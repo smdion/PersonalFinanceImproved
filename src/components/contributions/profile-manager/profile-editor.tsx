@@ -2,18 +2,12 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
 import { FormError } from "@/components/ui/form-error";
-import { FormField, FormInput } from "@/components/forms";
-import type { DeductionRow } from "./profile-types";
 import type { ContribDraft, MatchDraft } from "./account-row-types";
 import {
-  NewProfileCapCell,
-  NewProfileEnabledCell,
-  NewProfileMatchCell,
-  NewProfileMatchTypeCell,
-  NewProfileMethodCell,
-  NewProfileNameCell,
-  NewProfileValueCell,
-} from "./new-profile-cells";
+  NewProfileAccounts,
+  NewProfileDeductions,
+  NewProfileHeader,
+} from "./new-profile-sections";
 
 /**
  * Create-new form. The one place a batched Save survives: a profile row has
@@ -167,215 +161,37 @@ export function ProfileEditor({
       />
 
       <div className="space-y-5">
-        <div className="flex items-start justify-between gap-3">
-          {/* Name & Description */}
-          <div className="grid flex-1 grid-cols-2 gap-3">
-            <FormField label="Name">
-              <FormInput
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Austin Relocation"
-              />
-            </FormField>
-            <FormField label="Description">
-              <FormInput
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-              />
-            </FormField>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-muted hover:text-secondary px-2 py-1.5 text-xs font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!name.trim() || isPending}
-              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isPending ? "Saving…" : "Create"}
-            </button>
-          </div>
-        </div>
+        <NewProfileHeader
+          name={name}
+          setName={setName}
+          description={description}
+          setDescription={setDescription}
+          onCancel={onCancel}
+          handleSave={handleSave}
+          isPending={isPending}
+        />
 
         {/* Contribution accounts */}
-        {baseData?.accountDetails && baseData.accountDetails.length > 0 && (
-          <div>
-            <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
-              Contributions
-            </h4>
-            <p className="text-caption text-faint mb-2">
-              Leave Value blank to start this account with no value, same as
-              every account&apos;s own value — set it afterward once the profile
-              is created, or fill it in now.
-            </p>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-muted border-b">
-                  <th
-                    className="w-6 py-1.5 text-left font-medium"
-                    title="Enabled in this profile"
-                  >
-                    On
-                  </th>
-                  <th className="py-1.5 text-left font-medium">Account</th>
-                  <th className="w-28 py-1.5 text-left font-medium">Method</th>
-                  <th className="w-24 py-1.5 text-right font-medium">Value</th>
-                  <th className="w-28 py-1.5 text-left font-medium">
-                    Match Type
-                  </th>
-                  <th className="w-24 py-1.5 text-right font-medium">
-                    Employer Match
-                  </th>
-                  <th className="w-24 py-1.5 text-right font-medium">
-                    Match Cap
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {baseData.accountDetails.map((ad) => {
-                  const mVal = matchValues[String(ad.id)] ?? {};
-                  const effectiveMatchType = mVal.matchType ?? ad.liveMatchType;
-                  const hasMatch = effectiveMatchType !== "none";
-                  const isPercentMatch =
-                    effectiveMatchType === "percent_of_contribution";
-                  const isDisabled = disabledAccounts[String(ad.id)] ?? false;
-                  const contribVal = contribValues[String(ad.id)] ?? {};
-                  const effectiveMethod =
-                    contribVal.method ?? "percent_of_salary";
-                  const isPercent = effectiveMethod === "percent_of_salary";
-                  return (
-                    <tr
-                      key={ad.id}
-                      className={`border-subtle border-b ${isDisabled ? "opacity-40" : ""}`}
-                    >
-                      <NewProfileEnabledCell
-                        isDisabled={isDisabled}
-                        ad={ad}
-                        setDisabledAccounts={setDisabledAccounts}
-                      />
-                      <NewProfileNameCell
-                        isDisabled={isDisabled}
-                        ad={ad}
-                        nameValues={nameValues}
-                        setNameValues={setNameValues}
-                      />
-                      <NewProfileMethodCell
-                        isDisabled={isDisabled}
-                        effectiveMethod={effectiveMethod}
-                        setContribValues={setContribValues}
-                        ad={ad}
-                      />
-                      <NewProfileValueCell
-                        isDisabled={isDisabled}
-                        isPercent={isPercent}
-                        contribVal={contribVal}
-                        setContribValues={setContribValues}
-                        ad={ad}
-                      />
-                      <NewProfileMatchTypeCell
-                        effectiveMatchType={effectiveMatchType}
-                        setMatchValues={setMatchValues}
-                        ad={ad}
-                      />
-                      <NewProfileMatchCell
-                        hasMatch={hasMatch}
-                        effectiveMatchType={effectiveMatchType}
-                        mVal={mVal}
-                        setMatchValues={setMatchValues}
-                        ad={ad}
-                      />
-                      <NewProfileCapCell
-                        hasMatch={hasMatch}
-                        isPercentMatch={isPercentMatch}
-                        mVal={mVal}
-                        setMatchValues={setMatchValues}
-                        ad={ad}
-                      />
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <NewProfileAccounts
+          baseData={baseData}
+          matchValues={matchValues}
+          disabledAccounts={disabledAccounts}
+          contribValues={contribValues}
+          setDisabledAccounts={setDisabledAccounts}
+          nameValues={nameValues}
+          setNameValues={setNameValues}
+          setContribValues={setContribValues}
+          setMatchValues={setMatchValues}
+        />
         {/* Deductions — same "leave blank = not set" rule as contribution
             accounts above; a new profile starts with no deduction amounts
             unless entered here. */}
-        {deductionRows && deductionRows.length > 0 && (
-          <div>
-            <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
-              Deductions
-            </h4>
-            <table className="w-full border-collapse text-xs">
-              <thead>
-                <tr className="border-strong border-b-2">
-                  <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
-                    Deduction
-                  </th>
-                  <th className="text-muted w-24 px-3 py-2 text-left font-medium">
-                    Pretax
-                  </th>
-                  <th className="text-muted w-28 px-3 py-2 text-right font-medium">
-                    Amount / Period
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {deductionRows.map((d: DeductionRow, rowIdx: number) => {
-                  const personName =
-                    jobsList?.find((j) => j.id === d.jobId)?.employerName ??
-                    `Job ${d.jobId}`;
-                  return (
-                    <tr
-                      key={d.id}
-                      className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                        rowIdx % 2 === 1
-                          ? "bg-surface-sunken/60"
-                          : "bg-surface-primary"
-                      }`}
-                    >
-                      <td className="text-secondary py-1.5 pr-3 pl-4">
-                        {d.deductionName}
-                        <span className="text-faint"> — {personName}</span>
-                      </td>
-                      <td className="text-muted px-3 py-1.5">
-                        {d.isPretax ? "Pretax" : "Post-tax"}
-                      </td>
-                      <td className="px-3 py-1.5 text-right">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <span className="text-caption text-faint w-3 shrink-0 text-right">
-                            $
-                          </span>
-                          <input
-                            type="number"
-                            value={deductionValues[String(d.id)] ?? ""}
-                            onChange={(e) =>
-                              setDeductionValues((prev) => ({
-                                ...prev,
-                                [String(d.id)]: e.target.value,
-                              }))
-                            }
-                            placeholder="Not set"
-                            className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <NewProfileDeductions
+          deductionRows={deductionRows}
+          jobsList={jobsList}
+          deductionValues={deductionValues}
+          setDeductionValues={setDeductionValues}
+        />
         {/* The old "Employer & Bonus Handling" jobs active-fields section
             was removed in the Stage B migration — that bucket
             (contributionActiveFields.jobs) is retired entirely. Whether a
