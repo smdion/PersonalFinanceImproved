@@ -30,6 +30,7 @@ import {
   accountMatchWrite,
   refreshEntryRates,
 } from "@/server/services/contributions/match-writes";
+import { firstRow } from "@/lib/utils/first-row";
 
 // contributionMethod/contributionValue are deliberately NOT here — an
 // account is purely structural; the actual contribution amount/method is
@@ -216,7 +217,7 @@ export const contributionAccountsProcedures = {
           })
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.id, id))
-          .then((r) => r[0]);
+          .then(firstRow);
         // The incoming performanceAccountId, else the row's.
         const perfAccountId =
           data.performanceAccountId !== undefined
@@ -254,7 +255,7 @@ export const contributionAccountsProcedures = {
             .set(resolvedData)
             .where(eq(schema.contributionAccounts.id, id))
             .returning()
-            .then((r) => r[0]);
+            .then(firstRow);
           if (updated) await refreshEntryRates(tx, id, stored, updated);
           return updated;
         });
@@ -286,7 +287,7 @@ export const contributionAccountsProcedures = {
           .set({ isActive: input.isActive })
           .where(eq(schema.contributionAccounts.id, input.id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     setPriorYearAmount: adminProcedure
       .input(
@@ -322,7 +323,7 @@ export const contributionAccountsProcedures = {
           })
           .where(eq(schema.contributionAccounts.id, input.id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

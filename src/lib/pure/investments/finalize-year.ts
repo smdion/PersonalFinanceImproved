@@ -2,14 +2,8 @@
  *  next year's opening rows, the year's gross income and the tax-location
  *  split. finalizePerformanceYear writes them in one transaction. */
 import { toNumber } from "@/lib/utils/numbers";
-import {
-  isPortfolioParent,
-  type isRetirementParent,
-} from "@/lib/config/account-types";
-import {
-  PERF_CATEGORY_PORTFOLIO,
-  type accountTypeToPerformanceCategory,
-} from "@/lib/config/display-labels";
+import { isPortfolioParent } from "@/lib/config/account-types";
+import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { findActiveJob, type JobLike } from "@/lib/pure/household/profiles";
 import {
@@ -17,9 +11,11 @@ import {
   type SalaryProfileActiveMap,
 } from "@/lib/pure/household/compensation";
 import type { AnnualRowLike } from "./returns";
-import { getEffectiveCategory } from "./annual-rollups";
-
-type ParentCategory = NonNullable<Parameters<typeof isRetirementParent>[0]>;
+import {
+  getEffectiveCategory,
+  type AnnualCategory,
+  type StoredParentCategory,
+} from "./annual-rollups";
 
 /** A category's (or Portfolio's) annual_performance columns once finalized. */
 export function finalizedAnnualFields(
@@ -52,11 +48,11 @@ export function nextYearAccountRow(
     institution: string;
     accountLabel: string;
     ownerPersonId: number | null;
-    parentCategory: ParentCategory;
+    parentCategory: StoredParentCategory;
     performanceAccountId: number;
     endingBalance: string;
   },
-  allPerfAccounts: { id: number; parentCategory: ParentCategory }[],
+  allPerfAccounts: { id: number; parentCategory: StoredParentCategory }[],
   nextYear: number,
 ) {
   const masterAcct = a.performanceAccountId
@@ -90,7 +86,7 @@ export function nextYearAnnualRow(
   })[],
   finalizeLookups: Parameters<typeof getEffectiveCategory>[1],
   finalizedAnnualRows: {
-    category: ReturnType<typeof accountTypeToPerformanceCategory>;
+    category: AnnualCategory;
     lifetimeGains: string;
     lifetimeContributions: string;
     lifetimeMatch: string;
@@ -178,7 +174,7 @@ export function nearestToYearEnd<T extends { snapshotDate: string }>(
  *  from the rest (Retirement). */
 export function portfolioByTaxLocationFrom(
   snapAccounts: {
-    parentCategory: ParentCategory;
+    parentCategory: StoredParentCategory;
     taxType: PortfolioTaxType;
     amount: string;
   }[],

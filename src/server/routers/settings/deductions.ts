@@ -8,6 +8,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
+import { firstRow } from "@/lib/utils/first-row";
 
 // amountPerPeriod is deliberately NOT here — a deduction is purely
 // structural now; its dollar amount is ALWAYS a Contribution Profile's
@@ -61,7 +62,7 @@ export const deductionsProcedures = {
           .insert(schema.paycheckDeductions)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: contributionProfileProcedure
       .input(
@@ -76,7 +77,7 @@ export const deductionsProcedures = {
           .set(data)
           .where(eq(schema.paycheckDeductions.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

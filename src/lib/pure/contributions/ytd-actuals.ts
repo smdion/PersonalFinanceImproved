@@ -88,7 +88,6 @@ export function splitYtdActuals(
   }
 
   // Compute expected YTD for each contrib and group by perf account.
-  const expectedYtdMap = new Map<number, number>();
   const byPerfId = new Map<
     number,
     { contribId: number; expectedYtd: number }[]
@@ -113,8 +112,6 @@ export function splitYtdActuals(
       );
       expectedYtd = annual * (periodsElapsed / periodsPerYear);
     }
-
-    expectedYtdMap.set(c.id, expectedYtd);
 
     if (c.performanceAccountId != null) {
       const arr = byPerfId.get(c.performanceAccountId) ?? [];

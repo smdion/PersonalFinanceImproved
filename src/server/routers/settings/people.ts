@@ -15,6 +15,7 @@ import {
 } from "@/server/services/profiles/first-retirement-profile";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
 import { speculativeJobValues } from "@/server/data/jobs";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- Zod schemas ---
 
@@ -79,7 +80,7 @@ export const peopleProcedures = {
           .set(data)
           .where(eq(schema.people.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))

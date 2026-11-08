@@ -10,6 +10,7 @@ import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
 
 // A job is purely identity/lifecycle now — payPeriod/payWeek/anchorPayDate/
 // w4*/bonus-date/bonus-inclusion-flags/budgetPeriodsPerMonth all moved to
@@ -50,7 +51,7 @@ export const jobsProcedures = {
           .insert(schema.jobs)
           .values(jobData)
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
         await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
@@ -63,7 +64,7 @@ export const jobsProcedures = {
           .set(data)
           .where(eq(schema.jobs.id, id))
           .returning()
-          .then((r) => r[0]);
+          .then(firstRow);
         await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
