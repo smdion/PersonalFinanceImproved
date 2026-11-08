@@ -166,7 +166,7 @@ YNAB, Actual Budget, SimpleFIN and Tiingo credentials and the SEC contact are **
 
 **One figure, traced:** the Budget page's take-home pay reads `paycheck.computeSummary` (`src/server/routers/paycheck.ts`), which calls `computePaycheckSummary` (`src/server/services/paycheck/summary.ts`); that loads the active profiles, the people and the year's tax tables (`tax_brackets`, `tax_params`, seeded from `tax-data/us-federal/`) and calls `calculatePaycheck` (`src/lib/pure/paycheck/per-check.ts`), which does the math.
 
-**Key design decisions:**
+**Key design decisions** (the full list: [docs/DECISIONS.md](docs/DECISIONS.md)):
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
 - **Data-driven design** — Account-type behavior is declared in one config record; adding an account type is one entry, not code changes. Tax tables and limits are data, versioned by year.

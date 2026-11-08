@@ -1,6 +1,6 @@
 # Ledgr — Rules & Philosophy
 
-Read all of this: `CLAUDE.md` imports it. How things work is in [DESIGN.md](DESIGN.md), the code conventions in [CONTRIBUTING.md](../CONTRIBUTING.md), the review checklist (§ Violations to Watch For) in [TESTING.md](TESTING.md), and install, deploy and release in [OPS.md](OPS.md).
+Read all of this: `CLAUDE.md` imports it. How things work is in [DESIGN.md](DESIGN.md), the code conventions in [CONTRIBUTING.md](../CONTRIBUTING.md), the review checklist (§ Violations to Watch For) in [TESTING.md](TESTING.md), install, deploy and release in [OPS.md](OPS.md), and settled product and architecture choices in [DECISIONS.md](DECISIONS.md).
 
 **Every rule names its guard,** in brackets at its end: `[lint: <rule>]` (ESLint; a ratchet's count lives in the suppression files and only falls), `[test: <file>]`, `[check: <command>]` (a CI script), `[type]` (TypeScript), or `[human]` (a reviewer judges it). A rule with a tool and `[human]` is checked by the tool in the spellings it knows and by review in the rest. Known Gaps are facts, not rules, and name none.
 
