@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclaimer } from "@/components/ui/disclaimer";
-import { LoadingCard, ErrorCard } from "@/components/dashboard/utils";
+import { CardQueryBoundary, queryPending } from "@/components/dashboard/utils";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { RECOMMENDATION_AREAS } from "@/lib/config/recommendations";
 import Link from "next/link";
@@ -31,8 +31,8 @@ import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 const TOP_COUNT = 3;
 
 export function RecommendationsContent() {
-  const { isLoading, error, recommendations, dismissed, results } =
-    useRecommendations();
+  const advice = useRecommendations();
+  const { recommendations, dismissed, results } = advice;
   // A recommendation from a milestone links back to it.
   const milestoneOf = new Map(
     results.map((m) => [m.id, { id: m.id, title: m.title }]),
@@ -122,18 +122,11 @@ export function RecommendationsContent() {
       </Link>
     </PageHeader>
   );
-  if (isLoading)
+  if (queryPending(advice))
     return (
       <div>
         {header}
-        <LoadingCard title="Recommendations" />
-      </div>
-    );
-  if (error)
-    return (
-      <div>
-        {header}
-        <ErrorCard title="Recommendations" message="Failed to load" />
+        <CardQueryBoundary title="Recommendations" query={advice} />
       </div>
     );
   if (recommendations.length === 0)

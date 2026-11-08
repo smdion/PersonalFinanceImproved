@@ -1075,11 +1075,6 @@
       "count": 1
     }
   },
-  "src/components/dashboard/utils.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/debts/active-loan-card.tsx": {
     "ratchet/no-raw-button": {
       "count": 1

@@ -84,7 +84,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
   - **Chart series**: named exports from `colors.ts` (`CHART_COLORS`, `EXPENSE_PIE_COLORS`, `mcBandOuter`/`mcBandInner`/`mcMedian`/etc.) — never a local color array or hardcoded hex per chart file.
   - UI badges (BG, PC, etc.) must NOT use account-type colors — use indigo or gray to avoid overlap.
 - **Math:** Use `safeDivide()`, `roundToCents()`, `sumBy()` from `@/lib/utils/math.ts`.
-- **Shared components:** `EmptyState`, `HelpTip`, `AccountBadge`, `PageHeader`, `LoadingCard`, `ErrorCard`, `ContribPeriodToggle`.
+- **Shared components:** `EmptyState`, `HelpTip`, `AccountBadge`, `PageHeader`, `QueryBoundary` (a card's: `CardQueryBoundary`), `ContribPeriodToggle`.
 - **Account type config:** `src/lib/config/account-types.ts` is the single source for all account-type behavior. Use `getAccountTypeConfig()`, `getAllCategories()`, `isOverflowTarget()`, `categoriesWithIrsLimit()`, etc. — never hardcode category checks.
 - **Display labels:** Import from `src/lib/config/display-labels.ts`. Never define local label maps in components.
 

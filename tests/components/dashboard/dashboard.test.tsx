@@ -35,11 +35,6 @@ vi.mock("@/components/dashboard/living-costs-card", () => ({
 }));
 
 vi.mock("@/components/dashboard/utils", () => ({
-  ErrorCard: ({ title, message }: { title: string; message: string }) => (
-    <div data-testid="error-card">
-      {title}: {message}
-    </div>
-  ),
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),

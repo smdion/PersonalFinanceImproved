@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/query-boundary";
 
 export { queryPending } from "@/components/ui/query-boundary";
-import { TRPCClientError } from "@trpc/client";
 
 function CardPulse() {
   return (
@@ -46,51 +45,10 @@ export function CardQueryBoundary({
   );
 }
 
-/**
- * Categorize a tRPC error for the user-facing message.
- * Distinguishes:
- *   - 401 / UNAUTHORIZED → re-auth needed
- *   - 403 / FORBIDDEN → permission issue
- *   - 5xx / INTERNAL_SERVER_ERROR → server problem
- *   - default → generic
- */
-function categorizeErrorMessage(error: unknown): string {
-  if (error instanceof TRPCClientError) {
-    const code = error.data?.code;
-    if (code === "UNAUTHORIZED") {
-      return "You're signed out. Refresh the page to sign in again.";
-    }
-    if (code === "FORBIDDEN") {
-      return "You don't have permission to view this. Ask an admin to grant access.";
-    }
-    if (code === "INTERNAL_SERVER_ERROR") {
-      return error.message || "The server hit an error. Please try again.";
-    }
-    return error.message || "Failed to load";
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Failed to load";
-}
-
-export function ErrorCard({
-  title,
-  message,
-  error,
-}: {
-  title: string;
-  /** Plain string message — shown as-is. Pass either this OR `error`. */
-  message?: string;
-  /** Error object (typically a TRPCClientError) — message derived. */
-  error?: unknown;
-}) {
-  const shown = error
-    ? categorizeErrorMessage(error)
-    : (message ?? "Failed to load");
+function ErrorCard({ title, message }: { title: string; message: string }) {
   return (
     <Card title={title}>
-      <p className="text-sm text-red-600">{shown}</p>
+      <p className="text-sm text-red-600">{message}</p>
     </Card>
   );
 }

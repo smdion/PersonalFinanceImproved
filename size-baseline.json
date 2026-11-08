@@ -350,7 +350,7 @@
       "LiabilitiesContent": 205
     },
     "src/app/(dashboard)/milestones/milestones-content.tsx": {
-      "MilestonesContent": 223
+      "MilestonesContent": 217
     },
     "src/app/(dashboard)/networth/networth-content.tsx": {
       "NetWorthContent": 394
@@ -367,7 +367,7 @@
       "PortfolioContent.map()": 256
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
-      "RecommendationsContent": 192
+      "RecommendationsContent": 185
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
       "RetirementContent": 299

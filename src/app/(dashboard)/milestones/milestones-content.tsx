@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Disclaimer } from "@/components/ui/disclaimer";
-import { LoadingCard, ErrorCard } from "@/components/dashboard/utils";
+import { CardQueryBoundary, queryPending } from "@/components/dashboard/utils";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useMilestones } from "@/lib/hooks/use-milestones";
 import {
@@ -51,8 +51,8 @@ const SOURCES: MilestoneSource[] = [
 export function MilestonesContent() {
   const user = useUser();
   const canEdit = isAdmin(user);
-  const { isLoading, projectionLoading, error, input, results } =
-    useMilestones();
+  const milestones = useMilestones();
+  const { projectionLoading, input, results } = milestones;
   const firstReachedOf = useFirstReached();
   const [source, setSource] = useState<MilestoneSource | null>(null);
   const [hideUnknown, setHideUnknown] = useState(false);
@@ -71,18 +71,12 @@ export function MilestonesContent() {
       </Link>
     </PageHeader>
   );
-  if (isLoading)
+  // No input and no error: a query paused offline, still waiting.
+  if (queryPending(milestones) || !input)
     return (
       <div>
         {header}
-        <LoadingCard title="Milestones" />
-      </div>
-    );
-  if (error || !input)
-    return (
-      <div>
-        {header}
-        <ErrorCard title="Milestones" message="Failed to load" />
+        <CardQueryBoundary title="Milestones" query={milestones} />
       </div>
     );
   if (results.length === 0)
