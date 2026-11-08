@@ -3,8 +3,11 @@
 import React from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import { GoalProjection, PlannedTxForm, PlannedTransaction } from "./types";
-import { monthKey } from "@/lib/pure/savings/savings-projection";
+import { GoalProjection, PlannedTxForm } from "./types";
+import {
+  monthKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
 
 interface SavingsGoalSummary {
   goalId: number;

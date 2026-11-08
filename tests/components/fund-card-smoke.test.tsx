@@ -44,9 +44,9 @@ import { FundCard } from "@/components/savings/fund-card";
 import type {
   GoalProjection,
   NewFundForm,
-  PlannedTransaction,
   RawGoal,
 } from "@/components/savings/types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 const m = formatCurrency;
 

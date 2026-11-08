@@ -22,8 +22,8 @@ import {
   computeDerivedPoolByYear,
   type ProjectionGoalInput,
   type PoolGrowthEarner,
+  type PlannedTransaction,
 } from "@/lib/pure/savings/savings-projection";
-import type { PlannedTransaction } from "@/components/savings/types";
 
 function makeGoal(
   overrides: Partial<ProjectionGoalInput> = {},

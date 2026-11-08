@@ -38,13 +38,8 @@ import {
   SubGoalProgressAndMove,
 } from "./fund-card-sub-goals";
 import { FundApiSyncPanel, FundSummaryRow } from "./fund-card-summary";
-import {
-  GoalProjection,
-  PlannedTxForm,
-  NewFundForm,
-  RawGoal,
-  PlannedTransaction,
-} from "./types";
+import { GoalProjection, PlannedTxForm, NewFundForm, RawGoal } from "./types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 interface EfundResult {
   neededAfterRepay: number;

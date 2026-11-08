@@ -5,8 +5,11 @@ import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { localDateStr } from "@/lib/utils/date";
 import { AddTransactionForm } from "./add-transaction-form";
-import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
-import { occurrenceKey } from "@/lib/pure/savings/savings-projection";
+import { PlannedTxForm, emptyTxForm } from "./types";
+import {
+  occurrenceKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
 import { Badge } from "@/components/ui/badge";
 
 function txToForm(tx: PlannedTransaction): PlannedTxForm {

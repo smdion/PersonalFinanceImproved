@@ -7,8 +7,11 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import { buildSettledOccurrencesSet } from "@/lib/pure/savings/savings-projection";
-import type { GoalProjection, PlannedTransaction } from "../types";
+import {
+  buildSettledOccurrencesSet,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
+import type { GoalProjection } from "../types";
 import { SettlementSuggestions, TransactionsToolbar } from "./filters";
 import {
   TransactionAmountFields,

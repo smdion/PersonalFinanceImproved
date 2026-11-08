@@ -13,8 +13,8 @@ import type {
   PlannedTxForm,
   NewFundForm,
   RawGoal,
-  PlannedTransaction,
 } from "./types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 import type { RecalcIncomeParams } from "./api-sync-section";

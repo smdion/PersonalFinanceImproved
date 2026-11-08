@@ -26,24 +26,6 @@ export interface RawGoal {
   currentMonthBudgeted?: number | null;
 }
 
-/** Canonical planned-transaction row shape — was independently redeclared
- *  across ~7 files. One redeclaration (fund-details-tab.tsx) was
- *  missing isRecurring/recurrenceMonths/transferPairId, a real display gap
- *  now closed by importing this instead. */
-export interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-  source?: string;
-  /** Occurrence months ("YYYY-MM") already settled for this row. */
-  settledOccurrences?: string[];
-}
-
 export interface PlannedTxForm {
   goalId: number;
   transactionDate: string;

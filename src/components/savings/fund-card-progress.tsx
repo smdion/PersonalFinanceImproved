@@ -1,7 +1,8 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
-import type { GoalProjection, PlannedTransaction, RawGoal } from "./types";
+import type { GoalProjection, RawGoal } from "./types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 export function upcomingExpensesNote(transactions: PlannedTransaction[]) {
   // Date-truncated cutoff — matches the shared

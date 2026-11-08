@@ -9,7 +9,22 @@
  * this month's contribution for YNAB-linked goals" guard the page's copy
  * has. Both now call this module instead of reimplementing the walk.
  */
-import type { PlannedTransaction } from "@/components/savings/types";
+
+/** A savings goal's planned-transaction row; recurring rows repeat
+ *  every `recurrenceMonths`. */
+export interface PlannedTransaction {
+  id: number;
+  goalId: number;
+  transactionDate: string;
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  recurrenceMonths: number | null;
+  transferPairId?: string | null;
+  source?: string;
+  /** Occurrence months ("YYYY-MM") already settled for this row. */
+  settledOccurrences?: string[];
+}
 
 export interface ProjectionGoalInput {
   id: number;

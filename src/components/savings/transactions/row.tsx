@@ -5,8 +5,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { occurrenceKey } from "@/lib/pure/savings/savings-projection";
-import type { GoalProjection, PlannedTransaction } from "../types";
+import {
+  occurrenceKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
+import type { GoalProjection } from "../types";
 
 export interface EditForm {
   goalId: number;

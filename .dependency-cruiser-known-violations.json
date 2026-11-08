@@ -125,11 +125,6 @@
     "to": "src/lib/budget-api/types.ts"
   },
   {
-    "rule": "pure-has-no-io",
-    "from": "src/lib/pure/savings/savings-projection.ts",
-    "to": "src/components/savings/types.ts"
-  },
-  {
     "rule": "server-pages-prefetch-only",
     "from": "src/app/(dashboard)/layout.tsx",
     "to": "src/server/auth-mode.ts"

@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
-import type { PlannedTransaction } from "../types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 export function TransactionsToolbar({
   canEdit,

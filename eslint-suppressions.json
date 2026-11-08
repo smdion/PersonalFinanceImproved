@@ -3860,7 +3860,7 @@
   },
   "src/components/savings/types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/savings/upcoming-goals.tsx": {
