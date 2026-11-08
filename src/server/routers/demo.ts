@@ -36,7 +36,7 @@ export const demoRouter = createTRPCRouter({
    *  § Permission & Security Gates rule 3 exception. */
   activateProfile: protectedProcedure
     .input(z.object({ slug: demoSlugSchema }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       if (!isPostgres()) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -52,7 +52,7 @@ export const demoRouter = createTRPCRouter({
         });
       }
 
-      const schemaName = await buildDemoSchema(input.slug);
+      const schemaName = await buildDemoSchema(input.slug, ctx.scope.asOf);
 
       // Set HttpOnly cookie server-side so it's not accessible to JavaScript
       const cookieStore = await cookies();

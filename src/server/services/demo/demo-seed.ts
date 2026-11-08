@@ -10,12 +10,15 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "@/server/data/jobs";
-import { writeStamp } from "@/lib/utils/clock";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
-export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
+export async function seedProfile(
+  db: typeof appDb,
+  profile: DemoProfile,
+  seededOn: Date,
+) {
   // 1. People
   const personRows = await db
     .insert(schema.people)
@@ -29,11 +32,10 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const personIdByName = new Map(personRows.map((r) => [r.name, r.id]));
 
-  // For parity with real usage — every person gets the same auto-provisioned
-  // speculative-job peg settings.people.create gives real people.
+  // Every person gets the speculative-job peg real people get.
   await db
     .insert(schema.jobs)
-    .values(personRows.map((p) => speculativeJobValues(p.id, writeStamp())));
+    .values(personRows.map((p) => speculativeJobValues(p.id, seededOn)));
 
   // 2. Jobs — a job carries no salary/bonus/payroll terms of its own; insert
   // the (now purely structural) job row, then collect a COMPLETE Salary Profile
@@ -361,7 +363,6 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 15. Account performance (per-account yearly breakdown)
-  // Build a lookup from accountLabel → perfAccount.id for FK linking
   // These three guard the DEMO_PROFILES fixture's own consistency — a
   // malformed constant is a dev bug, not a user error. Left as plain Error.
   for (const ap of profile.accountPerformance) {
@@ -412,10 +413,8 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 17. Property taxes
-  // Build loan name → id map
   const loanIdByName = new Map<string, number>();
   for (const _ml of profile.mortgageLoans) {
-    // Re-query to get IDs (loans were inserted above without RETURNING)
     const rows = await db
       .select({ id: schema.mortgageLoans.id, name: schema.mortgageLoans.name })
       .from(schema.mortgageLoans);

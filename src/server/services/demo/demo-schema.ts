@@ -33,7 +33,10 @@ const MAX_DEMO_SCHEMAS = 10;
 /** Builds (or rebuilds) the demo schema for profile `slug`, seeds the
  *  profile into it and returns the schema's name. Refuses a slug that isn't
  *  a profile's before any SQL runs, whatever its caller checked. */
-export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
+export async function buildDemoSchema(
+  slug: DemoProfileSlug,
+  seededOn: Date,
+): Promise<string> {
   const profile = getDemoProfile(slug);
   const schemaName = demoSchemaName(slug);
   if (!profile || !schemaName)
@@ -116,7 +119,7 @@ export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
     // approved update — never the household's own rows.
     await applyReferenceData(cdb);
 
-    await seedProfile(cdb, profile);
+    await seedProfile(cdb, profile, seededOn);
   } finally {
     // Queries still queued run on the demo schema before the reset.
     await serial.close();

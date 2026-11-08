@@ -100,7 +100,11 @@ describe("Recently Retired demo seed (pinned)", () => {
       sqlite.prepare(`DELETE FROM "${name}"`).run();
     sqlite.prepare("DELETE FROM sqlite_sequence").run();
     sqlite.pragma("foreign_keys = ON");
-    await seedProfile(seeded.rawDb, DEMO_PROFILES["recently-retired"]!);
+    await seedProfile(
+      seeded.rawDb,
+      DEMO_PROFILES["recently-retired"]!,
+      new Date(),
+    );
     rows = dump(sqlite);
   });
 

@@ -396,7 +396,7 @@
     "src/server/services/contributions/profile.ts": 382,
     "src/server/services/contributions/summary.ts": 732,
     "src/server/services/debts/other-liabilities.ts": 64,
-    "src/server/services/demo/demo-seed.ts": 468,
+    "src/server/services/demo/demo-seed.ts": 467,
     "src/server/services/investments/current-balances.ts": 467,
     "src/server/services/net-worth/other-assets.ts": 91,
     "src/server/services/net-worth/year-end-history.ts": 620,
@@ -417,7 +417,7 @@
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/preview.ts": 455,
-    "src/server/services/sync/sync-all.ts": 265,
+    "src/server/services/sync/sync-all.ts": 264,
     "src/server/trpc.ts": 580
   },
   "functions": {
@@ -1116,7 +1116,7 @@
       "computeSyncPreview": 422
     },
     "src/server/services/sync/sync-all.ts": {
-      "syncAll": 241,
+      "syncAll": 240,
       "syncAll.assetsPulled.transaction()": 154
     }
   }

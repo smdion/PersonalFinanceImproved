@@ -185,7 +185,7 @@ describe.each(Object.values(DEMO_PROFILES).map((p) => [p.slug, p] as const))(
       sqlite.prepare("DELETE FROM sqlite_sequence").run();
       sqlite.pragma("foreign_keys = ON");
       await applyReferenceData(seeded.rawDb);
-      await seedProfile(seeded.rawDb, profile);
+      await seedProfile(seeded.rawDb, profile, new Date());
     }, 120_000);
 
     afterAll(() => seeded?.cleanup());

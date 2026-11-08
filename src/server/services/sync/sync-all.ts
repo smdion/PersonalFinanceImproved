@@ -71,7 +71,6 @@ export async function syncAll(
     const { getApiAccountBalanceMapFromAccounts } =
       await import("@/server/services/sync/api-balance-resolution");
     const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
-    const pulledAt = new Date(); // after the fetch
 
     // ── Drift detection ──
     // Diff cached account list against new fetch. Surfaces broken
@@ -232,7 +231,7 @@ export async function syncAll(
           mapping,
           apiBalance,
           service,
-          pulledAt,
+          pulledAt: now,
         });
         if (result.applied) pulled++;
       }

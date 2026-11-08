@@ -197,7 +197,7 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
       const { applyReferenceData } = await import("@/lib/db/reference-data");
       const { seedProfile } = await import("@/server/services/demo/demo-seed");
       await applyReferenceData(db);
-      await seedProfile(db, profile);
+      await seedProfile(db, profile, new Date());
     }, timeout);
 
     it.each(READS)(
