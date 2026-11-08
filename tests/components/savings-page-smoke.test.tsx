@@ -35,7 +35,7 @@ describe("Savings page", () => {
 
   it("creates a fund from the form", async () => {
     await page.mount();
-    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Manage" }));
     fireEvent.click(screen.getByRole("button", { name: "+ New Fund" }));
     fireEvent.change(screen.getByPlaceholderText("e.g. Vacation, New Car"), {
       target: { value: "Vacation" },

@@ -64,7 +64,7 @@ test.describe("focus links", () => {
   }) => {
     test.setTimeout(90_000);
     await page.goto("/savings?focus=extraPaychecks");
-    const tab = page.getByRole("button", { name: "Paychecks & Growth" });
+    const tab = page.getByRole("tab", { name: "Paychecks & Growth" });
     const hasGoals = await tab
       .waitFor({ timeout: 30_000 })
       .then(() => true)

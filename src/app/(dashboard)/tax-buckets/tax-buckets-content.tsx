@@ -16,6 +16,7 @@ import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { KpiCard } from "@/components/retirement-projection/projection-hero-kpis";
 import { formatCurrency } from "@/lib/utils/format";
+import { Tabs } from "@/components/ui/tabs";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -329,25 +330,15 @@ export function TaxBucketsContent() {
           silent switch. Default "now"; "at retirement" only fetches the
           (heavier, cache-backed) projection once selected. */}
       <div className="border-subtle flex items-center justify-between border-b">
-        <div className="flex gap-1">
-          {[
-            { key: "now" as const, label: "Now" },
-            { key: "atRetirement" as const, label: "At Retirement" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setView(tab.key)}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-                view === tab.key
-                  ? "border-primary text-primary"
-                  : "text-muted hover:text-primary border-transparent"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          look="underline-neutral"
+          value={view}
+          onChange={setView}
+          tabs={[
+            { value: "now", label: "Now" },
+            { value: "atRetirement", label: "At Retirement" },
+          ]}
+        />
         {/* Only meaningful for "At Retirement" — "Now" figures are already
             today's dollars, so deflating them is a no-op there. */}
         {view === "atRetirement" && (

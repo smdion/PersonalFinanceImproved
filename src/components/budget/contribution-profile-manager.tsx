@@ -42,6 +42,7 @@ import {
 } from "@/lib/pure/household/profiles";
 import { ContributionProfileCompare } from "./contribution-profile-compare";
 import { SlidePanel } from "@/components/ui/slide-panel";
+import { Tabs } from "@/components/ui/tabs";
 import {
   ContribAccountForm,
   type ContribAccountFormValues,
@@ -173,30 +174,15 @@ export function ContributionProfileManager({
           profile's editor — kept as an internal toggle rather than a new
           top-level Budget-page tab (see contribution-profile-compare.tsx). */}
       <div className="mb-4 flex items-center justify-between border-b">
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("profiles")}
-            className={`border-b-2 px-3 py-1.5 text-xs font-medium transition-colors ${
-              viewMode === "profiles"
-                ? "border-blue-600 text-blue-600"
-                : "text-muted hover:text-secondary border-transparent"
-            }`}
-          >
-            Profiles
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("compare")}
-            className={`border-b-2 px-3 py-1.5 text-xs font-medium transition-colors ${
-              viewMode === "compare"
-                ? "border-blue-600 text-blue-600"
-                : "text-muted hover:text-secondary border-transparent"
-            }`}
-          >
-            Compare
-          </button>
-        </div>
+        <Tabs
+          look="underline-compact"
+          value={viewMode}
+          onChange={setViewMode}
+          tabs={[
+            { value: "profiles", label: "Profiles" },
+            { value: "compare", label: "Compare" },
+          ]}
+        />
         {canEdit && (
           <button
             type="button"

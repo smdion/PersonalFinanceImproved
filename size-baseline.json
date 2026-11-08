@@ -14,13 +14,13 @@
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
     "src/app/(dashboard)/performance/performance-content.tsx": 871,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 870,
-    "src/app/(dashboard)/savings/savings-content.tsx": 930,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1019,
+    "src/app/(dashboard)/savings/savings-content.tsx": 918,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1010,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
-    "src/components/budget/contribution-profile-manager.tsx": 2041,
+    "src/components/budget/contribution-profile-manager.tsx": 2027,
     "src/components/budget/salary-profile-manager.tsx": 954,
     "src/components/budget/savings-allocation-panel.tsx": 522,
     "src/components/dashboard/contributions-card.tsx": 653,
@@ -373,12 +373,12 @@
       "RetirementContent": 299
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsContent": 848
+      "SavingsContent": 835
     },
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 374
+      "TaxBucketsContent": 364
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
       "ToolsContent": 537
@@ -415,7 +415,7 @@
       "BudgetSummaryTable": 517
     },
     "src/components/budget/contribution-profile-manager.tsx": {
-      "ContributionProfileManager": 347,
+      "ContributionProfileManager": 332,
       "ProfileDetailPanel": 246,
       "ProfileEditor": 517,
       "ProfileEditor.map()": 211,

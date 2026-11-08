@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useLocalStorageSet } from "@/app/(dashboard)/savings/use-local-storage-set";
 import { SummaryCards } from "@/components/savings/summary-cards";
@@ -520,31 +521,24 @@ export function SavingsContent() {
       </CardBoundary>
 
       {/* ── Master tabs ── */}
-      <div className="border-subtle flex border-b">
-        {(
-          [
-            { key: "plan", label: "Plan" },
-            { key: "manage", label: "Manage" },
-          ] as const
-        ).map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setMasterTab(key)}
-            className={`-mb-px border-b-2 px-5 py-2.5 text-sm font-medium transition-colors ${
-              masterTab === key
-                ? "border-blue-600 text-blue-600"
-                : "text-muted hover:text-primary border-transparent"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        look="underline-lg"
+        id="savings-master"
+        value={masterTab}
+        onChange={setMasterTab}
+        tabs={[
+          { value: "plan", label: "Plan" },
+          { value: "manage", label: "Manage" },
+        ]}
+      />
 
       {/* ── Plan tab ── */}
       {masterTab === "plan" && (
         <CardBoundary title="Plan">
-          <section className="bg-surface-primary border-default space-y-4 rounded-lg border p-4 sm:p-5">
+          <section
+            {...tabPanelProps("savings-master", "plan")}
+            className="bg-surface-primary border-default space-y-4 rounded-lg border p-4 sm:p-5"
+          >
             {/* Controls row */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               {goalProjections.length > 0 && (
@@ -612,25 +606,16 @@ export function SavingsContent() {
             {goalProjections.length > 0 && (
               <div className="border-subtle/60 space-y-4 border-t pt-4">
                 <div className="flex items-center border-b">
-                  {(
-                    [
-                      { key: "allocations", label: "Allocations" },
-                      { key: "transactions", label: "Transactions" },
-                      { key: "extraPaychecks", label: "Paychecks & Growth" },
-                    ] as const
-                  ).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setEditTab(key)}
-                      className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                        editTab === key
-                          ? "border-blue-600 text-blue-600"
-                          : "text-muted hover:text-primary border-transparent"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                  <Tabs
+                    look="underline-sm"
+                    value={editTab}
+                    onChange={setEditTab}
+                    tabs={[
+                      { value: "allocations", label: "Allocations" },
+                      { value: "transactions", label: "Transactions" },
+                      { value: "extraPaychecks", label: "Paychecks & Growth" },
+                    ]}
+                  />
                   {editTab === "allocations" && (
                     <div className="ml-auto pr-2">
                       <EditLockToggle
@@ -834,7 +819,10 @@ export function SavingsContent() {
       {/* ── Manage tab ── */}
       {masterTab === "manage" && (
         <CardBoundary title="Manage">
-          <section className="bg-surface-primary border-default space-y-3 rounded-lg border p-4 sm:p-5">
+          <section
+            {...tabPanelProps("savings-master", "manage")}
+            className="bg-surface-primary border-default space-y-3 rounded-lg border p-4 sm:p-5"
+          >
             {canEdit && showNewFund && (
               <NewFundFormCard
                 newFund={newFund}

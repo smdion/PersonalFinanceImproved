@@ -426,16 +426,11 @@
       "count": 2
     },
     "ratchet/no-raw-button": {
-      "count": 7
+      "count": 5
     }
   },
   "src/app/(dashboard)/savings/use-local-storage-set.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/app/(dashboard)/settings/settings-content.tsx": {
-    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -455,7 +450,7 @@
       "count": 9
     },
     "ratchet/no-raw-button": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 7
@@ -468,9 +463,6 @@
   },
   "src/app/(dashboard)/tax-optimization/tax-optimization-content.tsx": {
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-raw-button": {
       "count": 1
     }
   },
@@ -797,7 +789,7 @@
       "count": 3
     },
     "ratchet/no-raw-button": {
-      "count": 8
+      "count": 6
     },
     "ratchet/no-raw-input": {
       "count": 13

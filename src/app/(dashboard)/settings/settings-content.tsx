@@ -14,6 +14,7 @@ import { GeneralSettings } from "@/components/settings/general";
 import { DebugSettings } from "@/components/settings/debug";
 import { IntegrationsSettings } from "@/components/settings/integrations";
 import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_SETTINGS_ACTIVE_TAB } from "@/lib/constants/settings-keys";
@@ -64,23 +65,17 @@ export function SettingsContent() {
         }
       />
       <div className="mb-6 border-b">
-        <nav className="flex gap-1 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.key
-                  ? "border-blue-600 text-blue-600"
-                  : "text-muted hover:text-secondary hover:border-strong border-transparent"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <nav>
+          <Tabs
+            look="underline-nav"
+            id="settings"
+            value={activeTab}
+            onChange={setActiveTab}
+            tabs={tabs.map((tab) => ({ value: tab.key, label: tab.label }))}
+          />
         </nav>
       </div>
-      <div>
+      <div {...tabPanelProps("settings", activeTab)}>
         {activeTab === "general" && <GeneralSettings />}
         {activeTab === "taxdata" && <TaxDataSettings />}
         {activeTab === "integrations" && <IntegrationsSettings />}
