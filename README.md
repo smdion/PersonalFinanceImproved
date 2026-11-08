@@ -254,6 +254,10 @@ All three are configured from **Settings → Integrations** — there are no cre
 
 The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, every response checked against its endpoint's schema before anything is written, duplicate guards on writes (each push's transactions carry an import id, so a push finds what it posted when a response was lost; a POST is resent only after a rate limit), and drift detection after every sync that surfaces broken account mappings in the UI.
 
+## Security
+
+Sign-in runs on `next-auth` **5.0.0-beta.32**, a pre-release of Auth.js v5, pinned exactly so an update never arrives unreviewed. A beta gets fixes on its own schedule, and a security fix reaches Ledgr only when the pin is raised in a release. The plan is to move sign-in to [Better Auth](https://www.better-auth.com/), a stable release line, in a release of its own after v0.11.0; until then the pin stays and its advisories are watched (`pnpm audit` runs in CI). Credential encryption, request-target checks and permissions are under **Features → Platform**.
+
 ## Testing
 
 6,000+ tests across 530+ Vitest files plus 15 Playwright end-to-end specs — covering the financial calculators, retirement benchmarks, server and router logic, UI components, database migrations and backup transforms, theme-token regressions, and full browser flows. CI enforces coverage thresholds of 85% statements / 70% branches / 80% functions / 85% lines, and also runs the lint/type-check, a file-size guard, a tax-parameter freshness check, a migration safety check, and a documentation-freshness check.
