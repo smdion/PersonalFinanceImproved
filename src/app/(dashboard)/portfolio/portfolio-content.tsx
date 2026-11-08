@@ -4,44 +4,24 @@
  *  portfolio/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
-import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
-import { HoldingHistorySection } from "@/components/investments/holding-history-section";
 import { useFocusReveal } from "@/lib/hooks/use-focus";
-import { FocusTarget } from "@/components/ui/focus-target";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
-import dynamic from "next/dynamic";
 import { EDIT_LOCK_KEYS, useEditLock } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
 import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
-import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
-import { CardBoundary } from "@/components/dashboard/utils";
-import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
-import { SlidePanel } from "@/components/ui/slide-panel";
-import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
-import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { usePortfolioSnapshotMutations } from "@/components/portfolio/use-portfolio-snapshot-mutations";
-import { SnapshotTable, SnapshotFilters } from "./snapshot-history";
-import { SnapshotPagination } from "./snapshot-pagination";
 import { PortfolioSyncBanner, PortfolioHeader } from "./portfolio-sections";
-
-// Code-split Recharts. PortfolioChart pulls in
-// ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
-const PortfolioChart = dynamic(
-  () =>
-    import("@/components/portfolio/portfolio-chart").then((m) => ({
-      default: m.PortfolioChart,
-    })),
-  { loading: () => <SkeletonChart />, ssr: false },
-);
+import { PortfolioSnapshotHistory } from "./snapshot-history-card";
+import { PortfolioSettingsSections } from "./portfolio-settings-sections";
+import { PortfolioPanels } from "./portfolio-panels";
 
 export function PortfolioContent() {
   const user = useUser();
@@ -249,116 +229,52 @@ export function PortfolioContent() {
         syncServiceLabel={syncServiceLabel}
       />
 
-      {/* Change since the latest snapshot: added vs markets */}
-      <SinceSnapshotBanner />
-
-      {/* Quick Look Stats Panel */}
-      {showQuickLook && snapshotTotals && snapshotTotals.length >= 2 && (
-        <PortfolioQuickLook snapshots={snapshotTotals} />
-      )}
-
-      {/* New Snapshot Form */}
-      {canEdit && (
-        <SlidePanel
-          isOpen={showNewSnapshot}
-          onClose={() => setShowNewSnapshot(false)}
-          title="New Snapshot"
-        >
-          <NewSnapshotForm
-            onClose={() => setShowNewSnapshot(false)}
-            onSaved={() => {
-              setShowNewSnapshot(false);
-              invalidateSnapshotQueries();
-            }}
-          />
-        </SlidePanel>
-      )}
-
-      {/* Portfolio value chart */}
-      {showChart && snapshotTotals && snapshotTotals.length > 0 && (
-        <CardBoundary title="Portfolio Chart">
-          <PortfolioChart
-            snapshots={snapshotTotals}
-            live={liveSinceSnapshot?.points}
-          />
-        </CardBoundary>
-      )}
-
-      {/* Lightweight account balance overview */}
-      <CardBoundary title="Account Balances">
-        <AccountBalanceOverview />
-      </CardBoundary>
+      <PortfolioPanels
+        canEdit={canEdit}
+        invalidateSnapshotQueries={invalidateSnapshotQueries}
+        liveSinceSnapshot={liveSinceSnapshot}
+        setShowNewSnapshot={setShowNewSnapshot}
+        showChart={showChart}
+        showNewSnapshot={showNewSnapshot}
+        showQuickLook={showQuickLook}
+        snapshotTotals={snapshotTotals}
+      />
 
       {/* Snapshot history (paginated, collapsed by default) */}
-      <CardBoundary title="Snapshot History">
-        {paginatedSnapshots && paginatedSnapshots.totalCount > 0 && (
-          <CollapsibleSection
-            className="mt-6"
-            title="Snapshot History"
-            meta={`(${paginatedSnapshots.totalCount} snapshot${paginatedSnapshots.totalCount !== 1 ? "s" : ""})`}
-            open={showHistory}
-            onToggle={() => setShowHistory(!showHistory)}
-          >
-            <SnapshotFilters
-              paginatedSnapshots={paginatedSnapshots}
-              setShowAll={setShowAll}
-              setSnapshotDateFrom={setSnapshotDateFrom}
-              setSnapshotDateTo={setSnapshotDateTo}
-              setSnapshotPage={setSnapshotPage}
-              showAll={showAll}
-              snapshotDateFrom={snapshotDateFrom}
-              snapshotDateTo={snapshotDateTo}
-            />
-
-            <SnapshotTable
-              budgetApiConnected={budgetApiConnected}
-              canEdit={canEdit}
-              deleteSnapshot={deleteSnapshot}
-              expandedSnapshot={expandedSnapshot}
-              handleBalanceEdit={handleBalanceEdit}
-              rawSnapshots={rawSnapshots}
-              resyncPush={resyncPush}
-              setExpandedSnapshot={setExpandedSnapshot}
-              snapshotDate={snapshotDate}
-              snapshotEditLocked={snapshotEditLocked}
-              sortOf={sortOf}
-              syncPending={syncPending}
-              syncPendingSnapshot={syncPendingSnapshot}
-              syncServiceLabel={syncServiceLabel}
-              toggleSnapshotEditLock={toggleSnapshotEditLock}
-              toggleSort={toggleSort}
-            />
-
-            <SnapshotPagination
-              paginatedSnapshots={paginatedSnapshots}
-              setSnapshotPage={setSnapshotPage}
-              showAll={showAll}
-              snapshotPage={snapshotPage}
-            />
-          </CollapsibleSection>
-        )}
-      </CardBoundary>
-      {/* Account & Contribution Settings — unified table for goal/owner/contributions */}
-      <CardBoundary title="Contribution Account Settings">
-        <div className="mt-8">
-          <ContributionAccountsSettings />
-        </div>
-      </CardBoundary>
-      {/* What each account held over time — entered here, read by
-          Benchmarks' "Your mix, in index funds". */}
-      {hasPermission(user, "portfolio") && (
-        <CardBoundary title="Holding history">
-          <FocusTarget topic="holdingHistory" className="mt-8">
-            <CollapsibleSection
-              title="Holding history"
-              open={showHoldings}
-              onToggle={() => setShowHoldings(!showHoldings)}
-            >
-              <HoldingHistorySection />
-            </CollapsibleSection>
-          </FocusTarget>
-        </CardBoundary>
-      )}
+      <PortfolioSnapshotHistory
+        budgetApiConnected={budgetApiConnected}
+        canEdit={canEdit}
+        deleteSnapshot={deleteSnapshot}
+        expandedSnapshot={expandedSnapshot}
+        handleBalanceEdit={handleBalanceEdit}
+        paginatedSnapshots={paginatedSnapshots}
+        rawSnapshots={rawSnapshots}
+        resyncPush={resyncPush}
+        setExpandedSnapshot={setExpandedSnapshot}
+        setShowAll={setShowAll}
+        setShowHistory={setShowHistory}
+        setSnapshotDateFrom={setSnapshotDateFrom}
+        setSnapshotDateTo={setSnapshotDateTo}
+        setSnapshotPage={setSnapshotPage}
+        showAll={showAll}
+        showHistory={showHistory}
+        snapshotDate={snapshotDate}
+        snapshotDateFrom={snapshotDateFrom}
+        snapshotDateTo={snapshotDateTo}
+        snapshotEditLocked={snapshotEditLocked}
+        snapshotPage={snapshotPage}
+        sortOf={sortOf}
+        syncPending={syncPending}
+        syncPendingSnapshot={syncPendingSnapshot}
+        syncServiceLabel={syncServiceLabel}
+        toggleSnapshotEditLock={toggleSnapshotEditLock}
+        toggleSort={toggleSort}
+      />
+      <PortfolioSettingsSections
+        setShowHoldings={setShowHoldings}
+        showHoldings={showHoldings}
+        user={user}
+      />
     </div>
   );
 }
