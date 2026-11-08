@@ -1224,9 +1224,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 5
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/investments/holdings-section.tsx": {
@@ -1241,9 +1238,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 5
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/investments/hsa-cash-buffer.tsx": {
@@ -1667,9 +1661,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/performance/basis-cell.tsx": {
@@ -1726,9 +1717,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/performance/past-year-edit-dialog.tsx": {
@@ -1770,9 +1758,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/performance/update-performance-form.tsx": {
@@ -1787,9 +1772,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 6
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 4
     }
   },
   "src/components/performance/year-range-picker.tsx": {
@@ -1798,9 +1780,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/performance/year-row.tsx": {

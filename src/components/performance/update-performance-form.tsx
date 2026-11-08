@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   formatCurrency,
@@ -689,6 +689,7 @@ function AccountFormRow({
               <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
                 <span className="text-muted pl-1.5 text-xs select-none">$</span>
                 <input
+                  aria-label={`Ending balance for ${row.displayName}`}
                   type="number"
                   step="0.01"
                   value={row.endingBalance}
@@ -704,6 +705,7 @@ function AccountFormRow({
             <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
               <span className="text-muted pl-1.5 text-xs select-none">$</span>
               <input
+                aria-label={`Ending balance for ${row.displayName}`}
                 type="number"
                 step="0.01"
                 value={row.endingBalance}
@@ -729,6 +731,7 @@ function AccountFormRow({
               <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
                 <span className="text-muted pl-1.5 text-xs select-none">$</span>
                 <input
+                  aria-label={`Gain/loss for ${row.displayName}`}
                   type="number"
                   step="0.01"
                   value={row.yearlyGainLoss}
@@ -815,10 +818,14 @@ function CompactCurrencyField({
   const numValue = parseFloat(value) || 0;
   const isZero = numValue === 0 && originalValue === 0;
   const changed = numValue !== originalValue;
+  const id = useId();
 
   return (
     <div>
-      <label className="text-caption text-muted mb-0.5 block font-medium">
+      <label
+        htmlFor={`${id}-field`}
+        className="text-caption text-muted mb-0.5 block font-medium"
+      >
         {PERF_FIELD_HELP[field].label}
         <HelpTip text={PERF_FIELD_HELP[field].help} />
       </label>
@@ -827,6 +834,7 @@ function CompactCurrencyField({
       >
         <span className="text-muted pl-1.5 text-xs select-none">$</span>
         <input
+          id={`${id}-field`}
           type="number"
           step="0.01"
           value={value}

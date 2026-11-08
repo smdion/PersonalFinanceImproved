@@ -403,6 +403,7 @@ function AllocationCard({ data }: { data: Overview }) {
                     Give it a target by counting it in one of your asset
                     classes:
                     <select
+                      aria-label="Asset class to count it in"
                       value=""
                       disabled={link.isPending}
                       onChange={(e) =>

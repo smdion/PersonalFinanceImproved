@@ -206,6 +206,7 @@ export function FinalizeYearModal({
                     <td key={cat} className="px-3 py-1 text-right">
                       {isEditing ? (
                         <input
+                          aria-label={`${label}, ${cat}`}
                           type="text"
                           autoFocus
                           value={val}

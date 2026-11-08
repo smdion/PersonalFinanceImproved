@@ -34,8 +34,8 @@
     "src/components/help/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 668,
     "src/components/investments/fund-holding-row.tsx": 498,
-    "src/components/investments/holding-history-section.tsx": 522,
-    "src/components/investments/holdings-section.tsx": 793,
+    "src/components/investments/holding-history-section.tsx": 525,
+    "src/components/investments/holdings-section.tsx": 794,
     "src/components/layout/scenario-bar.tsx": 487,
     "src/components/layout/sidebar.tsx": 525,
     "src/components/methodology/decumulation-content.tsx": 862,
@@ -48,7 +48,7 @@
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
     "src/components/paycheck/person-paycheck.tsx": 453,
-    "src/components/performance/update-performance-form.tsx": 844,
+    "src/components/performance/update-performance-form.tsx": 852,
     "src/components/performance/year-row.tsx": 749,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 666,
@@ -486,10 +486,10 @@
       "GlidePathChart": 185
     },
     "src/components/investments/holding-history-section.tsx": {
-      "PeriodForm": 197
+      "PeriodForm": 200
     },
     "src/components/investments/holdings-section.tsx": {
-      "AllocationCard": 222,
+      "AllocationCard": 223,
       "HoldingsSection": 160
     },
     "src/components/layout/data-freshness.tsx": {
@@ -562,23 +562,23 @@
       "AccountNotesDialog": 195
     },
     "src/components/performance/account-picker.tsx": {
-      "AccountPicker": 187
+      "AccountPicker": 188
     },
     "src/components/performance/finalize-year-modal.tsx": {
-      "FinalizeYearModal": 200
+      "FinalizeYearModal": 201
     },
     "src/components/performance/performance-table.tsx": {
       "PerformanceTable": 181
     },
     "src/components/performance/update-basis-form.tsx": {
-      "UpdateBasisForm": 290
+      "UpdateBasisForm": 303
     },
     "src/components/performance/update-performance-form.tsx": {
-      "AccountFormRow": 305,
+      "AccountFormRow": 308,
       "UpdatePerformanceForm": 465
     },
     "src/components/performance/year-range-picker.tsx": {
-      "YearRangePicker": 156
+      "YearRangePicker": 158
     },
     "src/components/performance/year-row.tsx": {
       "YearRow": 719,

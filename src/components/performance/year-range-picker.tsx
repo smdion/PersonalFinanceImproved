@@ -126,6 +126,7 @@ export function YearRangePicker({
               <span className="text-caption text-muted px-2">Custom range</span>
               <div className="flex items-center gap-1 px-2 py-1">
                 <select
+                  aria-label="Custom range start year"
                   value={customStart}
                   onChange={(e) => setCustomStart(Number(e.target.value))}
                   className="flex-1 rounded border px-1 py-0.5 text-xs"
@@ -138,6 +139,7 @@ export function YearRangePicker({
                 </select>
                 <span className="text-faint text-xs">–</span>
                 <select
+                  aria-label="Custom range end year"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(Number(e.target.value))}
                   className="flex-1 rounded border px-1 py-0.5 text-xs"

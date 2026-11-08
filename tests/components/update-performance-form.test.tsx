@@ -264,6 +264,29 @@ describe("UpdatePerformanceForm", () => {
     expect(screen.getByText("Vanguard")).toBeInTheDocument();
   });
 
+  it("each row's Beginning label reaches its own field", () => {
+    render(
+      <UpdatePerformanceForm
+        currentYear={2026}
+        accountRows={accountRows}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    const labels = screen
+      .getAllByText("Beginning")
+      .map((el) => el.closest("label"))
+      .filter((label) => label !== null);
+    expect(labels).toHaveLength(2);
+    expect(labels[0]!.control).not.toBe(labels[1]!.control);
+    for (const label of labels) {
+      const onClick = vi.fn();
+      label.control!.addEventListener("click", onClick);
+      fireEvent.click(label);
+      expect(onClick).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it("computes gain/loss from snapshot ending balance when a snapshot match exists", () => {
     render(
       <UpdatePerformanceForm
