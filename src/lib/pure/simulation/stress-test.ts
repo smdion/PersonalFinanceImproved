@@ -74,14 +74,15 @@ export const STRESS_TEST_OPTIMISTIC: StressTestParams = {
  * The default-good scenario most users start from. Uses long-run averages.
  */
 export const STRESS_TEST_BASELINE: StressTestParams = {
-  returnRate: DEFAULT_RETURN_RATE, // 7% nominal — long-run real ~5% + inflation 2%
+  returnRate: DEFAULT_RETURN_RATE, // 7% nominal — a stock-and-bond mix (US stocks alone ~10%)
   inflationRate: DEFAULT_INFLATION_RATE, // 3% — long-run US average
   salaryGrowthRate: 0.01, // 1% real
   withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
   label: "Long-run baseline",
   description:
-    "Long-run US averages: 7% nominal return, 3% inflation, 1% real salary " +
-    "growth, 4% withdrawal. The default unless you change it.",
+    "Long-run averages for a stock-and-bond mix: 7% nominal return, 3% " +
+    "inflation, 1% real salary growth, 4% withdrawal. The default unless you " +
+    "change it.",
 };
 
 /**
@@ -103,7 +104,7 @@ export function getStressTestScenarios(): StressTestParams[] {
  * user to run the conservative stress test before committing to the plan.
  *
  * Thresholds:
- *   - returnRate > 8% (top quartile sustained → unlikely)
+ *   - returnRate > 8% (above a stock-and-bond mix's long-run return)
  *   - inflationRate < 2.5% (below historical floor)
  *   - salaryGrowthRate > 4% (very aggressive career projection)
  */
@@ -128,8 +129,9 @@ export function detectRosyAssumptions(
       threshold: 0.08,
       message:
         `Your assumed return rate (${formatPercent(returnRate, 1)}) is above ` +
-        `the long-run historical average for US equities (~7% nominal). ` +
-        `Sustained 8%+ over 30 years is in the top quartile of history. ` +
+        `8%. US stocks have returned about 10% a year before inflation (about ` +
+        `7% after) since 1928, and a mix with bonds returns less, so 8% or ` +
+        `more for 30 years assumes a portfolio that is mostly stocks. ` +
         `Run the Conservative Stress Test to see how the plan holds up if ` +
         `returns are lower.`,
     });

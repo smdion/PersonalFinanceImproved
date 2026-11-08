@@ -140,7 +140,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     }
   }
 
-  // Recommended strategy
+  // A common starting point for the withdrawal strategy
   let strategyRec: WithdrawalStrategyRecommendation | null = null;
   if (typeof props.retirementHorizonYears === "number") {
     strategyRec = recommendWithdrawalStrategy({
@@ -151,7 +151,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     });
     callouts.push(
       <CalloutLine key="m4-strategy" severity="info">
-        <strong>Recommended strategy:</strong> {strategyRec.label}.{" "}
+        <strong>A common starting point:</strong> {strategyRec.label}.{" "}
         {maskAmountsInText(strategyRec.rationale)}
       </CalloutLine>,
     );
