@@ -164,7 +164,7 @@ describe("FinancialIndependenceCard smoke", () => {
     };
     render(<FinancialIndependenceCard {...baseProps} />);
     expect(screen.getByText("2045")).toBeInTheDocument();
-    expect(screen.getByText("Based on retirement plan")).toBeInTheDocument();
+    expect(screen.getByText("From your projection")).toBeInTheDocument();
   });
 
   it("shows Reached once FI progress is complete", () => {

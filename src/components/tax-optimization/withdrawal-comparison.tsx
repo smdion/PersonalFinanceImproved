@@ -16,7 +16,7 @@
  * ("Roth first" is deliberately omitted — it needs a tax-preference
  * override, not a category order, which this procedure doesn't take.)
  *
- * The server also returns a 4th row, "Your current plan" (`isCurrentPlan`)
+ * The server also returns a 4th row, "Your current settings" (`isCurrentPlan`)
  * — the household's REAL resolved routing mode (session override, else the
  * persisted profile default), scored the identical way. It can coincide
  * with one of the three presets or differ from all of them (e.g. a
@@ -62,7 +62,7 @@ function presetStrategies(): RouterInputs["projection"]["compareWithdrawalStrate
   ];
 }
 
-/** A named preset's row and "Your current plan" can legitimately describe
+/** A named preset's row and "Your current settings" can legitimately describe
  *  the exact same run — e.g. a household already on Bracket Filling.
  *  Matches on BOTH the config (mode, and for waterfall, the resolved
  *  order) AND the computed output (lifetime tax, within a cent — the
@@ -155,12 +155,12 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
                   {s.label}
                   {"isCurrentPlan" in s && (
                     <span className="ml-1 text-[10px] text-slate-600">
-                      your plan
+                      your settings
                     </span>
                   )}
                   {matchesCurrentPlan(s) && (
                     <span className="text-faint ml-1 text-[10px]">
-                      (same as your current plan)
+                      (same as your current settings)
                     </span>
                   )}
                   {s.label === best && (

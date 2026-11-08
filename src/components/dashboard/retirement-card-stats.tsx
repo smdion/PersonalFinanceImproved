@@ -151,7 +151,7 @@ export function SimulatedSuccessRow({
           <span className="text-muted">
             Simulated success
             <HelpTip
-              text="The share of simulated market outcomes in which your plan doesn't run out of money, from the last Simulation you ran on the Retirement page. Not re-run automatically from the dashboard — visit the Retirement page's Projection Health tab to refresh it."
+              text="The share of simulated market outcomes in which your projection doesn't run out of money, from the last Simulation you ran on the Retirement page. Not re-run automatically from the dashboard — visit the Retirement page's Projection Health tab to refresh it."
               learnMoreHref={focusHref({ topic: "planHealth" })}
             />
           </span>

@@ -314,7 +314,7 @@ Full methodology →
 Decumulation Engine?
 Computes annual need (budget × inflation − Social Security from each person's start age), grosses up for taxes, and routes withdrawals via bracket filling (Traditional to bracket cap, then whichever of Roth or Brokerage is cheaper that year, HSA last). Enforces RMDs, optional Roth conversions, 8 dynamic spending strategies (Morningstar), and IRMAA/ACA cliff awareness.
 Full methodology →
-The plan runs out at age 72 (2048)
+The projection runs out at age 72 (2048)
 Why Trust These Numbers??
 Calibrated against the Trinity Study, cFIREsim backtesting, the IRS's published tax tables, and institutional asset data. Backed by thousands of automated tests, including mathematical invariants checked against random inputs.
 Full validation evidence →

@@ -98,8 +98,8 @@ function RangeCell({
       className={`py-1 text-right tabular-nums ${outside ? "text-amber-600" : "text-muted"}`}
       title={
         outside
-          ? "Outside what the plan expects in 9 years out of 10"
-          : "Inside what the plan expects"
+          ? "Outside what the projection expects in 9 years out of 10"
+          : "Inside what the projection expects"
       }
     >
       {formatPercent(range.low, 0)} to {formatPercent(range.high, 0)}

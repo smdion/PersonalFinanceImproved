@@ -30,7 +30,7 @@ export function ReportActionItemsSection({
         </ol>
       ) : (
         <p className="text-muted text-sm">
-          No specific recommendations — this plan looks solid based on the
+          No specific recommendations — this projection looks solid based on the
           analysis above.
         </p>
       )}

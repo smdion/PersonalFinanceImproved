@@ -169,7 +169,7 @@ describe("projection router — projectTaxYears", () => {
 });
 
 describe("projection router — withdrawal routing DB fallback", () => {
-  it("'Your current plan' resolves the household's persisted withdrawal_routing_mode, not a hardcoded default", async () => {
+  it("'Your current settings' resolves the household's persisted withdrawal_routing_mode, not a hardcoded default", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
@@ -190,12 +190,12 @@ describe("projection router — withdrawal routing DB fallback", () => {
       });
       assert(!("notConfigured" in res));
       const currentPlan = res.strategies.find(
-        (s) => s.label === "Your current plan",
+        (s) => s.label === "Your current settings",
       );
       expect(currentPlan?.mode).toBe("waterfall");
       // The resolved order, not just the mode — the client needs this to
       // tell whether a waterfall household matches one of the named
-      // presets (withdrawal-comparison.tsx's "same as your current plan"
+      // presets (withdrawal-comparison.tsx's "same as your current settings"
       // annotation) rather than just sharing a routing mode.
       assert(currentPlan && "withdrawalOrder" in currentPlan);
       expect(Array.isArray(currentPlan.withdrawalOrder)).toBe(true);
@@ -221,13 +221,13 @@ describe("projection router — compareWithdrawalStrategies", () => {
           { label: "Tax-optimized", mode: "bracket_filling" },
         ],
       });
-      // 2 named strategies + the server's own "Your current plan" baseline
+      // 2 named strategies + the server's own "Your current settings" baseline
       // row (the household's real resolved defaults, scored the same way —
       // see compareWithdrawalStrategies's docblock).
       expect(res.strategies).toHaveLength(3);
-      expect(res.strategies.some((s) => s.label === "Your current plan")).toBe(
-        true,
-      );
+      expect(
+        res.strategies.some((s) => s.label === "Your current settings"),
+      ).toBe(true);
       for (const s of res.strategies) {
         expect(s.lifetimeTax).toBeGreaterThanOrEqual(0);
         expect(s).toHaveProperty("terminalByTaxType");

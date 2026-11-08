@@ -114,7 +114,7 @@ export function TimelineSection({
         )}
         <div>
           <span className="text-muted">
-            Plan Through
+            Projection Through
             <HelpTip text="How long your money needs to last. Higher = more safety margin." />
           </span>
           <div className="flex items-baseline gap-1 font-medium">
@@ -152,7 +152,7 @@ export function TimelineSection({
             label="Withdraw what pay doesn't cover"
             size="xs"
             disabled={!isEditable}
-            title="Off: nothing comes out of the accounts in these years, and the plan spends only what's coming in."
+            title="Off: nothing comes out of the accounts in these years, and the projection spends only what's coming in."
           />
         </div>
       </div>

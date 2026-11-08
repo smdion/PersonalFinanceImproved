@@ -86,11 +86,11 @@ export function useSimulationAssumptionDrafts(
     activeOverrides.push("Asset class return/vol manually adjusted");
   if (inputs.accumulationExpenseOverride != null)
     activeOverrides.push(
-      `Pre-retirement spending set to ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
+      `Budget set to ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
     );
   if (inputs.decumulationExpenseOverride != null)
     activeOverrides.push(
-      `Retirement spending set to ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
+      `Retirement budget set to ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
 
   const presetColors: Record<string, string> = {

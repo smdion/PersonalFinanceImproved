@@ -181,7 +181,7 @@ export function buildWatchlist(
   const narrative =
     parts.length === 0
       ? "No Medicare IRMAA surcharges, ACA subsidy losses, or Required Minimum Distribution shortfalls were found in your projection."
-      : `Across your retirement, this plan has ${parts.join(", ")}. See below for the specific years.`;
+      : `Across your retirement, this projection has ${parts.join(", ")}. See below for the specific years.`;
 
   return { items, narrative };
 }

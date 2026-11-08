@@ -36,7 +36,7 @@ export function ScenarioInputs({
           )}
         />
         <AssumptionRow
-          label="Plan Through"
+          label="Projection Through"
           value={String(
             new Date().getFullYear() + inputs.endAge - inputs.currentAge,
           )}

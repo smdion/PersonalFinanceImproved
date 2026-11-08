@@ -27,13 +27,13 @@ export function buildRiskNarrative(mcResult: MonteCarloResult): RiskNarrative {
   const onTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
 
   const successRateNarrative = onTrack
-    ? `This report tested your plan against many different sequences of market returns. Your plan succeeded — meaning every retirement year was funded — in ${successPct} of those trials. This is a strong result: most plans that succeed less than 85% of the time have a real, addressable weak point.`
-    : `This report tested your plan against many different sequences of market returns. Your plan succeeded — meaning every retirement year was funded — in only ${successPct} of those trials. This is below the 85% threshold this report treats as "on track," and is worth addressing rather than relying on the single middle-of-the-road projection shown elsewhere in this report.`;
+    ? `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in ${successPct} of those trials. This is a strong result: most plans that succeed less than 85% of the time have a real, addressable weak point.`
+    : `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in only ${successPct} of those trials. This is below the 85% threshold this report treats as "on track," and is worth addressing rather than relying on the single middle-of-the-road projection shown elsewhere in this report.`;
 
   const worstCase = mcResult.worstCase;
   let worstCaseNarrative: string;
   if (worstCase.p5FailureAge != null) {
-    worstCaseNarrative = `In the worst 5% of market conditions this report tested, your plan falls short by age ${worstCase.p5FailureAge}. This is the kind of outcome a genuinely bad decade of market returns — not a typical one — could produce.`;
+    worstCaseNarrative = `In the worst 5% of market conditions this report tested, your projection falls short by age ${worstCase.p5FailureAge}. This is the kind of outcome a genuinely bad decade of market returns — not a typical one — could produce.`;
   } else {
     // Today's dollars from the Simulation itself — each trial deflated by
     // its own inflation (deflating the nominal figure at the base year was

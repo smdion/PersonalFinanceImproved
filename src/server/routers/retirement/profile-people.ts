@@ -110,7 +110,7 @@ export const profilePeopleProcedures = {
               .then(firstRow);
       }),
 
-    // "Plan Through" (end age) and Social Security "Start Age" both render
+    // "Projection Through" (end age) and Social Security "Start Age" both render
     // as ONE household-wide control regardless of person count
     // (sections/timeline.tsx, sections/social-security.tsx), but the
     // engine's real per-person read source for both

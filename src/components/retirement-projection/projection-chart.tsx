@@ -547,7 +547,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     )}
                     <div className="text-muted mt-1 border-t border-white/10 pt-1">
                       <div className="flex justify-between gap-4">
-                        <span>Plan return</span>
+                        <span>Assumed return</span>
                         <span className="tabular-nums">
                           {formatPercent(Number(d._planReturn), 1)}
                         </span>

@@ -114,7 +114,7 @@ export function TaxOptimizationContent() {
         <PageHeader title="Roth & conversions" />
         <EmptyState
           message="No retirement projection yet"
-          hint="Set retirement age, return rates, and a retirement budget on the Retirement page — the conversion and withdrawal-strategy tools need a plan to optimise against."
+          hint="Set retirement age, return rates, and a retirement budget on the Retirement page — the conversion and withdrawal-strategy tools need a projection to optimise against."
         />
       </div>
     );

@@ -109,7 +109,7 @@ export function CoastFireCard({
     <KpiCard
       label="Coast FIRE"
       tooltip={[
-        "The earliest age at which you can stop contributing and still fund your plan through end of plan.",
+        "The earliest age at which you can stop contributing and still fund every retirement year of the projection.",
         "Success criterion: every retirement year is funded from retirement money (it doesn't run out or fall short) AND the first year's spending covers your retirement budget.",
         `Headline combines the Baseline answer (at expected returns) and the Simulated answer (90% confidence across ${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} random market outcomes) — only shows 'Already ✓' when BOTH agree.`,
         `Baseline is a single expected-return path (same math as the Baseline scenario) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
@@ -182,7 +182,7 @@ function CombinedStatus({
         <div className="text-caption text-faint mt-1 leading-tight">
           {mc.status === "unreachable" && det.status !== "unreachable"
             ? "Baseline says reachable but simulated outcomes fail."
-            : "Plan requires contributions through retirement."}
+            : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -310,7 +310,7 @@ function DeterministicStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          Plan requires contributions through retirement.
+          Needs contributions through retirement.
         </div>
       </>
     );

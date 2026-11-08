@@ -167,7 +167,7 @@ export function ReportAssumptionsSummary({
           value={retirementYear != null ? String(retirementYear) : "—"}
         />
         <Row
-          label="Plan through"
+          label="Projection through"
           value={
             retirementYear != null && retirementAge != null && endAge != null
               ? String(retirementYear + endAge - retirementAge)
@@ -296,7 +296,7 @@ export function ReportAssumptionsSummary({
         <p className="text-faint mt-2 text-xs">
           Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
           projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
-          Distributions exceeding this plan&apos;s stated spending need —
+          Distributions exceeding this projection&apos;s stated spending need —
           {settings.rmdExcessHandling === "spend"
             ? " the excess is treated as spent, not reinvested."
             : " the excess is reinvested into a taxable brokerage account."}{" "}

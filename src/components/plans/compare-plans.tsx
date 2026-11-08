@@ -152,7 +152,7 @@ function PlanColumn({
               ? (() => {
                   const outcome = assessPlan(result);
                   return outcome.succeeded
-                    ? "through the plan"
+                    ? "through the projection"
                     : outcome.failureReason === "depleted"
                       ? `to ${outcome.failureYear}`
                       : `falls short in ${outcome.failureYear}`;

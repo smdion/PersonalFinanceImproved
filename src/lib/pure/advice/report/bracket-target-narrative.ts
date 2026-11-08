@@ -81,7 +81,7 @@ export function describeBracketCeilingMath(
 /** Qualitative-only fallback — the strategy's general rationale, no
  *  numbers, for when the optimizer result isn't available. */
 export function describeBracketTargetQualitative(targetPct: number): string {
-  return `This plan fills your Traditional withdrawals up to the ${formatPercent(
+  return `This projection fills your Traditional withdrawals up to the ${formatPercent(
     targetPct,
     0,
   )} tax bracket before drawing from any other account. The idea: your Traditional balance will eventually be taxed one way or another — either you withdraw it (or convert it to Roth) at a rate you choose now, or the IRS forces it out later as a Required Minimum Distribution, taxed at whatever your bracket happens to be at that point (often higher, once RMDs stack on top of other income). Filling to ${formatPercent(
@@ -130,17 +130,17 @@ export function describeBracketTargetChoice(
   const higher = idx < sorted.length - 1 ? sorted[idx + 1] : undefined;
 
   const parts: string[] = [
-    `This plan fills your Traditional withdrawals up to the ${formatPercent(currentTargetPct, 0)} tax bracket before drawing from any other account — your Traditional balance is taxed either at a rate you choose now, or later as a Required Minimum Distribution taxed at whatever bracket you're in then.`,
+    `This projection fills your Traditional withdrawals up to the ${formatPercent(currentTargetPct, 0)} tax bracket before drawing from any other account — your Traditional balance is taxed either at a rate you choose now, or later as a Required Minimum Distribution taxed at whatever bracket you're in then.`,
   ];
   if (mathSentence) parts.push(mathSentence);
 
   if (isCheapest) {
     parts.push(
-      `Among the bracket targets this plan tested (your own real marginal rates), ${formatPercent(currentTargetPct, 0)} is the lowest lifetime-cost choice.`,
+      `Among the bracket targets this projection tested (your own real marginal rates), ${formatPercent(currentTargetPct, 0)} is the lowest lifetime-cost choice.`,
     );
   } else {
     parts.push(
-      `Among the bracket targets this plan tested, ${formatPercent(cheapest.target, 0)} scores as the lower-cost choice — about ${formatCurrency(current.netCost - cheapest.netCost)} less over your plan than your current ${formatPercent(currentTargetPct, 0)} target. Worth reviewing on the Taxes settings page.`,
+      `Among the bracket targets this projection tested, ${formatPercent(cheapest.target, 0)} scores as the lower-cost choice — about ${formatCurrency(current.netCost - cheapest.netCost)} less over your retirement than your current ${formatPercent(currentTargetPct, 0)} target. Worth reviewing on the Taxes settings page.`,
     );
   }
 
@@ -149,7 +149,7 @@ export function describeBracketTargetChoice(
     parts.push(
       delta > 0
         ? `Filling only to ${formatPercent(lower.target, 0)} instead would cost about ${formatCurrency(delta)} less in tax today, but leaves more in Traditional accounts to be taxed later — worth it only if that later rate is expected to be lower.`
-        : `Filling only to ${formatPercent(lower.target, 0)} instead would leave more in Traditional accounts to be taxed later without reducing today's tax cost — this plan's own numbers show that's not worth it.`,
+        : `Filling only to ${formatPercent(lower.target, 0)} instead would leave more in Traditional accounts to be taxed later without reducing today's tax cost — this projection's own numbers show that's not worth it.`,
     );
   }
 
@@ -157,8 +157,8 @@ export function describeBracketTargetChoice(
     const delta = higher.netCost - current.netCost;
     parts.push(
       delta > 0
-        ? `Filling further to ${formatPercent(higher.target, 0)} would cost about ${formatCurrency(delta)} more over your plan — the extra tax paid now isn't offset by a large enough future benefit.`
-        : `Filling further to ${formatPercent(higher.target, 0)} doesn't cost meaningfully more over your plan, but doesn't save anything either.`,
+        ? `Filling further to ${formatPercent(higher.target, 0)} would cost about ${formatCurrency(delta)} more over your retirement — the extra tax paid now isn't offset by a large enough future benefit.`
+        : `Filling further to ${formatPercent(higher.target, 0)} doesn't cost meaningfully more over your retirement, but doesn't save anything either.`,
     );
   }
 

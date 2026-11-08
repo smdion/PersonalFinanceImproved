@@ -109,7 +109,7 @@ export function checkReportGate(input: ReportGateInput): ReportGateResult {
 export function reportGateFailureMessage(failure: ReportGateFailure): string {
   switch (failure) {
     case "not-baseline-scenario":
-      return "The full report is only available for your baseline plan — switch back from the current scenario view to generate it.";
+      return "The full report is only available for the Baseline scenario — switch back from the current scenario view to generate it.";
     case "simple-tax-mode":
       return "The full report's risk analysis needs Advanced tax mode. Switch to Advanced, then try again.";
     case "inputs-unsettled":
@@ -117,6 +117,6 @@ export function reportGateFailureMessage(failure: ReportGateFailure): string {
     case "engine-not-fresh":
       return "Your projection is still updating — try again in a moment.";
     case "mc-not-fresh":
-      return "Run the simulation first, so the report's risk analysis reflects your current plan.";
+      return "Run the simulation first, so the report's risk analysis reflects your current projection.";
   }
 }

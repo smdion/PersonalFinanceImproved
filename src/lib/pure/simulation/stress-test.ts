@@ -132,7 +132,7 @@ export function detectRosyAssumptions(
         `8%. US stocks have returned about 10% a year before inflation (about ` +
         `7% after) since 1928, and a mix with bonds returns less, so 8% or ` +
         `more for 30 years assumes a portfolio that is mostly stocks. ` +
-        `Run the Conservative Stress Test to see how the plan holds up if ` +
+        `Run the Conservative Stress Test to see how the projection holds up if ` +
         `returns are lower.`,
     });
   }

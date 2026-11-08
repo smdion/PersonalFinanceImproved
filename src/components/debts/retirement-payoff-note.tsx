@@ -60,7 +60,7 @@ export function RetirementPayoffNote({
           ? `Your retirement projection stops spending this payment from ${endsYear}. Taxes and insurance stay.`
           : "Pick the line that pays this loan and your retirement projection stops spending it after payoff."}
         {data.retirementTyped
-          ? " Retirement spending you typed in as a figure stays as entered."
+          ? " A Retirement budget you typed in as an amount stays as entered."
           : ""}
       </p>
     </div>

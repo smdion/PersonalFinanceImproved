@@ -152,7 +152,7 @@ export function WithdrawalComparisonCard({
                   Falls Short
                 </th>
                 <th className="px-2 py-1.5 text-right font-medium">
-                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 simulations)">
+                  <span title="Every retirement year funded through the end of the projection (200 simulations)">
                     Success
                   </span>
                 </th>
@@ -432,7 +432,7 @@ export function WithdrawalComparisonCard({
                   Strategy Analysis — {analyzerQuery.data.strategyLabel}
                 </h4>
                 <p className="text-label text-faint">
-                  Current plan:{" "}
+                  Current settings:{" "}
                   {formatPercent(analyzerQuery.data.baseline?.successRate ?? 0)}{" "}
                   success ·{" "}
                   {formatPercent(

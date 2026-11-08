@@ -241,7 +241,7 @@ export function SpendingStabilityChart({
             {isStrategy
               ? usesPostRetirementRaise
                 ? "the strategy's own year-by-year target"
-                : "year-1 plan"
+                : "year-1 amount"
               : "retirement budget"}{" "}
             (inflation-adjusted)
           </span>
@@ -355,7 +355,7 @@ export function SpendingStabilityChart({
                     <span>{formatCurrency(d.withdrawal ?? 0)}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted">Plan ({baselineLabel}):</span>
+                    <span className="text-muted">Base ({baselineLabel}):</span>
                     <span className="text-faint">
                       {formatCurrency(d.baseline ?? 0)}
                     </span>

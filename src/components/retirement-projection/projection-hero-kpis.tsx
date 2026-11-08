@@ -270,10 +270,10 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
     const longHorizonTip =
       strategyMeta.incomeSource === "formula"
-        ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower RMD Multiplier in Strategy Params if you want to slow spending.`
+        ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower RMD Multiplier in Strategy Params if you want to slow spending.`
         : strategyMeta.usesWithdrawalRate
-          ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
-          : `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
+          ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
+          : `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
 
     return (
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -326,7 +326,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 "For budget-based strategies (Fixed, Forgo, G-K), both donuts converge — spending IS the budget. For portfolio-linked strategies (Const %, Vanguard), the gap tells the story.",
                 ...(strategyGapUrgent
                   ? [
-                      `⚠ Your money survives in ${(mc.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(mc.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year plan the whole way through. In the other ${((mc.successRate - mc.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off-plan — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
+                      `⚠ Your money survives in ${(mc.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(mc.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((mc.successRate - mc.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
                     ]
                   : []),
               ]}

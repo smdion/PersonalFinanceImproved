@@ -242,7 +242,7 @@ function StressTestPanel({
               typeof userInflationRate === "number" &&
               typeof userSalaryGrowth === "number" && (
                 <tr className="border-subtle border-b bg-blue-50">
-                  <td className="py-2 pr-2 font-semibold">Your plan</td>
+                  <td className="py-2 pr-2 font-semibold">Your projection</td>
                   <td className="px-2 py-2">
                     {formatPercent(userReturnRate, 1)}
                   </td>

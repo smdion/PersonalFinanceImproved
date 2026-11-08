@@ -42,7 +42,7 @@ export function PlanPaceLine({
   return (
     <div className="text-caption text-muted flex justify-between gap-2">
       <span>
-        Plan expected by now
+        Projected by now
         <HelpTip
           text={`What your retirement projection counted on for today. It starts from your ${lastFinalized.year} year-end balance of ${formatCurrency(lastFinalized.balance, 0)}, grows it at the plan's ${formatPercent(plan.annualizedReturnRate, 1)} a year for the part of ${plan.year} gone by, and adds that part of the ${formatCurrency(contributions, 0)} a year the plan contributes, employer money included. Ahead or behind can come from returns or from contributing more or less than the plan.`}
         />

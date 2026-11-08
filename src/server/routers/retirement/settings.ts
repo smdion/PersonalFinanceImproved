@@ -211,7 +211,7 @@ export const settingsProcedures = {
           // few of its columns are presented in the UI as a SINGLE
           // household control while being read across all people within
           // that profile. Historically `end_age` was the live case here
-          // ("Plan Through" — see sections/timeline.tsx). As of the
+          // ("Projection Through" — see sections/timeline.tsx). As of the
           // Retirement Profiles migration (step B), the engine's actual
           // per-person read for end_age moved to `retirement_profile_people`
           // — see the `retirementProfilePeople.upsertPerson` /

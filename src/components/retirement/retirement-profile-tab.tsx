@@ -204,7 +204,7 @@ export function RetirementProfileTab({
   }, []);
 
   // Per-person / household-but-per-person-stored fields (Retirement Age,
-  // Rule of 55, Plan Through, SS Start Age, SS Benefit) write through these
+  // Rule of 55, Projection Through, SS Start Age, SS Benefit) write through these
   // two mutations, NOT retirementSettings.upsert — build-engine-payload.ts
   // reads them from `retirement_profile_people`, not `retirement_settings`,
   // as of the Retirement Profiles migration step B. See
@@ -270,7 +270,7 @@ export function RetirementProfileTab({
     upsertSettings as unknown as UpsertSettingsMutation; // eslint-disable-line no-restricted-syntax
 
   // Only ever called with "retirementAge" (single-person household) or
-  // "endAge" ("Plan Through") — both per-person-stored fields on
+  // "endAge" ("Projection Through") — both per-person-stored fields on
   // `retirement_profile_people`, not `retirement_settings`. See the
   // mutations' docblocks for why this can't go through upsertSettings.
   const handleRetirementSettingUpdate = useCallback(

@@ -370,7 +370,7 @@ function AllocationCard({ data }: { data: Overview }) {
                     ? shared
                       ? `target shared — see ${cls.name}`
                       : undefined
-                    : "no target in your plan"
+                    : "no target in your allocation"
                 }
                 expanded={open === c.bucket}
                 onToggle={

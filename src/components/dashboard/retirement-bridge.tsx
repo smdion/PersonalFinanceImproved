@@ -27,7 +27,7 @@ const SHORT_FIX: Record<NonNullable<BridgeYear["cause"]>, string> = {
   locked:
     "Money is locked: retire later, keep a workplace plan under the Rule of 55, or allow penalized draws.",
   portfolioExcluded:
-    "Portfolio savings sit outside the retirement plan — count them toward retirement to use them here.",
+    "Portfolio savings sit outside retirement accounts — count them toward retirement to use them here.",
   outOfMoney:
     "Not enough reachable money: build taxable savings, or start Roth conversions 5+ years before retiring.",
 };

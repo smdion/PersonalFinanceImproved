@@ -291,7 +291,7 @@ export function TaxesSection({
                     {formatPercent(recommendedTarget)}
                   </span>
                 </span>
-                <HelpTip text="Searches your own real tax brackets for the target that minimizes lifetime tax cost (including Roth conversions and RMDs, plus a penalty for Traditional money left unconverted at end of plan) while still funding your stated spending need. Recomputed from your current settings — not a one-time suggestion." />
+                <HelpTip text="Searches your own real tax brackets for the target that minimizes lifetime tax cost (including Roth conversions and RMDs, plus a penalty for Traditional money left unconverted at the end of the projection) while still funding your stated spending need. Recomputed from your current settings — not a one-time suggestion." />
                 {isEditable && (
                   <button
                     onClick={applyRecommendedTarget}

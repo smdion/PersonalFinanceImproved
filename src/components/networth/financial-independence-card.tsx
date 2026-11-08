@@ -80,7 +80,7 @@ export function FinancialIndependenceCard({
           <div className="flex justify-between">
             <span>
               Projected FI Year{" "}
-              <HelpTip text="The year your liquid net worth — all your investments, retirement and other, plus cash — reaches the FI target in your retirement plan's projection. The target grows with inflation, since the projection is in future dollars." />
+              <HelpTip text="The year your liquid net worth — all your investments, retirement and other, plus cash — reaches the FI target in your projection. The target grows with inflation, since the projection is in future dollars." />
             </span>
             <span className="text-primary font-medium">
               {fiProgress >= 1
@@ -96,7 +96,7 @@ export function FinancialIndependenceCard({
           </div>
           {projected.fi !== null && fiProgress < 1 && (
             <div className="text-caption text-faint mt-0.5 text-right">
-              Based on retirement plan
+              From your projection
             </div>
           )}
         </div>

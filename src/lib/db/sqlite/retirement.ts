@@ -375,7 +375,7 @@ export const retirementProfiles = sqliteTable("retirement_profiles", {
  *
  * `end_age` is here because the engine reads it per person
  * (`Math.max(...perPersonSettings.map(p => p.endAge))` →
- * `projectionEndAge`), which is also what made the household "Plan Through"
+ * `projectionEndAge`), which is also what made the household "Projection Through"
  * control silently discard edits before commit 0b5d5fe.
  *
  * COMPLETENESS INVARIANT: every profile must hold a row for every person.

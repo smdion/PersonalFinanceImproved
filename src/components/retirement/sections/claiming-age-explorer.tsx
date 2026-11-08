@@ -122,7 +122,7 @@ export function ClaimingAgeExplorer({
                       </td>
                       <td className="py-0.5 pr-3">
                         {c.fails
-                          ? "Plan falls short"
+                          ? "Projection falls short"
                           : formatCurrency(c.finalNetWorth)}
                       </td>
                       <td className="text-accent py-0.5">

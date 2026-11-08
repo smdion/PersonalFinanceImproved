@@ -283,7 +283,7 @@ export function DecumulationConfig({
           </div>
           {persistedModeLabel != null && (
             <p className="text-caption text-faint">
-              Your plan&rsquo;s saved default is{" "}
+              Your saved default is{" "}
               <span className="font-medium">{persistedModeLabel}</span> (Taxes
               in Retirement).
               {isOverridingPlanDefault
@@ -305,8 +305,8 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only changes your plan for this session — save it
-                  in Taxes in Retirement to make it your default.
+                  This order only changes your projection for this session —
+                  save it in Taxes in Retirement to make it your default.
                 </p>
               )}
             </div>
@@ -329,8 +329,8 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only changes your plan for this session — save it
-                  in Taxes in Retirement to make it your default.
+                  This order only changes your projection for this session —
+                  save it in Taxes in Retirement to make it your default.
                 </p>
               )}
               <div className="mt-3 border-t pt-3">
@@ -404,8 +404,8 @@ export function DecumulationConfig({
               {renderSplitsTotalWarning(displayedSplits)}
               {withdrawalSplitsTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  These splits only change your plan for this session — save
-                  them in Taxes in Retirement to make them your default.
+                  These splits only change your projection for this session —
+                  save them in Taxes in Retirement to make them your default.
                 </p>
               )}
             </div>

@@ -341,7 +341,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         return { strategies: [], baselineLabel: null };
       }
 
-      // "Your current plan" — the household's real resolved defaults
+      // "Your current settings" — the household's real resolved defaults
       // (buildDecumulationDefaults: session override, else
       // retirement_settings.withdrawal_routing_mode, else
       // "bracket_filling"), scored the identical way as the named
@@ -355,7 +355,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       // entirely: it's never a guess.
       const baselineFinalYear = baselineDecum[baselineDecum.length - 1];
       const currentPlan = {
-        label: "Your current plan",
+        label: "Your current settings",
         mode: baseline.engineInput.decumulationDefaults.withdrawalRoutingMode,
         // For waterfall households, `mode` alone can't tell the client
         // whether this matches one of the three named presets (they each
@@ -395,7 +395,7 @@ export const taxOptimizationRouter = createTRPCRouter({
 
       // The cheapest lifetime tax among strategies whose plan holds
       // (assessPlan; fall back to overall cheapest if none does). Includes
-      // "Your current plan" in the ranking — it's a real, comparably-scored
+      // "Your current settings" in the ranking — it's a real, comparably-scored
       // candidate, not just a reference row.
       const allScored = [currentPlan, ...scored];
       const viable = allScored.filter((s) => s.failureYear === null);

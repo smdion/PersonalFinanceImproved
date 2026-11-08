@@ -26,7 +26,9 @@ export function buildVerdict(
   const onTrack = deterministicOnTrack && mcOnTrack;
   return {
     onTrack,
-    headline: onTrack ? "Your plan is on track" : "Your plan needs attention",
+    headline: onTrack
+      ? "Your projection is on track"
+      : "Your projection needs attention",
   };
 }
 
@@ -58,7 +60,7 @@ export function buildExecutiveSummary(
       label:
         outcome.failureReason === "depleted"
           ? "Year retirement money runs out"
-          : "Year the plan first falls short",
+          : "Year the projection first falls short",
       value: String(outcome.failureYear),
     });
   }
@@ -66,15 +68,15 @@ export function buildExecutiveSummary(
   let narrative: string;
   if (verdict.onTrack) {
     narrative =
-      `Based on your current savings and spending plan, your simulation succeeds ${successPct} of the time — ` +
+      `Based on your current savings and Retirement budget, your simulation succeeds ${successPct} of the time — ` +
       `your retirement money is not projected to run out in the deterministic projection, and a sustainable annual ` +
       `spending level of about ${sustainablePV} (in today's dollars) holds up across most of the market ` +
       `conditions this report tested.`;
   } else if (!outcome.succeeded) {
     narrative =
       `Your simulation succeeds ${successPct} of the time. In the deterministic projection — a single, ` +
-      `middle-of-the-road path — your plan ${describePlanFailure(outcome)}. ` +
-      `This is worth addressing before you rely on this plan.`;
+      `middle-of-the-road path — your projection ${describePlanFailure(outcome)}. ` +
+      `This is worth addressing before you rely on this projection.`;
   } else {
     narrative =
       `Your deterministic projection funds every retirement year, but your simulation only succeeds ` +

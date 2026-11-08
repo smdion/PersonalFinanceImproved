@@ -193,7 +193,7 @@ export function RetirementProfileManager({
         <ProfileSidebarHeader />
         <HelpTip
           maxWidth={340}
-          text="Each Retirement Profile is a complete, self-contained retirement plan — its own retirement age, inflation, withdrawal strategy, everything. There's no shared baseline: changing one profile never affects another. Duplicate a profile to explore a variant (retire two years earlier, a different strategy) without touching the original."
+          text="Each Retirement Profile is a complete, self-contained set of retirement assumptions — its own retirement age, inflation, withdrawal strategy, everything. There's no shared baseline: changing one profile never affects another. Duplicate a profile to explore a variant (retire two years earlier, a different strategy) without touching the original."
         />
       </div>
 

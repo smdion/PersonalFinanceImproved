@@ -104,9 +104,9 @@ export function MethodologyContent() {
           This is why simulation matters: a single average return (deterministic
           mode) tells you nothing about sequence risk. By running thousands of
           randomized return sequences, simulation reveals how sensitive your
-          plan is to unlucky timing. Success rates below 85% often indicate that
-          sequence risk could derail your plan if early retirement years
-          coincide with a downturn.
+          projection is to unlucky timing. Success rates below 85% often
+          indicate that sequence risk could derail your retirement if early
+          retirement years coincide with a downturn.
         </p>
         <p>
           <strong>How our engine models it:</strong> Each Simulation trial draws
