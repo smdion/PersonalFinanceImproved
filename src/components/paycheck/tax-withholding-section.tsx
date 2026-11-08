@@ -6,16 +6,8 @@ import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
-import {
-  W4_FILING_STATUS_VALUES,
-  type FilingStatusKey,
-} from "@/lib/config/filing-status";
-
-const W4_BOX_LABELS: Record<FilingStatusKey, string> = {
-  MFJ: "Married jointly",
-  Single: "Single",
-  HOH: "Head of household",
-};
+import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
+import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 
 /**
  * W-4 tax-input controls. Deliberately a separate section from
@@ -60,7 +52,7 @@ export function TaxWithholdingSection({
           >
             {W4_FILING_STATUS_VALUES.map((s) => (
               <option key={s} value={s}>
-                {W4_BOX_LABELS[s]}
+                {FILING_STATUS_LABELS[s]}
               </option>
             ))}
           </select>

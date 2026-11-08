@@ -36,7 +36,7 @@ Net pay?
 $5,226.71
 Withholding (W-4)
 Filing status
-[Married jointly]
+[Married filing jointly]
 Extra withholding?
 —
 Multiple jobs or spouse works (Step 2c)
@@ -121,7 +121,7 @@ Net pay?
 $2,355.14
 Withholding (W-4)
 Filing status
-[Married jointly]
+[Married filing jointly]
 Extra withholding?
 —
 Multiple jobs or spouse works (Step 2c)

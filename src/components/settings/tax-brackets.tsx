@@ -10,9 +10,9 @@ import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   W4_FILING_STATUS_VALUES,
-  type FilingStatusKey,
   type W4FilingStatus,
 } from "@/lib/config/filing-status";
+import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 
 type BracketEntry = {
   threshold: number;
@@ -69,12 +69,6 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   // A year Ledgr ships can't be deleted (it would come back on restart).
   const yearShipped = yearData.some((tb) => tb.shipped);
   const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
-
-  const statusLabels: Record<FilingStatusKey, string> = {
-    MFJ: "Married Filing Jointly",
-    Single: "Single",
-    HOH: "Head of Household",
-  };
 
   const handleBracketUpdate = (
     tbId: number,
@@ -189,7 +183,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
             <div key={status} className="overflow-hidden rounded-lg border">
               <div className="bg-surface-sunken border-b px-4 py-2">
                 <h3 className="text-primary font-medium">
-                  {statusLabels[status]}
+                  {FILING_STATUS_LABELS[status]}
                   {admin &&
                     statusBrackets.some(
                       (tb) => tb.shipped && tb.origin === "user",
