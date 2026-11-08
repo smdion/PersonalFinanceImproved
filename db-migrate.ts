@@ -1336,12 +1336,24 @@ async function runPostgres() {
   }
 }
 
+/** A backup written but not made owner-only is still a backup: warn and migrate. */
+function restrictBackupOrWarn(backupPath: string): void {
+  try {
+    restrictBackupFile(backupPath);
+  } catch (err) {
+    log("warn", "pre_migration_backup_mode_not_set", {
+      path: backupPath,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 /**
  * Exact copy of the SQLite database (VACUUM INTO — consistent, includes the
  * migration journal). Restoring = stop Ledgr, put this file in place of the
  * database file, start the previous version.
  */
-function writePreMigrationBackupSqlite(
+export function writePreMigrationBackupSqlite(
   sqlite: InstanceType<typeof import("better-sqlite3")>,
 ): string | null {
   const backupDir = resolveWritableBackupDir();
@@ -1356,7 +1368,7 @@ function writePreMigrationBackupSqlite(
   const backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.db`);
   try {
     sqlite.exec(`VACUUM INTO '${backupPath.replaceAll("'", "''")}'`);
-    restrictBackupFile(backupPath);
+    restrictBackupOrWarn(backupPath);
     log("info", "pre_migration_backup_complete", { path: backupPath });
     warnIfEphemeral(backupPath);
     prunePreUpgradeBackups(backupDir);
