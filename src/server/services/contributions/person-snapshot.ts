@@ -1,11 +1,9 @@
-import type * as schema from "@/lib/db/schema";
 import {
   type AccountCategory,
   categoriesWithIrsLimit,
   getAccountTypeConfig,
   getLimitGroup,
 } from "@/lib/config/account-types";
-import { type CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { calculateContributions } from "@/lib/pure/contributions/contribution-totals";
 import type { ContributionInput } from "@/lib/pure/contributions/contribution.types";
 import {
@@ -18,7 +16,6 @@ import {
 import {
   type SalaryActiveMap,
   type SalaryProfileActiveMap,
-  type mergeSalaryProfileJobFields,
   applyActiveBonusTerms,
   applyActiveSalary,
   contributionPay,
@@ -29,16 +26,14 @@ import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.type
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
-import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
+import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
 import type { PerContribData } from "@/server/services/contributions/summary.types";
 
 export function personPay(
   salaryProfileActiveMap: SalaryProfileActiveMap,
-  activeJob: ReturnType<
-    typeof mergeSalaryProfileJobFields<typeof schema.jobs.$inferSelect>
-  >[number],
+  activeJob: { id: number },
   effectiveSalaryMap: SalaryActiveMap,
-  person: typeof schema.people.$inferSelect,
+  person: { id: number },
 ) {
   const comp = resolveCompensation(salaryProfileActiveMap, activeJob.id);
   // The What-If sandbox can override salary and/or bonus terms
@@ -67,12 +62,14 @@ export function personPay(
   return { dbSalary, pay, salary, totalCompensation };
 }
 
-export function contribAccountsFor(
-  effectiveContribs: (ContribRowWithActiveFields & CapPassed)[],
-  activeJob: ReturnType<
-    typeof mergeSalaryProfileJobFields<typeof schema.jobs.$inferSelect>
-  >[number],
-  person: typeof schema.people.$inferSelect,
+export function contribAccountsFor<R extends ContribAccountRow>(
+  effectiveContribs: R[],
+  activeJob: {
+    id: number;
+    bonusMonth?: number | null;
+    bonusDayOfMonth?: number | null;
+  },
+  person: { id: number; dateOfBirth: string },
   pay: ReturnType<typeof contributionPay>,
   asOfDate: Date,
   salary: number,
@@ -146,7 +143,7 @@ export function contribAccountsFor(
 }
 
 export function perContribRows(
-  rawContribs: (ContribRowWithActiveFields & CapPassed)[],
+  rawContribs: ContribAccountRow[],
   accounts: ContributionAccountInput[],
   resolveContribLimit: (
     accountType: string,

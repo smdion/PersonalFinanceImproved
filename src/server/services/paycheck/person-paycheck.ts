@@ -1,4 +1,3 @@
-import type * as schema from "@/lib/db/schema";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import {
@@ -26,19 +25,17 @@ import type {
   TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
-import type {
-  ContribRowWithActiveFields,
-  loadAndApplyContribProfile,
-} from "@/server/services/contributions/profile";
+import type { PaycheckContribRow } from "@/lib/pure/contributions/paycheck-contrib-row";
+import type { PaycheckYearJob } from "@/lib/pure/paycheck/person-paycheck.types";
 
 export function checkPaychecks(
   paycheckInput: ReturnType<typeof buildPaycheckInputForJob>,
-  jobContribs: (ContribRowWithActiveFields & CapPassed)[],
-  personalContribs: (ContribRowWithActiveFields & CapPassed)[],
+  jobContribs: (PaycheckContribRow & CapPassed)[],
+  personalContribs: (PaycheckContribRow & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   limitsRecord: Record<string, number>,
-  person: typeof schema.people.$inferSelect,
+  person: { dateOfBirth: string },
   taxYear: number,
   bonusTerms: Parameters<typeof contributionPay>[1],
   comp: ReturnType<typeof resolveCompensation>,
@@ -76,10 +73,8 @@ export function checkPaychecks(
   return { paycheck, paystubPaycheck, fullFormulaBonusEstimate };
 }
 
-export function yearEarnings(
-  activeJob: Awaited<
-    ReturnType<typeof loadAndApplyContribProfile>
-  >["jobs"][number],
+export function yearEarnings<P>(
+  activeJob: PaycheckYearJob,
   taxYear: number,
   paycheck: ReturnType<typeof calculatePaycheck>,
   periodsPerYear: number,
@@ -88,7 +83,7 @@ export function yearEarnings(
   contribAccounts: ContributionAccountInput[],
   deductions: DeductionLine[],
   endedJobYears: (
-    person: typeof schema.people.$inferSelect,
+    person: P,
     currentJobId?: number,
   ) => {
     endedJobs: unknown[];
@@ -96,7 +91,7 @@ export function yearEarnings(
     undatedBonusEmployers: string[];
     endedWithheld: { federal: number; fica: number };
   },
-  person: typeof schema.people.$inferSelect,
+  person: P,
 ) {
   // Blended annual computation. Salary is a flat number under the
   // active Salary Profile — no mid-year timeline to blend across

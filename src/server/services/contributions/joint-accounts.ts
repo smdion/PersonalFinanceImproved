@@ -10,10 +10,7 @@ import {
 } from "@/lib/config/account-types";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
-import {
-  type CapPassed,
-  capMessage,
-} from "@/lib/pure/contributions/contribution-caps";
+import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import type { AccountViewMetrics } from "@/lib/pure/contributions/view-metrics";
 import {
@@ -24,14 +21,14 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
-import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
+import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
 import type {
   AccountTypeSnapshot,
   PersonSnapshot,
 } from "@/server/services/contributions/summary.types";
 
 export function jointAccountRows(
-  jointContribs: (ContribRowWithActiveFields & CapPassed)[],
+  jointContribs: ContribAccountRow[],
   results: PersonSnapshot[],
   perfLabelMap: Map<number, string>,
   asOfDate: Date,
