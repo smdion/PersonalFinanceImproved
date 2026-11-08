@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { focusInto, useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
-/** Open modals by render order: Escape closes only the newest. */
-const openModals = new Set<number>();
+/** Open modals, by render order, with their layer's rank. */
+const openModals = new Map<number, number>();
 let rendered = 0;
 
 const OVERLAY = "fixed inset-0 flex print:hidden";
@@ -14,6 +20,22 @@ const LAYER = {
   dialog: "z-[110] bg-black/40",
   firstRun: "z-50 bg-black/60 backdrop-blur-sm",
 } as const;
+
+/** Which layer is on top: a dialog opens over the first-run wizard. */
+const LAYER_RANK: Record<keyof typeof LAYER, number> = {
+  firstRun: 0,
+  dialog: 1,
+};
+
+/** The modal on top, which alone takes Escape, Tab and focus: the
+ *  highest layer, and within it the newest. */
+function topModal(): number | undefined {
+  let top: [order: number, rank: number] | undefined;
+  for (const [order, rank] of openModals)
+    if (!top || rank > top[1] || (rank === top[1] && order > top[0]))
+      top = [order, rank];
+  return top?.[0];
+}
 
 const PLACEMENT = {
   center: "items-center justify-center",
@@ -67,12 +89,20 @@ export function Modal({
     latest.current = { onClose, closeOnEscape };
   });
 
+  // Registered before any modal's focus effect runs, so modals opening in
+  // one commit agree on which is on top.
+  useLayoutEffect(() => {
+    openModals.set(order, LAYER_RANK[layer]);
+    return () => {
+      openModals.delete(order);
+    };
+  }, [order, layer]);
+
   useEffect(() => {
-    openModals.add(order);
     const handler = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || Math.max(...openModals) !== order) return;
+      if (e.defaultPrevented || topModal() !== order) return;
       const panel = trapRef.current;
-      // Focus outside the newest dialog (a focused button disabled itself
+      // Focus outside the top dialog (a focused button disabled itself
       // mid-write, and focus fell to body): Tab goes back in.
       if (e.key === "Tab" && panel && !panel.contains(document.activeElement)) {
         e.preventDefault();
@@ -84,19 +114,27 @@ export function Modal({
       latest.current.onClose();
     };
     document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      openModals.delete(order);
-    };
+    return () => document.removeEventListener("keydown", handler);
   }, [order, trapRef]);
 
+  // A modal that opens under another (the wizard mounting under quick
+  // search) leaves focus there, and gives it back only if it held it.
   useEffect(() => {
     const panel = trapRef.current;
-    if (panel && !panel.contains(document.activeElement)) panel.focus();
+    if (
+      topModal() === order &&
+      panel &&
+      !panel.contains(document.activeElement)
+    )
+      panel.focus();
     return () => {
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+      const active = document.activeElement;
+      const held =
+        !active || active === document.body || panel?.contains(active);
+      if (held && opener instanceof HTMLElement && opener.isConnected)
+        opener.focus();
     };
-  }, [opener, trapRef]);
+  }, [opener, trapRef, order]);
 
   return (
     <div

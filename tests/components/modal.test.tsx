@@ -136,6 +136,83 @@ describe("Modal", () => {
     );
   });
 
+  it("stays on top when the first-run wizard mounts under it later (a hydration re-render)", () => {
+    const quickClose = vi.fn();
+    const wizardClose = vi.fn();
+    const quick = (
+      <Modal label="Quick search" className="" onClose={quickClose}>
+        <input aria-label="Search pages" autoFocus />
+      </Modal>
+    );
+    const wizard = (
+      <Modal
+        label="Set up Ledgr"
+        className=""
+        layer="firstRun"
+        onClose={wizardClose}
+      >
+        <button type="button">Get Started</button>
+      </Modal>
+    );
+    const view = render(
+      <>
+        {quick}
+        {null}
+      </>,
+    );
+    const box = screen.getByLabelText("Search pages");
+    expect(document.activeElement).toBe(box);
+    view.rerender(
+      <>
+        {quick}
+        {wizard}
+      </>,
+    );
+    expect(document.activeElement).toBe(box);
+    fireEvent.keyDown(box, { key: "Tab" });
+    expect(document.activeElement).toBe(box);
+    document.body.focus();
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    expect(document.activeElement).toBe(box);
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(quickClose).toHaveBeenCalledTimes(1);
+    expect(wizardClose).not.toHaveBeenCalled();
+  });
+
+  it("gives focus back on close only if it held it", () => {
+    const wizard = (
+      <Modal
+        label="Set up Ledgr"
+        className=""
+        layer="firstRun"
+        onClose={() => {}}
+      >
+        <button type="button">Get Started</button>
+      </Modal>
+    );
+    const quick = (
+      <Modal label="Quick search" className="" onClose={() => {}}>
+        <input aria-label="Search pages" autoFocus />
+      </Modal>
+    );
+    const view = render(
+      <>
+        {wizard}
+        {quick}
+      </>,
+    );
+    const box = screen.getByLabelText("Search pages");
+    expect(document.activeElement).toBe(box);
+    view.rerender(
+      <>
+        {null}
+        {quick}
+      </>,
+    );
+    expect(screen.queryByRole("dialog", { name: "Set up Ledgr" })).toBeNull();
+    expect(document.activeElement).toBe(box);
+  });
+
   it("closes on Escape unless closeOnEscape is false", () => {
     const onClose = vi.fn();
     render(<Opener onClose={onClose} closeOnEscape={false} />);
