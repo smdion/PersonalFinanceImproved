@@ -21,7 +21,6 @@ import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { DEFAULT_CHECKPOINT_SOURCE } from "@/lib/config/milestones";
 import { Card } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -42,6 +41,7 @@ import {
   SimulatedSuccessRow,
   TaxRoomRow,
 } from "./retirement-card-stats";
+import { PlanTimeRows, RetirementBudgetRow } from "./retirement-card-plan-rows";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
@@ -191,21 +191,13 @@ function RetirementCardImpl() {
             nestEggAge={nestEggAge}
           />
           <div className="mt-3 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">Years to retirement</span>
-              <span className="text-primary">
-                {yearsToRet} yrs{" "}
-                <span className="text-caption text-faint">
-                  ({result.projectionByYear[0]?.year} → {yearOf(retAge)})
-                </span>
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">Retirement accounts</span>
-              <span className="text-primary">
-                {formatCurrency(portfolioTotal)}
-              </span>
-            </div>
+            <PlanTimeRows
+              yearsToRet={yearsToRet}
+              result={result}
+              yearOf={yearOf}
+              retAge={retAge}
+              portfolioTotal={portfolioTotal}
+            />
             <RetirementAccountsBreakdown
               retPortfolio={retPortfolio}
               portfolioTotal={portfolioTotal}
@@ -218,14 +210,7 @@ function RetirementCardImpl() {
             />
             <TaxRoomRow taxAdvSpace={taxAdvSpace} />
             <div className="border-subtle my-1 border-t" />
-            {retirementBudget > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted">Retirement budget</span>
-                <span className="text-primary">
-                  {formatCurrency(retirementBudget)}/yr
-                </span>
-              </div>
-            )}
+            <RetirementBudgetRow retirementBudget={retirementBudget} />
             {sustainableWd > 0 && renderWithdrawalRow(settings, sustainableWd)}
             {coastFireData?.result &&
               renderCoastFireRow(coastFireMcPeek, ageLabel, coastFireData)}
