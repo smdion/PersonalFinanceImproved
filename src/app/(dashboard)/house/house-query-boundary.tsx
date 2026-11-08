@@ -30,5 +30,3 @@ export function HouseQueryBoundary({
     />
   );
 }
-
-export { queryPending } from "@/components/ui/query-boundary";

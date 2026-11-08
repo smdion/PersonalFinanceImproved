@@ -11,10 +11,8 @@ import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
-import {
-  ContributionsQueryBoundary,
-  queryPending,
-} from "./contributions-query-boundary";
+import { ContributionsQueryBoundary } from "./contributions-query-boundary";
+import { queryPending } from "@/components/ui/query-boundary";
 import {
   formatCurrency,
   formatPercent,

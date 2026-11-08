@@ -9,10 +9,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { CellButton } from "@/components/ui/cell-button";
 import { SkeletonChart } from "@/components/ui/skeleton";
-import {
-  UtilitiesQueryBoundary,
-  queryPending,
-} from "./utilities-query-boundary";
+import { UtilitiesQueryBoundary } from "./utilities-query-boundary";
+import { queryPending } from "@/components/ui/query-boundary";
 import dynamic from "next/dynamic";
 import {
   budgetApiServiceLabel,

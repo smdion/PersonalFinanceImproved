@@ -30,5 +30,3 @@ export function UtilitiesQueryBoundary({
     />
   );
 }
-
-export { queryPending } from "@/components/ui/query-boundary";

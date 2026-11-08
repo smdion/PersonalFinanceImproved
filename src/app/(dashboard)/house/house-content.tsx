@@ -4,7 +4,8 @@
 
 import { loanFeedIsStale } from "@/lib/pure/sync/simplefin-feeds";
 import { useState } from "react";
-import { HouseQueryBoundary, queryPending } from "./house-query-boundary";
+import { HouseQueryBoundary } from "./house-query-boundary";
+import { queryPending } from "@/components/ui/query-boundary";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
@@ -32,7 +33,6 @@ export function HouseContent() {
   const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
   const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
   const taxes = trpc.assets.listPropertyTaxes.useQuery();
-  const { data: propTaxes } = taxes;
   const utils = trpc.useUtils();
 
   // Home improvement form state
@@ -386,7 +386,7 @@ export function HouseContent() {
           </div>
         )}
 
-        {!propTaxes || propTaxes.length === 0 ? (
+        {!taxes.data || taxes.data.length === 0 ? (
           <p className="text-faint text-sm">
             {loanId
               ? "No property tax records yet."
@@ -405,7 +405,7 @@ export function HouseContent() {
               </tr>
             </thead>
             <tbody>
-              {propTaxes.map((pt) =>
+              {taxes.data.map((pt) =>
                 editingTax === pt.id ? (
                   <tr
                     key={pt.id}

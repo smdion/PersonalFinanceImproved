@@ -6,7 +6,7 @@
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 979,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 977,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 1021,
     "src/app/(dashboard)/house/house-content.tsx": 733,
@@ -17,7 +17,7 @@
     "src/app/(dashboard)/savings/savings-content.tsx": 930,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1019,
     "src/app/(dashboard)/tools/tools-content.tsx": 580,
-    "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 515,
+    "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
     "src/components/budget/contribution-profile-manager.tsx": 2041,
@@ -344,7 +344,7 @@
       "HistoricalTable.map()": 362
     },
     "src/app/(dashboard)/house/house-content.tsx": {
-      "HouseContent": 708
+      "HouseContent": 707
     },
     "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
       "LiabilitiesContent": 205

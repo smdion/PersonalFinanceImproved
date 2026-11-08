@@ -38,5 +38,3 @@ export function ContributionsQueryBoundary({
     />
   );
 }
-
-export { queryPending } from "@/components/ui/query-boundary";
