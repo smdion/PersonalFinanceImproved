@@ -179,6 +179,7 @@ export function ConfirmDialog() {
 
       {state.mode === "prompt" && (
         <input
+          aria-labelledby="confirm-dialog-message"
           ref={inputRef}
           type="text"
           defaultValue={state.defaultValue}

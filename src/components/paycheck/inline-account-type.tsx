@@ -28,6 +28,7 @@ export function InlineAccountType({
 
   return (
     <select
+      aria-label="Account type"
       autoFocus
       value={value}
       onChange={(e) => {

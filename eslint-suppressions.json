@@ -611,9 +611,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/budget/add-item-form.tsx": {
@@ -624,9 +621,6 @@
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -1467,9 +1461,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/paycheck/bonus-section.tsx": {
@@ -1574,9 +1565,6 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },
@@ -3065,9 +3053,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/settings/fpl-by-household.tsx": {
@@ -3097,11 +3082,6 @@
     "ratchet/no-raw-input": {
       "count": 1
     },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
-    }
-  },
-  "src/components/settings/integrations-api-category-select.tsx": {
     "ratchet/no-unlabeled-control": {
       "count": 1
     }
@@ -3183,9 +3163,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/settings/integrations/drift-banner.tsx": {
@@ -3193,9 +3170,6 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -3518,9 +3492,6 @@
   },
   "src/components/ui/confirm-dialog.tsx": {
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 1
     }
   },

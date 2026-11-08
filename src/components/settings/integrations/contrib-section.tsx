@@ -144,6 +144,7 @@ export function ContribSection({ budget, contribAccounts }: Props) {
                 </span>
                 <span className="text-faint">&rarr;</span>
                 <select
+                  aria-label={`Budget item for ${ca.displayLabel}`}
                   value=""
                   onChange={(e) => {
                     if (e.target.value) {

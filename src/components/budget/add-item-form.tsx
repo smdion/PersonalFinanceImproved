@@ -41,6 +41,7 @@ export function AddItemForm({
     <div>
       <div className="flex items-center gap-2">
         <input
+          aria-label="New item name"
           type="text"
           value={name}
           onChange={(e) => {

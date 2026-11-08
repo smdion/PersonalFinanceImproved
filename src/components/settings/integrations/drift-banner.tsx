@@ -14,6 +14,7 @@
  * Mutations live in `useIntegrationDriftMutations` so that a pending flip here does not
  * re-render any of the other four sections.
  */
+import { useId } from "react";
 import type { PreviewData, Service } from "../integrations-types";
 import { useIntegrationDriftMutations } from "./use-integration-drift-mutations";
 
@@ -29,6 +30,7 @@ export function DriftBanner({ service, profile, totalDrifted }: Props) {
     setLinkedProfile: setLinkedProfileMut,
     setLinkedColumn: setLinkedColumnMut,
   } = useIntegrationDriftMutations();
+  const id = useId();
 
   return (
     <>
@@ -64,8 +66,14 @@ export function DriftBanner({ service, profile, totalDrifted }: Props) {
 
       {profile.availableProfiles.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted whitespace-nowrap">Profile:</span>
+          <label
+            htmlFor={`${id}-profile`}
+            className="text-muted whitespace-nowrap"
+          >
+            Profile:
+          </label>
           <select
+            id={`${id}-profile`}
             value={profile.linkedProfileId ?? ""}
             onChange={(e) => {
               const val = e.target.value;
@@ -86,8 +94,14 @@ export function DriftBanner({ service, profile, totalDrifted }: Props) {
           </select>
           {profile.columnLabels.length > 1 && (
             <>
-              <span className="text-muted whitespace-nowrap">Mode:</span>
+              <label
+                htmlFor={`${id}-mode`}
+                className="text-muted whitespace-nowrap"
+              >
+                Mode:
+              </label>
               <select
+                id={`${id}-mode`}
                 value={profile.linkedColumnIndex}
                 onChange={(e) =>
                   setLinkedColumnMut.mutate({

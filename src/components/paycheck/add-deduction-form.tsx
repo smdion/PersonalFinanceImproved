@@ -44,6 +44,7 @@ export function AddDeductionForm({
       </p>
       <div className="flex gap-2">
         <input
+          aria-label="Deduction name"
           type="text"
           placeholder="Name (e.g. Dental)"
           value={name}
@@ -52,6 +53,7 @@ export function AddDeductionForm({
           autoFocus
         />
         <input
+          aria-label="Deduction amount per period"
           type="number"
           placeholder="$/period"
           value={amount}
