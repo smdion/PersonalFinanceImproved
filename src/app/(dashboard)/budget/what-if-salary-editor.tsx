@@ -62,6 +62,7 @@ export function WhatIfSalaryEditor({
                   pinnedValue={entry.salary}
                   onCommit={(n) => onChange(v.person.id, "salary", n)}
                   onReset={() => onChange(v.person.id, "salary", undefined)}
+                  label={`Salary, ${v.person.name}`}
                   step="1000"
                   width="w-28"
                 />
@@ -80,6 +81,7 @@ export function WhatIfSalaryEditor({
                   onReset={() =>
                     onChange(v.person.id, "bonusPercent", undefined)
                   }
+                  label={`Bonus %, ${v.person.name}`}
                   step="0.5"
                   width="w-16"
                 />
@@ -92,6 +94,7 @@ export function WhatIfSalaryEditor({
                   onReset={() =>
                     onChange(v.person.id, "bonusMultiplier", undefined)
                   }
+                  label={`Bonus ×, ${v.person.name}`}
                   step="0.1"
                   width="w-16"
                 />

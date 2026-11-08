@@ -153,6 +153,15 @@ describe("WhatIfTab smoke", () => {
     expect(screen.queryByRole("button", { name: /reset sandbox/i })).toBeNull();
   });
 
+  it("names each salary and bonus cell by its column and person", () => {
+    renderTab();
+    for (const name of ["Priya", "Tomas"])
+      for (const column of ["Salary", "Bonus %", "Bonus ×"])
+        expect(
+          screen.getByRole("spinbutton", { name: `${column}, ${name}` }),
+        ).toBeInTheDocument();
+  });
+
   it("an edit reaches the paycheck recompute; Reset sandbox puts it back", () => {
     renderTab();
     fireEvent.change(salaryInput("Priya"), { target: { value: "130000" } });

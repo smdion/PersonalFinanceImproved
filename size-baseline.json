@@ -18,7 +18,7 @@
     "src/app/(dashboard)/budget/what-if-make-real-panel.tsx": 58,
     "src/app/(dashboard)/budget/what-if-pickers.tsx": 97,
     "src/app/(dashboard)/budget/what-if-profile-picker.tsx": 36,
-    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 107,
+    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 110,
     "src/app/(dashboard)/budget/what-if-salary-step.tsx": 55,
     "src/app/(dashboard)/budget/what-if-save-actions.tsx": 140,
     "src/app/(dashboard)/budget/what-if-savings-step.tsx": 49,
