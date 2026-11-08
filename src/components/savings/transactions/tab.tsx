@@ -17,6 +17,7 @@ import {
   occurrenceKey,
 } from "@/lib/pure/savings/savings-projection";
 import type { GoalProjection, PlannedTransaction } from "../types";
+import { balanceAfterCell } from "./row";
 
 interface EditForm {
   goalId: number;
@@ -1332,37 +1333,7 @@ export function AllTransactionsTab({
                     </td>
 
                     {/* Balance after — end-of-month projected balance for this fund */}
-                    {(() => {
-                      // Transfer rows are collapsed to a single leg (deduped by
-                      // transferPairId), so a per-fund balance here would reflect
-                      // only whichever leg survived. Suppress it to avoid showing
-                      // an ambiguous balance for a two-fund movement.
-                      if (isTransfer)
-                        return (
-                          <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
-                            —
-                          </td>
-                        );
-                      const bal = getBalanceAfter(
-                        tx.goalId,
-                        tx.transactionDate,
-                      );
-                      if (bal === undefined)
-                        return (
-                          <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
-                            —
-                          </td>
-                        );
-                      return (
-                        <td
-                          className={`px-3 py-2 text-right text-xs font-medium whitespace-nowrap tabular-nums ${
-                            bal < 0 ? "text-red-500" : "text-muted"
-                          }`}
-                        >
-                          {formatCurrency(bal)}
-                        </td>
-                      );
-                    })()}
+                    {balanceAfterCell(isTransfer, getBalanceAfter, tx)}
 
                     {/* Recurring */}
                     <td className="text-faint px-3 py-2 text-center">

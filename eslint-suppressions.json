@@ -2674,12 +2674,9 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-history-comment": {
-      "count": 1
-    },
-    "ratchet/no-jsx-iife": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -7449,6 +7446,11 @@
     }
   },
   "src/workers/monte-carlo-worker.ts": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "src/components/savings/transactions/row.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
     }
