@@ -817,7 +817,7 @@
       "RothExplorer": 233
     },
     "src/components/tools/relocation/budget-selectors.tsx": {
-      "RelocationBudgetSelectors": 281
+      "RelocationBudgetSelectors": 296
     },
     "src/components/tools/relocation/large-purchases.tsx": {
       "RelocationLargePurchases": 345
@@ -829,7 +829,7 @@
       "ComparisonTable": 217
     },
     "src/components/tools/relocation/year-adjustments.tsx": {
-      "RelocationYearAdjustments": 249
+      "RelocationYearAdjustments": 282
     },
     "src/components/ui/push-preview-modal.tsx": {
       "PushPreviewModal": 199

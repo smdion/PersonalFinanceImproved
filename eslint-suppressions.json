@@ -3375,9 +3375,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 8
     }
   },
   "src/components/tools/relocation/large-purchases.tsx": {
@@ -3433,9 +3430,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 6
     }
   },
   "src/components/ui/badge.tsx": {

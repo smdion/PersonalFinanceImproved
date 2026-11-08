@@ -77,9 +77,6 @@
   "e2e-b/tools": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 4
     }
   },
   "e2e-b/versions": {
@@ -158,9 +155,6 @@
   "e2e-d/tools": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 4
     }
   },
   "e2e-d/versions": {
@@ -244,9 +238,6 @@
   "ws-h2/tools": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 4
     }
   },
   "ws-h2/versions": {
