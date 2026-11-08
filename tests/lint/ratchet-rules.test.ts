@@ -189,6 +189,38 @@ describe("ratchet/no-abbreviation", () => {
   }, 30_000);
 });
 
+describe("ratchet/no-clock-read", () => {
+  it("counts new Date() and localDateStr() with no argument, and Date.now()", () => {
+    expect(
+      reported(
+        "no-clock-read",
+        [
+          "const a = new Date();",
+          "const b = Date.now();",
+          "const c = localDateStr();",
+          "const d = new Date(ms);",
+          "const e = localDateStr(asOf);",
+          "const f = Date.UTC(2026, 0, 1);",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+
+  it("covers server and lib code, not the scope's clock, client hooks or the UI", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const today = () => new Date();\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some((m) => m.ruleId === "ratchet/no-clock-read");
+    };
+    expect(await counted("src/server/services/demo/part.ts")).toBe(true);
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/trpc.ts")).toBe(false);
+    expect(await counted("src/lib/hooks/use-demo.ts")).toBe(false);
+    expect(await counted("src/components/demo/part.tsx")).toBe(false);
+  }, 30_000);
+});
+
 describe("the repo config's scopes (owner Q4, v0.10.4)", () => {
   const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
   /** The rules the repo config reports for `code` written at `file`. */

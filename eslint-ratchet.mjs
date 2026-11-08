@@ -501,6 +501,15 @@ export const ratchetPlugin = {
       "JSXOpeningElement[name.name='input']",
       "Raw <input>. Use FormInput from @/components/forms or a primitive in @/components/ui.",
     ),
+    "no-clock-read": selectorRule(
+      "Server and library code takes today's date from the request scope.",
+      [
+        "NewExpression[callee.name='Date'][arguments.length=0]",
+        "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+        "CallExpression[callee.name='localDateStr'][arguments.length=0]",
+      ].join(", "),
+      "Clock read in server or library code. Take the date from ctx.scope (or a passed-in asOf), so one request reads one date (RULES § Time Resolution).",
+    ),
     "no-text-includes": {
       meta: {
         type: "suggestion",
@@ -575,6 +584,13 @@ export const ratchetConfig = [
       "ratchet/no-guarded-division": "error",
       "ratchet/no-abbreviation": "error",
     },
+  },
+  {
+    // The request scope's own clock is server/trpc.ts; client hooks read the
+    // browser's today.
+    files: ["src/server/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+    ignores: ["src/server/trpc.ts", "src/lib/hooks/**"],
+    rules: { "ratchet/no-clock-read": "error" },
   },
   {
     // The helpers themselves.
