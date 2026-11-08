@@ -149,6 +149,17 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 
 - **New shared primitives ship with a real consumer.** A component/hook/util introduced specifically to replace duplicated logic (a new `lib/pure/` function, a `lib/hooks/` hook, a `components/ui/` primitive) must migrate at least one genuine call site in the same PR — never merge one with zero adopters "for later." `FormField`, `useOptimisticMutation`, and `safeDivide()` all shipped unused and the duplication they were meant to kill kept spreading for months until a dedicated audit rediscovered them.
 - **A hook lives in one of three homes, picked by who uses it.** Beside `<route>-content.tsx` when one route uses it, in `components/<feature>/` when one feature shares it, in `lib/hooks/` when two or more features do. No `hooks/` subfolders (`tests/lint/violations.test.ts` holds that list at zero).
+- **A dashboard page is a thin server `page.tsx`** that renders its `<route>-content.tsx` client component (and prefetches through `prefetchForPage()` when it does); no `page.tsx` under `app/(dashboard)` is a client component (`tests/lint/violations.test.ts` holds that list at zero).
+- **The UI's counted patterns each have a primitive** (DESIGN § Layout Patterns); a count only falls:
+  - `ratchet/no-raw-button`: a raw `<button>` → `Button`, where its look matches.
+  - `ratchet/no-unlabeled-control`: a control with no accessible name → `FormField`, a `<label htmlFor>` with the control's `id`, or `aria-label`.
+  - `ratchet/no-raw-tablist`: a hand-written `role="tab"`, `"tablist"` or `"radiogroup"` → `Tabs` or `SegmentedControl`.
+  - `ratchet/no-fixed-inset-overlay`: a hand-built overlay → `Modal` or `Popover`.
+  - `ratchet/no-raw-chart-container`: a `ResponsiveContainer` → `ChartFrame`.
+  - `ratchet/no-hand-date-format`: `toLocaleDateString`/`toLocaleTimeString` → `formatDate`.
+  - `ratchet/no-jsx-iife`: an IIFE in JSX → a named function or a view model.
+  - `jsx-a11y/click-events-have-key-events`, `jsx-a11y/no-static-element-interactions`: a click with no keyboard path → `asButton`, `ExpandRowButton`, `SortableHeader` or `CellButton`.
+  - A skeleton returned on `isLoading || !data` (`tests/lint/violations.test.ts`, at zero) → `QueryBoundary`.
 
 ### Refactoring: LOC vs per-file size
 
