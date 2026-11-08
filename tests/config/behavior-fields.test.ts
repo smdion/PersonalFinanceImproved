@@ -1,8 +1,7 @@
 /**
- * The behavior fields that replace isHsaCategory/isIraCategory outside Tax
- * Buckets (RULES § Data-Driven Architecture rule 10) answer exactly as the
- * identity checks did, at each site's own expression, for every configured
- * category and for stored text this version doesn't know — so no figure moves.
+ * Migration proof: each site's field equals its isHsaCategory/isIraCategory
+ * check for every category and unknown text. Delete with them in v0.11; a new
+ * type failing here is expected, never bend its flags to pass.
  */
 import { describe, it, expect } from "vitest";
 import {
