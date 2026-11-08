@@ -376,15 +376,23 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 3
     },
     "ratchet/no-raw-button": {
-      "count": 12
+      "count": 10
     },
     "ratchet/no-raw-input": {
       "count": 2
     },
     "ratchet/no-unlabeled-control": {
+      "count": 2
+    }
+  },
+  "src/app/(dashboard)/portfolio/snapshot-rows.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-raw-button": {
       "count": 2
     }
   },
