@@ -1496,15 +1496,17 @@
       "count": 1
     }
   },
+  "src/components/onboarding/income-job-list.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
   "src/components/onboarding/income-step.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -1519,9 +1521,6 @@
     }
   },
   "src/components/onboarding/onboarding-wizard.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -1551,6 +1550,11 @@
   "src/components/onboarding/wizard-nav.tsx": {
     "ratchet/no-raw-button": {
       "count": 4
+    }
+  },
+  "src/components/onboarding/wizard-saves.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
     }
   },
   "src/components/paycheck/add-deduction-form.tsx": {

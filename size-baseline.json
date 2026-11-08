@@ -63,11 +63,13 @@
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 464,
     "src/components/onboarding/admin-step.tsx": 107,
     "src/components/onboarding/done-step.tsx": 38,
-    "src/components/onboarding/income-step.tsx": 168,
+    "src/components/onboarding/income-job-list.tsx": 42,
+    "src/components/onboarding/income-step.tsx": 143,
     "src/components/onboarding/oidc-step.tsx": 113,
-    "src/components/onboarding/onboarding-wizard.tsx": 351,
+    "src/components/onboarding/onboarding-wizard.tsx": 257,
     "src/components/onboarding/people-step.tsx": 144,
     "src/components/onboarding/wizard-nav.tsx": 68,
+    "src/components/onboarding/wizard-saves.ts": 153,
     "src/components/onboarding/wizard-state.ts": 32,
     "src/components/paycheck/contrib-account-form.tsx": 624,
     "src/components/paycheck/contrib-card.tsx": 542,
@@ -551,11 +553,8 @@
       "SpreadsheetYearOverYearTable": 298,
       "SpreadsheetYearOverYearTable.map()": 188
     },
-    "src/components/onboarding/income-step.tsx": {
-      "IncomeStep": 162
-    },
     "src/components/onboarding/onboarding-wizard.tsx": {
-      "OnboardingWizard": 319
+      "OnboardingWizard": 228
     },
     "src/components/paycheck/contrib-account-form.tsx": {
       "ContribAccountForm": 516

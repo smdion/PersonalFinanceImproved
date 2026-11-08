@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  BLANK_SALARY_ENTRY,
-  type SalaryEntry,
-} from "@/lib/db/salary-entry-defaults";
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Modal } from "@/components/ui/modal";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { StepIndicator } from "@/components/onboarding/step-indicator";
-import { localDateStr } from "@/lib/utils/date";
 import {
   type PersonDraft,
   type JobDraft,
@@ -23,6 +18,8 @@ import { PeopleStep } from "./people-step";
 import { IncomeStep } from "./income-step";
 import { DoneStep } from "./done-step";
 import { WizardNav } from "./wizard-nav";
+import { finishSetup } from "./wizard-saves";
+import { restoreFromBackup } from "./wizard-saves";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -65,44 +62,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setIsRestoring(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/versions/import", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Import failed");
-      }
-
-      // Sync budget API after restore (silently — may not be configured)
-      try {
-        const activeService = await utils.sync.getActiveBudgetApi.fetch();
-        if (activeService !== "none") {
-          await syncAll.mutateAsync({ service: activeService });
-        }
-      } catch {
-        // No API connection configured or sync failed — not critical
-      }
-
-      // Full page reload to pick up all imported data
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to restore backup");
-      setIsRestoring(false);
-    }
-  };
+  const { handleFileSelected } = restoreFromBackup(
+    setIsRestoring,
+    setError,
+    utils,
+    syncAll,
+  );
 
   const steps: readonly Step[] = adminNeeded
     ? STEPS
@@ -153,79 +118,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
-  const handleFinish = async () => {
-    setIsSaving(true);
-    setError(null);
-    try {
-      // Create all people and collect their IDs
-      const createdPeopleIds: number[] = [];
-      for (const person of people) {
-        const created = await createPerson.mutateAsync(person);
-        createdPeopleIds.push(created!.id);
-      }
-
-      // Create all jobs, mapping personIndex to the real person ID. A job
-      // carries no salary of its own — each one's annualSalary from the
-      // Income step goes into the household's Salary Profile below instead.
-      const today = localDateStr();
-      const jobEntries: Record<
-        string,
-        { salary: number; payPeriod: JobDraft["payPeriod"] }
-      > = {};
-      for (const job of jobs) {
-        const personId = createdPeopleIds[job.personIndex];
-        if (personId === undefined) continue;
-        const created = await createJob.mutateAsync({
-          personId,
-          employerName: job.employerName,
-          startDate: today,
-        });
-        if (created) {
-          jobEntries[String(created.id)] = {
-            salary: Number(job.annualSalary),
-            payPeriod: job.payPeriod,
-          };
-        }
-      }
-
-      // Give each new job a complete entry in the baseline Salary Profile
-      // (migrations always leave exactly one active profile behind, even on
-      // a fresh install) — no bonus assumed, plain on-target terms.
-      if (Object.keys(jobEntries).length > 0) {
-        const profiles = await utils.salaryProfile.list.fetch();
-        const baseline = profiles[0];
-        if (baseline) {
-          const salaries = { ...baseline.salaries } as Record<
-            string,
-            SalaryEntry
-          >;
-          for (const [jobId, entry] of Object.entries(jobEntries)) {
-            salaries[jobId] = {
-              ...BLANK_SALARY_ENTRY,
-              salary: entry.salary,
-              payPeriod: entry.payPeriod,
-            };
-          }
-          await updateSalaryProfile.mutateAsync({
-            id: baseline.id,
-            salaries,
-          });
-        }
-      }
-
-      await setTaxDataSyncEnabled.mutateAsync({ enabled: taxDataSync });
-      // Mark onboarding complete
-      await completeOnboarding.mutateAsync();
-      onComplete();
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Something went wrong. Please try again.",
-      );
-      setIsSaving(false);
-    }
-  };
+  const { handleFinish } = finishSetup(
+    setIsSaving,
+    setError,
+    people,
+    createPerson,
+    jobs,
+    createJob,
+    utils,
+    updateSalaryProfile,
+    setTaxDataSyncEnabled,
+    taxDataSync,
+    completeOnboarding,
+    onComplete,
+  );
 
   const goNext = async () => {
     // Which steps there are isn't known until the server answers.
