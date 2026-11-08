@@ -124,14 +124,16 @@
     "src/components/retirement-projection/mc-asset-class-section.tsx": 99,
     "src/components/retirement-projection/mc-asset-classes.tsx": 134,
     "src/components/retirement-projection/mc-assumptions-overview.tsx": 89,
+    "src/components/retirement-projection/mc-assumptions-toggle.tsx": 40,
     "src/components/retirement-projection/mc-bounds.tsx": 187,
     "src/components/retirement-projection/mc-correlation-section.tsx": 23,
     "src/components/retirement-projection/mc-glide-path-section.tsx": 102,
     "src/components/retirement-projection/mc-glide-path.tsx": 107,
     "src/components/retirement-projection/mc-outcome-distribution.tsx": 92,
+    "src/components/retirement-projection/mc-preset-multipliers.tsx": 32,
     "src/components/retirement-projection/mc-scenario-inputs.tsx": 154,
     "src/components/retirement-projection/mc-scenario-section.tsx": 94,
-    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 252,
+    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 212,
     "src/components/retirement-projection/mc-simulation-types.ts": 30,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
@@ -693,7 +695,7 @@
       "LumpSumForm": 158
     },
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
-      "SimulationAssumptions": 233
+      "SimulationAssumptions": 193
     },
     "src/components/retirement-projection/overrides-panel.tsx": {
       "OverridesPanel": 668,

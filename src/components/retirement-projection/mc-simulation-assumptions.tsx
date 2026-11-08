@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type {
   SimulationInputs,
   AssetClassOverride,
   OutcomeDistribution,
 } from "./mc-simulation-types";
-import { AssumptionRow } from "./assumption-row";
 import { ReturnClampSection } from "./mc-bounds";
 import { OutcomeDistributionPanel } from "./mc-outcome-distribution";
 import { AssumptionsOverview } from "./mc-assumptions-overview";
@@ -16,6 +14,8 @@ import { ScenarioInputs } from "./mc-scenario-section";
 import { AssetClassSection } from "./mc-asset-class-section";
 import { GlidePathSection } from "./mc-glide-path-section";
 import { CorrelationSection } from "./mc-correlation-section";
+import { AssumptionsToggle } from "./mc-assumptions-toggle";
+import { PresetMultipliers } from "./mc-preset-multipliers";
 
 export function SimulationAssumptions({
   inputs,
@@ -131,34 +131,11 @@ export function SimulationAssumptions({
 
   return (
     <div className="bg-surface-sunken rounded-lg border">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="text-muted hover:bg-surface-elevated flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors"
-      >
-        <span className="font-medium">
-          Simulation Assumptions
-          {activeOverrides.length > 0 && (
-            <span className="ml-1 text-amber-600">
-              ({activeOverrides.length} set by you)
-            </span>
-          )}
-        </span>
-        <svg
-          aria-hidden="true"
-          className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
+      <AssumptionsToggle
+        activeOverrides={activeOverrides}
+        expanded={expanded}
+        setExpanded={setExpanded}
+      />
 
       {expanded && (
         <div className="space-y-3 px-3 pb-3">
@@ -209,24 +186,7 @@ export function SimulationAssumptions({
           />
 
           {/* Preset multipliers */}
-          {inputs.preset !== "custom" && (
-            <div>
-              <div className="text-label text-muted mb-1 font-medium">
-                Preset Multipliers
-                <HelpTip text="How the selected preset modifies the raw DB asset class values. Return multiplier scales expected returns; vol multiplier scales volatility." />
-              </div>
-              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-0.5">
-                <AssumptionRow
-                  label="Return Multiplier"
-                  value={`${inputs.returnMultiplier.toFixed(2)}×`}
-                />
-                <AssumptionRow
-                  label="Volatility Multiplier"
-                  value={`${inputs.volMultiplier.toFixed(2)}×`}
-                />
-              </div>
-            </div>
-          )}
+          <PresetMultipliers inputs={inputs} />
 
           {/* Return clamp bounds */}
           <ReturnClampSection
