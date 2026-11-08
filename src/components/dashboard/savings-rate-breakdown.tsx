@@ -18,8 +18,8 @@ import type {
 const LINE_LABEL: Record<SavingsTreatment | "match", string> = {
   preTax: taxTypeLabel("preTax"),
   taxFree: taxTypeLabel("taxFree"),
-  afterTax: "After-tax",
-  hsa: "HSA",
+  afterTax: taxTypeLabel("afterTax"),
+  hsa: taxTypeLabel("hsa"),
   match: "Employer match",
 };
 

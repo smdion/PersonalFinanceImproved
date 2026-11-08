@@ -25,13 +25,13 @@ Joint$140,000.00(22.7%)
 Total$618,000.00
 Tax Bucket
 Traditional$405,000.00(65.5%)
-After-Tax$140,000.00(22.7%)
+After-tax$140,000.00(22.7%)
 Roth$45,000.00(7.3%)
 HSA$28,000.00(4.5%)
 Total$618,000.00
 Per Person Detail
 Jordan Traditional$310,000.00(50.2%)
-Joint After-Tax$140,000.00(22.7%)
+Joint After-tax$140,000.00(22.7%)
 Riley Traditional$95,000.00(15.4%)
 Riley Roth$45,000.00(7.3%)
 Jordan HSA$28,000.00(4.5%)

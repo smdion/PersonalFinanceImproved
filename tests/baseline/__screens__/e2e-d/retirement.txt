@@ -93,7 +93,7 @@ Off
 90%
 $Balance Projection
 ⚠ 25 years in this deterministic projection couldn't fund the actual spending need — see the marked ages below.
-Traditional Roth HSA After-Tax Withdrawal SS Income Sim. median 50% bandSS StartUnmet Need
+Traditional Roth HSA After-tax Withdrawal SS Income Sim. median 50% bandSS StartUnmet Need
 Contributions
 Account
 Tax Type
@@ -117,7 +117,7 @@ In / Out?
 Traditional?
 Roth?
 HSA?
-After-Tax?
+After-tax?
 Balance?
 Sim. Median?
 Info?

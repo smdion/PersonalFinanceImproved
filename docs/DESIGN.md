@@ -174,9 +174,9 @@ Helpers: `accountColor()`, `accountMatchColor()`, `accountBorderColor()`, `accou
 | Traditional | preTax   | blue-500    | blue-600      | Traditional |
 | Roth        | taxFree  | violet-500  | purple-600    | Roth        |
 | HSA         | hsa      | emerald-500 | green-600     | HSA         |
-| After-Tax   | afterTax | orange-500  | orange-600    | After-Tax   |
+| After-tax   | afterTax | orange-500  | orange-600    | After-tax   |
 
-Helpers: `taxTypeTextColor()`, `taxTypeLabel()`; bar fills read `TAX_TYPE_COLORS[key].bg`
+Helpers: `taxTypeTextColor()`, `taxTypeLabel()` (reads `TAX_TYPE_LABELS` in `lib/config/display-labels.ts`); bar fills read `TAX_TYPE_COLORS[key].bg`
 
 **Label convention:** The DB stores IRS bucket keys (`preTax`/`taxFree`/`hsa`/`afterTax`) — these are the correct data model. The UI displays user-friendly labels via `taxTypeLabel()`: `preTax → "Traditional"`, `taxFree → "Roth"`. These are the terms on Vanguard statements, 401k enrollment, and finance articles. IRS-level context is available in `TAX_BUCKET_DESCRIPTIONS` tooltips (e.g. "Traditional (pre-tax) contributions..."). Payroll terms like "Pre-Tax Deductions" on pay stubs are a different concept (payroll section headers) and are not changed.
 

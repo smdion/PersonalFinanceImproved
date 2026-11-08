@@ -88,7 +88,7 @@ Off
 80%
 90%
 $Balance Projection
-Traditional After-Tax Withdrawal SS Income Sim. median 50% bandSS StartRMD Start
+Traditional After-tax Withdrawal SS Income Sim. median 50% bandSS StartRMD Start
 Contributions
 Account
 Tax Type
@@ -108,7 +108,7 @@ Rate?
 401k?
 In / Out?
 Traditional?
-After-Tax?
+After-tax?
 Balance?
 Sim. Median?
 Info?

@@ -104,7 +104,7 @@ export function ProjectionTable({
         <div className="text-caption text-faint mb-1">
           This scenario uses Simple tax mode, which doesn&apos;t track
           individual accounts — the Balance column below is your real total, but
-          a Traditional/Roth/HSA/After-Tax breakdown isn&apos;t available.
+          a Traditional/Roth/HSA/After-tax breakdown isn&apos;t available.
           Switch to Advanced tax mode to see your real account split.
         </div>
       )}

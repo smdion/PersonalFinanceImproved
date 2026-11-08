@@ -332,7 +332,7 @@ export function filterYearByParentCategory(
   }
 
   // Rescope withdrawals to the same account subset as the balances above —
-  // otherwise a filtered "After-Tax: $32k" balance sits next to an
+  // otherwise a filtered "After-tax: $32k" balance sits next to an
   // unfiltered "Brokerage: -$30k" withdrawal that was mostly drawn from a
   // Portfolio-parented account this page never shows, making it look like
   // the account is being overdrawn. `slots` has no per-account structure

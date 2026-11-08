@@ -7,6 +7,7 @@
  */
 
 import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
+import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 
 // ── Account-type colors (paycheck, dashboard contribution cards) ──
 
@@ -72,20 +73,13 @@ export function accountTextColor(type: string): string {
 // Must be visually distinct from each other in stacked bar charts.
 // Echoes account-type hues where possible:
 //   Pre-Tax → blue (like 401k), Tax-Free → purple (like IRA, often Roth),
-//   HSA → green (matches HSA account), After-Tax → amber (like Brokerage)
+//   HSA → green (matches HSA account), After-tax → amber (like Brokerage)
 
-export const TAX_TYPE_COLORS: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  preTax: { bg: "bg-blue-500", text: "text-blue-600", label: "Traditional" },
-  taxFree: { bg: "bg-violet-500", text: "text-violet-600", label: "Roth" },
-  hsa: { bg: "bg-emerald-500", text: "text-emerald-600", label: "HSA" },
-  afterTax: {
-    bg: "bg-orange-500",
-    text: "text-orange-600",
-    label: "After-Tax",
-  },
+export const TAX_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+  preTax: { bg: "bg-blue-500", text: "text-blue-600" },
+  taxFree: { bg: "bg-violet-500", text: "text-violet-600" },
+  hsa: { bg: "bg-emerald-500", text: "text-emerald-600" },
+  afterTax: { bg: "bg-orange-500", text: "text-orange-600" },
 };
 
 /** Text color for tax treatment labels (e.g. `text-blue-500` for Pre-Tax) */
@@ -95,7 +89,7 @@ export function taxTypeTextColor(taxType: string): string {
 
 /** Display label for tax treatment (e.g. `taxFree` → `Tax-Free`) */
 export function taxTypeLabel(taxType: string): string {
-  return TAX_TYPE_COLORS[taxType]?.label ?? taxType;
+  return TAX_TYPE_LABELS[taxType] ?? taxType;
 }
 
 // ── Status/severity colors (badges, toasts, alert banners) ──
@@ -258,7 +252,7 @@ export const CHART_COLORS = {
   // Security" everywhere on this chart. withdrawalFlow is a new, neutral
   // slate tone (no existing account-type or tax-bucket hue uses this
   // family) for total portfolio withdrawal — deliberately NOT blue/violet/
-  // emerald/orange (Traditional/Roth/HSA/After-Tax) or teal/amber (SS/RMD
+  // emerald/orange (Traditional/Roth/HSA/After-tax) or teal/amber (SS/RMD
   // markers above), per DESIGN.md's "distinct hue families, no overlap"
   // rule — this is an aggregate flow across all tax types, not a specific
   // account or bucket.

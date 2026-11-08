@@ -27,7 +27,7 @@ export type AccountEntry = AccountAnalysisEntry;
 
 /** Richer label ("Roth IRA", "Traditional 401k") than
  *  `@/lib/utils/colors.ts`'s canonical `taxTypeLabel(taxType)` (which only
- *  returns "Traditional"/"Roth"/"HSA"/"After-Tax") — deliberately named
+ *  returns "Traditional"/"Roth"/"HSA"/"After-tax") — deliberately named
  *  differently to avoid a same-name, different-signature collision with
  *  that function. */
 export function bucketTaxTypeLabel(category: string, taxType: string): string {

@@ -33,7 +33,7 @@ export function TaxLocationPie({
       title={
         <>
           Tax Location{" "}
-          <HelpTip text="How your investment portfolio is distributed across tax treatments: Traditional (pre-tax), Roth (tax-free), HSA, and After-Tax (brokerage)" />
+          <HelpTip text="How your investment portfolio is distributed across tax treatments: Traditional (pre-tax), Roth (tax-free), HSA, and After-tax (brokerage)" />
         </>
       }
       subtitle={yearLabel != null ? `${yearLabel} data` : undefined}

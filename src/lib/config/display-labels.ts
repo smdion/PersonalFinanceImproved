@@ -57,8 +57,16 @@ export const CONTRIBUTION_METHOD_LABELS_SHORT: Record<string, string> = {
 export const TAX_TREATMENT_LABELS: Record<string, string> = {
   pre_tax: "Traditional",
   tax_free: "Roth",
-  after_tax: "After-Tax",
+  after_tax: "After-tax",
   hsa: "HSA",
+};
+
+/** The same four treatments by their camel-case key (balances, charts). */
+export const TAX_TYPE_LABELS: Record<string, string> = {
+  preTax: "Traditional",
+  taxFree: "Roth",
+  hsa: "HSA",
+  afterTax: "After-tax",
 };
 
 export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
@@ -137,7 +145,7 @@ export const TAX_BUCKET_DESCRIPTIONS: Record<string, string> = {
 const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
   pre_tax: "Trad",
   tax_free: "Roth",
-  after_tax: "After-Tax",
+  after_tax: "After-tax",
   hsa: "HSA",
   // Engine-internal keys (used in projection overrides taxTypeCaps)
   traditional: "Trad",
