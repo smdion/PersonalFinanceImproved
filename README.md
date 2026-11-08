@@ -230,7 +230,7 @@ docker compose restart ledgr
 - Built-in healthcheck hits `/api/health` every 30 seconds.
 - Memory limit of **1 GB** is set in `docker-compose.yml`.
 - For HTTPS, put a reverse proxy (NGINX, Caddy, Traefik, …) in front and set `NEXTAUTH_URL` to your public URL and `AUTH_TRUST_HOST=true`.
-- **SQLite mode:** the `ledgr_data` volume persists the database file across restarts. **PostgreSQL mode:** data lives in the external instance.
+- **SQLite mode:** the `ledgr_data` volume persists the database file across restarts. **PostgreSQL mode:** data lives in the PostgreSQL instance; the `ledgr_data` volume keeps the migrator's pre-upgrade backups.
 
 ### Schema migrations
 
