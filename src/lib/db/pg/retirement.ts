@@ -304,7 +304,7 @@ export const retirementSettings = pgTable(
     irmaaOnTopOfBudget: boolean("irmaa_on_top_of_budget")
       .notNull()
       .default(false),
-    /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
+    /** Enable ACA subsidy awareness (pre-65): report MAGI headroom below the subsidy cliff and warn when a year crosses it; never caps MAGI. */
     enableAcaAwareness: boolean("enable_aca_awareness")
       .notNull()
       .default(false),

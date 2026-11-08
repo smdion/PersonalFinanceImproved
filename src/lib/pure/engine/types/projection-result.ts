@@ -276,7 +276,7 @@ export type ProjectionInput = {
   primaryPersonId?: number;
   /** When true, cap Roth conversions to stay below the next IRMAA cliff (default: true when IRMAA awareness is on). */
   irmaaAwareRothConversions?: boolean;
-  /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
+  /** Enable ACA subsidy awareness (pre-65): report MAGI headroom below the subsidy cliff and warn when a year crosses it; never caps MAGI. */
   enableAcaAwareness?: boolean;
   /** Household size for ACA FPL calculation (default 2). */
   householdSize?: number;
