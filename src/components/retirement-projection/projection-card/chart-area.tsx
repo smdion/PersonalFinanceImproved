@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { ProjectionChartSkeleton } from "../projection-chart-skeleton";
-import type { ProjectionState } from "../projection-table-types";
+import type { ProjectionState, ReportMode } from "../projection-table-types";
 
 // Code-split Recharts-heavy children. Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
@@ -25,7 +25,7 @@ export function ChartArea({
   state,
   mcChartPending,
 }: {
-  reportMode: "none" | "basic" | "advisor";
+  reportMode: ReportMode;
   engineQuery: ProjectionState["engineQuery"];
   chartView: ProjectionState["chartView"];
   state: ProjectionState;

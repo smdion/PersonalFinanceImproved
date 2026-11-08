@@ -16,15 +16,8 @@ export function PersonViewPills({
     hasIndividualAccountData,
   } = state;
   const pp = people ?? enginePeople;
-  // hasIndividualAccountData computed once in
-  // use-projection-derived.ts — MC "Simple" tax mode (the
-  // default) collapses per-account balances into one
-  // fictional bucket server-side, so a scenario sourced
-  // from an MC result (Rate-Seeded, and any future
-  // Simple-tax-mode scenario) has NO real per-person data
-  // to filter by — offering Alex/Sam views would
-  // silently show $0 everywhere instead of an honest "not
-  // available."
+  // A scenario from a Simple-tax-mode simulation has no per-person balances,
+  // so the person pills are disabled rather than showing $0 everywhere.
   const personViewDisabledTitle = hasIndividualAccountData
     ? undefined
     : "Per-person breakdown isn't available for this scenario — it uses Simple tax mode, which doesn't track individual accounts. Switch to Advanced tax mode or view Joint totals.";

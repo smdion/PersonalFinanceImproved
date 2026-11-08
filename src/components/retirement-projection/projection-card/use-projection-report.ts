@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
-import type { ProjectionState } from "../projection-table-types";
+import type { ProjectionState, ReportMode } from "../projection-table-types";
 
 export function useProjectionReport(state: ProjectionState) {
   const {
@@ -15,9 +15,7 @@ export function useProjectionReport(state: ProjectionState) {
   // "basic" prints the chart and table; "advisor" mounts ReportRoot, hidden
   // on screen, and is reached only once checkReportGate passes, so a report
   // never prints with stale or missing simulation data.
-  const [reportMode, setReportMode] = useState<"none" | "basic" | "advisor">(
-    "none",
-  );
+  const [reportMode, setReportMode] = useState<ReportMode>("none");
   const [gateFailure, setGateFailure] = useState<ReportGateFailure | null>(
     null,
   );
@@ -25,7 +23,7 @@ export function useProjectionReport(state: ProjectionState) {
   // "Print Chart & Table" prints every year, whatever the table's own
   // milestone toggle shows; the toggle is put back after printing.
   const priorShowAllYearsRef = useRef<boolean | null>(null);
-  const handlePrint = (mode: "basic" | "advisor") => {
+  const handlePrint = (mode: Exclude<ReportMode, "none">) => {
     originalTitleRef.current = document.title;
     setReportMode(mode);
     document.title = `Retirement Projection - ${new Date().toLocaleDateString()}`;

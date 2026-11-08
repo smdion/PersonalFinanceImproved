@@ -65,18 +65,11 @@ export function ProjectionCard(props: ProjectionCardProps) {
   const {
     dollarMode: internalDollarMode,
     setDollarMode: internalSetDollarMode,
-    chartView,
-    setChartView,
     setPersonFilter,
     isPersonFiltered,
     engineQuery,
-    mcPrefetchQuery,
-    mcChartPending,
     result,
     hasIndividualAccountData,
-    autoloadEnabled,
-    mcAutoloadEnabled,
-    runMonteCarlo,
   } = state;
 
   // If the active scenario's result has no per-person data (Simple-tax-mode
@@ -126,18 +119,10 @@ export function ProjectionCard(props: ProjectionCardProps) {
               position, so the layout never shifts while loading. */}
           <ProjectionResults
             report={report}
-            engineQuery={engineQuery}
             state={state}
-            result={result}
-            mcAutoloadEnabled={mcAutoloadEnabled}
-            mcPrefetchQuery={mcPrefetchQuery}
-            runMonteCarlo={runMonteCarlo}
             people={people}
-            chartView={chartView}
-            setChartView={setChartView}
             dollarMode={dollarMode}
             setDollarMode={setDollarMode}
-            mcChartPending={mcChartPending}
           />
 
           {/* LOADER — full skeleton card during engine loading / action state;
@@ -151,8 +136,6 @@ export function ProjectionCard(props: ProjectionCardProps) {
               active (it renders its own simplified table instead). */}
           <TableArea
             reportMode={report.reportMode}
-            engineQuery={engineQuery}
-            autoloadEnabled={autoloadEnabled}
             state={state}
             people={people}
             parentCategoryFilter={parentCategoryFilter}

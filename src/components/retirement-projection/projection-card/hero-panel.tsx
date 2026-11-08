@@ -1,12 +1,12 @@
 import { ProjectionHeroKpis } from "../projection-hero-kpis";
-import type { ProjectionState } from "../projection-table-types";
+import type { ProjectionState, ReportMode } from "../projection-table-types";
 
 export function HeroKpisPanel({
   reportMode,
   engineQuery,
   state,
 }: {
-  reportMode: "none" | "basic" | "advisor";
+  reportMode: ReportMode;
   engineQuery: ProjectionState["engineQuery"];
   state: ProjectionState;
 }) {

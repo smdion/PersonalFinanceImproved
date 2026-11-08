@@ -10,33 +10,28 @@ import type { useProjectionReport } from "./use-projection-report";
 
 export function ProjectionResults({
   report,
-  engineQuery,
   state,
-  result,
-  mcAutoloadEnabled,
-  mcPrefetchQuery,
-  runMonteCarlo,
   people,
-  chartView,
-  setChartView,
   dollarMode,
   setDollarMode,
-  mcChartPending,
 }: {
   report: ReturnType<typeof useProjectionReport>;
-  engineQuery: ProjectionState["engineQuery"];
   state: ProjectionState;
-  result: ProjectionState["result"];
-  mcAutoloadEnabled: ProjectionState["mcAutoloadEnabled"];
-  mcPrefetchQuery: ProjectionState["mcPrefetchQuery"];
-  runMonteCarlo: ProjectionState["runMonteCarlo"];
   people: { id: number; name: string }[] | undefined;
-  chartView: ProjectionState["chartView"];
-  setChartView: ProjectionState["setChartView"];
   dollarMode: DollarBasis;
   setDollarMode: (mode: DollarBasis) => void;
-  mcChartPending: ProjectionState["mcChartPending"];
 }) {
+  const {
+    engineQuery,
+    result,
+    engineSettings,
+    mcAutoloadEnabled,
+    mcPrefetchQuery,
+    runMonteCarlo,
+    chartView,
+    setChartView,
+    mcChartPending,
+  } = state;
   return (
     <>
       {(engineQuery.isLoading || !!result) && (
@@ -82,7 +77,12 @@ export function ProjectionResults({
                           calculated. Scenario is the primary control
                           (bigger, colored active state); everything else
                           is secondary, below the dashed rule. */}
-              <ComputeControls state={state} people={people} />
+              <ComputeControls
+                state={state}
+                result={result}
+                engineSettings={engineSettings}
+                people={people}
+              />
 
               {/* DISPLAY zone — lenses on results already computed.
                           Chart type is the primary control; Dollars rides

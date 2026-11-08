@@ -8,14 +8,16 @@ import { SimulationSettings } from "./simulation-settings";
 
 export function ComputeControls({
   state,
+  result,
+  engineSettings,
   people,
 }: {
   state: ProjectionState;
+  result: NonNullable<ProjectionState["result"]>;
+  engineSettings: NonNullable<ProjectionState["engineSettings"]>;
   people: { id: number; name: string }[] | undefined;
 }) {
   const {
-    result,
-    engineSettings,
     projectionMode,
     scenarioView,
     setScenarioView,
@@ -43,9 +45,7 @@ export function ComputeControls({
         scenarioView={scenarioView}
         setScenarioView={setScenarioView}
       />
-      {/* The card renders this zone only with a result; the check narrows
-          its type (and engineSettings' with it). */}
-      {scenarioView === "coastFireCustom" && result && (
+      {scenarioView === "coastFireCustom" && (
         <CoastFireCustomAge
           state={state}
           result={result}

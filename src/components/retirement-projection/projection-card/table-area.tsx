@@ -1,14 +1,12 @@
 import { ProjectionTable } from "../projection-table";
 import { ProjectionTableSkeleton } from "../projection-table-skeleton";
 import type {
-  ProjectionState,
   ProjectionTableProps,
+  ReportMode,
 } from "../projection-table-types";
 
 export function TableArea({
   reportMode,
-  engineQuery,
-  autoloadEnabled,
   state,
   people,
   parentCategoryFilter,
@@ -19,10 +17,9 @@ export function TableArea({
   decumulationBudgetColumn,
   decumulationExpenseOverride,
 }: ProjectionTableProps & {
-  reportMode: "none" | "basic" | "advisor";
-  engineQuery: ProjectionState["engineQuery"];
-  autoloadEnabled: ProjectionState["autoloadEnabled"];
+  reportMode: ReportMode;
 }) {
+  const { engineQuery, autoloadEnabled } = state;
   return (
     <div className={reportMode === "advisor" ? "print:hidden" : undefined}>
       {engineQuery.isLoading || (!autoloadEnabled && !engineQuery.data) ? (
