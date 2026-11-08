@@ -5,7 +5,7 @@
     "src/app/(dashboard)/budget/budget-content.tsx": 656,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 574,
-    "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
+    "src/app/(dashboard)/budget/what-if-tab.tsx": 1365,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 977,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 935,
@@ -325,7 +325,7 @@
       "WhatIfDeductionsEditor": 156
     },
     "src/app/(dashboard)/budget/what-if-tab.tsx": {
-      "useSandboxState": 234,
+      "useSandboxState": 233,
       "WhatIfTab": 830
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {

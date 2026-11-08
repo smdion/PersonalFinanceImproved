@@ -55,9 +55,20 @@ const paycheckViews = vi.fn((_opts: unknown) => ({
   views,
   isLoading: false,
 }));
-vi.mock("@/lib/hooks/use-paycheck-person-views", () => ({
-  usePaycheckPersonViews: (opts: unknown) => paycheckViews(opts),
-}));
+/** The paycheck inputs of renders React committed (a render it threw away,
+ *  as when state is adjusted while rendering, never reaches an effect). */
+const committedPaycheckInputs: unknown[] = [];
+vi.mock("@/lib/hooks/use-paycheck-person-views", async () => {
+  const { useEffect } = await import("react");
+  return {
+    usePaycheckPersonViews: (opts: unknown) => {
+      useEffect(() => {
+        committedPaycheckInputs.push(opts);
+      });
+      return paycheckViews(opts);
+    },
+  };
+});
 vi.mock("@/app/(dashboard)/budget/what-if-paycheck-summary", () => ({
   WhatIfPaycheckSummary: () => <div data-testid="paycheck-summary" />,
 }));
@@ -86,6 +97,7 @@ beforeEach(() => {
   resetTrpcMock();
   localStorage.clear();
   paycheckViews.mockClear();
+  committedPaycheckInputs.length = 0;
   setQuery("settings.appSettings.list", [
     { key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: 4 },
     { key: SK_ACTIVE_SALARY_PROFILE_ID, value: 7 },
@@ -244,5 +256,22 @@ describe("WhatIfTab smoke", () => {
     });
     expect(screen.getByTestId("groceries-draft")).toHaveTextContent("640");
     expect(screen.getByDisplayValue("New deduction")).toBeInTheDocument();
+  });
+
+  it("no render pairs a newly picked profile with the old profile's drafts", () => {
+    renderTab();
+    draftEverything();
+    committedPaycheckInputs.length = 0;
+    pick("Salary", 8);
+
+    const calls = committedPaycheckInputs as {
+      salaryProfileId: number;
+      sandboxSalaryEntries: unknown;
+    }[];
+    expect(calls.length).toBeGreaterThan(0);
+    for (const opts of calls) {
+      expect(opts.salaryProfileId).toBe(8);
+      expect(opts.sandboxSalaryEntries).toEqual({});
+    }
   });
 });

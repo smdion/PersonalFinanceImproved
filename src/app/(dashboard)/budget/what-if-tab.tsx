@@ -34,12 +34,12 @@
  *    active profiles — they start FROM them and diverge locally from there.
  * 4. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
  *    ids that only mean something for the CURRENTLY picked profile — they
- *    reset when that picker changes (see useSandboxState's effects), and
+ *    reset when that picker changes (see useSandboxState), and
  *    there is deliberately no `beforeunload` guard: this is a throwaway
  *    play area, not an in-progress save.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
@@ -194,7 +194,7 @@ function WhatIfStep({
 /**
  * Sandbox-local edit state: salary/bonus entries, deduction edits/
  * additions, and budget item amount drafts. None of it is ever persisted —
- * see this file's docblock point 5 for why the profile-scoped pieces (salary
+ * see this file's docblock point 4 for why the profile-scoped pieces (salary
  * entries, budget drafts) reset when their owning picker changes. Deduction
  * edits/additions are keyed by real deduction id / personId, which don't
  * change when a picker changes, so they persist until "Reset sandbox."
@@ -218,21 +218,20 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
   );
   const nextLocalId = useRef(-1);
 
-  const prevSalaryId = useRef(salaryId);
-  useEffect(() => {
-    if (prevSalaryId.current !== salaryId) {
-      setSalaryEntries({});
-      prevSalaryId.current = salaryId;
-    }
-  }, [salaryId]);
+  // A picker switch clears its drafts in the render that first sees the new
+  // id (React's "adjust state when a prop changes"), not in an effect after
+  // it, so no render pairs the new profile with the old profile's drafts.
+  const [salaryDraftsFor, setSalaryDraftsFor] = useState(salaryId);
+  if (salaryDraftsFor !== salaryId) {
+    setSalaryDraftsFor(salaryId);
+    setSalaryEntries({});
+  }
 
-  const prevBudgetId = useRef(budgetId);
-  useEffect(() => {
-    if (prevBudgetId.current !== budgetId) {
-      setBudgetDrafts(new Map());
-      prevBudgetId.current = budgetId;
-    }
-  }, [budgetId]);
+  const [budgetDraftsFor, setBudgetDraftsFor] = useState(budgetId);
+  if (budgetDraftsFor !== budgetId) {
+    setBudgetDraftsFor(budgetId);
+    setBudgetDrafts(new Map());
+  }
 
   const setSalaryField = (
     personId: number,
