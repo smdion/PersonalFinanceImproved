@@ -418,7 +418,7 @@
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/preview.ts": 455,
     "src/server/services/sync/sync-all.ts": 265,
-    "src/server/trpc.ts": 581
+    "src/server/trpc.ts": 580
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {

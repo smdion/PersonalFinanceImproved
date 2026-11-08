@@ -19,6 +19,7 @@ import { clientAddress } from "@/lib/client-address";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
+import { demoSchemaName } from "@/lib/demo/slugs";
 import {
   notifyMutationSucceeded,
   onMutationSucceeded,
@@ -108,9 +109,7 @@ export async function createContext(): Promise<Context> {
   try {
     const cookieStore = await cookies();
     const demoSlug = cookieStore.get("demo_active_profile")?.value;
-    if (demoSlug && /^[a-z0-9-]+$/.test(demoSlug)) {
-      demoSchema = `demo_${demoSlug.replace(/-/g, "_")}`;
-    }
+    if (demoSlug) demoSchema = demoSchemaName(demoSlug);
   } catch {
     // cookies() may throw outside request context (e.g. during build)
   }
@@ -204,7 +203,7 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   // Demo schemas require PG (uses SET search_path for isolation)
   if (!ctx.demoSchema || !isPostgres()) return next({ ctx });
 
-  // ctx.demoSchema is already validated by the regex in createContext,
+  // ctx.demoSchema is a demo profile's (demoSchemaName in createContext),
   // but double-quote the identifier defensively.
   const quotedSchema = `"${ctx.demoSchema.replace(/"/g, '""')}"`;
   const client = await pool.connect();

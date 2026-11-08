@@ -5,8 +5,18 @@ import { dualIncomeFamilyProfile } from "./profiles/dual-income-family";
 import { earlyRetirementProfile } from "./profiles/early-retirement";
 import { debtPayoffProfile } from "./profiles/debt-payoff";
 import { recentlyRetiredProfile } from "./profiles/recently-retired";
+import {
+  DEMO_PROFILE_SLUGS,
+  isDemoProfileSlug,
+  type DemoProfileSlug,
+} from "./slugs";
 
 export type { DemoProfile } from "./types";
+export {
+  demoSchemaName,
+  isDemoProfileSlug,
+  type DemoProfileSlug,
+} from "./slugs";
 
 const PROFILES = {
   "single-income": singleIncomeProfile,
@@ -14,33 +24,15 @@ const PROFILES = {
   "early-retirement": earlyRetirementProfile,
   "debt-payoff": debtPayoffProfile,
   "recently-retired": recentlyRetiredProfile,
-} satisfies Record<string, DemoProfile>;
-
-/** A demo profile's slug: one of DEMO_PROFILES' keys. */
-export type DemoProfileSlug = keyof typeof PROFILES;
+} satisfies Record<DemoProfileSlug, DemoProfile>;
 
 /** All demo profiles, keyed by slug. */
 export const DEMO_PROFILES: Record<string, DemoProfile> = PROFILES;
-
-/** Whether `slug` is one of DEMO_PROFILES' own keys (never an inherited
- *  name such as `constructor`). */
-export function isDemoProfileSlug(slug: string): slug is DemoProfileSlug {
-  return Object.hasOwn(DEMO_PROFILES, slug);
-}
 
 /** The demo profile `slug` names, or null when it names none. */
 export function getDemoProfile(slug: string): DemoProfile | null {
   return isDemoProfileSlug(slug) ? PROFILES[slug] : null;
 }
-
-/** Ordered list of profile slugs for display. */
-const DEMO_PROFILE_ORDER = [
-  "single-income",
-  "dual-income-family",
-  "early-retirement",
-  "debt-payoff",
-  "recently-retired",
-] as const;
 
 /** The chooser card's stats: income (current jobs' salaries) and portfolio
  *  size (the seeded portfolio accounts) from the profile's own rows, so they
@@ -61,7 +53,7 @@ export function demoKeyStats(p: DemoProfile) {
 
 /** Get profile metadata for listing (without full dataset). */
 export function getDemoProfileList() {
-  return DEMO_PROFILE_ORDER.map((slug) => {
+  return DEMO_PROFILE_SLUGS.map((slug) => {
     const p = DEMO_PROFILES[slug]!;
     return {
       slug: p.slug,

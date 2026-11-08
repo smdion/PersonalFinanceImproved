@@ -12,7 +12,11 @@ import { applyReferenceData } from "@/lib/db/reference-data";
 import * as schema from "@/lib/db/schema";
 import { pool, type db as appDb } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";
-import { getDemoProfile, type DemoProfileSlug } from "@/lib/demo";
+import {
+  demoSchemaName,
+  getDemoProfile,
+  type DemoProfileSlug,
+} from "@/lib/demo";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 
 /**
@@ -31,8 +35,9 @@ const MAX_DEMO_SCHEMAS = 10;
  *  a profile's before any SQL runs, whatever its caller checked. */
 export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
   const profile = getDemoProfile(slug);
-  if (!profile) throw new Error(`Not a demo profile: ${JSON.stringify(slug)}`);
-  const schemaName = `demo_${slug.replace(/-/g, "_")}`;
+  const schemaName = demoSchemaName(slug);
+  if (!profile || !schemaName)
+    throw new Error(`Not a demo profile: ${JSON.stringify(slug)}`);
   const quotedSchema = quoteIdent(schemaName);
 
   // Enforce max demo schema count to prevent DoS
