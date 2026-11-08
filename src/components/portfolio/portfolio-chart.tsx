@@ -31,7 +31,7 @@ import {
 } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { ChartFrame } from "@/components/charts/chart-frame";
 import { portfolioSummary, stackedSummary } from "./portfolio-chart.summary";
@@ -79,7 +79,7 @@ function getTimeFrameCutoff(tf: TimeFrame): string | null {
   cutoff.setMonth(cutoff.getMonth() - months);
   // Local day — compared against `s.date` (a date-only value); a UTC render
   // would move the cutoff a day every evening in a US timezone.
-  return localDateStr(cutoff);
+  return calendarDateOf(cutoff);
 }
 
 export function PortfolioChart({

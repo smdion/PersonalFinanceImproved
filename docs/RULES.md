@@ -82,7 +82,6 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Today's-dollar balances are deflated at their row's start,** up to a year's inflation high, until each balance is deflated by its own date (decision F3, v0.11).
 - **Inflation shocks are independent year to year,** so long-run inflation spread is understated, until persistent inflation is modelled (decision F4, v0.11).
 - **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
-- **Some helpers still default `asOfDate = new Date()`,** until every caller passes its request's date (§ Time Resolution, rule 2). Don't add one.
 - **A few older reads compare a UTC day with a local day** (live contributions, the mortgage's payoff check), until v0.11.
 - **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
 

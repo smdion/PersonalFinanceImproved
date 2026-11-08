@@ -5,7 +5,7 @@
  * if the recommendation escalates (soon → now) it comes back.
  */
 import { z } from "zod/v4";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type {
   Recommendation,
   RecommendationUrgency,
@@ -95,5 +95,5 @@ export function snoozeUntil(today: string, months: number): string {
   // Clamp to the target month's last day: Jan 31 + 1 month is Feb 28/29,
   // not Mar 3 (Date rolls the overflow into the next month).
   const lastDay = new Date(y, m - 1 + months + 1, 0).getDate();
-  return localDateStr(new Date(y, m - 1 + months, Math.min(d, lastDay)));
+  return calendarDateOf(new Date(y, m - 1 + months, Math.min(d, lastDay)));
 }

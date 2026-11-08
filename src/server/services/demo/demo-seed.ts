@@ -10,6 +10,7 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "@/server/data/jobs";
+import { writeStamp } from "@/lib/utils/clock";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 
@@ -32,15 +33,14 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // speculative-job peg settings.people.create gives real people.
   await db
     .insert(schema.jobs)
-    .values(personRows.map((p) => speculativeJobValues(p.id)));
+    .values(personRows.map((p) => speculativeJobValues(p.id, writeStamp())));
 
-  // 2. Jobs — a job carries no salary/bonus/payroll terms of its own;
-  // insert the (now purely structural) job row, then collect a COMPLETE
-  // Salary Profile entry (all 17 fields — salary, bonus terms, the
-  // payroll-config fields that used to live on the job row, and
-  // extraPaycheckRouting) to give it in
-  // a demo Salary Profile below — a profile entry is all-or-nothing, never
-  // a partial pin (mirrors the "Demo Contribution" profile pattern).
+  // 2. Jobs — a job carries no salary/bonus/payroll terms of its own; insert
+  // the (now purely structural) job row, then collect a COMPLETE Salary Profile
+  // entry (all 17 fields — salary, bonus terms, the payroll-config fields that
+  // used to live on the job row, and extraPaycheckRouting) to give it in a demo
+  // Salary Profile below — a profile entry is all-or-nothing, never a partial
+  // pin (mirrors the "Demo Contribution" profile pattern).
   const salaryPinsByJobId: Record<string, SalaryEntry> = {};
   const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {

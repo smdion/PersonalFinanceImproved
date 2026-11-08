@@ -8,7 +8,7 @@
 
 import { MS_PER_DAY } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 export type PortfolioSnapshot = {
   id: number;
@@ -170,7 +170,7 @@ export function derivePortfolioQuickLookStats(
   const oneYearAgoDate = new Date(now);
   oneYearAgoDate.setFullYear(oneYearAgoDate.getFullYear() - 1);
   // Local day — this is a threshold compared against `s.date` (date-only).
-  const oneYearAgoStr = localDateStr(oneYearAgoDate);
+  const oneYearAgoStr = calendarDateOf(oneYearAgoDate);
   const yearAgoSnap = sorted.reduce<PortfolioSnapshot | null>((best, s) => {
     if (s.date > oneYearAgoStr) return best;
     return !best ||

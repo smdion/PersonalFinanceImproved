@@ -4,7 +4,7 @@
 
 import { useId, useState } from "react";
 import type { trpc } from "@/lib/trpc";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { ReplacesNote } from "@/components/versions/replaces-note";
 import { DataLossWarning } from "@/components/versions/restore-notices";
 import { Modal, ModalCancel } from "@/components/ui/modal";
@@ -42,7 +42,7 @@ export function RestoreDialog({
     try {
       if (restoreCreateBackup) {
         await createMutation.mutateAsync({
-          name: `Pre-restore backup (${localDateStr()})`,
+          name: `Pre-restore backup (${calendarDateOf(new Date())})`,
           description: `Auto-created before restoring"${target.name}"`,
         });
       }

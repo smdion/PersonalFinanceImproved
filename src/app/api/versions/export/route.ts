@@ -4,7 +4,7 @@ import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
 import { exportBackup } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 export async function GET() {
   if (process.env.DEMO_ONLY === "true") {
@@ -31,7 +31,7 @@ export async function GET() {
 
     const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
     const json = JSON.stringify(backup, null, 2);
-    const dateStr = localDateStr();
+    const dateStr = calendarDateOf(new Date());
 
     return new NextResponse(json, {
       status: 200,

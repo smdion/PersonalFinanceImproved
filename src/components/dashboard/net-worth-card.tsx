@@ -10,7 +10,7 @@ import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";
 import { PlanPaceLine } from "./plan-pace-line";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
@@ -99,7 +99,11 @@ function NetWorthCardImpl() {
         </div>
         <PlanPaceLine
           actual={data.portfolioTotal + (sinceSnapshot?.estimate?.change ?? 0)}
-          day={sinceSnapshot?.estimate ? localDateStr() : data.snapshotDate}
+          day={
+            sinceSnapshot?.estimate
+              ? calendarDateOf(new Date())
+              : data.snapshotDate
+          }
           lastFinalized={data.lastFinalized ?? null}
         />
         {data.hasHouse && (

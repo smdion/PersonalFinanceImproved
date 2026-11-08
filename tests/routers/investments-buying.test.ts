@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, createViewerSessionWithPermissions } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 /** The 15th of the month `back` months before this one, as YYYY-MM-DD. */
 function monthDay(back: number, day = 15): string {
@@ -15,7 +15,7 @@ function monthDay(back: number, day = 15): string {
   d.setDate(1);
   d.setMonth(d.getMonth() - back);
   d.setDate(day);
-  return localDateStr(d);
+  return calendarDateOf(d);
 }
 
 describe("investments.getBuyingMonths", () => {

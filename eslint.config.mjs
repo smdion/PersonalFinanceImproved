@@ -41,13 +41,13 @@ const localRules = {
         type: "problem",
         docs: {
           description:
-            "Two timezone footguns: deriving a calendar day from a Date via .toISOString() (renders in UTC), and new Date('YYYY-MM-DD') (parses as UTC midnight, reads back as the prior day/year in US zones). Use localDateStr() / parseLocalDateOnly() from @/lib/utils/date.ts.",
+            "Two timezone footguns: deriving a calendar day from a Date via .toISOString() (renders in UTC), and new Date('YYYY-MM-DD') (parses as UTC midnight, reads back as the prior day/year in US zones). Use calendarDateOf() from @/lib/utils/calendar-date.ts / parseLocalDateOnly() from @/lib/utils/date.ts.",
         },
         schema: [],
       },
       create(context) {
         const OUT_MSG =
-          ".toISOString() renders in UTC, so slicing/splitting a calendar day off it is tomorrow's date for any user behind UTC every evening. Use localDateStr(d) from @/lib/utils/date.ts. If a UTC string is genuinely intended (an internal key never compared to a local day), add an eslint-disable with that justification.";
+          ".toISOString() renders in UTC, so slicing/splitting a calendar day off it is tomorrow's date for any user behind UTC every evening. Use calendarDateOf(d) from @/lib/utils/calendar-date.ts. If a UTC string is genuinely intended (an internal key never compared to a local day), add an eslint-disable with that justification.";
         const PARSE_MSG =
           "new Date('YYYY-MM-DD') parses a bare date-only string as UTC midnight — .getFullYear()/.getMonth()/comparisons then read it as the PRIOR calendar day (or prior YEAR at a Jan-1 boundary) in any US timezone. Use parseLocalDateOnly() from @/lib/utils/date.ts, or an explicit Date.UTC(...) if UTC is really intended.";
         const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;

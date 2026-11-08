@@ -16,7 +16,7 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { getEffectiveCreditCardDebt } from "@/server/services/budget/account-balances";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import type { DbOrTx } from "@/lib/db";
@@ -45,7 +45,7 @@ export async function getEffectiveOtherLiabilities(
     "current_other_liabilities",
     0,
   );
-  const day = localDateStr(asOf);
+  const day = calendarDateOf(asOf);
   const openDebts = (await db.select().from(schema.debts)).filter((d) =>
     isOpenDebt(d, day),
   );

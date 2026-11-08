@@ -6,7 +6,7 @@
  */
 import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { DbOrTx } from "@/lib/db";
 
@@ -50,7 +50,7 @@ export async function applyLoanFeedBalances(
           Math.abs(Number(feed.lastBalance)),
           "a loan balance from SimpleFIN",
         ),
-        apiBalanceDate: localDateStr(feed.lastBalanceDate ?? feed.lastSeenAt),
+        apiBalanceDate: calendarDateOf(feed.lastBalanceDate ?? feed.lastSeenAt),
       })
       .where(eq(schema.mortgageLoans.id, feed.linkedLoanId!));
   }

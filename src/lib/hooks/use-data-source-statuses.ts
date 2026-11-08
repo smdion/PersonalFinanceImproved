@@ -11,7 +11,7 @@ import {
   evaluateDataSources,
   type DataSourceStatus,
 } from "@/lib/pure/sync/data-freshness";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 /** A sync time as ISO text — tRPC sends Dates as strings at runtime even
  *  where the type says Date, and Date#toString() isn't ISO. */
@@ -64,7 +64,7 @@ export function useDataSourceStatuses() {
           // Current = checked now; late years or carried figures = warnings.
           taxData: taxDataStatus
             ? {
-                lastUpdated: localDateStr(),
+                lastUpdated: calendarDateOf(new Date()),
                 warnings: taxDataStatus.summary ? [taxDataStatus.summary] : [],
               }
             : undefined,

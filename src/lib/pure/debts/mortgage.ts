@@ -1,6 +1,5 @@
 /**
  * Mortgage Calculator
- *
  * Handles multiple loans, refinance chains, extra payments, and what-if scenarios.
  *
  * Key concepts:
@@ -22,7 +21,8 @@
  *               new_balance = balance - principal - extra
  *   Loop terminates when balance reaches $0 or term expires.
  */
-import { localDateStr, utcDayOf } from "../../utils/date";
+import { utcDayOf } from "../../utils/date";
+import { calendarDateOf } from "../../utils/calendar-date";
 import type {
   MortgageInput,
   MortgageResult,
@@ -232,7 +232,7 @@ function amortizeLoan(
   // A date before the live balance's own date is history: the schedule's.
   const beforeLiveBalance =
     loan.apiBalanceDate != null &&
-    localDateStr(asOfDate) < utcDayOf(loan.apiBalanceDate);
+    calendarDateOf(asOfDate) < utcDayOf(loan.apiBalanceDate);
   const isCurrentPeriod =
     !endDate &&
     currentDate.getFullYear() - asOfDate.getFullYear() <= 0 &&

@@ -12,7 +12,7 @@ import {
   accountDisplayName,
   personDisplayName,
 } from "@/lib/utils/format";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { snapshotAccountKey } from "@/lib/pure/accounts/portfolio";
 import { snapshotRowLabel } from "@/lib/pure/accounts/snapshot-row-label";
 import { TrendingUp, TrendingDown } from "lucide-react";
@@ -287,8 +287,8 @@ export function NewSnapshotForm({
     Map<number, NonNullable<typeof suggestions>["accounts"][number]>
   >(new Map());
 
-  const today = localDateStr();
-  const [snapshotDate, setSnapshotDate] = useState(today);
+  const today = calendarDateOf(new Date());
+  const [snapshotDate, setSnapshotDate] = useState<string>(today);
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<AccountRow[] | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);

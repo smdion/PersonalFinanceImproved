@@ -9,7 +9,7 @@ import {
   isExtraPaycheckBudgetMode,
 } from "@/lib/pure/paycheck/extra-paycheck-months";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db } from "@/lib/db";
 
 /** Months walked from the current one: the 10-year projection window. */
@@ -45,7 +45,7 @@ export async function loadExtraPaycheckJobs(
     .from(schema.jobs);
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
 
-  const todayStr = localDateStr(now);
+  const todayStr = calendarDateOf(now);
   const jobs: ExtraPaycheckJob[] = [];
   for (const job of allJobs) {
     if (job.isSpeculative) continue;

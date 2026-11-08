@@ -1,5 +1,3 @@
-import { calendarDateOf } from "./calendar-date";
-
 /**
  * Get a person's age as of a given date.
  */
@@ -46,24 +44,6 @@ export function isPriorYearContribWindow(date: Date): boolean {
   return month < 3 || (month === 3 && day <= 15);
 }
 
-/**
- * A calendar date (YYYY-MM-DD) in the CALLER'S OWN local timezone, not UTC.
- *
- * `date.toISOString().slice(0, 10)` — the pattern this replaces — reads the
- * date in UTC, which silently returns tomorrow's date once local time passes
- * midnight UTC (e.g. after ~7pm Eastern, ~4pm Pacific). Every "today"
- * default (a new snapshot's date, a new transaction's date, a backup
- * filename) computed this way is silently wrong for part of every day.
- *
- * Moved here from `lib/simplefin/sync.ts` — that module already
- * had this exact helper for exactly this reason ("matching the version-cron
- * convention"); centralizing it is what lets every other "today" call site
- * share the same fix instead of re-deriving it.
- */
-export function localDateStr(date: Date = new Date()): string {
-  return calendarDateOf(date);
-}
-
 /** The year of a YYYY-MM-DD date. `new Date(d).getFullYear()` parses it as
  *  UTC midnight, which behind UTC reads Jan 1 as the year before. */
 export function calendarYear(date: string): number {
@@ -100,7 +80,7 @@ export function localMidnight(date: Date): Date {
  * UTC calendar day (YYYY-MM-DD) of a timestamp. Institutions report posting
  * dates as UTC timestamps, so posted dates, balance dates and windows are
  * compared as UTC days — an internal key, never compared to a local "today"
- * (use localDateStr for that).
+ * (use calendarDateOf for that).
  */
 export function utcDayOf(date: Date): string {
   return date.toISOString().slice(0, 10);

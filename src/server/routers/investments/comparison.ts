@@ -27,7 +27,6 @@ import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
-import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
 import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
@@ -64,6 +63,7 @@ async function matchedMixBenchmark(
   db: Db,
   rows: readonly (typeof schema.accountPerformance.$inferSelect)[],
   years: readonly YearlyResult[],
+  today: string,
 ) {
   const [{ positions }, entered] = await Promise.all([
     // From the month before the first year — enough for every month's weights.
@@ -92,7 +92,6 @@ async function matchedMixBenchmark(
         .from(schema.securityFacts)
         .where(inArray(schema.securityFacts.securityId, ids))
     : [];
-  const today = localDateStr();
   const facts = new Map(
     ids.map((id) => [
       id,
@@ -233,7 +232,7 @@ export const investmentComparisonRouter = createTRPCRouter({
 
       const matched =
         years.length > 0
-          ? await matchedMixBenchmark(ctx.db, rows, years)
+          ? await matchedMixBenchmark(ctx.db, rows, years, ctx.scope.today)
           : null;
       if (matched) benchmarks.push(matched);
 

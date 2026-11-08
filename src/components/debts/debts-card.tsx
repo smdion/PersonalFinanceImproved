@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { DEBT_KIND_CONFIG } from "@/lib/config/debts";
 import { DEBT_KIND_VALUES, type DebtKind } from "@/lib/config/enum-values";
 
@@ -40,7 +40,7 @@ const blank = (): Draft => ({
   kind: "student_loan",
   ownerPersonId: "",
   balance: "",
-  balanceAsOf: localDateStr(),
+  balanceAsOf: calendarDateOf(new Date()),
   ratePct: "",
   monthlyPayment: "",
   originalAmount: "",
@@ -432,7 +432,7 @@ export function DebtsCard() {
                           if (confirm(`Mark ${d.name} paid off today?`))
                             markPaidOff.mutate({
                               id: d.id,
-                              date: localDateStr(),
+                              date: calendarDateOf(new Date()),
                             });
                         }}
                         title="Mark paid off today"

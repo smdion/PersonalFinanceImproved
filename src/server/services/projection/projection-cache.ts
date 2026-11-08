@@ -33,7 +33,7 @@
  */
 
 import { createHash } from "crypto";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { and, eq, lt, asc, sql, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
@@ -55,7 +55,7 @@ function canonicalize(value: unknown): unknown {
     // millisecond, on every request). Local day (not UTC via `.toISOString()`):
     // the engine reasons about `asOfDate` in local time everywhere else, so the
     // key must agree or an evening request keys on tomorrow.
-    return localDateStr(value);
+    return calendarDateOf(value);
   }
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === "object") {

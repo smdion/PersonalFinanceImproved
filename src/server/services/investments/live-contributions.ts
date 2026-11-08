@@ -8,7 +8,8 @@
  */
 import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { addDays, localDateStr } from "@/lib/utils/date";
+import { addDays } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { roundToCents } from "@/lib/utils/math";
 import {
   checkLatestContribution,
@@ -51,7 +52,7 @@ export async function loadLiveContributions(
   db: Db,
   asOf: Date,
 ): Promise<LiveContribution[]> {
-  const today = localDateStr(asOf);
+  const today = calendarDateOf(asOf);
   const year = Number(today.slice(0, 4));
   const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
   const [rows, pending, names, context, recent] = await Promise.all([

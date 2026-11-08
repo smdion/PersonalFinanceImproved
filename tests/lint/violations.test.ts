@@ -33,7 +33,7 @@
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit. Scans src/, tests/, and scripts/.
  *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding") and bare roadmap R## tags scan src/, tests/, and scripts/; bare ISO date-stamps scan src/ only (ambiguous elsewhere — see the pattern's own comment)
- *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `localDateStr()` / `parseLocalDateOnly()` from `src/lib/utils/date.ts`. Also an ESLint rule (`local/no-tz-unsafe-date-string`).
+ *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `calendarDateOf(d)` (`src/lib/utils/calendar-date.ts`) / `parseLocalDateOnly()` (`src/lib/utils/date.ts`). Also an ESLint rule (`local/no-tz-unsafe-date-string`).
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -1128,7 +1128,7 @@ function findBroadCitationViolations(): Violation[] {
 //   a) `d.toISOString()` renders in UTC, so `.slice(0, 10)` /
 //      `.substring(0, 10)` / `.split("T")[0]` on it returns TOMORROW's date
 //      for any user behind UTC once local time passes midnight there (all
-//      of the US, every evening). Fix: `localDateStr(d)`.
+//      of the US, every evening). Fix: `calendarDateOf(d)`.
 //   b) `new Date("YYYY-MM-DD")` — a bare date-only string literal parses as
 //      UTC midnight, which reads back as the prior day (or prior YEAR at a
 //      Jan-1 boundary) in any US zone. Fix: `parseLocalDateOnly(...)` or an
@@ -1534,7 +1534,7 @@ describe("RULES.md violations sweep", () => {
           `tomorrow for any user behind UTC every evening) or ` +
           `\`new Date("YYYY-MM-DD")\` (a bare date-only string parses as UTC ` +
           `midnight — the prior day, or prior year at a Jan-1 boundary, in ` +
-          `any US zone). Use \`localDateStr(d)\` / \`parseLocalDateOnly(s)\` ` +
+          `any US zone). Use \`calendarDateOf(d)\` / \`parseLocalDateOnly(s)\` ` +
           `from \`src/lib/utils/date.ts\`. If UTC is genuinely intended (an ` +
           `internally UTC-consistent key never compared to a local day), add ` +
           `\`lint-violation-ok\` to that line.\n` +

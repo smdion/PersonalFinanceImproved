@@ -16,7 +16,7 @@ import {
   ValueNotes,
   type ValueNote,
 } from "@/components/versions/restore-notices";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { formatDate } from "@/lib/utils/format";
 
 function formatBytes(bytes: number | null): string {
@@ -38,7 +38,8 @@ async function handleExport() {
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
     const match = disposition.match(/filename="(.+)"/);
-    const filename = match?.[1] ?? `ledgr-backup-${localDateStr()}.json`;
+    const filename =
+      match?.[1] ?? `ledgr-backup-${calendarDateOf(new Date())}.json`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -86,7 +87,6 @@ export function VersionsContent() {
     onSuccess: () => utils.version.getSchedule.invalidate(),
   });
 
-  // Create form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");

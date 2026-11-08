@@ -10,7 +10,7 @@ import {
 } from "@/lib/pure/household/what-if.schema";
 import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
@@ -463,7 +463,7 @@ export async function computePaycheckSummary(
             (j) =>
               j.personId === person.id &&
               !j.isSpeculative &&
-              String(j.startDate).slice(0, 10) > localDateStr(asOfDate),
+              String(j.startDate).slice(0, 10) > calendarDateOf(asOfDate),
           )
           .sort((a, b) =>
             String(a.startDate).localeCompare(String(b.startDate)),

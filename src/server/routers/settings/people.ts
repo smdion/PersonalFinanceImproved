@@ -51,7 +51,9 @@ export const peopleProcedures = {
           // inserted directly (not via jobs.create) so it doesn't trigger
           // materializeExtraPaycheckSavings, which a job that never has
           // real routing rules has no need for.
-          await tx.insert(schema.jobs).values(speculativeJobValues(person.id));
+          await tx
+            .insert(schema.jobs)
+            .values(speculativeJobValues(person.id, ctx.scope.asOf));
 
           // Completeness invariant: every profile holds rows for every
           // person, so the new person joins each existing profile. Under the

@@ -28,7 +28,7 @@ import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax/data-status";
 import { pendingUpdate } from "./tax-data-sync";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
@@ -313,7 +313,7 @@ export const taxLimitsProcedures = {
         sections: status.sections.map(({ upcoming, ...s }) => ({
           ...s,
           upcoming: upcoming
-            ? { year: upcoming.year, due: localDateStr(upcoming.due) }
+            ? { year: upcoming.year, due: calendarDateOf(upcoming.due) }
             : null,
         })),
         carriedRows,

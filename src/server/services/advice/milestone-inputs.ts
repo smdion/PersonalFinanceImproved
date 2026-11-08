@@ -38,7 +38,8 @@ import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
-import { getAge, localDateStr } from "@/lib/utils/date";
+import { getAge } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
@@ -223,7 +224,7 @@ export async function loadMilestoneInputs(
   // Each debt judged at its owner's age today, by birthday (a joint
   // debt: the household's average age, as every other milestone uses —
   // 0, the most lenient band, only when there are no people at all).
-  const today = localDateStr(asOfDate);
+  const today = calendarDateOf(asOfDate);
   const householdAge = current?.averageAge ?? 0;
   const ageOf = (personId: number | null) => {
     const p = people.find((x) => x.id === personId);

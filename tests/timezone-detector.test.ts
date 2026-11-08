@@ -42,28 +42,32 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
     }
   });
 
-  describe("localDateStr", () => {
+  describe("calendarDateOf", () => {
     it("reads the CHICAGO calendar day for a fixed UTC instant, not the UTC day", async () => {
-      const { localDateStr } = await import("@/lib/utils/date");
+      const { calendarDateOf } = await import("@/lib/utils/calendar-date");
       // 2026-09-07T02:00:00Z is 2026-09-06 21:00 in Chicago (UTC-5) — still
       // "the 6th" locally, even though UTC has already rolled to the 7th.
       // The old bug (`.toISOString().slice(0, 10)`) would report "2026-09-07"
       // here; local getters correctly report "2026-09-06".
       const instant = new Date("2026-09-07T02:00:00.000Z");
-      expect(localDateStr(instant)).toBe("2026-09-06");
+      expect(calendarDateOf(instant)).toBe("2026-09-06");
     });
   });
 
   describe("parseLocalDateOnly", () => {
-    it("round-trips a date-only string through localDateStr under a non-UTC zone", async () => {
-      const { localDateStr, parseLocalDateOnly } =
-        await import("@/lib/utils/date");
+    it("round-trips a date-only string through calendarDateOf under a non-UTC zone", async () => {
+      const { parseLocalDateOnly } = await import("@/lib/utils/date");
+      const { calendarDateOf } = await import("@/lib/utils/calendar-date");
       // The bug this module exists to prevent: `new Date("2026-09-06")`
       // unguarded parses as UTC midnight, which reads back as "2026-09-05"
       // under any timezone behind UTC (all of the US). Guarded parsing must
       // reproduce the SAME calendar date regardless of host timezone.
-      expect(localDateStr(parseLocalDateOnly("2026-09-06"))).toBe("2026-09-06");
-      expect(localDateStr(parseLocalDateOnly("2026-01-01"))).toBe("2026-01-01");
+      expect(calendarDateOf(parseLocalDateOnly("2026-09-06"))).toBe(
+        "2026-09-06",
+      );
+      expect(calendarDateOf(parseLocalDateOnly("2026-01-01"))).toBe(
+        "2026-01-01",
+      );
     });
   });
 

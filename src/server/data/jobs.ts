@@ -1,6 +1,6 @@
 /** The jobs table's own rows. */
 
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 /**
  * A speculative job is a permanent, auto-provisioned peg for Salary
@@ -12,11 +12,11 @@ import { localDateStr } from "@/lib/utils/date";
  * of truth for that exclusion. Exported so demo-seed.ts and the 0013 migration
  * can use the identical placeholder shape.
  */
-export function speculativeJobValues(personId: number) {
+export function speculativeJobValues(personId: number, startedOn: Date) {
   return {
     personId,
     employerName: "Speculative (What-If Planning)",
-    startDate: localDateStr(),
+    startDate: calendarDateOf(startedOn),
     isSpeculative: true,
   };
 }

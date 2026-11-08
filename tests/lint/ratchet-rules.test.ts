@@ -190,16 +190,16 @@ describe("ratchet/no-abbreviation", () => {
 });
 
 describe("ratchet/no-clock-read", () => {
-  it("counts new Date() and localDateStr() with no argument, and Date.now()", () => {
+  it("counts new Date() with no argument, also inside a call, and Date.now()", () => {
     expect(
       reported(
         "no-clock-read",
         [
           "const a = new Date();",
           "const b = Date.now();",
-          "const c = localDateStr();",
+          "const c = calendarDateOf(new Date());",
           "const d = new Date(ms);",
-          "const e = localDateStr(asOf);",
+          "const e = calendarDateOf(asOf);",
           "const f = Date.UTC(2026, 0, 1);",
         ].join("\n"),
       ),

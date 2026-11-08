@@ -7,7 +7,8 @@ import type { accountTypeToPerformanceCategory } from "@/lib/config/display-labe
 import type { isRetirementParent } from "@/lib/config/account-types";
 import { toNumber } from "@/lib/utils/numbers";
 import { accountDisplayName } from "@/lib/utils/format";
-import { localDateStr, parseLocalDateOnly } from "@/lib/utils/date";
+import { parseLocalDateOnly } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { computeReturn } from "./returns";
 import { resolveMaster } from "./annual-rollups";
 import {
@@ -75,12 +76,11 @@ export function performanceAccountRows(
     const distributions = toNumber(r.distributions);
     const fees = toNumber(r.fees);
     const rollovers = toNumber(r.rollovers);
-    // Roth basis is per person, but one Performance row can cover an
-    // account two people hold (a joint-labeled IRA with each spouse's
-    // Roth). Every person's basis for this account and year rides along;
-    // the row's own figures are their total.
-    // (An account tracked with a row per person keeps each row to its
-    // own person, so nothing is counted twice.)
+    // Roth basis is per person, but one Performance row can cover an account
+    // two people hold (a joint-labeled IRA with each spouse's Roth). Every
+    // person's basis for this account and year rides along; the row's own
+    // figures are their total. (An account tracked with a row per person keeps
+    // each row to its own person, so nothing is counted twice.)
     const perPerson =
       (rowsPerAccountYear.get(`${r.performanceAccountId}|${r.year}`) ?? 0) > 1;
     const owners = basisRows.filter(
@@ -189,7 +189,7 @@ export function performanceBalanceMismatch(
     // already tomorrow in UTC).
     const perfDate =
       typeof performanceLastUpdated === "string"
-        ? localDateStr(parseLocalDateOnly(performanceLastUpdated))
+        ? calendarDateOf(parseLocalDateOnly(performanceLastUpdated))
         : null;
     if (!perfDate || snapDate !== perfDate) return null;
 

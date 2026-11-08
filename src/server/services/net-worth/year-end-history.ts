@@ -5,11 +5,8 @@ import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/lib/utils/numbers";
 import { getAllPeople } from "@/server/data/people";
 import { safeDivide } from "@/lib/utils/math";
-import {
-  parseLocalDateOnly,
-  localMidnight,
-  localDateStr,
-} from "@/lib/utils/date";
+import { parseLocalDateOnly, localMidnight } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import {
   getTotalCompensation,
@@ -93,7 +90,7 @@ function yearEndCacheKey(
   targeting: YearEndHistoryTargeting | undefined,
 ) {
   return JSON.stringify([
-    localDateStr(asOfDate),
+    calendarDateOf(asOfDate),
     targeting?.budgetProfileId ?? null,
     targeting?.budgetColumn ?? null,
   ]);
@@ -402,7 +399,7 @@ export async function buildYearEndHistory(
       // Local calendar day — `.toISOString()` would render this in UTC and
       // store tomorrow's date (and the wrong YEAR at a Dec-31 boundary) for
       // the "current" year-end row any evening in a US timezone.
-      yearEndDate: localDateStr(asOfDate),
+      yearEndDate: calendarDateOf(asOfDate),
       isCurrent: true,
       netWorth,
       portfolioTotal,

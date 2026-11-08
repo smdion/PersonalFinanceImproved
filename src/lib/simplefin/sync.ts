@@ -36,10 +36,8 @@ import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { reidentifySimplefinAccounts } from "./reidentify";
 import { utcDayOf } from "@/lib/utils/date";
 import { toDecimalColumn } from "@/lib/utils/math";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db, DbOrTx } from "@/lib/db";
-
-export { localDateStr };
 
 export type SimplefinConfig = {
   accessUrl: string;
@@ -188,7 +186,7 @@ export async function getSimplefinConnection(db: Db) {
 export async function hasSyncedToday(db: Db, asOfDate: Date): Promise<boolean> {
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
-  return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
+  return calendarDateOf(conn.lastSyncedAt) === calendarDateOf(asOfDate);
 }
 
 /** Record (or clear) the last SimpleFIN sync error for display in the UI. */
@@ -227,7 +225,7 @@ async function bumpPartialSyncAttempts(
   db: DbOrTx,
   asOfDate: Date,
 ): Promise<number> {
-  const today = localDateStr(asOfDate);
+  const today = calendarDateOf(asOfDate);
   const rows = await db
     .select({ value: schema.appSettings.value })
     .from(schema.appSettings)
@@ -451,7 +449,7 @@ export async function runSimplefinSync(
     // next request stays inside it (and this isn't reported as an error).
     if (windowLimitDays) await learnWindowLimit(db, windowLimitDays);
     const fetchedIds = new Set(fetched.map((a) => a.id));
-    const snapshotDate = localDateStr(asOfDate);
+    const snapshotDate = calendarDateOf(asOfDate);
 
     // Every balance write together: a failure partway leaves the accounts,
     // loans and today's snapshot as they were, never half updated.
@@ -601,7 +599,7 @@ export async function recomputeTodaySnapshotFromLocal(
 
   const totalBalance = rows.reduce((sum, r) => sum + Number(r.lastBalance), 0);
   const accountCount = rows.length;
-  const snapshotDate = localDateStr(asOfDate);
+  const snapshotDate = calendarDateOf(asOfDate);
 
   await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
 

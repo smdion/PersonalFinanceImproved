@@ -22,7 +22,8 @@ import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
-import { getAge, localDateStr } from "@/lib/utils/date";
+import { getAge } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
 import { toFactRows } from "@/server/data/fund-facts";
@@ -150,7 +151,7 @@ export async function valueHoldings(
           .where(inArray(schema.securityFacts.securityId, securityIds)),
       ])
     : [[], []];
-  const today = localDateStr(asOf);
+  const today = calendarDateOf(asOf);
   const securityById = new Map(securities.map((s) => [s.id, s]));
   const factsBySecurity = new Map(
     securityIds.map((id) => [

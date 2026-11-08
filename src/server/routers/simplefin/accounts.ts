@@ -2,10 +2,8 @@ import { z } from "zod/v4";
 import { asc, desc, eq, gte } from "drizzle-orm";
 import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  recomputeTodaySnapshotFromLocal,
-  localDateStr,
-} from "@/lib/simplefin/sync";
+import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";
 import {
   applyLoanFeedBalances,
@@ -235,7 +233,7 @@ export const accountsProcedures = {
     .query(async ({ ctx, input }) => {
       const since = new Date(ctx.scope.asOf);
       since.setDate(since.getDate() - input.days);
-      const sinceStr = localDateStr(since);
+      const sinceStr = calendarDateOf(since);
 
       const rows = await ctx.db
         .select()

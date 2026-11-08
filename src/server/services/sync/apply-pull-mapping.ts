@@ -8,7 +8,7 @@
 import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { log } from "@/lib/logger";
 import { loansFedBySimplefin } from "./loan-feed";
 import {
@@ -70,7 +70,7 @@ export async function applyPullMapping(
           Math.abs(apiBalance),
           "a balance from the budget app",
         ),
-        apiBalanceDate: localDateStr(pulledAt),
+        apiBalanceDate: calendarDateOf(pulledAt),
       })
       .where(eq(schema.debts.id, debtId))
       .returning({ id: schema.debts.id });
@@ -109,7 +109,7 @@ export async function applyPullMapping(
             Math.abs(apiBalance),
             "a balance from the budget app",
           ),
-          apiBalanceDate: localDateStr(pulledAt),
+          apiBalanceDate: calendarDateOf(pulledAt),
         })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };

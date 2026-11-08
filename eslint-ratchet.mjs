@@ -571,7 +571,6 @@ export const ratchetPlugin = {
       [
         "NewExpression[callee.name='Date'][arguments.length=0]",
         "CallExpression[callee.object.name='Date'][callee.property.name='now']",
-        "CallExpression[callee.name='localDateStr'][arguments.length=0]",
       ].join(", "),
       "Clock read in server or library code. Take the date from ctx.scope (or a passed-in asOf), so one request reads one date (RULES § Time Resolution).",
     ),

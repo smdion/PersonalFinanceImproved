@@ -7,7 +7,7 @@
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { SK_RECOMMENDATION_DISMISSALS } from "@/lib/constants/settings-keys";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toast } from "@/lib/hooks/use-toast";
 import {
   parseDismissals,
@@ -29,7 +29,7 @@ export function useRecommendationDismissals() {
   const dismissals: Dismissals = parseDismissals(
     settings?.find((s) => s.key === SK_RECOMMENDATION_DISMISSALS)?.value,
   );
-  const today = localDateStr();
+  const today = calendarDateOf(new Date());
   // One change per request; the server applies it to the saved map in a
   // transaction, so two admins (or two quick clicks) never overwrite each
   // other.

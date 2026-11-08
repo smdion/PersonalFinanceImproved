@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { isNewlyReached } from "@/lib/pure/advice/milestone-first-reached";
 
 export function useFirstReached(): (
@@ -26,7 +26,7 @@ export function useFirstReached(): (
     asked.current = true;
     record.mutate();
   }, [record]);
-  const today = localDateStr();
+  const today = calendarDateOf(new Date());
   return (id) => {
     const date = data?.reached[id];
     // Only a full date: a year comes from the history (the note already
