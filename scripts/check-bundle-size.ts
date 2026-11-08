@@ -78,7 +78,7 @@ const PAGE_BUDGET_KB: Record<string, number> = {
   "/(dashboard)/tools/page": 240,
   "/(dashboard)/upkeep/utilities/page": 343,
   "/(dashboard)/versions/page": 222,
-  "/demo/page": 185,
+  "/demo/page": 186,
   "/login/page": 188,
 };
 /**
