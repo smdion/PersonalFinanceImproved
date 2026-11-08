@@ -88,6 +88,11 @@ jobs:
         if: env.RUN == 'true'
         run: pnpm check:file-size
 
+      # jscpd over src/: copied blocks and lines only fall (owner Q1).
+      - name: Duplicate code (copied blocks only fall)
+        if: env.RUN == 'true'
+        run: pnpm check:duplicates
+
       - name: Dead code (unused files, exports, dependencies)
         if: env.RUN == 'true'
         run: pnpm check:dead-code

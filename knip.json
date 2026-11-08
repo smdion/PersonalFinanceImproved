@@ -16,7 +16,7 @@
   ],
   "project": ["src/**/*.{ts,tsx}!", "scripts/**/*.ts!", "tests/**/*.{ts,tsx}"],
   "ignore": ["src/lib/db/sqlite/**", "src/lib/db/schema-sqlite.ts"],
-  "ignoreDependencies": ["tailwindcss"],
+  "ignoreDependencies": ["tailwindcss", "jscpd"],
   "rules": {
     "duplicates": "off"
   },

@@ -1,0 +1,19 @@
+{
+  "format": ["typescript", "tsx"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/lib/generated/**",
+    "src/lib/tax-data/**",
+    "src/lib/db/schema-pg.ts",
+    "src/lib/db/schema-sqlite.ts",
+    "src/lib/db/pg/**",
+    "src/lib/db/sqlite/**",
+    "src/lib/db/reference-data.ts"
+  ],
+  "minTokens": 100,
+  "minLines": 5,
+  "mode": "mild",
+  "reporters": ["json"],
+  "silent": true
+}

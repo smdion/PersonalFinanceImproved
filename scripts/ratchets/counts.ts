@@ -1,6 +1,7 @@
 /**
- * The JSON ratchets: size-baseline.json, the ESLint suppressions files and
- * the calculation-register baseline, each compared with its base copy.
+ * The JSON ratchets: size-baseline.json, the ESLint suppressions files, the
+ * calculation-register baseline and the duplicate-code counts, each compared
+ * with its base copy.
  */
 import { members, sumByGroup } from "./moves";
 import { named, type Rise } from "./rise";
@@ -14,6 +15,8 @@ export const SUPPRESSION_FILES = [
   AXE_FILE,
 ];
 export const REGISTER_FILE = "scripts/calculation-register-baseline.json";
+/** scripts/check-duplicates.ts's totals: jscpd's copied blocks and lines. */
+export const DUPLICATES_FILE = "scripts/ratchets/duplicates.json";
 const FILE_LIMIT = 400;
 
 export type SizeBaseline = {
@@ -199,4 +202,25 @@ export function registerRises(base: Register, head: Register): Rise[] {
       });
   }
   return rises;
+}
+
+export type Duplicates = { blocks: number; lines: number };
+
+/** Neither total rises; a file the base doesn't have yet starts the count. */
+export function duplicateRises(
+  base: Duplicates | undefined,
+  head: Duplicates | undefined,
+): Rise[] {
+  if (!base || !head) return [];
+  return (["blocks", "lines"] as const)
+    .filter((key) => head[key] > base[key])
+    .map((key) =>
+      named(
+        DUPLICATES_FILE,
+        key,
+        `copied ${key}: ${head[key]}, ${base[key]} at the base`,
+        [key],
+        head[key] - base[key],
+      ),
+    );
 }

@@ -29,6 +29,7 @@ step "dead code, production" pnpm -s check:dead-code:production
 step "layer rules (base $base)" pnpm -s check:layers --base "$base"
 step "ratchets and behavior baseline (base $base)" pnpm -s check:ratchets --base "$base"
 step "size baseline" pnpm -s check:file-size
+step "duplicate code" pnpm -s check:duplicates
 step "build" pnpm -s build
 step "no prerendered sign-in or dashboard page" pnpm -s tsx scripts/check-prerender.ts
 step "tests with coverage thresholds" pnpm -s test:coverage

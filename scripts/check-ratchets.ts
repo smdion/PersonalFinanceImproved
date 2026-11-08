@@ -6,6 +6,7 @@
  *   size-baseline.json, eslint-suppressions.json, eslint-suppressions-typed.json,
  *   tests/accessibility/axe-baseline.json (counts per page and rule),
  *   scripts/calculation-register-baseline.json (lists and risk labels),
+ *   scripts/ratchets/duplicates.json (copied blocks and lines),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
  *   tests/lint/violations.test.ts, tests/lint/procedure-verbs.test.ts and
@@ -36,12 +37,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  DUPLICATES_FILE,
   REGISTER_FILE,
   SIZE_FILE,
   SUPPRESSION_FILES,
+  duplicateRises,
   registerRises,
   sizeRises,
   suppressionRises,
+  type Duplicates,
   type Register,
   type SizeBaseline,
 } from "./ratchets/counts";
@@ -182,6 +186,7 @@ export const RATCHET_FILES = [
   SIZE_FILE,
   ...SUPPRESSION_FILES,
   REGISTER_FILE,
+  DUPLICATES_FILE,
   BUNDLE_FILE,
   COVERAGE_FILE,
   ...LIST_FILES,
@@ -230,6 +235,12 @@ export function risesBetween(git: Git, from: string, to: string): Rise[] {
     ...registerRises(
       json(was, REGISTER_FILE, emptyRegister),
       json(now, REGISTER_FILE, emptyRegister),
+    ),
+  );
+  rises.push(
+    ...duplicateRises(
+      json<Duplicates | undefined>(was, DUPLICATES_FILE, undefined),
+      json<Duplicates | undefined>(now, DUPLICATES_FILE, undefined),
     ),
   );
   rises.push(...bundleRises(...both(BUNDLE_FILE), now));
