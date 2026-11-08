@@ -9,6 +9,7 @@ import { matchValueToStore } from "@/lib/pure/contributions/match-display";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import type { DeductionRow } from "./profile-types";
+import type { ContribDraft, MatchDraft } from "./account-row-types";
 
 /**
  * Create-new form. The one place a batched Save survives: a profile row has
@@ -25,14 +26,11 @@ export function ProfileEditor({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [matchValues, setMatchValues] = useState<
-    Record<
-      string,
-      { matchType?: string; matchValue?: string; maxMatchPct?: string }
-    >
-  >({});
+  const [matchValues, setMatchValues] = useState<Record<string, MatchDraft>>(
+    {},
+  );
   const [contribValues, setContribValues] = useState<
-    Record<string, { method?: string; value?: string }>
+    Record<string, ContribDraft>
   >({});
   const [nameValues, setNameValues] = useState<Record<string, string>>({});
   const [disabledAccounts, setDisabledAccounts] = useState<

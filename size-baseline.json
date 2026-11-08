@@ -25,8 +25,8 @@
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 363,
     "src/components/contributions/profile-manager/match-groups.ts": 51,
     "src/components/contributions/profile-manager/profile-detail-panel.tsx": 135,
-    "src/components/contributions/profile-manager/profile-detail-rows.tsx": 126,
-    "src/components/contributions/profile-manager/profile-editor.tsx": 535,
+    "src/components/contributions/profile-manager/profile-detail-rows.tsx": 122,
+    "src/components/contributions/profile-manager/profile-editor.tsx": 533,
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": 819,
     "src/components/contributions/profile-manager/profile-types.ts": 15,
     "src/components/dashboard/contributions-card.tsx": 653,
@@ -446,7 +446,7 @@
       "ContributionProfileManager": 332
     },
     "src/components/contributions/profile-manager/profile-editor.tsx": {
-      "ProfileEditor": 517,
+      "ProfileEditor": 514,
       "ProfileEditor.map()": 211
     },
     "src/components/contributions/profile-manager/profile-inline-editor.tsx": {

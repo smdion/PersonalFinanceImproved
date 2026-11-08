@@ -1,6 +1,5 @@
 /** The read-only panel's account rows. */
 import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
-import type { RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 import {
@@ -8,10 +7,9 @@ import {
   type ContribAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 import { groupSharedMatchAccounts } from "./match-groups";
+import type { AccountDetail, ProfileDetail } from "./account-row-types";
 
-export function renderDetailAccountRows(
-  profile: NonNullable<RouterOutputs["contributionProfile"]["getById"]>,
-) {
+export function renderDetailAccountRows(profile: ProfileDetail) {
   // A Roth/Traditional split of one account shares one match,
   // entered on one row and applied to their combined
   // contributions: every row in the group shows the same match
@@ -104,9 +102,7 @@ export function renderDetailAccountRows(
 }
 
 export function renderDetailMatch(
-  matchSource: NonNullable<
-    RouterOutputs["contributionProfile"]["getById"]
-  >["accountDetails"][number],
+  matchSource: AccountDetail,
   isCombined: boolean,
 ) {
   const matchText = formatEmployerMatch(
