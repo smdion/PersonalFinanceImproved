@@ -148,7 +148,7 @@ describe("per-owner RMDs through the engine", () => {
       w.includes("RMD SHORTFALL"),
     )!;
     expect(warning).toContain("Ann");
-    expect(warning).toContain("outside the retirement plan");
+    expect(warning).toContain("held as Portfolio money");
     expect(warning).not.toContain("Roth conversions");
   });
 });

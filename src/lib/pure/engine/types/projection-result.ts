@@ -369,7 +369,7 @@ export type EngineAccumulationYear = {
   /** Nobody saved this year. Set with `gapDraw`. */
   savingStopped?: boolean;
   /** Retirement money at end of year: every account minus the
-   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  Portfolio-parented ones (savings outside retirement accounts) — what
    *  retirement answers count (depletion, success, nest egg). */
   retirementBalance: number;
   /** Every account at end of year, Portfolio included — for net-worth
@@ -554,7 +554,7 @@ export type EngineDecumulationYear = {
   /** Debug: pre-withdrawal per-account balances (what the router sees). */
   preWithdrawalAcctBal?: AccountBalances;
   /** Retirement money at end of year: every account minus the
-   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  Portfolio-parented ones (savings outside retirement accounts) — what
    *  retirement answers count (depletion, success, nest egg). */
   retirementBalance: number;
   /** Every account at end of year, Portfolio included — for net-worth

@@ -224,7 +224,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           warnings.push(
             `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${met.toFixed(0)} available. ` +
               `IRS penalty (25% excise tax) on the $${rmdShortfallAmount.toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
-              `The rest of the balance is held outside the retirement plan, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
+              `The rest of the balance is held as Portfolio money, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
           );
         }
       }
@@ -380,7 +380,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
       warnings.push(
         `RMD SHORTFALL: ${personName}'s accounts can pay $${(required - remaining).toFixed(0)} of the $${required.toFixed(0)} Traditional distribution required this year. ` +
           `IRS penalty (25% excise tax) on the $${remaining.toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
-          `The rest of ${personName}'s balance is held outside the retirement plan, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
+          `The rest of ${personName}'s balance is held as Portfolio money, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
       );
     }
   }

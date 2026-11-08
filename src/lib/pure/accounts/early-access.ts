@@ -262,7 +262,7 @@ export function computeRothIraAccess(input: {
  */
 export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
 
-/** HSA: modeled as general retirement spending money, not qualified medical
+/** HSA: modeled as non-medical spending money, not qualified medical
  *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
  *  even though that's real and available. Under that assumption, an HSA
  *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
@@ -274,7 +274,7 @@ export function computeHsaAccess(
 ): EarlyAccessSlice[] {
   return [
     {
-      label: "HSA (general retirement spending)",
+      label: "HSA (non-medical spending in retirement)",
       amount: balance,
       penaltyFree: currentAge >= HSA_NON_MEDICAL_PENALTY_AGE,
       taxFree: false,

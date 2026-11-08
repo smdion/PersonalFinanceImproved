@@ -370,7 +370,7 @@ export function runGapYearDraw(
         .slice(0, 1)
         .map(
           () =>
-            `${year}: a required minimum distribution falls due before withdrawals start; the plan doesn't take it until then.`,
+            `${year}: a required minimum distribution falls due before withdrawals start; the projection doesn't take it until then.`,
         ),
     ],
   };
