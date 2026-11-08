@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { expectLabelReachesControl } from "../label-click";
 
 // Smoke tests for src/components/debts/mortgage-settings.tsx — loan
 // CRUD + extra-payment CRUD settings tab. src/components/mortgage/ had no
@@ -131,6 +132,13 @@ describe("MortgageSettings smoke", () => {
     // mortgage balance refresh, not just the loan list.
     expect(utilsCalls("mortgage.invalidate")).not.toHaveLength(0);
     expect(utilsCalls("networth.invalidate")).not.toHaveLength(0);
+  });
+
+  it("the add-loan form's labels reach their fields", () => {
+    render(<MortgageSettings />);
+    fireEvent.click(screen.getByRole("button", { name: "+ Add Loan" }));
+    for (const name of ["Loan Name", "Term (years)", "Refinanced From"])
+      expectLabelReachesControl(name);
   });
 
   it("deletes a loan after confirming", async () => {

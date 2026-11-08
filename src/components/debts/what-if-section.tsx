@@ -239,6 +239,7 @@ export function WhatIfSection({
                 <td className="py-2 pr-4" colSpan={3}>
                   <div className="flex flex-wrap gap-2">
                     <input
+                      aria-label="Scenario label"
                       type="text"
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}
@@ -246,6 +247,7 @@ export function WhatIfSection({
                       className="w-36 rounded border px-2 py-1 text-sm"
                     />
                     <input
+                      aria-label="Scenario extra payment per month"
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
@@ -255,6 +257,7 @@ export function WhatIfSection({
                       min="0"
                     />
                     <input
+                      aria-label="Scenario one-time payment"
                       type="number"
                       value={oneTimeAmount}
                       onChange={(e) => setOneTimeAmount(e.target.value)}

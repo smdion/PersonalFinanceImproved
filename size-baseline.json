@@ -30,7 +30,7 @@
     "src/components/dashboard/retirement-card.tsx": 354,
     "src/components/dashboard/savings-goals-card.tsx": 420,
     "src/components/debts/debts-card.tsx": 530,
-    "src/components/debts/mortgage-settings.tsx": 728,
+    "src/components/debts/mortgage-settings.tsx": 800,
     "src/components/help/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 668,
     "src/components/investments/fund-holding-row.tsx": 498,
@@ -458,17 +458,17 @@
       "DebtsCard": 475
     },
     "src/components/debts/mortgage-settings.tsx": {
-      "LoanFormFields": 172,
-      "MortgageSettings": 501
+      "LoanFormFields": 222,
+      "MortgageSettings": 523
     },
     "src/components/debts/refinance-calculator.tsx": {
-      "RefinanceCalculator": 175
+      "RefinanceCalculator": 188
     },
     "src/components/debts/refinance-impact.tsx": {
       "RefinanceImpact": 182
     },
     "src/components/debts/what-if-section.tsx": {
-      "WhatIfSection": 301
+      "WhatIfSection": 304
     },
     "src/components/help/help-content.tsx": {
       "HelpContent": 978

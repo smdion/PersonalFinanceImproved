@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -63,11 +63,15 @@ function LoanFormFields({
   allLoans: { id: number; name: string }[];
   editId?: number;
 }) {
+  const id = useId();
   return (
     <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
       <div>
-        <label className="text-muted mb-1 block text-xs">Loan Name</label>
+        <label htmlFor={`${id}-name`} className="text-muted mb-1 block text-xs">
+          Loan Name
+        </label>
         <input
+          id={`${id}-name`}
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -76,10 +80,11 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">
+        <label htmlFor={`${id}-rate`} className="text-muted mb-1 block text-xs">
           Interest Rate (decimal, e.g. 0.065)
         </label>
         <input
+          id={`${id}-rate`}
           type="text"
           value={form.interestRate}
           onChange={(e) => setForm({ ...form, interestRate: e.target.value })}
@@ -88,8 +93,11 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Term (years)</label>
+        <label htmlFor={`${id}-term`} className="text-muted mb-1 block text-xs">
+          Term (years)
+        </label>
         <input
+          id={`${id}-term`}
           type="number"
           value={form.termYears}
           onChange={(e) => setForm({ ...form, termYears: e.target.value })}
@@ -97,10 +105,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">
+        <label
+          htmlFor={`${id}-amount`}
+          className="text-muted mb-1 block text-xs"
+        >
           Original Loan Amount
         </label>
         <input
+          id={`${id}-amount`}
           type="text"
           value={form.originalLoanAmount}
           onChange={(e) =>
@@ -111,8 +123,11 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Monthly P&I</label>
+        <label htmlFor={`${id}-pi`} className="text-muted mb-1 block text-xs">
+          Monthly P&I
+        </label>
         <input
+          id={`${id}-pi`}
           type="text"
           value={form.principalAndInterest}
           onChange={(e) =>
@@ -123,10 +138,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">
+        <label
+          htmlFor={`${id}-first-payment`}
+          className="text-muted mb-1 block text-xs"
+        >
           First Payment Date
         </label>
         <input
+          id={`${id}-first-payment`}
           type="date"
           value={form.firstPaymentDate}
           onChange={(e) =>
@@ -136,8 +155,11 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">PMI</label>
+        <label htmlFor={`${id}-pmi`} className="text-muted mb-1 block text-xs">
+          PMI
+        </label>
         <input
+          id={`${id}-pmi`}
           type="text"
           value={form.pmi}
           onChange={(e) => setForm({ ...form, pmi: e.target.value })}
@@ -145,10 +167,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">
+        <label
+          htmlFor={`${id}-insurance`}
+          className="text-muted mb-1 block text-xs"
+        >
           Insurance & Taxes
         </label>
         <input
+          id={`${id}-insurance`}
           type="text"
           value={form.insuranceAndTaxes}
           onChange={(e) =>
@@ -158,8 +184,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Total Escrow</label>
+        <label
+          htmlFor={`${id}-escrow`}
+          className="text-muted mb-1 block text-xs"
+        >
+          Total Escrow
+        </label>
         <input
+          id={`${id}-escrow`}
           type="text"
           value={form.totalEscrow}
           onChange={(e) => setForm({ ...form, totalEscrow: e.target.value })}
@@ -167,8 +199,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Purchase Value</label>
+        <label
+          htmlFor={`${id}-purchase`}
+          className="text-muted mb-1 block text-xs"
+        >
+          Purchase Value
+        </label>
         <input
+          id={`${id}-purchase`}
           type="text"
           value={form.propertyValuePurchase}
           onChange={(e) =>
@@ -178,8 +216,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Estimated Value</label>
+        <label
+          htmlFor={`${id}-estimated`}
+          className="text-muted mb-1 block text-xs"
+        >
+          Estimated Value
+        </label>
         <input
+          id={`${id}-estimated`}
           type="text"
           value={form.propertyValueEstimated}
           onChange={(e) =>
@@ -189,8 +233,14 @@ function LoanFormFields({
         />
       </div>
       <div>
-        <label className="text-muted mb-1 block text-xs">Refinanced From</label>
+        <label
+          htmlFor={`${id}-refinanced-from`}
+          className="text-muted mb-1 block text-xs"
+        >
+          Refinanced From
+        </label>
         <select
+          id={`${id}-refinanced-from`}
           value={form.refinancedFromId ?? ""}
           onChange={(e) =>
             setForm({
@@ -226,6 +276,7 @@ function LoanFormFields({
 }
 
 export function MortgageSettings() {
+  const extraId = useId();
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
@@ -541,8 +592,14 @@ export function MortgageSettings() {
           <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="text-muted mb-1 block text-xs">Loan</label>
+                <label
+                  htmlFor={`${extraId}-loan`}
+                  className="text-muted mb-1 block text-xs"
+                >
+                  Loan
+                </label>
                 <select
+                  id={`${extraId}-loan`}
                   value={extraForm.loanId}
                   onChange={(e) =>
                     setExtraForm({
@@ -560,8 +617,14 @@ export function MortgageSettings() {
                 </select>
               </div>
               <div>
-                <label className="text-muted mb-1 block text-xs">Amount</label>
+                <label
+                  htmlFor={`${extraId}-amount`}
+                  className="text-muted mb-1 block text-xs"
+                >
+                  Amount
+                </label>
                 <input
+                  id={`${extraId}-amount`}
                   type="number"
                   value={extraForm.amount}
                   onChange={(e) =>
@@ -586,6 +649,7 @@ export function MortgageSettings() {
                 {extraForm.isRange ? (
                   <div className="flex gap-1">
                     <input
+                      aria-label="Extra payment start date"
                       type="date"
                       value={extraForm.startDate}
                       onChange={(e) =>
@@ -597,6 +661,7 @@ export function MortgageSettings() {
                       className="flex-1 rounded border px-2 py-1 text-xs"
                     />
                     <input
+                      aria-label="Extra payment end date"
                       type="date"
                       value={extraForm.endDate}
                       onChange={(e) =>
@@ -607,6 +672,7 @@ export function MortgageSettings() {
                   </div>
                 ) : (
                   <input
+                    aria-label="Extra payment date"
                     type="date"
                     value={extraForm.paymentDate}
                     onChange={(e) =>
@@ -620,8 +686,14 @@ export function MortgageSettings() {
                 )}
               </div>
               <div>
-                <label className="text-muted mb-1 block text-xs">Notes</label>
+                <label
+                  htmlFor={`${extraId}-notes`}
+                  className="text-muted mb-1 block text-xs"
+                >
+                  Notes
+                </label>
                 <input
+                  id={`${extraId}-notes`}
                   type="text"
                   value={extraForm.notes}
                   onChange={(e) =>

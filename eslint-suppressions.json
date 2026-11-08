@@ -1082,9 +1082,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 19
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 18
     }
   },
   "src/components/debts/refinance-calculator.tsx": {
@@ -1096,9 +1093,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/debts/refinance-impact.tsx": {
@@ -1122,9 +1116,6 @@
       "count": 7
     },
     "ratchet/no-raw-input": {
-      "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 3
     }
   },

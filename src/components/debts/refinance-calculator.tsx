@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
@@ -13,6 +13,7 @@ export function RefinanceCalculator({
 }: {
   currentLoan: LoanSummary;
 }) {
+  const id = useId();
   const [showRefi, setShowRefi] = useState(false);
   const [refiRate, setRefiRate] = useState("");
   const [refiTerm, setRefiTerm] = useState("30");
@@ -66,10 +67,14 @@ export function RefinanceCalculator({
     <Card title="Refinance Calculator" className="mb-6">
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="text-muted mb-1 block text-xs">
+          <label
+            htmlFor={`${id}-rate`}
+            className="text-muted mb-1 block text-xs"
+          >
             New Interest Rate (%)
           </label>
           <input
+            id={`${id}-rate`}
             type="number"
             step="0.125"
             value={refiRate}
@@ -79,10 +84,14 @@ export function RefinanceCalculator({
           />
         </div>
         <div>
-          <label className="text-muted mb-1 block text-xs">
+          <label
+            htmlFor={`${id}-term`}
+            className="text-muted mb-1 block text-xs"
+          >
             New Term (years)
           </label>
           <select
+            id={`${id}-term`}
             value={refiTerm}
             onChange={(e) => setRefiTerm(e.target.value)}
             className="w-full rounded border px-2 py-1 text-sm"
@@ -94,10 +103,14 @@ export function RefinanceCalculator({
           </select>
         </div>
         <div>
-          <label className="text-muted mb-1 block text-xs">
+          <label
+            htmlFor={`${id}-closing`}
+            className="text-muted mb-1 block text-xs"
+          >
             Closing Costs ($)
           </label>
           <input
+            id={`${id}-closing`}
             type="number"
             value={refiClosingCosts}
             onChange={(e) => setRefiClosingCosts(e.target.value)}
