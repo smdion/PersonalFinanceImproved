@@ -38,9 +38,9 @@
     "src/components/investments/holdings-section.tsx": 793,
     "src/components/layout/scenario-bar.tsx": 487,
     "src/components/layout/sidebar.tsx": 525,
-    "src/components/methodology/decumulation-content.tsx": 880,
-    "src/components/methodology/methodology-content.tsx": 555,
-    "src/components/methodology/validation-content.tsx": 552,
+    "src/components/methodology/decumulation-content.tsx": 862,
+    "src/components/methodology/methodology-content.tsx": 551,
+    "src/components/methodology/validation-content.tsx": 524,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 464,
     "src/components/onboarding/onboarding-wizard.tsx": 986,
     "src/components/paycheck/contrib-account-form.tsx": 624,
@@ -502,16 +502,16 @@
       "Sidebar": 200
     },
     "src/components/methodology/accumulation-content.tsx": {
-      "AccumulationMethodologyContent": 373
+      "AccumulationMethodologyContent": 364
     },
     "src/components/methodology/decumulation-content.tsx": {
-      "DecumulationMethodologyContent": 867
+      "DecumulationMethodologyContent": 848
     },
     "src/components/methodology/methodology-content.tsx": {
-      "MethodologyContent": 551
+      "MethodologyContent": 546
     },
     "src/components/methodology/validation-content.tsx": {
-      "ValidationContent": 548
+      "ValidationContent": 519
     },
     "src/components/networth/assets-liabilities-cards.tsx": {
       "AssetsLiabilitiesCards": 225

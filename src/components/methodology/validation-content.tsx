@@ -1,6 +1,7 @@
 "use client";
 
 import { ProseSection } from "@/components/ui/prose-section";
+import { MethodologyTableHead } from "./methodology-table";
 
 export function ValidationContent() {
   return (
@@ -23,14 +24,14 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Scenario</th>
-                <th className="py-1.5 pr-3">Trinity Published</th>
-                <th className="py-1.5 pr-3">Our Engine</th>
-                <th className="py-1.5">Tolerance</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={[
+                "Scenario",
+                "Trinity Published",
+                "Our Engine",
+                "Tolerance",
+              ]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">4% SWR, 50/50, 30yr</td>
@@ -69,14 +70,9 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Scenario</th>
-                <th className="py-1.5 pr-3">cFIREsim</th>
-                <th className="py-1.5 pr-3">Our Engine</th>
-                <th className="py-1.5">Trials</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["Scenario", "cFIREsim", "Our Engine", "Trials"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">4% SWR, 75/25, 30yr</td>
@@ -110,13 +106,9 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">SWR</th>
-                <th className="py-1.5 pr-3">cFIREsim</th>
-                <th className="py-1.5">Engine Range</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["SWR", "cFIREsim", "Engine Range"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">3.0%</td>
@@ -198,15 +190,9 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Formula</th>
-                <th className="py-1.5 pr-3">Input</th>
-                <th className="py-1.5 pr-3">Expected</th>
-                <th className="py-1.5 pr-3">Engine</th>
-                <th className="py-1.5">Tolerance</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["Formula", "Input", "Expected", "Engine", "Tolerance"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Compound growth</td>
@@ -255,14 +241,14 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Asset Class</th>
-                <th className="py-1.5 pr-3">Published Range</th>
-                <th className="py-1.5 pr-3">Our Value</th>
-                <th className="py-1.5">Sources</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={[
+                "Asset Class",
+                "Published Range",
+                "Our Value",
+                "Sources",
+              ]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">US Equities</td>
@@ -371,13 +357,9 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Property</th>
-                <th className="py-1.5 pr-3">Assertion</th>
-                <th className="py-1.5">Why It Matters</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["Property", "Assertion", "Why It Matters"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Right skew</td>
@@ -442,13 +424,7 @@ export function ValidationContent() {
         </p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Suite</th>
-                <th className="py-1.5 pr-3">Tests</th>
-                <th className="py-1.5">Purpose</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead headers={["Suite", "Tests", "Purpose"]} />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Calculator unit tests</td>
@@ -498,13 +474,9 @@ export function ValidationContent() {
         <h4 className="text-secondary mt-4 font-semibold">Evidence layers</h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">What It Proves</th>
-                <th className="py-1.5 pr-3">Source</th>
-                <th className="py-1.5">Precision</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["What It Proves", "Source", "Precision"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Success rates match research</td>

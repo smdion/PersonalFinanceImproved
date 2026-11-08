@@ -1,6 +1,7 @@
 "use client";
 
 import { ProseSection } from "@/components/ui/prose-section";
+import { MethodologyTableHead } from "./methodology-table";
 
 export function AccumulationMethodologyContent() {
   return (
@@ -104,13 +105,9 @@ export function AccumulationMethodologyContent() {
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Setting</th>
-                <th className="py-1.5 pr-3">Type</th>
-                <th className="py-1.5">Description</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["Setting", "Type", "Description"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="text-label py-1.5 pr-3 font-mono">
@@ -211,12 +208,7 @@ export function AccumulationMethodologyContent() {
         </h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Field</th>
-                <th className="py-1.5">Effect</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead headers={["Field", "Effect"]} />
             <tbody className="divide-y">
               <tr>
                 <td className="text-label py-1.5 pr-3 font-mono">

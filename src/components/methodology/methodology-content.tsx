@@ -1,6 +1,7 @@
 "use client";
 
 import { ProseSection } from "@/components/ui/prose-section";
+import { MethodologyTableHead } from "./methodology-table";
 
 export function MethodologyContent() {
   return (
@@ -181,14 +182,9 @@ export function MethodologyContent() {
         </h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1.5 pr-3">Asset Class</th>
-                <th className="py-1.5 pr-3">Mean Return</th>
-                <th className="py-1.5 pr-3">Std Dev</th>
-                <th className="py-1.5">Source</th>
-              </tr>
-            </thead>
+            <MethodologyTableHead
+              headers={["Asset Class", "Mean Return", "Std Dev", "Source"]}
+            />
             <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">US Equities</td>
