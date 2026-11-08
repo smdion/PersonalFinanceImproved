@@ -44,10 +44,7 @@ export function countsInLiveBalance(a: {
  *  and keeps its last real balance (the schedule would move net worth). */
 export const LOAN_FEED_STALE_DAYS = 45;
 
-export function loanFeedIsStale(
-  asOf: Date | string,
-  now: Date = new Date(),
-): boolean {
+export function loanFeedIsStale(asOf: Date | string, now: Date): boolean {
   const ageMs = now.getTime() - new Date(asOf).getTime();
   return ageMs > LOAN_FEED_STALE_DAYS * 86_400_000;
 }

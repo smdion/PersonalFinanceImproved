@@ -29,7 +29,7 @@ describe("computeMortgageBalance", () => {
         new Date("2025-12-31T12:00:00"),
       );
       expect(yearEnd).not.toBe(123456);
-      expect(computeMortgageBalance([loan], [])).toBe(123456);
+      expect(computeMortgageBalance([loan], [], new Date())).toBe(123456);
     } finally {
       vi.useRealTimers();
     }

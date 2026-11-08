@@ -40,10 +40,7 @@ const KEY = "ws-h3";
 
 /** Queries that still read the clock themselves, through library
  *  helpers (v0.10.5 12b); only shrinks. */
-const STILL_READ_THE_CLOCK: string[] = [
-  "settings.taxData.status",
-  "contribution.computeSummary",
-];
+const STILL_READ_THE_CLOCK: string[] = ["settings.taxData.status"];
 
 const ISO_INSTANT = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)"/g;
 

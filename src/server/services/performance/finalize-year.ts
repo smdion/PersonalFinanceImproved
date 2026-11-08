@@ -294,7 +294,6 @@ export async function finalizePerformanceYear(
 
     const yearEndDate = `${year}-12-31`;
     const asOfDate = new Date(yearEndDate);
-
     const { cash } = await getEffectiveCash(tx, allSettings);
     const otherAssets = await getEffectiveOtherAssets(
       tx,
@@ -326,6 +325,7 @@ export async function finalizePerformanceYear(
       mortgageLoans,
       mortgageExtras,
       asOfDate,
+      ctx.scope.asOf,
     );
 
     const activeLoan = getActiveMortgageLoan(mortgageLoans);

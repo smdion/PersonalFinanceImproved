@@ -39,11 +39,13 @@ export type CapPassContext = {
 };
 
 /** What the pass needs from the household — the same for every set of
- *  rows in a request (this tax year), whichever profile's pay applies. */
+ *  rows in a request (this tax year), whichever profile's pay applies;
+ *  CapRequestHousehold adds the request's date (capForRequest). */
 export type CapPassHousehold = Omit<
   CapPassContext,
   "activeJobs" | "jobSalaries"
 >;
+export type CapRequestHousehold = CapPassHousehold & { asOf: Date };
 
 /** The fields of an effective row the pass reads (DB, profile, sandbox, engine rows). */
 export type CapPassRow = {
@@ -193,17 +195,15 @@ export function capEffectiveContribs<R extends CapPassRow>(
  *  year's pay (thisYearJobPay, the same pay the request's figures use). */
 export function capForRequest<R extends CapPassRow>(
   rows: readonly R[],
-  household: CapPassHousehold,
+  household: CapRequestHousehold,
   jobs: readonly (JobRef & JobLike)[],
   salaryProfileActiveMap: SalaryProfileActiveMap,
   salaryActiveMap: SalaryActiveMap,
 ): (R & CappedRowFields)[] {
-  // The job current in the tax year: today in this one, its last day in
-  // another (a later year's cap sees the job held then).
-  const now = new Date();
+  // The job held on the request's date in its tax year, else on Dec 31.
   const asOf =
-    household.taxYear === now.getFullYear()
-      ? now
+    household.taxYear === household.asOf.getFullYear()
+      ? household.asOf
       : new Date(household.taxYear, 11, 31);
   const activeJobs = household.people.flatMap((p) => {
     const job = findActiveJob(jobs, p.id, asOf);

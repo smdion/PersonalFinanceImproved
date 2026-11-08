@@ -155,7 +155,6 @@ export function HouseContent() {
         subtitle="Home value, mortgage summary, property taxes, and improvements"
       />
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           title={
@@ -193,7 +192,9 @@ export function HouseContent() {
           {feedAsOf && (
             <p
               className={`text-caption mt-1 ${
-                loanFeedIsStale(feedAsOf) ? "text-amber-600" : "text-muted"
+                loanFeedIsStale(feedAsOf, new Date())
+                  ? "text-amber-600"
+                  : "text-muted"
               }`}
             >
               As of {formatDate(feedAsOf)}
@@ -222,7 +223,6 @@ export function HouseContent() {
         </Card>
       </div>
 
-      {/* Mortgage Summary */}
       {loanResult && activeLoan && (
         <Card
           title={

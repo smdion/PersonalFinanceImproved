@@ -88,7 +88,7 @@ export async function computeContributionSummary(
   input: z.output<typeof zContributionSummaryInput>,
 ) {
   const currentYear = ctx.scope.asOf.getFullYear();
-  const inPriorYearWindow = isPriorYearContribWindow();
+  const inPriorYearWindow = isPriorYearContribWindow(ctx.scope.asOf);
   const priorYear = currentYear - 1;
 
   const [

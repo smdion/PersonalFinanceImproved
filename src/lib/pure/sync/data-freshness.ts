@@ -43,7 +43,7 @@ const DAY_MS = 86_400_000;
  */
 export function evaluateDataSources(
   inputs: DataSourceInputs,
-  now: Date = new Date(),
+  now: Date,
 ): DataSourceStatus[] {
   const statuses: DataSourceStatus[] = [];
   for (const source of DATA_SOURCES) {

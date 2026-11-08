@@ -5895,9 +5895,6 @@
     "ratchet/no-abbreviation": {
       "count": 2
     },
-    "ratchet/no-clock-read": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -6136,11 +6133,6 @@
   "src/lib/pure/debts/debts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    }
-  },
-  "src/lib/pure/debts/mortgage-balance.ts": {
-    "ratchet/no-clock-read": {
-      "count": 2
     }
   },
   "src/lib/pure/debts/mortgage.ts": {
@@ -7401,11 +7393,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/sync/data-freshness.ts": {
-    "ratchet/no-clock-read": {
-      "count": 1
-    }
-  },
   "src/lib/pure/sync/feed-data-date.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
@@ -7414,9 +7401,6 @@
   "src/lib/pure/sync/simplefin-feeds.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/lib/pure/sync/simplefin-holdings.ts": {
@@ -7680,7 +7664,7 @@
       "count": 2
     },
     "ratchet/no-clock-read": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/utils/demo-session.ts": {

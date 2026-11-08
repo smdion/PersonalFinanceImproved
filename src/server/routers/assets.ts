@@ -74,7 +74,6 @@ export const assetsRouter = createTRPCRouter({
         allSettings,
       );
 
-      // Mortgage data
       const activeLoan = getActiveMortgageLoan(mortgageLoans);
       const houseValue = activeLoan
         ? toNumber(
@@ -85,6 +84,7 @@ export const assetsRouter = createTRPCRouter({
       const mortgageBalance = computeMortgageBalance(
         mortgageLoans,
         mortgageExtras,
+        ctx.scope.asOf,
       );
 
       // Determine sync status for house value and mortgage

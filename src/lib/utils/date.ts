@@ -40,7 +40,7 @@ export function ageInYear(birthYear: number, year: number): number {
  * (January 1 through April 15). During this window, IRA and HSA contributions
  * can be designated for the prior tax year.
  */
-export function isPriorYearContribWindow(date: Date = new Date()): boolean {
+export function isPriorYearContribWindow(date: Date): boolean {
   const month = date.getMonth(); // 0-indexed
   const day = date.getDate();
   return month < 3 || (month === 3 && day <= 15);
@@ -92,7 +92,7 @@ export function parseLocalDateOnly(value: string | Date): Date {
 /** Midnight, local time, of the given date's calendar day — for calendar-day
  *  arithmetic (e.g. "how many days old is this date-only value") that must
  *  not be thrown off by the date's own time-of-day component. */
-export function localMidnight(date: Date = new Date()): Date {
+export function localMidnight(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 

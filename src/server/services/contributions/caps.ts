@@ -29,16 +29,16 @@ import {
   capEffectiveContribs,
   capForRequest,
   type CapPassHousehold,
+  type CapRequestHousehold,
   type CapPassRow,
   type CappedRowFields,
 } from "@/lib/pure/contributions/cap-pass";
 
 /**
  * The household's cap context for a request: who (birth years), the year's
- * limits, and `asOf`'s year's filing status (lib/pure/tax/filing-status.ts — a
- * W-4 status is a withholding choice, only a last stand-in). The paycheck's
- * household tax and Roth IRA view read it from here too, so there is one
- * answer.
+ * limits, `asOf`'s year's filing status (lib/pure/tax/filing-status.ts — a
+ * W-4 is only a last stand-in) and `asOf` itself. The paycheck's household
+ * tax and Roth IRA view read it here too, so there is one answer.
  */
 export async function loadCapHousehold(
   db: Db,
@@ -54,7 +54,7 @@ export async function loadCapHousehold(
   /** The request's Salary Profile (What-If included) for a W-4 stand-in. */
   salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<
-  CapPassHousehold & { filingStatusSource: FilingStatusSource | null }
+  CapRequestHousehold & { filingStatusSource: FilingStatusSource | null }
 > {
   const [appSettings, retSettings, retProfiles, limitRows] = await Promise.all([
     db.select().from(schema.appSettings),
@@ -94,6 +94,7 @@ export async function loadCapHousehold(
     filingStatus: thisYear.status ?? "",
     filingStatusSource: thisYear.source,
     taxYear,
+    asOf,
   };
 }
 
@@ -324,8 +325,7 @@ export async function switchProfileLimitWarning(
   return `Over the IRS limits in ${when} at those years' ages (judged on today's limits and pay) — the projection cuts it to the limit then. ${first.year}: ${first.problems.join(" ")}`;
 }
 
-/** A ContribSaveCheck for helpers that can't import this module (it
- *  imports theirs) — they take it as a required argument. */
+/** The save check for helpers this module imports (they can't import it). */
 export type ContribSaveChecker = (
   db: Db,
   check: ContribSaveCheck,

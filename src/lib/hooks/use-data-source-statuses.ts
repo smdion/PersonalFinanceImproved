@@ -39,35 +39,38 @@ export function useDataSourceStatuses() {
   const budgetApiCanSync = !!(syncStatus?.service && syncStatus.connected);
   const simplefinCanSync = !!simplefinStatus?.connected;
   const statuses: DataSourceStatus[] = data
-    ? evaluateDataSources({
-        balance: data.balanceDate
-          ? { lastUpdated: data.balanceDate }
-          : undefined,
-        performance: data.performanceDate
-          ? { lastUpdated: data.performanceDate }
-          : undefined,
-        basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
-        budgetApi: budgetApiCanSync
-          ? { lastUpdated: toIso(syncStatus.lastSynced) }
-          : undefined,
-        simplefin: simplefinCanSync
-          ? {
-              lastUpdated: toIso(simplefinStatus.lastSyncedAt),
-              error: simplefinStatus.lastError ?? null,
-              warnings: investmentHealth?.issues.map((i) => i.message),
-            }
-          : undefined,
-        secFacts: secStatus?.connected
-          ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
-          : undefined,
-        // Current = checked now; late years or carried figures = warnings.
-        taxData: taxDataStatus
-          ? {
-              lastUpdated: localDateStr(),
-              warnings: taxDataStatus.summary ? [taxDataStatus.summary] : [],
-            }
-          : undefined,
-      })
+    ? evaluateDataSources(
+        {
+          balance: data.balanceDate
+            ? { lastUpdated: data.balanceDate }
+            : undefined,
+          performance: data.performanceDate
+            ? { lastUpdated: data.performanceDate }
+            : undefined,
+          basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
+          budgetApi: budgetApiCanSync
+            ? { lastUpdated: toIso(syncStatus.lastSynced) }
+            : undefined,
+          simplefin: simplefinCanSync
+            ? {
+                lastUpdated: toIso(simplefinStatus.lastSyncedAt),
+                error: simplefinStatus.lastError ?? null,
+                warnings: investmentHealth?.issues.map((i) => i.message),
+              }
+            : undefined,
+          secFacts: secStatus?.connected
+            ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
+            : undefined,
+          // Current = checked now; late years or carried figures = warnings.
+          taxData: taxDataStatus
+            ? {
+                lastUpdated: localDateStr(),
+                warnings: taxDataStatus.summary ? [taxDataStatus.summary] : [],
+              }
+            : undefined,
+        },
+        new Date(),
+      )
     : [];
   return {
     // Settled (loaded or failed) — a failing check must not hold a page
