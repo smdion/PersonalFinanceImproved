@@ -27,6 +27,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { ContribAccountRow } from "@/lib/pure/contributions/contrib-account-row";
+import type { ContribAccountsForInput } from "@/lib/pure/contributions/person-snapshot.types";
 import type { PerContribData } from "@/server/services/contributions/summary.types";
 
 export function personPay(
@@ -62,23 +63,19 @@ export function personPay(
   return { dbSalary, pay, salary, totalCompensation };
 }
 
-export function contribAccountsFor<R extends ContribAccountRow>(
-  effectiveContribs: R[],
-  activeJob: {
-    id: number;
-    bonusMonth?: number | null;
-    bonusDayOfMonth?: number | null;
-  },
-  person: { id: number; dateOfBirth: string },
-  pay: ReturnType<typeof contributionPay>,
-  asOfDate: Date,
-  salary: number,
-  periodsPerYear: number,
-  limitsRecord: Record<string, number>,
-  totalCompensation: number,
-  age: number,
-  priorYearLimitsRecord: Record<string, number>,
-) {
+export function contribAccountsFor<R extends ContribAccountRow>({
+  effectiveContribs,
+  activeJob,
+  person,
+  pay,
+  asOfDate,
+  salary,
+  periodsPerYear,
+  limitsRecord,
+  totalCompensation,
+  age,
+  priorYearLimitsRecord,
+}: ContribAccountsForInput<R>) {
   const jobContribs = effectiveContribs.filter((c) => c.jobId === activeJob.id);
   const personalContribs = effectiveContribs.filter(
     (c) =>

@@ -390,7 +390,7 @@
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/joint-accounts.ts": 176,
     "src/server/services/contributions/live-data.ts": 98,
-    "src/server/services/contributions/person-snapshot.ts": 219,
+    "src/server/services/contributions/person-snapshot.ts": 216,
     "src/server/services/contributions/profile.ts": 382,
     "src/server/services/contributions/summary.ts": 732,
     "src/server/services/contributions/summary.types.ts": 111,

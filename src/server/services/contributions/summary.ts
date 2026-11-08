@@ -341,7 +341,7 @@ export async function computeContributionSummary(
         result,
         resolveContribLimit,
         resolveContribPriorYearLimit,
-      } = contribAccountsFor(
+      } = contribAccountsFor({
         effectiveContribs,
         activeJob,
         person,
@@ -353,7 +353,7 @@ export async function computeContributionSummary(
         totalCompensation,
         age,
         priorYearLimitsRecord,
-      );
+      });
 
       // Build per-raw-contrib computed data for consumers (Paycheck page)
       const { perContribData } = perContribRows(
