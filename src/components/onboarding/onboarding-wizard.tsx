@@ -18,8 +18,8 @@ import { PeopleStep } from "./people-step";
 import { IncomeStep } from "./income-step";
 import { DoneStep } from "./done-step";
 import { WizardNav } from "./wizard-nav";
-import { finishSetup } from "./wizard-saves";
 import { restoreFromBackup } from "./wizard-saves";
+import { wizardNavigation } from "./wizard-navigation";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -93,82 +93,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     currentStep === "Income";
 
   /** Create the local admin account before advancing past the Admin step */
-  const handleAdminCreate = async () => {
-    if (!adminNeeded) return true;
-    setError(null);
-    try {
-      await createLocalAdmin.mutateAsync({
-        name: admin.name.trim(),
-        email: admin.email.trim(),
-        password: admin.password,
-      });
-      await utils.settings.firstRunState.invalidate();
-      return true;
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Failed to create admin account.",
-      );
-      // Refused because an admin exists already: move past the step.
-      const { data } = await firstRun.refetch();
-      if (data?.adminNeeded === false) {
-        setError(null);
-        setCurrentStep("OIDC");
-      }
-      return false;
-    }
-  };
-
-  const { handleFinish } = finishSetup(
-    setIsSaving,
+  const { goNext, goBack, skipIncome, skipOidc } = wizardNavigation(
+    adminNeeded,
     setError,
+    createLocalAdmin,
+    admin,
+    utils,
+    firstRun,
+    setCurrentStep,
+    setIsSaving,
     people,
     createPerson,
     jobs,
     createJob,
-    utils,
     updateSalaryProfile,
     setTaxDataSyncEnabled,
     taxDataSync,
     completeOnboarding,
     onComplete,
+    canGoNext,
+    currentStep,
+    setStepError,
+    isAdminValid,
+    steps,
+    step,
   );
-
-  const goNext = async () => {
-    // Which steps there are isn't known until the server answers.
-    if (firstRun.isPending) return;
-    if (!canGoNext) {
-      if (currentStep === "People" && people.length === 0) {
-        setStepError("Add at least one household member to continue");
-      }
-      if (currentStep === "Admin" && !isAdminValid()) {
-        setStepError("Complete all fields to continue");
-      }
-      return;
-    }
-    setStepError(null);
-
-    // Admin step: create the account before advancing
-    if (currentStep === "Admin") {
-      const ok = await handleAdminCreate();
-      if (!ok) return;
-      setCurrentStep("OIDC");
-      return;
-    }
-
-    if (currentStep === "Done") {
-      handleFinish();
-      return;
-    }
-    setCurrentStep(steps[step + 1] ?? "Done");
-  };
-
-  const goBack = () => {
-    setStepError(null);
-    setCurrentStep(steps[step - 1] ?? "Welcome");
-  };
-
-  const skipIncome = () => setCurrentStep("Done");
-  const skipOidc = () => setCurrentStep("People");
 
   return (
     <Modal

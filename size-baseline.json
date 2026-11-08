@@ -66,9 +66,10 @@
     "src/components/onboarding/income-job-list.tsx": 42,
     "src/components/onboarding/income-step.tsx": 143,
     "src/components/onboarding/oidc-step.tsx": 113,
-    "src/components/onboarding/onboarding-wizard.tsx": 257,
+    "src/components/onboarding/onboarding-wizard.tsx": 206,
     "src/components/onboarding/people-step.tsx": 144,
     "src/components/onboarding/wizard-nav.tsx": 68,
+    "src/components/onboarding/wizard-navigation.ts": 120,
     "src/components/onboarding/wizard-saves.ts": 153,
     "src/components/onboarding/wizard-state.ts": 32,
     "src/components/paycheck/contrib-account-form.tsx": 624,
@@ -554,7 +555,7 @@
       "SpreadsheetYearOverYearTable.map()": 188
     },
     "src/components/onboarding/onboarding-wizard.tsx": {
-      "OnboardingWizard": 228
+      "OnboardingWizard": 177
     },
     "src/components/paycheck/contrib-account-form.tsx": {
       "ContribAccountForm": 516
