@@ -1,9 +1,10 @@
 /**
- * prefetchForPage always carries the dashboard shell's queries, so a page
- * rendered from prefetched data reads the same saved settings and freshness
- * dates on the server as in the browser (no hydration mismatch); a shell
- * query failing never costs the page its own data. A page load is one
- * request against the rate limit — its queries run as internal calls.
+ * prefetchForShell loads the dashboard shell's queries for the layout, so
+ * the shell and the page read the same saved settings and freshness dates
+ * on the server as in the browser (no hydration mismatch). prefetchForPage
+ * carries them too; a shell query failing never costs the page its own
+ * data. Each load is one request against the rate limit — its queries run
+ * as internal calls.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
@@ -62,7 +63,7 @@ vi.mock("@trpc/react-query/server", () => ({
   },
 }));
 
-import { prefetchForPage } from "@/server/trpc-server";
+import { prefetchForPage, prefetchForShell } from "@/server/trpc-server";
 
 type Helpers = { page: { prefetch: () => Promise<void> } };
 const pagePrefetch = (h: unknown) => (h as Helpers).page.prefetch();
@@ -117,6 +118,43 @@ describe("prefetchForPage", () => {
   it("when the budget is spent, prefetches nothing (the browser's fetch reports it)", async () => {
     state.tokensLeft = 0;
     expect(await prefetchForPage(pagePrefetch)).toBeUndefined();
+    expect(shellCalls).toEqual([]);
+  });
+});
+
+describe("prefetchForShell", () => {
+  it("prefetches the shell's queries and nothing else", async () => {
+    const state = await prefetchForShell();
+    expect(shellCalls).toEqual(
+      expect.arrayContaining([
+        "settings.appSettings.list",
+        "simplefin.getStatus",
+        "contributionProfile.list",
+      ]),
+    );
+    expect(state?.queries).toEqual([]);
+  });
+
+  it("a shell query failing still returns a state", async () => {
+    settingsPrefetch = async () => {
+      throw new Error("down");
+    };
+    expect(await prefetchForShell()).toBeDefined();
+  });
+
+  it("privacy mode prefetches nothing", async () => {
+    privacy = true;
+    expect(await prefetchForShell()).toBeUndefined();
+    expect(shellCalls).toEqual([]);
+  });
+
+  it("costs one rate-limit token; when it's spent, prefetches nothing", async () => {
+    await prefetchForShell();
+    expect(state.charged).toEqual(["shell.prefetch"]);
+    expect(state.helperCtx).toMatchObject({ internal: true });
+    shellCalls.length = 0;
+    state.tokensLeft = 0;
+    expect(await prefetchForShell()).toBeUndefined();
     expect(shellCalls).toEqual([]);
   });
 });
