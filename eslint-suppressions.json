@@ -1483,26 +1483,74 @@
       "count": 2
     }
   },
-  "src/components/onboarding/onboarding-wizard.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/no-raw-button": {
-      "count": 9
-    },
+  "src/components/onboarding/admin-step.tsx": {
     "ratchet/no-raw-input": {
-      "count": 10
+      "count": 4
     },
     "ratchet/no-unlabeled-control": {
-      "count": 11
+      "count": 4
+    }
+  },
+  "src/components/onboarding/done-step.tsx": {
+    "ratchet/no-raw-input": {
+      "count": 1
+    }
+  },
+  "src/components/onboarding/income-step.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 4
+    }
+  },
+  "src/components/onboarding/oidc-step.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
+    }
+  },
+  "src/components/onboarding/onboarding-wizard.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 1
+    }
+  },
+  "src/components/onboarding/people-step.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    },
+    "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-unlabeled-control": {
+      "count": 2
     }
   },
   "src/components/onboarding/welcome-step.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
+    }
+  },
+  "src/components/onboarding/wizard-nav.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/components/paycheck/add-deduction-form.tsx": {
