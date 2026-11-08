@@ -23,14 +23,14 @@ import {
   storedMatchRate,
 } from "@/lib/pure/contributions/employer-match";
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
-import type { ContribRowWithActiveFields } from "./profile";
+import type { PaycheckContribRow } from "@/lib/pure/contributions/paycheck-contrib-row";
 
 /** ContributionAccountInput[] from DB rows for a job and person. The match
  *  is grouped (computeGroupedEmployerMatch): a Roth + Traditional split of
  *  one account is capped on their combined contribution. */
 export function buildContribAccounts(
-  jobContribs: (ContribRowWithActiveFields & CapPassed)[],
-  personalContribs: (ContribRowWithActiveFields & CapPassed)[],
+  jobContribs: (PaycheckContribRow & CapPassed)[],
+  personalContribs: (PaycheckContribRow & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   /** The year's limits and the person's age at Dec 31 — sizes each
