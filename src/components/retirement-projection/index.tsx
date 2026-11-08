@@ -4,7 +4,6 @@
 import { useEffect } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { OverridesPanel } from "./overrides-panel";
-import { ReportRoot } from "./report/report-root";
 import {
   EngineNotices,
   SimulationOffNotice,
@@ -17,9 +16,9 @@ import { ProjectionLoaderStrip } from "./projection-card/loader-strip";
 import { DecumulationPanel } from "./projection-card/decumulation-panel";
 import { ProjectionSlidePanels } from "./projection-card/slide-panels";
 import { useProjectionReport } from "./projection-card/use-projection-report";
+import { ReportControls } from "./projection-card/report-controls";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
-import { ReportGateModal } from "./report/report-gate-modal";
 import { McResultsSection } from "./projection-mc-results";
 import {
   useProjectionState,
@@ -74,32 +73,21 @@ export function ProjectionCard(props: {
 
   // Destructure for the toolbar and stats row (kept inline since they're tightly coupled to layout)
   const {
-    mcTaxMode,
     dollarMode: internalDollarMode,
     setDollarMode: internalSetDollarMode,
     chartView,
     setChartView,
-    scenarioView,
     setPersonFilter,
     isPersonFiltered,
     engineQuery,
     mcPrefetchQuery,
-    mcQuery,
-    sharedInput,
-    debouncedInput,
     mcChartPending,
     result,
     hasIndividualAccountData,
-    enginePeople,
     engineSettings,
-    enginePerPersonSettings,
-    deflate,
     autoloadEnabled,
     mcAutoloadEnabled,
     runMonteCarlo,
-    coastFireAge: deterministicCoastFireAge,
-    bracketOptimizerResult,
-    isRerunning,
   } = state;
 
   // If the active scenario's result has no per-person data (Simple-tax-mode
@@ -135,114 +123,26 @@ export function ProjectionCard(props: {
     decumulationBudgetColumn,
     decumulationExpenseOverride,
   } = props;
-  const {
-    reportMode,
-    gateFailure,
-    setGateFailure,
-    handlePrint,
-    handlePrintAdvisor,
-  } = useProjectionReport(
-    state,
-    scenarioView,
-    mcTaxMode,
-    sharedInput,
-    debouncedInput,
-    engineQuery,
-    mcQuery,
-  );
+  const report = useProjectionReport(state);
 
   return (
     <>
       <RecalculatingBanner state={state} />
       <div className="mb-6 space-y-6">
         <div className="space-y-6">
-          {/* ================================================================= */}
-          {/* RESULTS */}
-          {/* ================================================================= */}
-
           <EngineNotices engineQuery={engineQuery} />
 
-          {/* Print/export report controls. print:hidden so the
-              buttons themselves never appear in the printed output. */}
-          {result && (
-            <div className="text-caption flex items-center gap-3 print:hidden">
-              <button
-                type="button"
-                onClick={() => handlePrint("basic")}
-                className="text-muted hover:text-secondary underline"
-              >
-                Print Chart &amp; Table
-              </button>
-              <button
-                type="button"
-                onClick={handlePrintAdvisor}
-                className="text-muted hover:text-secondary underline"
-              >
-                Print Full Report
-              </button>
-            </div>
-          )}
+          <ReportControls state={state} people={people} report={report} />
 
-          {gateFailure && (
-            <ReportGateModal
-              failure={gateFailure}
-              isRunning={isRerunning}
-              onRunSimulation={() => {
-                runMonteCarlo();
-                setGateFailure(null);
-              }}
-              onCancel={() => setGateFailure(null)}
-            />
-          )}
-
-          {/* Advisor-report-only root — mounted only in "advisor" mode,
-              hidden on screen, print-visible. Only reached when the gate
-              already passed, so `result`/`mcQuery.data`/`engineSettings`
-              are all guaranteed present here. */}
-          {reportMode === "advisor" && result && mcQuery.data?.result && (
-            <div className="hidden print:block">
-              <ReportRoot
-                projectionResult={result}
-                mcResult={mcQuery.data.result}
-                deflate={deflate}
-                coastFireAge={deterministicCoastFireAge}
-                peopleNames={(people ?? enginePeople ?? []).map((p) => p.name)}
-                generatedAt={new Date()}
-                engineSettings={engineSettings}
-                perPersonSettings={enginePerPersonSettings}
-                rmdExcessYears={
-                  result.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" && y.rmdExcessAmount > 0.01,
-                  ).length
-                }
-                qcdYears={
-                  result.projectionByYear.filter(
-                    (y) => y.phase === "decumulation" && y.qcdAmount > 0.01,
-                  ).length
-                }
-                irmaaCappedRothYears={
-                  result.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" &&
-                      y.rothConversionIrmaaCapped === true,
-                  ).length
-                }
-                bracketOptimizerResult={bracketOptimizerResult}
-              />
-            </div>
-          )}
-
-          {/* ── CONTENT BLOCK ────────────────────────────────────────────────
-               Every section renders a skeleton or real content at the SAME
-               DOM position so the layout never shifts during loading. */}
+          {/* Each section renders its skeleton or content at the same DOM
+              position, so the layout never shifts while loading. */}
           {(engineQuery.isLoading || !!result) && (
             <div className="space-y-4">
               {/* Hero KPIs (headline numbers) — always shown on screen;
                   print-visible only in the "advisor" report tier (basic
                   tier prints just the chart+table). */}
               <HeroKpisPanel
-                reportMode={reportMode}
+                reportMode={report.reportMode}
                 engineQuery={engineQuery}
                 state={state}
               />
@@ -270,13 +170,9 @@ export function ProjectionCard(props: {
                 />
               ) : null}
 
-              {/* Unified toolbar — two rows (only when real data). Row 1
-                  = compute-time inputs (what to run), Row 2 = display-time
-                  lenses (how to show what's already computed). Both render
-                  here (not inside the chart) so they stay visible/
-                  interactive during engineQuery.isLoading and use one
-                  consistent PillBtn/LabeledPillGroup/LabeledSelect
-                  convention instead of four separate hand-rolled ones. */}
+              {/* The toolbar, once there is a result: Compute (what to run)
+                  and Display (how to show it), outside the chart so it
+                  stays usable while the engine loads. */}
               {result &&
                 (() => {
                   return (
@@ -313,7 +209,7 @@ export function ProjectionCard(props: {
                   interactive chart — print:hidden whenever "advisor" mode
                   is active. */}
               <ChartArea
-                reportMode={reportMode}
+                reportMode={report.reportMode}
                 engineQuery={engineQuery}
                 chartView={chartView}
                 state={state}
@@ -332,7 +228,7 @@ export function ProjectionCard(props: {
               interactive table — print:hidden whenever "advisor" mode is
               active (it renders its own simplified table instead). */}
           <TableArea
-            reportMode={reportMode}
+            reportMode={report.reportMode}
             engineQuery={engineQuery}
             autoloadEnabled={autoloadEnabled}
             state={state}

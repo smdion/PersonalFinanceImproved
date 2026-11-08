@@ -3,23 +3,18 @@ import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/advice/report/mc-freshness";
 import type { ProjectionState } from "../projection-table-types";
 
-export function useProjectionReport(
-  state: ProjectionState,
-  scenarioView: ProjectionState["scenarioView"],
-  mcTaxMode: ProjectionState["mcTaxMode"],
-  sharedInput: ProjectionState["sharedInput"],
-  debouncedInput: ProjectionState["debouncedInput"],
-  engineQuery: ProjectionState["engineQuery"],
-  mcQuery: ProjectionState["mcQuery"],
-) {
-  // Print/export report. "none" = normal screen view (default print
-  // behavior, unchanged). "basic" prints just the chart+table with page
-  // chrome hidden. "advisor" (was "fancy") mounts the purpose-built
-  // advisor-report document instead — ReportRoot, not the interactive
-  // chart/table — hidden on screen via `hidden print:block`, so this is a
-  // no-op on layout until printed. Only reachable after checkReportGate
-  // passes (see handlePrintAdvisor below) — never printed with stale/
-  // missing Monte Carlo data.
+export function useProjectionReport(state: ProjectionState) {
+  const {
+    scenarioView,
+    mcTaxMode,
+    sharedInput,
+    debouncedInput,
+    engineQuery,
+    mcQuery,
+  } = state;
+  // "basic" prints the chart and table; "advisor" mounts ReportRoot, hidden
+  // on screen, and is reached only once checkReportGate passes, so a report
+  // never prints with stale or missing simulation data.
   const [reportMode, setReportMode] = useState<"none" | "basic" | "advisor">(
     "none",
   );
@@ -27,11 +22,8 @@ export function useProjectionReport(
     null,
   );
   const originalTitleRef = useRef<string>("");
-  // "Print Chart & Table" is a deliberate export action, not a screenshot
-  // of whatever's on screen — it should always include every year
-  // regardless of the interactive table's own milestone-only toggle
-  // state, restored after printing so it doesn't silently change what the
-  // user was looking at on screen.
+  // "Print Chart & Table" prints every year, whatever the table's own
+  // milestone toggle shows; the toggle is put back after printing.
   const priorShowAllYearsRef = useRef<boolean | null>(null);
   const handlePrint = (mode: "basic" | "advisor") => {
     originalTitleRef.current = document.title;

@@ -114,7 +114,7 @@
     "src/components/retirement-projection/account-notes.ts": 260,
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/retirement-projection/decumulation-config.tsx": 468,
-    "src/components/retirement-projection/index.tsx": 364,
+    "src/components/retirement-projection/index.tsx": 260,
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1071,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
@@ -130,10 +130,11 @@
     "src/components/retirement-projection/projection-card/loader-strip.tsx": 59,
     "src/components/retirement-projection/projection-card/person-view-pills.tsx": 54,
     "src/components/retirement-projection/projection-card/recalculating-banner.tsx": 82,
+    "src/components/retirement-projection/projection-card/report-controls.tsx": 105,
     "src/components/retirement-projection/projection-card/simulation-settings.tsx": 114,
     "src/components/retirement-projection/projection-card/slide-panels.tsx": 124,
     "src/components/retirement-projection/projection-card/table-area.tsx": 45,
-    "src/components/retirement-projection/projection-card/use-projection-report.ts": 92,
+    "src/components/retirement-projection/projection-card/use-projection-report.ts": 84,
     "src/components/retirement-projection/projection-chart.tsx": 1130,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
     "src/components/retirement-projection/projection-mc-results.tsx": 120,
@@ -674,7 +675,7 @@
       "DecumulationConfig": 351
     },
     "src/components/retirement-projection/index.tsx": {
-      "ProjectionCard": 332
+      "ProjectionCard": 229
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 158
