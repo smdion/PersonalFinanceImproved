@@ -166,13 +166,12 @@ async function refreshExtraPaycheckRoutingIfActive(
  * composite-key mismatch should never be persisted in the first place.
  */
 async function assertSalaryEntryTaxBracketsExist(
-  db: typeof import("@/lib/db").db,
+  { db, scope }: { db: typeof import("@/lib/db").db; scope: { asOf: Date } },
   salaries: SalaryEntryMap | undefined,
 ): Promise<void> {
   const entries = Object.entries(salaries ?? {});
   if (entries.length === 0) return;
-
-  const taxYear = new Date().getFullYear();
+  const taxYear = scope.asOf.getFullYear();
   const brackets = await db
     .select({
       filingStatus: schema.taxBrackets.filingStatus,
@@ -380,7 +379,7 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
+      await assertSalaryEntryTaxBracketsExist(ctx, input.salaries);
       return createProfile(ctx.db, "salary", input);
     }),
 
@@ -428,7 +427,7 @@ export const salaryProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
+      await assertSalaryEntryTaxBracketsExist(ctx, input.salaries);
 
       const updates: Partial<typeof schema.salaryProfiles.$inferInsert> = {};
       if (input.name !== undefined) updates.name = input.name;
@@ -511,9 +510,10 @@ export const salaryProfileRouter = createTRPCRouter({
         }
 
         const nextSalaries = { ...salaries, [key]: parsed.data };
-        await assertSalaryEntryTaxBracketsExist(tx, {
-          [key]: parsed.data,
-        });
+        await assertSalaryEntryTaxBracketsExist(
+          { db: tx, scope: ctx.scope },
+          { [key]: parsed.data },
+        );
 
         const rows = await tx
           .update(schema.salaryProfiles)

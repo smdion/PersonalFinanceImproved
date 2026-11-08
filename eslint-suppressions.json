@@ -8260,9 +8260,6 @@
     "ratchet/max-comment-lines": {
       "count": 12
     },
-    "ratchet/no-clock-read": {
-      "count": 1
-    },
     "ratchet/no-history-comment": {
       "count": 2
     }

@@ -23,9 +23,6 @@ export async function fetchRetirementData(
     snapshotId?: number;
     contributionProfileId?: number;
     salaryProfileId?: number;
-    /** Unused: no read here depends on a date (resolveTaxParams picks the
-     *  tax year later). */
-    asOfDate?: Date;
   },
 ) {
   const reads = {
