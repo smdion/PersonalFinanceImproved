@@ -23,14 +23,8 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
+  "src/app/(dashboard)/brokerage/brokerage-figures.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -69,6 +63,14 @@
   "src/app/(dashboard)/brokerage/use-brokerage-lump-sums.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
+    }
+  },
+  "src/app/(dashboard)/brokerage/use-brokerage-page.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/budget/budget-content.tsx": {
