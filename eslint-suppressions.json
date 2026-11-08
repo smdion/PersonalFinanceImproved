@@ -1521,9 +1521,6 @@
     }
   },
   "src/components/onboarding/onboarding-wizard.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 1
     },

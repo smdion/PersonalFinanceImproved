@@ -3,8 +3,6 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Modal } from "@/components/ui/modal";
-import { WelcomeStep } from "@/components/onboarding/welcome-step";
-import { StepIndicator } from "@/components/onboarding/step-indicator";
 import {
   type PersonDraft,
   type JobDraft,
@@ -12,14 +10,11 @@ import {
   STEPS,
   type Step,
 } from "./wizard-state";
-import { AdminStep } from "./admin-step";
-import { OidcStep } from "./oidc-step";
-import { PeopleStep } from "./people-step";
-import { IncomeStep } from "./income-step";
-import { DoneStep } from "./done-step";
 import { WizardNav } from "./wizard-nav";
 import { restoreFromBackup } from "./wizard-saves";
 import { wizardNavigation } from "./wizard-navigation";
+import { WizardBody } from "./wizard-body";
+import { WizardProgress } from "./wizard-body";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -128,10 +123,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       layer="firstRun"
       className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8"
     >
-      <StepIndicator currentStep={step} steps={steps} />
-      <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
-        Step {step + 1} of {steps.length}
-      </div>
+      <WizardProgress step={step} steps={steps} />
 
       {/* Hidden file input for restore */}
       <input
@@ -142,54 +134,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         onChange={handleFileSelected}
       />
 
-      {/* Step content */}
-      {currentStep === "Welcome" && (
-        <WelcomeStep onNext={goNext} onRestore={handleRestore} />
-      )}
-      {currentStep === "Admin" && (
-        <AdminStep admin={admin} setAdmin={setAdmin} />
-      )}
-      {currentStep === "OIDC" && <OidcStep />}
-      {currentStep === "People" && (
-        <PeopleStep people={people} setPeople={setPeople} />
-      )}
-      {currentStep === "Income" && (
-        <IncomeStep people={people} jobs={jobs} setJobs={setJobs} />
-      )}
-      {currentStep === "Done" && (
-        <DoneStep
-          isSaving={isSaving}
-          taxDataSync={taxDataSync}
-          setTaxDataSync={setTaxDataSync}
-        />
-      )}
-
-      {/* Restoring overlay */}
-      {isRestoring && (
-        <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-          <div className="text-primary text-lg font-medium">
-            Restoring backup...
-          </div>
-          <p className="text-muted text-sm">
-            This may take a moment. Please don&apos;t close this page.
-          </p>
-        </div>
-      )}
-
-      {/* Error display */}
-      {error && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-      {stepError && (
-        <div
-          className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
-          role="alert"
-        >
-          {stepError}
-        </div>
-      )}
+      <WizardBody
+        admin={admin}
+        currentStep={currentStep}
+        error={error}
+        goNext={goNext}
+        handleRestore={handleRestore}
+        isRestoring={isRestoring}
+        isSaving={isSaving}
+        jobs={jobs}
+        people={people}
+        setAdmin={setAdmin}
+        setJobs={setJobs}
+        setPeople={setPeople}
+        setTaxDataSync={setTaxDataSync}
+        stepError={stepError}
+        taxDataSync={taxDataSync}
+      />
 
       {/* Navigation buttons (Welcome has its own CTA) */}
       <WizardNav
