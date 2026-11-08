@@ -1651,6 +1651,9 @@
     "ratchet/no-guarded-division": {
       "count": 2
     },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 5
     }
@@ -2369,6 +2372,9 @@
     "ratchet/no-abbreviation": {
       "count": 14
     },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 10
     },
@@ -2600,6 +2606,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 4
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/balance-cell.tsx": {
@@ -3044,6 +3053,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 38
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
@@ -3058,6 +3070,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 2
     }
   },
   "src/components/retirement-projection/projection-table-mc-cell.tsx": {
@@ -5483,6 +5498,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 2
     }
   },
   "src/lib/pure/accounts/cost-basis.ts": {
@@ -6044,6 +6062,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 8
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 8
@@ -6783,6 +6804,9 @@
   "src/lib/pure/investments/fund-findings.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
     }
   },
   "src/lib/pure/investments/fund-prices.ts": {
@@ -7103,6 +7127,9 @@
   "src/lib/pure/retirement/retirement-bridge.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 2
     }
   },
   "src/lib/pure/retirement/rmd-excess-target.ts": {
@@ -7491,6 +7518,9 @@
     },
     "ratchet/no-clock-read": {
       "count": 3
+    },
+    "ratchet/no-identity-predicate-import": {
+      "count": 1
     }
   },
   "src/lib/simplefin/reidentify.ts": {
@@ -7701,6 +7731,9 @@
       "count": 1
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-identity-predicate-import": {
       "count": 1
     }
   },
@@ -8810,6 +8843,9 @@
   },
   "src/server/services/paycheck/household-totals.ts": {
     "ratchet/max-comment-lines": {
+      "count": 2
+    },
+    "ratchet/no-identity-predicate-import": {
       "count": 2
     }
   },

@@ -510,6 +510,11 @@ export const ratchetPlugin = {
       ].join(", "),
       "Clock read in server or library code. Take the date from ctx.scope (or a passed-in asOf), so one request reads one date (RULES § Time Resolution).",
     ),
+    "no-identity-predicate-import": selectorRule(
+      "Code branches on an account type's behavior fields, not its identity.",
+      "ImportSpecifier[imported.name=/^is(Hsa|Ira)Category$/]",
+      "isHsaCategory/isIraCategory outside Tax Buckets. Read the account type's behavior field in lib/config/account-types.ts (RULES § Data-Driven Architecture rule 10).",
+    ),
     "no-text-includes": {
       meta: {
         type: "suggestion",
@@ -583,7 +588,18 @@ export const ratchetConfig = [
       "ratchet/no-stacked-docblock": "error",
       "ratchet/no-guarded-division": "error",
       "ratchet/no-abbreviation": "error",
+      "ratchet/no-identity-predicate-import": "error",
     },
+  },
+  {
+    // Tax Buckets still branches on the predicates until v0.11.
+    files: [
+      "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx",
+      "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts",
+      "src/lib/pure/accounts/tax-bucket-analysis.ts",
+      "src/lib/pure/accounts/tax-bucket-projection.ts",
+    ],
+    rules: { "ratchet/no-identity-predicate-import": "off" },
   },
   {
     // The request scope's own clock is server/trpc.ts; client hooks read the

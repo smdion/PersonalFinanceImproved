@@ -221,6 +221,40 @@ describe("ratchet/no-clock-read", () => {
   }, 30_000);
 });
 
+describe("ratchet/no-identity-predicate-import", () => {
+  it("counts each predicate imported, not the behavior helpers", () => {
+    expect(
+      reported(
+        "no-identity-predicate-import",
+        [
+          "import { isHsaCategory, isIraCategory } from '@/lib/config/account-types';",
+          "import { isTaxableCategory, getLimitGroup } from '@/lib/config/account-types';",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 1]);
+  });
+
+  it("leaves Tax Buckets' four files to them until v0.11", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code =
+      "import { isHsaCategory } from '@/lib/config/account-types';\nexport const f = isHsaCategory;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-identity-predicate-import",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(
+      await counted("src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts"),
+    ).toBe(false);
+    expect(await counted("src/lib/pure/accounts/tax-bucket-analysis.ts")).toBe(
+      false,
+    );
+  }, 30_000);
+});
+
 describe("the repo config's scopes (owner Q4, v0.10.4)", () => {
   const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
   /** The rules the repo config reports for `code` written at `file`. */
