@@ -30,14 +30,13 @@ import {
   SectionSummaryRow,
 } from "./section-summary-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { IntegrationBudgetMutations } from "./use-integration-budget-mutations";
+import { useIntegrationBudgetMutations } from "./use-integration-budget-mutations";
 
 type Props = {
   service: Service;
   budget: NonNullable<PreviewData["budget"]>;
   savings: PreviewData["savings"];
   allApiCats: ApiCategoryOption[];
-  mutations: IntegrationBudgetMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
   onCreateSavingsGoalFromApi: (apiCat: {
     id: string;
@@ -58,7 +57,6 @@ export function BudgetSection({
   budget,
   savings,
   allApiCats,
-  mutations,
   onLinkSavings,
   onCreateSavingsGoalFromApi,
   savingsOverrideCount,
@@ -73,7 +71,7 @@ export function BudgetSection({
     renameBudgetApiName: renameBudgetApiNameMut,
     moveBudgetToApiGroup: moveBudgetToApiGroupMut,
     setBudgetSyncDir: setBudgetSyncDirMut,
-  } = mutations;
+  } = useIntegrationBudgetMutations();
 
   const [expandedBudget, setExpandedBudget] = useState(false);
   const [creatingSavingsFor, setCreatingSavingsFor] = useState<string | null>(

@@ -93,9 +93,9 @@
     "src/components/settings/general.tsx": 449,
     "src/components/settings/integrations-simplefin.tsx": 437,
     "src/components/settings/integrations.tsx": 707,
-    "src/components/settings/integrations/budget-section.tsx": 691,
+    "src/components/settings/integrations/budget-section.tsx": 689,
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
-    "src/components/settings/integrations/portfolio-section.tsx": 338,
+    "src/components/settings/integrations/portfolio-section.tsx": 337,
     "src/components/tools/relocation/projection-table.tsx": 416,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,
@@ -777,7 +777,7 @@
       "LivingCostMappingEditor": 233
     },
     "src/components/settings/integrations-preview-panel.tsx": {
-      "PreviewPanel": 232
+      "PreviewPanel": 222
     },
     "src/components/settings/integrations-sec.tsx": {
       "SecCard": 188
@@ -791,7 +791,7 @@
       "ServiceCard": 455
     },
     "src/components/settings/integrations/budget-section.tsx": {
-      "BudgetSection": 636,
+      "BudgetSection": 635,
       "BudgetSection.map()": 206,
       "BudgetSection.map().map()": 171
     },
@@ -799,7 +799,7 @@
       "PortfolioSection": 298
     },
     "src/components/settings/integrations/savings-section.tsx": {
-      "SavingsSection": 244
+      "SavingsSection": 240
     },
     "src/components/settings/rbac-groups.tsx": {
       "RbacGroupsSettings": 220

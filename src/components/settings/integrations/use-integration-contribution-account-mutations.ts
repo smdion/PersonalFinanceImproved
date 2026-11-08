@@ -23,7 +23,3 @@ export function useIntegrationContributionAccountMutations() {
 
   return { linkContrib, unlinkContrib };
 }
-
-export type IntegrationContributionAccountMutations = ReturnType<
-  typeof useIntegrationContributionAccountMutations
->;

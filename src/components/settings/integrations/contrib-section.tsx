@@ -10,7 +10,7 @@
  * account and at least one linked or unlinked item to show.
  */
 import type { PreviewData } from "../integrations-types";
-import type { IntegrationContributionAccountMutations } from "./use-integration-contribution-account-mutations";
+import { useIntegrationContributionAccountMutations } from "./use-integration-contribution-account-mutations";
 import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
@@ -25,12 +25,11 @@ type ContribAccount = {
 type Props = {
   budget: NonNullable<PreviewData["budget"]>;
   contribAccounts: ContribAccount[];
-  mutations: IntegrationContributionAccountMutations;
 };
 
-export function ContribSection({ budget, contribAccounts, mutations }: Props) {
+export function ContribSection({ budget, contribAccounts }: Props) {
   const { linkContrib: linkContribMut, unlinkContrib: unlinkContribMut } =
-    mutations;
+    useIntegrationContributionAccountMutations();
 
   if (contribAccounts.length === 0) return null;
 

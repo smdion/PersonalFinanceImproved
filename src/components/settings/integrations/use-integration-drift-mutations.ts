@@ -26,7 +26,3 @@ export function useIntegrationDriftMutations() {
 
   return { syncAllNames, setLinkedProfile, setLinkedColumn };
 }
-
-export type IntegrationDriftMutations = ReturnType<
-  typeof useIntegrationDriftMutations
->;

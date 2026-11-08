@@ -56,7 +56,3 @@ export function useIntegrationBudgetMutations() {
     setBudgetSyncDir,
   };
 }
-
-export type IntegrationBudgetMutations = ReturnType<
-  typeof useIntegrationBudgetMutations
->;

@@ -1,8 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { PortfolioSection } from "@/components/settings/integrations/portfolio-section";
 import type { PreviewData } from "@/components/settings/integrations-types";
-import type { IntegrationPortfolioMutations } from "@/components/settings/integrations/use-integration-portfolio-mutations";
+import { mutationCalls, resetTrpcMock } from "./trpc-mock";
+
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
+
+import { PortfolioSection } from "@/components/settings/integrations/portfolio-section";
+
+beforeEach(() => {
+  resetTrpcMock();
+});
 
 // Regression test for a live bug: two people sharing the same
 // performanceAccountId (e.g. both have an IRA at the same institution) —
@@ -50,33 +59,11 @@ function makePortfolio(
   };
 }
 
-function makeMutations(
-  updateMappingsMutate: (input: unknown) => void,
-): IntegrationPortfolioMutations {
-  return {
-    updateMappings: {
-      mutate: updateMappingsMutate,
-      isPending: false,
-    },
-    createAssetAndMap: {
-      mutate: vi.fn(),
-      isPending: false,
-    },
-    // eslint-disable-next-line no-restricted-syntax -- minimal mock of tRPC's full useMutation return shape, only the fields the component reads are needed
-  } as unknown as IntegrationPortfolioMutations;
-}
-
 describe("PortfolioSection — shared performanceAccountId across owners", () => {
   it("renders both owners' accounts without a duplicate-key collision", () => {
     const portfolio = makePortfolio();
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    render(
-      <PortfolioSection
-        service="ynab"
-        portfolio={portfolio}
-        mutations={makeMutations(vi.fn())}
-      />,
-    );
+    render(<PortfolioSection service="ynab" portfolio={portfolio} />);
     // Each account appears once in the "Add mapping" optgroup and once in
     // the per-tracking-account "Link to existing" select — 2 occurrences
     // each, not collapsed/duplicated/omitted by a React key collision.
@@ -90,15 +77,8 @@ describe("PortfolioSection — shared performanceAccountId across owners", () =>
   });
 
   it("selecting the second owner's option in 'Link to existing' maps to that owner, not the first match", () => {
-    const updateMappingsMutate = vi.fn();
     const portfolio = makePortfolio();
-    render(
-      <PortfolioSection
-        service="ynab"
-        portfolio={portfolio}
-        mutations={makeMutations(updateMappingsMutate)}
-      />,
-    );
+    render(<PortfolioSection service="ynab" portfolio={portfolio} />);
 
     const select = screen
       .getByText("Link to existing...")
@@ -108,8 +88,8 @@ describe("PortfolioSection — shared performanceAccountId across owners", () =>
     )!;
     fireEvent.change(select, { target: { value: bobOption.value } });
 
-    expect(updateMappingsMutate).toHaveBeenCalledTimes(1);
-    const call = updateMappingsMutate.mock.calls[0]![0] as {
+    expect(mutationCalls("sync.updateAccountMappings")).toHaveLength(1);
+    const call = mutationCalls("sync.updateAccountMappings")[0] as {
       mappings: { localName: string }[];
     };
     const newMapping = call.mappings[call.mappings.length - 1]!;

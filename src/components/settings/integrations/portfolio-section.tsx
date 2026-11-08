@@ -18,7 +18,7 @@ import {
   mappingsWithTypedIds,
 } from "@/lib/pure/sync/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
-import type { IntegrationPortfolioMutations } from "./use-integration-portfolio-mutations";
+import { useIntegrationPortfolioMutations } from "./use-integration-portfolio-mutations";
 import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
@@ -35,14 +35,13 @@ import {
 type Props = {
   service: Service;
   portfolio: NonNullable<PreviewData["portfolio"]>;
-  mutations: IntegrationPortfolioMutations;
 };
 
-export function PortfolioSection({ service, portfolio, mutations }: Props) {
+export function PortfolioSection({ service, portfolio }: Props) {
   const {
     updateMappings: updateMappingsMut,
     createAssetAndMap: createAssetAndMapMut,
-  } = mutations;
+  } = useIntegrationPortfolioMutations();
 
   const [newPortfolioLocal, setNewPortfolioLocal] = useState("");
   const [newPortfolioRemote, setNewPortfolioRemote] = useState("");

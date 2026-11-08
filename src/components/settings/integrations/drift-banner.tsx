@@ -15,26 +15,20 @@
  * re-render any of the other four sections.
  */
 import type { PreviewData, Service } from "../integrations-types";
-import type { IntegrationDriftMutations } from "./use-integration-drift-mutations";
+import { useIntegrationDriftMutations } from "./use-integration-drift-mutations";
 
 type Props = {
   service: Service;
   profile: PreviewData["profile"];
   totalDrifted: number;
-  mutations: IntegrationDriftMutations;
 };
 
-export function DriftBanner({
-  service,
-  profile,
-  totalDrifted,
-  mutations,
-}: Props) {
+export function DriftBanner({ service, profile, totalDrifted }: Props) {
   const {
     syncAllNames: syncAllNamesMut,
     setLinkedProfile: setLinkedProfileMut,
     setLinkedColumn: setLinkedColumnMut,
-  } = mutations;
+  } = useIntegrationDriftMutations();
 
   return (
     <>
