@@ -20,7 +20,15 @@
  * hold the stage's signature, return and brace and the call. A UI cut
  * (owner v0.10.4 Q3: an IIFE's body into a function, a JSX run into a
  * component) carries the same way, with its function's lines around what
- * it took.
+ * it took. Each new function a cut makes may also bring the lines
+ * check-commit proves around it (splitReading): the blank line before it, a
+ * component's props type, and a doc comment of RULES' three lines, as may a
+ * new part's header. A part the per-commit ratchet (check-ratchets) would
+ * refuse is refused here too: one over the limit, or carrying a function
+ * entry, whose lines didn't mostly leave `--from`; and, when the parts over
+ * the limit and what is left exceed the old entry, a rise that isn't
+ * exactly the import lines (a plain split) or that holds a doc comment (a
+ * cut), since the ratchet holds a Mechanical: rise to those.
  */
 import { execFileSync } from "child_process";
 import * as fs from "fs";
@@ -28,10 +36,13 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
 
+import { attributeMoves, groupsOf, parseDiff } from "./ratchets/moves";
 import { importLines } from "./ratchets/raise";
 
 const FILE_LIMIT = 400;
 const FUNCTION_LIMIT = 150;
+/** RULES' comment limit: lines of text in one doc comment. */
+const MAX_DOC_LINES = 3;
 const BASELINE_PATH = "size-baseline.json";
 const SRC_DIR = "src";
 // Generated from the PostgreSQL schema by scripts/gen-sqlite-schema.ts.
@@ -362,6 +373,7 @@ export function recorded(
   parts: string[],
   from?: string,
   carry?: BodyCarry,
+  split?: SplitReading,
 ) {
   const problems: string[] = [];
   const files = { ...baseline.files };
@@ -387,6 +399,14 @@ export function recorded(
     }
     if (lines > FILE_LIMIT && oldEntry === undefined)
       problems.push(`${file}: ${lines} lines, limit ${FILE_LIMIT} — ${GROW}`);
+    else if (
+      split &&
+      !split.joined(file) &&
+      (lines > FILE_LIMIT || Object.keys(measured.functions[file] ?? {}).length)
+    )
+      problems.push(
+        `${file}: ${lines} lines, not joined to ${from} (under half its lines left it), so the per-commit ratchet reads it as a new file — ${GROW}`,
+      );
     else files[file] = lines;
     if (from === undefined) continue;
     for (const [key, fnLines] of Object.entries(
@@ -419,10 +439,15 @@ export function recorded(
     const total =
       parts.reduce((sum, f) => sum + (measured.files[f] ?? 0), 0) +
       (measured.files[from] ?? 0);
-    const allowed = oldEntry + (carry?.total ?? 0);
+    const layout = (split?.layout ?? 0) + (split?.docs ?? 0);
+    const allowed = oldEntry + (carry?.total ?? 0) + layout;
     if (total > allowed)
       problems.push(
-        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${allowance(carry)} — ${GROW}`,
+        `${from}: the parts and what is left total ${total} lines, entry ${oldEntry}${allowance(carry)}${layout ? ` and +${layout} for the blank lines, props types and doc comments its new functions bring` : ""} — ${GROW}`,
+      );
+    if (split)
+      problems.push(
+        ...ratchetRise(measured, parts, from, oldEntry, carry, split),
       );
   }
   return { baseline: { files, functions }, problems };
@@ -434,6 +459,166 @@ function allowance(carry: BodyCarry | undefined): string {
   const moved =
     Object.keys(carry.renames).length + Object.keys(carry.stages ?? {}).length;
   return ` and +${carry.total} for ${moved > 0 ? "the moved bodies" : "the import lines it adds"}`;
+}
+
+/**
+ * What a split adds that check-commit proves and the per-commit ratchet
+ * reads (owner v0.10.4 Q3): `layout`, the blank line before each function a
+ * cut makes and a component's props type (the ratchet skips blank lines
+ * and cuts the props type out with the component); `docs`, the doc comment
+ * above each such function and a new part's header, each of RULES' three
+ * lines at most (the ratchet counts these); `imports`, the import lines
+ * each file gains; `joined`, whether the ratchet joins a part to `from`.
+ */
+export type SplitReading = {
+  layout: number;
+  docs: number;
+  imports: Record<string, number>;
+  joined: (file: string) => boolean;
+};
+
+/**
+ * The per-commit ratchet's reading of the split (scripts/ratchets/counts.ts
+ * and check-ratchets): it sums only the parts over FILE_LIMIT with what is
+ * left of `from`. A sum over the old entry is a rise, which a Mechanical:
+ * commit holds to exactly the import lines of those files (a plain split),
+ * or, with a cut, to no line but imports once the cuts are taken out (so no
+ * doc comment).
+ */
+function ratchetRise(
+  measured: Baseline,
+  parts: string[],
+  from: string,
+  oldEntry: number,
+  carry: BodyCarry | undefined,
+  split: SplitReading,
+): string[] {
+  const counted = parts.filter((f) => (measured.files[f] ?? 0) > FILE_LIMIT);
+  const sum = [from, ...counted].reduce(
+    (n, f) => n + (measured.files[f] ?? 0),
+    0,
+  );
+  const rise = sum - oldEntry;
+  if (rise <= 0) return [];
+  const cuts =
+    Object.keys(carry?.renames ?? {}).length +
+    Object.keys(carry?.stages ?? {}).length;
+  const files = [from, ...counted].join(", ");
+  if (cuts > 0)
+    return split.docs > 0
+      ? [
+          `${files}: ${sum} lines, entry ${oldEntry}: the per-commit ratchet reads +${rise}, and a cut's rise may hold no doc comment (${split.docs} lines) — fit them within the entry, or ${GROW}`,
+        ]
+      : [];
+  const imports = [from, ...counted].reduce(
+    (n, f) => n + (split.imports[f] ?? 0),
+    0,
+  );
+  return rise === imports
+    ? []
+    : [
+        `${files}: ${sum} lines, entry ${oldEntry}: the per-commit ratchet reads +${rise}, and a split's rise is exactly the ${imports} import lines these files add — ${GROW}`,
+      ];
+}
+
+/** Lines of the comments directly above `node` (a new function or part;
+ *  `gap` blank lines may stand between, as below a part's header):
+ *  all of them when they hold at most MAX_DOC_LINES lines of text, else
+ *  none. */
+function docLines(node: ts.Node, sf: ts.SourceFile, gap = 0): number {
+  const ranges = ts.getLeadingCommentRanges(sf.text, node.getFullStart());
+  if (!ranges || ranges.length === 0) return 0;
+  const line = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line;
+  const first = line(ranges[0]!.pos);
+  const last = line(ranges[ranges.length - 1]!.end);
+  if (line(node.getStart(sf)) - last > 1 + gap) return 0;
+  const text = ranges
+    .map((r) => sf.text.slice(r.pos, r.end))
+    .join("\n")
+    .split("\n")
+    .filter(
+      (l) =>
+        l
+          .replace(/^\s*(\/\/+|\/\*\*?|\*(?!\/))?/, "")
+          .replace(/\*\/\s*$/, "")
+          .trim() !== "",
+    ).length;
+  return text <= MAX_DOC_LINES ? last - first + 1 : 0;
+}
+
+/**
+ * The SplitReading of a split from `from` into `parts`, for the functions
+ * `carry` names (the bodies, stages and UI cuts it found); `joined` as the
+ * ratchet joins files over the change.
+ */
+export function splitReading(
+  from: string,
+  parts: string[],
+  now: (file: string) => string | undefined,
+  before: (file: string) => string | undefined,
+  carry: BodyCarry,
+  joined: (file: string) => boolean,
+): SplitReading {
+  const reading: SplitReading = { layout: 0, docs: 0, imports: {}, joined };
+  const made = new Set([
+    ...Object.keys(carry.renames),
+    ...Object.keys(carry.stages ?? {}),
+  ]);
+  for (const file of [from, ...parts]) {
+    const [was, is] = [
+      importLines(file, before(file)),
+      importLines(file, now(file)),
+    ];
+    reading.imports[file] =
+      is.statements + is.types - was.statements - was.types;
+  }
+  for (const part of parts) {
+    const text = now(part);
+    if (text === undefined) continue;
+    const sf = ts.createSourceFile(part, text, ts.ScriptTarget.Latest, true);
+    const line = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line;
+    const statements = [...sf.statements];
+    // A new part's header: the comment above its first statement after a
+    // directive ("use client"), unless that is a new function's own.
+    if (before(part) === undefined) {
+      const first = statements.find(
+        (s) =>
+          !(ts.isExpressionStatement(s) && ts.isStringLiteral(s.expression)),
+      );
+      if (
+        first &&
+        !(ts.isFunctionDeclaration(first) && made.has(first.name?.text ?? ""))
+      )
+        reading.docs += docLines(first, sf, 1);
+    }
+    statements.forEach((statement, i) => {
+      if (!ts.isFunctionDeclaration(statement) || !statement.name) return;
+      if (!made.has(statement.name.text)) return;
+      const prev = statements[i - 1];
+      const type = statement.parameters[0]?.type;
+      const props =
+        prev &&
+        (ts.isTypeAliasDeclaration(prev) || ts.isInterfaceDeclaration(prev)) &&
+        type &&
+        ts.isTypeReferenceNode(type) &&
+        ts.isIdentifier(type.typeName) &&
+        type.typeName.text === prev.name.text
+          ? prev
+          : undefined;
+      const top = props ?? statement;
+      if (props)
+        reading.layout += line(props.getEnd()) - line(props.getStart(sf)) + 1;
+      reading.docs += docLines(top, sf);
+      if (props) reading.docs += docLines(statement, sf);
+      const docTop = ts.getLeadingCommentRanges(sf.text, top.getFullStart());
+      const start = docTop?.length
+        ? line(docTop[0]!.pos)
+        : line(top.getStart(sf));
+      if (start > 0 && /^\s*$/.test(text.split("\n")[start - 1] ?? "x"))
+        reading.layout += 1;
+    });
+  }
+  return reading;
 }
 
 /** A function node's key, as functionEntries names it (unnumbered). */
@@ -669,6 +854,35 @@ function gitShowHead(file: string): string | undefined {
   }
 }
 
+/**
+ * Whether the per-commit ratchet joins a file to `from`: its added lines
+ * mostly left `from` in the change since HEAD (ratchets/moves.ts), new
+ * parts not yet added to git read as all added.
+ */
+function joinedTo(
+  from: string,
+  parts: string[],
+  now: (file: string) => string | undefined,
+): (file: string) => boolean {
+  const diff = execFileSync("git", ["diff", "--no-renames", "-U0", "HEAD"], {
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024 * 1024,
+  });
+  const diffs = parseDiff(diff);
+  for (const part of parts) {
+    const text = now(part);
+    if (
+      diffs.has(part) ||
+      text === undefined ||
+      gitShowHead(part) !== undefined
+    )
+      continue;
+    diffs.set(part, { added: text.split("\n"), deleted: [] });
+  }
+  const group = groupsOf(attributeMoves(diffs));
+  return (file) => group(file) === group(from);
+}
+
 function main(argv: string[]): number {
   const measured = measure();
   const mode = argv[0];
@@ -679,6 +893,10 @@ function main(argv: string[]): number {
     const parts = args.filter(
       (_, i) => fromIdx < 0 || (i !== fromIdx && i !== fromIdx + 1),
     );
+    const now = (f: string) =>
+      fs.existsSync(f) ? fs.readFileSync(f, "utf8") : undefined;
+    const carry =
+      from === undefined ? undefined : bodyCarry(from, parts, now, gitShowHead);
     const result =
       mode === "--move"
         ? moved(readBaseline(), measured, args)
@@ -687,14 +905,16 @@ function main(argv: string[]): number {
             measured,
             parts,
             from,
-            from === undefined
+            carry,
+            from === undefined || carry === undefined
               ? undefined
-              : bodyCarry(
+              : splitReading(
                   from,
                   parts,
-                  (f) =>
-                    fs.existsSync(f) ? fs.readFileSync(f, "utf8") : undefined,
+                  now,
                   gitShowHead,
+                  carry,
+                  joinedTo(from, parts, now),
                 ),
           );
     for (const line of result.problems) console.log(line);
