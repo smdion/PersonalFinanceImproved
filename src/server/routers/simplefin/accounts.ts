@@ -225,7 +225,7 @@ export const accountsProcedures = {
 
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 

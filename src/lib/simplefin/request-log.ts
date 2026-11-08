@@ -60,10 +60,7 @@ export function simplefinRequestRecorder(db: Db) {
 
 /** Before any real request: at Ledgr's daily limit, logs the skip and
  *  throws the pause. Replays never count, so they're never stopped. */
-export async function stopAtSimplefinQuota(
-  db: Db,
-  now: Date = new Date(),
-): Promise<void> {
+export async function stopAtSimplefinQuota(db: Db, now: Date): Promise<void> {
   if (isSimplefinReplayMode()) return;
   const used = await countSimplefinRequestsLastDay(db, now);
   if (used < SIMPLEFIN_DAILY_REQUEST_LIMIT) return;
@@ -79,7 +76,7 @@ export async function stopAtSimplefinQuota(
 /** Real requests (not replays or skips) in the 24 hours before `now`. */
 export async function countSimplefinRequestsLastDay(
   db: Db,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<number> {
   const rows = await db
     .select({ n: sql<number>`count(*)` })
@@ -118,7 +115,7 @@ export async function lastSimplefinRequestAt(db: Db): Promise<Date | null> {
 /** Drop ledger rows older than 30 days. */
 export async function pruneSimplefinRequestLog(
   db: Db,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<void> {
   await db
     .delete(schema.syncRequestLog)

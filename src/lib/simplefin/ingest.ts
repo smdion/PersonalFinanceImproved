@@ -229,6 +229,7 @@ async function ingestTransactions(
   accountHasError: boolean,
   summary: IngestSummary,
   label: string,
+  now: Date,
 ): Promise<void> {
   const redacted = new Set<string>();
   const incoming = account.transactions.map((t) => {
@@ -298,7 +299,6 @@ async function ingestTransactions(
     accountHasError,
   });
 
-  const now = new Date();
   for (const t of plan.inserts) {
     const lock = redacted.has(t.externalId);
     await db
@@ -450,7 +450,7 @@ export async function ingestInvestmentData(
     /** "YYYY-MM-DD" — the start-date requested from SimpleFIN. */
     windowStart: string;
     accountIdsWithErrors: ReadonlySet<string>;
-    now?: Date;
+    now: Date;
   },
 ): Promise<IngestSummary> {
   const summary: IngestSummary = {
@@ -505,9 +505,7 @@ export async function ingestInvestmentData(
         });
     }
 
-    const asOf = valuationDateFor(
-      account.balanceDate ?? args.now ?? new Date(),
-    );
+    const asOf = valuationDateFor(account.balanceDate ?? args.now);
     await ingestHoldings(db, reg.id, account, asOf, label, summary);
 
     const redactCardSpending = redactsCardSpending(
@@ -525,6 +523,7 @@ export async function ingestInvestmentData(
       args.accountIdsWithErrors.has(account.id),
       summary,
       label,
+      args.now,
     );
   }
   return summary;

@@ -79,8 +79,8 @@ describe("SimpleFIN request ledger", () => {
 
   it("records every real request", async () => {
     sends(200);
-    await runSimplefinSync(ctx.rawDb);
-    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+    await runSimplefinSync(ctx.rawDb, new Date());
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(1);
   });
 
   it("pauses at the daily limit instead of calling SimpleFIN", async () => {
@@ -90,32 +90,36 @@ describe("SimpleFIN request ledger", () => {
         outcome: "ok",
       });
     }
-    await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow(/Paused/);
+    await expect(runSimplefinSync(ctx.rawDb, new Date())).rejects.toThrow(
+      /Paused/,
+    );
     expect(mockGetAccounts).not.toHaveBeenCalled();
   });
 
   it("records a failed request too (it still used quota)", async () => {
     sends(null, new Error("network down"));
-    await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow();
-    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+    await expect(runSimplefinSync(ctx.rawDb, new Date())).rejects.toThrow();
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(1);
   });
 
   it("records a bad response as its own outcome, counted as a request", async () => {
     sends(200, serviceError("SimpleFIN", "bad", "bad-response"));
-    await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow("bad");
+    await expect(runSimplefinSync(ctx.rawDb, new Date())).rejects.toThrow(
+      "bad",
+    );
     const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
     expect(log.map((r) => [r.outcome, r.httpStatus])).toEqual([
       ["bad_response", 200],
     ]);
-    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(1);
     expect(await lastSimplefinRequestAt(ctx.rawDb)).not.toBeNull();
   });
 
   it("does not count replayed reads", async () => {
     replay.on = true;
     mockGetAccounts.mockResolvedValueOnce(emptyResponse);
-    await runSimplefinSync(ctx.rawDb);
-    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(0);
+    await runSimplefinSync(ctx.rawDb, new Date());
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(0);
     const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
     expect(log.map((r) => r.outcome)).toEqual(["replay"]);
   });
@@ -126,7 +130,7 @@ describe("SimpleFIN request ledger", () => {
       outcome: "ok",
       at: new Date(Date.now() - 25 * 3600_000),
     });
-    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(0);
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(0);
   });
 });
 

@@ -137,7 +137,7 @@ export async function fetchFundTickers(
 /** SEC's fund series/class registry (this year's file, else last year's). */
 export async function fetchRegistry(
   contact: string,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<RegistryClass[]> {
   const base =
     "https://www.sec.gov/files/investment/data/other/investment-company-series-class-information/investment-company-series-class-";

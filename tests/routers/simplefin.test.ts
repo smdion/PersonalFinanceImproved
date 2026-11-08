@@ -533,7 +533,9 @@ describe("simplefin router", () => {
         });
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(log()).toEqual([["/accounts", "error", 503]]);
-        expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+        expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(
+          1,
+        );
       } finally {
         vi.unstubAllGlobals();
         ctx.cleanup();

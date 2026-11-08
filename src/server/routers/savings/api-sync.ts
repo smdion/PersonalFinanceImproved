@@ -212,7 +212,7 @@ export const apiSyncProcedures = {
       // a refresh failure must not turn pushes that landed into an error.
       if (pushed > 0) {
         try {
-          await refreshCategoryCache(ctx.db, active, client);
+          await refreshCategoryCache(ctx, active, client);
         } catch (err) {
           log("error", "post_push_cache_refresh_failed", {
             error: err instanceof Error ? err.message : String(err),

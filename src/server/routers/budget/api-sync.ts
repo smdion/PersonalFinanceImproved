@@ -256,7 +256,7 @@ export const apiSyncProcedures = {
       // previews show what was just pushed, not pre-push diffs.
       if (pushed > 0) {
         try {
-          await refreshCategoryCache(ctx.db, active, client);
+          await refreshCategoryCache(ctx, active, client);
         } catch (err) {
           // Pushes already succeeded remotely — a stale cache must not turn
           // a successful push into a client-visible failure.

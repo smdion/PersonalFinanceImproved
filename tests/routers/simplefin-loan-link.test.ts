@@ -195,7 +195,7 @@ describe("the live total", () => {
   it("leaves a loan's feed out", async () => {
     addFeed("checking", "1000");
     await link();
-    const r = await recomputeTodaySnapshotFromLocal(raw());
+    const r = await recomputeTodaySnapshotFromLocal(raw(), new Date());
     expect(r.totalBalance).toBe(1000);
     expect(r.accountCount).toBe(1);
   });
@@ -219,7 +219,7 @@ describe("an unclaimed debt", () => {
   it("stays out of the total and is flagged until it's linked", async () => {
     addFeed("checking", "1000");
     addFeed("new card", "-5000");
-    const r = await recomputeTodaySnapshotFromLocal(raw());
+    const r = await recomputeTodaySnapshotFromLocal(raw(), new Date());
     expect(r.totalBalance).toBe(1000);
     const listed = await ctx.caller.simplefin.listAccounts();
     expect(

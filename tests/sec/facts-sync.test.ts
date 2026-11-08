@@ -385,7 +385,10 @@ describe("syncSecurityFacts", () => {
 
   it("does nothing without an SEC contact", async () => {
     ctx.db.delete(ctx.schema.apiConnections).run();
-    const r = await syncSecurityFacts(ctx.rawDb, { force: true });
+    const r = await syncSecurityFacts(ctx.rawDb, {
+      force: true,
+      now: new Date(),
+    });
     expect(r.checked).toBe(0);
   });
 });

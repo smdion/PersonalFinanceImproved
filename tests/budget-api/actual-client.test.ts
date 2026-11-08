@@ -772,7 +772,7 @@ describe("ActualClient", () => {
       // getMonthDetail/mapCategory already produced (undefined -- this
       // fixture doesn't set a `goal` field either).
       mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
-      const groups = await client.getCategories();
+      const groups = await client.getCategories(new Date());
       expect(groups).toHaveLength(1);
       expect(groups[0]!.name).toBe("Bills");
       expect(groups[0]!.categories[0]).toMatchObject({
@@ -814,7 +814,7 @@ describe("ActualClient", () => {
         }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
-      const groups = await client.getCategories();
+      const groups = await client.getCategories(new Date());
       expect(groups[0]!.categories[0]).toMatchObject({
         name: "Rent",
         budgeted: 0,

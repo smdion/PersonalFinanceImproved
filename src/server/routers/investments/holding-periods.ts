@@ -332,16 +332,17 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
         .select({ id: s.id })
         .from(s)
         .where(eq(s.ticker, T));
-      await syncSecurityFacts(ctx.db, { securityIds: [row!.id] }).catch(
-        (e: unknown) => {
-          // Its facts are unchecked, so the next refresh fetches them.
-          throw new WriteStopped(
-            `Added ${T}, then fetching its facts failed`,
-            "Added the fund; its facts will be fetched on the next refresh.",
-            e,
-          );
-        },
-      );
+      await syncSecurityFacts(ctx.db, {
+        securityIds: [row!.id],
+        now: ctx.scope.asOf,
+      }).catch((e: unknown) => {
+        // Its facts are unchecked, so the next refresh fetches them.
+        throw new WriteStopped(
+          `Added ${T}, then fetching its facts failed`,
+          "Added the fund; its facts will be fetched on the next refresh.",
+          e,
+        );
+      });
       return { id: row!.id };
     }),
 

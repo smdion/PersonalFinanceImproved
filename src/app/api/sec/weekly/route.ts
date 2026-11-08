@@ -20,9 +20,10 @@ async function refreshSecFacts(): Promise<Response> {
   try {
     if (!(await getSecConnection(db)))
       return NextResponse.json({ skipped: true, reason: "SEC not set up" });
-    if (!(await secFactsRefreshDue(db)))
+    const now = new Date();
+    if (!(await secFactsRefreshDue(db, now)))
       return NextResponse.json({ skipped: true, reason: "Checked this week" });
-    const result = await syncSecurityFacts(db);
+    const result = await syncSecurityFacts(db, { now });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     log("error", "sec_weekly_failed", {

@@ -4547,9 +4547,6 @@
     "ratchet/no-abbreviation": {
       "count": 3
     },
-    "ratchet/no-clock-read": {
-      "count": 1
-    },
     "ratchet/no-history-comment": {
       "count": 3
     }
@@ -4567,7 +4564,7 @@
       "count": 1
     },
     "ratchet/no-clock-read": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/budget-api/drift-detection.ts": {
@@ -7497,7 +7494,7 @@
       "count": 1
     },
     "ratchet/no-clock-read": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/sec/connection.ts": {
@@ -7513,7 +7510,7 @@
       "count": 3
     },
     "ratchet/no-clock-read": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/sec/parsers.ts": {
@@ -7537,7 +7534,7 @@
       "count": 1
     },
     "ratchet/no-clock-read": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/simplefin/reidentify.ts": {
@@ -7548,9 +7545,6 @@
   "src/lib/simplefin/request-log.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-clock-read": {
-      "count": 3
     }
   },
   "src/lib/simplefin/sync.ts": {
@@ -7562,9 +7556,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-clock-read": {
-      "count": 4
     },
     "ratchet/no-history-comment": {
       "count": 1

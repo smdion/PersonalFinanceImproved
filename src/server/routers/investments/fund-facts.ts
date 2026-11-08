@@ -76,6 +76,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
           message: "No stand-in to confirm",
         });
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       }).catch((e: unknown) => {
         // Its facts are unchecked, so the next refresh fetches them.
@@ -148,6 +149,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       if (!sec.preview?.error && Date.now() - last < CHECK_STANDIN_COOLDOWN_MS)
         return { checked: false, stoppedBySec: false, errors: [] };
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       });
       return {
@@ -168,6 +170,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "none")))
         .returning({ id: s.id });
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       }).catch((e: unknown) => {
         // A reopened fund is unchecked, so the next refresh looks again.

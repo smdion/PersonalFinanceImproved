@@ -82,11 +82,11 @@ export const connectionsProcedures = {
       try {
         const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
         // A test counts against the daily quota like a sync.
-        await stopAtSimplefinQuota(ctx.db);
+        await stopAtSimplefinQuota(ctx.db, ctx.scope.asOf);
         const { accounts, providerErrors } = await getAccounts(accessUrl, {
           onRequest: simplefinRequestRecorder(ctx.db),
         });
-        await upsertSimplefinAccounts(ctx.db, accounts);
+        await upsertSimplefinAccounts(ctx.db, accounts, ctx.scope.asOf);
         return {
           ok: true as const,
           accountCount: accounts.length,
@@ -124,7 +124,10 @@ export const connectionsProcedures = {
       }
     }
     try {
-      return { ok: true as const, ...(await runSimplefinSync(ctx.db)) };
+      return {
+        ok: true as const,
+        ...(await runSimplefinSync(ctx.db, ctx.scope.asOf)),
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       throw new TRPCError({
@@ -199,7 +202,7 @@ export const connectionsProcedures = {
           })
           .from(t)
           .where(isNull(t.voidedAt)),
-        countSimplefinRequestsLastDay(ctx.db),
+        countSimplefinRequestsLastDay(ctx.db, ctx.scope.asOf),
         ctx.db
           .select({
             orgName: schema.simplefinAccounts.orgName,

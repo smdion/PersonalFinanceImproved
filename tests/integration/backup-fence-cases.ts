@@ -271,12 +271,12 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         .update(schema.apiConnections)
         .set({ lastSyncedAt: daysAgo(0) })
         .where(eq(schema.apiConnections.service, "simplefin"));
-      expect(await hasSyncedToday(db as never)).toBe(true);
+      expect(await hasSyncedToday(db as never, new Date())).toBe(true);
 
       await restoreVersion(db, version.id, notAdmin);
       const [after] = await connections(db);
       expect(after!.lastSyncedAt).toEqual(atVersion);
-      expect(await hasSyncedToday(db as never)).toBe(false);
+      expect(await hasSyncedToday(db as never, new Date())).toBe(false);
       const now = new Date();
       expect(
         transactionWindowStart(after!.lastSyncedAt, now).getTime(),

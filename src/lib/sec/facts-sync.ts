@@ -210,16 +210,16 @@ export async function getSecFactsStatus(db: Db): Promise<{
 }
 
 /** Whether the weekly refresh is due (persisted, so it survives restarts). */
-export async function secFactsRefreshDue(db: Db, now = new Date()) {
+export async function secFactsRefreshDue(db: Db, now: Date) {
   const { lastRun } = await getSecFactsStatus(db);
   return !lastRun || now.getTime() - Date.parse(lastRun) >= CHECK_EVERY_MS;
 }
 
 export async function syncSecurityFacts(
   db: Db,
-  options: { force?: boolean; now?: Date; securityIds?: number[] } = {},
+  options: { force?: boolean; now: Date; securityIds?: number[] },
 ): Promise<SecFactsSummary> {
-  const now = options.now ?? new Date();
+  const { now } = options;
   const summary: SecFactsSummary = {
     checked: 0,
     updated: 0,

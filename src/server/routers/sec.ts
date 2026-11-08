@@ -82,7 +82,7 @@ export const secRouter = createTRPCRouter({
           "Fund facts were refreshed moments ago — try again in a few minutes.",
       });
     lastManualRefresh = Date.now();
-    return syncSecurityFacts(ctx.db, { force: true });
+    return syncSecurityFacts(ctx.db, { force: true, now: ctx.scope.asOf });
   }),
 
   removeConnection: adminProcedure.mutation(async ({ ctx }) => {

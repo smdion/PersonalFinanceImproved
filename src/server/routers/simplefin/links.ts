@@ -65,7 +65,7 @@ export const linksProcedures = {
       await redactStoredCardSpending(ctx.db, input.keepId);
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 
@@ -213,7 +213,7 @@ export const linksProcedures = {
         .returning();
       if (endsLoanLink) {
         await clearLoanBalance(ctx.db, before!.linkedLoanId!);
-        await recomputeTodaySnapshotFromLocal(ctx.db);
+        await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf);
       }
 
       if (!row) {
@@ -311,7 +311,7 @@ export const linksProcedures = {
       await redactStoredCardSpending(ctx.db, feed.id);
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 };

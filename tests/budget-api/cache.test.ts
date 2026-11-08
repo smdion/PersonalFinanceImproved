@@ -24,7 +24,11 @@ describe("refreshCategoryCache", () => {
       } as unknown as BudgetAPIClient;
 
       await expect(
-        refreshCategoryCache(db as never, "ynab", client),
+        refreshCategoryCache(
+          { db: db as never, scope: { asOf: new Date() } },
+          "ynab",
+          client,
+        ),
       ).rejects.toThrow();
 
       const categories = await cacheGet<{ id: string }[]>(

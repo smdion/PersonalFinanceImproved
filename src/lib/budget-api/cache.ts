@@ -96,13 +96,13 @@ export async function cacheClear(
  * push only ever changes category goal data.
  */
 export async function refreshCategoryCache(
-  db: Db,
+  { db, scope }: { db: Db; scope: { asOf: Date } },
   service: BudgetApiService,
   client: BudgetAPIClient,
 ): Promise<void> {
-  const currentMonth = currentMonthKey(new Date());
+  const currentMonth = currentMonthKey(scope.asOf);
   const [categories, monthDetail] = await Promise.all([
-    client.getCategories(),
+    client.getCategories(scope.asOf),
     client.getMonthDetail(currentMonth),
   ]);
   // Together: categories and the month detail are read as one picture.

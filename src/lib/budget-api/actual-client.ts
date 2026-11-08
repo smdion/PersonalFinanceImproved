@@ -485,8 +485,7 @@ export class ActualClient implements BudgetAPIClient {
   /** `/categorygroups` and `/categories` carry names only; each category's
    *  numbers come from the current month, merged in by id. A category the
    *  month doesn't list yet (just created) has 0 for each. */
-  async getCategories(): Promise<BudgetCategoryGroup[]> {
-    const now = new Date();
+  async getCategories(now: Date): Promise<BudgetCategoryGroup[]> {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const [groupsRes, catsRes, monthDetail] = await Promise.all([
       this.request("/categorygroups", actualSchemas.categoryGroups),

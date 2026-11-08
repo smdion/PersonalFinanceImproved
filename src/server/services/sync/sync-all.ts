@@ -22,7 +22,7 @@ import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { toDecimalColumn } from "@/lib/utils/math";
 
 export async function syncAll(
-  ctx: { db: Db },
+  ctx: { db: Db; scope: { asOf: Date } },
   input: { service: BudgetApiService },
 ) {
   const client = await getClientForService(ctx.db, input.service);
@@ -49,7 +49,7 @@ export async function syncAll(
     // If anything here throws, no local state changes.
     const [accounts, categories] = await Promise.all([
       client.getAccounts(),
-      client.getCategories(),
+      client.getCategories(ctx.scope.asOf),
     ]);
 
     const now = new Date(); // after the fetch

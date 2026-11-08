@@ -240,7 +240,7 @@ const actual: World = {
     getCategories: [
       {
         answers: syncAll,
-        run: (c) => c.getCategories(),
+        run: (c) => c.getCategories(new Date()),
         check: (r) => {
           const groups = r as Awaited<
             ReturnType<BudgetAPIClient["getCategories"]>
@@ -625,7 +625,7 @@ const ynab: World = {
             },
           }),
         ],
-        run: (c) => c.getCategories(),
+        run: (c) => c.getCategories(new Date()),
         check: (r) => {
           const groups = r as Awaited<
             ReturnType<BudgetAPIClient["getCategories"]>

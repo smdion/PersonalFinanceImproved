@@ -38,8 +38,8 @@ export interface BudgetAPIClient {
 
   // -- Categories & Months --
 
-  /** List all category groups with nested categories */
-  getCategories(): Promise<BudgetCategoryGroup[]>;
+  /** Category groups with nested categories; numbers are `asOf`'s month's. */
+  getCategories(asOf: Date): Promise<BudgetCategoryGroup[]>;
 
   /** List monthly summaries for a date range */
   getMonths(start: string, end: string): Promise<BudgetMonth[]>;

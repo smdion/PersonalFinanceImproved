@@ -185,10 +185,7 @@ export async function getSimplefinConnection(db: Db) {
  * this guard skip the real sync on any day a user merely toggles an
  * account's inclusion).
  */
-export async function hasSyncedToday(
-  db: Db,
-  asOfDate: Date = new Date(),
-): Promise<boolean> {
+export async function hasSyncedToday(db: Db, asOfDate: Date): Promise<boolean> {
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
   return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
@@ -300,9 +297,9 @@ type SimplefinAccountRow = {
 export async function upsertSimplefinAccounts(
   db: DbOrTx,
   accounts: SimplefinAccount[],
+  now: Date,
 ): Promise<SimplefinAccountRow[]> {
   if (accounts.length === 0) return [];
-  const now = new Date();
   // Postgres rejects a multi-row ON CONFLICT DO UPDATE batch if the same
   // conflict target appears twice ("cannot affect row a second time") —
   // dedupe defensively so a provider response with a repeated account id
@@ -392,7 +389,7 @@ async function writeSnapshot(
  */
 export async function runSimplefinSync(
   db: Db,
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<SimplefinSyncResult> {
   const conn = await getSimplefinConnection(db);
   if (!conn) {
@@ -461,7 +458,7 @@ export async function runSimplefinSync(
     const synced = await db.transaction(async (tx) => {
       // An account reported under a new SimpleFIN id keeps its row first.
       const renewed = await reidentifySimplefinAccounts(tx, response, asOfDate);
-      await upsertSimplefinAccounts(tx, fetched);
+      await upsertSimplefinAccounts(tx, fetched, asOfDate);
       const missingAccounts = expectedIncluded.filter(
         (a) => !fetchedIds.has(a.externalAccountId) && !renewed.has(a.id),
       );
@@ -593,7 +590,7 @@ export async function runSimplefinSync(
  */
 export async function recomputeTodaySnapshotFromLocal(
   db: Db,
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<SimplefinSyncResult> {
   const rows = (
     await db
