@@ -2,23 +2,23 @@ import { trpc } from "@/lib/trpc";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
 import type { ContribDraft, MatchDraft } from "./account-row-types";
 
-export function useNewProfileSave(
-  contribValues: Record<string, ContribDraft>,
-  nameValues: Record<string, string>,
-  disabledAccounts: Record<string, boolean>,
-  matchValues: Record<string, MatchDraft>,
-  deductionValues: Record<string, string>,
+export function useNewProfileSave(form: {
+  contribValues: Record<string, ContribDraft>;
+  nameValues: Record<string, string>;
+  disabledAccounts: Record<string, boolean>;
+  matchValues: Record<string, MatchDraft>;
+  deductionValues: Record<string, string>;
   createMutation: ReturnType<
     typeof trpc.contributionProfile.create.useMutation
-  >,
-  name: string,
-  description: string,
-) {
+  >;
+  name: string;
+  description: string;
+}) {
   const handleSave = () => {
     // A new profile starts with no value for an account unless one is
     // entered here: a blank Value leaves it unset, editable afterward.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
-    for (const [accountId, cVal] of Object.entries(contribValues)) {
+    for (const [accountId, cVal] of Object.entries(form.contribValues)) {
       if (cVal.value && cVal.value.trim()) {
         const num = parseFloat(cVal.value);
         if (!isNaN(num)) {
@@ -30,7 +30,7 @@ export function useNewProfileSave(
         }
       }
     }
-    for (const [accountId, nameVal] of Object.entries(nameValues)) {
+    for (const [accountId, nameVal] of Object.entries(form.nameValues)) {
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
@@ -38,15 +38,15 @@ export function useNewProfileSave(
         };
       }
     }
-    for (const [accountId, isDisabled] of Object.entries(disabledAccounts)) {
-      if (isDisabled) {
+    for (const [accountId, disabled] of Object.entries(form.disabledAccounts)) {
+      if (disabled) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
           isActive: false,
         };
       }
     }
-    for (const [accountId, mVal] of Object.entries(matchValues)) {
+    for (const [accountId, mVal] of Object.entries(form.matchValues)) {
       if (mVal.matchType) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
@@ -80,9 +80,9 @@ export function useNewProfileSave(
 
     // Per-deduction amounts: blank = not set, as for contribution accounts.
     const deductions: Record<string, Record<string, unknown>> = {};
-    for (const [deductionId, amountStr] of Object.entries(deductionValues)) {
-      if (amountStr && amountStr.trim()) {
-        const num = parseFloat(amountStr);
+    for (const [deductionId, amount] of Object.entries(form.deductionValues)) {
+      if (amount && amount.trim()) {
+        const num = parseFloat(amount);
         if (!isNaN(num)) {
           deductions[deductionId] = { amountPerPeriod: String(num) };
         }
@@ -99,14 +99,14 @@ export function useNewProfileSave(
       ...(Object.keys(deductions).length > 0 ? { deductions } : {}),
     };
 
-    createMutation.mutate({
-      name,
-      description: description || undefined,
+    form.createMutation.mutate({
+      name: form.name,
+      description: form.description || undefined,
       contributionActiveFields,
     });
   };
 
-  const isPending = createMutation.isPending;
+  const isPending = form.createMutation.isPending;
 
   // An existing profile supplies the rows (and their current values) to start
   // from — every account/job is listed with its live value either way.

@@ -43,31 +43,27 @@ const INLINE_CELLS: Record<AccountFieldKey, ComponentType<InlineRowProps>> = {
   cap: InlineCapCell,
 };
 
-export function renderInlineAccountRows(
-  profile: ProfileDetail,
-  accountActiveFields: (id: number) => Record<string, unknown>,
-  drafts: Record<string, string>,
+export function renderInlineAccountRows({
+  profile,
+  accountActiveFields,
+  setAccountFields,
+  ...cellInputs
+}: Pick<
+  InlineRowProps,
+  | "drafts"
+  | "setDraft"
+  | "clearDraft"
+  | "patchAccount"
+  | "setAccountActive"
+  | "commitText"
+  | "commitNumeric"
+> & {
+  profile: ProfileDetail;
+  accountActiveFields: (id: number) => Record<string, unknown>;
   setAccountFields: ReturnType<
     typeof trpc.contributionProfile.setAccountActiveFields.useMutation
-  >,
-  setAccountActive: ReturnType<
-    typeof trpc.settings.contributionAccounts.setActive.useMutation
-  >,
-  setDraft: (key: string, value: string) => void,
-  commitText: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-  ) => void,
-  patchAccount: (accountId: number, changes: Record<string, unknown>) => void,
-  commitNumeric: (
-    draftKey: string,
-    stored: string,
-    apply: (value: unknown) => void,
-    toValue: (num: number) => unknown,
-  ) => void,
-  clearDraft: (key: string) => void,
-) {
+  >;
+}) {
   const { sharedMatchSource: editSharedMatchSource } = groupSharedMatchAccounts(
     profile.accountDetails,
   );
@@ -78,7 +74,8 @@ export function renderInlineAccountRows(
       af.contributionMethod !== undefined ? String(af.contributionMethod) : "";
     // The <select> has no blank option: unset shows "% of Salary".
     const effectiveMethod =
-      drafts[`a${ad.id}:method`] ?? (storedMethod || "percent_of_salary");
+      cellInputs.drafts[`a${ad.id}:method`] ??
+      (storedMethod || "percent_of_salary");
     const isPercent = effectiveMethod === "percent_of_salary";
     // Profile-owned: resolved as applyContribActiveFields does.
     const storedMatchType =
@@ -116,13 +113,7 @@ export function renderInlineAccountRows(
       isDisabled,
       ad,
       af,
-      drafts,
-      setDraft,
-      clearDraft,
-      patchAccount,
-      setAccountActive,
-      commitText,
-      commitNumeric,
+      ...cellInputs,
       storedName,
       effectiveMethod,
       storedValue,

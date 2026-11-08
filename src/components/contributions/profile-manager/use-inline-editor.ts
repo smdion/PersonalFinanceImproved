@@ -99,21 +99,19 @@ export function useInlineEditorState(profileId: number, onSaved: () => void) {
   };
 }
 
-export function inlineEditorCommits(
-  profile: ProfileDetail,
-  profileId: number,
-  drafts: Record<string, string>,
-  clearDraft: (key: string) => void,
-  setAccountFields: ReturnType<
-    typeof trpc.contributionProfile.setAccountActiveFields.useMutation
-  >,
+export function inlineEditorCommits(editor: {
+  profile: ProfileDetail;
+  profileId: number;
+  drafts: Record<string, string>;
+  clearDraft: (key: string) => void;
+  setAccountFields: ReturnType<typeof useInlineEditorState>["setAccountFields"];
   setDeductionFields: ReturnType<
-    typeof trpc.contributionProfile.setDeductionActiveFields.useMutation
-  >,
-  updateMutation: ReturnType<
-    typeof trpc.contributionProfile.update.useMutation
-  >,
-) {
+    typeof useInlineEditorState
+  >["setDeductionFields"];
+  updateMutation: ReturnType<typeof useInlineEditorState>["updateMutation"];
+}) {
+  const { profile, profileId, drafts, clearDraft } = editor;
+  const { setAccountFields, setDeductionFields, updateMutation } = editor;
   const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot; // Stored jsonb, typed by $type only: kept guarded.
   const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};

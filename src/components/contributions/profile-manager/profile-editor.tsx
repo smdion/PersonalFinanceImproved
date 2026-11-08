@@ -45,7 +45,7 @@ export function ProfileEditor({
     onSuccess: (created) => onSaved(created.id),
   });
 
-  const { handleSave, isPending, baseData } = useNewProfileSave(
+  const { handleSave, isPending, baseData } = useNewProfileSave({
     contribValues,
     nameValues,
     disabledAccounts,
@@ -54,7 +54,7 @@ export function ProfileEditor({
     createMutation,
     name,
     description,
-  );
+  });
 
   return (
     <div className="bg-surface-sunken rounded-lg p-4">

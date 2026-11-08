@@ -45,7 +45,7 @@ export function ProfileInlineEditor({
     commitNumeric,
     commitText,
     commitProfileDescription,
-  } = inlineEditorCommits(
+  } = inlineEditorCommits({
     profile,
     profileId,
     drafts,
@@ -53,7 +53,7 @@ export function ProfileInlineEditor({
     setAccountFields,
     setDeductionFields,
     updateMutation,
-  );
+  });
 
   return (
     <div>
@@ -95,7 +95,7 @@ export function ProfileInlineEditor({
               </tr>
             </thead>
             <tbody>
-              {renderInlineAccountRows(
+              {renderInlineAccountRows({
                 profile,
                 accountActiveFields,
                 drafts,
@@ -106,7 +106,7 @@ export function ProfileInlineEditor({
                 patchAccount,
                 commitNumeric,
                 clearDraft,
-              )}
+              })}
             </tbody>
           </table>
         </div>
