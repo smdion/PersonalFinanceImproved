@@ -339,7 +339,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     label: "Spending Decline",
     shortLabel: "Decline",
     description:
-      "Annual real spending decline reflecting reduced consumption in later retirement (per EBRI data)",
+      "Annual real spending decline reflecting reduced consumption in later retirement (Morningstar's 2%, from EBRI data)",
     morningstarRef: "Method 4",
     incomeSource: "budget",
     usesWithdrawalRate: true,
@@ -356,13 +356,13 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.02,
         tooltip:
-          "Annual real spending decline rate. 2% matches EBRI actual spending data.",
+          "Annual real spending decline rate. 2% is Morningstar's steady-rate reading of EBRI spending data.",
         lever: { delta: 0.5, unit: "relative", targets: ["survival"] },
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount", "decumulationYearCount"],
     guide: {
-      how: "Based on EBRI research showing retirees' real spending declines ~2% annually. Spending grows with CPI (maintaining nominal value) but the 2% real decline means purchasing power intentionally reduces each year.",
+      how: "Based on Morningstar's 2% a year, its steady-rate reading of EBRI spending data. Spending grows with CPI (maintaining nominal value) but the 2% real decline means purchasing power intentionally reduces each year.",
       strengths: [
         "Matches actual retiree behavior — most people spend less as they age",
         "Higher initial withdrawal rate than Fixed Real (~5.0% vs ~3.9%)",
@@ -521,7 +521,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       how: "Withdraw 5% of the 10-year rolling average portfolio balance. This smooths out year-to-year market swings. A nominal floor at 90% of initial withdrawal prevents severe cuts.",
       strengths: [
         "Smoother income than Constant Percentage — volatility is dampened by the rolling average",
-        "Based on how university endowments (Yale, Stanford) manage spending",
+        "Averages the balance over time, as university endowments often do (Morningstar's Method 6)",
         "Self-correcting like Constant Percentage",
       ],
       weaknesses: [

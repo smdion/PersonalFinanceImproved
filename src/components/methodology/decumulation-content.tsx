@@ -145,8 +145,8 @@ export function DecumulationMethodologyContent() {
         <p className="text-faint mb-2 text-xs">
           Based on Morningstar&apos;s &ldquo;State of Retirement Income:
           2025&rdquo; research. The SWR (starting safe withdrawal rate) shown is
-          the maximum starting rate each strategy can support at 90% historical
-          success over 30 years with a 40/60 portfolio.
+          the highest starting rate each strategy supports in 90% of its
+          simulated trials over 30 years with a 40/60 portfolio.
         </p>
 
         <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
@@ -224,7 +224,7 @@ export function DecumulationMethodologyContent() {
           <li>
             <strong>Spending Decline (SWR ~5.0%)</strong> — annual real spending
             declines by a fixed rate (default 2%), reflecting actual reduced
-            consumption in later retirement per EBRI spending data. Not
+            consumption in later retirement (Morningstar, from EBRI data). Not
             market-responsive — the decline is predetermined regardless of
             portfolio performance.
             <br />
@@ -525,7 +525,7 @@ export function DecumulationMethodologyContent() {
                 <td className="text-label pr-3 font-mono">annualDeclineRate</td>
                 <td className="pr-3">0.02</td>
                 <td>
-                  Annual real spending decline rate (2% matches EBRI data)
+                  Annual real spending decline rate (2%: Morningstar, from EBRI)
                 </td>
               </tr>
               <tr>
