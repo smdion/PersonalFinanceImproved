@@ -24,9 +24,7 @@ import {
   SimulationOffNotice,
 } from "./projection-card/engine-notices";
 import { HeroKpisPanel } from "./projection-card/hero-panel";
-import { ScenarioPills } from "./projection-card/compute-zone";
-import { PersonViewPills } from "./projection-card/person-view-pills";
-import { SimulationSettings } from "./projection-card/simulation-settings";
+import { ComputeControls } from "./projection-card/compute-controls";
 import { ChartArea } from "./projection-card/chart-area";
 import { TableArea } from "./projection-card/table-area";
 import { checkReportGate } from "@/lib/pure/advice/report/mc-freshness";
@@ -117,8 +115,6 @@ export function ProjectionCard(props: {
     withdrawalSplitsTouched,
     withdrawalTaxPref,
     setWithdrawalTaxPref,
-    projectionMode,
-    // setProjectionMode removed — MC is always active
     mcTaxMode,
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
@@ -136,15 +132,7 @@ export function ProjectionCard(props: {
     setFanBandRange,
     mcBandsByYear,
     scenarioView,
-    setScenarioView,
-    coastFireCustomAge,
-    setCoastFireCustomAge,
-    coastFireCustomAgeDraft,
-    setCoastFireCustomAgeDraft,
-    coastFireProbeResult,
     coastFireProbeLoading,
-    coastFireProbeError,
-    checkCoastFireCustomAge,
     showMethodology,
     setShowMethodology,
     showAccumMethodology,
@@ -510,39 +498,6 @@ export function ProjectionCard(props: {
                   convention instead of four separate hand-rolled ones. */}
               {result &&
                 (() => {
-                  const isMc = projectionMode === "monteCarlo";
-                  // AVAILABILITY (can the pill be clicked at all) is sourced
-                  // from the cheap deterministic `coastFireQuery`, which
-                  // always runs — the MC probe is now on-demand (fires once
-                  // this scenario is actually selected, see
-                  // use-projection-queries.ts's coastFireMcQuery docblock),
-                  // so gating availability on MC data would make the pill
-                  // permanently unclickable (it needs a click to start
-                  // loading, but couldn't be clicked until it had loaded).
-                  //
-                  // The LABEL/NUMBER still prefers the MC-verified result
-                  // once it's loaded — deterministic ignores sequence-of-
-                  // returns risk, so the two can legitimately disagree, and
-                  // this pill's own scenario runs off coastFireMcResult (see
-                  // use-projection-queries.ts's activeCoastFireMcResult).
-                  // Before MC data exists, showing the deterministic guess
-                  // is the "basic KPI info" — it self-corrects to the
-                  // verified number the moment MC loads. status ===
-                  // "already_coast" is the one case where MC HAS resolved
-                  // and definitively says there's no distinct future age to
-                  // show (that's the separate "Coast FIRE (Today)" pill) —
-                  // showing a fallback age there would reproduce a real bug
-                  // (pill said "Age 37", hero card said "Age 47" for the
-                  // same household), so that case still nulls out rather
-                  // than falling back.
-                  const coastFireMcData = coastFireMcQuery.data?.result;
-                  const coastFireAge =
-                    coastFireMcData?.status === "found"
-                      ? coastFireMcData.coastFireAge
-                      : coastFireMcData?.status === "already_coast"
-                        ? null
-                        : deterministicCoastFireAge;
-                  const coastFireAvailable = deterministicCoastFireAge != null;
                   const hasMc = mcBandsByYear != null;
                   // The Balance chart's stacked bars are built from real
                   // per-account tax-type/account data — a Simple-tax-mode
@@ -559,118 +514,12 @@ export function ProjectionCard(props: {
                           calculated. Scenario is the primary control
                           (bigger, colored active state); everything else
                           is secondary, below the dashed rule. */}
-                      <ControlZone
-                        tone="compute"
-                        title="Compute"
-                        why="what gets run"
-                      >
-                        <ScenarioPills
-                          coastFireAvailable={coastFireAvailable}
-                          state={state}
-                          coastFireAge={coastFireAge}
-                          scenarioView={scenarioView}
-                          setScenarioView={setScenarioView}
-                        />
-                        {scenarioView === "coastFireCustom" &&
-                          (() => {
-                            const currentAge =
-                              result.projectionByYear[0]?.age ?? 0;
-                            const maxAge = engineSettings.retirementAge - 1;
-                            const committedAge =
-                              coastFireCustomAge ?? currentAge;
-                            // What the box actually shows while typing —
-                            // the raw, unclamped draft if the user has one,
-                            // else the last committed age. Clamping used to
-                            // happen on every keystroke (via
-                            // setCoastFireCustomAge directly in onChange),
-                            // which corrupted multi-digit entry: typing "4"
-                            // of "42" got clamped up to the min bound
-                            // immediately, forcing the DOM value to change
-                            // mid-keystroke so the "2" landed in the wrong
-                            // position — e.g. produced "54" instead of "42".
-                            // Clamping now happens only in commitDraft, on
-                            // blur or "Check this age".
-                            const draftText =
-                              coastFireCustomAgeDraft ?? String(committedAge);
-                            const commitDraft = (): number => {
-                              const v = parseInt(draftText, 10);
-                              const clamped = isNaN(v)
-                                ? committedAge
-                                : Math.min(maxAge, Math.max(currentAge, v));
-                              setCoastFireCustomAge(clamped);
-                              setCoastFireCustomAgeDraft(null);
-                              return clamped;
-                            };
-                            return (
-                              <div className="bg-surface-sunken -mt-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm">
-                                <label
-                                  htmlFor="coast-fire-custom-age"
-                                  className="text-caption text-muted"
-                                >
-                                  {state.primaryName
-                                    ? `Check ${state.primaryName}'s age`
-                                    : "Check age"}
-                                </label>
-                                <input
-                                  id="coast-fire-custom-age"
-                                  type="number"
-                                  min={currentAge}
-                                  max={maxAge}
-                                  step={1}
-                                  value={draftText}
-                                  onChange={(e) =>
-                                    setCoastFireCustomAgeDraft(e.target.value)
-                                  }
-                                  onBlur={commitDraft}
-                                  className="w-16 rounded border px-1.5 py-0.5 text-sm tabular-nums"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    checkCoastFireCustomAge(commitDraft())
-                                  }
-                                  disabled={coastFireProbeLoading}
-                                  className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-2.5 py-1 font-semibold shadow-sm transition-colors disabled:opacity-50"
-                                >
-                                  {coastFireProbeLoading
-                                    ? "Checking…"
-                                    : "Check this age"}
-                                </button>
-                                {coastFireProbeError && (
-                                  <span className="text-caption text-red-600">
-                                    {coastFireProbeError}
-                                  </span>
-                                )}
-                                {!coastFireProbeError &&
-                                  coastFireProbeResult &&
-                                  coastFireProbeResult.probeAge ===
-                                    committedAge && (
-                                    <span
-                                      className={`text-caption font-medium ${
-                                        coastFireProbeResult.passes
-                                          ? "text-green-600"
-                                          : "text-red-600"
-                                      }`}
-                                    >
-                                      {coastFireProbeResult.passes
-                                        ? "✓ Passes"
-                                        : "✗ Doesn't pass"}{" "}
-                                      (
-                                      {formatPercent(
-                                        coastFireProbeResult.successRate,
-                                        0,
-                                      )}
-                                      )
-                                    </span>
-                                  )}
-                              </div>
-                            );
-                          })()}
-                        <ZoneSecondaryRow>
-                          <PersonViewPills state={state} people={people} />
-                          {isMc && <SimulationSettings state={state} />}
-                        </ZoneSecondaryRow>
-                      </ControlZone>
+                      <ComputeControls
+                        state={state}
+                        people={people}
+                        result={result}
+                        engineSettings={engineSettings}
+                      />
 
                       {/* DISPLAY zone — lenses on results already computed.
                           Chart type is the primary control; Dollars rides

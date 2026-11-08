@@ -2269,19 +2269,24 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 16
+      "count": 14
     },
     "ratchet/no-hand-date-format": {
       "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-jsx-iife": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-raw-button": {
-      "count": 3
+      "count": 2
+    }
+  },
+  "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 1
