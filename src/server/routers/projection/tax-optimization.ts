@@ -122,11 +122,11 @@ type TaxOptimizationBaseInput = z.infer<typeof taxOptimizationBaseInput>;
  * the not-configured reason when no return rate covers its current age.
  */
 async function runProjection(
-  db: Parameters<typeof prepareProjectionRun>[0],
+  ctx: Parameters<typeof prepareProjectionRun>[0],
   input: TaxOptimizationBaseInput,
   extraDecumulationOverrides: DecumulationOverride[] = [],
 ) {
-  const { payload } = await prepareProjectionRun(db, {
+  const { payload } = await prepareProjectionRun(ctx, {
     selection: input.selection,
     snapshotId: input.snapshotId,
   });
@@ -135,7 +135,7 @@ async function runProjection(
 
   const { settings, distributionTaxRates, baseEngineInput } = payload;
   // Omitted "Changes by year" = the household's saved rows.
-  const overrides = await resolveProjectionOverrides(db, input);
+  const overrides = await resolveProjectionOverrides(ctx.db, input);
 
   const engineInput = {
     ...baseEngineInput,
@@ -282,7 +282,7 @@ export const taxOptimizationRouter = createTRPCRouter({
   projectTaxYears: protectedProcedure
     .input(taxOptimizationBaseInput)
     .query(async ({ ctx, input }) => {
-      const run = await runProjection(ctx.db, input);
+      const run = await runProjection(ctx, input);
       if (!run) return { rows: [] as TaxYearRow[], meta: null };
       if (typeof run === "string")
         return {
@@ -326,7 +326,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const baseline = await runProjection(ctx.db, input);
+      const baseline = await runProjection(ctx, input);
       if (!baseline) return { strategies: [], baselineLabel: null };
       if (typeof baseline === "string")
         return {
@@ -380,7 +380,7 @@ export const taxOptimizationRouter = createTRPCRouter({
             : {}),
         } as DecumulationOverride;
 
-        const out = await runProjection(ctx.db, input, [override]);
+        const out = await runProjection(ctx, input, [override]);
         const run = typeof out === "string" ? null : out;
         const years = run ? decumulationYears(run.result.projectionByYear) : [];
         const finalYear = years[years.length - 1];
@@ -433,7 +433,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       ]),
     )
     .query(async ({ ctx, input }) => {
-      const run = await runProjection(ctx.db, input);
+      const run = await runProjection(ctx, input);
       if (!run) return { mode: input.mode, result: null };
       if (typeof run === "string")
         return {
@@ -474,8 +474,8 @@ export const taxOptimizationRouter = createTRPCRouter({
       ];
 
       const [withRun, offRun] = await Promise.all([
-        runProjection(ctx.db, input, withOverrides),
-        runProjection(ctx.db, input, offOverride),
+        runProjection(ctx, input, withOverrides),
+        runProjection(ctx, input, offOverride),
       ]);
       const withYears =
         withRun && typeof withRun !== "string"

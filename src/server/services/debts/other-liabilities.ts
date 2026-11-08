@@ -35,10 +35,7 @@ type OtherLiabilities = {
 
 export async function getEffectiveOtherLiabilities(
   db: DbOrTx,
-  {
-    activeBudgetApi,
-    asOf = new Date(),
-  }: { activeBudgetApi?: ActiveBudgetApi; asOf?: Date } = {},
+  { activeBudgetApi, asOf }: { activeBudgetApi?: ActiveBudgetApi; asOf: Date },
 ): Promise<OtherLiabilities> {
   const [manualRow] = await db
     .select()

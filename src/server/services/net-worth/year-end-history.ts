@@ -101,7 +101,7 @@ function yearEndCacheKey(
 
 export async function buildYearEndHistory(
   db: Db,
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
   targeting?: YearEndHistoryTargeting,
 ): Promise<YearEndRow[]> {
   const cacheKey = yearEndCacheKey(asOfDate, targeting);
@@ -149,7 +149,7 @@ export async function buildYearEndHistory(
       .select()
       .from(schema.retirementProfiles)
       .orderBy(asc(schema.retirementProfiles.id)),
-    getAnnualExpensesFromBudget(db, targeting),
+    getAnnualExpensesFromBudget(db, asOfDate, targeting),
     db
       .select()
       .from(schema.homeImprovementItems)
@@ -439,7 +439,7 @@ export async function buildYearEndHistory(
       // dates instead.
       snapshotAgeDays: snapshotData
         ? Math.round(
-            (localMidnight(new Date()).getTime() -
+            (localMidnight(asOfDate).getTime() -
               parseLocalDateOnly(
                 snapshotData.snapshot.snapshotDate,
               ).getTime()) /

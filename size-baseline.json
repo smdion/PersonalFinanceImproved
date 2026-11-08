@@ -358,7 +358,7 @@
     "src/server/routers/contribution-profiles.ts": 800,
     "src/server/routers/demo.ts": 83,
     "src/server/routers/milestones.ts": 53,
-    "src/server/routers/networth/comparison.ts": 246,
+    "src/server/routers/networth/comparison.ts": 245,
     "src/server/routers/networth/index.ts": 19,
     "src/server/routers/networth/portfolio-snapshots.ts": 336,
     "src/server/routers/networth/snapshots.ts": 306,
@@ -369,7 +369,7 @@
     "src/server/routers/projection/_shared.ts": 234,
     "src/server/routers/projection/coast-fire.ts": 457,
     "src/server/routers/projection/monte-carlo.ts": 531,
-    "src/server/routers/projection/relocation.ts": 651,
+    "src/server/routers/projection/relocation.ts": 650,
     "src/server/routers/projection/scenarios.ts": 161,
     "src/server/routers/projection/strategy.ts": 815,
     "src/server/routers/projection/tax-optimization.ts": 526,
@@ -387,15 +387,15 @@
     "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
-    "src/server/services/budget/active-summary.ts": 330,
-    "src/server/services/budget/annual-expenses.ts": 59,
+    "src/server/services/budget/active-summary.ts": 324,
+    "src/server/services/budget/annual-expenses.ts": 58,
     "src/server/services/budget/linked-items.ts": 206,
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/live-data.ts": 98,
     "src/server/services/contributions/profile.ts": 382,
     "src/server/services/contributions/summary.ts": 732,
-    "src/server/services/debts/other-liabilities.ts": 67,
+    "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 468,
     "src/server/services/investments/current-balances.ts": 467,
     "src/server/services/net-worth/other-assets.ts": 91,
@@ -1028,7 +1028,7 @@
       "contributionProfileRouter.getById.query()": 186
     },
     "src/server/routers/networth/comparison.ts": {
-      "comparisonProcedures.computeComparison.query()": 216
+      "comparisonProcedures.computeComparison.query()": 215
     },
     "src/server/routers/networth/portfolio-snapshots.ts": {
       "portfolioSnapshotProcedures.create.mutation()": 265
@@ -1046,7 +1046,7 @@
       "monteCarloRouter.computeMonteCarloProjection.query()": 304
     },
     "src/server/routers/projection/relocation.ts": {
-      "relocationProjectionRouter.computeRelocationFiProjection.query()": 476
+      "relocationProjectionRouter.computeRelocationFiProjection.query()": 475
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 400,
@@ -1062,7 +1062,7 @@
       "syncNamesRouter.syncAllNames.mutation()": 159
     },
     "src/server/services/budget/active-summary.ts": {
-      "computeBudgetActiveSummary": 247
+      "computeBudgetActiveSummary": 241
     },
     "src/server/services/budget/linked-items.ts": {
       "resolveLinkedBudgetItemAmounts": 152

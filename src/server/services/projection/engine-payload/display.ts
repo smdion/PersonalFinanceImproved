@@ -17,7 +17,11 @@ export async function budgetSummaries(
     ReturnType<typeof fetchRetirementData>
   >["allBudgetItems"],
   db: Db,
-  opts: { contributionProfileId?: number; salaryProfileId?: number },
+  opts: {
+    asOf: Date;
+    contributionProfileId?: number;
+    salaryProfileId?: number;
+  },
 ) {
   const budgetProfileSummaries = await Promise.all(
     allBudgetProfiles.map(async (p) => {
@@ -26,7 +30,7 @@ export async function budgetSummaries(
       const months = (p.columnMonths as number[] | null) ?? null;
       const numColumns = labels.length;
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        db,
+        { db, scope: { asOf: opts.asOf } },
         items,
         numColumns,
         {

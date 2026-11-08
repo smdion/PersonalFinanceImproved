@@ -251,7 +251,9 @@ describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person 
       });
 
       const data = await fetchRetirementData(rawDb, {});
-      const payload = await buildEnginePayload(rawDb, data, {});
+      const payload = await buildEnginePayload(rawDb, data, {
+        asOf: new Date(),
+      });
       if (!payload) throw new Error("expected a payload for seeded data");
       const {
         settings,
@@ -380,7 +382,9 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
       });
 
       const data = await fetchRetirementData(rawDb, {});
-      const payload = await buildEnginePayload(rawDb, data, {});
+      const payload = await buildEnginePayload(rawDb, data, {
+        asOf: new Date(),
+      });
       if (!payload) throw new Error("expected a payload for seeded data");
       const {
         settings,

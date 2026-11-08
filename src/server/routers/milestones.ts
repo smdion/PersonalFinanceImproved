@@ -21,7 +21,7 @@ export const milestonesRouter = createTRPCRouter({
   /** Year-end history mapped for the Milestones engine, plus the household's own goals and checklist. */
   computeInputs: protectedProcedure
     .input(zYearEndTargeting)
-    .query(({ ctx, input }) => loadMilestoneInputs(ctx.db, input)),
+    .query(({ ctx, input }) => loadMilestoneInputs(ctx, input)),
 
   /** When each milestone was first reached (null before any recording). */
   firstReached: protectedProcedure.query(async ({ ctx }) => {

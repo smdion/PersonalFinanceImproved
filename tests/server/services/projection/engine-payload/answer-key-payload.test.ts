@@ -60,6 +60,7 @@ const SPEC_TO_ACCOUNT = `v0.11 Engine "matchAccountForContribution matches by ow
 async function projectFromPayload(appDb: Db, contributionProfileId: number) {
   const data = await fetchRetirementData(appDb, { contributionProfileId });
   const payload = (await buildEnginePayload(appDb, data, {
+    asOf: new Date(),
     contributionProfileId,
   }))!;
   return calculateProjection({
@@ -250,7 +251,9 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
           .run();
         seedAppSetting(db, SK_RETIREMENT_DEC_EXPENSE_OVERRIDE, "90000");
         const data = await fetchRetirementData(appDb, {});
-        const payload = await buildEnginePayload(appDb, data, {});
+        const payload = await buildEnginePayload(appDb, data, {
+          asOf: new Date(),
+        });
         return sent(payload!.baseEngineInput);
       },
       expected: {
@@ -274,6 +277,7 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
       run: async () => {
         const data = await fetchRetirementData(appDb, {});
         const payload = await buildEnginePayload(appDb, data, {
+          asOf: new Date(),
           decumulationBudgetProfileId: budgetProfileId,
           decumulationBudgetColumn: 0,
         });

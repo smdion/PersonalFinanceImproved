@@ -16,7 +16,7 @@ export const projectionMetadataRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { data, payload } = await prepareProjectionRun(ctx.db, input);
+      const { data, payload } = await prepareProjectionRun(ctx, input);
       if (!payload) return { result: null };
       return { result: null, ...projectionMetadata(data, payload) };
     }),

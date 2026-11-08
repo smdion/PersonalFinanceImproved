@@ -70,7 +70,7 @@ export const scenariosRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { data, payload } = await prepareProjectionRun(ctx.db, {
+      const { data, payload } = await prepareProjectionRun(ctx, {
         selection: input.selection,
         snapshotId: input.snapshotId,
       });

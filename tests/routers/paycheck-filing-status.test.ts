@@ -135,7 +135,9 @@ describe("a Retirement Profile's filing status: Auto, saves, the fallback", () =
       .get()?.f;
   const engineStatus = async () => {
     const data = await fetchRetirementData(ctx.db as never, {});
-    return (await buildEnginePayload(ctx.db as never, data, {}))?.filingStatus;
+    return (
+      await buildEnginePayload(ctx.db as never, data, { asOf: new Date() })
+    )?.filingStatus;
   };
 
   beforeAll(async () => {

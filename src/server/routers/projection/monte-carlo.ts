@@ -155,7 +155,7 @@ export const monteCarloRouter = createTRPCRouter({
         },
         savedAssetOverridesRow,
       ] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),

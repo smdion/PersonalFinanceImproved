@@ -62,17 +62,16 @@ export const comparisonProcedures = {
         );
       })();
       // Resolved once, threaded into getEffectiveCash/
-      // getEffectiveCreditCardDebt, and run alongside the independent
-      // otherAssets lookup instead of 2 separate getActiveBudgetApi calls
-      // plus a serialized otherAssets fetch.
+      // getEffectiveCreditCardDebt, and run alongside otherAssets.
+      const { asOf } = ctx.scope;
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [{ cash }, otherAssets] = await Promise.all([
         getEffectiveCash(ctx.db, settings, activeBudgetApi),
-        getEffectiveOtherAssets(ctx.db, settings),
+        getEffectiveOtherAssets(ctx.db, settings, asOf),
       ]);
       const otherLiabilities = (
-        await getEffectiveOtherLiabilities(ctx.db, { activeBudgetApi })
+        await getEffectiveOtherLiabilities(ctx.db, { activeBudgetApi, asOf })
       ).total;
 
       // Find nearest snapshot to a target date

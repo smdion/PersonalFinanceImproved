@@ -8034,9 +8034,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/routers/networth/portfolio-snapshots.ts": {
@@ -8185,7 +8182,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 13
+      "count": 12
     },
     "ratchet/no-abbreviation": {
       "count": 3
@@ -8532,9 +8529,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 2
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/server/services/budget/account-balances.ts": {
@@ -8601,9 +8595,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 10
-    },
-    "ratchet/no-clock-read": {
-      "count": 2
     }
   },
   "src/server/services/contributions/account-edits.ts": {
@@ -8705,9 +8696,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     }
   },
   "src/server/services/demo/demo-schema.ts": {
@@ -8793,9 +8781,6 @@
   "src/server/services/net-worth/other-assets.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-clock-read": {
-      "count": 2
     }
   },
   "src/server/services/net-worth/snapshot-derivatives.ts": {
@@ -8823,7 +8808,7 @@
       "count": 9
     },
     "ratchet/no-clock-read": {
-      "count": 4
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -8976,9 +8961,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 15
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
     },
     "ratchet/no-guarded-division": {
       "count": 1

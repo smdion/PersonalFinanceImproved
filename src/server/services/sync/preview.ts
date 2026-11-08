@@ -188,7 +188,7 @@ export async function computeSyncPreview(
     const previewNumColumns = (activeProfile.columnLabels as string[]).length;
     const activeProfiles = await resolveProfileSelection(ctx.scope);
     budgetItemRows = await resolveLinkedBudgetItemAmounts(
-      ctx.db,
+      ctx,
       linkedRows,
       previewNumColumns,
       activeProfiles,

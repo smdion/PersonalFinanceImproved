@@ -22,6 +22,7 @@ export async function resolvePhaseExpenses(
     allBudgetItems: (typeof schema.budgetItems.$inferSelect)[];
     globalActiveCol: number;
     opts: {
+      asOf: Date;
       contributionProfileId?: number;
       salaryProfileId?: number;
       accumulationBudgetProfileId?: number;
@@ -76,15 +77,16 @@ export async function resolvePhaseExpenses(
     (accProfile?.columnLabels as string[] | null)?.length ?? 1;
   const decNumColumns =
     (decProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const dated = { db, scope: { asOf: opts.asOf } };
   const resolvedAccItems = opts.accumulationExpenseOverride
     ? accItems
-    : await resolveLinkedBudgetItemAmounts(db, accItems, accNumColumns, {
+    : await resolveLinkedBudgetItemAmounts(dated, accItems, accNumColumns, {
         contribProfileId: opts.contributionProfileId ?? null,
         salaryProfileId: opts.salaryProfileId ?? null,
       });
   const resolvedDecItems = opts.decumulationExpenseOverride
     ? decItems
-    : await resolveLinkedBudgetItemAmounts(db, decItems, decNumColumns, {
+    : await resolveLinkedBudgetItemAmounts(dated, decItems, decNumColumns, {
         contribProfileId: opts.contributionProfileId ?? null,
         salaryProfileId: opts.salaryProfileId ?? null,
       });

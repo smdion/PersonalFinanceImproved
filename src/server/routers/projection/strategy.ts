@@ -123,7 +123,7 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
@@ -406,7 +406,7 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
@@ -636,7 +636,6 @@ export const strategyRouter = createTRPCRouter({
           if (field?.max != null) rounded = Math.min(field.max, rounded);
         }
 
-        // Build variant engine input
         let variantInput = { ...mcBaseEngineInput };
         if (lever.kind === "strategyParam") {
           const tweakedParams = {
@@ -662,6 +661,7 @@ export const strategyRouter = createTRPCRouter({
             // contribution caps, working years) moves with it.
             const shifted = await buildEnginePayload(ctx.db, data, {
               ...profiles,
+              asOf: ctx.scope.asOf,
               retirementAgeDelta: rounded - lever.currentValue,
             });
             if (!shifted) continue;

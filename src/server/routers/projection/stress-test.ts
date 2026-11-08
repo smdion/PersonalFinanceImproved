@@ -40,7 +40,7 @@ export const stressTestRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const { payload } = await prepareProjectionRun(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx, {
         selection: input?.selection,
         snapshotId: input?.snapshotId,
       });

@@ -13,7 +13,7 @@ import type { Db } from "@/lib/db";
 export async function getEffectiveOtherAssets(
   db: Db,
   settings: { key: string; value: unknown }[],
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<number> {
   const result = await getEffectiveOtherAssetsDetailed(db, settings, asOfDate);
   return result.total;
@@ -23,12 +23,12 @@ export async function getEffectiveOtherAssets(
  *  Each item includes `sourceYear` — the year the value was last entered.
  *  When sourceYear < currentYear, the value is carried forward and may be stale.
  *  `id` is included so callers can check API sync mappings.
- *  `asOfDate` defaults to now; pass it explicitly when the caller already has
- *  a resolved date (e.g. a year-end snapshot) to avoid a fresh `new Date()`. */
+ *  `asOfDate` is the request's date, or a resolved one (a year-end
+ *  snapshot's). */
 export async function getEffectiveOtherAssetsDetailed(
   db: Db,
   settings: { key: string; value: unknown }[],
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<{
   items: {
     id: number | null;

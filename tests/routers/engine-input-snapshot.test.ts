@@ -139,6 +139,7 @@ describe("engine input snapshot guard", () => {
       contributionProfileId: contribProfileId,
     });
     const result = await buildEnginePayload(testCaller.rawDb, data, {
+      asOf: new Date(),
       contributionProfileId: contribProfileId,
     });
     if (!result) {

@@ -59,7 +59,7 @@ export async function resolveLinkedBudgetItemAmounts<
     amounts: unknown;
   },
 >(
-  db: Db,
+  { db, scope }: { db: Db; scope: { asOf: Date } },
   items: T[],
   numColumns: number,
   profiles: ProfilePair,
@@ -120,14 +120,14 @@ export async function resolveLinkedBudgetItemAmounts<
       db,
       await getAllPeople(db),
       null,
-      new Date().getFullYear(),
+      scope.asOf.getFullYear(),
     ),
     profileResult.jobs,
     salaryProfileActiveMap,
     effectiveSalaryMap,
   );
   const activeContribIds = new Set(activeContribs.map((c) => c.id));
-  const activeJobs = filterActiveJobs(profileResult.jobs, new Date());
+  const activeJobs = filterActiveJobs(profileResult.jobs, scope.asOf);
   const {
     periodsPerYear: defaultPeriodsPerYear,
     incomplete: joblessIncomplete,

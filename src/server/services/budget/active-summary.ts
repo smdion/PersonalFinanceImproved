@@ -176,16 +176,10 @@ export async function computeBudgetActiveSummary(
   // between the two call sites.
   const resolvedItemsById = new Map(
     (
-      await resolveLinkedBudgetItemAmounts(
-        ctx.db,
-        items,
-        numColumns,
-        profiles,
-        {
-          sandboxContribActiveFields: input?.sandboxContribActiveFields,
-          sandboxSalaryEntries: input?.sandboxSalaryEntries,
-        },
-      )
+      await resolveLinkedBudgetItemAmounts(ctx, items, numColumns, profiles, {
+        sandboxContribActiveFields: input?.sandboxContribActiveFields,
+        sandboxSalaryEntries: input?.sandboxSalaryEntries,
+      })
     ).map((r) => [r.id, r]),
   );
 

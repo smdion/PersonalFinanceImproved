@@ -180,7 +180,7 @@ export async function computeRelocationAnalysis(
       const numColumns = labels.length;
       const activeProfiles = await resolveProfileSelection(ctx.scope);
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,

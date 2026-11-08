@@ -140,6 +140,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       contributionProfileId: profileId,
     });
     const payload = (await buildEnginePayload(t.rawDb, data, {
+      asOf: new Date(),
       contributionProfileId: profileId,
     }))!;
     expect(payload.baseEngineInput.baseYearContributions!["401k"]).toBeCloseTo(
@@ -156,6 +157,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       contributionProfileId: profileId,
     });
     const payload = (await buildEnginePayload(t.rawDb, data, {
+      asOf: new Date(),
       contributionProfileId: profileId,
     }))!;
     // 36,000 configured: 24,500 now; catch-up from 50 (2040), the larger
@@ -421,6 +423,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         contributionProfileId: profileId,
       });
       const payload = (await buildEnginePayload(t.rawDb, data, {
+        asOf: new Date(),
         contributionProfileId: profileId,
       }))!;
       expect(
@@ -454,6 +457,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         contributionProfileId: profileId,
       });
       const payload = (await buildEnginePayload(t.rawDb, data, {
+        asOf: new Date(),
         contributionProfileId: profileId,
       }))!;
       const switches = payload.baseEngineInput.profileSwitches!.map((s) => [

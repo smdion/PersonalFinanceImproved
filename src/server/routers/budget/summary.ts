@@ -105,7 +105,7 @@ export const summaryProcedures = {
       // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
       // every contribution-linked item from this sidebar's totals.
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,

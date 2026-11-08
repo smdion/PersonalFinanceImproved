@@ -130,12 +130,9 @@ export const relocationProjectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Fetch all DB tables once — both scenarios share the same base data.
-      // Pre-fetch: batches the Salary Profile row alongside everything
-      // else when an id is known, same as scenarios.ts/monte-carlo.ts/
-      // coast-fire.ts. Contribution Profile is NOT pre-fetched here since
-      // each scenario applies its own (see the two buildEnginePayload calls
-      // below) — only one Salary Profile applies to both.
+      // Fetch all DB tables once — both scenarios share the same base data,
+      // the Salary Profile row included. Each scenario applies its own
+      // Contribution Profile (the two buildEnginePayload calls below).
       const data = await fetchRetirementData(ctx.db, {
         salaryProfileId: input.salaryProfileId ?? undefined,
       });
@@ -188,7 +185,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.currentExpenseOverride !== null
           ? currentItems
           : await resolveLinkedBudgetItemAmounts(
-              ctx.db,
+              ctx,
               currentItems,
               currentNumColumns,
               {
@@ -200,7 +197,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.relocationExpenseOverride !== null
           ? relocItems
           : await resolveLinkedBudgetItemAmounts(
-              ctx.db,
+              ctx,
               relocItems,
               relocNumColumns,
               {
@@ -230,6 +227,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       // profile, but shares the same (Plan-pinned or globally-active)
       // Salary Profile, matching every other engine-backed endpoint.
       const currentPayload = await buildEnginePayload(ctx.db, data, {
+        asOf: ctx.scope.asOf,
         accumulationExpenseOverride: currentAnnualExpenses,
         contributionProfileId: input.currentContributionProfileId ?? undefined,
         salaryProfileId: input.salaryProfileId ?? undefined,
@@ -240,6 +238,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         return { notConfigured: currentPayload.notConfigured };
 
       const relocPayload = await buildEnginePayload(ctx.db, data, {
+        asOf: ctx.scope.asOf,
         accumulationExpenseOverride: relocationAnnualExpenses,
         contributionProfileId:
           input.relocationContributionProfileId ?? undefined,

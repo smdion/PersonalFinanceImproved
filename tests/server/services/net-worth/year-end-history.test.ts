@@ -25,7 +25,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("returns an array with at least a current-year row when DB is empty", async () => {
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     expect(Array.isArray(rows)).toBe(true);
     // Should have at least a current-year YTD row
     const currentYear = new Date().getFullYear();
@@ -35,7 +35,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("caches the history until invalidateYearEndCache is called", async () => {
-    const before = await buildYearEndHistory(ctx.rawDb);
+    const before = await buildYearEndHistory(ctx.rawDb, new Date());
     expect(before.some((r) => r.year === 2019)).toBe(false);
 
     ctx.db
@@ -53,12 +53,12 @@ describe("buildYearEndHistory", () => {
       .run();
 
     // Still the cached result...
-    const cached = await buildYearEndHistory(ctx.rawDb);
+    const cached = await buildYearEndHistory(ctx.rawDb, new Date());
     expect(cached.some((r) => r.year === 2019)).toBe(false);
 
     // ...until invalidated.
     invalidateYearEndCache();
-    const fresh = await buildYearEndHistory(ctx.rawDb);
+    const fresh = await buildYearEndHistory(ctx.rawDb, new Date());
     expect(fresh.some((r) => r.year === 2019)).toBe(true);
 
     ctx.db.delete(ctx.schema.netWorthAnnual).run();
@@ -80,10 +80,10 @@ describe("buildYearEndHistory", () => {
           portfolioByTaxLocation: { retirement: {}, portfolio: {} },
         })
         .run();
-      const fromOther = await buildYearEndHistory(other.rawDb);
+      const fromOther = await buildYearEndHistory(other.rawDb, new Date());
       expect(fromOther.some((r) => r.year === 2019)).toBe(true);
       // Same arguments on a different handle → its own build, not the other's.
-      const fromCtx = await buildYearEndHistory(ctx.rawDb);
+      const fromCtx = await buildYearEndHistory(ctx.rawDb, new Date());
       expect(fromCtx.some((r) => r.year === 2019)).toBe(false);
     } finally {
       other.cleanup();
@@ -92,7 +92,7 @@ describe("buildYearEndHistory", () => {
 
   it("caches targeted calls per targeting, never across different targeting", async () => {
     const profileA = { budgetProfileId: 1, budgetColumn: 0 };
-    const before = await buildYearEndHistory(ctx.rawDb, undefined, profileA);
+    const before = await buildYearEndHistory(ctx.rawDb, new Date(), profileA);
     expect(before.some((r) => r.year === 2019)).toBe(false);
 
     ctx.db
@@ -110,12 +110,12 @@ describe("buildYearEndHistory", () => {
       .run();
 
     // Same targeting → the cached build (a page's second caller).
-    const again = await buildYearEndHistory(ctx.rawDb, undefined, {
+    const again = await buildYearEndHistory(ctx.rawDb, new Date(), {
       ...profileA,
     });
     expect(again.some((r) => r.year === 2019)).toBe(false);
     // Different targeting → its own fresh build.
-    const other = await buildYearEndHistory(ctx.rawDb, undefined, {
+    const other = await buildYearEndHistory(ctx.rawDb, new Date(), {
       ...profileA,
       budgetColumn: 1,
     });
@@ -157,7 +157,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023);
     expect(row2023).toBeDefined();
     expect(row2023!.isCurrent).toBe(false);
@@ -169,7 +169,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("computes net worth from components", async () => {
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     // netWorth = portfolio + cash + house + other - mortgage - otherLiabilities
     const expected =
@@ -214,7 +214,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     // With performance data, portfolioTotal should come from account_performance
     expect(row2023.portfolioTotal).toBe(380000);
@@ -222,7 +222,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("includes per-account performance breakdown", async () => {
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     expect(row2023.perfByAccount.length).toBeGreaterThan(0);
     const acct = row2023.perfByAccount[0]!;
@@ -234,7 +234,7 @@ describe("buildYearEndHistory", () => {
   });
 
   it("includes performance summary from account data", async () => {
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     // Should have computed performance summary from account_performance
     expect(row2023.perfBeginningBalance).toBe(300000);
@@ -304,7 +304,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2021 = rows.find((r) => r.year === 2021)!;
     // Modified Dietz: denom = beginBal + (contribs + rollovers - distributions - fees) / 2
     //                       = 10000 + (3000 + (-4000) - 0 - 0) / 2 = 9500
@@ -332,7 +332,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     // Should use finalized data
     expect(row2023.perfBeginningBalance).toBe(310000);
@@ -341,16 +341,16 @@ describe("buildYearEndHistory", () => {
   });
 
   it("caching returns same data within TTL", async () => {
-    const first = await buildYearEndHistory(ctx.rawDb);
-    const second = await buildYearEndHistory(ctx.rawDb);
+    const first = await buildYearEndHistory(ctx.rawDb, new Date());
+    const second = await buildYearEndHistory(ctx.rawDb, new Date());
     // Should be the exact same array reference (cached)
     expect(first).toBe(second);
   });
 
   it("invalidating cache causes fresh fetch", async () => {
-    const first = await buildYearEndHistory(ctx.rawDb);
+    const first = await buildYearEndHistory(ctx.rawDb, new Date());
     invalidateYearEndCache();
-    const second = await buildYearEndHistory(ctx.rawDb);
+    const second = await buildYearEndHistory(ctx.rawDb, new Date());
     // New array (not same reference), but same data
     expect(first).not.toBe(second);
     expect(first.length).toBe(second.length);
@@ -372,7 +372,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     // Should have a mortgage balance computed from amortization
     expect(row2023.mortgageBalance).toBeGreaterThan(0);
@@ -393,7 +393,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     const row2023 = rows.find((r) => r.year === 2023)!;
     expect(row2023.propertyTaxes).toBe(4500);
   });
@@ -421,7 +421,7 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
-    const rows = await buildYearEndHistory(ctx.rawDb);
+    const rows = await buildYearEndHistory(ctx.rawDb, new Date());
     // Check ordering of historical rows
     for (let i = 1; i < rows.length; i++) {
       expect(rows[i]!.year).toBeGreaterThanOrEqual(rows[i - 1]!.year);

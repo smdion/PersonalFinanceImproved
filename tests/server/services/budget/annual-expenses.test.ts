@@ -20,7 +20,7 @@ describe("getAnnualExpensesFromBudget", () => {
   afterAll(() => ctx.cleanup());
 
   it("returns 0 when no budget profiles exist", async () => {
-    const result = await getAnnualExpensesFromBudget(ctx.rawDb);
+    const result = await getAnnualExpensesFromBudget(ctx.rawDb, new Date());
     expect(result).toBe(0);
   });
 
@@ -56,7 +56,7 @@ describe("getAnnualExpensesFromBudget", () => {
       ])
       .run();
 
-    const result = await getAnnualExpensesFromBudget(ctx.rawDb);
+    const result = await getAnnualExpensesFromBudget(ctx.rawDb, new Date());
     // (2000 + 500) × 12 = 30000
     expect(result).toBe(30000);
   });
@@ -97,7 +97,7 @@ describe("getAnnualExpensesFromBudget", () => {
       .values({ key: "budget_active_column", value: 1 })
       .run();
 
-    const result = await getAnnualExpensesFromBudget(ctx.rawDb);
+    const result = await getAnnualExpensesFromBudget(ctx.rawDb, new Date());
     // Column 1: (2500 + 600) × 12 = 37200
     expect(result).toBe(37200);
   });

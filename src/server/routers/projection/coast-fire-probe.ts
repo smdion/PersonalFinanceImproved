@@ -105,7 +105,7 @@ export const coastFireProbeRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       // Coast FIRE's Simulation runs on the default preset.
       const [{ payload }, mc] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),

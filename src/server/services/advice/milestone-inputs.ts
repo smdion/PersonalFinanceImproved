@@ -161,10 +161,10 @@ function salaryByYear(
 /** Year-end history mapped for the Milestones engine, plus the household's
  *  own goals and checklist. */
 export async function loadMilestoneInputs(
-  db: Db,
+  { db, scope }: { db: Db; scope: RequestScope },
   input: z.infer<typeof zYearEndTargeting>,
 ) {
-  const asOfDate = new Date();
+  const asOfDate = scope.asOf;
   const [
     history,
     settingRows,
@@ -192,7 +192,7 @@ export async function loadMilestoneInputs(
       ),
     db.select().from(schema.debts),
     db.select().from(schema.people),
-    getEffectiveOtherLiabilities(db),
+    getEffectiveOtherLiabilities(db, { asOf: asOfDate }),
     db.select().from(schema.historicalSalaries),
     db
       .select({
@@ -327,7 +327,7 @@ export async function activeMilestoneInput(ctx: {
     goals,
     line,
   ] = await Promise.all([
-    loadMilestoneInputs(ctx.db, undefined),
+    loadMilestoneInputs(ctx, undefined),
     computeContributionSummary(ctx, profileIds),
     computeSavingsSummary(
       ctx,

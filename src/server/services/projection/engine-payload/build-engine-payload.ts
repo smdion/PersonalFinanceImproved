@@ -88,6 +88,7 @@ export async function buildEnginePayload(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
   opts: {
+    asOf: Date;
     contributionProfileId?: number;
     salaryProfileId?: number;
     accumulationBudgetProfileId?: number;
@@ -221,11 +222,10 @@ export async function buildEnginePayload(
     activeProfileRows,
     opts,
   );
-
-  // The plan's "as of" date: a selected historical snapshot's date, else today.
+  // The plan's "as of": a selected historical snapshot's date, else opts.asOf.
   const asOfDate = data.snapshotData?.snapshot.snapshotDate
     ? new Date(data.snapshotData.snapshot.snapshotDate)
-    : new Date();
+    : opts.asOf;
   const currentYear = asOfDate.getFullYear();
 
   const { budgetProfileSummaries } = await budgetSummaries(

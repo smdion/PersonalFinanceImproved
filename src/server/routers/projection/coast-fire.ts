@@ -107,7 +107,7 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { payload } = await prepareProjectionRun(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx, {
         selection: input.selection,
         snapshotId: input.snapshotId,
       });
@@ -213,7 +213,7 @@ export const coastFireRouter = createTRPCRouter({
       // overrides. Coast FIRE MC uses defaults for reproducibility.
       // Coast FIRE's Simulation runs on the default preset.
       const [{ payload }, mc] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),

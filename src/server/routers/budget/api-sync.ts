@@ -185,7 +185,7 @@ export const apiSyncProcedures = {
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
       // would push the stale value instead of the profile's live one.
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,
