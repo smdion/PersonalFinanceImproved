@@ -1,6 +1,7 @@
 /** The Relocation calculator's add-purchase form fields: what is bought and
  *  when, and how it is paid for. */
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 
 export type PurchaseFormState = {
@@ -25,12 +26,16 @@ export function PurchaseBasicsFields({
   purchaseForm,
   setPurchaseForm,
 }: PurchaseFieldsProps) {
+  const id = useId();
   return (
     <>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <div>
-          <label className="text-muted block text-xs">Name</label>
+          <label htmlFor={`${id}-name`} className="text-muted block text-xs">
+            Name
+          </label>
           <input
+            id={`${id}-name`}
             type="text"
             className="w-full rounded border px-2 py-1 text-sm"
             placeholder="e.g. New Home"
@@ -41,8 +46,11 @@ export function PurchaseBasicsFields({
           />
         </div>
         <div>
-          <label className="text-muted block text-xs">Purchase Price ($)</label>
+          <label htmlFor={`${id}-price`} className="text-muted block text-xs">
+            Purchase Price ($)
+          </label>
           <input
+            id={`${id}-price`}
             type="number"
             className="w-full rounded border px-2 py-1 text-sm"
             placeholder="e.g. 500000"
@@ -56,8 +64,11 @@ export function PurchaseBasicsFields({
           />
         </div>
         <div>
-          <label className="text-muted block text-xs">Purchase Year</label>
+          <label htmlFor={`${id}-year`} className="text-muted block text-xs">
+            Purchase Year
+          </label>
           <input
+            id={`${id}-year`}
             type="number"
             className="w-full rounded border px-2 py-1 text-sm"
             value={purchaseForm.purchaseYear}
@@ -95,13 +106,17 @@ export function PurchaseCostFields({
   purchaseForm,
   setPurchaseForm,
 }: PurchaseFieldsProps) {
+  const id = useId();
   return (
     <>
       {purchaseForm.financed && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div>
-            <label className="text-muted block text-xs">Down Payment %</label>
+            <label htmlFor={`${id}-down`} className="text-muted block text-xs">
+              Down Payment %
+            </label>
             <input
+              id={`${id}-down`}
               type="number"
               className="w-full rounded border px-2 py-1 text-sm"
               value={purchaseForm.downPaymentPercent}
@@ -114,8 +129,11 @@ export function PurchaseCostFields({
             />
           </div>
           <div>
-            <label className="text-muted block text-xs">Loan Rate %</label>
+            <label htmlFor={`${id}-rate`} className="text-muted block text-xs">
+              Loan Rate %
+            </label>
             <input
+              id={`${id}-rate`}
               type="number"
               step="0.1"
               className="w-full rounded border px-2 py-1 text-sm"
@@ -129,10 +147,11 @@ export function PurchaseCostFields({
             />
           </div>
           <div>
-            <label className="text-muted block text-xs">
+            <label htmlFor={`${id}-term`} className="text-muted block text-xs">
               Loan Term (years)
             </label>
             <input
+              id={`${id}-term`}
               type="number"
               className="w-full rounded border px-2 py-1 text-sm"
               value={purchaseForm.loanTermYears}
@@ -149,11 +168,12 @@ export function PurchaseCostFields({
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
-          <label className="text-muted block text-xs">
+          <label htmlFor={`${id}-monthly`} className="text-muted block text-xs">
             Ongoing Monthly Cost ($)
             <HelpTip text="Property tax, HOA, insurance, maintenance — any recurring monthly cost from this purchase" />
           </label>
           <input
+            id={`${id}-monthly`}
             type="number"
             className="w-full rounded border px-2 py-1 text-sm"
             placeholder="0"
@@ -167,11 +187,15 @@ export function PurchaseCostFields({
           />
         </div>
         <div>
-          <label className="text-muted block text-xs">
+          <label
+            htmlFor={`${id}-proceeds`}
+            className="text-muted block text-xs"
+          >
             Sale Proceeds ($)
             <HelpTip text="Net proceeds from selling an existing asset (e.g. current home equity minus closing costs). Offsets the cash outlay." />
           </label>
           <input
+            id={`${id}-proceeds`}
             type="number"
             className="w-full rounded border px-2 py-1 text-sm"
             placeholder="0"

@@ -96,7 +96,7 @@
     "src/components/settings/integrations/budget-section.tsx": 689,
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
     "src/components/settings/integrations/portfolio-section.tsx": 337,
-    "src/components/tools/relocation/large-purchase-fields.tsx": 190,
+    "src/components/tools/relocation/large-purchase-fields.tsx": 214,
     "src/components/tools/relocation/projection-table.tsx": 416,
     "src/lib/budget-api/actual-client.ts": 820,
     "src/lib/budget-api/ynab-client.ts": 540,

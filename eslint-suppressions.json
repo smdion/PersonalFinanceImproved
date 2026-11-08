@@ -3317,9 +3317,6 @@
   "src/components/tools/relocation/large-purchase-fields.tsx": {
     "ratchet/no-raw-input": {
       "count": 9
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 8
     }
   },
   "src/components/tools/relocation/large-purchases.tsx": {
