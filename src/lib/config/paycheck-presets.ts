@@ -19,7 +19,7 @@ export const DEDUCTION_PRESETS: readonly DeductionPreset[] = [
     key: "section125",
     short: "Before-tax (Section 125)",
     label:
-      "Before-tax — health, dental, vision, payroll HSA (Section 125: no income tax or FICA)",
+      "Before-tax — health, dental, vision (Section 125: no income tax or FICA)",
     isPretax: true,
     ficaExempt: true,
   },
