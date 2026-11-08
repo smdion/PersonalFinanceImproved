@@ -50,8 +50,8 @@ export type InlineRowProps = {
   storedCap: string;
 };
 
-/** The stored shape of contribution_profiles.contribution_active_fields.
- *  No more "jobs" bucket — retired entirely in the Stage B migration. */
+/** The stored shape of contribution_profiles.contribution_active_fields:
+ *  the profile's fields per contribution account and per deduction. */
 export type ActiveFieldsRoot = {
   contributionAccounts?: Record<string, Record<string, unknown>>;
   deductions?: Record<string, Record<string, unknown>>;
