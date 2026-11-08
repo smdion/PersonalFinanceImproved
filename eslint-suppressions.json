@@ -778,20 +778,41 @@
       "count": 1
     }
   },
-  "src/components/budget/salary-profile-manager.tsx": {
-    "max-lines-per-function": {
+  "src/components/budget/salary-profile-create-panel.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-raw-button": {
       "count": 2
+    }
+  },
+  "src/components/budget/salary-profile-edit-panel.tsx": {
+    "max-lines-per-function": {
+      "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 4
+      "count": 2
+    }
+  },
+  "src/components/budget/salary-profile-entry.tsx": {
+    "ratchet/max-comment-lines": {
+      "count": 2
     },
     "ratchet/no-raw-input": {
+      "count": 1
+    }
+  },
+  "src/components/budget/salary-profile-manager.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

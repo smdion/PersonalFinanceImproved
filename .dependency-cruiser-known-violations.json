@@ -171,7 +171,7 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/components/budget/salary-profile-manager.tsx",
+    "from": "src/components/budget/salary-profile-edit-panel.tsx",
     "to": "src/lib/db/salary-entry-edit.ts"
   },
   {

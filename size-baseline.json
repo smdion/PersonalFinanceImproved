@@ -20,7 +20,11 @@
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
-    "src/components/budget/salary-profile-manager.tsx": 954,
+    "src/components/budget/salary-profile-create-panel.tsx": 82,
+    "src/components/budget/salary-profile-detail.tsx": 109,
+    "src/components/budget/salary-profile-edit-panel.tsx": 296,
+    "src/components/budget/salary-profile-entry.tsx": 259,
+    "src/components/budget/salary-profile-manager.tsx": 241,
     "src/components/budget/savings-allocation-panel.tsx": 524,
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 154,
     "src/components/contributions/profile-manager/inline-account-cells.tsx": 229,
@@ -455,8 +459,10 @@
     "src/components/budget/budget-summary-table.tsx": {
       "BudgetSummaryTable": 517
     },
+    "src/components/budget/salary-profile-edit-panel.tsx": {
+      "ProfileEditPanel": 267
+    },
     "src/components/budget/salary-profile-manager.tsx": {
-      "ProfileEditPanel": 267,
       "SalaryProfileManager": 198
     },
     "src/components/budget/savings-allocation-panel.tsx": {
