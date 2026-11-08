@@ -872,9 +872,6 @@
   "src/components/contributions/profile-manager/contribution-profile-manager.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-raw-button": {
-      "count": 1
     }
   },
   "src/components/contributions/profile-manager/inline-account-cells.tsx": {
@@ -975,6 +972,11 @@
   "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
+    }
+  },
+  "src/components/contributions/profile-manager/profile-manager-parts.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 1
     }
   },
   "src/components/contributions/profile-manager/use-inline-editor.ts": {
