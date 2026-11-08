@@ -425,9 +425,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 2
-    },
     "ratchet/no-jsx-iife": {
       "count": 1
     },
@@ -1783,11 +1780,6 @@
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/components/networth/financial-independence-card.tsx": {
-    "ratchet/no-raw-button": {
       "count": 1
     }
   },

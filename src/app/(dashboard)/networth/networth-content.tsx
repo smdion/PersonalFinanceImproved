@@ -58,11 +58,6 @@ const TaxLocationPie = dynamic(
 import { SpreadsheetView } from "@/components/networth/spreadsheet/spreadsheet-view";
 import { CardBoundary } from "@/components/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_BUDGET_ACTIVE_COLUMN,
-} from "@/lib/constants/settings-keys";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 
 export function NetWorthContent() {
   const utils = trpc.useUtils();
@@ -77,23 +72,6 @@ export function NetWorthContent() {
       retry: false,
     });
   const primaryBirthYear = historyData?.primaryBirthYear;
-  const [budgetColumn] = usePersistedSetting<number>(
-    SK_BUDGET_ACTIVE_COLUMN,
-    0,
-  );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
-  );
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
-    selectedColumn: budgetColumn,
-    selection: {
-      contribution: activeContribProfileId,
-      salary: rawActiveSalaryProfileId,
-    },
-  });
-  const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const [useMarketValue, setUseMarketValue] = useState(true);
   const [viewMode, setViewMode] = usePersistedSetting<"cards" | "spreadsheet">(
     "networth_view_mode",
@@ -141,23 +119,9 @@ export function NetWorthContent() {
     return map;
   }, [data?.portfolioByTaxLocation]);
 
-  const currentExpenseColumn = useMemo(() => {
-    const setting = appSettings?.find(
-      (s: { key: string }) => s.key === "expenses_budget_column",
-    );
-    return typeof setting?.value === "number" ? setting.value : 0;
-  }, [appSettings]);
-
   const availableYears = useMemo(
     () => displayHistory?.map((h) => h.year),
     [displayHistory],
-  );
-
-  const handleExpenseColumnChange = useCallback(
-    (idx: number) => {
-      upsertSetting.mutate({ key: "expenses_budget_column", value: idx });
-    },
-    [upsertSetting],
   );
 
   if (queryPending(summary)) {
@@ -438,9 +402,6 @@ export function NetWorthContent() {
               cash={cash}
               withdrawalRate={data.withdrawalRate}
               withdrawalRateIsDefault={data.withdrawalRateIsDefault}
-              budgetColumnLabels={budgetData?.columnLabels}
-              currentExpenseColumn={currentExpenseColumn}
-              onExpenseColumnChange={handleExpenseColumnChange}
             />
           </CardBoundary>
         </>
