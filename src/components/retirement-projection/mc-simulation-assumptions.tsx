@@ -1,16 +1,20 @@
 "use client";
 
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type {
   SimulationInputs,
   AssetClassOverride,
   OutcomeDistribution,
 } from "./mc-simulation-types";
 import { AssumptionRow } from "./assumption-row";
+import { InflationRiskRow, withdrawalRateRows } from "./mc-scenario-inputs";
+import { AssetClassTable } from "./mc-asset-classes";
+import { GlidePathTable } from "./mc-glide-path";
+import { correlationMatrix, ReturnClampSection } from "./mc-bounds";
+import { OutcomeDistributionPanel } from "./mc-outcome-distribution";
+import { AssumptionsOverview } from "./mc-assumptions-overview";
 
 export function SimulationAssumptions({
   inputs,
@@ -157,72 +161,13 @@ export function SimulationAssumptions({
 
       {expanded && (
         <div className="space-y-3 px-3 pb-3">
-          {/* Preset badge + description */}
-          <div
-            className={`text-label rounded border px-2.5 py-2 leading-relaxed ${presetColors[inputs.preset]}`}
-          >
-            <span className="text-caption font-bold tracking-wider uppercase">
-              {inputs.presetLabel}
-            </span>
-            <span className="mx-1.5">&mdash;</span>
-            {inputs.presetDescription}
-          </div>
-          {/* Tax mode badge */}
-          <div
-            className={`text-label rounded border px-2.5 py-2 leading-relaxed ${
-              inputs.taxMode === "simple"
-                ? "border-blue-200 bg-blue-50 text-blue-700"
-                : "border-orange-200 bg-orange-50 text-orange-700"
-            }`}
-          >
-            <span className="text-caption font-bold tracking-wider uppercase">
-              {inputs.taxMode === "simple" ? "Simple" : "Advanced"}
-            </span>
-            <span className="mx-1.5">&mdash;</span>
-            {inputs.taxMode === "simple"
-              ? "Single balance, no tax (cFIREsim-comparable)"
-              : "Tax-aware multi-account simulation with gross-up"}
-          </div>
-
-          {/* ELI5 explanation */}
-          <div className="text-label text-muted bg-surface-primary border-subtle rounded border px-2.5 py-2 leading-relaxed">
-            This runs{" "}
-            <span className="text-secondary font-semibold">
-              {numTrials.toLocaleString()}
-            </span>{" "}
-            simulated futures. Each trial randomizes annual investment returns
-            (correlated log-normal draws per asset class) and inflation (your{" "}
-            {formatPercent(inputs.inflationRate, 1)} &plusmn;{" "}
-            {formatPercent(inputs.inflationRisk.stdDev, 1)} std dev). Your
-            portfolio follows a glide path that shifts from stocks to bonds as
-            you age. At your current allocation, the blended expected return is{" "}
-            <span className="text-secondary font-semibold">
-              {formatPercent(inputs.blendedReturn, 1)}
-            </span>{" "}
-            with{" "}
-            <span className="text-secondary font-semibold">
-              {formatPercent(inputs.blendedVol, 1)}
-            </span>{" "}
-            volatility. The fan chart shows the{" "}
-            {fanBandRange === "p5-p95"
-              ? "90%"
-              : fanBandRange === "p10-p90"
-                ? "80%"
-                : "50%"}{" "}
-            confidence range across all trials.
-          </div>
-
-          {/* Active overrides callout */}
-          {activeOverrides.length > 0 && (
-            <div className="text-label rounded border border-amber-200 bg-amber-50 px-2.5 py-2 text-amber-700">
-              <span className="font-semibold">Set by you:</span>
-              <ul className="mt-0.5 ml-3 list-disc space-y-0">
-                {activeOverrides.map((o) => (
-                  <li key={o}>{o}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <AssumptionsOverview
+            activeOverrides={activeOverrides}
+            fanBandRange={fanBandRange}
+            inputs={inputs}
+            numTrials={numTrials}
+            presetColors={presetColors}
+          />
 
           {/* Key scenario inputs — 2 columns on mobile, 4 on desktop */}
           <div>
@@ -272,67 +217,14 @@ export function SimulationAssumptions({
                 value={formatPercent(inputs.inflationRate, 1)}
                 tip="Fixed annual inflation rate used in the deterministic projection. The Fed targets 2%; historical US average is ~3%."
               />
-              {editingInflation ? (
-                <div className="col-span-1 flex items-center gap-1">
-                  <span className="text-caption text-muted whitespace-nowrap">
-                    Stoch. Inflation
-                  </span>
-                  <span className="text-caption text-muted tabular-nums">
-                    {formatPercent(inputs.inflationRate, 1)} ±
-                  </span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={draftInflStdDev}
-                    onChange={(e) => setDraftInflStdDev(e.target.value)}
-                    className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
-                  />
-                  <span className="text-faint text-caption">%</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onInflationRiskChange) {
-                        onInflationRiskChange(
-                          parseFloat(draftInflStdDev) / 100,
-                        );
-                      }
-                      setEditingInflation(false);
-                    }}
-                    className="text-micro ml-0.5 text-blue-600 underline"
-                  >
-                    OK
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingInflation(false)}
-                    className="text-micro text-faint underline"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <AssumptionRow
-                    label="Stochastic Inflation"
-                    value={`${formatPercent(inputs.inflationRate, 1)} \u00B1 ${formatPercent(inputs.inflationRisk.stdDev, 1)}`}
-                    tip={`Your inflation rate, varied in each trial by this standard deviation a year; your post-retirement raise (${formatPercent(inputs.postRetirementInflationRate, 1)}) moves with it. Set the rates themselves in your retirement settings — here you set only the spread. Each trial runs at its own average, and its today's dollars use its own inflation. Typical spread: about 1%.`}
-                  />
-                  {onInflationRiskChange && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDraftInflStdDev(
-                          (inputs.inflationRisk.stdDev * 100).toFixed(1),
-                        );
-                        setEditingInflation(true);
-                      }}
-                      className="text-micro text-blue-500 underline hover:text-blue-700"
-                    >
-                      edit
-                    </button>
-                  )}
-                </div>
-              )}
+              <InflationRiskRow
+                draftInflStdDev={draftInflStdDev}
+                editingInflation={editingInflation}
+                inputs={inputs}
+                onInflationRiskChange={onInflationRiskChange}
+                setDraftInflStdDev={setDraftInflStdDev}
+                setEditingInflation={setEditingInflation}
+              />
               <AssumptionRow
                 label="Blended Return"
                 value={formatPercent(inputs.blendedReturn, 1)}
@@ -343,78 +235,7 @@ export function SimulationAssumptions({
                 value={formatPercent(inputs.blendedVol, 1)}
                 tip="Weighted average standard deviation of returns. Higher = wider range of outcomes. Typical range: 8-16% (diversified to all-equity)."
               />
-              {(() => {
-                const strategy =
-                  inputs.withdrawalStrategy as WithdrawalStrategyType;
-                const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
-                const isDynamic = strategy !== "fixed";
-                // None of the 8 strategies actually
-                // read this rate to compute spending (Finding 0) — the old
-                // copy here claimed Fixed uses it directly (`isDynamic`
-                // false branch) and every dynamic strategy "adjusts this
-                // yearly," which is also wrong for the 4 balance-derived
-                // strategies (they never read this field at all, seeded or
-                // otherwise) and imprecise for Guyton-Klinger (its guardrail
-                // rate is self-derived, not seeded from this field either).
-                //
-                // Branch on `usesWithdrawalRate` (not `incomeSource`) for the
-                // budget-vs-balance split — `incomeSource` classifies
-                // Guyton-Klinger as "rate" (a UI-framing label, its own
-                // config docs a portfolio-linked rate as the primary
-                // control), but GK's actual spending IS budget-seeded and
-                // guardrail-adjusted every year, same as Fixed/Forgo/
-                // Spending-Decline (verified against guyton-klinger.ts and
-                // methodology/decumulation-content.tsx's grouping).
-                // `usesWithdrawalRate` correctly groups GK with the other 3
-                // budget-continuation strategies; only RMD/Constant %/
-                // Endowment/Vanguard Dynamic are truly balance-derived.
-                const isBudgetSeeded = cfg?.usesWithdrawalRate === true;
-                const rateTip =
-                  cfg?.incomeSource === "formula"
-                    ? `Reference rate only — ${cfg.label} computes withdrawals from the IRS RMD factor, not this rate.`
-                    : !isBudgetSeeded && cfg
-                      ? `Reference rate only — ${cfg.label} computes withdrawals as a percentage of your portfolio balance directly (see Strategy Params for its actual rate), not this field.`
-                      : `Reference rate only — used to estimate the "years to FI" figure elsewhere. Your actual spending is driven by the Retirement Budget${strategy === "guyton_klinger" ? ", adjusted by guardrails" : strategy === "spending_decline" ? " and its own annual decline schedule" : ""}, not this rate.`;
-                return (
-                  <>
-                    <AssumptionRow
-                      label={
-                        isDynamic
-                          ? "Initial Withdrawal Rate"
-                          : "Withdrawal Rate"
-                      }
-                      value={formatPercent(inputs.withdrawalRate, 1)}
-                      tip={rateTip}
-                    />
-                    {isDynamic && (
-                      <AssumptionRow
-                        label="Spending Strategy"
-                        value={cfg?.label ?? strategy}
-                        tip={`${cfg?.label ?? strategy}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. See Strategy Params for this strategy's own parameters — not the rate above.`}
-                        highlight
-                      />
-                    )}
-                    {inputs.decumulationExpenseOverride != null && (
-                      <AssumptionRow
-                        label={
-                          isDynamic
-                            ? "Year-1 Retirement Expenses"
-                            : "Retirement Expenses"
-                        }
-                        value={`${formatCurrency(inputs.decumulationExpenseOverride)}/yr`}
-                        tip={
-                          isDynamic
-                            ? isBudgetSeeded
-                              ? `Starting retirement budget — your ${cfg.label} strategy adjusts actual spending from this figure each year.`
-                              : `Starting retirement budget — ${cfg?.label ?? strategy} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
-                            : undefined
-                        }
-                        highlight
-                      />
-                    )}
-                  </>
-                );
-              })()}
+              {withdrawalRateRows(inputs)}
             </div>
           </div>
 
@@ -466,116 +287,15 @@ export function SimulationAssumptions({
                 </div>
               )}
             </div>
-            {!editing ? (
-              <table className="text-label w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-muted py-1 pr-2 text-left font-medium">
-                      Asset Class
-                    </th>
-                    <th className="text-muted px-1.5 py-1 text-right font-medium">
-                      Return
-                    </th>
-                    <th className="text-muted px-1.5 py-1 text-right font-medium">
-                      Vol
-                    </th>
-                    <th className="text-muted px-1.5 py-1 text-right font-medium">
-                      DB Return
-                    </th>
-                    <th className="text-muted px-1.5 py-1 text-right font-medium">
-                      Alloc
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inputs.assetClasses.map((ac) => {
-                    const override = assetClassOverrides?.find(
-                      (o) => o.id === ac.id,
-                    );
-                    const isOverridden =
-                      override &&
-                      (override.meanReturn !== undefined ||
-                        override.stdDev !== undefined);
-                    const dbAc = inputs.dbAssetClasses.find(
-                      (d) => d.id === ac.id,
-                    );
-                    const dbDiff =
-                      dbAc && Math.abs(dbAc.meanReturn - ac.meanReturn) > 0.001;
-                    const allocPct =
-                      (inputs.currentAllocation[ac.id] ?? 0) * 100;
-                    return (
-                      <tr key={ac.id} className="border-subtle border-b">
-                        <td
-                          className={`py-0.5 pr-2 ${isOverridden ? "font-medium text-amber-700" : "text-muted"}`}
-                        >
-                          {ac.name}
-                        </td>
-                        <td
-                          className={`px-1.5 py-0.5 text-right font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
-                        >
-                          {formatPercent(ac.meanReturn, 1)}
-                        </td>
-                        <td
-                          className={`px-1.5 py-0.5 text-right font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
-                        >
-                          {formatPercent(ac.stdDev, 1)}
-                        </td>
-                        <td
-                          className={`px-1.5 py-0.5 text-right tabular-nums ${dbDiff ? "text-faint line-through" : "text-faint"}`}
-                        >
-                          {dbAc ? formatPercent(dbAc.meanReturn, 1) : "—"}
-                        </td>
-                        <td className="text-muted px-1.5 py-0.5 text-right tabular-nums">
-                          {allocPct > 0 ? formatPercent(allocPct / 100) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div className="space-y-1">
-                <div className="text-caption text-faint grid grid-cols-[1fr_80px_80px] gap-1 px-0.5 font-medium">
-                  <span>Asset Class</span>
-                  <span className="text-center">Return %</span>
-                  <span className="text-center">Vol %</span>
-                </div>
-                {inputs.assetClasses.map((ac) => (
-                  <div
-                    key={ac.id}
-                    className="grid grid-cols-[1fr_80px_80px] items-center gap-1"
-                  >
-                    <span className="text-muted truncate text-xs">
-                      {ac.name}
-                    </span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={draftReturns[ac.id] ?? ""}
-                      onChange={(e) =>
-                        setDraftReturns((prev) => ({
-                          ...prev,
-                          [ac.id]: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded border px-1 py-0.5 text-center text-xs focus:border-blue-400 focus:outline-none"
-                    />
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={draftVols[ac.id] ?? ""}
-                      onChange={(e) =>
-                        setDraftVols((prev) => ({
-                          ...prev,
-                          [ac.id]: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded border px-1 py-0.5 text-center text-xs focus:border-blue-400 focus:outline-none"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <AssetClassTable
+              assetClassOverrides={assetClassOverrides}
+              draftReturns={draftReturns}
+              draftVols={draftVols}
+              editing={editing}
+              inputs={inputs}
+              setDraftReturns={setDraftReturns}
+              setDraftVols={setDraftVols}
+            />
           </div>
 
           {/* Glide path table */}
@@ -641,95 +361,12 @@ export function SimulationAssumptions({
                   </div>
                 )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="text-label w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-muted py-1 pr-2 text-left font-medium">
-                        Age
-                      </th>
-                      {inputs.assetClasses.map((ac) => (
-                        <th
-                          key={ac.id}
-                          className="text-muted px-1.5 py-1 text-right font-medium"
-                        >
-                          {ac.name}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {editingGlidePath
-                      ? draftGlidePath.map((gp, gi) => (
-                          <tr key={gp.age} className="border-subtle border-b">
-                            <td className="text-muted py-0.5 pr-2 font-medium">
-                              {gp.age}
-                            </td>
-                            {inputs.assetClasses.map((ac) => (
-                              <td key={ac.id} className="px-0.5 py-0.5">
-                                <input
-                                  type="number"
-                                  step="1"
-                                  value={gp.allocations[ac.id] ?? "0"}
-                                  onChange={(e) => {
-                                    setDraftGlidePath((prev) =>
-                                      prev.map((item, idx) =>
-                                        idx === gi
-                                          ? {
-                                              age: item.age,
-                                              allocations: {
-                                                ...item.allocations,
-                                                [ac.id]: e.target.value,
-                                              },
-                                            }
-                                          : item,
-                                      ),
-                                    );
-                                  }}
-                                  className="text-caption w-full rounded border px-0.5 py-0.5 text-center tabular-nums focus:border-blue-400 focus:outline-none"
-                                />
-                              </td>
-                            ))}
-                          </tr>
-                        ))
-                      : inputs.glidePath.map((gp) => {
-                          const isCurrentAge =
-                            gp.age <=
-                              inputs.currentAge +
-                                (inputs.glidePath.find(
-                                  (g) => g.age > inputs.currentAge,
-                                )?.age ?? gp.age) &&
-                            gp.age >= inputs.currentAge;
-                          return (
-                            <tr
-                              key={gp.age}
-                              className={`border-subtle border-b ${isCurrentAge ? "bg-blue-50/50" : ""}`}
-                            >
-                              <td className="text-muted py-0.5 pr-2 font-medium">
-                                {gp.age}
-                                {isCurrentAge && (
-                                  <span className="text-micro ml-1 text-blue-500">
-                                    now
-                                  </span>
-                                )}
-                              </td>
-                              {inputs.assetClasses.map((ac) => {
-                                const pct = (gp.allocations[ac.id] ?? 0) * 100;
-                                return (
-                                  <td
-                                    key={ac.id}
-                                    className="text-secondary px-1.5 py-0.5 text-right tabular-nums"
-                                  >
-                                    {pct > 0 ? formatPercent(pct / 100) : "—"}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })}
-                  </tbody>
-                </table>
-              </div>
+              <GlidePathTable
+                draftGlidePath={draftGlidePath}
+                editingGlidePath={editingGlidePath}
+                inputs={inputs}
+                setDraftGlidePath={setDraftGlidePath}
+              />
             </div>
           )}
 
@@ -754,96 +391,16 @@ export function SimulationAssumptions({
           )}
 
           {/* Return clamp bounds */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <div className="text-label text-muted font-medium">
-                Return Clamp Bounds
-                <HelpTip text="Simulated annual returns are clamped to this range to prevent extreme outliers from dominating results." />
-              </div>
-              {onClampBoundsChange &&
-                inputs.preset === "custom" &&
-                !editingClamps && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraftClampMin(
-                        (inputs.returnClampMin * 100).toFixed(0),
-                      );
-                      setDraftClampMax(
-                        (inputs.returnClampMax * 100).toFixed(0),
-                      );
-                      setEditingClamps(true);
-                    }}
-                    className="text-caption text-blue-600 underline hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                )}
-              {editingClamps && (
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setEditingClamps(false)}
-                    className="text-caption text-muted hover:text-secondary underline"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onClampBoundsChange) {
-                        onClampBoundsChange(
-                          parseFloat(draftClampMin) / 100,
-                          parseFloat(draftClampMax) / 100,
-                        );
-                      }
-                      setEditingClamps(false);
-                    }}
-                    className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
-                  >
-                    Apply
-                  </button>
-                </div>
-              )}
-            </div>
-            {editingClamps ? (
-              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-muted">Min (floor)</span>
-                  <input
-                    type="number"
-                    step="1"
-                    value={draftClampMin}
-                    onChange={(e) => setDraftClampMin(e.target.value)}
-                    className="text-caption w-16 rounded border px-1 py-0.5 text-center focus:border-blue-400 focus:outline-none"
-                  />
-                  <span className="text-faint">%</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-muted">Max (ceiling)</span>
-                  <input
-                    type="number"
-                    step="1"
-                    value={draftClampMax}
-                    onChange={(e) => setDraftClampMax(e.target.value)}
-                    className="text-caption w-16 rounded border px-1 py-0.5 text-center focus:border-blue-400 focus:outline-none"
-                  />
-                  <span className="text-faint">%</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-0.5">
-                <AssumptionRow
-                  label="Min (floor)"
-                  value={formatPercent(inputs.returnClampMin, 0)}
-                />
-                <AssumptionRow
-                  label="Max (ceiling)"
-                  value={formatPercent(inputs.returnClampMax, 0)}
-                />
-              </div>
-            )}
-          </div>
+          <ReturnClampSection
+            draftClampMax={draftClampMax}
+            draftClampMin={draftClampMin}
+            editingClamps={editingClamps}
+            inputs={inputs}
+            onClampBoundsChange={onClampBoundsChange}
+            setDraftClampMax={setDraftClampMax}
+            setDraftClampMin={setDraftClampMin}
+            setEditingClamps={setEditingClamps}
+          />
 
           {/* Correlation matrix */}
           {inputs.correlations.length > 0 && (
@@ -852,162 +409,14 @@ export function SimulationAssumptions({
                 Asset Class Correlations
                 <HelpTip text="Pairwise correlations used to generate correlated random returns across asset classes each simulation year. Values range from -1 (perfectly inverse) to +1 (perfectly correlated)." />
               </div>
-              {(() => {
-                const idToName = new Map(
-                  inputs.assetClasses.map((ac) => [ac.id, ac.name]),
-                );
-                const names = Array.from(
-                  new Set(
-                    inputs.correlations.flatMap((c) => [
-                      idToName.get(c.classAId) ?? String(c.classAId),
-                      idToName.get(c.classBId) ?? String(c.classBId),
-                    ]),
-                  ),
-                ).sort();
-                const corrMap = new Map<string, number>();
-                for (const c of inputs.correlations) {
-                  const a = idToName.get(c.classAId) ?? String(c.classAId);
-                  const b = idToName.get(c.classBId) ?? String(c.classBId);
-                  corrMap.set(`${a}|${b}`, c.correlation);
-                  corrMap.set(`${b}|${a}`, c.correlation);
-                }
-                return (
-                  <div className="overflow-x-auto">
-                    <table className="text-caption border-collapse">
-                      <thead>
-                        <tr>
-                          <th className="text-faint py-0.5 pr-1.5 text-left font-medium" />
-                          {names.map((n) => (
-                            <th
-                              key={n}
-                              className="text-faint px-1 py-0.5 text-right font-medium whitespace-nowrap"
-                            >
-                              {n.length > 8 ? n.slice(0, 7) + "…" : n}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {names.map((row) => (
-                          <tr key={row} className="border-subtle border-t">
-                            <td className="text-muted py-0.5 pr-1.5 font-medium whitespace-nowrap">
-                              {row.length > 8 ? row.slice(0, 7) + "…" : row}
-                            </td>
-                            {names.map((col) => {
-                              const val =
-                                row === col
-                                  ? 1
-                                  : (corrMap.get(`${row}|${col}`) ?? 0);
-                              const bg =
-                                row === col
-                                  ? "bg-surface-elevated"
-                                  : val > 0.5
-                                    ? "bg-green-50 text-green-700"
-                                    : val > 0
-                                      ? "bg-green-50/50 text-green-600"
-                                      : val < -0.3
-                                        ? "bg-red-50 text-red-600"
-                                        : val < 0
-                                          ? "bg-red-50/50 text-red-500"
-                                          : "text-faint";
-                              return (
-                                <td
-                                  key={col}
-                                  className={`px-1 py-0.5 text-right tabular-nums ${bg}`}
-                                >
-                                  {val.toFixed(2)}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
+              {correlationMatrix(inputs)}
             </div>
           )}
         </div>
       )}
 
       {/* Outcome Distribution — detail metrics moved here from inline KPIs */}
-      {outcomeDistribution && (
-        <div className="overflow-hidden rounded-lg border">
-          <div className="bg-surface-sunken text-secondary px-4 py-3 text-sm font-medium">
-            Outcome Distribution
-          </div>
-          <div className="text-muted space-y-2 px-4 py-4 text-sm">
-            <AssumptionRow
-              label="Median End Balance"
-              value={formatCurrency(outcomeDistribution.medianEndBalance)}
-              tip="50th percentile terminal portfolio value. When some scenarios deplete, the median still reflects surviving paths — which benefit from compounding — so it can appear high even with meaningful depletion risk."
-            />
-            <AssumptionRow
-              label="P5 End Balance (worst realistic)"
-              value={formatCurrency(outcomeDistribution.p5EndBalance)}
-              highlight={outcomeDistribution.p5EndBalance <= 0}
-              tip="Only 5% of scenarios end worse than this. If this is $0, a meaningful number of simulations fully depleted."
-            />
-            <AssumptionRow
-              label="Simulated Withdrawal Range (p25–p75)"
-              value={`${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p25)} – ${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p75)}`}
-              tip="25th–75th percentile range of annual withdrawals across all simulation trials, in today's purchasing power. Unlike the deterministic estimate, this accounts for market volatility, sequence-of-returns risk, and tax gross-up."
-            />
-            <div className="border-subtle mt-2 border-t pt-2">
-              <div className="text-label text-muted mb-1.5 font-medium">
-                Terminal Balance Percentiles
-              </div>
-              <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                {(
-                  [
-                    [
-                      "p10",
-                      outcomeDistribution.terminalBalance.p10,
-                      "Bad luck",
-                    ],
-                    [
-                      "p25",
-                      outcomeDistribution.terminalBalance.p25,
-                      "Below avg",
-                    ],
-                    [
-                      "p50",
-                      outcomeDistribution.terminalBalance.median,
-                      "Typical",
-                    ],
-                    [
-                      "p75",
-                      outcomeDistribution.terminalBalance.p75,
-                      "Above avg",
-                    ],
-                    [
-                      "p90",
-                      outcomeDistribution.terminalBalance.p90,
-                      "Good luck",
-                    ],
-                  ] as const
-                ).map(([label, val, desc]) => (
-                  <div key={label}>
-                    <div className="text-caption text-faint">{desc}</div>
-                    <div
-                      className={`font-medium ${val <= 0 ? "text-red-600" : "text-secondary"}`}
-                    >
-                      {formatCurrency(val)}
-                    </div>
-                    <div className="text-micro text-faint">{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <AssumptionRow
-              label="Compute Time"
-              value={`${(outcomeDistribution.computeTimeMs / 1000).toFixed(1)}s`}
-              tip="Wall-clock time for the simulation run."
-            />
-          </div>
-        </div>
-      )}
+      <OutcomeDistributionPanel outcomeDistribution={outcomeDistribution} />
     </div>
   );
 }

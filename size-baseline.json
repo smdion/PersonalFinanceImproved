@@ -121,7 +121,13 @@
     "src/components/retirement-projection/coast-fire-card.tsx": 408,
     "src/components/retirement-projection/decumulation-config.tsx": 468,
     "src/components/retirement-projection/index.tsx": 165,
-    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 1013,
+    "src/components/retirement-projection/mc-asset-classes.tsx": 134,
+    "src/components/retirement-projection/mc-assumptions-overview.tsx": 89,
+    "src/components/retirement-projection/mc-bounds.tsx": 187,
+    "src/components/retirement-projection/mc-glide-path.tsx": 107,
+    "src/components/retirement-projection/mc-outcome-distribution.tsx": 92,
+    "src/components/retirement-projection/mc-scenario-inputs.tsx": 154,
+    "src/components/retirement-projection/mc-simulation-assumptions.tsx": 422,
     "src/components/retirement-projection/mc-simulation-types.ts": 30,
     "src/components/retirement-projection/overrides-panel.tsx": 1132,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
@@ -683,7 +689,7 @@
       "LumpSumForm": 158
     },
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
-      "SimulationAssumptions": 999
+      "SimulationAssumptions": 404
     },
     "src/components/retirement-projection/overrides-panel.tsx": {
       "OverridesPanel": 668,
