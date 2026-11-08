@@ -94,16 +94,18 @@ export function RetirementProfileTab({
       ? Number(irsLimitGrowthRow.value)
       : IRS_LIMIT_GROWTH_RATE;
   const utils = trpc.useUtils();
-  const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
-    number | null
-  >(SK_RETIREMENT_DEC_BUDGET_PROFILE_ID, null);
-  const [decBudgetCol, setDecBudgetCol] = usePersistedSetting<number | null>(
-    SK_RETIREMENT_DEC_BUDGET_COL,
-    null,
-  );
-  const [decExpenseOverride, setDecExpenseOverride] = usePersistedSetting<
-    string | null
-  >(SK_RETIREMENT_DEC_EXPENSE_OVERRIDE, null);
+  const [decumulationBudgetProfileId, setDecumulationBudgetProfileId] =
+    usePersistedSetting<number | null>(
+      SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+      null,
+    );
+  const [decumulationBudgetColumn, setDecumulationBudgetColumn] =
+    usePersistedSetting<number | null>(SK_RETIREMENT_DEC_BUDGET_COL, null);
+  const [decumulationExpenseOverride, setDecumulationExpenseOverride] =
+    usePersistedSetting<string | null>(
+      SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+      null,
+    );
   const [contribProfileId, setContribProfileId] = useActiveContribProfile();
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];
@@ -136,10 +138,10 @@ export function RetirementProfileTab({
       selection: profileSelectionFrom({
         contributionProfileId: effectiveContribProfileId,
         salaryProfileId: effectiveSalaryProfileId,
-        decumulationBudgetProfileId: decBudgetProfileId,
-        decumulationBudgetColumn: decBudgetCol,
-        decumulationExpenseOverride: decExpenseOverride
-          ? parseFloat(decExpenseOverride)
+        decumulationBudgetProfileId: decumulationBudgetProfileId,
+        decumulationBudgetColumn: decumulationBudgetColumn,
+        decumulationExpenseOverride: decumulationExpenseOverride
+          ? parseFloat(decumulationExpenseOverride)
           : null,
         retirementProfileId: profileId,
       }),
@@ -147,9 +149,9 @@ export function RetirementProfileTab({
     [
       effectiveContribProfileId,
       effectiveSalaryProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
+      decumulationBudgetProfileId,
+      decumulationBudgetColumn,
+      decumulationExpenseOverride,
       profileId,
     ],
   );
@@ -444,10 +446,10 @@ export function RetirementProfileTab({
                 budgetProfileSummaries={data.budgetProfileSummaries}
                 decumulationBudgetProfileId={data.decumulationBudgetProfileId}
                 decumulationBudgetColumn={data.decumulationBudgetColumn}
-                decExpenseOverride={decExpenseOverride}
-                setDecExpenseOverride={setDecExpenseOverride}
-                setDecBudgetProfileId={setDecBudgetProfileId}
-                setDecBudgetCol={setDecBudgetCol}
+                decExpenseOverride={decumulationExpenseOverride}
+                setDecExpenseOverride={setDecumulationExpenseOverride}
+                setDecBudgetProfileId={setDecumulationBudgetProfileId}
+                setDecBudgetCol={setDecumulationBudgetColumn}
                 isEditable={admin}
               />
 

@@ -100,7 +100,7 @@ function LivingCostsCardImpl() {
   );
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const [storedActiveSalaryProfileId] = useActiveSalaryProfile();
   const {
     contributionProfileId: effectiveContribId,
     queryInput: contribProfileInput,
@@ -131,7 +131,7 @@ function LivingCostsCardImpl() {
         : {}),
       selection: {
         contribution: effectiveContribId,
-        salary: rawActiveSalaryProfileId,
+        salary: storedActiveSalaryProfileId,
       },
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am

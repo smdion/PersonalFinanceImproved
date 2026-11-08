@@ -152,7 +152,7 @@
     "src/components/retirement-projection/override-options.ts": 67,
     "src/components/retirement-projection/override-wizard-steps.tsx": 209,
     "src/components/retirement-projection/overrides-list.tsx": 126,
-    "src/components/retirement-projection/overrides-panel.tsx": 383,
+    "src/components/retirement-projection/overrides-panel.tsx": 385,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
     "src/components/retirement-projection/projection-card/compute-controls.tsx": 61,
@@ -191,7 +191,7 @@
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 430,
-    "src/components/retirement/retirement-profile-tab.tsx": 549,
+    "src/components/retirement/retirement-profile-tab.tsx": 551,
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
@@ -714,7 +714,7 @@
       "LumpSumForm": 158
     },
     "src/components/retirement-projection/overrides-panel.tsx": {
-      "OverridesPanel": 345,
+      "OverridesPanel": 347,
       "OverridesPanel.renderFields": 168
     },
     "src/components/retirement-projection/projection-chart.tsx": {
@@ -772,7 +772,7 @@
       "RetirementProfileManager": 270
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 477
+      "RetirementProfileTab": 479
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 182

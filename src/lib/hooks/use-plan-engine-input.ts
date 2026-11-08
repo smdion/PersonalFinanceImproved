@@ -88,28 +88,29 @@ export function usePlanEngineInput(): {
       activeProfileId: activeRetirementId,
     },
   );
-  const [decBudgetProfileId, , l1] = usePersistedSetting<number | null>(
-    SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
-    null,
-  );
-  const [decBudgetCol, , l2] = usePersistedSetting<number | null>(
-    SK_RETIREMENT_DEC_BUDGET_COL,
-    null,
-  );
-  const [decExpenseOverride, , l3] = usePersistedSetting<string | null>(
-    SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
-    null,
-  );
-  const [snapshotId, , l4] = usePersistedSetting<number | null>(
+  const [decumulationBudgetProfileId, , budgetProfileLoaded] =
+    usePersistedSetting<number | null>(
+      SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+      null,
+    );
+  const [decumulationBudgetColumn, , budgetColumnLoaded] = usePersistedSetting<
+    number | null
+  >(SK_RETIREMENT_DEC_BUDGET_COL, null);
+  const [decumulationExpenseOverride, , expenseOverrideLoaded] =
+    usePersistedSetting<string | null>(
+      SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+      null,
+    );
+  const [snapshotId, , snapshotLoaded] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
   );
 
   const ready =
-    l1 &&
-    l2 &&
-    l3 &&
-    l4 &&
+    budgetProfileLoaded &&
+    budgetColumnLoaded &&
+    expenseOverrideLoaded &&
+    snapshotLoaded &&
     contribProfiles.data !== undefined &&
     salaryProfiles.data !== undefined &&
     retirementProfiles.data !== undefined;
@@ -120,10 +121,10 @@ export function usePlanEngineInput(): {
         contributionProfileId,
         salaryProfileId,
         retirementProfileId,
-        decumulationBudgetProfileId: decBudgetProfileId,
-        decumulationBudgetColumn: decBudgetCol,
-        decumulationExpenseOverride: decExpenseOverride
-          ? parseFloat(decExpenseOverride)
+        decumulationBudgetProfileId: decumulationBudgetProfileId,
+        decumulationBudgetColumn: decumulationBudgetColumn,
+        decumulationExpenseOverride: decumulationExpenseOverride
+          ? parseFloat(decumulationExpenseOverride)
           : null,
       }),
       ...(snapshotId != null ? { snapshotId } : {}),
@@ -136,9 +137,9 @@ export function usePlanEngineInput(): {
       contributionProfileId,
       salaryProfileId,
       retirementProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
+      decumulationBudgetProfileId,
+      decumulationBudgetColumn,
+      decumulationExpenseOverride,
       snapshotId,
     ],
   );

@@ -124,7 +124,7 @@ export function ExpensesContent() {
     },
   );
 
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const [storedActiveSalaryProfileId] = useActiveSalaryProfile();
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
@@ -132,7 +132,7 @@ export function ExpensesContent() {
       : {}),
     selection: {
       contribution: activeContribProfileId,
-      salary: rawActiveSalaryProfileId,
+      salary: storedActiveSalaryProfileId,
     },
   });
 

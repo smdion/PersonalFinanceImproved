@@ -57,11 +57,13 @@ export function OverridesPanel({
   } | null>(null);
 
   // Determine if selected year is pre or post retirement
-  const retAge = state.engineSettings?.retirementAge;
+  const retirementAge = state.engineSettings?.retirementAge;
   const currentAge = state.result?.projectionByYear[0]?.age ?? 0;
   const baseYear = new Date().getFullYear();
   const retYear =
-    retAge != null && currentAge > 0 ? baseYear + (retAge - currentAge) : null;
+    retirementAge != null && currentAge > 0
+      ? baseYear + (retirementAge - currentAge)
+      : null;
   const isPostRetirement = retYear != null && parseInt(selectedYear) >= retYear;
 
   // Collect ALL overrides into a unified sorted list

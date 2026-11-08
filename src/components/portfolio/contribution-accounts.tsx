@@ -71,7 +71,7 @@ export function ContributionAccountsSettings() {
   // same profile entry the Paycheck/Budget pages write into, not the raw
   // account row, or an edit made here would be silently shadowed by the
   // active profile everywhere else in the app.
-  const [rawActiveContribProfileId] = useActiveContribProfile();
+  const [storedActiveContributionProfileId] = useActiveContribProfile();
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
   const { profileId: activeContribProfileId } = useEffectiveProfileId(
@@ -79,7 +79,7 @@ export function ContributionAccountsSettings() {
     {
       validIds: contribProfilesList?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: rawActiveContribProfileId,
+      activeProfileId: storedActiveContributionProfileId,
     },
   );
   // Powers each contribution row's "$X in <profile name>" status line —
