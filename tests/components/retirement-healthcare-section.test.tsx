@@ -5,6 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";
+import { expectLabelReachesControl } from "./label-click";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 vi.mock("@/components/retirement/sections/settings-patch", () => ({
@@ -38,5 +39,12 @@ describe("HealthcareSection — IRMAA surcharge", () => {
   it("shows on top when set", () => {
     renderWith({ enableIrmaaAwareness: true, irmaaOnTopOfBudget: true });
     expect(screen.getByText("On top of my budget")).toBeInTheDocument();
+  });
+});
+
+describe("HealthcareSection — labels", () => {
+  it("clicking Household Size reaches its select", () => {
+    renderWith({ enableAcaAwareness: true, householdSize: 2 });
+    expectLabelReachesControl("Household Size");
   });
 });

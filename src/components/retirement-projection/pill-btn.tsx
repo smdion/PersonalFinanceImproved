@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 /** Shared pill button for toolbar/control bar toggles. */
 export function PillBtn({
   active,
@@ -116,13 +118,18 @@ export function LabeledSelect({
   title?: string;
   children: React.ReactNode;
 }) {
+  const id = useId();
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-caption text-faint font-medium whitespace-nowrap uppercase">
+      <label
+        htmlFor={`${id}-select`}
+        className="text-caption text-faint font-medium whitespace-nowrap uppercase"
+      >
         {label}
         {helpTip}
-      </span>
+      </label>
       <select
+        id={`${id}-select`}
         value={value}
         onChange={onChange}
         title={title}

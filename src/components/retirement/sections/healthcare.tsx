@@ -5,6 +5,7 @@
  */
 "use client";
 
+import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
@@ -22,6 +23,7 @@ export function HealthcareSection({
   upsertSettings,
   isEditable,
 }: Props) {
+  const id = useId();
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="mb-2 flex items-center gap-2">
@@ -110,9 +112,12 @@ export function HealthcareSection({
         </div>
         {settings.enableAcaAwareness && (
           <div>
-            <span className="text-muted">Household Size</span>
+            <label htmlFor={`${id}-household-size`} className="text-muted">
+              Household Size
+            </label>
             <div className="font-medium">
               <select
+                id={`${id}-household-size`}
                 value={String(settings.householdSize)}
                 onChange={(e) => {
                   upsertSettings.mutate(

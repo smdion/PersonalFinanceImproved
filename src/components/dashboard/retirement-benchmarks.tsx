@@ -1,7 +1,7 @@
 "use client";
 
 import { FocusLink } from "@/components/ui/focus-link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -61,6 +61,7 @@ function Readiness({
   checkpoint: ReadinessCheckpoint;
 }) {
   const [projectedAge, setProjectedAge] = useState<number | null>(null);
+  const id = useId();
   const { combinedSalary, settings, result } = data;
   const { source, now } = checkpoint;
   const table =
@@ -99,13 +100,14 @@ function Readiness({
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-muted text-sm">
+        <label htmlFor={`${id}-projected-age`} className="text-muted text-sm">
           Readiness
           <HelpTip
             text={`${measures[0]!.toUpperCase()}${measures.slice(1)} as a multiple of gross pay, against ${label}'s age targets (${table.map((t) => `${t.multiple}× by ${t.age}`).join(", ")}). Change the table on the Milestones page. Pick a future age to see your projected standing.`}
           />
-        </span>
+        </label>
         <select
+          id={`${id}-projected-age`}
           className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
           value={projectedAge ?? ""}
           onClick={stop}
@@ -205,6 +207,7 @@ function Growth({
       <div className="mt-1 flex items-center gap-1 text-xs" onClick={stop}>
         <span className="text-muted">$</span>
         <input
+          aria-label="Amount invested today"
           type="number"
           placeholder="amount"
           value={amount}

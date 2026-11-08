@@ -26,9 +26,6 @@
   "e2e-b/dashboard": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 1
     }
   },
   "e2e-b/historical": {
@@ -70,9 +67,6 @@
   "e2e-b/retirement": {
     "heading-order": {
       "count": 1
-    },
-    "label-title-only": {
-      "count": 2
     }
   },
   "e2e-b/settings": {
@@ -126,9 +120,6 @@
   "e2e-d/dashboard": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 1
     }
   },
   "e2e-d/historical": {
@@ -157,9 +148,6 @@
   "e2e-d/retirement": {
     "heading-order": {
       "count": 1
-    },
-    "label-title-only": {
-      "count": 2
     }
   },
   "e2e-d/settings": {
@@ -213,9 +201,6 @@
   "ws-h2/dashboard": {
     "heading-order": {
       "count": 1
-    },
-    "select-name": {
-      "count": 1
     }
   },
   "ws-h2/historical": {
@@ -249,9 +234,6 @@
   "ws-h2/retirement": {
     "heading-order": {
       "count": 1
-    },
-    "label-title-only": {
-      "count": 2
     }
   },
   "ws-h2/settings": {
