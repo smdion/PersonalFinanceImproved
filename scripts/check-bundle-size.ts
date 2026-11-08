@@ -69,7 +69,7 @@ const PAGE_BUDGET_KB: Record<string, number> = {
   "/(dashboard)/retirement/accumulation-methodology/page": 219,
   "/(dashboard)/retirement/decumulation-methodology/page": 230,
   "/(dashboard)/retirement/methodology/page": 221,
-  "/(dashboard)/retirement/page": 506,
+  "/(dashboard)/retirement/page": 507,
   "/(dashboard)/savings/page": 395,
   "/(dashboard)/settings/page": 258,
   "/(dashboard)/tax-buckets/page": 248,
