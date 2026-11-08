@@ -310,6 +310,32 @@ type HistoricalRow = {
   salaryDetails: Record<string, { base: number; bonus: number; total: number }>;
 };
 
+/** A column group heading's link to the page that manages its figures. */
+function ColumnGroupLink({ href, title }: { href: string; title: string }) {
+  return (
+    <Link
+      href={href}
+      className="text-blue-600 hover:text-blue-700"
+      title={title}
+    >
+      <svg
+        aria-hidden="true"
+        className="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+        />
+      </svg>
+    </Link>
+  );
+}
+
 function HistoricalTable({
   rows,
   peopleNames,
@@ -366,26 +392,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Net Worth
-                  <Link
+                  <ColumnGroupLink
                     href="/networth"
-                    className="text-blue-600 hover:text-blue-700"
                     title="View Net Worth page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -401,26 +411,10 @@ function HistoricalTable({
                       (updated {perfLastUpdatedDisplay})
                     </span>
                   )}
-                  <Link
+                  <ColumnGroupLink
                     href="/brokerage"
-                    className="text-blue-600 hover:text-blue-700"
                     title="View Performance page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -431,26 +425,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Portfolio Breakdown
-                  <Link
+                  <ColumnGroupLink
                     href="/brokerage"
-                    className="text-blue-600 hover:text-blue-700"
                     title="View Portfolio page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -461,26 +439,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Assets
-                  <Link
+                  <ColumnGroupLink
                     href="/assets"
-                    className="text-blue-600 hover:text-blue-700"
                     title="Manage on Assets page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -491,26 +453,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Liabilities
-                  <Link
+                  <ColumnGroupLink
                     href="/liabilities"
-                    className="text-blue-600 hover:text-blue-700"
                     title="Manage on Liabilities page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -521,26 +467,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Income & Tax
-                  <Link
+                  <ColumnGroupLink
                     href="/paycheck"
-                    className="text-blue-600 hover:text-blue-700"
                     title="View Paycheck page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}
@@ -551,26 +481,10 @@ function HistoricalTable({
               >
                 <span className="inline-flex items-center gap-1">
                   Salary
-                  <Link
+                  <ColumnGroupLink
                     href="/paycheck"
-                    className="text-blue-600 hover:text-blue-700"
                     title="View Paycheck page"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
+                  />
                 </span>
               </th>
             )}

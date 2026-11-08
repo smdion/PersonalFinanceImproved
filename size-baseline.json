@@ -8,7 +8,7 @@
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 977,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
-    "src/app/(dashboard)/historical/historical-content.tsx": 1021,
+    "src/app/(dashboard)/historical/historical-content.tsx": 935,
     "src/app/(dashboard)/house/house-content.tsx": 733,
     "src/app/(dashboard)/networth/networth-content.tsx": 460,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 684,
@@ -340,7 +340,7 @@
     },
     "src/app/(dashboard)/historical/historical-content.tsx": {
       "HistoricalContent": 189,
-      "HistoricalTable": 709,
+      "HistoricalTable": 597,
       "HistoricalTable.map()": 362
     },
     "src/app/(dashboard)/house/house-content.tsx": {
