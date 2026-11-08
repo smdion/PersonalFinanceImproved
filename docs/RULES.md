@@ -53,6 +53,7 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 - **SQLite is the default, supported install;** PostgreSQL is equally supported. Neither is "dev only". [check: CI's SQLite suite and its PostgreSQL job; test: `tests/baseline/router-baseline-postgres.test.ts`]
 - **External responses are parsed, never cast.** A response from another service is checked at the boundary, and a bad shape fails before anything is written. [lint: `@typescript-eslint/consistent-type-assertions`; human]
 - **Plan-wide dates show the year,** with each person's age on hover. An age on a plan-wide figure names whose it is. Never average ages for retirement logic. Metrics that are defined on age (income multiples, the wealth formula) keep the household's average age. [human]
+- **One word per meaning** ([GLOSSARY.md](GLOSSARY.md) § Ledgr terms). **Plan** is a saved set of profiles; **Projection** is the retirement forecast; **Retirement budget** is yearly spending in retirement; **Budget** alone is today's budget. "Retirement spending" and "plan spending" are retired. A profile is "active", never pinned, overridden or customized, and the random-returns run is the "Simulation" (`ratchet/no-retired-ui-word`). Text the user sees changes only in its own commit. [lint: `ratchet/no-retired-ui-word`, `ratchet/no-abbreviation`; human]
 - **One bar for the Simulation: 0.90** (`MC_CONFIDENCE_THRESHOLD`), judging Portfolio Survival only. No second bar (see Known Gaps for the report's 85% until v0.11). [human]
 
 ## Known Gaps
