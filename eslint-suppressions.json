@@ -2750,9 +2750,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-jsx-iife": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 14
     },
