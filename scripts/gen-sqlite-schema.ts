@@ -191,11 +191,17 @@ for (const f of fs.readdirSync(PG_DIR).filter((f) => f.endsWith(".ts")))
     "utf-8",
   );
 
-// The barrel: same sections, re-exported from ./sqlite/.
-const barrel = fs
-  .readFileSync(path.join(DB, "schema-pg.ts"), "utf-8")
+// The barrel: same sections, re-exported from ./sqlite/. Its header is the
+// comment block that opens with the first line below, however many lines
+// it runs to.
+const PG_HEADER =
+  /^\/\/ Drizzle schema — all table definitions for ledgr\.(\n\/\/.*)*/;
+const pgBarrel = fs.readFileSync(path.join(DB, "schema-pg.ts"), "utf-8");
+if (!PG_HEADER.test(pgBarrel))
+  throw new Error("schema-pg.ts no longer opens with its header line");
+const barrel = pgBarrel
   .replace(
-    /^\/\/ Drizzle schema — all table definitions for ledgr\.\n\/\/ This file is the single source of truth for the data model\.\n\/\/ See Migration Plan Section 4 for design principles and seed data notes\./,
+    PG_HEADER,
     "// AUTO-GENERATED from schema-pg.ts — do not edit by hand.\n// Run: npx tsx scripts/gen-sqlite-schema.ts\n// SQLite dialect of the Drizzle schema.",
   )
   .replace(/from "\.\/pg\//g, 'from "./sqlite/');
