@@ -24,10 +24,8 @@ export const savingsGoals = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
-    // Lost in the v0.8 squash and restored by 0005_v086_schema_cleanup.
-    // Upgraded SQLite installs lack it (SQLite can't add one in place), so
-    // deleting a goal also detaches its sub-goals in app code
-    // (savings router, deleteSavingsGoal).
+    // Some SQLite installs lack this FK (SQLite can't add one in place), so deleting
+    // a goal also detaches its sub-goals in app code (deleteSavingsGoal).
     parentGoalId: integer("parent_goal_id").references(
       (): AnySQLiteColumn => savingsGoals.id,
       { onDelete: "set null" },
@@ -54,12 +52,8 @@ export const savingsGoals = sqliteTable(
   ],
 );
 
-// One row per (savings goal, service, role) — replaces the old single-slot
-// apiCategoryId/apiCategoryName/isApiSyncEnabled/reimbursementApiCategoryId
-// columns on savingsGoals, which could only hold ONE service's link (plus
-// one reimbursement link) at a time. See budgetItemCategoryLinks above for
-// the same fix applied to budget items; those raw columns stay dead-but-
-// present for now, cleanup deferred to a future schema squash.
+// One row per (savings goal, service, role), so a goal can link to several services.
+// savingsGoals' single-slot api* columns are unused, kept until a schema squash.
 export const savingsGoalCategoryLinks = sqliteTable(
   "savings_goal_category_links",
   {
@@ -129,11 +123,8 @@ export const savingsPlannedTransactions = sqliteTable(
   ],
 );
 
-// Settlement is per-occurrence rather than a column on the row above, because
-// a single recurring row (isRecurring) represents many future occurrences —
-// a row-level "settled" flag would incorrectly hide every future occurrence
-// once one instance was confirmed. Non-recurring rows just have exactly one
-// possible occurrence (their own transactionDate's month).
+// Settlement is per occurrence, not on the row: a recurring row stands for many
+// occurrences (a non-recurring row has one, its transactionDate's month).
 export const savingsPlannedTxSettlements = sqliteTable(
   "savings_planned_tx_settlements",
   {
@@ -177,11 +168,8 @@ export const savingsAllocationOverrides = sqliteTable(
   ],
 );
 
-// Materialized extra-paycheck amounts for jobs whose routing is in Budget
-// mode (the complement of the Savings-mode materializer, which writes to
-// savings_planned_transactions instead — see extra-paycheck-materializer.ts
-// vs. budget-income-materializer.ts). One row per (job, month); no split/goal
-// fan-out, since Budget mode has no split concept.
+// Extra-paycheck amounts for jobs routed in Budget mode, one row per (job, month); Savings
+// mode writes savings_planned_transactions instead (extra-paycheck-materializer.ts).
 export const budgetIncomeAdjustments = sqliteTable(
   "budget_income_adjustments",
   {
@@ -201,15 +189,9 @@ export const budgetIncomeAdjustments = sqliteTable(
   ],
 );
 
-// Per-(goal, budget profile) funding — how much a goal is funded, and how
-// (percent of leftover vs. flat dollar), is entirely owned per profile.
-// Every active (goal, profile) pair has an explicit row; there is no shared
-// default a profile falls back to — each budget profile is its own funding
-// scenario. Row-per-pair is guaranteed by seeding at goal/profile creation
-// time (both start every new pairing at $0/no-percent) and backfilled by
-// migration 0006 for pairs that predate this table's mandatory-row model.
-// (Goal *identity* — name, target amount/date, priority, etc. — stays on
-// savingsGoals and IS shared across profiles; only funding is per-profile.)
+// Per-(goal, budget profile) funding (amount, percent vs flat): every active pair has a row,
+// seeded at $0 when a goal or profile is created, with no shared default. Goal identity
+// (name, target, priority) stays on savingsGoals, shared across profiles.
 export const savingsGoalProfileAllocations = sqliteTable(
   "savings_goal_profile_allocations",
   {

@@ -4468,34 +4468,6 @@
       "count": 2
     }
   },
-  "src/lib/db/pg/performance.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
-  "src/lib/db/pg/retirement.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 18
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/savings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/db/pg/scenarios.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
   "src/lib/db/pg/tax-tables.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -4577,34 +4549,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/lib/db/sqlite/performance.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
-  "src/lib/db/sqlite/retirement.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 18
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/savings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/db/sqlite/scenarios.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
     }
   },
   "src/lib/db/sqlite/tax-tables.ts": {

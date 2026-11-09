@@ -45,25 +45,13 @@ export const performanceAccounts = sqliteTable(
       .notNull()
       .default("scales_with_salary"),
     costBasis: text("cost_basis").notNull().default("0"),
-    /** Date the account owner separated from the employer funding this plan
-     *  (401k/403b only) — durable, user-set source of truth for Rule of 55
-     *  eligibility (Tax Buckets tool). Null = not separated yet / not
-     *  applicable / not entered; the UI derives a default suggestion from
-     *  linked jobs but never writes it here automatically. */
+    /** When the owner left the employer funding this plan (401k/403b only): the user-set source
+     *  for Rule of 55 eligibility. Null = not separated / not applicable / not entered; the UI
+     *  suggests one from linked jobs but never writes it. */
     separationDate: text("separation_date"),
-    /** Household is fine paying the 10%/20% early-withdrawal penalty on
-     *  THIS account when the projection needs to draw from it. Default
-     *  false = today's behavior (this account participates in the
-     *  household-wide hard exclusion like every other account, never
-     *  touched while penalty-free money exists anywhere). True makes this
-     *  account's penalty-exposed balance normally withdrawable again —
-     *  ordinary routing order (waterfall/bracket-filling) decides WHEN it's
-     *  drawn, same as any other reachable dollar. This is NOT a strict
-     *  "only as a true last resort, after every other account is
-     *  exhausted" guarantee — that would require reordering withdrawal
-     *  routing across account categories, a larger change tracked
-     *  separately. One-way opt-in per
-     *  account, set by the user — never inferred. */
+    /** The household accepts the early-withdrawal penalty on this account. False = left out while
+     *  penalty-free money exists anywhere; true = normal routing decides when it's drawn (not a
+     *  strict last resort). Set by the user, never inferred. */
     allowPenalizedWithdrawals: integer("allow_penalized_withdrawals", {
       mode: "boolean",
     })
@@ -94,21 +82,9 @@ export const performanceAccounts = sqliteTable(
   ],
 );
 
-/** Manually-tracked basis for the Tax Buckets analysis tool — how much of a
- *  Roth (taxFree) balance is contribution/conversion basis (accessible
- *  penalty-free under IRS ordering rules, for a Roth IRA) vs. growth. Keyed
- *  by (performanceAccountId, ownerPersonId), not a single column on
- *  performanceAccounts, because one account can carry two people's balances
- *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts).
- *  Named `account_basis` (not `roth_basis`) since it's the intended future
- *  home for other basis kinds (e.g. brokerage cost basis) — currently holds
- *  Roth fields only; brokerage cost basis still lives as a single live
- *  column on performanceAccounts (see tracksCostBasis()), unmigrated.
- *
- *  Year-scoped to mirror accountPerformance/annualPerformance's
- *  live-then-finalized lifecycle: one row per (account, owner, year),
- *  mutable while current, locked by finalizeRothBasisForYear() when
- *  performance.finalizeYear runs. */
+/** Tracked Roth basis (contributions/conversions, penalty-free under IRS ordering) vs growth,
+ *  per (account, owner, year) since one account can hold two owners' balances. Mutable while
+ *  current; finalizeRothBasisForYear locks it when performance.finalizeYear runs. */
 export const accountBasis = sqliteTable(
   "account_basis",
   {
@@ -125,21 +101,14 @@ export const accountBasis = sqliteTable(
     /** Roth conversions — always tax-free, but penalty-free only once
      *  seasoned (see latestConversionYear). */
     conversionBasis: text("conversion_basis").notNull().default("0"),
-    /** Most recent tax year a conversion was made, if conversionBasis > 0.
-     *  Gating the whole conversionBasis figure on the LATEST (not earliest)
-     *  tracked conversion year is deliberately conservative: this is a
-     *  pooled total across potentially several years of conversions, so
-     *  using the latest year only ever understates penalty-free access,
-     *  never overstates it. Null if conversionBasis = 0. */
+    /** Latest tax year with a conversion (null if conversionBasis = 0); gating the pooled basis
+     *  on the latest year can only understate penalty-free access, never overstate it. */
     latestConversionYear: integer("latest_conversion_year"),
     isFinalized: integer("is_finalized", { mode: "boolean" })
       .notNull()
       .default(false),
-    /** True for a row auto-seeded by finalizeRothBasisForYear (carried
-     *  forward from the prior year, not yet reviewed) vs. one the user
-     *  actually entered/confirmed. Basis normally grows each year, so an
-     *  unreviewed seeded row left as-is would silently understate
-     *  accessible funds — cleared the moment updateRothBasis touches it. */
+    /** True for a row finalizeRothBasisForYear carried forward unreviewed (it would understate
+     *  basis, which normally grows); updateRothBasis clears it. */
     isSeeded: integer("is_seeded", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -231,14 +200,8 @@ export const annualPerformance = sqliteTable(
     isFinalized: integer("is_finalized", { mode: "boolean" })
       .notNull()
       .default(false),
-    /** When true, this row's lifetime_* fields are considered authoritative
-     *  and must not be edited via routers. Set on finalization. App-layer
-     *  enforcement guards against silent drift when account_performance
-     *  rows on a finalized year are edited (per DESIGN.md § Data Model
-     *  Principles point 4 cascade rule). The router-level guard in
-     *  routers/performance:updateAnnual is the real protection — these fields
-     *  intentionally have NO CHECK constraints because lifetime_gains
-     *  can legitimately be negative (cumulative losses across years). */
+    /** True once finalized: lifetime_* fields are authoritative and routers must not edit them
+     *  (routers/performance:updateAnnual guards it). No CHECKs: lifetime_gains can be negative. */
     isImmutable: integer("is_immutable", { mode: "boolean" })
       .notNull()
       .default(false),

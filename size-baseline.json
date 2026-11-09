@@ -228,7 +228,7 @@
     "src/lib/db/backup-transforms.ts": 986,
     "src/lib/db/json-schemas.ts": 376,
     "src/lib/db/pg/api-sync.ts": 550,
-    "src/lib/db/pg/retirement.ts": 627,
+    "src/lib/db/pg/retirement.ts": 497,
     "src/lib/db/reference-reconcile-core.ts": 797,
     "src/lib/db/version-logic.ts": 573,
     "src/lib/demo/profiles/debt-payoff.ts": 446,

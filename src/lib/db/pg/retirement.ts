@@ -27,11 +27,8 @@ export const retirementSettings = pgTable(
   "retirement_settings",
   {
     id: serial("id").primaryKey(),
-    // NOT bare .unique() any more. One row per person, PER PROFILE, not one row
-    // per person system-wide — see the composite unique index below. This
-    // is what makes a second retirement profile able to hold genuinely
-    // different household settings; without it there was nowhere to put a
-    // duplicated profile's row (unique(person_id) forbade the INSERT).
+    // One row per person per profile (composite unique index below), so each retirement
+    // profile holds its own household settings.
     personId: integer("person_id")
       .notNull()
       .references(() => people.id, { onDelete: "restrict" }),
@@ -57,15 +54,9 @@ export const retirementSettings = pgTable(
     raisesDuringRetirement: boolean("raises_during_retirement")
       .notNull()
       .default(false),
-    /** Per-person Rule of 55 forecasting override. True (default)
-     *  ⇒ no override — the engine's computed Rule of 55 status (from real
-     *  job separation data) is used unchanged. False ⇒ force this person's
-     *  employer-plan accounts ineligible for Rule of 55, regardless of what
-     *  the computed status says — for forecasting "what if I'm not at a
-     *  qualifying job when I retire." Deliberately one-directional: this
-     *  never forces eligibility TRUE, only FALSE, so a default-true row can
-     *  never silently paint an account eligible when the real computed
-     *  status says otherwise. */
+    /** Per-person Rule of 55 override: true (default) = use the computed status; false = force
+     *  this person's employer plans ineligible ("what if I'm not at a qualifying job"). Never
+     *  forces eligibility on. */
     ruleOf55Override: boolean("rule_of_55_override").notNull().default(true),
     withdrawalRate: decimal("withdrawal_rate", { precision: 8, scale: 6 })
       .notNull()
@@ -101,60 +92,27 @@ export const retirementSettings = pgTable(
     withdrawalStrategy: varchar("withdrawal_strategy", { length: 30 })
       .notNull()
       .default("fixed"),
-    /** Within the cost-ranked tier (beyond the Traditional
-     *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
-     *  drains first. "roth_first" (default) matches all pre-existing
-     *  behavior. "brokerage_first" is an explicit household opt-in — a
-     *  brokerage LTCG gain still counts toward MAGI for ACA/IRMAA purposes
-     *  even when taxed at 0% federally, so this trades a real ACA/IRMAA
-     *  cost (when either awareness setting is on) for using the "use it or
-     *  lose it" annual 0%-LTCG allowance sooner — an explicit, user-chosen
-     *  tradeoff (with UI warning text), not an automatic optimization. */
+    /** Within the cost-ranked tier, whether Roth basis or brokerage 0%-LTCG room drains first.
+     *  "brokerage_first" is a household opt-in: those gains still count toward MAGI for ACA/IRMAA,
+     *  trading that cost for using the annual 0%-LTCG room sooner. */
     discretionaryWithdrawalOrder: varchar("discretionary_withdrawal_order", {
       length: 20,
     })
       .notNull()
       .default("roth_first"),
-    /** Household default for `withdrawalRoutingMode` ("bracket_filling" |
-     *  "waterfall" | "percentage") — WHICH accounts fund a year's
-     *  withdrawal, as opposed to `withdrawalStrategy` (HOW MUCH). Read as
-     *  the DB fallback in `buildDecumulationDefaults`
-     *  (server/routers/projection/_shared.ts) — a client-supplied
-     *  `decumulationDefaults.withdrawalRoutingMode` still wins when
-     *  present (the Retirement page's per-session Configure toggle), this
-     *  only fills in when the caller sends none (Tax Optimization's
-     *  comparison + "your current plan" baseline, and any future caller
-     *  that wants the household's real default rather than a hardcoded
-     *  one). Validated as an enum in zod (`retirementSettingsInput`,
-     *  routers/retirement/settings.ts), not a CHECK constraint — see
-     *  gen-sqlite-schema.ts's header on why a CHECK forces the SQLite
-     *  recreate path this schema otherwise avoids. */
+    /** Household default `withdrawalRoutingMode` (WHICH accounts fund a year; `withdrawalStrategy`
+     *  is HOW MUCH): `buildDecumulationDefaults`'s fallback when the client sends none. An enum in
+     *  zod (`retirementSettingsInput`), not a CHECK (that forces SQLite's table recreate). */
     withdrawalRoutingMode: varchar("withdrawal_routing_mode", { length: 20 })
       .notNull()
       .default("bracket_filling"),
-    /** Household default for the withdrawal ORDER — the account sequence
-     *  Waterfall mode drains in, and (filtered to 401k/403b/IRA) the
-     *  Traditional Account Order bracket_filling's Phase 1 consults first.
-     *  Same DB-fallback role as `withdrawalRoutingMode` above: read in
-     *  `buildDecumulationDefaults` (server/routers/projection/_shared.ts),
-     *  a client-supplied `decumulationDefaults.withdrawalOrder` still wins
-     *  when the Retirement page's Configure toggle sends one.
-     *  NULL = "use `getDefaultDecumulationOrder()`" — never store a copy of
-     *  the config default (same "null means absent" convention
-     *  `distributionTaxRateTraditional` documents in this table). Element
-     *  type + no-duplicates enforced in zod (`retirementSettingsInput`,
-     *  routers/retirement/settings.ts); a partial list is allowed (the engine's
-     *  `ensureCompleteWithdrawalOrder` backfills the rest). jsonb array,
-     *  auto-converted to SQLite `text({ mode: "json" })` by
-     *  gen-sqlite-schema.ts, matching `budgetProfileColumns.columnLabels`. */
+    /** Household default withdrawal ORDER (Waterfall's sequence; bracket_filling's Traditional
+     *  order); same fallback role as above. NULL = `getDefaultDecumulationOrder()`, never a copy.
+     *  Zod rejects bad or duplicate entries; the engine completes a partial list. */
     withdrawalOrder: jsonb("withdrawal_order").$type<string[]>(),
-    /** Household default for the percentage-mode splits — how a year's total
-     *  withdrawal divides across accounts. Same DB-fallback role and NULL
-     *  convention as `withdrawalOrder` above; NULL = "use
-     *  `DEFAULT_WITHDRAWAL_SPLITS`." Per-account fractions, roughly summing
-     *  to 1.0 (loose bound checked in zod, retirementSettingsInput); a partial record
-     *  is legal — a missing account resolves to 0 and the engine
-     *  redistributes proportionally. */
+    /** Household default percentage-mode splits (per-account fractions, roughly summing to 1);
+     *  same fallback role, NULL = `DEFAULT_WITHDRAWAL_SPLITS`. A missing account is 0 and the
+     *  engine redistributes proportionally. */
     withdrawalSplits:
       jsonb("withdrawal_splits").$type<Record<string, number>>(),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
@@ -233,60 +191,37 @@ export const retirementSettings = pgTable(
     /** VPW: the age the table runs to (null = config default). */
     vpwEndAge: integer("vpw_end_age"),
     /**
-     * Per portfolio-sized strategy: whether Social Security comes out of
-     * the strategy's amount (true — the amount is spending and Social
-     * Security pays part of it) or comes on top of it (false — the amount
-     * is what leaves the portfolio, the published methods' definition).
-     * Null = the strategy's config default (false). Migration 0006 set the
-     * four that existed to true, keeping projections as they were.
+     * Per portfolio-sized strategy: true = Social Security pays part of the strategy's amount
+     * (spending); false = the amount is what leaves the portfolio (the published definition).
+     * Null = the strategy's config default (false).
      */
     cpSsInAmount: boolean("cp_ss_in_amount"),
     enSsInAmount: boolean("en_ss_in_amount"),
     vdSsInAmount: boolean("vd_ss_in_amount"),
     rmdSsInAmount: boolean("rmd_ss_in_amount"),
     vpwSsInAmount: boolean("vpw_ss_in_amount"),
-    /** What to do with RMD-forced withdrawal beyond stated spending
-     *  need (after any QCD reduces the taxable RMD first) — "reinvest"
-     *  into brokerage (default, matches prior behavior) or "spend"
-     *  (household consumes it; net worth ends up lower, by design). */
+    /** RMD-forced withdrawal beyond spending need (after QCD): "reinvest" into brokerage
+     *  (default) or "spend" (consumed, so net worth ends lower). */
     rmdExcessHandling: varchar("rmd_excess_handling", { length: 20 })
       .notNull()
       .default("reinvest"),
-    /** Where reinvested RMD money goes: a Retirement-parented brokerage
-     *  account. Null = spread across the household's Retirement brokerages
-     *  by balance (the default); an account that is gone or no longer a
-     *  Retirement brokerage falls back to that with a warning. Never a
-     *  Portfolio account — retirement money stays retirement money.
-     *  Household-grain like rmdExcessHandling (stored on the primary
-     *  person's row, which pickProfileSettingsRow reads), per Retirement
-     *  Profile. */
+    /** The Retirement brokerage reinvested RMD money goes to (never a Portfolio account). Null =
+     *  spread over Retirement brokerages by balance, also the fallback (with a warning) for an
+     *  invalid account. Household-grain per profile, on the primary person's row. */
     rmdExcessTargetPerformanceAccountId: integer(
       "rmd_excess_target_performance_account_id",
     ).references(() => performanceAccounts.id, { onDelete: "set null" }),
-    /** Automatically apply the largest Qualified Charitable
-     *  Distribution the household's RMD situation allows each year
-     *  (capped by the year's qcd_annual_limit and the person's IRA-only
-     *  Traditional balance — see qcd.ts for the approximation this uses).
-     *  Excludes that portion of RMD from taxable income entirely. */
+    /** Apply the largest QCD the RMD allows each year (capped by qcd_annual_limit and the
+     *  IRA-only Traditional balance; approximated in qcd.ts), excluded from taxable income. */
     qcdMaximize: boolean("qcd_maximize").notNull().default(false),
-    /** Proactively size Roth conversions to shrink a FUTURE RMD
-     *  toward projected spending need, not just fill this year's bracket
-     *  room opportunistically — default false, byte-identical for every
-     *  existing household until explicitly turned on (converting more
-     *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
-     *  tradeoff). Per-person, requires individual-account tracking. */
+    /** Size Roth conversions to shrink a future RMD toward spending need, not just fill this
+     *  year's bracket (pay tax sooner). Default false; per person, needs individual accounts. */
     rmdSmoothingEnabled: boolean("rmd_smoothing_enabled")
       .notNull()
       .default(false),
-    /** How far smoothing may raise the EFFECTIVE conversion target
-     *  rate above the household's own `rothBracketTarget`/
-     *  `rothConversionTarget` when it needs more room than those provide
-     *  — can only RAISE the effective ceiling, never lower it (a
-     *  household's existing, separately-configured target always wins if
-     *  it's already higher). Null = not yet set; UI should seed a new
-     *  household's default from their current `rothBracketTarget`, not a
-     *  hardcoded value, so opting into smoothing can never look like it
-     *  silently lowered an existing target. */
+    /** How far smoothing may raise the effective conversion target above `rothBracketTarget` /
+     *  `rothConversionTarget`; never lowers it. Null = not set: the UI seeds it from the current
+     *  `rothBracketTarget`, not a hardcoded value. */
     rmdSmoothingMaxBracketTarget: decimal("rmd_smoothing_max_bracket_target", {
       precision: 8,
       scale: 6,
@@ -318,50 +253,16 @@ export const retirementSettings = pgTable(
     // --- Retirement Profiles migration, step A (expand) ---------------------
     // Added additively; nothing reads them yet (step B switches the reads).
 
-    /** The profile this row belongs to. Together with `person_id` this is
-     *  now the row's real key (see the composite unique index below,
-     *  replacing the old bare unique(person_id)): one
-     *  row per person PER PROFILE, which is what lets two profiles hold
-     *  genuinely different household settings.
-     *
-     *  Still nullable, not NOT NULL — `retirementSettings.upsert`
-     *  (server/routers/retirement/settings.ts) explicitly resolves and sets it on
-     *  every write (falling back to `isNull` scoping, never a bare
-     *  personId match, when no profile resolves), and a null value can't
-     *  weaken the unique index (Postgres/SQLite both treat NULL as
-     *  non-equal there), so there is no correctness gap. Made NOT NULL
-     *  ONLY as part of the next schema squash: SQLite has no ALTER COLUMN SET
-     *  NOT NULL, so tightening this now would force the exact table-recreate
-     *  path this schema has otherwise avoided. */
+    /** The profile this row belongs to; with person_id, the row's key (unique index below).
+     *  Nullable only because SQLite can't SET NOT NULL without a table recreate: every write
+     *  sets it, and a NULL can't weaken the unique index. */
     profileId: integer("profile_id").references(() => retirementProfiles.id, {
       onDelete: "cascade",
     }),
 
-    /** Distribution tax rates, relocated from `retirement_scenarios` — a
-     *  table with live engine reads but ZERO UI (its CRUD router has no
-     *  callers), so these values changed every projection while being
-     *  invisible and uneditable. Backfilled from the `is_selected` row.
-     *
-     *  Household-grain, so every person's row carries the same value, matching
-     *  how the other household columns here already behave.
-     *
-     *  DELIBERATELY NULLABLE, against the usual "NOT NULL on financial amount
-     *  columns" convention. Today's read is `selectedScenario ? rate : 0` —
-     *  i.e. no selected row means 0, NOT the DEFAULT_TAX_RATE_* constants.
-     *  Backfilling a literal 0 would preserve behaviour but permanently
-     *  destroy the difference between "the household chose 0%" and "there was
-     *  no row", and the open question of whether these should actually be the
-     *  defaults needs that distinction to remain answerable. So: null means
-     *  absent, and the read stays `!= null ? rate : 0` — byte-identical
-     *  output, no information laundered away.
-     *
-     *  NOTE: `retirement_scenarios.withdrawal_rate` is deliberately NOT
-     *  relocated here. `retirement_settings.withdrawal_rate` (line ~1400)
-     *  already exists, is NOT NULL, and is read in eight+ places; the
-     *  scenarios one is a different value overriding it in exactly one
-     *  consumer (the relocation tool). Collapsing them is correct eventually
-     *  but is a user-visible behaviour change, not a behaviour-neutral
-     *  relocation, so it gets its own change and its own justification. */
+    /** Distribution tax rates, household-grain (same on every person's row). Nullable on
+     *  purpose: null = never set and reads as 0 (`!= null ? rate : 0`), kept distinct from a
+     *  chosen 0%. */
     distributionTaxRateTraditional: decimal(
       "distribution_tax_rate_traditional",
       {
@@ -388,12 +289,8 @@ export const retirementSettings = pgTable(
     index("retirement_settings_rmd_excess_target_idx").on(
       table.rmdExcessTargetPerformanceAccountId,
     ),
-    // Replaces the old bare unique(person_id). profile_id stays nullable
-    // (Postgres/SQLite both treat NULL as non-equal in a unique index, so
-    // this can't be weakened by a null profile_id — every write path sets
-    // one) rather than made NOT NULL now, which would force SQLite's
-    // recreate-table path for no benefit; that tightening folds into the
-    // next schema squash alongside the rest of the deferred contract step.
+    // profile_id stays nullable (avoids SQLite's table recreate); NULLs are never equal in a
+    // unique index and every write sets one, so this holds one row per person per profile.
     uniqueIndex("retirement_settings_profile_person_unq").on(
       table.profileId,
       table.personId,
@@ -402,31 +299,17 @@ export const retirementSettings = pgTable(
 );
 
 /**
- * Retirement Profiles — the named, swappable entity.
- *
- * Thin parent matching `contribution_profiles` / `salary_profiles`: id, name,
- * description, created_at. The assumptions themselves stay on
- * `retirement_settings` (re-keyed to `profile_id`) rather than moving into a
- * JSON payload like its siblings, because 24 of those columns are typed
- * decimals with explicit precision — moving them to JSON would turn financial
- * rates into floats and discard every validator and default binding.
- *
- * Each profile is a COMPLETE world: no baseline, no default profile, no
- * inheritance, no merge at read time. Same contract Salary Profiles already
- * state ("no fallback to a job record: if you want a different number, use a
- * different profile").
+ * Retirement Profiles: a thin parent like contribution/salary profiles; the assumptions stay
+ * on `retirement_settings`' typed decimal columns (keyed by profile_id), not JSON. Each profile
+ * is a complete world: no baseline, default, inheritance or read-time merge.
  */
 export const retirementProfiles = pgTable("retirement_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
   /**
-   * Tax-law year this profile's projections are priced under.
-   * NULL = track the latest enacted tax data — the historical behaviour, so
-   * every profile predating this column is byte-identical after the migration adds this
-   * column. A non-null value pins the `resolveTaxParams` base year (with
-   * `onMissing: "nearest"`); "Latest = current law" in the profile
-   * assumptions UI.
+   * Tax-law year this profile is priced under: `resolveTaxParams`'s base year (`onMissing:
+   * "nearest"`). NULL = the latest enacted tax data ("Latest = current law" in the UI).
    */
   taxParamsYear: integer("tax_params_year"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -435,22 +318,9 @@ export const retirementProfiles = pgTable("retirement_profiles", {
 });
 
 /**
- * Per-person retirement assumptions within a profile.
- *
- * Only the fields the engine genuinely reads per person live here. Everything
- * else is household-grain and stays on `retirement_settings` — see the design
- * plan's §01 for why the household/per-person line falls where it does.
- *
- * `end_age` is here because the engine reads it per person
- * (`Math.max(...perPersonSettings.map(p => p.endAge))` →
- * `projectionEndAge`), which is also what made the household "Projection Through"
- * control silently discard edits before commit 0b5d5fe.
- *
- * COMPLETENESS INVARIANT: every profile must hold a row for every person.
- * With no baseline to fall back to, a missing row is a missing retirement
- * age — not a number the engine can invent. Enforced on profile create,
- * duplicate, person create (fan a row into every existing profile — the one
- * that gets forgotten), and person delete.
+ * Per-person retirement assumptions within a profile (only what the engine reads per person,
+ * e.g. end_age). Every profile holds a row for every person (kept on profile create/duplicate,
+ * person create/delete): with no baseline, a missing row is a missing retirement age.
  */
 export const retirementProfilePeople = pgTable(
   "retirement_profile_people",
