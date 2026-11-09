@@ -12,16 +12,20 @@ import { eq } from "drizzle-orm";
 import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
 import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
-import type { AccountCategory } from "@/lib/config/account-types";
 import type { DecumulationDefaults } from "@/lib/pure/engine/types";
+import { readStoredValue } from "@/lib/db/stored-setting";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import {
+  decumulationDefaultsInputSchema,
   decumulationOverrideArraySchema,
   lumpSumSchema,
+  storedWithdrawalOrderSchema,
+  storedWithdrawalSplitsSchema,
 } from "@/lib/pure/engine/types";
 import {
   getAllStrategyKeys,
@@ -158,6 +162,13 @@ export function buildStrategyParams(
   return out;
 }
 
+/** retirement_settings' withdrawal routing, as its writer stores it. */
+const storedRouting = z.looseObject({
+  withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES),
+  withdrawalOrder: storedWithdrawalOrderSchema.nullish(),
+  withdrawalSplits: storedWithdrawalSplitsSchema.nullish(),
+});
+
 /**
  * Build decumulation defaults from DB settings + client-supplied routing overrides.
  * Shared by computeProjection and computeMonteCarloProjection.
@@ -175,39 +186,24 @@ export function buildDecumulationDefaults(
     rmdSmoothingMaxBracketTarget?: string | null;
     discretionaryWithdrawalOrder?: string | null;
   },
-  clientDefaults: {
-    withdrawalRoutingMode?: string;
-    withdrawalOrder?: string[];
-    withdrawalSplits?: Record<string, number>;
-    withdrawalTaxPreference: Record<string, string>;
-  },
+  clientDefaults: z.output<typeof decumulationDefaultsInputSchema>,
   distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
 ): DecumulationDefaults {
+  const saved = readStoredValue("retirement_settings", settings, storedRouting);
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
-    // Client override wins when the caller sent one (the Retirement page's
-    // per-session Configure toggle, once the user touches it); otherwise the
-    // persisted `retirement_settings.withdrawal_routing_mode` (NOT NULL,
-    // default "bracket_filling"). The ONE place that resolves the mode —
-    // every caller (computeProjection, Monte Carlo, Tax Optimization) goes
-    // through this function, so all read the same value.
-    withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
-      settings.withdrawalRoutingMode) as DecumulationDefaults["withdrawalRoutingMode"],
-    // Like `withdrawalRoutingMode` above, a touched-session client
-    // override wins, else the household's persisted
-    // `retirement_settings.withdrawal_order` / `.withdrawal_splits`, else
-    // the config default. A NULL DB column means "never customized" and
-    // falls through to the config default.
-    withdrawalOrder: (clientDefaults.withdrawalOrder ??
-      settings.withdrawalOrder ??
-      getDefaultDecumulationOrder()) as AccountCategory[],
-    withdrawalSplits: (clientDefaults.withdrawalSplits ??
-      settings.withdrawalSplits ?? {
-        ...CONFIG_WITHDRAWAL_SPLITS,
-      }) as Record<AccountCategory, number>,
-    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference as Partial<
-      Record<AccountCategory, "traditional" | "roth">
-    >,
+    // The ONE place the routing is resolved, for every caller: a client
+    // override (the Retirement page's touched Configure toggle) wins, else
+    // the household's saved value; a NULL order or splits is the config's.
+    withdrawalRoutingMode:
+      clientDefaults.withdrawalRoutingMode ?? saved.withdrawalRoutingMode,
+    withdrawalOrder:
+      clientDefaults.withdrawalOrder ??
+      saved.withdrawalOrder ??
+      getDefaultDecumulationOrder(),
+    withdrawalSplits: clientDefaults.withdrawalSplits ??
+      saved.withdrawalSplits ?? { ...CONFIG_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference,
     distributionTaxRates,
     withdrawalStrategy: readStoredStrategy(settings.withdrawalStrategy),
     strategyParams: buildStrategyParams(settings),

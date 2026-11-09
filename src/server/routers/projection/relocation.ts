@@ -252,7 +252,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       // relocation scenarios; omitting the keys lets each resolve its own
       // household's real routing mode, order, and splits.
       const clientDecumulationDefaults = {
-        withdrawalTaxPreference: {} as Record<string, string>,
+        withdrawalTaxPreference: {},
       };
 
       const currentDecumulationDefaults = buildDecumulationDefaults(

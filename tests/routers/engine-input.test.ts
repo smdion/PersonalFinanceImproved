@@ -72,7 +72,7 @@ describe("prepareEngineInput", () => {
   it("uses the caller's lists and its client defaults over the saved ones", async () => {
     const sent = [{ year: 2035, contributionRate: 0.1 }];
     const client = {
-      withdrawalRoutingMode: "percentage",
+      withdrawalRoutingMode: "percentage" as const,
       withdrawalTaxPreference: {},
     };
     const out = await prepareEngineInput(ctx.rawDb, payload, {
