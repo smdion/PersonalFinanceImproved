@@ -225,7 +225,7 @@
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 771,
     "src/lib/constants.ts": 370,
-    "src/lib/db/backup-transforms.ts": 1114,
+    "src/lib/db/backup-transforms.ts": 986,
     "src/lib/db/json-schemas.ts": 452,
     "src/lib/db/pg/api-sync.ts": 600,
     "src/lib/db/pg/retirement.ts": 627,
@@ -908,7 +908,7 @@
       "UtilityFeedCard": 219
     },
     "src/lib/db/backup-transforms.ts": {
-      "transformV07xToCurrent": 212
+      "transformV07xToCurrent": 185
     },
     "src/lib/db/reference-reconcile-core.ts": {
       "reconcileSteps": 167

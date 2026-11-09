@@ -1,10 +1,6 @@
 /**
- * Auto-backfill performanceAccountId on contribution accounts saved without
- * one: a fuzzy match by person and account type.
- *
- * Runs on startup (via instrumentation.ts). Idempotent — only touches rows
- * where performanceAccountId IS NULL. Only contribution accounts can be
- * saved without a link.
+ * Startup backfill (idempotent): links contribution accounts saved without a
+ * performanceAccountId by a fuzzy match on person and account type.
  */
 
 import { eq, isNull } from "drizzle-orm";
@@ -48,10 +44,7 @@ export async function backfillPerformanceAccountIds(db: Db) {
         return (
           labelLower.includes(typeLabel) &&
           (pa.ownerPersonId === contribution.personId ||
-            // Guard against personName being "" (joint contribution / unresolved
-            // person) — String.includes("") is always true, which would
-            // otherwise match this contribution to ANY performance account of
-            // the right type regardless of actual ownership.
+            // An empty personName (joint or unresolved) would match any label.
             (personName !== "" && labelLower.includes(personName)))
         );
       });

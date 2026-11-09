@@ -4433,18 +4433,10 @@
   "src/lib/db/backfill-joint-person-id.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/db/backfill-local-ids.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    }
-  },
-  "src/lib/db/backfill-perf-ids.ts": {
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
@@ -4454,30 +4446,16 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 25
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
     }
   },
   "src/lib/db/compat.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 9
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/db/converter-rows.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/lib/db/demo-schema-marker.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/db/index.ts": {
