@@ -22,19 +22,14 @@ import { InlineAccountType } from "./inline-account-type";
 import { InstitutionPicker } from "./institution-picker";
 import { trpc } from "@/lib/trpc";
 import type { ContributionCardProps } from "./types";
-import {
-  categoriesWithIrsLimit,
-  isOverflowTarget,
-  getDisplayConfig,
-} from "@/lib/config/account-types";
+import { isOverflowTarget, getDisplayConfig } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,
   CONTRIBUTION_METHOD_LABELS_SHORT,
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
-import type { AccountCategory } from "@/lib/config/account-types";
-import { renderAutoMax } from "./contrib-card-auto-max";
+import { AutoMax } from "./contrib-card-auto-max";
 
 export function ContributionCard({
   contrib: c,
@@ -349,18 +344,18 @@ export function ContributionCard({
         </div>
       )}
 
-      {categoriesWithIrsLimit().includes(c.accountType as AccountCategory) &&
-        onToggleAutoMax &&
-        renderAutoMax(
-          annualLimit,
-          c,
-          employerMatchAnnual,
-          onToggleAutoMax,
-          periodsPerYear,
-          readOnly,
-          salary,
-          siblingAnnualContributions,
-        )}
+      {onToggleAutoMax && (
+        <AutoMax
+          contribution={c}
+          annualLimit={annualLimit}
+          employerMatchAnnual={employerMatchAnnual}
+          siblingAnnualContributions={siblingAnnualContributions}
+          salary={salary}
+          periodsPerYear={periodsPerYear}
+          readOnly={readOnly}
+          onToggleAutoMax={onToggleAutoMax}
+        />
+      )}
     </div>
   );
 }
