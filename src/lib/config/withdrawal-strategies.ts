@@ -218,7 +218,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     guide: {
       how: "Each year from the RMD age (73, or 75 if born 1960 or later), withdraw your portfolio balance divided by the IRS life expectancy factor, times an optional multiplier. Before RMD age, spending tracks your retirement budget with inflation.",
       strengths: [
-        "Mathematically self-correcting — can never fully deplete the portfolio",
+        "Self-correcting from RMD age: a multiplier of 1 or less takes only a share of what's left each year; above 1 it can run the portfolio out, and so can the budget-funded years before RMD age",
         "Spending naturally increases as time horizon shortens (higher % in later years)",
         "Backed by actuarial tables designed for lifetime distribution",
       ],

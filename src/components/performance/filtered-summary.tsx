@@ -58,7 +58,7 @@ export function FilteredSummary({
               ? formatPercent(chained.annualizedReturn, 1)
               : "—"
           }
-          label="Derived from chained annual Modified-Dietz returns"
+          label="Derived from chained annual Simple Dietz returns"
         />
       </Card>
       <Card
