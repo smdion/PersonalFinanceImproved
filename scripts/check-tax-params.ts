@@ -136,6 +136,7 @@ const TAX_PATHS = [
   "tax-data/",
   "src/lib/config/tax-tables.ts",
   "src/lib/config/tax-params.ts",
+  "src/lib/pure/tax/resolve-tax-params.ts",
   "src/lib/config/tax-data-publication.ts",
   "src/lib/pure/tax/data-status.ts",
 ];
