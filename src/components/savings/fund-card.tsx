@@ -5,7 +5,7 @@ import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import dynamic from "next/dynamic";
 import { Popover } from "@/components/ui/popover";
-import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 
 // Code-split the per-fund Recharts mini chart. All
@@ -326,7 +326,7 @@ export function FundCard({
       : Math.min(safeDivide(savingsGoal.current, savingsGoal.target, 0)!, 1);
   const progressPct = (progress * 100).toFixed(0);
 
-  const serviceLabel = (apiServiceName ?? "API").toUpperCase();
+  const serviceLabel = budgetApiServiceLabel(apiServiceName);
 
   /* ── Menu dropdown (shared by compact row) ── */
   const menuDropdown = canEdit !== false && !rawGoal.isEmergencyFund && (

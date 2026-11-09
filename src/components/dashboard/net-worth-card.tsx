@@ -5,7 +5,11 @@ import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  formatDate,
+} from "@/lib/utils/format";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";
@@ -53,7 +57,7 @@ function NetWorthCardImpl() {
     freshnessParts.push(`Snapshot ${formatDate(data.snapshotDate, "medium")}`);
   }
   if (data.cashSource !== "manual" && syncStatus?.lastSynced) {
-    const serviceLabel = syncStatus.service === "ynab" ? "YNAB" : "Actual";
+    const serviceLabel = budgetApiServiceLabel(syncStatus.service);
     const time = formatDate(new Date(syncStatus.lastSynced), "time");
     freshnessParts.push(`${serviceLabel} synced ${time}`);
   }
