@@ -1,5 +1,9 @@
 /** What a converter throws to refuse the start: the migration stops in its
- *  transaction, so nothing is written, and db-migrate.ts logs the ids. */
+ *  transaction, so nothing is written, and db-migrate.ts logs the ids. A
+ *  missing encryption key refuses it too. */
+
+import { parseEncryptionKey } from "../../crypto-envelope";
+import type { ConverterContext } from "./converter-rows";
 
 /** Field names a refusal may name: identifiers only, never a stored text. */
 const FIELD = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
@@ -52,3 +56,19 @@ export class MigrationRefusal extends Error {
     this.fields = fields;
   }
 }
+
+/** ENCRYPTION_KEY as it is when a converter asks (db-migrate.ts has loaded
+ *  .env by then); missing or malformed, the start is refused. */
+export const ENV_CONTEXT: ConverterContext = {
+  encryptionKey: (purpose) => {
+    try {
+      return parseEncryptionKey(process.env["ENCRYPTION_KEY"]);
+    } catch (e) {
+      const why = e instanceof Error ? e.message : String(e);
+      throw new MigrationRefusal({
+        problem: `ENCRYPTION_KEY is required to ${purpose}: ${why.replace(/\.$/, "")}`,
+        fix: "Set it and start again.",
+      });
+    }
+  },
+};

@@ -2,6 +2,8 @@
  *  serves the live migration (db-migrate.ts: pending loop and both squash
  *  replays, in the migration's transaction) and the restore step. */
 
+import type { ConverterContext } from "./converter-rows";
+import { ENV_CONTEXT } from "./converter-refusal";
 import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
 import { MATCH_VALUE_CONVERTER, MATCH_VALUE_TAG } from "./v0102-match-value";
 
@@ -48,7 +50,10 @@ export type DataConverter = {
   /** Idempotent: gates on structure or a closed set, rewrites in place only
    *  as a projection, never infers "done" or a unit from a magnitude (DESIGN
    *  § Data-converting migrations: "What a converter may decide by"). */
-  readonly convert: (tables: ConverterTables) => ConverterResult;
+  readonly convert: (
+    tables: ConverterTables,
+    context: ConverterContext,
+  ) => ConverterResult;
 };
 
 /** A tag's converter, or several that run in order, each over a fresh read
@@ -264,7 +269,7 @@ export async function runConverterPg(
       );
       if (rows[0]?.["present"]) tables[table] = await selectPg(client, table);
     }
-    const result = c.convert(tables);
+    const result = c.convert(tables, ENV_CONTEXT);
     for (const s of statements(result, (i) => `$${i}`, false))
       assertOneRow(s.label, (await client.query(s.sql, s.params)).rowCount);
     results.push(result);
@@ -301,7 +306,7 @@ export function runConverterSqlite(
           .get(table)
       )
         tables[table] = sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all();
-    const result = c.convert(tables);
+    const result = c.convert(tables, ENV_CONTEXT);
     for (const s of statements(result, () => "?", true))
       assertOneRow(s.label, sqlite.prepare(s.sql).run(...s.params).changes);
     return result;
@@ -362,7 +367,7 @@ export function convertBackup(
   const results = list.map((c) => {
     const read: Record<string, unknown[] | undefined> = {};
     for (const table of c.tables) read[table] = tables[table];
-    const result = c.convert(read);
+    const result = c.convert(read, ENV_CONTEXT);
     applyToBackup(tables, result);
     return result;
   });

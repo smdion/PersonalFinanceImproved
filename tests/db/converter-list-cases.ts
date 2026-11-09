@@ -1,13 +1,17 @@
 /**
  * Invented converters over app_settings for the converter-list tests on
- * both dialects: three idempotent ones that update, insert and delete, and
- * one that changes its own output.
+ * both dialects: three idempotent ones that update, insert and delete, one
+ * that changes its own output, and one that asks for the encryption key.
  */
 import type {
   ConverterResult,
   ConverterTables,
   DataConverter,
 } from "@/lib/db/migrate/migration-converters";
+import {
+  encryptStringWithKey,
+  isEncryptedEnvelope,
+} from "@/lib/crypto-envelope";
 
 type Setting = { id: number; key: string; value: string };
 const settingsOf = (t: ConverterTables) =>
@@ -65,3 +69,28 @@ export const appends = over((rows) => ({
     set: { value: `${r.value}!` },
   })),
 }));
+
+/** Encrypts each `secret_*` setting's text, asking for the key only then. */
+export const encrypts: DataConverter = {
+  tables: ["app_settings"],
+  runs: "afterSql",
+  convert: (tables, context) => {
+    const plain = settingsOf(tables).filter(
+      (r) =>
+        r.key.startsWith("secret_") &&
+        !isEncryptedEnvelope(JSON.parse(r.value)),
+    );
+    if (plain.length === 0) return { updates: [], notes: [] };
+    const key = context.encryptionKey(
+      `encrypt ${plain.length} invented credential(s)`,
+    );
+    return {
+      updates: plain.map((r) => ({
+        table: "app_settings",
+        id: r.id,
+        set: { value: encryptStringWithKey(key, r.value) },
+      })),
+      notes: [],
+    };
+  },
+};

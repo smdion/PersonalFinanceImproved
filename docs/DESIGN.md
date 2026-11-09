@@ -975,6 +975,14 @@ SQLite and PostgreSQL).
   pending tag) rolls back, the migrator logs `migration_failed` with the
   ids and exits non-zero, so the container doesn't start and the previous
   image still runs. On restore it fails the restore before any write.
+- **The encryption key:** a converter gets its tables and a context
+  whose `encryptionKey(purpose)` reads `ENCRYPTION_KEY` when the converter
+  asks, after `db-migrate.ts` has loaded `.env` (and from the app's
+  environment on restore), through `src/lib/crypto-envelope.ts`, the
+  server-free half of the encryption, which the migrator bundle may
+  import. A converter asks only when it has something to encrypt, so a
+  keyless install with nothing to convert still starts; missing or
+  malformed when asked, the key refuses the start as above.
 - **A new migration never recreates a SQLite table** (0005 and 0015 do,
   and replay handles those as above); a shape that seems to need one stops
   for an owner decision.
