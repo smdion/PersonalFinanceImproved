@@ -116,6 +116,7 @@ export const assetsRouter = createTRPCRouter({
 
   // --- Other Asset Items ---
 
+  /** Set an other asset's value for a year, keyed by name and year. */
   upsertOtherAsset: adminProcedure
     .input(
       z.object({
@@ -144,6 +145,7 @@ export const assetsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
+  /** Delete an other asset and the budget-API mappings that point at it. */
   deleteOtherAsset: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
@@ -158,6 +160,7 @@ export const assetsRouter = createTRPCRouter({
 
   // --- Property Taxes ---
 
+  /** Property taxes by year, newest first, for one loan or all; with none, year-end history's figures stand in (id 0). */
   listPropertyTaxes: protectedProcedure
     .input(z.object({ loanId: z.number() }).optional())
     .query(async ({ ctx, input }) => {
@@ -201,6 +204,7 @@ export const assetsRouter = createTRPCRouter({
         }));
     }),
 
+  /** Set a loan's property tax for a year, keyed by loan and year. */
   upsertPropertyTax: adminProcedure
     .input(
       z.object({
@@ -245,6 +249,7 @@ export const assetsRouter = createTRPCRouter({
 
   // --- Notes ---
 
+  /** Save the note on one year's field; a blank note deletes it. */
   upsertNote: adminProcedure
     .input(
       z.object({

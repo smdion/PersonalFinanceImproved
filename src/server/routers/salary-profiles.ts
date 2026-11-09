@@ -205,6 +205,7 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(({ ctx, input }) => duplicateProfile(ctx.db, "salary", input)),
 
+  /** Rename a Salary profile or replace its entries (W-4 brackets checked); the active profile's extra-paycheck routing refreshes. */
   update: contributionProfileProcedure
     .input(
       z.object({

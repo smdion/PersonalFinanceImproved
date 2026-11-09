@@ -106,6 +106,7 @@ export const monteCarloRouter = createTRPCRouter({
 
   // --- Mutations for editing projection assumptions ---
 
+  /** Replace the Custom Simulation preset's glide path (each age's mix by asset class); returns the rows written. */
   updateGlidePathAllocations: scenarioProcedure
     .input(
       z.object({
@@ -141,6 +142,7 @@ export const monteCarloRouter = createTRPCRouter({
       return { updated: rows.length };
     }),
 
+  /** Save the Custom Simulation preset's bounds on a year's return, as a setting (Custom has no preset row). */
   updateClampBounds: scenarioProcedure
     .input(
       z.object({

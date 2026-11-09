@@ -19,6 +19,7 @@ import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schem
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 export const summaryProcedures = {
+  /** Today's net worth and its parts (portfolio, cash, home, mortgage, other assets and liabilities), each with its source. */
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {

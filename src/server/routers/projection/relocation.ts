@@ -72,12 +72,14 @@ export const relocationProjectionRouter = createTRPCRouter({
     .query(({ ctx, input }) => computeRelocationFiProjection(ctx, input)),
 
   relocationScenarios: createTRPCRouter({
+    /** The Relocation tool's saved comparisons, newest first. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
         .from(schema.relocationScenarios)
         .orderBy(desc(schema.relocationScenarios.updatedAt)),
     ),
+    /** Save a Relocation comparison: a new one, or the one `id` names; returns the row. */
     save: adminProcedure
       .input(
         z.object({

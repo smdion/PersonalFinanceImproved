@@ -258,6 +258,7 @@ export const taxLimitsProcedures = {
     listSectionSources: protectedProcedure.query(
       async ({ ctx }) => (await shippedData(ctx.db)).sectionCitations,
     ),
+    /** Whether each section's tax data is current (a waiting community update counts) and the unconfirmed carried figures. */
     getStatus: protectedProcedure.query(async ({ ctx }) => {
       const yearsByTable: Partial<Record<YearlyTable, number[]>> = {};
       const carried: CarriedFigure[] = [];
@@ -395,6 +396,7 @@ export const taxLimitsProcedures = {
           shipped.limitCitations.get(keyText([r.taxYear, r.limitType])) ?? [],
       }));
     }),
+    /** A new figure: carried when `carried`, else the household's own, confirmed. */
     create: adminProcedure
       .input(contributionLimitInput.extend(carriedInput))
       .mutation(({ ctx, input: { carried, ...input } }) =>
@@ -404,6 +406,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Saving confirms the figure; a changed value becomes the household's, which shipped updates leave alone. */
     update: adminProcedure
       .input(
         z.object({ id: z.number().int() }).extend(contributionLimitInput.shape),
@@ -427,6 +430,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /** Refused for a figure Ledgr ships (Reset to shipped instead). */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -465,6 +469,7 @@ export const taxLimitsProcedures = {
   }),
 
   taxBrackets: createTRPCRouter({
+    /** Every withholding bracket row, each marked whether Ledgr ships it. */
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()
@@ -479,6 +484,7 @@ export const taxLimitsProcedures = {
         shipped: isShipped("tax_brackets", r, shipped),
       }));
     }),
+    /** A new figure: carried when `carried`, else the household's own, confirmed. */
     create: adminProcedure
       .input(taxBracketInput.extend(carriedInput))
       .mutation(({ ctx, input: { carried, ...input } }) =>
@@ -488,6 +494,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Saving confirms the figure; a changed value becomes the household's, which shipped updates leave alone. */
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(taxBracketInput.shape))
       .mutation(async ({ ctx, input: { id, ...data } }) => {
@@ -505,6 +512,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /** Refused for a figure Ledgr ships (Reset to shipped instead). */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -540,6 +548,7 @@ export const taxLimitsProcedures = {
   }),
 
   ltcgBrackets: createTRPCRouter({
+    /** Every long-term capital gains bracket row, each marked whether Ledgr ships it. */
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()
@@ -554,6 +563,7 @@ export const taxLimitsProcedures = {
         shipped: isShipped("ltcg_brackets", r, shipped),
       }));
     }),
+    /** A new figure: carried when `carried`, else the household's own, confirmed. */
     create: adminProcedure
       .input(ltcgBracketInput.extend(carriedInput))
       .mutation(({ ctx, input: { carried, ...input } }) =>
@@ -563,6 +573,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Saving confirms the figure; a changed value becomes the household's, which shipped updates leave alone. */
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(ltcgBracketInput.shape))
       .mutation(async ({ ctx, input: { id, ...data } }) => {
@@ -580,6 +591,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /** Refused for a figure Ledgr ships (Reset to shipped instead). */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -615,6 +627,7 @@ export const taxLimitsProcedures = {
   }),
 
   irmaaBrackets: createTRPCRouter({
+    /** Every IRMAA bracket row, each marked whether Ledgr ships it. */
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()
@@ -629,6 +642,7 @@ export const taxLimitsProcedures = {
         shipped: isShipped("irmaa_brackets", r, shipped),
       }));
     }),
+    /** A new figure: carried when `carried`, else the household's own, confirmed. */
     create: adminProcedure
       .input(irmaaBracketInput.extend(carriedInput))
       .mutation(({ ctx, input: { carried, ...input } }) =>
@@ -638,6 +652,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Saving confirms the figure; a changed value becomes the household's, which shipped updates leave alone. */
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(irmaaBracketInput.shape))
       .mutation(async ({ ctx, input: { id, ...data } }) => {
@@ -659,6 +674,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /** Refused for a figure Ledgr ships (Reset to shipped instead). */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -697,6 +713,7 @@ export const taxLimitsProcedures = {
   }),
 
   fplByHousehold: createTRPCRouter({
+    /** Every poverty-level (FPL) row, each marked whether Ledgr ships it. */
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()
@@ -708,6 +725,7 @@ export const taxLimitsProcedures = {
         shipped: isShipped("fpl_by_household", r, shipped),
       }));
     }),
+    /** A new figure: carried when `carried`, else the household's own, confirmed. */
     create: adminProcedure
       .input(fplByHouseholdInput.extend(carriedInput))
       .mutation(({ ctx, input: { carried, ...input } }) =>
@@ -717,6 +735,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Saving confirms the figure; a changed value becomes the household's, which shipped updates leave alone. */
     update: adminProcedure
       .input(
         z.object({ id: z.number().int() }).extend(fplByHouseholdInput.shape),
@@ -740,6 +759,7 @@ export const taxLimitsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /** Refused for a figure Ledgr ships (Reset to shipped instead). */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
