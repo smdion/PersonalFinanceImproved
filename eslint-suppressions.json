@@ -4132,40 +4132,16 @@
       "count": 2
     }
   },
-  "src/lib/config/aca-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/config/account-balance.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 9
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-abbreviation": {
       "count": 18
     }
   },
   "src/lib/config/account-types.types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
-      "count": 4
-    }
-  },
-  "src/lib/config/benchmarks.ts": {
-    "ratchet/max-comment-lines": {
       "count": 4
     }
   },
@@ -4174,86 +4150,19 @@
       "count": 1
     }
   },
-  "src/lib/config/data-sources.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/config/debts.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/config/display-labels.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    }
-  },
-  "src/lib/config/enum-values.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/config/fixed-by-law.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/config/focus-topics.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 7
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/config/fund-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/config/investment-health.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/config/irmaa-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/config/milestones.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
-  "src/lib/config/niit.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/config/pay-periods.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/config/paycheck-presets.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/config/performance-help.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/config/recommendations.ts": {

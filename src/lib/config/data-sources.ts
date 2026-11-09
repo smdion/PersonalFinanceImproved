@@ -1,12 +1,6 @@
-/**
- * Where Ledgr's data comes from, and how often each source is expected to
- * be refreshed. Drives the sidebar's "Data" indicator: a source needs
- * attention only when it is late for its own rhythm or its last run
- * failed — a yearly source is not "stale" for 11 months of the year.
- *
- * Adding a source = one entry here plus its input in
- * `lib/pure/sync/data-freshness.ts`'s `DataSourceInputs`.
- */
+/** Ledgr's data sources and each one's refresh rhythm, for the sidebar's "Data" indicator: a
+ *  source needs attention only when late for its own rhythm or its last run failed. A new
+ *  source also needs its input in `lib/pure/sync/data-freshness.ts`'s `DataSourceInputs`. */
 
 import type { Focus } from "./focus-topics";
 

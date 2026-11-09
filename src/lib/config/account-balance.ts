@@ -1,8 +1,5 @@
-// ---------------------------------------------------------------------------
-// Balance discriminated union accessor/mutator functions
-// ---------------------------------------------------------------------------
-// Works with the AccountBalance discriminated union. All balance reads and
-// writes go through these helpers so the rest of the codebase never
+// Accessors/mutators for the AccountBalance discriminated union. All balance
+// reads and writes go through these helpers so the rest of the codebase never
 // pattern-matches on `structure` directly.
 
 import { assertNever } from "@/lib/utils/assert-never";

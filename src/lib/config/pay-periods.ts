@@ -1,10 +1,5 @@
-/**
- * Pay-period configuration table.
- *
- * Single source of truth for pay frequency → periods/year, default budget
- * periods per month, and UI notes (labels: display-labels' PAY_PERIOD_LABELS).
- * Replaces all inline maps and hardcoded help text strings in the codebase.
- */
+/** Pay frequency → periods/year, default budget periods per month, and UI notes
+ *  (labels: display-labels' PAY_PERIOD_LABELS). */
 import type { PayPeriod } from "./enum-values";
 
 type PayPeriodConfig = {

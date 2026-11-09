@@ -1,9 +1,6 @@
-/**
- * How a paycheck deduction is taxed, named the way a pay stub groups it.
- * Each preset is the pair of flags the calculator reads: `isPretax`
- * (reduces federal income-tax wages) and `ficaExempt` (reduces Social
- * Security + Medicare wages). Data, not code: another preset is one entry.
- */
+/** How a paycheck deduction is taxed, named the way a pay stub groups it: `isPretax`
+ *  (reduces federal income-tax wages) and `ficaExempt` (reduces Social Security + Medicare
+ *  wages). */
 type DeductionPreset = {
   key: string;
   /** Short label for the pay-stub row. */

@@ -1,10 +1,6 @@
-/**
- * Plain-language help for entering Performance figures: what each field
- * holds (and the usual traps), situation tips by account type, and the
- * wording of the reconciliation checks (lib/pure/investments/performance-checks.ts).
- * Copy lives here, not in components, so the form, the table and Finalize
- * say the same thing.
- */
+/** Help copy for entering Performance figures: what each field holds, tips by account type,
+ *  and the reconciliation checks' wording. Kept here so the form, the table and Finalize say
+ *  the same thing. */
 import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import type { PerfField } from "@/lib/pure/investments/performance-annotations";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -142,13 +138,8 @@ export const PERF_STORED_FIELD_LABELS: Record<string, string> = {
   lifetimeMatch: "Lifetime employer money",
 };
 
-/**
- * The two kinds of investment cost, named the same everywhere. Fund costs
- * come from fund filings (Benchmarks); account fees from the Performance
- * Fees column. Never added into each other's figures — fund costs are
- * already inside the funds' prices, so counting them as a fee would count
- * them twice.
- */
+/** The two kinds of investment cost: fund costs (fund filings) and account fees (Performance
+ *  Fees column). Never added together: fund costs are already inside the funds' prices. */
 export const COST_KINDS = {
   fundCosts: {
     label: "Fund costs",

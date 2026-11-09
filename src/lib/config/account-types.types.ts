@@ -57,12 +57,9 @@ export type AccountTypeConfig = {
   withdrawalTaxType: WithdrawalTaxType;
   taxBucketKey: string; // maps to byTaxType routing key
   supportedTaxTreatments: readonly string[];
-  /** How IRS ordering rules treat a distribution from this account type's
-   *  Roth (taxFree) balance: "basis_first" (a Roth IRA — contributions and
-   *  seasoned conversions come out before growth, always) vs "pro_rata" (a
-   *  designated Roth 401k/403b sub-election — any distribution is prorated
-   *  between basis and earnings, IRS Notice 2009-68). null where the
-   *  category has no Roth concept at all (hsa, brokerage). */
+  /** IRS ordering of a Roth (taxFree) distribution: "basis_first" (Roth IRA: basis before growth)
+   *  or "pro_rata" (designated Roth 401k/403b: prorated, IRS Notice 2009-68); null where the
+   *  category has no Roth concept (hsa, brokerage). */
   rothOrderingRules: "basis_first" | "pro_rata" | null;
   /** The early-access rule a withdrawal follows: an IRA's 59½ and Roth
    *  ordering, an employer plan's 59½ or Rule of 55 (IRC §72(t)(2)(A)(v)),
@@ -122,10 +119,8 @@ export type AccountTypeConfig = {
    *  true = employer-plan (401k, 403b, HSA) — deducted before take-home pay.
    *  false = individual account (IRA, brokerage) — paid from take-home pay. */
   isPayrollDeductible: boolean;
-  /** Payroll contributions are made under a §125 cafeteria plan and so are
-   *  not FICA wages (IRS Pub 15 / 15-B) — up to the IRS limit for the
-   *  account type, after employer money. true for HSA only today. Applies
-   *  only when the contribution is actually payroll-deducted. */
+  /** Payroll-deducted contributions go through a §125 cafeteria plan, so aren't FICA wages
+   *  (IRS Pub 15 / 15-B), up to the type's IRS limit after employer money. true for HSA. */
   payrollFicaExempt: boolean;
 
   // --- Classification ---
@@ -140,10 +135,9 @@ export type AccountTypeConfig = {
   chartHex: { standard: string; roth: string };
   employerMatchLabel: string;
   hasDiscountBar: boolean;
-  /** Whether this account type's employer_contributions represents real cash
-   *  ("match") or a non-cash purchase-price discount ("discount", e.g. ESPP).
-   *  Drives the cash-basis (gainLoss + employerContributions) annotations —
-   *  distinct from hasDiscountBar, which only controls progress-bar rendering. */
+  /** employer_contributions as real cash ("match") or a purchase-price discount ("discount",
+   *  e.g. ESPP). Drives the cash-basis (gainLoss + employerContributions) annotations;
+   *  hasDiscountBar only controls progress-bar rendering. */
   employerContribKind: "match" | "discount";
   taxPreferenceNote: string;
   subTypeOptions: readonly string[];
@@ -152,10 +146,9 @@ export type AccountTypeConfig = {
    *  contributions when a feed reports only the account's total. */
   employerMatchSubType?: string;
 
-  // --- Sub-type display overrides ---
-  // Sub-types (e.g. ESPP under brokerage) that need distinct display behavior.
-  // Keyed by lowercase sub-type name. Not separate account categories — they
-  // roll up to the parent in the engine and don't appear in getAllCategories().
+  // Sub-types needing distinct display (e.g. ESPP under brokerage), keyed by lowercase
+  // name. Not account categories: they roll up to the parent in the engine and don't
+  // appear in getAllCategories().
   subTypeDisplay: Readonly<
     Record<
       string,

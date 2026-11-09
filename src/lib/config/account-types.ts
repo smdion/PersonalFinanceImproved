@@ -627,13 +627,9 @@ export function isRetirementMoney(
   return isRetirementParent(parentCategory || "Retirement");
 }
 
-/**
- * Whether an account counts toward the "Retirement" performance rollup: a
- * fully-retirement performance category (401k/IRA, HSA, whatever its
- * parentCategory), or a Brokerage account tagged parentCategory "Retirement"
- * (Brokerage spans both goals). The performance router's rollup and the
- * page's selection matching share this one rule.
- */
+/** Whether an account counts toward the "Retirement" performance rollup: a fully-retirement
+ *  category (401k/IRA, HSA, whatever its parentCategory), or Brokerage tagged "Retirement".
+ *  Shared by the performance router's rollup and the page's selection matching. */
 export function isInRetirementPerformanceRollup(
   accountType: string | null,
   parentCategory: string | undefined,
@@ -650,10 +646,9 @@ export function isPortfolioParent(parentCategory: string | undefined): boolean {
   return parentCategory === "Portfolio";
 }
 
-/** Performance categories that report a distinct Distributions row (in addition
- *  to Contributions and Gains/Losses) — e.g. HSA, which supports tax-free
- *  qualified medical withdrawals during accumulation. Single source of truth
- *  for the year-over-year spreadsheet table's Distributions row. */
+/** Performance categories with their own Distributions row in the year-over-year table
+ *  (besides Contributions and Gains/Losses), e.g. HSA's tax-free medical withdrawals
+ *  during accumulation. */
 const PERF_CATEGORIES_WITH_DISTRIBUTIONS: readonly string[] = [
   PERF_CATEGORY_HSA,
 ];

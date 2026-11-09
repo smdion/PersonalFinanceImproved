@@ -1,16 +1,6 @@
-/**
- * The figures Ledgr's math assumes that are set by law and not indexed —
- * they change only when Congress changes them, so they live in code (each
- * cited where it's defined) rather than in the yearly tax data. Settings →
- * Reference Data → Fixed by law lists them read-only, so everything the
- * calculators assume can be seen in one place.
- *
- * Values are read from the constants the calculators use, never retyped
- * here; tests/config/fixed-by-law.test.ts pins each to the law, so a change
- * is deliberate. Statutory figures that live in the yearly tax data instead
- * (the senior deduction, the HSA catch-up, the capital-gains rates in the
- * LTCG table) are editable there and not repeated here.
- */
+/** Figures set by law and not indexed (they live in code, cited where defined), listed
+ *  read-only in Settings → Reference Data → Fixed by law. Values come from the calculators'
+ *  own constants; statutory figures in the yearly tax data are not repeated here. */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   EARLY_WITHDRAWAL_PENALTY_RATE,

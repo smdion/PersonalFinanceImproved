@@ -83,13 +83,9 @@ export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   fixed_annual: "Fixed annual",
 };
 
-/** Unit glyph for a match type's value field — null for "none" (no value
- *  ever renders for it). Display-only: never use this for %-to-decimal
- *  conversion math. Only percent_of_contribution has a cap concept at all
- *  (see computeEmployerMatch) — that check stays a plain inline
- *  `matchType === "percent_of_contribution"` at each call site rather than
- *  living in this table, so the cap's ×100/÷100 conversion can never
- *  accidentally piggyback on a future non-percent type gaining a cap. */
+/** Unit glyph for a match type's value field; null for "none". Display-only: never use it
+ *  for %-to-decimal math. The cap check stays an inline `"percent_of_contribution"` test
+ *  so a new type with a cap can't inherit its ×100/÷100 conversion. */
 export const EMPLOYER_MATCH_VALUE_UNIT: Record<string, "%" | "$" | null> = {
   none: null,
   percent_of_contribution: "%",
@@ -97,10 +93,8 @@ export const EMPLOYER_MATCH_VALUE_UNIT: Record<string, "%" | "$" | null> = {
   fixed_annual: "$",
 };
 
-/** Budget "PC" badge text for a linked item, per why it resolved the way
- *  it did for the column being viewed. "ok" keeps the plain "PC" text —
- *  the other five replace it so the badge itself names the real cause
- *  instead of a bare $0 the amber "Incomplete" badge used to carry alone. */
+/** Budget "PC" badge text for a linked item, per how it resolved for the column viewed.
+ *  "ok" keeps the plain "PC"; the others name the cause on the badge itself. */
 export const CONTRIB_RESOLUTION_LABELS: Record<
   ContribResolutionStatus,
   string
@@ -221,10 +215,8 @@ export const FULLY_RETIREMENT_PERF_CATEGORIES = [
 /** Parent-category rollup names used in performance data. */
 export const PARENT_CATEGORY_ROLLUPS = ["Retirement", "Portfolio"] as const;
 
-/** HelpTip copy for the ESPP cash-basis annotation (gainLoss + employer
- *  contributions on a discount-kind account, e.g. ESPP). The employer amount
- *  there is a purchase-price discount, not cash paid — this figure measures
- *  against actual cash paid rather than full market value. */
+/** HelpTip for the cash-basis annotation (gainLoss + employer contributions) on a
+ *  discount-kind account such as ESPP, where the employer amount is a discount, not cash. */
 export const CASH_BASIS_HELP =
   "vs. cash paid — ESPP shares are purchased at a discount, so this figure measures against what was actually paid rather than full market value.";
 

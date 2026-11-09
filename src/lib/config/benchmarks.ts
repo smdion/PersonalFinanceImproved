@@ -1,12 +1,7 @@
 import type { CompositionBucket } from "@/lib/config/enum-values";
-/**
- * What Ledgr compares your investments with. Each is priced with a real,
- * low-cost fund (total return: dividends reinvested), so "the benchmark"
- * is something an ordinary investor could actually have owned.
- *
- * Data, not code: another benchmark is one more entry. A target-date
- * entry picks its fund from the household's planned retirement year.
- */
+/** What Ledgr compares your investments with, each priced with a real low-cost fund (total
+ *  return) an ordinary investor could have owned. Another benchmark is one more entry; a
+ *  target-date entry picks its fund from the household's planned retirement year. */
 type BenchmarkDefinition = {
   key: string;
   label: string;
@@ -128,13 +123,9 @@ export function resolveBenchmark(
   };
 }
 
-/**
- * Vanguard Target Retirement's published glide path — the stock share by
- * years until retirement (negative = years after), linear between points:
- * 90% until 25 years out, down to 50% at retirement, to 30% seven years
- * after, then flat. Shown next to the household's own glide path, shifted to
- * the household's retirement age.
- */
+/** Vanguard Target Retirement's published glide path: stock share by years until retirement
+ *  (negative = after), linear between points. Shown beside the household's own glide path,
+ *  shifted to its retirement age. */
 export const VANGUARD_TDF_STOCK_SHARE: readonly {
   yearsToRetirement: number;
   stockShare: number;
@@ -145,12 +136,9 @@ export const VANGUARD_TDF_STOCK_SHARE: readonly {
   { yearsToRetirement: -7, stockShare: 0.3 },
 ];
 
-/**
- * A plain index fund standing in for each composition bucket — what the
- * matched-mix line prices a household's own weights with, and the "same
- * class, index fund" a cheaper-fund suggestion points to. Data, not code;
- * `other` has no proxy and is shown as left out.
- */
+/** A plain index fund per composition bucket: prices the matched-mix line and is the
+ *  "same class, index fund" a cheaper-fund suggestion points to. `other` has no proxy
+ *  and is shown as left out. */
 export const BUCKET_INDEX_PROXIES: Readonly<
   Record<CompositionBucket, { ticker: string; label: string } | null>
 > = {
@@ -163,11 +151,9 @@ export const BUCKET_INDEX_PROXIES: Readonly<
   other: null,
 };
 
-/** Holding periods. An observed period (from daily holdings) ends when the
- *  set of funds changes or the daily data skips more than
- *  `observedMaxGapTradingDays` trading days (shares move with prices every
- *  day, so they never split a period). Entered weights must sum to 1
- *  within `weightSumTolerance` (rounding), as the current glide path's do. */
+/** An observed holding period ends when the fund set changes or daily data skips more than
+ *  `observedMaxGapTradingDays` trading days (share moves never split one). Entered weights
+ *  must sum to 1 within `weightSumTolerance`. */
 export const HOLDING_PERIODS = {
   observedMaxGapTradingDays: 3,
   weightSumTolerance: 0.005,

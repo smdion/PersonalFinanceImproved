@@ -1,12 +1,6 @@
-/**
- * Milestones — the registry of financial rules and milestones the Milestones
- * page, the dashboard Financial Checkup and the Retirement card's readiness
- * row all judge through `evaluateMilestones()` (lib/pure/advice/milestones/milestones.ts).
- *
- * Every threshold lives here, once. Rules come from The Money Guy Show (their
- * adapted versions — `adaptedNote` says how they differ from the original
- * source), the Bogleheads, Fidelity and The Millionaire Next Door.
- */
+/** Registry of financial rules and milestones judged by `evaluateMilestones()`, with every
+ *  threshold here once. Sources: The Money Guy Show (adapted; `adaptedNote` says how), the
+ *  Bogleheads, Fidelity and The Millionaire Next Door. */
 
 import type { Focus } from "./focus-topics";
 import { highInterestLineText } from "./debts";
@@ -273,37 +267,25 @@ export const CAR_RULE = {
   source: "https://moneyguy.com/faq/cash-to-buy-car/",
 } as const;
 
-/**
- * Money Guy's student-loan rule: borrow no more in total than your
- * first-year salary. Judged against the first full year of pay at or after
- * the earliest loan's year, and only when that year is within
- * `maxYearsAfterLoan` of it (further out, it isn't the first-year salary).
- */
+/** Money Guy's student-loan rule: borrow no more in total than your first-year salary, judged
+ *  on the first full year of pay at or after the earliest loan's year, if within
+ *  `maxYearsAfterLoan` of it. */
 export const STUDENT_LOAN_RULE = {
   maxYearsAfterLoan: 5,
   source:
     "https://moneyguy.com/faq/how-much-student-loan-debt-is-ok-to-take-on",
 } as const;
 
-/**
- * Money Guy's "Always Be Buying": invest on a schedule whatever the market
- * does. Judged two ways — month by month where SimpleFIN shows deposits
- * (the last `recentMonths` covered months), and in each year the
- * household's investments lost money, whether its own contributions held
- * at `heldUpShare` or more of the year before.
- */
+/** Money Guy's "Always Be Buying": monthly over the last `recentMonths` SimpleFIN-covered
+ *  months, and in each losing year whether contributions held at `heldUpShare` or more of
+ *  the year before. */
 export const ALWAYS_BUYING_RULE = {
   recentMonths: 12,
   heldUpShare: 0.9,
 } as const;
 
-/**
- * Money Guy's 60/40 rule for raises: at least 60% of any income boost goes
- * to saving and investing, at most 40% to lifestyle. Judged on salary (a
- * bonus swings year to year) and only for a raise of at least
- * `minRaiseShare` of last year's salary, so a rounding-sized change isn't
- * judged.
- */
+/** Money Guy's 60/40 rule for raises: at least 60% to saving, at most 40% to lifestyle.
+ *  Judged on salary, only for a raise of at least `minRaiseShare` of last year's. */
 export const RAISE_RULE = {
   saveShare: 0.6,
   minRaiseShare: 0.01,
@@ -311,13 +293,9 @@ export const RAISE_RULE = {
     "https://moneyguy.com/episode/the-1m-mistake-almost-everyone-makes-in-their-30s/",
 } as const;
 
-/**
- * Money Guy's high-income line — at or above it the employer match stops
- * counting toward the 25% savings rate. Money Guy names $200k for a
- * household; $100k for one filer is the owner's reading of the same line
- * (Money Guy's page gives only the household figure). A saved
- * `high_income_threshold` setting replaces both.
- */
+/** Money Guy's high-income line, at or above which the match stops counting toward the 25%
+ *  savings rate: $200k per household; $100k for one filer is Ledgr's reading of the same
+ *  line. A saved `high_income_threshold` setting replaces both. */
 export const HIGH_INCOME_LINE = {
   married: 200_000,
   single: 100_000,
@@ -325,13 +303,8 @@ export const HIGH_INCOME_LINE = {
     "https://moneyguy.com/article/should-you-include-your-employer-match-in-the-20-25-investing-goal",
 } as const;
 
-/**
- * Money Guy's Goldilocks rule — lump sum or dollar-cost average, sized by
- * how big the money is against your invested assets ("Dollar cost averaging
- * vs lump sum", moneyguy.com): under 10% invest it at
- * once; at 10% spread it over 5 months, one month more for each further 5%,
- * at most 12 months.
- */
+/** Money Guy's Goldilocks rule, by size against invested assets: under 10% invest at once;
+ *  at 10% spread over 5 months, one month more per further 5%, at most 12. */
 export const GOLDILOCKS_RULE = {
   lumpSumBelow: 0.1,
   startMonths: 5,

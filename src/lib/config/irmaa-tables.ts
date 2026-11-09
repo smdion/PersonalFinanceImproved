@@ -1,13 +1,6 @@
-// IRMAA (Income-Related Monthly Adjustment Amount) bracket tables.
-// The brackets are yearly data (tax-data/us-federal/ → `irmaa_brackets`),
-// passed in by the caller — none are built in.
-//
-// IRMAA uses a 2-year MAGI lookback — 2026 premiums are based on 2024 MAGI.
-// Surcharges are per-person annual amounts (Part B + Part D combined).
-// A tier applies above its threshold (`magi > threshold`). CMS's top tier
-// starts AT its threshold (≥ $750,000 jointly / $500,000 otherwise), so a
-// MAGI of exactly that amount lands one tier low here — a $1 edge, kept for
-// one rule; don't shift the shipped thresholds to match.
+// IRMAA tiers from yearly `irmaa_brackets` passed in by the caller; 2-year MAGI lookback;
+// per-person annual surcharges (Part B + D). Tiers apply at `magi > threshold`, so a MAGI exactly
+// at CMS's top tier (≥ $750,000 jointly / $500,000) lands one tier low (a $1 edge, kept).
 
 import type { ReturnFilingStatus } from "./filing-status";
 
