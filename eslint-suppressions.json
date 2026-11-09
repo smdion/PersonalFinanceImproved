@@ -106,7 +106,7 @@
   },
   "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
+      "count": 7
     },
     "max-lines-per-function": {
       "count": 1
@@ -722,12 +722,12 @@
   },
   "src/components/budget/budget-profile-sidebar.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/budget/budget-retirement-note.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/budget/budget-summary-bar.tsx": {
@@ -5043,9 +5043,6 @@
     }
   },
   "src/server/routers/budget/api-sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -5731,7 +5728,7 @@
   },
   "src/server/services/projection/engine-payload/display.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-abbreviation": {
       "count": 1
@@ -5817,7 +5814,7 @@
   },
   "src/server/services/projection/relocation-analysis.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "max-lines-per-function": {
       "count": 1
@@ -5867,9 +5864,6 @@
     }
   },
   "src/server/services/sync/preview.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },

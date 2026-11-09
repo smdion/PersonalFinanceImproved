@@ -25,7 +25,7 @@ export function BudgetRetirementNote() {
   ) => {
     const p = profiles?.find((x) => x.id === profileId);
     if (!p) return null;
-    const label = (p.columnLabels as string[] | null)?.[column];
+    const label = p.columnLabels[column];
     return `${p.name}${label ? ` · ${label}` : ""}${yearly != null ? ` (${formatCurrency(yearly)} a year)` : ""}`;
   };
   const setBefore = engineInput.selection.accumulationBudget?.annualExpenses;

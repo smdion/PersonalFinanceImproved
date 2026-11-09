@@ -178,7 +178,7 @@ export const apiSyncProcedures = {
         };
       });
 
-      const numColumns = (profile.columnLabels as string[]).length;
+      const numColumns = profile.columnLabels.length;
       const activeProfiles = await resolveProfileSelection(ctx.scope);
       // Contribution-linked items freeze `amounts` on edit (see
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`

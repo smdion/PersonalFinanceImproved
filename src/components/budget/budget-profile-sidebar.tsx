@@ -130,10 +130,8 @@ function renderApiLinkBadge(
   apiService: string,
   p: BudgetProfileListEntry,
 ) {
-  // columnLabels is stored jsonb, typed by a cast here.
   const mode =
-    (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-    `Mode ${apiLinkedColumnIndex}`;
+    p.columnLabels[apiLinkedColumnIndex] ?? `Mode ${apiLinkedColumnIndex}`;
   return (
     <Badge
       color="blue"

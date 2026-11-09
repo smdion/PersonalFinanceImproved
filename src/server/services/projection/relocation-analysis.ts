@@ -158,7 +158,7 @@ export async function computeRelocationAnalysis(
   const profileSummaries = await Promise.all(
     allBudgetProfiles.map(async (p) => {
       const items = allBudgetItems.filter((i) => i.profileId === p.id);
-      const labels = p.columnLabels as string[];
+      const labels = p.columnLabels;
       const months = (p.columnMonths as number[] | null) ?? null;
       const numColumns = labels.length;
       const activeProfiles = await resolveProfileSelection(ctx.scope);

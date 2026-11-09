@@ -54,7 +54,7 @@ type DataShape =
         name?: string;
         columnMonths?: number[] | null;
       } | null;
-      columnLabels?: unknown;
+      columnLabels?: string[];
       allColumnResults?: unknown;
       rawItems?: unknown;
     }
@@ -86,10 +86,7 @@ export function useBudgetDerivedData({
 
   const profile = data?.profile ?? null;
 
-  const cols = useMemo(
-    () => (data?.columnLabels as string[] | undefined) ?? [],
-    [data?.columnLabels],
-  );
+  const cols = useMemo(() => data?.columnLabels ?? [], [data?.columnLabels]);
   const numCols = cols.length;
   const columnMonths = (profile?.columnMonths as number[] | null) ?? null;
   const isWeighted = columnMonths !== null && columnMonths.length > 0;

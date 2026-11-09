@@ -176,7 +176,7 @@ export async function computeSyncPreview(
     });
     // Contribution-linked items freeze `amounts` on edit, so resolve them to
     // show what syncBudgetToApi would push.
-    const previewNumColumns = (activeProfile.columnLabels as string[]).length;
+    const previewNumColumns = activeProfile.columnLabels.length;
     const activeProfiles = await resolveProfileSelection(ctx.scope);
     budgetItemRows = await resolveLinkedBudgetItemAmounts(
       ctx,

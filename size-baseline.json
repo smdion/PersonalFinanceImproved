@@ -10,7 +10,7 @@
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 141,
     "src/app/(dashboard)/budget/budget-content.tsx": 637,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 354,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 351,
     "src/app/(dashboard)/budget/use-what-if-sandbox.ts": 251,
     "src/app/(dashboard)/budget/what-if-budget-step.tsx": 171,
     "src/app/(dashboard)/budget/what-if-contributions-step.tsx": 93,
@@ -431,7 +431,7 @@
       "BudgetContent": 565
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 291
+      "useBudgetDerivedData": 288
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
       "useBudgetPageState": 200
