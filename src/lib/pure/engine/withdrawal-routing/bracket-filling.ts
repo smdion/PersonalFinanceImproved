@@ -22,21 +22,9 @@ import { computeBracketTraditionalCap, pastTargetWarning } from "./caps";
 import type { RouteBracketInfo, RouteResult } from "./types";
 
 /**
- * Route withdrawals using bracket-filling strategy.
- *
- * Instead of draining accounts sequentially (waterfall) or splitting by fixed %
- * (percentage), this mode optimizes tax efficiency each year:
- *
- * 1. Fill traditional withdrawals (401k/403b/IRA traditional) up to a tax
- *    bracket cap, in the household's own configured account order
- *    (see `phase1Order` below). This uses the
- *    cheap bracket space without overfilling into expensive brackets.
- * 2-4. Rank the remainder (Roth growth, brokerage LTCG, HSA) by real
- *    marginal cost each year instead of a fixed order
- *    (`withdrawal-cost-ranking.ts`'s `rankWithdrawalTiers`).
- *
- * The bracket cap is determined by `rothBracketTarget` (target marginal rate).
- * If no brackets or target are provided, falls back to waterfall behavior.
+ * Bracket-filling routing: fill Traditional up to the `rothBracketTarget` bracket
+ * cap in the configured account order, then draw the rest by marginal cost
+ * (`rankWithdrawalTiers`). Without brackets or a target, behaves as waterfall.
  */
 export function routeWithdrawalsBracketFilling(
   targetWithdrawal: number,
@@ -64,10 +52,8 @@ export function routeWithdrawalsBracketFilling(
     return routeWithdrawals(targetWithdrawal, config, balances);
   }
 
-  // Traditional income cap: max traditional withdrawals before exceeding
-  // the target marginal bracket, minus SS income already occupying that
-  // bracket space. Shared with applyRothBracketOverlay below — see
-  // computeBracketTraditionalCap's docblock.
+  // Max Traditional withdrawals before exceeding the target bracket, net of SS
+  // already in it; shared with applyRothBracketOverlay.
   const traditionalCap = computeBracketTraditionalCap(bracketInfo);
 
   let remaining = targetWithdrawal;
@@ -80,15 +66,9 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
-  // Computed ONCE, shared by Phase 1 (below) and `drawRothTierCapped`
-  // further down, so both read "which Traditional-preference account
-  // first" from the user's own `config.withdrawalOrder`, as waterfall and
-  // percentage modes do. Filtering the user's FULL order down to just the
-  // Traditional-preference categories preserves their relative order
-  // among themselves; `tradPreferenceEngineCategories()` (not
-  // `categoriesWithTaxPreference()` alone) is the correct membership test
-  // — see that function's docblock for why the two aren't guaranteed
-  // identical by construction, even though they coincide today.
+  // The user's `withdrawalOrder` filtered to Traditional-preference categories,
+  // shared by Phase 1 and `drawRothTierCapped`. `tradPreferenceEngineCategories()`
+  // is the membership test, not `categoriesWithTaxPreference()` (see its docblock).
   const tradPreferenceCategories = new Set(tradPreferenceEngineCategories());
   const phase1Order = config.withdrawalOrder.filter((c) =>
     tradPreferenceCategories.has(c),
@@ -134,21 +114,13 @@ export function routeWithdrawalsBracketFilling(
   }
 
   // --- Phases 2-4: cost-ranked sources ---
-  // Roth, brokerage, and HSA don't drain in a fixed order — a
-  // non-qualified Roth growth withdrawal is real ordinary-rate income,
-  // so draining it before brokerage sitting in the real 0%/15%
-  // LTCG zone can pick the more expensive source purely from sequencing.
-  // rankWithdrawalTiers (withdrawal-cost-ranking.ts) orders the remaining
-  // need by actual marginal cost instead; this loop just mechanically
-  // drains whatever order it returns, reusing the same per-category
-  // draw/cap/merge logic each source always used.
+  // Roth growth is ordinary income, so a fixed order can pick the costlier source;
+  // this drains the order rankWithdrawalTiers returns.
 
   function drawRothTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
-    // Same `phase1Order` as Phase 1 above — Roth
-    // withdrawals draw from the same physical accounts, so using a
-    // different order here would let a household's configured order
-    // apply to Traditional draws but not Roth draws in the same year.
+    // Same `phase1Order` as Phase 1: Roth draws come from the same accounts, so
+    // the configured order must apply to both.
     for (const category of phase1Order) {
       if (remaining <= 0 || tierRemaining <= 0) break;
 
@@ -315,22 +287,12 @@ export function routeWithdrawalsBracketFilling(
     0,
   );
 
-  // Self-referential fixed point: the LTCG-room
-  // computation depends on ordinary income, which includes Roth growth —
-  // itself an OUTPUT of this ranking. Re-rank up to 3 times, refining the
-  // ordinary-income-floor estimate by the previous pass's implied Roth
-  // growth draw, converging before drawing for real. Bounded like the
-  // gross-up secant loop's own iteration cap, for the same reason: a real
-  // tax system's cost curve doesn't move enough for more iterations to
-  // matter, and unbounded iteration risks non-termination on pathological
-  // inputs.
-  // Reserve up to the rate the conversion will ACTUALLY target
-  // (bracketInfo.conversionTarget), not necessarily the withdrawal
-  // target's own traditionalCap above — they can differ (see
-  // RouteBracketInfo.conversionTarget's docblock). Falls back to
-  // traditionalCap itself when conversionTarget is omitted or equals
-  // rothBracketTarget, so this is a no-op for every caller/fixture that
-  // predates this field.
+  // Fixed point: LTCG room depends on ordinary income, which includes the Roth
+  // growth this ranking outputs. Re-rank up to 3 times, refining the floor by the
+  // previous pass's Roth growth draw; bounded to guarantee termination.
+
+  // Reserve room up to the conversion's own target (`conversionTarget`), which can
+  // differ from the withdrawal target; otherwise `traditionalCap`.
   const conversionCap =
     bracketInfo.conversionTarget != null &&
     bracketInfo.conversionTarget !== bracketInfo.rothBracketTarget
@@ -408,11 +370,8 @@ export function routeWithdrawalsBracketFilling(
   }
 
   // --- Phase 5: Traditional above the bracket target ---
-  // The target bracket is a preference for the order money comes out in,
-  // not a limit on spending: once Roth, brokerage and HSA can't cover the
-  // rest, Traditional money pays it at a higher bracket rather than the
-  // need going unmet while Traditional balances sit untouched. The user's
-  // own per-account and Traditional caps still hold, and the year says so.
+  // The target orders withdrawals, it doesn't limit spending: Traditional covers
+  // what other sources can't, within the user's own caps, and the year says so.
   let pastTarget = 0;
   for (const category of phase1Order) {
     if (remaining <= 0) break;

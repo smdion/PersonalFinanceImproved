@@ -5934,17 +5934,11 @@
   "src/lib/pure/engine/vpw.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 18
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -5957,18 +5951,12 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
   },
   "src/lib/pure/engine/withdrawal-routing/caps.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {

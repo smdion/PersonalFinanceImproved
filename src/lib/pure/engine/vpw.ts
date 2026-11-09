@@ -1,20 +1,7 @@
 /**
- * Variable Percentage Withdrawal (Bogleheads wiki, "Variable percentage
- * withdrawal"; tests/fixtures/vpw-table.ts holds the published table).
- *
- * Each year withdraw a percentage of the portfolio balance: the annuity-due
- * payment that would spend the balance by the table's end age at the
- * portfolio's expected real return —
- *   rate = r / ((1 − (1 + r)^−n) (1 + r)),  n = endAge − age,
- *   r = stocks × stockReturn + bonds × bondReturn.
- * With the defaults (100, 5.0%, 1.9%) this is the published VPW table to
- * the tenth of a percent. Age is the younger spouse's. "The withdrawal
- * percentage stops growing when it reaches 10%" — the cap, which also
- * covers ages at or past the end age.
- *
- * The amount is the gross portfolio withdrawal; Social Security and
- * pensions come on top (unless the household's `ssInAmount` switch says
- * otherwise — see pre-year-setup).
+ * Variable Percentage Withdrawal (Bogleheads): rate = r / ((1 − (1 + r)^−n) (1 + r)),
+ * n = endAge − younger spouse's age, r = blended real return; capped at 10%.
+ * Gross withdrawal; SS and pensions come on top unless `ssInAmount` says otherwise.
  */
 import { roundToCents } from "../../utils/math";
 import type {

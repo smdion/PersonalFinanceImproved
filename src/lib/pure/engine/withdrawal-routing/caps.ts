@@ -41,18 +41,9 @@ export function capsLeftAfter(
 }
 
 /**
- * The dollar cap on Traditional withdrawals/conversions that keeps ordinary
- * income within `bracketInfo.rothBracketTarget`'s bracket — the gross-income
- * ceiling for that bracket (after standard deduction) minus SS income
- * already occupying part of that room. Shared by
- * `routeWithdrawalsBracketFilling` and `applyRothBracketOverlay`
- * (these computed the byte-identical formula
- * independently under different variable names — same risk class as any
- * other duplicated computation, RULES.md single-computation-path).
- * Returns Infinity when there's no bracket data or target to compute from —
- * callers already branch on that case, this just makes "no cap" explicit
- * rather than requiring each caller to re-check `taxBrackets`/
- * `rothBracketTarget` before calling.
+ * Dollar cap on Traditional withdrawals/conversions that keeps ordinary income in
+ * the `rothBracketTarget` bracket: its gross ceiling minus SS already in it.
+ * Infinity when there is no bracket data or target.
  */
 export function computeBracketTraditionalCap(
   bracketInfo: RouteBracketInfo,
