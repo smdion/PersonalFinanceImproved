@@ -40,6 +40,9 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -51,9 +54,6 @@
     },
     "ratchet/no-unlabeled-control": {
       "count": 2
-    },
-    "ratchet/no-lint-violation-ok": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-sections.tsx": {
@@ -339,13 +339,13 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-config-reach-through": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    },
-    "ratchet/no-config-reach-through": {
       "count": 1
     }
   },
@@ -451,11 +451,11 @@
     "ratchet/no-jsx-iife": {
       "count": 1
     },
-    "ratchet/no-raw-button": {
-      "count": 5
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 5
     }
   },
   "src/app/(dashboard)/portfolio/page.tsx": {
@@ -1818,6 +1818,9 @@
     "ratchet/no-abbreviation": {
       "count": 1
     },
+    "ratchet/no-config-reach-through": {
+      "count": 1
+    },
     "ratchet/no-jsx-iife": {
       "count": 1
     },
@@ -1826,9 +1829,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-config-reach-through": {
-      "count": 1
     }
   },
   "src/components/paycheck/contrib-card.tsx": {
@@ -2114,14 +2114,14 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 3
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-lint-violation-ok": {
-      "count": 1
     }
   },
   "src/components/performance/update-performance-form.tsx": {
@@ -2131,14 +2131,14 @@
     "max-lines-per-function": {
       "count": 2
     },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 7
     },
     "ratchet/no-raw-input": {
       "count": 6
-    },
-    "ratchet/no-lint-violation-ok": {
-      "count": 1
     }
   },
   "src/components/performance/year-range-picker.tsx": {
@@ -2215,6 +2215,9 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 10
     },
@@ -2223,9 +2226,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 6
-    },
-    "ratchet/no-lint-violation-ok": {
-      "count": 1
     }
   },
   "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
@@ -2261,6 +2261,9 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
+    "ratchet/no-config-reach-through": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -2268,9 +2271,6 @@
       "count": 4
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    },
-    "ratchet/no-config-reach-through": {
       "count": 1
     }
   },
@@ -2314,11 +2314,11 @@
     "ratchet/no-abbreviation": {
       "count": 2
     },
-    "ratchet/no-raw-button": {
-      "count": 2
-    },
     "ratchet/no-config-reach-through": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 2
     }
   },
   "src/components/portfolio/new-snapshot-form.tsx": {
@@ -2385,10 +2385,10 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-raw-button": {
+    "ratchet/no-lint-violation-ok": {
       "count": 2
     },
-    "ratchet/no-lint-violation-ok": {
+    "ratchet/no-raw-button": {
       "count": 2
     }
   },
@@ -2464,10 +2464,10 @@
     "ratchet/max-comment-lines": {
       "count": 9
     },
-    "ratchet/no-lint-violation-ok": {
+    "ratchet/no-config-reach-through": {
       "count": 1
     },
-    "ratchet/no-config-reach-through": {
+    "ratchet/no-lint-violation-ok": {
       "count": 1
     }
   },
@@ -2497,6 +2497,9 @@
     "ratchet/max-comment-lines": {
       "count": 8
     },
+    "ratchet/no-config-reach-through": {
+      "count": 6
+    },
     "ratchet/no-history-comment": {
       "count": 1
     },
@@ -2505,9 +2508,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-config-reach-through": {
-      "count": 6
     }
   },
   "src/components/retirement-projection/index.tsx": {
@@ -2824,11 +2824,11 @@
     "ratchet/no-abbreviation": {
       "count": 1
     },
-    "ratchet/no-raw-button": {
-      "count": 4
-    },
     "ratchet/no-config-reach-through": {
       "count": 1
+    },
+    "ratchet/no-raw-button": {
+      "count": 4
     }
   },
   "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
@@ -2843,10 +2843,10 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
-    "ratchet/no-history-comment": {
+    "ratchet/no-config-reach-through": {
       "count": 1
     },
-    "ratchet/no-config-reach-through": {
+    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -3055,14 +3055,14 @@
     "ratchet/max-comment-lines": {
       "count": 9
     },
+    "ratchet/no-config-reach-through": {
+      "count": 1
+    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 9
-    },
-    "ratchet/no-config-reach-through": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/withdrawal-comparison.tsx": {
@@ -3227,13 +3227,13 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
+    "ratchet/no-config-reach-through": {
+      "count": 1
+    },
     "ratchet/no-raw-button": {
       "count": 7
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    },
-    "ratchet/no-config-reach-through": {
       "count": 1
     }
   },
@@ -5178,9 +5178,6 @@
     "ratchet/max-comment-lines": {
       "count": 16
     },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 5
     },
@@ -5463,11 +5460,11 @@
     "ratchet/max-comment-lines": {
       "count": 9
     },
-    "ratchet/no-unregistered-fallback": {
-      "count": 3
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 2
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
     }
   },
   "src/lib/pure/advice/report/year-table.ts": {
@@ -5612,10 +5609,10 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-string-closed-set-field": {
+    "ratchet/no-config-reach-through": {
       "count": 1
     },
-    "ratchet/no-config-reach-through": {
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -5821,9 +5818,6 @@
   "src/lib/pure/engine/balance-deduction.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-abbreviation": {
-      "count": 15
     }
   },
   "src/lib/pure/engine/balance-utils.ts": {
@@ -5831,9 +5825,6 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-abbreviation": {
       "count": 4
     },
     "ratchet/no-guarded-division": {
@@ -5854,9 +5845,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 6
-    },
-    "ratchet/no-abbreviation": {
-      "count": 22
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -5885,14 +5873,11 @@
     "ratchet/max-comment-lines": {
       "count": 3
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
+    "ratchet/no-config-reach-through": {
+      "count": 2
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
-    },
-    "ratchet/no-config-reach-through": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/endowment.ts": {
@@ -5926,9 +5911,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 8
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5936,9 +5918,6 @@
   "src/lib/pure/engine/growth-application.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 3
     }
   },
   "src/lib/pure/engine/guyton-klinger.ts": {
@@ -5959,9 +5938,6 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
-    "ratchet/no-abbreviation": {
-      "count": 23
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     },
@@ -5973,9 +5949,6 @@
     "ratchet/max-comment-lines": {
       "count": 5
     },
-    "ratchet/no-abbreviation": {
-      "count": 10
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -5984,9 +5957,6 @@
     "ratchet/max-comment-lines": {
       "count": 5
     },
-    "ratchet/no-abbreviation": {
-      "count": 19
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5994,9 +5964,6 @@
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-abbreviation": {
-      "count": 19
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -6012,9 +5979,6 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
       "count": 1
     },
     "ratchet/no-history-comment": {
@@ -6037,9 +6001,6 @@
   "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
     }
   },
   "src/lib/pure/engine/projection-year-handlers/context.ts": {
@@ -6048,30 +6009,16 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 9
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     },
     "ratchet/no-unregistered-fallback": {
       "count": 7
@@ -6080,9 +6027,6 @@
   "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 10
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -6094,30 +6038,16 @@
     }
   },
   "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/helpers.ts": {
-    "ratchet/no-abbreviation": {
       "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 5
     }
   },
   "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 5
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6128,9 +6058,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
     }
   },
   "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": {
@@ -6139,9 +6066,6 @@
     }
   },
   "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 10
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -6150,43 +6074,12 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
     "ratchet/no-history-comment": {
       "count": 1
     }
   },
-  "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 10
-    }
-  },
   "src/lib/pure/engine/projection-year-handlers/types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/year-draws.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 13
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/year-end.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 8
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/year-need.ts": {
-    "ratchet/no-abbreviation": {
       "count": 6
     }
   },
@@ -6214,7 +6107,7 @@
       "count": 5
     },
     "ratchet/no-abbreviation": {
-      "count": 16
+      "count": 8
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -6245,9 +6138,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 16
-    },
-    "ratchet/no-abbreviation": {
-      "count": 18
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -6288,9 +6178,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -6322,9 +6209,6 @@
   "src/lib/pure/engine/types/withdrawal-solver.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/types/year-overrides.ts": {
@@ -6354,9 +6238,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 18
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -6408,9 +6289,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -6428,20 +6306,12 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/withdrawal-routing/waterfall.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/withdrawal-solver.ts": {
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 16
-    },
-    "ratchet/no-abbreviation": {
-      "count": 17
     },
     "ratchet/no-guarded-division": {
       "count": 1

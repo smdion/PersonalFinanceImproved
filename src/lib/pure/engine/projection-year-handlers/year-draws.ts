@@ -25,20 +25,20 @@ import type {
 /** The year's target withdrawal routed across accounts by the configured
  *  mode, through the dispatch the solver's estimate shares. */
 export function routeYearDraw(
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   balances: ProjectionLoopState["balances"],
   retirementBasisRatio: number | undefined,
   hasIndividualAccounts: boolean,
   indBasis: ProjectionLoopState["indBasis"],
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   year: number,
   taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
   config: ReturnType<typeof resolveDecumulationConfig>,
   targetWithdrawal: number,
   grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined,
-  taxEst: ReturnType<typeof yearNeed>["taxEst"],
+  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
   filingStatus: ProjectionContext["input"]["filingStatus"],
   grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
   grownStandardDeduction: number | undefined,
@@ -48,8 +48,8 @@ export function routeYearDraw(
 ) {
   // Routing reads the tracked per-account balances; a copy is kept as
   // the year's pre-withdrawal row.
-  const acctBalances = acctBal;
-  const preWithdrawalAcctBal = cloneAccountBalances(acctBal);
+  const accountBalances = accountBalance;
+  const preWithdrawalAcctBal = cloneAccountBalances(accountBalance);
 
   // routeForMode is the one dispatch the solver's estimate shares, so a
   // mode's rule can't differ between them; its basis-ranking inputs come from
@@ -58,9 +58,9 @@ export function routeYearDraw(
     balances,
     brokerageBasisRatio: retirementBasisRatio,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indAccounts: hasIndividualAccounts ? indAccounts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
+    indBalance: hasIndividualAccounts ? indBalance : undefined,
     year,
   });
 
@@ -74,7 +74,7 @@ export function routeYearDraw(
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
-    acctBalances,
+    accountBalances,
     {
       taxBrackets: grownTaxBrackets,
       // The year's override, else the plan's default: a rate, so not grown.
@@ -82,7 +82,7 @@ export function routeYearDraw(
       // The rate the conversion targets, when it differs (only with
       // conversions on).
       conversionTarget: resolvedConversionTarget,
-      taxableSS: taxEst.taxableSS,
+      taxableSS: taxEstimate.taxableSS,
       filingStatus,
       ltcgBrackets: grownLtcgBrackets,
       rothBasisAvailable,
@@ -120,9 +120,9 @@ export function routeYearDraw(
 /** The routed draw followed to each account (RMD pins kept), its Roth basis
  *  drawn, the Roth growth's taxable share, and any early-withdrawal penalty. */
 export function distributeYearDraws(
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   hasIndividualAccounts: boolean,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
   brokBasis: ProjectionLoopState["brokBasis"],
   slots: ReturnType<typeof routeForMode>["slots"],
@@ -135,28 +135,28 @@ export function distributeYearDraws(
   // Draws reach accounts before tax: the tax reads this year's Roth basis
   // draws, and only indBalance/indBasis change here. indBalance is copied first for
   // the basis draw's pro-rata ratio.
-  const preWithdrawalIndBal = new Map(indBal);
+  const preWithdrawalIndBalance = new Map(indBalance);
   const distributeResult = hasIndividualAccounts
-    ? followDraws(indAccts, indKey, indBal, brokBasis, () =>
+    ? followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeWithdrawals(
           slots,
-          indAccts,
+          indAccounts,
           indKey,
-          indBal,
+          indBalance,
           eligibility,
           ownerRmd?.pins,
         ),
       )
-    : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
-  const decIndWithdrawal = distributeResult.decIndWithdrawal;
+    : { decumulationIndWithdrawal: new Map<string, number>(), warnings: [] };
+  const decumulationIndWithdrawal = distributeResult.decumulationIndWithdrawal;
   routeWarnings.push(...distributeResult.warnings);
   const basisDraws = hasIndividualAccounts
     ? depleteIndividualBasis({
-        indAccts,
+        indAccounts,
         indKey,
         indBasis,
-        preWithdrawalBal: preWithdrawalIndBal,
-        withdrawals: decIndWithdrawal,
+        preWithdrawalBalance: preWithdrawalIndBalance,
+        withdrawals: decumulationIndWithdrawal,
       })
     : new Map<string, BasisDraw>();
 
@@ -164,7 +164,7 @@ export function distributeYearDraws(
   // under 59 1/2; a joint account counts as qualified).
   const rothTaxSplit = hasIndividualAccounts
     ? splitRothWithdrawalForTax({
-        accounts: indAccts.map((ia) => ({
+        accounts: indAccounts.map((ia) => ({
           indKey: indKey(ia),
           ownerBirthYear: ia.ownerBirthYear,
         })),
@@ -179,9 +179,14 @@ export function distributeYearDraws(
     hasIndividualAccounts && eligibility
       ? computeEarlyWithdrawalPenalty({
           exposure: eligibility,
-          withdrawnByKey: decIndWithdrawal,
+          withdrawnByKey: decumulationIndWithdrawal,
         })
       : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
 
-  return { decIndWithdrawal, basisDraws, rothTaxSplit, earlyWithdrawalPenalty };
+  return {
+    decumulationIndWithdrawal,
+    basisDraws,
+    rothTaxSplit,
+    earlyWithdrawalPenalty,
+  };
 }

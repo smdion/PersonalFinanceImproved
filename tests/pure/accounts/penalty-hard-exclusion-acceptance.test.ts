@@ -69,8 +69,8 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 100000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 100000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -105,9 +105,9 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
+      indAccounts: [ia],
       // balance = 20k contribution + 30k conversion + 25k growth
-      indBal: new Map([[indKey(ia), 75000]]),
+      indBalance: new Map([[indKey(ia), 75000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -172,11 +172,11 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
         balance: 50000,
       },
     ];
-    const indBal = new Map(fixtures.map((f) => [indKey(f.ia), f.balance]));
+    const indBalance = new Map(fixtures.map((f) => [indKey(f.ia), f.balance]));
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: fixtures.map((f) => f.ia),
-      indBal,
+      indAccounts: fixtures.map((f) => f.ia),
+      indBalance,
       indKey,
     });
     for (const f of fixtures) {
@@ -207,8 +207,8 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 80000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 80000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -229,8 +229,8 @@ describe("penalty-hard-exclusion acceptance criteria", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 60000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 60000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;

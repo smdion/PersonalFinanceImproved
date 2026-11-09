@@ -25,14 +25,14 @@ export function qcdStep(
   hasIndividualAccounts: boolean,
   rmdStartAgeByPerson: ProjectionContext["rmdStartAgeByPerson"],
   year: number,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   ctx: ProjectionContext,
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   indKey: ProjectionContext["indKey"],
   decumulationDefaults: ProjectionContext["input"]["decumulationDefaults"],
   config: ReturnType<typeof resolveDecumulationConfig>,
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
 ) {
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
   // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd), not the RMD
@@ -47,7 +47,7 @@ export function qcdStep(
       : [];
   if (qcdEligiblePersonIds.length > 0) {
     const iraTradByPerson = new Map<number, number>();
-    for (const ia of indAccts) {
+    for (const ia of indAccounts) {
       if (
         isQcdEligible(ia.category) &&
         rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
@@ -56,9 +56,9 @@ export function qcdStep(
         // isn't retirement money -- must not inflate QCD-eligible capacity.
         isRetirementMoney(ia.parentCategory)
       ) {
-        const bal = indBal.get(indKey(ia)) ?? 0;
+        const balance = indBalance.get(indKey(ia)) ?? 0;
         const owner = rmdOwnerOf(ia, ctx.primaryPersonId)!;
-        iraTradByPerson.set(owner, (iraTradByPerson.get(owner) ?? 0) + bal);
+        iraTradByPerson.set(owner, (iraTradByPerson.get(owner) ?? 0) + balance);
       }
     }
     // The per-person QCD limit is CPI-indexed (IRC 408(d)(8)(G)): grown
@@ -79,41 +79,41 @@ export function qcdStep(
       // trackers must still move together regardless of the per-account
       // debit below).
       balances.preTax = roundToCents(balances.preTax - totalQcd);
-      addTraditional(acctBal.ira, -totalQcd);
+      addTraditional(accountBalance.ira, -totalQcd);
       // A QCD leaves one owner's own IRAs: debit each person's amount from
       // only their Retirement-parented IRAs, by balance, never pooled (the
       // reconcile step would spread it over every IRA in the category).
       for (const { personId, qcdAmount } of qcdByPerson) {
         if (qcdAmount <= 0) continue;
-        const personIraAccts = indAccts.filter(
+        const personIraAccounts = indAccounts.filter(
           (ia) =>
             isQcdEligible(ia.category) &&
             rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
             isPreTaxType(ia.taxType) &&
             isRetirementMoney(ia.parentCategory),
         );
-        const personIraTotal = personIraAccts.reduce(
-          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+        const personIraTotal = personIraAccounts.reduce(
+          (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
           0,
         );
         if (personIraTotal <= 0) continue;
         let distributed = 0;
-        for (const ia of personIraAccts) {
+        for (const ia of personIraAccounts) {
           const k = indKey(ia);
-          const bal = Math.max(0, indBal.get(k) ?? 0);
-          const share = roundToCents(qcdAmount * (bal / personIraTotal));
-          const capped = Math.min(share, bal);
-          indBal.set(k, roundToCents(bal - capped));
+          const balance = Math.max(0, indBalance.get(k) ?? 0);
+          const share = roundToCents(qcdAmount * (balance / personIraTotal));
+          const capped = Math.min(share, balance);
+          indBalance.set(k, roundToCents(balance - capped));
           distributed += capped;
         }
         // Rounding remainder mop-up, same convention as elsewhere in this
         // file (e.g. Roth conversion's tradAccounts loop).
         const remainder = roundToCents(qcdAmount - distributed);
-        if (remainder > 0.005 && personIraAccts.length > 0) {
-          const first = personIraAccts[0]!;
+        if (remainder > 0.005 && personIraAccounts.length > 0) {
+          const first = personIraAccounts[0]!;
           const k = indKey(first);
-          const bal = Math.max(0, indBal.get(k) ?? 0);
-          indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+          const balance = Math.max(0, indBalance.get(k) ?? 0);
+          indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
         }
       }
     }
@@ -134,10 +134,10 @@ export function enforceYearRmd(
   rmdByPerson: ReturnType<typeof rmdIncomeByOwner>["rmdByPerson"],
   qcdByPerson: ReturnType<typeof qcdStep>["qcdByPerson"],
   ctx: ProjectionContext,
-  acctBal: ProjectionLoopState["acctBal"],
-  indAccts: ProjectionContext["indAccts"],
+  accountBalance: ProjectionLoopState["accountBalance"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   nonRetirement: PreYearSetup["nonRetirement"],
   routeWarnings: string[],
   state: ProjectionLoopState,
@@ -183,10 +183,10 @@ export function enforceYearRmd(
         slots,
         totalTraditionalWithdrawal,
         totalWithdrawal,
-        acctBal,
-        indAccts,
+        accountBalance,
+        indAccounts,
         indKey,
-        indBal,
+        indBalance,
         nonRetirement,
       })
     : null;
@@ -199,7 +199,7 @@ export function enforceYearRmd(
       slots,
       totalTraditionalWithdrawal,
       totalWithdrawal,
-      acctBal,
+      accountBalance,
       nonRetirement,
     });
   const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
@@ -214,7 +214,7 @@ export function enforceYearRmd(
     if (
       !state.rmdNoOwnerWarned &&
       rmdByPerson.some((p) => p.personId === ctx.primaryPersonId) &&
-      indAccts.some(
+      indAccounts.some(
         (ia) => ia.ownerPersonId == null && isPreTaxType(ia.taxType),
       )
     ) {

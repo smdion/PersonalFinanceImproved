@@ -240,7 +240,7 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("brokerage", { withdrawal: 10000 }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -281,7 +281,7 @@ describe("distributeWithdrawals", () => {
         rothWithdrawal: 5000,
       }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -371,7 +371,7 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 12000,
       }),
     ];
-    const { decIndWithdrawal: resultWithin } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: resultWithin } = distributeWithdrawals(
       withinEligible,
       [eligible, locked],
       indKey,
@@ -391,7 +391,7 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 30000,
       }),
     ];
-    const { decIndWithdrawal: resultExceeds } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: resultExceeds } = distributeWithdrawals(
       exceedsEligible,
       [eligible, locked],
       indKey,
@@ -484,15 +484,15 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 15000,
       }),
     ];
-    const { decIndWithdrawal } = distributeWithdrawals(
+    const { decumulationIndWithdrawal } = distributeWithdrawals(
       slots,
       [allowed, disallowed],
       indKey,
       new Map(indBal),
       eligibility,
     );
-    expect(decIndWithdrawal.get(indKey(allowed))).toBe(15000);
-    expect(decIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
+    expect(decumulationIndWithdrawal.get(indKey(allowed))).toBe(15000);
+    expect(decumulationIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
 
     // Need exceeds the allowed account's entire balance ($20k) — the
     // residual is reported as a shortfall rather than falling through to
@@ -505,13 +505,14 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 30000,
       }),
     ];
-    const { decIndWithdrawal: bigResult, warnings } = distributeWithdrawals(
-      bigSlots,
-      [allowed, disallowed],
-      indKey,
-      new Map(indBal),
-      eligibility,
-    );
+    const { decumulationIndWithdrawal: bigResult, warnings } =
+      distributeWithdrawals(
+        bigSlots,
+        [allowed, disallowed],
+        indKey,
+        new Map(indBal),
+        eligibility,
+      );
     expect(bigResult.get(indKey(allowed))).toBe(20000);
     expect(bigResult.get(indKey(disallowed)) ?? 0).toBe(0);
     expect(warnings.length).toBeGreaterThan(0);
@@ -593,16 +594,16 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 20000,
       }),
     ];
-    const { decIndWithdrawal } = distributeWithdrawals(
+    const { decumulationIndWithdrawal } = distributeWithdrawals(
       slots,
       [allowedA, allowedB, disallowed],
       indKey,
       new Map(indBal),
       eligibility,
     );
-    expect(decIndWithdrawal.get(indKey(allowedA))).toBe(15000); // 3/4 of 20k
-    expect(decIndWithdrawal.get(indKey(allowedB))).toBe(5000); // 1/4 of 20k
-    expect(decIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
+    expect(decumulationIndWithdrawal.get(indKey(allowedA))).toBe(15000); // 3/4 of 20k
+    expect(decumulationIndWithdrawal.get(indKey(allowedB))).toBe(5000); // 1/4 of 20k
+    expect(decumulationIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
   });
 
   it("falls through to plain proportional distribution when eligibility.totalPenaltyExposed is 0 (byte-identity no-op)", () => {
@@ -654,7 +655,7 @@ describe("distributeWithdrawals", () => {
         traditionalWithdrawal: 10000,
       }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -676,7 +677,7 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("hsa", { withdrawal: 0 }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -717,7 +718,7 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("brokerage", { withdrawal: 5000 }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -743,7 +744,7 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("brokerage", { withdrawal: 5000 }),
     ];
-    const { decIndWithdrawal: result } = distributeWithdrawals(
+    const { decumulationIndWithdrawal: result } = distributeWithdrawals(
       slots,
       accounts,
       indKey,
@@ -1138,8 +1139,8 @@ describe("distributeContributions", () => {
         ownerName: "Alice",
       }),
     ];
-    const indBal = new Map<string, number>();
-    for (const a of accounts) indBal.set(indKey(a), a.startingBalance ?? 0);
+    const indBalance = new Map<string, number>();
+    for (const a of accounts) indBalance.set(indKey(a), a.startingBalance ?? 0);
     const indParentCat = new Map<string, string>();
 
     const specs: ContributionSpec[] = [
@@ -1182,9 +1183,9 @@ describe("distributeContributions", () => {
     return {
       slots,
       contributionSpecs: specs,
-      indAccts: accounts,
+      indAccounts: accounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat,
       specToAccount,
       accountsWithSpecs,
@@ -1203,28 +1204,28 @@ describe("distributeContributions", () => {
     const input = makeInput();
     const result = distributeContributions(input);
 
-    const tradKey = indKey(input.indAccts[0]!);
-    const rothKey = indKey(input.indAccts[1]!);
+    const tradKey = indKey(input.indAccounts[0]!);
+    const rothKey = indKey(input.indAccounts[1]!);
 
-    expect(result.indContribs.get(tradKey)).toBe(12000);
-    expect(result.indContribs.get(rothKey)).toBe(7200);
+    expect(result.indContributions.get(tradKey)).toBe(12000);
+    expect(result.indContributions.get(rothKey)).toBe(7200);
   });
 
   it("mutates indBal with contributions", () => {
     const input = makeInput();
-    const tradKey = indKey(input.indAccts[0]!);
-    const startBal = input.indBal.get(tradKey) ?? 0;
+    const tradKey = indKey(input.indAccounts[0]!);
+    const startBal = input.indBalance.get(tradKey) ?? 0;
 
     distributeContributions(input);
 
-    expect(input.indBal.get(tradKey)!).toBeGreaterThan(startBal);
+    expect(input.indBalance.get(tradKey)!).toBeGreaterThan(startBal);
   });
 
   it("distributes employer match to preTax accounts", () => {
     const input = makeInput();
     const result = distributeContributions(input);
 
-    const tradKey = indKey(input.indAccts[0]!);
+    const tradKey = indKey(input.indAccounts[0]!);
     // Employer match of 6000 should go to preTax account
     expect(result.indMatch.get(tradKey)).toBe(6000);
   });
@@ -1245,8 +1246,8 @@ describe("distributeContributions", () => {
       startingBalance: 0,
     });
     const accounts = [brokA, brokB];
-    const indBal = new Map<string, number>();
-    for (const a of accounts) indBal.set(indKey(a), 0);
+    const indBalance = new Map<string, number>();
+    for (const a of accounts) indBalance.set(indKey(a), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1286,9 +1287,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots,
       contributionSpecs: specs,
-      indAccts: accounts,
+      indAccounts: accounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1302,8 +1303,8 @@ describe("distributeContributions", () => {
     });
 
     // 2:1 ratio (12000:6000) → 12000 to A, 6000 to B
-    expect(result.indContribs.get(indKey(brokA))).toBe(12000);
-    expect(result.indContribs.get(indKey(brokB))).toBe(6000);
+    expect(result.indContributions.get(indKey(brokA))).toBe(12000);
+    expect(result.indContributions.get(indKey(brokB))).toBe(6000);
   });
 
   it("distributes overflow to brokerage accounts respecting targetAnnual", () => {
@@ -1314,8 +1315,8 @@ describe("distributeContributions", () => {
       startingBalance: 0,
     });
     const accounts = [brokA];
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 0);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1337,9 +1338,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: accounts,
+      indAccounts: accounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1364,8 +1365,8 @@ describe("distributeContributions", () => {
       startingBalance: 50000,
     });
     const accounts = [brokA];
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 50000);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 50000);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1382,9 +1383,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: accounts,
+      indAccounts: accounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1408,8 +1409,8 @@ describe("distributeContributions", () => {
       startingBalance: 0,
     });
     const accounts = [brokA];
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 0);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1429,9 +1430,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: accounts,
+      indAccounts: accounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1463,8 +1464,8 @@ describe("distributeContributions", () => {
       taxType: "afterTax",
       startingBalance: 0,
     });
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 0);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1483,9 +1484,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: [brokA],
+      indAccounts: [brokA],
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1512,8 +1513,8 @@ describe("distributeContributions", () => {
       taxType: "afterTax",
       startingBalance: 0,
     });
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 0);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1531,9 +1532,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: [brokA],
+      indAccounts: [brokA],
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1559,8 +1560,8 @@ describe("distributeContributions", () => {
       taxType: "afterTax",
       startingBalance: 0,
     });
-    const indBal = new Map<string, number>();
-    indBal.set(indKey(brokA), 0);
+    const indBalance = new Map<string, number>();
+    indBalance.set(indKey(brokA), 0);
 
     const specs: ContributionSpec[] = [
       makeContributionSpec({
@@ -1577,9 +1578,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: specs,
-      indAccts: [brokA],
+      indAccounts: [brokA],
       indKey,
-      indBal,
+      indBalance,
       indParentCat: new Map(),
       specToAccount,
       accountsWithSpecs: new Set(specToAccount.values()),
@@ -1600,9 +1601,9 @@ describe("distributeContributions", () => {
     const result = distributeContributions({
       slots: [],
       contributionSpecs: [],
-      indAccts: [],
+      indAccounts: [],
       indKey,
-      indBal: new Map(),
+      indBalance: new Map(),
       indParentCat: new Map(),
       specToAccount: new Map(),
       accountsWithSpecs: new Set(),
@@ -1615,7 +1616,7 @@ describe("distributeContributions", () => {
       rampAmount: 0,
     });
 
-    expect(result.indContribs.size).toBe(0);
+    expect(result.indContributions.size).toBe(0);
     expect(result.indMatch.size).toBe(0);
     expect(result.indOverflow.size).toBe(0);
     expect(result.indRamp.size).toBe(0);
@@ -1942,10 +1943,10 @@ describe("depleteIndividualBasis", () => {
       ],
     ]);
     const draws = depleteIndividualBasis({
-      indAccts: [ira],
+      indAccounts: [ira],
       indKey,
       indBasis,
-      preWithdrawalBal: new Map([[k, 50000]]),
+      preWithdrawalBalance: new Map([[k, 50000]]),
       withdrawals: new Map([[k, 6000]]),
     });
     expect(indBasis.get(k)!.contributionBasis).toBe(4000);
@@ -1977,10 +1978,10 @@ describe("depleteIndividualBasis", () => {
     ]);
     // 20k basis / 100k balance = 20% basis ratio.
     const draws = depleteIndividualBasis({
-      indAccts: [roth401k],
+      indAccounts: [roth401k],
       indKey,
       indBasis,
-      preWithdrawalBal: new Map([[k, 100000]]),
+      preWithdrawalBalance: new Map([[k, 100000]]),
       withdrawals: new Map([[k, 10000]]),
     });
     expect(draws.get(k)!.contributionDrawn).toBeCloseTo(2000, 0);
@@ -1998,10 +1999,10 @@ describe("depleteIndividualBasis", () => {
       [k, initRothBasisState(null, 2026)],
     ]);
     const draws = depleteIndividualBasis({
-      indAccts: [ira],
+      indAccounts: [ira],
       indKey,
       indBasis,
-      preWithdrawalBal: new Map([[k, 50000]]),
+      preWithdrawalBalance: new Map([[k, 50000]]),
       withdrawals: new Map(), // no withdrawal entry at all
     });
     expect(draws.has(k)).toBe(false);
@@ -2049,10 +2050,10 @@ describe("depleteIndividualBasis", () => {
       [k401k, 30000],
     ]);
     const draws = depleteIndividualBasis({
-      indAccts: [iraRoth, k401kRoth],
+      indAccounts: [iraRoth, k401kRoth],
       indKey,
       indBasis,
-      preWithdrawalBal: new Map([
+      preWithdrawalBalance: new Map([
         [kIra, 20000],
         [k401k, 60000],
       ]),

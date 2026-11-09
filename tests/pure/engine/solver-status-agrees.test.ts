@@ -140,8 +140,8 @@ describe("the solver's status agrees with the year's shortfall", () => {
         const added =
           row.taxCost +
           (row.penaltyCost ?? 0) -
-          result.estTax -
-          result.estPenalty;
+          result.estimatedTax -
+          result.estimatedPenalty;
         if (Math.abs(added) < CENT)
           expect(Math.abs(funding - shortfall), at).toBeLessThan(CENT);
       }

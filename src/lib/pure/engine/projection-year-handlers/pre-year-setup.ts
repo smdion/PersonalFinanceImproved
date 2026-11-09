@@ -48,7 +48,7 @@ export function runPreYearSetup(
     returnRateMap,
     sortedProfileSwitches,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
     indParentCat,
     hasPerPersonSalary,
@@ -90,7 +90,7 @@ export function runPreYearSetup(
       if (hasIndividualAccounts) {
         const rebuilt = buildSpecToAccountMapping(
           state.contributionSpecs,
-          indAccts,
+          indAccounts,
           indKey,
           indParentCat,
         );
@@ -111,7 +111,7 @@ export function runPreYearSetup(
       const yearOverrides = perPersonSalaryOverrides.get(year);
       const personIds = Array.from(state.projectedSalaryByPerson.keys());
       for (const pid of personIds) {
-        const prevSal = state.projectedSalaryByPerson.get(pid)!;
+        const prevSalary = state.projectedSalaryByPerson.get(pid)!;
         if (yearOverrides?.has(pid)) {
           state.projectedSalaryByPerson.set(
             pid,
@@ -123,10 +123,10 @@ export function runPreYearSetup(
         const personGrowthRate =
           input.salaryGrowthRateByPerson?.[pid] ?? salaryGrowthRate;
         if (yearIndex > 0 && personGrowthRate > 0) {
-          let newSal = prevSal * (1 + personGrowthRate);
+          let newSalary = prevSalary * (1 + personGrowthRate);
           if (input.salaryCap !== null)
-            newSal = Math.min(newSal, input.salaryCap);
-          state.projectedSalaryByPerson.set(pid, newSal);
+            newSalary = Math.min(newSalary, input.salaryCap);
+          state.projectedSalaryByPerson.set(pid, newSalary);
         }
       }
       // Recompute combined salary from per-person totals
@@ -138,10 +138,11 @@ export function runPreYearSetup(
       if (state.contributionSpecs && state.projectedSalary > 0) {
         for (const spec of state.contributionSpecs) {
           if (spec.method === "percent_of_salary" && spec.personId != null) {
-            const personSal =
+            const personSalary =
               state.projectedSalaryByPerson.get(spec.personId) ?? 0;
             spec.salaryFraction =
-              (personSal * (spec.personPayShare ?? 1)) / state.projectedSalary;
+              (personSalary * (spec.personPayShare ?? 1)) /
+              state.projectedSalary;
           }
         }
       }
@@ -295,7 +296,7 @@ export function runPreYearSetup(
   // accumulation reads it.
   const nonRetirement =
     !isAccumulation && hasIndividualAccounts
-      ? computeNonRetirementExclusion(indAccts, state.indBal, indKey)
+      ? computeNonRetirementExclusion(indAccounts, state.indBalance, indKey)
       : undefined;
   const { allAccountsBalance: totalBalance, retirementBalance } =
     scopedBalances(state.balances, nonRetirement);

@@ -25,7 +25,7 @@ export function yearZeroBasis(
   // Year 0 uses the paycheck's per-account amounts (salary × rate can make
   // false overflow), unless a job starts or ends this year or someone isn't
   // at work: the paycheck doesn't know that; the specs do.
-  const useRealContribs =
+  const useRealContributions =
     yearIndex === 0 &&
     !setup.jobEdgeThisYear &&
     !setup.yearSpecs &&
@@ -50,12 +50,14 @@ export function yearZeroBasis(
     }
   const totalLateYearCut = sumBy(Object.values(lateYearCut), (v) => v);
 
-  return { useRealContribs, proRate, lateYearCut, totalLateYearCut };
+  return { useRealContributions, proRate, lateYearCut, totalLateYearCut };
 }
 
 /** The year's contribution target and employer match, before IRS caps. */
 export function yearContributionTarget(
-  useRealContribs: ReturnType<typeof yearZeroBasis>["useRealContribs"],
+  useRealContributions: ReturnType<
+    typeof yearZeroBasis
+  >["useRealContributions"],
   activeBaseYearContributions: ProjectionLoopState["activeBaseYearContributions"],
   proRate: number,
   totalLateYearCut: number,
@@ -73,7 +75,7 @@ export function yearContributionTarget(
   state: ProjectionLoopState,
 ) {
   let targetContribution: number;
-  if (useRealContribs) {
+  if (useRealContributions) {
     targetContribution = roundToCents(
       Object.values(activeBaseYearContributions!).reduce((s, v) => s + v, 0) *
         proRate -
@@ -99,7 +101,7 @@ export function yearContributionTarget(
   const yearEmployerMatch: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => [
       cat,
-      useRealContribs
+      useRealContributions
         ? roundToCents((activeBaseYearEmployerMatch![cat] ?? 0) * proRate)
         : roundToCents(
             projectedSalary *
@@ -115,7 +117,7 @@ export function yearContributionTarget(
   const personPay = hasPerPersonSalary
     ? { projected: projectedSalaryByPerson, base: baseSalaryByPerson }
     : undefined;
-  if (!useRealContribs && hasPerPersonSalary && contributionSpecs) {
+  if (!useRealContributions && hasPerPersonSalary && contributionSpecs) {
     const payRatio = (personId: number | null | undefined) =>
       personId == null
         ? safeDivide(projectedSalary, currentSalary, 0)
@@ -146,7 +148,7 @@ export function yearContributionTarget(
       yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
   }
   const contribution = contributionStateForYear({
-    actual: Boolean(useRealContribs),
+    actual: Boolean(useRealContributions),
     savingStopped: setup.savingStopped,
     rate: config.contributionRate,
     defaultRate: state.accumulationDefaults.contributionRate,

@@ -31,13 +31,13 @@ export function validateEngineInputs(
   // money: a gap is counted as retirement money the router may never
   // reach, which moves withdrawals, depletion and the plan's verdict.
   const categoryTotals = emptyTaxBucketMap();
-  for (const bal of Object.values(input.startingAccountBalances)) {
-    if (bal.structure === "roth_traditional") {
-      categoryTotals.preTax += bal.traditional;
-      categoryTotals.taxFree += bal.roth;
-    } else if (bal.structure === "single_bucket")
-      categoryTotals.hsa += bal.balance;
-    else categoryTotals.afterTax += bal.balance;
+  for (const balance of Object.values(input.startingAccountBalances)) {
+    if (balance.structure === "roth_traditional") {
+      categoryTotals.preTax += balance.traditional;
+      categoryTotals.taxFree += balance.roth;
+    } else if (balance.structure === "single_bucket")
+      categoryTotals.hsa += balance.balance;
+    else categoryTotals.afterTax += balance.balance;
   }
   for (const [key, sum] of Object.entries(categoryTotals)) {
     const start = input.startingBalances[key as keyof typeof categoryTotals];

@@ -89,8 +89,8 @@ export function runGapYearDraw(
     pretaxContributions: number;
   },
 ): { draw: GapYearDraw; accounts: GapYearAccounts | null } {
-  const { input, hasIndividualAccounts, indAccts, indKey } = ctx;
-  const { balances, acctBal, indBal, indBasis, brokBasis } = state;
+  const { input, hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
   const { year, age, fraction, payByPerson, budget } = args;
   const { employeeContributions, pretaxContributions } = args;
   const pay = sumBy(payByPerson, (p) => p);
@@ -190,24 +190,30 @@ export function runGapYearDraw(
   const config = resolveDecumulationConfig(
     year,
     decumulationDefaults,
-    ctx.sortedDecOverrides,
+    ctx.sortedDecumulationOverrides,
   );
   const eligibility = hasIndividualAccounts
-    ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
+    ? computeWithdrawalEligibility({
+        year,
+        indAccounts,
+        indBalance,
+        indKey,
+        indBasis,
+      })
     : undefined;
   const nonRetirement = hasIndividualAccounts
-    ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+    ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
     : undefined;
   const retirementBasisRatio = hasIndividualAccounts
-    ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+    ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indAccounts: hasIndividualAccounts ? indAccounts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
+    indBalance: hasIndividualAccounts ? indBalance : undefined,
     year,
   });
 
@@ -215,7 +221,7 @@ export function runGapYearDraw(
     routeForMode(
       target,
       config,
-      acctBal,
+      accountBalance,
       {
         taxBrackets,
         rothBracketTarget:
@@ -238,7 +244,7 @@ export function runGapYearDraw(
   // needed to size the draw (on copies) and to take it.
   const shareOut = (
     slots: DecumulationSlot[],
-    bal: typeof indBal,
+    balance: typeof indBalance,
     basis: typeof indBasis,
   ) => {
     if (!hasIndividualAccounts)
@@ -249,27 +255,27 @@ export function runGapYearDraw(
         rothGrowth: 0,
         penalty: 0,
       };
-    const before = new Map(bal);
-    const { decIndWithdrawal, warnings } = distributeWithdrawals(
+    const before = new Map(balance);
+    const { decumulationIndWithdrawal, warnings } = distributeWithdrawals(
       slots,
-      indAccts,
+      indAccounts,
       indKey,
-      bal,
+      balance,
       eligibility,
     );
     const draws = depleteIndividualBasis({
-      indAccts,
+      indAccounts,
       indKey,
       indBasis: basis,
-      preWithdrawalBal: before,
-      withdrawals: decIndWithdrawal,
+      preWithdrawalBalance: before,
+      withdrawals: decumulationIndWithdrawal,
     });
     return {
-      byKey: decIndWithdrawal,
+      byKey: decumulationIndWithdrawal,
       draws,
       warnings,
       rothGrowth: splitRothWithdrawalForTax({
-        accounts: indAccts.map((ia) => ({
+        accounts: indAccounts.map((ia) => ({
           indKey: indKey(ia),
           ownerBirthYear: ia.ownerBirthYear,
         })),
@@ -279,7 +285,7 @@ export function runGapYearDraw(
       penalty: eligibility
         ? computeEarlyWithdrawalPenalty({
             exposure: eligibility,
-            withdrawnByKey: decIndWithdrawal,
+            withdrawnByKey: decumulationIndWithdrawal,
           }).penaltyCost
         : 0,
     };
@@ -320,7 +326,7 @@ export function runGapYearDraw(
   for (let pass = 0; pass < 3; pass++) {
     const trial = shareOut(
       result.slots,
-      new Map(indBal),
+      new Map(indBalance),
       new Map([...indBasis].map(([k, v]) => [k, { ...v }])),
     );
     result = route(
@@ -331,21 +337,21 @@ export function runGapYearDraw(
   }
   const { slots, warnings } = result;
 
-  const taken = followDraws(indAccts, indKey, indBal, brokBasis, () =>
-    shareOut(slots, indBal, indBasis),
+  const taken = followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+    shareOut(slots, indBalance, indBasis),
   );
   const { priced, cost } = price(slots, taken.rothGrowth, taken.penalty);
 
   deductWithdrawals({
     slots,
     balances,
-    acctBal,
+    accountBalance,
     brokerageBasisPortion: priced.brokerageBasisPortion,
   });
-  clampBalances(balances, acctBal);
+  clampBalances(balances, accountBalance);
   if (hasIndividualAccounts) {
-    followDraws(indAccts, indKey, indBal, brokBasis, () =>
-      clampIndividualBalances(indAccts, indKey, indBal),
+    followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+      clampIndividualBalances(indAccounts, indKey, indBalance),
     );
   }
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));

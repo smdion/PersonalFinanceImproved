@@ -45,7 +45,7 @@ export function buildProjectionContext(
   const sortedAccOverrides = [...input.accumulationOverrides].sort(
     (a, b) => a.year - b.year,
   );
-  const sortedDecOverrides = [...input.decumulationOverrides].sort(
+  const sortedDecumulationOverrides = [...input.decumulationOverrides].sort(
     (a, b) => a.year - b.year,
   );
 
@@ -154,11 +154,11 @@ export function buildProjectionContext(
   }
 
   // Individual account tracking
-  const indAccts = input.individualAccounts ?? [];
-  const hasIndividualAccounts = indAccts.length > 0;
+  const indAccounts = input.individualAccounts ?? [];
+  const hasIndividualAccounts = indAccounts.length > 0;
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     if (ia.parentCategory) indParentCat.set(indKey(ia), ia.parentCategory);
   }
 
@@ -188,10 +188,10 @@ export function buildProjectionContext(
     returnRateMap,
     brokerageGoalsByYear,
     sortedAccOverrides,
-    sortedDecOverrides,
+    sortedDecumulationOverrides,
     sortedProfileSwitches,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
     indParentCat,
     hasPerPersonSalary: !!hasPerPersonSalary,

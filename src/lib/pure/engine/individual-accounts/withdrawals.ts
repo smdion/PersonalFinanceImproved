@@ -19,9 +19,9 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
  * brokerages fund retirement and are never drawn for them.
  */
 export function goalFundingAccounts(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
 ): IndividualAccountInput[] {
-  return indAccts.filter(
+  return indAccounts.filter(
     (ia) =>
       isOverflowTarget(ia.category) && !isRetirementMoney(ia.parentCategory),
   );
@@ -29,13 +29,13 @@ export function goalFundingAccounts(
 
 /** What the goal-funding accounts hold now (the most a goal can draw). */
 export function goalFundingBalance(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
 ): number {
   return roundToCents(
-    goalFundingAccounts(indAccts).reduce(
-      (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+    goalFundingAccounts(indAccounts).reduce(
+      (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
       0,
     ),
   );
@@ -47,22 +47,25 @@ export function goalFundingBalance(
  */
 export function distributeGoalWithdrawal(
   drawAmount: number,
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
 ): void {
-  const brokAccts = goalFundingAccounts(indAccts);
-  const brokTotal = brokAccts.reduce(
-    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+  const brokAccounts = goalFundingAccounts(indAccounts);
+  const brokTotal = brokAccounts.reduce(
+    (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
     0,
   );
-  for (const ia of brokAccts) {
+  for (const ia of brokAccounts) {
     const k = indKey(ia);
     const weight =
       brokTotal > 0
-        ? Math.max(0, indBal.get(k) ?? 0) / brokTotal
-        : 1 / brokAccts.length;
-    indBal.set(k, roundToCents((indBal.get(k) ?? 0) - drawAmount * weight));
+        ? Math.max(0, indBalance.get(k) ?? 0) / brokTotal
+        : 1 / brokAccounts.length;
+    indBalance.set(
+      k,
+      roundToCents((indBalance.get(k) ?? 0) - drawAmount * weight),
+    );
   }
 }
 
@@ -89,15 +92,15 @@ export function distributeGoalWithdrawal(
  */
 export function distributeWithdrawals(
   slots: DecumulationSlot[],
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   eligibility?: EligibilityRecord,
   /** Traditional draws an owner's RMD fixes to an account (rmd-enforcement.ts
    *  `enforceOwnerRmds`): applied first; the rest of the slot fans out as usual. */
   pins?: ReadonlyMap<string, number>,
-): { decIndWithdrawal: Map<string, number>; warnings: string[] } {
-  const decIndWithdrawal = new Map<string, number>();
+): { decumulationIndWithdrawal: Map<string, number>; warnings: string[] } {
+  const decumulationIndWithdrawal = new Map<string, number>();
   const warnings: string[] = [];
   const reportShortfall = (shortfall: number, label: string) => {
     if (shortfall <= 0.005) return;
@@ -115,7 +118,7 @@ export function distributeWithdrawals(
     // accounts' balances, so this filter should be a no-op in practice,
     // but it's what makes the exclusion a hard guarantee rather than
     // "should never happen if the upstream math is right."
-    const catAccts = indAccts.filter(
+    const catAccounts = indAccounts.filter(
       (ia) =>
         ia.category === slot.category && isRetirementMoney(ia.parentCategory),
     );
@@ -125,41 +128,46 @@ export function distributeWithdrawals(
       bs === "roth_traditional" &&
       (slot.traditionalWithdrawal > 0 || slot.rothWithdrawal > 0)
     ) {
-      const tradAccts = catAccts.filter((ia) => isPreTaxType(ia.taxType));
-      const rothAccts = catAccts.filter((ia) => isTaxFreeBucket(ia.taxType));
+      const tradAccounts = catAccounts.filter((ia) => isPreTaxType(ia.taxType));
+      const rothAccounts = catAccounts.filter((ia) =>
+        isTaxFreeBucket(ia.taxType),
+      );
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)
-      if (slot.traditionalWithdrawal > 0 && tradAccts.length > 0) {
+      if (slot.traditionalWithdrawal > 0 && tradAccounts.length > 0) {
         let pinned = 0;
-        for (const ia of tradAccts) {
+        for (const ia of tradAccounts) {
           const k = indKey(ia);
           const pin = pins?.get(k) ?? 0;
           if (pin <= 0) continue;
-          indBal.set(k, roundToCents((indBal.get(k) ?? 0) - pin));
-          decIndWithdrawal.set(k, (decIndWithdrawal.get(k) ?? 0) + pin);
+          indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) - pin));
+          decumulationIndWithdrawal.set(
+            k,
+            (decumulationIndWithdrawal.get(k) ?? 0) + pin,
+          );
           pinned = roundToCents(pinned + pin);
         }
         reportShortfall(
           distributeProportionallyPreferringPenaltyFree(
             roundToCents(slot.traditionalWithdrawal - pinned),
-            tradAccts,
+            tradAccounts,
             indKey,
-            indBal,
-            decIndWithdrawal,
+            indBalance,
+            decumulationIndWithdrawal,
             eligibility,
           ),
           `${slot.category} traditional`,
         );
       }
       // Distribute roth withdrawal to taxFree accounts (#33/#35)
-      if (slot.rothWithdrawal > 0 && rothAccts.length > 0) {
+      if (slot.rothWithdrawal > 0 && rothAccounts.length > 0) {
         reportShortfall(
           distributeProportionallyPreferringPenaltyFree(
             slot.rothWithdrawal,
-            rothAccts,
+            rothAccounts,
             indKey,
-            indBal,
-            decIndWithdrawal,
+            indBalance,
+            decumulationIndWithdrawal,
             eligibility,
           ),
           `${slot.category} Roth`,
@@ -167,14 +175,14 @@ export function distributeWithdrawals(
       }
     } else {
       // Single-bucket / brokerage / fallback (#33/#35)
-      if (catAccts.length > 0) {
+      if (catAccounts.length > 0) {
         reportShortfall(
           distributeProportionallyPreferringPenaltyFree(
             slot.withdrawal,
-            catAccts,
+            catAccounts,
             indKey,
-            indBal,
-            decIndWithdrawal,
+            indBalance,
+            decumulationIndWithdrawal,
             eligibility,
           ),
           slot.category,
@@ -183,7 +191,7 @@ export function distributeWithdrawals(
     }
   }
 
-  return { decIndWithdrawal, warnings };
+  return { decumulationIndWithdrawal, warnings };
 }
 
 /**
@@ -214,7 +222,7 @@ function distributeProportionallyPreferringPenaltyFree(
   amount: number,
   accounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   withdrawalMap: Map<string, number>,
   exposure: EligibilityRecord | undefined,
 ): number {
@@ -223,7 +231,7 @@ function distributeProportionallyPreferringPenaltyFree(
       amount,
       accounts,
       indKey,
-      indBal,
+      indBalance,
       withdrawalMap,
     );
   }
@@ -235,7 +243,7 @@ function distributeProportionallyPreferringPenaltyFree(
       amount,
       accounts,
       indKey,
-      indBal,
+      indBalance,
       withdrawalMap,
     );
   }
@@ -244,11 +252,13 @@ function distributeProportionallyPreferringPenaltyFree(
   const penaltyFreeCapacity = new Map<string, number>(
     accounts.map((ia) => {
       const k = indKey(ia);
-      const bal = Math.max(0, indBal.get(k) ?? 0);
-      const acctExposure = exposure.byKey.get(k);
+      const balance = Math.max(0, indBalance.get(k) ?? 0);
+      const accountExposure = exposure.byKey.get(k);
       return [
         k,
-        acctExposure ? Math.min(bal, acctExposure.penaltyFreeAmount) : bal,
+        accountExposure
+          ? Math.min(balance, accountExposure.penaltyFreeAmount)
+          : balance,
       ];
     }),
   );
@@ -256,7 +266,7 @@ function distributeProportionallyPreferringPenaltyFree(
     amount,
     accounts,
     indKey,
-    indBal,
+    indBalance,
     withdrawalMap,
     penaltyFreeCapacity,
   );
@@ -275,14 +285,14 @@ function distributeProportionallyPreferringPenaltyFree(
       accounts.map((ia) => {
         const k = indKey(ia);
         const allowed = exposure.byKey.get(k)?.allowPenalizedWithdrawals;
-        return [k, allowed ? Math.max(0, indBal.get(k) ?? 0) : 0];
+        return [k, allowed ? Math.max(0, indBalance.get(k) ?? 0) : 0];
       }),
     );
     const shortfall2 = distributeProportionally(
       shortfall,
       accounts,
       indKey,
-      indBal,
+      indBalance,
       withdrawalMap,
       allowedExposedCapacity,
     );
@@ -305,7 +315,7 @@ function distributeProportionallyPreferringPenaltyFree(
     shortfall,
     accounts,
     indKey,
-    indBal,
+    indBalance,
     withdrawalMap,
   );
 }
@@ -327,14 +337,14 @@ function distributeProportionally(
   amount: number,
   accounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   withdrawalMap: Map<string, number>,
   capacity?: Map<string, number>,
 ): number {
   const room = (k: string): number => {
-    const bal = Math.max(0, indBal.get(k) ?? 0);
+    const balance = Math.max(0, indBalance.get(k) ?? 0);
     const c = capacity?.get(k);
-    return c != null ? Math.max(0, Math.min(bal, c)) : bal;
+    return c != null ? Math.max(0, Math.min(balance, c)) : balance;
   };
   const total = accounts.reduce((s, ia) => s + room(indKey(ia)), 0);
   if (total <= 0) return amount;
@@ -344,11 +354,11 @@ function distributeProportionally(
     const k = indKey(ia);
     const r = room(k);
     if (r <= 0) continue;
-    const wd = roundToCents(Math.min(amount * (r / total), r));
-    if (wd <= 0) continue;
-    indBal.set(k, roundToCents((indBal.get(k) ?? 0) - wd));
-    withdrawalMap.set(k, (withdrawalMap.get(k) ?? 0) + wd);
-    distributed += wd;
+    const withdrawal = roundToCents(Math.min(amount * (r / total), r));
+    if (withdrawal <= 0) continue;
+    indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) - withdrawal));
+    withdrawalMap.set(k, (withdrawalMap.get(k) ?? 0) + withdrawal);
+    distributed += withdrawal;
   }
 
   // Re-route any rounding residual within the same account group instead of
@@ -363,7 +373,7 @@ function distributeProportionally(
     if (r <= 0) continue;
     const draw = roundToCents(Math.min(remaining, r));
     if (draw <= 0) continue;
-    indBal.set(k, roundToCents((indBal.get(k) ?? 0) - draw));
+    indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) - draw));
     withdrawalMap.set(k, (withdrawalMap.get(k) ?? 0) + draw);
     remaining = roundToCents(remaining - draw);
   }

@@ -58,7 +58,7 @@ interface GrowthInput {
   /** Aggregate tax bucket balances (mutated in place). */
   balances: TaxBuckets;
   /** Per-account balances (mutated in place). */
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ interface GrowthInput {
  * only market value grows.
  */
 export function applyGrowth(input: GrowthInput): void {
-  const { effectiveReturn, balances, acctBal } = input;
+  const { effectiveReturn, balances, accountBalance } = input;
 
   // Grow aggregate tax buckets
   balances.preTax = roundToCents(balances.preTax * (1 + effectiveReturn));
@@ -83,18 +83,24 @@ export function applyGrowth(input: GrowthInput): void {
 
   // Grow per-account balances
   for (const cat of getAllCategories()) {
-    const bal = acctBal[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = accountBalance[cat];
+    if (balance.structure === "roth_traditional") {
       setTraditional(
-        bal,
-        roundToCents(bal.traditional * (1 + effectiveReturn)),
+        balance,
+        roundToCents(balance.traditional * (1 + effectiveReturn)),
       );
-      setRoth(bal, roundToCents(bal.roth * (1 + effectiveReturn)));
-    } else if (bal.structure === "single_bucket") {
-      setBalance(bal, roundToCents(bal.balance * (1 + effectiveReturn)));
+      setRoth(balance, roundToCents(balance.roth * (1 + effectiveReturn)));
+    } else if (balance.structure === "single_bucket") {
+      setBalance(
+        balance,
+        roundToCents(balance.balance * (1 + effectiveReturn)),
+      );
     } else {
       // basis_tracking: only market value grows, basis does NOT grow
-      setBalance(bal, roundToCents(bal.balance * (1 + effectiveReturn)));
+      setBalance(
+        balance,
+        roundToCents(balance.balance * (1 + effectiveReturn)),
+      );
     }
   }
 }

@@ -73,14 +73,14 @@ type Holdings = {
 /** The household's money: Traditional and Roth in the IRA, a brokerage
  *  with its basis, an HSA. Nothing else holds a balance. */
 function holdings(h: Holdings) {
-  const acctBal = Object.fromEntries(
+  const accountBalance = Object.fromEntries(
     getAllCategories().map((c) => [c, zeroBalance(c)]),
   ) as AccountBalances;
-  setTraditional(acctBal.ira, h.traditional ?? 0);
-  setRoth(acctBal.ira, h.roth ?? 0);
-  setBalance(acctBal.brokerage, h.brokerage ?? 0);
-  setBasis(acctBal.brokerage, h.basis ?? h.brokerage ?? 0);
-  setBalance(acctBal.hsa, h.hsa ?? 0);
+  setTraditional(accountBalance.ira, h.traditional ?? 0);
+  setRoth(accountBalance.ira, h.roth ?? 0);
+  setBalance(accountBalance.brokerage, h.brokerage ?? 0);
+  setBasis(accountBalance.brokerage, h.basis ?? h.brokerage ?? 0);
+  setBalance(accountBalance.hsa, h.hsa ?? 0);
   const buckets = makeTaxBuckets({
     preTax: h.traditional ?? 0,
     taxFree: h.roth ?? 0,
@@ -90,7 +90,7 @@ function holdings(h: Holdings) {
   });
   const total =
     (h.traditional ?? 0) + (h.roth ?? 0) + (h.brokerage ?? 0) + (h.hsa ?? 0);
-  return { acctBal, buckets, total };
+  return { accountBalance, buckets, total };
 }
 
 /** Bracket filling at `target` (none: the mode falls back to Waterfall),
@@ -136,7 +136,7 @@ function grossUp(
   h: Holdings,
   o: { config?: ResolvedDecumulationConfig; target?: number } = {},
 ) {
-  const { acctBal, buckets, total } = holdings(h);
+  const { accountBalance, buckets, total } = holdings(h);
   const config = o.config ?? bracketConfig();
   const est = estimateWithdrawalTaxCost({
     ssSurplus: 0,
@@ -146,13 +146,13 @@ function grossUp(
     config,
     taxRates: taxRates(o.target),
     balances: buckets,
-    acctBal,
+    accountBalance,
     totalBalance: total,
   });
   const routed = routeForMode(
     est.targetWithdrawal,
     config,
-    acctBal,
+    accountBalance,
     bracketInfo({ target: o.target }),
   );
   return { est, ...drawn(routed.slots) };
@@ -285,7 +285,7 @@ describe("answer key: Bracket filling", () => {
     cents(
       {
         G: r.est.targetWithdrawal,
-        tax: r.est.estTax,
+        tax: r.est.estimatedTax,
         traditional: r.traditional,
         roth: r.roth,
       },
@@ -304,7 +304,7 @@ describe("answer key: Bracket filling", () => {
     cents(
       {
         G: r.est.targetWithdrawal,
-        tax: r.est.estTax,
+        tax: r.est.estimatedTax,
         traditional: r.traditional,
         roth: r.roth,
       },
@@ -315,11 +315,14 @@ describe("answer key: Bracket filling", () => {
   it("strategies/C63 [WDR-04] other ordinary income shrinks the room: 93,000", () => {
     // A 40,000 pension: room = 133,000 − 40,000 = 93,000 (BF-3). Routed
     // 120,000 gross: Traditional 93,000, Roth the other 27,000.
-    const { acctBal } = holdings({ traditional: 1_000_000, roth: 500_000 });
+    const { accountBalance } = holdings({
+      traditional: 1_000_000,
+      roth: 500_000,
+    });
     const r = routeForMode(
       120_000,
       bracketConfig(),
-      acctBal,
+      accountBalance,
       bracketInfo({ target: 0.12, otherIncome: 40_000 }),
     );
     const d = drawn(r.slots);
@@ -334,7 +337,7 @@ describe("answer key: Bracket filling", () => {
     // 50,000 gross with Roth 30,000, brokerage 10,000 (all basis), HSA
     // 5,000: those 45,000 first, then Traditional the last 5,000 (BF-6,
     // the last resort).
-    const { acctBal } = holdings({
+    const { accountBalance } = holdings({
       traditional: 1_000_000,
       roth: 30_000,
       brokerage: 10_000,
@@ -343,7 +346,7 @@ describe("answer key: Bracket filling", () => {
     const r = routeForMode(
       50_000,
       bracketConfig(),
-      acctBal,
+      accountBalance,
       bracketInfo({ target: 0.12, otherIncome: 140_000, basisRatio: 1 }),
     );
     const d = drawn(r.slots);
@@ -379,7 +382,7 @@ describe("answer key: Bracket filling", () => {
     cents(
       {
         G: r.est.targetWithdrawal,
-        tax: r.est.estTax,
+        tax: r.est.estimatedTax,
         traditional: r.traditional,
         brokerage: r.brokerage,
       },
@@ -390,7 +393,7 @@ describe("answer key: Bracket filling", () => {
   it("strategies/C66 [WDR-04] no target: bracket filling routes as Waterfall", () => {
     // BF-7: without a `rothBracketTarget` the mode falls back to the
     // household's order. Same 100,000, same money, both modes.
-    const { acctBal } = holdings({
+    const { accountBalance } = holdings({
       traditional: 300_000,
       roth: 200_000,
       brokerage: 100_000,
@@ -399,13 +402,13 @@ describe("answer key: Bracket filling", () => {
     const bracket = routeForMode(
       100_000,
       bracketConfig(),
-      acctBal,
+      accountBalance,
       bracketInfo({}),
     );
     const waterfall = routeForMode(
       100_000,
       { ...bracketConfig(), withdrawalRoutingMode: "waterfall" },
-      acctBal,
+      accountBalance,
       bracketInfo({}),
     );
     expect(bracket.slots).toEqual(waterfall.slots);
@@ -419,7 +422,7 @@ describe("answer key: Bracket filling", () => {
     cents(
       {
         G: r.est.targetWithdrawal,
-        tax: r.est.estTax,
+        tax: r.est.estimatedTax,
         traditional: r.traditional,
       },
       { G: 169_666.67, tax: 19_666.67, traditional: 169_666.67 },
@@ -444,11 +447,11 @@ describe("answer key: Bracket filling", () => {
     // `withdrawal-cost-ranking.ts:449,457,484`).
     run: () => {
       const h = { hsa: 10_000, brokerage: 500_000, basis: 375_000 };
-      const { acctBal } = holdings(h);
+      const { accountBalance } = holdings(h);
       const r = routeForMode(
         300_000,
         bracketConfig(),
-        acctBal,
+        accountBalance,
         bracketInfo({ target: 0.12, otherIncome: 60_000, basisRatio: 0.75 }),
       );
       const tax = computeTaxFromSlots({
@@ -483,7 +486,7 @@ describe("answer key: the gross-up", () => {
       { config: waterfall() },
     );
     cents(
-      { G: r.est.targetWithdrawal, tax: r.est.estTax },
+      { G: r.est.targetWithdrawal, tax: r.est.estimatedTax },
       { G: 63_227.27, tax: 3_227.27 },
     );
   });
@@ -498,7 +501,7 @@ describe("answer key: the gross-up", () => {
       { config: waterfall() },
     );
     cents(
-      { G: r.est.targetWithdrawal, tax: r.est.estTax },
+      { G: r.est.targetWithdrawal, tax: r.est.estimatedTax },
       { G: 169_666.67, tax: 19_666.67 },
     );
   });

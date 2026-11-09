@@ -75,19 +75,19 @@ export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
 
   return Object.fromEntries(
     getAllCategories().map((cat) => {
-      const bal = zeroBalance(cat);
+      const balance = zeroBalance(cat);
       const group = getLimitGroup(cat);
-      if (bal.structure === "roth_traditional" && group) {
+      if (balance.structure === "roth_traditional" && group) {
         const frac = fracByGroup[group] ?? 0;
-        bal.traditional = roundToCents(b.preTax * frac);
-        bal.roth = roundToCents(b.taxFree * frac);
-      } else if (bal.structure === "single_bucket") {
-        bal.balance = b.hsa;
-      } else if (bal.structure === "basis_tracking") {
-        bal.balance = b.afterTax;
-        bal.basis = b.afterTaxBasis;
+        balance.traditional = roundToCents(b.preTax * frac);
+        balance.roth = roundToCents(b.taxFree * frac);
+      } else if (balance.structure === "single_bucket") {
+        balance.balance = b.hsa;
+      } else if (balance.structure === "basis_tracking") {
+        balance.balance = b.afterTax;
+        balance.basis = b.afterTaxBasis;
       }
-      return [cat, bal];
+      return [cat, balance];
     }),
   ) as AccountBalances;
 }
@@ -117,25 +117,26 @@ export function subtractPenaltyExposed(
 ): AccountBalances {
   const result = cloneAccountBalances(balances);
   for (const cat of getAllCategories()) {
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       setTraditional(
-        bal,
+        balance,
         Math.max(
           0,
-          bal.traditional - record.penaltyExposedTradStillExcluded[cat],
+          balance.traditional - record.penaltyExposedTradStillExcluded[cat],
         ),
       );
       setRoth(
-        bal,
-        Math.max(0, bal.roth - record.penaltyExposedRothStillExcluded[cat]),
+        balance,
+        Math.max(0, balance.roth - record.penaltyExposedRothStillExcluded[cat]),
       );
     } else {
       setBalance(
-        bal,
+        balance,
         Math.max(
           0,
-          getTotalBalance(bal) - record.penaltyExposedTotalStillExcluded[cat],
+          getTotalBalance(balance) -
+            record.penaltyExposedTotalStillExcluded[cat],
         ),
       );
     }
@@ -167,33 +168,33 @@ export function subtractExcluded(
 ): AccountBalances {
   const result = cloneAccountBalances(balances);
   for (const cat of getAllCategories()) {
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       const tradExcl =
         (exposure?.penaltyExposedTradStillExcluded[cat] ?? 0) +
         (nonRetirement?.trad[cat] ?? 0);
       const rothExcl =
         (exposure?.penaltyExposedRothStillExcluded[cat] ?? 0) +
         (nonRetirement?.roth[cat] ?? 0);
-      setTraditional(bal, Math.max(0, bal.traditional - tradExcl));
-      setRoth(bal, Math.max(0, bal.roth - rothExcl));
+      setTraditional(balance, Math.max(0, balance.traditional - tradExcl));
+      setRoth(balance, Math.max(0, balance.roth - rothExcl));
     } else {
       const totalExcl =
         (exposure?.penaltyExposedTotalStillExcluded[cat] ?? 0) +
         (nonRetirement?.total[cat] ?? 0);
-      setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
+      setBalance(balance, Math.max(0, getTotalBalance(balance) - totalExcl));
     }
     // Never more than the category's tracked accounts can give: money no
     // tracked account holds is not penalty-free by default
     // (EligibilityRecord.reachableByCategory).
     const reachable = exposure?.reachableByCategory[cat];
-    const total = getTotalBalance(bal);
+    const total = getTotalBalance(balance);
     if (reachable != null && total > reachable) {
       const keep = total > 0 ? Math.max(0, reachable) / total : 0;
-      if (bal.structure === "roth_traditional") {
-        setTraditional(bal, roundToCents(bal.traditional * keep));
-        setRoth(bal, roundToCents(bal.roth * keep));
-      } else setBalance(bal, roundToCents(total * keep));
+      if (balance.structure === "roth_traditional") {
+        setTraditional(balance, roundToCents(balance.traditional * keep));
+        setRoth(balance, roundToCents(balance.roth * keep));
+      } else setBalance(balance, roundToCents(total * keep));
     }
   }
   return result;
@@ -235,15 +236,18 @@ export function applySlotsToBalances(
   for (const cat of getAllCategories()) {
     const slot = byCategory.get(cat);
     if (!slot || slot.withdrawal === 0) continue;
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       setTraditional(
-        bal,
-        Math.max(0, bal.traditional - slot.traditionalWithdrawal),
+        balance,
+        Math.max(0, balance.traditional - slot.traditionalWithdrawal),
       );
-      setRoth(bal, Math.max(0, bal.roth - slot.rothWithdrawal));
+      setRoth(balance, Math.max(0, balance.roth - slot.rothWithdrawal));
     } else {
-      setBalance(bal, Math.max(0, getTotalBalance(bal) - slot.withdrawal));
+      setBalance(
+        balance,
+        Math.max(0, getTotalBalance(balance) - slot.withdrawal),
+      );
     }
   }
   return result;

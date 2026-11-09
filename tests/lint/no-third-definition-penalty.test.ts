@@ -106,8 +106,8 @@ describe("criterion 12B: exposure verdict agrees slice-for-slice with early-acce
 
     const record = computeWithdrawalEligibility({
       year,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), balance]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), balance]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -142,8 +142,8 @@ describe("criterion 12B: exposure verdict agrees slice-for-slice with early-acce
 
     const record = computeWithdrawalEligibility({
       year,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), balance]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), balance]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -171,8 +171,8 @@ describe("criterion 12B: exposure verdict agrees slice-for-slice with early-acce
 
     const record = computeWithdrawalEligibility({
       year,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), balance]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), balance]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;

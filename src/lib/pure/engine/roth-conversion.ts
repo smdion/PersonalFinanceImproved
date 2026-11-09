@@ -84,7 +84,7 @@ export interface RothConversionInput {
    *  Retirement brokerages' own, brokerage-basis.ts). Omitted: aggregate. */
   brokerageBasisRatio?: number;
   /** Per-account balances (mutated in place). */
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   /** Portfolio-parented ("non-retirement") exclusion for this year —
    *  when supplied, both the conversion SOURCE amount and the tax-payment
    *  capacity gate are capped to Retirement-only money (this half needs
@@ -103,8 +103,8 @@ export interface RothConversionInput {
    *  key function — same triple every other individual-tracking-aware
    *  module in this engine takes. Only used when `nonRetirement` is also
    *  supplied. */
-  indAccts?: IndividualAccountInput[];
-  indBal?: Map<string, number>;
+  indAccounts?: IndividualAccountInput[];
+  indBalance?: Map<string, number>;
   indKey?: IndKeyFn;
   /** This year's combined household RMD-smoothing minimum (sum of
    *  every person's own target — see `rmd-smoothing.ts`'s
@@ -163,18 +163,18 @@ export function performRothConversion(
     taxableSS,
     rothTaxableGrowth,
     balances,
-    acctBal,
+    accountBalance,
     nonRetirement,
-    indAccts,
-    indBal,
+    indAccounts,
+    indBalance,
     indKey,
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget,
   } = input;
   const hasIndTracking =
     nonRetirement != null &&
-    indAccts != null &&
-    indBal != null &&
+    indAccounts != null &&
+    indBalance != null &&
     indKey != null;
   // Single isOverflowTarget category (brokerage today) — hoisted so both
   // the tax-payment capacity gate and the later per-account debit loop can
@@ -278,7 +278,7 @@ export function performRothConversion(
     ? roundToCents(
         balances.preTax -
           getAllCategories().reduce((s, cat) => {
-            if (acctBal[cat].structure !== "roth_traditional") return s;
+            if (accountBalance[cat].structure !== "roth_traditional") return s;
             return s + nonRetirement.trad[cat];
           }, 0),
       )
@@ -381,24 +381,26 @@ export function performRothConversion(
   // with what the individual debit can place in Retirement-only accounts.
   const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
   for (const cat of getAllCategories()) {
-    const bal = acctBal[cat];
-    if (bal.structure !== "roth_traditional") continue;
+    const balance = accountBalance[cat];
+    if (balance.structure !== "roth_traditional") continue;
     const weight = nonRetirement
-      ? Math.max(0, bal.traditional - nonRetirement.trad[cat])
-      : bal.traditional;
+      ? Math.max(0, balance.traditional - nonRetirement.trad[cat])
+      : balance.traditional;
     if (weight > 0) tradAccounts.push({ cat, balance: weight });
   }
-  const totalTradBal = tradAccounts.reduce((s, a) => s + a.balance, 0);
+  const totalTradBalance = tradAccounts.reduce((s, a) => s + a.balance, 0);
   const categoryShare = new Map<AccountCategory, number>();
-  if (totalTradBal > 0) {
+  if (totalTradBalance > 0) {
     let distributed = 0;
     for (const account of tradAccounts) {
-      const bal = acctBal[account.cat];
-      if (bal.structure !== "roth_traditional") continue;
-      const share = roundToCents(conversion * (account.balance / totalTradBal));
-      const capped = Math.min(share, bal.traditional);
-      setTraditional(bal, roundToCents(bal.traditional - capped));
-      setRoth(bal, roundToCents(bal.roth + capped));
+      const balance = accountBalance[account.cat];
+      if (balance.structure !== "roth_traditional") continue;
+      const share = roundToCents(
+        conversion * (account.balance / totalTradBalance),
+      );
+      const capped = Math.min(share, balance.traditional);
+      setTraditional(balance, roundToCents(balance.traditional - capped));
+      setRoth(balance, roundToCents(balance.roth + capped));
       categoryShare.set(
         account.cat,
         (categoryShare.get(account.cat) ?? 0) + capped,
@@ -408,15 +410,18 @@ export function performRothConversion(
     // Handle rounding remainder
     if (distributed < conversion - 0.01 && tradAccounts.length > 0) {
       const remainder = roundToCents(conversion - distributed);
-      const firstAcct = tradAccounts[0]!;
-      const firstBal = acctBal[firstAcct.cat];
-      if (firstBal.structure === "roth_traditional") {
-        const extra = Math.min(remainder, firstBal.traditional);
-        setTraditional(firstBal, roundToCents(firstBal.traditional - extra));
-        setRoth(firstBal, roundToCents(firstBal.roth + extra));
+      const firstAccount = tradAccounts[0]!;
+      const firstBalance = accountBalance[firstAccount.cat];
+      if (firstBalance.structure === "roth_traditional") {
+        const extra = Math.min(remainder, firstBalance.traditional);
+        setTraditional(
+          firstBalance,
+          roundToCents(firstBalance.traditional - extra),
+        );
+        setRoth(firstBalance, roundToCents(firstBalance.roth + extra));
         categoryShare.set(
-          firstAcct.cat,
-          (categoryShare.get(firstAcct.cat) ?? 0) + extra,
+          firstAccount.cat,
+          (categoryShare.get(firstAccount.cat) ?? 0) + extra,
         );
       }
     }
@@ -433,29 +438,29 @@ export function performRothConversion(
   if (hasIndTracking) {
     for (const [cat, amount] of categoryShare) {
       if (amount <= 0) continue;
-      const catAccts = indAccts.filter(
+      const catAccounts = indAccounts.filter(
         (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
       );
-      const catTotal = catAccts.reduce(
-        (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+      const catTotal = catAccounts.reduce(
+        (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
         0,
       );
       if (catTotal <= 0) continue;
-      let acctDistributed = 0;
-      for (const ia of catAccts) {
+      let accountDistributed = 0;
+      for (const ia of catAccounts) {
         const k = indKey(ia);
-        const bal = Math.max(0, indBal.get(k) ?? 0);
-        const share = roundToCents(amount * (bal / catTotal));
-        const capped = Math.min(share, bal);
-        indBal.set(k, roundToCents(bal - capped));
-        acctDistributed += capped;
+        const balance = Math.max(0, indBalance.get(k) ?? 0);
+        const share = roundToCents(amount * (balance / catTotal));
+        const capped = Math.min(share, balance);
+        indBalance.set(k, roundToCents(balance - capped));
+        accountDistributed += capped;
       }
-      const remainder = roundToCents(amount - acctDistributed);
-      if (remainder > 0.005 && catAccts.length > 0) {
-        const first = catAccts[0]!;
+      const remainder = roundToCents(amount - accountDistributed);
+      if (remainder > 0.005 && catAccounts.length > 0) {
+        const first = catAccounts[0]!;
         const k = indKey(first);
-        const bal = Math.max(0, indBal.get(k) ?? 0);
-        indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+        const balance = Math.max(0, indBalance.get(k) ?? 0);
+        indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
       }
     }
   }
@@ -464,14 +469,16 @@ export function performRothConversion(
   for (const cat of getAllCategories()) {
     if (isOverflowTarget(cat)) {
       setBalance(
-        acctBal[cat],
-        roundToCents(getTotalBalance(acctBal[cat]) - taxCostOfConversion),
+        accountBalance[cat],
+        roundToCents(
+          getTotalBalance(accountBalance[cat]) - taxCostOfConversion,
+        ),
       );
-      if (acctBal[cat].structure === "basis_tracking") {
-        const currentBasis = getBasis(acctBal[cat]);
-        const currentBalance = getTotalBalance(acctBal[cat]);
+      if (accountBalance[cat].structure === "basis_tracking") {
+        const currentBasis = getBasis(accountBalance[cat]);
+        const currentBalance = getTotalBalance(accountBalance[cat]);
         setBasis(
-          acctBal[cat],
+          accountBalance[cat],
           roundToCents(Math.min(currentBasis, currentBalance)),
         );
       }
@@ -481,29 +488,31 @@ export function performRothConversion(
       // payment across Retirement-parented accounts in this category only,
       // proportional to their own balance.
       if (hasIndTracking) {
-        const catAccts = indAccts.filter(
+        const catAccounts = indAccounts.filter(
           (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
         );
-        const catTotal = catAccts.reduce(
-          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+        const catTotal = catAccounts.reduce(
+          (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
           0,
         );
         if (catTotal > 0) {
           let taxDistributed = 0;
-          for (const ia of catAccts) {
+          for (const ia of catAccounts) {
             const k = indKey(ia);
-            const bal = Math.max(0, indBal.get(k) ?? 0);
-            const share = roundToCents(taxCostOfConversion * (bal / catTotal));
-            const capped = Math.min(share, bal);
-            indBal.set(k, roundToCents(bal - capped));
+            const balance = Math.max(0, indBalance.get(k) ?? 0);
+            const share = roundToCents(
+              taxCostOfConversion * (balance / catTotal),
+            );
+            const capped = Math.min(share, balance);
+            indBalance.set(k, roundToCents(balance - capped));
             taxDistributed += capped;
           }
           const remainder = roundToCents(taxCostOfConversion - taxDistributed);
-          if (remainder > 0.005 && catAccts.length > 0) {
-            const first = catAccts[0]!;
+          if (remainder > 0.005 && catAccounts.length > 0) {
+            const first = catAccounts[0]!;
             const k = indKey(first);
-            const bal = Math.max(0, indBal.get(k) ?? 0);
-            indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+            const balance = Math.max(0, indBalance.get(k) ?? 0);
+            indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
           }
         }
       }

@@ -84,12 +84,12 @@ export type ProfileSwitch = {
   /** This profile's base-year amounts and match over retirement money only
    *  — what Simple tax mode swaps in (simple-tax-mode.ts). Set by the
    *  payload; switches built elsewhere never reach Simple. */
-  retirementOnly?: RetirementContribSlice;
+  retirementOnly?: RetirementContributionSlice;
 };
 
 /** A contribution profile's base-year amounts and match over retirement
  *  money only (built from paycheck data next to the all-accounts ones). */
-export type RetirementContribSlice = {
+export type RetirementContributionSlice = {
   baseYearContributions: Record<AccountCategory, number>;
   baseYearEmployerMatch: Record<AccountCategory, number>;
   employerMatchRateByCategory: Record<AccountCategory, number>;

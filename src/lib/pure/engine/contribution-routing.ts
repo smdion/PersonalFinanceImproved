@@ -342,12 +342,12 @@ export function routePercentage(
     // Any remaining goes to brokerage
     const stillRemaining = roundToCents(totalOverflow - redistributed);
     if (stillRemaining > 0) {
-      const brokerageAlloc = allocations.find((a) =>
+      const brokerageAllocation = allocations.find((a) =>
         isOverflowTarget(a.category),
       );
-      if (brokerageAlloc) {
-        brokerageAlloc.allocated = roundToCents(
-          brokerageAlloc.allocated + stillRemaining,
+      if (brokerageAllocation) {
+        brokerageAllocation.allocated = roundToCents(
+          brokerageAllocation.allocated + stillRemaining,
         );
       } else {
         allocations.push({

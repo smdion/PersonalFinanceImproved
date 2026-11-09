@@ -27,35 +27,35 @@ export function applyLumpSums(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  const { hasIndividualAccounts, indAccts, indKey } = ctx;
-  const { balances, acctBal, indBal } = state;
+  const { hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { balances, accountBalance, indBalance } = state;
 
   for (const ls of lumpSums) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
       if (isRothType(ls.taxType ?? "")) {
         balances.taxFree += ls.amount;
-        addRoth(acctBal[ls.targetAccount], ls.amount);
+        addRoth(accountBalance[ls.targetAccount], ls.amount);
       } else {
         balances.preTax += ls.amount;
-        addTraditional(acctBal[ls.targetAccount], ls.amount);
+        addTraditional(accountBalance[ls.targetAccount], ls.amount);
       }
     } else if (bs === "single_bucket") {
       balances.hsa += ls.amount;
-      addBalance(acctBal[ls.targetAccount], ls.amount);
+      addBalance(accountBalance[ls.targetAccount], ls.amount);
     } else {
       // basis_tracking (brokerage)
       balances.afterTax += ls.amount;
       balances.afterTaxBasis += ls.amount;
-      addBalance(acctBal[ls.targetAccount], ls.amount);
-      addBasis(acctBal[ls.targetAccount], ls.amount);
+      addBalance(accountBalance[ls.targetAccount], ls.amount);
+      addBasis(accountBalance[ls.targetAccount], ls.amount);
     }
     // Update individual account tracking for the lump sum
     if (hasIndividualAccounts) {
-      const target = resolveLumpSumTarget(ls, indAccts);
+      const target = resolveLumpSumTarget(ls, indAccounts);
       if (target) {
         const key = indKey(target);
-        indBal.set(key, (indBal.get(key) ?? 0) + ls.amount);
+        indBalance.set(key, (indBalance.get(key) ?? 0) + ls.amount);
       }
     }
   }
@@ -75,17 +75,18 @@ export function applyLumpSums(
  */
 export function resolveLumpSumTarget(
   ls: LumpSum,
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
 ): IndividualAccountInput | undefined {
   if (ls.targetAccountName)
     return (
       (ls.targetOwnerName
-        ? indAccts.find(
+        ? indAccounts.find(
             (ia) =>
               ia.name === ls.targetAccountName &&
               ia.ownerName === ls.targetOwnerName,
           )
-        : undefined) ?? indAccts.find((ia) => ia.name === ls.targetAccountName)
+        : undefined) ??
+      indAccounts.find((ia) => ia.name === ls.targetAccountName)
     );
   const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
   const taxType =
@@ -96,20 +97,20 @@ export function resolveLumpSumTarget(
         ? "preTax"
         : "afterTax");
   const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
-  const byParent = (accts: readonly IndividualAccountInput[]) => {
+  const byParent = (accounts: readonly IndividualAccountInput[]) => {
     if (isRetirementMoney(ls.targetParentCategory))
-      return retirementFirst(accts, parentOf);
+      return retirementFirst(accounts, parentOf);
     // Portfolio savings never go to the projection-only account unless
     // there's nowhere else for them.
-    const real = accts.filter((ia) => !ia.projectedOnly);
-    return real.length > 0 ? portfolioFirst(real, parentOf) : [...accts];
+    const real = accounts.filter((ia) => !ia.projectedOnly);
+    return real.length > 0 ? portfolioFirst(real, parentOf) : [...accounts];
   };
   return (
     byParent(
-      indAccts.filter(
+      indAccounts.filter(
         (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
       ),
     )[0] ??
-    byParent(indAccts.filter((ia) => ia.category === ls.targetAccount))[0]
+    byParent(indAccounts.filter((ia) => ia.category === ls.targetAccount))[0]
   );
 }

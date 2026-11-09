@@ -46,7 +46,7 @@ export function rmdIncomeByOwner(
             personName:
               input.socialSecurityEntries?.find((e) => e.personId === personId)
                 ?.personName ??
-              ctx.indAccts.find((a) => a.ownerPersonId === personId)
+              ctx.indAccounts.find((a) => a.ownerPersonId === personId)
                 ?.ownerName ??
               "Account owner",
             amount: rmdAmount,

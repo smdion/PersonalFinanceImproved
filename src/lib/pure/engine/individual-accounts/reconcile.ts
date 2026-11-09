@@ -47,9 +47,9 @@ import {
  * drift out of sync with it.
  */
 export function buildIndividualYearBalances(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   indParentCat: Map<string, string>,
   phase: "accumulation" | "decumulation",
   maps: {
@@ -68,10 +68,10 @@ export function buildIndividualYearBalances(
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
   const drawFor = (k: string): AccountYearDraw => {
-    const acctEligibility = eligibility?.byKey.get(k);
+    const accountEligibility = eligibility?.byKey.get(k);
     return {
       withdrawal: maps.withdrawal?.get(k) ?? 0,
-      ...(acctEligibility
+      ...(accountEligibility
         ? {
             // "Locked" (whole-account, backward-compatible UI meaning) —
             // every dollar in the account is penalty-exposed. A PARTIALLY
@@ -80,15 +80,15 @@ export function buildIndividualYearBalances(
             // nonzero penaltyExposedAmount (eligibility.ts's module docblock:
             // `locked` vs `penalty-exposed`).
             eligibilityLocked:
-              acctEligibility.penaltyFreeAmount <= 0.005 &&
-              acctEligibility.penaltyExposedAmount > 0,
-            reason: acctEligibility.reason,
+              accountEligibility.penaltyFreeAmount <= 0.005 &&
+              accountEligibility.penaltyExposedAmount > 0,
+            reason: accountEligibility.reason,
             // Start-of-year capacity (before this year's withdrawals and
             // growth) — the same numbers routing used.
-            penaltyFreeAmount: acctEligibility.penaltyFreeAmount,
-            penaltyExposedAmount: acctEligibility.penaltyExposedAmount,
+            penaltyFreeAmount: accountEligibility.penaltyFreeAmount,
+            penaltyExposedAmount: accountEligibility.penaltyExposedAmount,
             allowPenalizedWithdrawals:
-              acctEligibility.allowPenalizedWithdrawals,
+              accountEligibility.allowPenalizedWithdrawals,
           }
         : {}),
     };
@@ -96,12 +96,14 @@ export function buildIndividualYearBalances(
   // The roth group, when this account has any of its fields.
   const rothFields = (roth: AccountYearRothBasis) =>
     Object.keys(roth).length > 0 ? { roth } : {};
-  const rows = indAccts.map((ia): IndividualAccountYearBalance => {
+  const rows = indAccounts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
     const projectedFields = ia.projectedOnly ? { projectedOnly: true } : {};
     const balance =
-      Math.abs(indBal.get(k) ?? 0) < 1 ? 0 : roundToCents(indBal.get(k) ?? 0);
+      Math.abs(indBalance.get(k) ?? 0) < 1
+        ? 0
+        : roundToCents(indBalance.get(k) ?? 0);
     const basisState = maps.basis?.get(k);
     const basisFields: AccountYearRothBasis = basisState
       ? {
@@ -193,14 +195,14 @@ export function buildIndividualYearBalances(
  * Mutates `indBalance` in place.
  */
 export function clampIndividualBalances(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
 ): void {
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const k = indKey(ia);
-    const v = indBal.get(k) ?? 0;
-    if (v < 0) indBal.set(k, 0);
+    const v = indBalance.get(k) ?? 0;
+    if (v < 0) indBalance.set(k, 0);
   }
 }
 
@@ -234,39 +236,39 @@ export function clampIndividualBalances(
  * absorbed.
  */
 export function reconcileIndividualToAggregate(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
-  acctBal: AccountBalances,
+  indBalance: Map<string, number>,
+  accountBalance: AccountBalances,
 ): string[] {
   const diagnostics: string[] = [];
   for (const cat of getAllCategories()) {
-    const catAccts = indAccts.filter((ia) => ia.category === cat);
-    if (catAccts.length === 0) continue;
+    const catAccounts = indAccounts.filter((ia) => ia.category === cat);
+    if (catAccounts.length === 0) continue;
     const bs = getAccountTypeConfig(cat).balanceStructure;
     if (bs === "roth_traditional") {
       reconcileGroup(
-        catAccts.filter((ia) => isPreTaxType(ia.taxType)),
+        catAccounts.filter((ia) => isPreTaxType(ia.taxType)),
         indKey,
-        indBal,
-        getTraditionalBalance(acctBal[cat]),
+        indBalance,
+        getTraditionalBalance(accountBalance[cat]),
         `${cat} traditional`,
         diagnostics,
       );
       reconcileGroup(
-        catAccts.filter((ia) => isTaxFreeBucket(ia.taxType)),
+        catAccounts.filter((ia) => isTaxFreeBucket(ia.taxType)),
         indKey,
-        indBal,
-        getRothBalance(acctBal[cat]),
+        indBalance,
+        getRothBalance(accountBalance[cat]),
         `${cat} Roth`,
         diagnostics,
       );
     } else {
       reconcileGroup(
-        catAccts,
+        catAccounts,
         indKey,
-        indBal,
-        getTotalBalance(acctBal[cat]),
+        indBalance,
+        getTotalBalance(accountBalance[cat]),
         cat,
         diagnostics,
       );
@@ -287,19 +289,19 @@ export function reconcileIndividualToAggregate(
  *  only what's left from Portfolio. A group with no Portfolio account
  *  reconciles exactly as before (by balance; no weight → left alone). */
 function reconcileGroup(
-  groupAccts: IndividualAccountInput[],
+  groupAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   target: number,
   label: string,
   diagnostics: string[],
 ): void {
-  if (groupAccts.length === 0) return;
-  const bal = (ia: IndividualAccountInput) =>
-    Math.max(0, indBal.get(indKey(ia)) ?? 0);
-  const sumOf = (accts: IndividualAccountInput[]) =>
-    accts.reduce((s, ia) => s + bal(ia), 0);
-  const sumInd = sumOf(groupAccts);
+  if (groupAccounts.length === 0) return;
+  const balance = (ia: IndividualAccountInput) =>
+    Math.max(0, indBalance.get(indKey(ia)) ?? 0);
+  const sumOf = (accounts: IndividualAccountInput[]) =>
+    accounts.reduce((s, ia) => s + balance(ia), 0);
+  const sumInd = sumOf(groupAccounts);
   const delta = roundToCents(target - sumInd);
   if (delta === 0) return;
 
@@ -309,53 +311,53 @@ function reconcileGroup(
     );
   }
 
-  const retirement = groupAccts.filter((ia) =>
+  const retirement = groupAccounts.filter((ia) =>
     isRetirementMoney(ia.parentCategory),
   );
-  const portfolio = groupAccts.filter(
+  const portfolio = groupAccounts.filter(
     (ia) => !isRetirementMoney(ia.parentCategory),
   );
 
   // Spread `amount` over `accounts` by balance (equally when they hold
   // nothing and `equalWhenEmpty`); returns what couldn't be placed.
   const spread = (
-    accts: IndividualAccountInput[],
+    accounts: IndividualAccountInput[],
     amount: number,
     equalWhenEmpty: boolean,
   ): number => {
-    if (accts.length === 0 || amount === 0) return amount;
-    const total = sumOf(accts);
+    if (accounts.length === 0 || amount === 0) return amount;
+    const total = sumOf(accounts);
     if (total <= 0 && !equalWhenEmpty) return amount;
     let distributed = 0;
     let largestKey: string | null = null;
-    let largestBal = -Infinity;
-    for (const ia of accts) {
+    let largestBalance = -Infinity;
+    for (const ia of accounts) {
       const k = indKey(ia);
-      const b = bal(ia);
-      if (b > largestBal) {
-        largestBal = b;
+      const b = balance(ia);
+      if (b > largestBalance) {
+        largestBalance = b;
         largestKey = k;
       }
       const share = roundToCents(
-        amount * (total > 0 ? b / total : 1 / accts.length),
+        amount * (total > 0 ? b / total : 1 / accounts.length),
       );
-      const newBal = Math.max(0, roundToCents(b + share));
-      indBal.set(k, newBal);
-      distributed += roundToCents(newBal - b);
+      const newBalance = Math.max(0, roundToCents(b + share));
+      indBalance.set(k, newBalance);
+      distributed += roundToCents(newBalance - b);
     }
     const residual = roundToCents(amount - distributed);
     if (residual !== 0 && largestKey) {
-      const b = Math.max(0, indBal.get(largestKey) ?? 0);
-      const newBal = Math.max(0, roundToCents(b + residual));
-      indBal.set(largestKey, newBal);
-      return roundToCents(residual - (newBal - b));
+      const b = Math.max(0, indBalance.get(largestKey) ?? 0);
+      const newBalance = Math.max(0, roundToCents(b + residual));
+      indBalance.set(largestKey, newBalance);
+      return roundToCents(residual - (newBalance - b));
     }
     return 0;
   };
 
   let unplaced: number;
   if (portfolio.length === 0 || retirement.length === 0) {
-    unplaced = spread(groupAccts, delta, false);
+    unplaced = spread(groupAccounts, delta, false);
   } else if (delta > 0) {
     unplaced = spread(retirement, delta, true);
   } else {
@@ -369,7 +371,7 @@ function reconcileGroup(
     );
   }
 
-  if (unplaced !== 0 && sumOf(groupAccts) <= 0 && target > 0) {
+  if (unplaced !== 0 && sumOf(groupAccounts) <= 0 && target > 0) {
     // No weight to distribute by — inventing one would be a second
     // allocation policy. Leave indBalance alone; the diagnostic above (for
     // >$1 drift) already surfaces this if it's material.
@@ -390,16 +392,16 @@ function reconcileGroup(
  * final balance for the year. Mutates `indBasis` in place.
  */
 export function clampIndividualBasis(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBasis: Map<string, RothBasisState>,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
 ): void {
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const k = indKey(ia);
     const state = indBasis.get(k);
     if (!state) continue;
-    const balance = Math.max(0, indBal.get(k) ?? 0);
+    const balance = Math.max(0, indBalance.get(k) ?? 0);
     indBasis.set(k, clampBasisToBalance(state, balance));
   }
 }

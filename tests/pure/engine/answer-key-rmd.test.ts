@@ -173,10 +173,12 @@ function ownerRmds(
     slots,
     totalTraditionalWithdrawal: routedFromIra,
     totalWithdrawal: routedFromIra,
-    acctBal: iraBalances(accounts.reduce((s, a) => s + a.startingBalance, 0)),
-    indAccts: accounts,
+    accountBalance: iraBalances(
+      accounts.reduce((s, a) => s + a.startingBalance, 0),
+    ),
+    indAccounts: accounts,
     indKey,
-    indBal: new Map(accounts.map((a) => [a.name, a.startingBalance])),
+    indBalance: new Map(accounts.map((a) => [a.name, a.startingBalance])),
   });
 }
 

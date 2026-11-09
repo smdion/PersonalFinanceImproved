@@ -1859,8 +1859,8 @@ describe("one config entry adds an account type", () => {
       Reflect.set(account, "category", SYNTHETIC_CATEGORY);
       const exposure = computeWithdrawalEligibility({
         year: 2030,
-        indAccts: [account],
-        indBal: new Map([["k", 1000]]),
+        indAccounts: [account],
+        indBalance: new Map([["k", 1000]]),
         indKey: () => "k",
       });
       expect(exposure.byKey.get("k")?.penaltyFreeAmount).toBe(0);

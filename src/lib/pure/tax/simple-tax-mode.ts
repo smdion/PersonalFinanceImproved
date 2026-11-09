@@ -23,7 +23,7 @@ import type { AccountCategory } from "../../config/account-types";
 import type {
   AccumulationDefaults,
   ProjectionInput,
-  RetirementContribSlice,
+  RetirementContributionSlice,
 } from "../engine/types";
 import type {
   IndividualAccountInput,
@@ -35,7 +35,7 @@ export type SimpleTaxModeParts = {
   retirementBuckets: TaxBuckets;
   /** The default contribution profile's retirement slice, plus the
    *  routing splits recomputed from it. */
-  defaults: RetirementContribSlice & {
+  defaults: RetirementContributionSlice & {
     accountSplits: AccumulationDefaults["accountSplits"];
     taxSplits: AccumulationDefaults["taxSplits"];
   };

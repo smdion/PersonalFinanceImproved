@@ -84,8 +84,8 @@ function yearDraw(opts: {
   const key = indKey(opts.account);
   const exposure = computeWithdrawalEligibility({
     year: opts.year,
-    indAccts: [opts.account],
-    indBal: new Map([[key, opts.balance ?? BIG_BALANCE]]),
+    indAccounts: [opts.account],
+    indBalance: new Map([[key, opts.balance ?? BIG_BALANCE]]),
     indKey,
     indBasis: opts.basis ? new Map([[key, opts.basis]]) : undefined,
   });

@@ -75,7 +75,7 @@ export function deriveBasisRankingInputs(params: {
    *  for this ordering-only refinement isn't worth the added risk --
    *  same category of scope boundary as the module docblock's "does not
    *  model IRMAA." */
-  indAccts?: {
+  indAccounts?: {
     name: string;
     category: string;
     taxType: string;
@@ -86,22 +86,22 @@ export function deriveBasisRankingInputs(params: {
   indKey?: IndKeyFn;
   /** With both, a qualified owner's whole Roth balance is free capacity:
    *  growth past 59½ costs no more than basis does. */
-  indBal?: ReadonlyMap<string, number>;
+  indBalance?: ReadonlyMap<string, number>;
   year?: number;
 }): { rothBasisAvailable: number | undefined; brokerageBasisRatio: number } {
-  const { balances, indBasis, indAccts, indKey, indBal, year } = params;
+  const { balances, indBasis, indAccounts, indKey, indBalance, year } = params;
   let rothBasisAvailable: number | undefined;
   if (indBasis) {
-    if (indAccts && indKey) {
-      rothBasisAvailable = indAccts.reduce((s, ia) => {
+    if (indAccounts && indKey) {
+      rothBasisAvailable = indAccounts.reduce((s, ia) => {
         if (!isTaxFreeBucket(ia.taxType)) return s;
         if (!isRetirementMoney(ia.parentCategory)) return s;
         if (
-          indBal &&
+          indBalance &&
           year !== undefined &&
           isQualifiedRothOwner(ia.ownerBirthYear, year)
         )
-          return s + Math.max(0, indBal.get(indKey(ia)) ?? 0);
+          return s + Math.max(0, indBalance.get(indKey(ia)) ?? 0);
         const state = indBasis.get(indKey(ia));
         return state ? s + state.contributionBasis + state.conversionBasis : s;
       }, 0);

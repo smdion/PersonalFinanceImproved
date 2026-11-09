@@ -28,18 +28,18 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 export function closeDecumulationYear(
   returnRate: number,
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   state: ProjectionLoopState,
   spendingState: ProjectionLoopState["spendingState"],
   hasIndividualAccounts: boolean,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   ctx: ProjectionContext,
-  decumContribByAccount: Map<string, number>,
+  decumContributionByAccount: Map<string, number>,
   indBasis: ProjectionLoopState["indBasis"],
   indParentCat: ProjectionContext["indParentCat"],
-  decIndWithdrawal: Map<string, number>,
+  decumulationIndWithdrawal: Map<string, number>,
   basisDraws: Map<string, BasisDraw>,
   brokBasis: ProjectionLoopState["brokBasis"],
   eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
@@ -48,7 +48,7 @@ export function closeDecumulationYear(
   age: number,
 ) {
   // Apply growth
-  applyGrowth({ effectiveReturn: returnRate, balances, acctBal });
+  applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
@@ -56,36 +56,38 @@ export function closeDecumulationYear(
   spendingState.priorYearReturn = returnRate;
   spendingState.priorYearSpending = state.projectedExpenses;
   // Per-individual-account growth (decumulation)
-  const decIndGrowth = hasIndividualAccounts
-    ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
+  const decumulationIndGrowth = hasIndividualAccounts
+    ? applyIndividualGrowth(indAccounts, indKey, indBalance, returnRate, true)
     : new Map<string, number>();
   // Each owner's RMD base is year-end, after growth — like the household's
   // above and accumulation's.
   updatePerPersonTradBalance(ctx, state);
 
   // The Portfolio contributions passed in, if any.
-  const decIndContribs =
-    decumContribByAccount.size > 0 ? decumContribByAccount : undefined;
+  const decumulationIndContributions =
+    decumContributionByAccount.size > 0
+      ? decumContributionByAccount
+      : undefined;
 
   // Tracked Roth basis clamped to the balance before the row is built
   // (clampBasisToBalance): losses can leave basis above what's held.
   if (hasIndividualAccounts) {
-    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
+    clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
   }
 
   // Build individual account year balances (decumulation)
-  const decIndYearBalances: IndividualAccountYearBalance[] =
+  const decumulationIndYearBalances: IndividualAccountYearBalance[] =
     hasIndividualAccounts
       ? buildIndividualYearBalances(
-          indAccts,
+          indAccounts,
           indKey,
-          indBal,
+          indBalance,
           indParentCat,
           "decumulation",
           {
-            contribs: decIndContribs,
-            growth: decIndGrowth,
-            withdrawal: decIndWithdrawal,
+            contribs: decumulationIndContributions,
+            growth: decumulationIndGrowth,
+            withdrawal: decumulationIndWithdrawal,
             basis: indBasis,
             draws: basisDraws,
             brokerageBasis: brokBasis,
@@ -95,8 +97,8 @@ export function closeDecumulationYear(
       : [];
 
   // Zero out rounding dust
-  followDraws(indAccts, indKey, indBal, brokBasis, () =>
-    cleanupDust(balances, acctBal, indAccts, indKey, indBal),
+  followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+    cleanupDust(balances, accountBalance, indAccounts, indKey, indBalance),
   );
 
   // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
@@ -105,22 +107,28 @@ export function closeDecumulationYear(
   if (hasIndividualAccounts) {
     routeWarnings.push(
       ...followReconciliation(
-        indAccts,
+        indAccounts,
         indKey,
-        indBal,
+        indBalance,
         brokBasis,
         balances.afterTaxBasis,
-        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+        () =>
+          reconcileIndividualToAggregate(
+            indAccounts,
+            indKey,
+            indBalance,
+            accountBalance,
+          ),
       ),
     );
     // The aggregate basis is the accounts' sum.
     syncAggregateBasis(
-      indAccts,
+      indAccounts,
       indKey,
-      indBal,
+      indBalance,
       brokBasis,
       balances,
-      acctBal,
+      accountBalance,
       routeWarnings,
     );
   }
@@ -128,12 +136,12 @@ export function closeDecumulationYear(
   // Basis re-clamped after dust cleanup: an account cleaned to $0 carries $0
   // basis into next year (the row already shows the pre-cleanup figure).
   if (hasIndividualAccounts) {
-    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
+    clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
   }
   const yearEnd = scopedBalances(
     balances,
     hasIndividualAccounts
-      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );
 
@@ -144,5 +152,5 @@ export function closeDecumulationYear(
     state.retirementDepletionAge = age;
   }
 
-  return { decIndYearBalances, yearEnd };
+  return { decumulationIndYearBalances, yearEnd };
 }

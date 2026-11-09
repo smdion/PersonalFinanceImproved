@@ -68,10 +68,10 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
-    expect(result.estTax).toBe(0);
+    expect(result.estimatedTax).toBe(0);
     expect(result.effectiveTaxRate).toBe(0);
     expect(result.grossUpFactor).toBe(1);
     expect(result.targetWithdrawal).toBe(0);
@@ -97,7 +97,7 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
     // Bounds only: an over-withdrawal passes them. The gross-up's equation
@@ -138,7 +138,7 @@ describe("estimateWithdrawalTaxCost", () => {
         afterTax: 100,
         afterTaxBasis: 50,
       }),
-      acctBal: makeAccountBalances({
+      accountBalance: makeAccountBalances({
         preTax: 100,
         taxFree: 100,
         hsa: 100,
@@ -175,7 +175,7 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
     expect(result.grossUpFactor).toBe(1);
@@ -201,7 +201,7 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
     expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
@@ -226,7 +226,7 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
     expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
@@ -252,7 +252,7 @@ describe("estimateWithdrawalTaxCost", () => {
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
     // taxableSS should be computed via IRS formula (not flat 85%)
@@ -281,10 +281,10 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     // withdrawalSplits directly, so a config-driven estimate must differ.
     // Both 401k and brokerage need real balance so redistribution (when one
     // target is unfunded) can't mask the split's effect.
-    const acctBal = zeroedBalances();
-    setTraditional(acctBal["401k"], 300000);
-    setBalance(acctBal.brokerage, 300000);
-    setBasis(acctBal.brokerage, 300000); // 0 gains -- isolates the traditional-vs-brokerage tax gap
+    const accountBalance = zeroedBalances();
+    setTraditional(accountBalance["401k"], 300000);
+    setBalance(accountBalance.brokerage, 300000);
+    setBasis(accountBalance.brokerage, 300000); // 0 gains -- isolates the traditional-vs-brokerage tax gap
     const balances = makeTaxBuckets({
       preTax: 300000,
       taxFree: 0,
@@ -310,7 +310,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       }),
       taxRates,
       balances,
-      acctBal,
+      accountBalance,
       totalBalance: 1000000,
     });
 
@@ -331,14 +331,16 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       }),
       taxRates,
       balances,
-      acctBal,
+      accountBalance,
       totalBalance: 1000000,
     });
 
     // 401k here is 100% traditional (per withdrawalTaxPreference default),
     // brokerage is untaxed in this fixture (0 gains) -- so weighting more
     // toward 401k must cost more tax than weighting toward brokerage.
-    expect(mostlyTraditional.estTax).toBeGreaterThan(mostlyRoth.estTax);
+    expect(mostlyTraditional.estimatedTax).toBeGreaterThan(
+      mostlyRoth.estimatedTax,
+    );
   });
 
   it("waterfall + rothBracketTarget: estimate reflects the real overlay's forced-traditional preference", () => {
@@ -359,7 +361,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       config,
       taxRates: { ...taxRates, rothBracketTarget: 0.1 },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
 
@@ -371,21 +373,24 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       config,
       taxRates: { ...taxRates, rothBracketTarget: undefined },
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
+      accountBalance: makeAccountBalances(),
       totalBalance: 1050000,
     });
 
     // The overlay caps traditional withdrawals at a low bracket target,
     // which must change the estimated tax relative to no cap at all.
-    expect(withOverlay.estTax).not.toBeCloseTo(withoutOverlay.estTax, 0);
+    expect(withOverlay.estimatedTax).not.toBeCloseTo(
+      withoutOverlay.estimatedTax,
+      0,
+    );
   });
 
   it("bracket_filling: estimate respects withdrawalAccountCaps", () => {
     // Only 401k funded (via zeroedBalances + direct assignment) so a cap on
     // it can't be silently backfilled by a sibling traditional account --
     // makeAccountBalances' even 401k/403b/ira split would mask that.
-    const acctBal = zeroedBalances();
-    setTraditional(acctBal["401k"], 500000);
+    const accountBalance = zeroedBalances();
+    setTraditional(accountBalance["401k"], 500000);
     const balances = makeTaxBuckets({
       preTax: 500000,
       taxFree: 0,
@@ -404,7 +409,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       }),
       taxRates,
       balances,
-      acctBal,
+      accountBalance,
       totalBalance: 500000,
     });
 
@@ -422,7 +427,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       }),
       taxRates,
       balances,
-      acctBal,
+      accountBalance,
       totalBalance: 500000,
     });
 
@@ -451,7 +456,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "bracket_filling",
     });
-    const acctBal = makeAccountBalances();
+    const accountBalance = makeAccountBalances();
     const balances = makeTaxBuckets();
 
     const est = estimateWithdrawalTaxCost({
@@ -462,16 +467,21 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       config,
       taxRates,
       balances,
-      acctBal,
+      accountBalance,
       totalBalance: 1050000,
     });
 
-    const routeResult = routeForMode(est.targetWithdrawal, config, acctBal, {
-      taxBrackets: taxRates.taxBrackets,
-      ltcgBrackets: shippedTaxTables().ltcgBrackets,
-      rothBracketTarget: taxRates.rothBracketTarget,
-      taxableSS: 0,
-    });
+    const routeResult = routeForMode(
+      est.targetWithdrawal,
+      config,
+      accountBalance,
+      {
+        taxBrackets: taxRates.taxBrackets,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
+        rothBracketTarget: taxRates.rothBracketTarget,
+        taxableSS: 0,
+      },
+    );
     const taxResult = computeTaxFromSlots({
       rothTaxableGrowth: 0,
       penaltyCost: 0,
@@ -482,7 +492,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       filingStatus: null,
     });
 
-    expect(est.estTax).toBe(taxResult.taxCost);
+    expect(est.estimatedTax).toBe(taxResult.taxCost);
   });
 });
 
@@ -506,7 +516,7 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
       rothBracketTarget: 0.22,
     },
     balances: makeTaxBuckets(),
-    acctBal: makeAccountBalances(),
+    accountBalance: makeAccountBalances(),
     totalBalance: 1050000,
   };
 
@@ -518,10 +528,10 @@ describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Securit
     expect(r.targetWithdrawal).toBe(60000);
     expect(r.grossUpFactor).toBe(1);
     expect(r.derivedAfterTaxNeed).toBeCloseTo(
-      60000 - r.estTax - r.estPenalty,
+      60000 - r.estimatedTax - r.estimatedPenalty,
       2,
     );
-    expect(r.estTax).toBeGreaterThan(0);
+    expect(r.estimatedTax).toBeGreaterThan(0);
     expect(r.status).toBe("met");
   });
 
@@ -562,7 +572,7 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
     }),
     taxRates,
     balances: makeTaxBuckets(),
-    acctBal: makeAccountBalances(),
+    accountBalance: makeAccountBalances(),
     totalBalance: 1050000,
   };
 
@@ -576,7 +586,7 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
         ssIncome: 80000,
         fixedGrossWithdrawal: amount,
       });
-      expect(r.estTax, `amount ${amount}`).toBeGreaterThan(amount);
+      expect(r.estimatedTax, `amount ${amount}`).toBeGreaterThan(amount);
       expect(r.status, `amount ${amount}`).toBe("met");
     }
   });
@@ -593,8 +603,8 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
 
   it("a fixed withdrawal capped by the router is short by the routed gap", () => {
     // Only the 401(k) holds money, and its cap lets $1,000 out.
-    const acctBal = zeroedBalances();
-    setTraditional(acctBal["401k"], 500000);
+    const accountBalance = zeroedBalances();
+    setTraditional(accountBalance["401k"], 500000);
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "bracket_filling",
       withdrawalAccountCaps: {
@@ -605,7 +615,7 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
     const r = estimateWithdrawalTaxCost({
       ...base,
       config,
-      acctBal,
+      accountBalance,
       balances: makeTaxBuckets({
         preTax: 500000,
         taxFree: 0,
@@ -616,7 +626,7 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
       totalBalance: 500000,
       fixedGrossWithdrawal: 50000,
     });
-    const routed = routeForMode(50000, config, acctBal, {
+    const routed = routeForMode(50000, config, accountBalance, {
       taxBrackets: TEST_BRACKETS,
       ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.22,
@@ -642,10 +652,10 @@ describe("estimateWithdrawalTaxCost — met or capped, arm by arm", () => {
   it("gross-up on, the pool holding just the need: capped by the tax", () => {
     const r = estimateWithdrawalTaxCost({ ...base, totalBalance: 60000 });
     expect(r.targetWithdrawal).toBe(60000);
-    expect(r.estTax).toBeGreaterThan(0);
+    expect(r.estimatedTax).toBeGreaterThan(0);
     expect(r).toMatchObject({
       status: "capped",
-      shortfall: Math.round((r.estTax + r.estPenalty) * 100) / 100,
+      shortfall: Math.round((r.estimatedTax + r.estimatedPenalty) * 100) / 100,
     });
   });
 });

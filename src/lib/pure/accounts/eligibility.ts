@@ -213,12 +213,12 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
  */
 export function computeWithdrawalEligibility(input: {
   year: number;
-  indAccts: EligibilityAccountInput[];
-  indBal: Map<string, number>;
+  indAccounts: EligibilityAccountInput[];
+  indBalance: Map<string, number>;
   indKey: IndKeyFn;
   indBasis?: Map<string, RothBasisState>;
 }): EligibilityRecord {
-  const { year, indAccts, indBal, indKey, indBasis } = input;
+  const { year, indAccounts, indBalance, indKey, indBasis } = input;
   const byKey = new Map<string, AccountEligibility>();
   const penaltyExposedTrad = zeroByCategory();
   const penaltyExposedRoth = zeroByCategory();
@@ -230,9 +230,9 @@ export function computeWithdrawalEligibility(input: {
   let totalPenaltyExposedStillExcluded = 0;
   const reachableByCategory: Partial<Record<AccountCategory, number>> = {};
 
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const key = indKey(ia);
-    const balance = indBal.get(key) ?? 0;
+    const balance = indBalance.get(key) ?? 0;
     const birthYear = ia.ownerBirthYear;
 
     let reason: EligibilityReason = { kind: "no_owner" };

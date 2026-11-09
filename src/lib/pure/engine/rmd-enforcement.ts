@@ -35,7 +35,7 @@ export interface RmdEnforcementInput {
   slots: DecumulationSlot[];
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   /** When provided, overrides the internal RMD calculation. Tests only:
    *  multi-person households go through `enforceOwnerRmds`. */
   overrideRmdRequired?: number;
@@ -93,7 +93,8 @@ function routedTraditionalDraw(slots: DecumulationSlot[]): number {
  * new ones). Returns updated totals and diagnostic info.
  */
 export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
-  const { age, rmdStartAge, priorYearEndTradBalance, slots, acctBal } = input;
+  const { age, rmdStartAge, priorYearEndTradBalance, slots, accountBalance } =
+    input;
   let { totalTraditionalWithdrawal, totalWithdrawal } = input;
 
   const warnings: string[] = [];
@@ -120,7 +121,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
         const tradCategories = categoriesWithTaxPreference();
         // Compute available capacity per category: balance minus what routing already took
         const tradBalByCategory = tradCategories.map((cat) => {
-          const fullBal = getTraditionalBalance(acctBal[cat]);
+          const fullBal = getTraditionalBalance(accountBalance[cat]);
           const alreadyRouted =
             slots.find((s) => s.category === cat)?.traditionalWithdrawal ?? 0;
           const nonRetirementAmount = input.nonRetirement?.trad[cat] ?? 0;
@@ -265,10 +266,10 @@ interface OwnerRmdInput {
   slots: DecumulationSlot[];
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
-  acctBal: AccountBalances;
-  indAccts: IndividualAccountInput[];
+  accountBalance: AccountBalances;
+  indAccounts: IndividualAccountInput[];
   indKey: IndKeyFn;
-  indBal: Map<string, number>;
+  indBalance: Map<string, number>;
   nonRetirement?: NonRetirementExclusion;
 }
 
@@ -308,7 +309,8 @@ interface OwnerRmdResult {
  * Mutates `slots` in place.
  */
 export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
-  const { owners, slots, acctBal, indAccts, indKey, indBal } = input;
+  const { owners, slots, accountBalance, indAccounts, indKey, indBalance } =
+    input;
   const tradCategories = categoriesWithTaxPreference();
   const catRoom = new Map<AccountCategory, number>(
     tradCategories.map((cat) => [
@@ -316,7 +318,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
       Math.max(
         0,
         roundToCents(
-          getTraditionalBalance(acctBal[cat]) -
+          getTraditionalBalance(accountBalance[cat]) -
             (input.nonRetirement?.trad[cat] ?? 0),
         ),
       ),
@@ -329,7 +331,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
 
   for (const { personId, personName, required } of owners) {
     if (required <= 0) continue;
-    const accts = indAccts.filter(
+    const accts = indAccounts.filter(
       (ia) =>
         rmdOwnerOf(ia, input.primaryPersonId) === personId &&
         isPreTaxType(ia.taxType) &&
@@ -341,7 +343,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
         0,
         Math.min(
           roundToCents(
-            (indBal.get(indKey(ia)) ?? 0) - (pins.get(indKey(ia)) ?? 0),
+            (indBalance.get(indKey(ia)) ?? 0) - (pins.get(indKey(ia)) ?? 0),
           ),
           catRoom.get(ia.category) ?? 0,
         ),

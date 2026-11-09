@@ -110,7 +110,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
           resolveDecumulationConfig(
             input.retirementYear,
             input.decumulationDefaults,
-            ctx.sortedDecOverrides,
+            ctx.sortedDecumulationOverrides,
           ).withdrawalRate,
       );
 

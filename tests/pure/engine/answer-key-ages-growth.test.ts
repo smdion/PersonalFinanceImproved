@@ -76,9 +76,9 @@ describe("answer key: a year's return on each balance", () => {
       afterTax: 80_000,
       afterTaxBasis: 50_000,
     };
-    const acctBal = accountBalancesFromTaxBuckets(balances);
-    applyGrowth({ effectiveReturn: r, balances, acctBal });
-    const b = acctBal.brokerage;
+    const accountBalance = accountBalancesFromTaxBuckets(balances);
+    applyGrowth({ effectiveReturn: r, balances, accountBalance });
+    const b = accountBalance.brokerage;
     return {
       ...balances,
       brokerageValue: b.structure === "basis_tracking" ? b.balance : NaN,
@@ -135,7 +135,7 @@ describe("answer key: a year's return on each balance", () => {
     applyGrowth({
       effectiveReturn: 0.0333,
       balances,
-      acctBal: accountBalancesFromTaxBuckets(balances),
+      accountBalance: accountBalancesFromTaxBuckets(balances),
     });
     cents(balances.preTax, 106_770.89);
   });

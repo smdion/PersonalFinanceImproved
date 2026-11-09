@@ -53,9 +53,9 @@ export function runDecumulationYear(
   const {
     input,
     budgetOverrideMap,
-    sortedDecOverrides,
+    sortedDecumulationOverrides,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
     indParentCat,
     rmdStartAge,
@@ -63,10 +63,10 @@ export function runDecumulationYear(
   } = ctx;
   const {
     balances,
-    acctBal,
+    accountBalance,
     priorYearEndTradBalance,
     priorYearEndTradByPerson,
-    indBal,
+    indBalance,
     indBasis,
     brokBasis,
     spendingState,
@@ -87,27 +87,33 @@ export function runDecumulationYear(
   const config = resolveDecumulationConfig(
     year,
     decumulationDefaults,
-    sortedDecOverrides,
+    sortedDecumulationOverrides,
   );
 
   // Each account's penalty-free/locked split this year, computed once for
   // both routeForMode sites (the solver's estimate and the real draw), from
   // the running Roth basis the UI shows.
   const eligibility = hasIndividualAccounts
-    ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
+    ? computeWithdrawalEligibility({
+        year,
+        indAccounts,
+        indBalance,
+        indKey,
+        indBasis,
+      })
     : undefined;
   // Portfolio-parented money never funds retirement spending: one exclusion
   // a year, read by every step that decides what's available.
   const { nonRetirement } = setup;
 
   // Reconciliation check: accountBalance Roth total should match balances.taxFree
-  const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
-    const b = acctBal[cat];
+  const accountBalanceRothTotal = getAllCategories().reduce((s, cat) => {
+    const b = accountBalance[cat];
     return s + (b.structure === "roth_traditional" ? b.roth : 0);
   }, 0);
   const rothDivergence =
-    Math.abs(acctBalRothTotal - balances.taxFree) > 1
-      ? `[DIAG] Roth divergence: acctBal.roth=${acctBalRothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - acctBalRothTotal).toFixed(0)}`
+    Math.abs(accountBalanceRothTotal - balances.taxFree) > 1
+      ? `[DIAG] Roth divergence: acctBal.roth=${accountBalanceRothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - accountBalanceRothTotal).toFixed(0)}`
       : null;
 
   // Social Security income reduces withdrawal need (per person from each
@@ -131,21 +137,21 @@ export function runDecumulationYear(
     hasIndividualAccounts,
     rmdStartAgeByPerson,
     year,
-    indAccts,
+    indAccounts,
     ctx,
-    indBal,
+    indBalance,
     indKey,
     decumulationDefaults,
     config,
     balances,
-    acctBal,
+    accountBalance,
   );
 
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
   // estimate, the ranking and the real tax.
   const retirementBasisRatio = hasIndividualAccounts
-    ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+    ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
 
   const taxRates = decumulationDefaults.distributionTaxRates;
@@ -182,7 +188,7 @@ export function runDecumulationYear(
     "medicare",
     year,
   );
-  const { afterTaxNeed, ssSurplus, taxEst, targetWithdrawal } = yearNeed(
+  const { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal } = yearNeed(
     state,
     ssIncome,
     input,
@@ -197,15 +203,15 @@ export function runDecumulationYear(
     grownStandardDeduction,
     grownLtcgBrackets,
     balances,
-    acctBal,
+    accountBalance,
     totalBalance,
     retirementBasisRatio,
     eligibility,
     nonRetirement,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     indBasis,
     year,
   );
@@ -221,20 +227,20 @@ export function runDecumulationYear(
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
   } = routeYearDraw(
-    acctBal,
+    accountBalance,
     balances,
     retirementBasisRatio,
     hasIndividualAccounts,
     indBasis,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     year,
     taxRates,
     config,
     targetWithdrawal,
     grownTaxBrackets,
-    taxEst,
+    taxEstimate,
     filingStatus,
     grownLtcgBrackets,
     grownStandardDeduction,
@@ -261,30 +267,34 @@ export function runDecumulationYear(
     rmdByPerson,
     qcdByPerson,
     ctx,
-    acctBal,
-    indAccts,
+    accountBalance,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     nonRetirement,
     routeWarnings,
     state,
     perPersonRmdTotal,
   );
 
-  const { decIndWithdrawal, basisDraws, rothTaxSplit, earlyWithdrawalPenalty } =
-    distributeYearDraws(
-      indBal,
-      hasIndividualAccounts,
-      indAccts,
-      indKey,
-      brokBasis,
-      slots,
-      eligibility,
-      ownerRmd,
-      routeWarnings,
-      indBasis,
-      year,
-    );
+  const {
+    decumulationIndWithdrawal,
+    basisDraws,
+    rothTaxSplit,
+    earlyWithdrawalPenalty,
+  } = distributeYearDraws(
+    indBalance,
+    hasIndividualAccounts,
+    indAccounts,
+    indKey,
+    brokBasis,
+    slots,
+    eligibility,
+    ownerRmd,
+    routeWarnings,
+    indBasis,
+    year,
+  );
 
   const { priceTax, taxableSS, taxFromSlots } = priceYearTax(
     slots,
@@ -299,7 +309,7 @@ export function runDecumulationYear(
     rothTaxSplit,
     earlyWithdrawalPenalty,
     brokerageBasisRatio,
-    taxEst,
+    taxEstimate,
     ssIncome,
   );
   const {
@@ -315,7 +325,7 @@ export function runDecumulationYear(
     slots,
     balances,
     ssSurplus,
-    taxEst,
+    taxEstimate,
     rmdOverrodeRouting,
     afterTaxNeed,
     state,
@@ -324,11 +334,11 @@ export function runDecumulationYear(
   const { rmdExcessAmount } = settleYearDraws(
     slots,
     balances,
-    acctBal,
+    accountBalance,
     brokerageBasisPortion,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     brokBasis,
     config,
     ctx,
@@ -354,9 +364,9 @@ export function runDecumulationYear(
     config,
     hasIndividualAccounts,
     rmdStartAgeByPerson,
-    indAccts,
+    indAccounts,
     ctx,
-    indBal,
+    indBalance,
     indKey,
     year,
     balances,
@@ -375,7 +385,7 @@ export function runDecumulationYear(
     enableIrmaaAwareness,
     grownIrmaaBracketsForCap,
     filingStatus,
-    acctBal,
+    accountBalance,
     nonRetirement,
   );
 
@@ -428,32 +438,35 @@ export function runDecumulationYear(
       taxRates,
     );
 
-  const { decumBrokerageContrib, decumContribByAccount, decumRampAmount } =
-    decumulationPortfolioContributions(
-      input,
-      yearIndex,
-      state,
-      ctx,
-      indKey,
-      indAccts,
-      indBal,
-    );
+  const {
+    decumBrokerageContribution,
+    decumContributionByAccount,
+    decumRampAmount,
+  } = decumulationPortfolioContributions(
+    input,
+    yearIndex,
+    state,
+    ctx,
+    indKey,
+    indAccounts,
+    indBalance,
+  );
 
-  const { decIndYearBalances, yearEnd } = closeDecumulationYear(
+  const { decumulationIndYearBalances, yearEnd } = closeDecumulationYear(
     returnRate,
     balances,
-    acctBal,
+    accountBalance,
     state,
     spendingState,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     ctx,
-    decumContribByAccount,
+    decumContributionByAccount,
     indBasis,
     indParentCat,
-    decIndWithdrawal,
+    decumulationIndWithdrawal,
     basisDraws,
     brokBasis,
     eligibility,
@@ -476,7 +489,7 @@ export function runDecumulationYear(
     withdrawalSized: state.portfolioWithdrawal !== null,
     budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
-    brokerageContribution: decumBrokerageContrib,
+    brokerageContribution: decumBrokerageContribution,
     brokerageRampContribution: decumRampAmount,
     targetWithdrawal,
     config,
@@ -519,8 +532,8 @@ export function runDecumulationYear(
     retirementBalance: yearEnd.retirementBalance,
     allAccountsBalance: yearEnd.allAccountsBalance,
     balanceByTaxType: { ...balances },
-    balanceByAccount: cloneAccountBalances(acctBal),
-    individualAccountBalances: decIndYearBalances,
+    balanceByAccount: cloneAccountBalances(accountBalance),
+    individualAccountBalances: decumulationIndYearBalances,
     returnRate,
     annualizedReturnRate: returnRate,
     rmdAmount,

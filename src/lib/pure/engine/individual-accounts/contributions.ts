@@ -23,13 +23,13 @@ import { credit, portfolioFirst, retirementFirst, specKeyOf } from "./ledger";
  */
 export function buildSpecToAccountMapping(
   contributionSpecs: ContributionSpec[],
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indParentCat: Map<string, string>,
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
   const specToAccount = new Map<string, string>();
   // The projection-only retirement brokerage has no contributions of its own.
-  const accts = indAccts.filter((ia) => !ia.projectedOnly);
+  const accounts = indAccounts.filter((ia) => !ia.projectedOnly);
 
   for (const spec of contributionSpecs) {
     const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
@@ -63,7 +63,7 @@ export function buildSpecToAccountMapping(
     ];
     let match: IndividualAccountInput | undefined;
     for (const rule of matchRules) {
-      match = accts.find((ia) => ia.category === spec.category && rule(ia));
+      match = accounts.find((ia) => ia.category === spec.category && rule(ia));
       if (match) break;
     }
     if (match) specToAccount.set(specKeyOf(spec), indKey(match));
@@ -75,9 +75,9 @@ export function buildSpecToAccountMapping(
 interface DistributeContributionsInput {
   slots: AccumulationSlot[];
   contributionSpecs: ContributionSpec[];
-  indAccts: IndividualAccountInput[];
+  indAccounts: IndividualAccountInput[];
   indKey: IndKeyFn;
-  indBal: Map<string, number>;
+  indBalance: Map<string, number>;
   indParentCat: Map<string, string>;
   specToAccount: Map<string, string>;
   accountsWithSpecs: Set<string>;
@@ -96,7 +96,7 @@ interface DistributeContributionsInput {
 }
 
 interface DistributeContributionsResult {
-  indContribs: Map<string, number>;
+  indContributions: Map<string, number>;
   indMatch: Map<string, number>;
   indIntentional: Map<string, number>;
   indOverflow: Map<string, number>;
@@ -115,9 +115,9 @@ export function distributeContributions(
   const {
     slots,
     contributionSpecs,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     indParentCat,
     specToAccount,
     accountsWithSpecs,
@@ -132,7 +132,7 @@ export function distributeContributions(
     employerMatchByParentCat,
   } = input;
 
-  const indContribs = new Map<string, number>();
+  const indContributions = new Map<string, number>();
   const indMatch = new Map<string, number>();
   const indIntentional = new Map<string, number>();
   const indOverflow = new Map<string, number>();
@@ -143,11 +143,11 @@ export function distributeContributions(
   // --- Step 1: Compute raw projected amount per spec (for weighting only) ---
   const lgf = Math.pow(1 + limitGrowthRate, y);
   const specRaw = new Map<string, number>();
-  const specAcct = new Map<string, string>();
+  const specAccount = new Map<string, string>();
   for (const spec of contributionSpecs) {
     const sk = specKeyOf(spec);
-    const acctName = specToAccount.get(sk);
-    if (!acctName) continue;
+    const accountName = specToAccount.get(sk);
+    if (!accountName) continue;
     const projected = roundToCents(
       projectSpecAmount(spec, {
         projectedSalary,
@@ -158,7 +158,7 @@ export function distributeContributions(
       }),
     );
     specRaw.set(sk, projected);
-    specAcct.set(sk, acctName);
+    specAccount.set(sk, accountName);
   }
 
   // --- Step 2: Distribute slot totals to individual accounts using spec weights ---
@@ -179,11 +179,11 @@ export function distributeContributions(
       for (const sp of allSpecs) {
         if (isRetirementMoney(sp.parentCategory)) continue;
         const sk = specKeyOf(sp);
-        const acctName = specAcct.get(sk);
-        if (!acctName) continue;
+        const accountName = specAccount.get(sk);
+        if (!accountName) continue;
         const portion = roundToCents(Math.min(specRaw.get(sk) ?? 0, remaining));
         if (portion <= 0) continue;
-        credit(acctName, portion, [indContribs, indBal]);
+        credit(accountName, portion, [indContributions, indBalance]);
         remaining -= portion;
       }
       const specs = allSpecs.filter((sp) =>
@@ -200,12 +200,12 @@ export function distributeContributions(
       // Pre-allocate fixed specs their raw amount (capped at slot total)
       for (const sp of fixedSpecs) {
         const sk = specKeyOf(sp);
-        const acctName = specAcct.get(sk);
-        if (!acctName) continue;
+        const accountName = specAccount.get(sk);
+        if (!accountName) continue;
         const rawAmount = specRaw.get(sk) ?? 0;
         const portion = roundToCents(Math.min(rawAmount, remaining));
         if (portion <= 0) continue;
-        credit(acctName, portion, [indContribs, indBal]);
+        credit(accountName, portion, [indContributions, indBalance]);
         remaining -= portion;
       }
 
@@ -217,14 +217,14 @@ export function distributeContributions(
         );
         for (const sp of scalingSpecs) {
           const sk = specKeyOf(sp);
-          const acctName = specAcct.get(sk);
-          if (!acctName) continue;
+          const accountName = specAccount.get(sk);
+          if (!accountName) continue;
           const weight =
             rawTotal > 0
               ? (specRaw.get(sk) ?? 0) / rawTotal
               : 1 / scalingSpecs.length;
           const portion = roundToCents(remaining * weight);
-          credit(acctName, portion, [indContribs, indBal]);
+          credit(accountName, portion, [indContributions, indBalance]);
         }
       }
     };
@@ -265,20 +265,23 @@ export function distributeContributions(
     const withSpecs = candidates.filter((ia) =>
       accountsWithSpecs.has(indKey(ia)),
     );
-    const accts = withSpecs.length > 0 ? withSpecs : candidates;
-    const total = accts.reduce((s, ia) => s + (indBal.get(indKey(ia)) ?? 0), 0);
-    for (const ia of accts) {
+    const accounts = withSpecs.length > 0 ? withSpecs : candidates;
+    const total = accounts.reduce(
+      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
+      0,
+    );
+    for (const ia of accounts) {
       const k = indKey(ia);
       const weight =
-        total > 0 ? (indBal.get(k) ?? 0) / total : 1 / accts.length;
-      credit(k, roundToCents(amount * weight), [indMatch, indBal]);
+        total > 0 ? (indBalance.get(k) ?? 0) / total : 1 / accounts.length;
+      credit(k, roundToCents(amount * weight), [indMatch, indBalance]);
     }
   };
   for (const cat of ACCOUNT_CATEGORIES) {
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
     if (catMatch <= 0) continue;
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
-    const catAccounts = indAccts.filter(
+    const catAccounts = indAccounts.filter(
       (ia) => ia.category === cat && !ia.projectedOnly,
     );
     if (parentCatMatchData && parentCatMatchData.size > 0) {
@@ -307,11 +310,11 @@ export function distributeContributions(
     // cap it within those accounts. The projection-only retirement
     // brokerage counts: with no real Retirement brokerage it's where
     // retirement money lands, so overflow never becomes Portfolio money.
-    const brokAccts = retirementFirst(
-      indAccts.filter((ia) => isOverflowTarget(ia.category)),
+    const brokAccounts = retirementFirst(
+      indAccounts.filter((ia) => isOverflowTarget(ia.category)),
       (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
     );
-    const brokKeys = new Set(brokAccts.map((ia) => indKey(ia)));
+    const brokKeys = new Set(brokAccounts.map((ia) => indKey(ia)));
     const overflowSpecs = contributionSpecs
       .filter(
         (s) =>
@@ -322,19 +325,23 @@ export function distributeContributions(
         (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
       );
 
-    if (brokAccts.length > 0) {
+    if (brokAccounts.length > 0) {
       let remaining = overflowToBrokerage;
       for (const spec of overflowSpecs) {
         if (remaining <= 0) break;
         if (spec.targetAnnual == null || spec.targetAnnual <= 0) continue;
         const sk = specKeyOf(spec);
-        const acctName = specToAccount.get(sk);
-        if (!acctName) continue;
-        const currentContrib = indContribs.get(acctName) ?? 0;
-        const room = Math.max(0, spec.targetAnnual - currentContrib);
+        const accountName = specToAccount.get(sk);
+        if (!accountName) continue;
+        const currentContribution = indContributions.get(accountName) ?? 0;
+        const room = Math.max(0, spec.targetAnnual - currentContribution);
         const portion = roundToCents(Math.min(remaining, room));
         if (portion > 0) {
-          credit(acctName, portion, [indContribs, indBal, indOverflow]);
+          credit(accountName, portion, [
+            indContributions,
+            indBalance,
+            indOverflow,
+          ]);
           remaining -= portion;
         }
       }
@@ -345,18 +352,26 @@ export function distributeContributions(
         if (noTargetSpecs.length > 0) {
           const perAccount = roundToCents(remaining / noTargetSpecs.length);
           for (const spec of noTargetSpecs) {
-            const acctName = specToAccount.get(specKeyOf(spec));
-            if (!acctName) continue;
-            credit(acctName, perAccount, [indContribs, indBal, indOverflow]);
+            const accountName = specToAccount.get(specKeyOf(spec));
+            if (!accountName) continue;
+            credit(accountName, perAccount, [
+              indContributions,
+              indBalance,
+              indOverflow,
+            ]);
           }
           // Routed in full — the fallback below must not hand it out again.
           remaining = 0;
         } else {
           const lastSpec = overflowSpecs[overflowSpecs.length - 1];
           if (lastSpec) {
-            const acctName = specToAccount.get(specKeyOf(lastSpec));
-            if (acctName) {
-              credit(acctName, remaining, [indContribs, indBal, indOverflow]);
+            const accountName = specToAccount.get(specKeyOf(lastSpec));
+            if (accountName) {
+              credit(accountName, remaining, [
+                indContributions,
+                indBalance,
+                indOverflow,
+              ]);
               remaining = 0;
             }
           }
@@ -366,12 +381,13 @@ export function distributeContributions(
       // Fallback: if remaining overflow wasn't routed (no matching specs),
       // distribute to joint/unowned brokerage accounts directly.
       if (remaining > 0) {
-        const jointBrok = brokAccts.filter((ia) => ia.ownerPersonId == null);
-        const fallbackAccts = jointBrok.length > 0 ? jointBrok : brokAccts;
-        const perAcct = roundToCents(remaining / fallbackAccts.length);
-        for (const ia of fallbackAccts) {
+        const jointBrok = brokAccounts.filter((ia) => ia.ownerPersonId == null);
+        const fallbackAccounts =
+          jointBrok.length > 0 ? jointBrok : brokAccounts;
+        const perAccount = roundToCents(remaining / fallbackAccounts.length);
+        for (const ia of fallbackAccounts) {
           const k = indKey(ia);
-          credit(k, perAcct, [indContribs, indBal, indOverflow]);
+          credit(k, perAccount, [indContributions, indBalance, indOverflow]);
         }
       }
     }
@@ -380,8 +396,8 @@ export function distributeContributions(
   // --- Step 5: Track intentional contributions for source breakdown ---
   for (const spec of contributionSpecs) {
     if (!isOverflowTarget(spec.category)) continue;
-    const acctName = specToAccount.get(specKeyOf(spec));
-    if (!acctName) continue;
+    const accountName = specToAccount.get(specKeyOf(spec));
+    if (!accountName) continue;
     const projected = roundToCents(
       projectSpecAmount(spec, {
         projectedSalary,
@@ -392,8 +408,8 @@ export function distributeContributions(
       }),
     );
     indIntentional.set(
-      acctName,
-      (indIntentional.get(acctName) ?? 0) + projected,
+      accountName,
+      (indIntentional.get(accountName) ?? 0) + projected,
     );
   }
 
@@ -406,25 +422,29 @@ export function distributeContributions(
     // has no brokerage at all.
     const parentOf = (ia: IndividualAccountInput) =>
       indParentCat.get(indKey(ia)) ?? ia.parentCategory;
-    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const brokerages = indAccounts.filter((ia) =>
+      isOverflowTarget(ia.category),
+    );
     const real = brokerages.filter((ia) => !ia.projectedOnly);
     const group = real.length > 0 ? portfolioFirst(real, parentOf) : brokerages;
     const groupWithSpecs = group.filter((ia) =>
       accountsWithSpecs.has(indKey(ia)),
     );
-    const brokAccts = groupWithSpecs.length > 0 ? groupWithSpecs : group;
-    const brokTotal = brokAccts.reduce(
-      (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
+    const brokAccounts = groupWithSpecs.length > 0 ? groupWithSpecs : group;
+    const brokTotal = brokAccounts.reduce(
+      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
       0,
     );
-    for (const ia of brokAccts) {
+    for (const ia of brokAccounts) {
       const k = indKey(ia);
       const weight =
-        brokTotal > 0 ? (indBal.get(k) ?? 0) / brokTotal : 1 / brokAccts.length;
+        brokTotal > 0
+          ? (indBalance.get(k) ?? 0) / brokTotal
+          : 1 / brokAccounts.length;
       const portion = roundToCents(rampAmount * weight);
-      credit(k, portion, [indContribs, indBal, indRamp]);
+      credit(k, portion, [indContributions, indBalance, indRamp]);
     }
   }
 
-  return { indContribs, indMatch, indIntentional, indOverflow, indRamp };
+  return { indContributions, indMatch, indIntentional, indOverflow, indRamp };
 }

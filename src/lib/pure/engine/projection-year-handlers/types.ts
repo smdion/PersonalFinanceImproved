@@ -49,7 +49,7 @@ export type BrokerageGoal = {
 export type ProjectionLoopState = {
   // Balance tracking
   balances: TaxBuckets;
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   priorYearEndTradBalance: number;
   /** Per-person prior-year Traditional balance for per-person RMD. */
   priorYearEndTradByPerson: Map<number, number>;
@@ -75,7 +75,7 @@ export type ProjectionLoopState = {
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking
-  indBal: Map<string, number>;
+  indBalance: Map<string, number>;
   /** Tracked Roth basis per taxFree-bucket account (see
    *  `@/lib/pure/accounts/roth-basis-tracking`). Present only for accounts
    *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
@@ -150,12 +150,12 @@ export type ProjectionContext = {
   returnRateMap: Map<number, number>;
   brokerageGoalsByYear: Map<number, BrokerageGoal[]>;
   sortedAccOverrides: AccumulationOverride[];
-  sortedDecOverrides: DecumulationOverride[];
+  sortedDecumulationOverrides: DecumulationOverride[];
   sortedProfileSwitches: ProfileSwitch[];
 
   // Individual account setup
   hasIndividualAccounts: boolean;
-  indAccts: IndividualAccountInput[];
+  indAccounts: IndividualAccountInput[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;
   hasPerPersonSalary: boolean;

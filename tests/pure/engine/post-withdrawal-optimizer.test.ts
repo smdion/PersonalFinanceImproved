@@ -36,7 +36,7 @@ function makeRothInput(
     filingStatus: "MFJ",
     irmaaBrackets: shippedTaxTables().irmaaBrackets,
     balances: makeTaxBuckets(),
-    acctBal: makeAccountBalances(),
+    accountBalance: makeAccountBalances(),
     ...overrides,
   };
 }
@@ -91,8 +91,10 @@ describe("performRothConversion", () => {
     // conversionRoom = 201550 - 50000 = 151550
     // preTax balance = 500000 (default), so capped at conversionRoom
     const balances = makeTaxBuckets();
-    const acctBal = makeAccountBalances();
-    const result = performRothConversion(makeRothInput({ balances, acctBal }));
+    const accountBalance = makeAccountBalances();
+    const result = performRothConversion(
+      makeRothInput({ balances, accountBalance }),
+    );
     expect(result.rothConversionAmount).toBeCloseTo(151550, 0);
     expect(result.rothConversionTaxCost).toBeGreaterThan(0);
     // Traditional balance should decrease
@@ -110,9 +112,9 @@ describe("performRothConversion", () => {
     // docblock, tax-estimation.ts, was added to prevent), overstating
     // conversionRoom by the full $20,000.
     const balances = makeTaxBuckets();
-    const acctBal = makeAccountBalances();
+    const accountBalance = makeAccountBalances();
     const result = performRothConversion(
-      makeRothInput({ balances, acctBal, rothTaxableGrowth: 20000 }),
+      makeRothInput({ balances, accountBalance, rothTaxableGrowth: 20000 }),
     );
     // conversionRoom = 201550 - (40000 + 10000 + 20000) = 131550
     expect(result.rothConversionAmount).toBeCloseTo(131550, 0);
@@ -121,8 +123,10 @@ describe("performRothConversion", () => {
   it("caps conversion at available Traditional balance", () => {
     // Only 5000 in Traditional
     const balances = makeTaxBuckets({ preTax: 5000 });
-    const acctBal = makeAccountBalances({ preTax: 5000 });
-    const result = performRothConversion(makeRothInput({ balances, acctBal }));
+    const accountBalance = makeAccountBalances({ preTax: 5000 });
+    const result = performRothConversion(
+      makeRothInput({ balances, accountBalance }),
+    );
     expect(result.rothConversionAmount).toBe(5000);
   });
 
@@ -141,8 +145,13 @@ describe("performRothConversion", () => {
   it("skips conversion when brokerage can't cover tax cost", () => {
     // Very small brokerage balance can't cover tax
     const balances = makeTaxBuckets({ afterTax: 1, afterTaxBasis: 0 });
-    const acctBal = makeAccountBalances({ afterTax: 1, afterTaxBasis: 0 });
-    const result = performRothConversion(makeRothInput({ balances, acctBal }));
+    const accountBalance = makeAccountBalances({
+      afterTax: 1,
+      afterTaxBasis: 0,
+    });
+    const result = performRothConversion(
+      makeRothInput({ balances, accountBalance }),
+    );
     // Conversion of ~46175 would have tax > $1
     expect(result.rothConversionAmount).toBe(0);
   });
@@ -157,7 +166,7 @@ describe("performRothConversion", () => {
         rothConversionTarget: 0.12,
         rothBracketTarget: 0.32,
         balances: balances1,
-        acctBal: acctBal1,
+        accountBalance: acctBal1,
       }),
     );
     const balances2 = makeTaxBuckets();
@@ -167,7 +176,7 @@ describe("performRothConversion", () => {
         rothConversionTarget: undefined,
         rothBracketTarget: 0.32,
         balances: balances2,
-        acctBal: acctBal2,
+        accountBalance: acctBal2,
       }),
     );
     // With lower target (0.12), conversion should be smaller
@@ -183,7 +192,7 @@ describe("performRothConversion", () => {
     // Since 46175 < 163000, IRMAA cap doesn't reduce it here.
     // To test IRMAA actually capping, use higher income:
     const balances = makeTaxBuckets();
-    const acctBal = makeAccountBalances();
+    const accountBalance = makeAccountBalances();
     const result = performRothConversion(
       makeRothInput({
         irmaaAwareRothConversions: true,
@@ -199,7 +208,7 @@ describe("performRothConversion", () => {
         // Use higher bracket target:
         rothBracketTarget: 0.35, // cap at 457525
         balances,
-        acctBal,
+        accountBalance,
       }),
     );
     // Without IRMAA: conversionRoom = 457525 - 160000 = 297525 (capped at preTax 500000)
@@ -268,7 +277,7 @@ describe("performRothConversion", () => {
       makeRothInput({
         taxMultiplier: 1.0,
         balances: balances1,
-        acctBal: acctBal1,
+        accountBalance: acctBal1,
       }),
     );
     const balances2 = makeTaxBuckets();
@@ -277,7 +286,7 @@ describe("performRothConversion", () => {
       makeRothInput({
         taxMultiplier: 1.5,
         balances: balances2,
-        acctBal: acctBal2,
+        accountBalance: acctBal2,
       }),
     );
     // Same conversion amount (bracket cap is the same), but higher tax cost
@@ -636,8 +645,11 @@ describe("performRothConversion (nonRetirement scope)", () => {
     // the retirement-only cap, conversion would size against the full
     // blended balance.
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({
+      preTax: 500000,
+      afterTax: 300000,
+    });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 500000,
       roth: 0,
@@ -646,9 +658,9 @@ describe("performRothConversion (nonRetirement scope)", () => {
     const result = performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
-        indAccts: ia,
-        indBal: indBalFor(ia),
+        accountBalance,
+        indAccounts: ia,
+        indBalance: indBalFor(ia),
         indKey,
         nonRetirement: nonRetirementFor(400000), // Portfolio 401k's balance
       }),
@@ -660,27 +672,30 @@ describe("performRothConversion (nonRetirement scope)", () => {
 
   it("debits only the Retirement-parented account's indBal, leaving the Portfolio-parented account untouched", () => {
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({
+      preTax: 500000,
+      afterTax: 300000,
+    });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 500000,
       roth: 0,
     };
     const ia = accts();
-    const indBal = indBalFor(ia);
+    const indBalance = indBalFor(ia);
     performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
-        indAccts: ia,
-        indBal,
+        accountBalance,
+        indAccounts: ia,
+        indBalance,
         indKey,
         nonRetirement: nonRetirementFor(400000),
       }),
     );
     const [retirement401k, portfolio401k] = ia;
-    expect(indBal.get(indKey(portfolio401k!))).toBe(400000); // untouched
-    expect(indBal.get(indKey(retirement401k!))).toBeLessThan(100000); // debited
+    expect(indBalance.get(indKey(portfolio401k!))).toBe(400000); // untouched
+    expect(indBalance.get(indKey(retirement401k!))).toBeLessThan(100000); // debited
   });
 
   it("caps the tax-payment gate to Retirement-only brokerage capacity", () => {
@@ -689,16 +704,19 @@ describe("performRothConversion (nonRetirement scope)", () => {
     // asserts the gate doesn't spuriously fail when nonRetirement has
     // nothing to exclude from THIS category.
     const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 100000, afterTax: 300000 });
+    const accountBalance = makeAccountBalances({
+      preTax: 100000,
+      afterTax: 300000,
+    });
     const ia = accts().filter(
       (a) => a.category !== "401k" || a.parentCategory === "Retirement",
     );
     const result = performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
-        indAccts: ia,
-        indBal: indBalFor(ia),
+        accountBalance,
+        indAccounts: ia,
+        indBalance: indBalFor(ia),
         indKey,
         nonRetirement: nonRetirementFor(0),
       }),
@@ -708,7 +726,10 @@ describe("performRothConversion (nonRetirement scope)", () => {
 
   it("skips the conversion entirely when Retirement-only brokerage can't cover the tax cost, even though blended brokerage could", () => {
     const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 100000, afterTax: 300000 });
+    const accountBalance = makeAccountBalances({
+      preTax: 100000,
+      afterTax: 300000,
+    });
     const ia = [
       makeIndividualAccount({
         name: "Retirement 401k",
@@ -741,9 +762,9 @@ describe("performRothConversion (nonRetirement scope)", () => {
     const result = performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
-        indAccts: ia,
-        indBal: indBalFor(ia),
+        accountBalance,
+        indAccounts: ia,
+        indBalance: indBalFor(ia),
         indKey,
         nonRetirement,
       }),
@@ -763,10 +784,10 @@ describe("performRothConversion (nonRetirement scope)", () => {
     const balancesB = makeTaxBuckets();
     const acctBalB = makeAccountBalances();
     const resultA = performRothConversion(
-      makeRothInput({ balances: balancesA, acctBal: acctBalA }),
+      makeRothInput({ balances: balancesA, accountBalance: acctBalA }),
     );
     const resultB = performRothConversion(
-      makeRothInput({ balances: balancesB, acctBal: acctBalB }),
+      makeRothInput({ balances: balancesB, accountBalance: acctBalB }),
     );
     expect(resultA.rothConversionAmount).toBe(resultB.rothConversionAmount);
     expect(resultA.rothConversionTaxCost).toBe(resultB.rothConversionTaxCost);
@@ -774,8 +795,11 @@ describe("performRothConversion (nonRetirement scope)", () => {
 
   it("still caps the amount from nonRetirement alone even without indAccts/indBal/indKey -- capping doesn't require per-account debit capability", () => {
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({
+      preTax: 500000,
+      afterTax: 300000,
+    });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 500000,
       roth: 0,
@@ -783,7 +807,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
     const result = performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
+        accountBalance,
         nonRetirement: nonRetirementFor(400000),
       }),
     );
@@ -826,13 +850,13 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
     const withUndefined = performRothConversion(
       makeRothInput({
         balances: makeTaxBuckets(),
-        acctBal: makeAccountBalances(),
+        accountBalance: makeAccountBalances(),
       }),
     );
     const withZero = performRothConversion(
       makeRothInput({
         balances: makeTaxBuckets(),
-        acctBal: makeAccountBalances(),
+        accountBalance: makeAccountBalances(),
         rmdSmoothingTarget: 0,
       }),
     );
@@ -858,7 +882,7 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
     const withoutSmoothing = performRothConversion(
       makeRothInput({
         balances: { ...balances },
-        acctBal: { ...acctBal },
+        accountBalance: { ...acctBal },
         rothBracketTarget: 0.32,
         rothConversionTarget: undefined,
       }),
@@ -866,7 +890,7 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
     const withSmoothing = performRothConversion(
       makeRothInput({
         balances: { ...balances },
-        acctBal: { ...acctBal },
+        accountBalance: { ...acctBal },
         rothBracketTarget: 0.32,
         rothConversionTarget: undefined,
         rmdSmoothingTarget: 1000, // small -- shouldn't need MORE than 32% already provides
@@ -925,11 +949,14 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
 
   it("still respects the Retirement-only capacity cap even when smoothing elevates the target rate", () => {
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
+    const accountBalance = makeAccountBalances({
+      preTax: 500000,
+      afterTax: 300000,
+    });
     const result = performRothConversion(
       makeRothInput({
         balances,
-        acctBal,
+        accountBalance,
         rothBracketTarget: undefined,
         rothConversionTarget: undefined,
         enableRothConversions: false,

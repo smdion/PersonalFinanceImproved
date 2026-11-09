@@ -34,15 +34,15 @@ export function yearNeed(
   grownStandardDeduction: number | undefined,
   grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   totalBalance: PreYearSetup["totalBalance"],
   retirementBasisRatio: number | undefined,
   eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
   nonRetirement: PreYearSetup["nonRetirement"],
   hasIndividualAccounts: boolean,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   indBasis: ProjectionLoopState["indBasis"],
   year: number,
 ) {
@@ -82,7 +82,7 @@ export function yearNeed(
     ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
   }
 
-  const taxEst = estimateWithdrawalTaxCost({
+  const taxEstimate = estimateWithdrawalTaxCost({
     afterTaxNeed,
     fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,
     ssIncome,
@@ -98,20 +98,20 @@ export function yearNeed(
       ltcgBrackets: grownLtcgBrackets,
     },
     balances,
-    acctBal,
+    accountBalance,
     totalBalance,
     brokerageBasisRatio: retirementBasisRatio,
     eligibility,
     nonRetirement,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indAccounts: hasIndividualAccounts ? indAccounts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
+    indBalance: hasIndividualAccounts ? indBalance : undefined,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     year,
   });
-  const { targetWithdrawal } = taxEst;
-  if (taxEst.derivedAfterTaxNeed !== undefined)
-    afterTaxNeed = taxEst.derivedAfterTaxNeed;
+  const { targetWithdrawal } = taxEstimate;
+  if (taxEstimate.derivedAfterTaxNeed !== undefined)
+    afterTaxNeed = taxEstimate.derivedAfterTaxNeed;
 
-  return { afterTaxNeed, ssSurplus, taxEst, targetWithdrawal };
+  return { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal };
 }

@@ -53,11 +53,11 @@ export function makeIndKey(): IndKeyFn {
 /** Adds `amount` to account `account` in each of the year's maps `into`
  *  (its contributions, balance, and the source the amount came from). */
 export function credit(
-  acct: string,
+  account: string,
   amount: number,
   into: Map<string, number>[],
 ): void {
-  for (const map of into) map.set(acct, (map.get(acct) ?? 0) + amount);
+  for (const map of into) map.set(account, (map.get(account) ?? 0) + amount);
 }
 
 /** Creates spec key from contribution spec fields. */
@@ -76,21 +76,21 @@ export function specKeyOf(spec: {
  * Mutates `indBalance` in place. Returns per-account growth amounts.
  */
 export function applyIndividualGrowth(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   effectiveReturn: number,
   clampNegative: boolean = false,
 ): Map<string, number> {
   const growthMap = new Map<string, number>();
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const k = indKey(ia);
-    const prevBal = clampNegative
-      ? Math.max(0, indBal.get(k) ?? 0)
-      : (indBal.get(k) ?? 0);
-    const growth = roundToCents(prevBal * effectiveReturn);
+    const prevBalance = clampNegative
+      ? Math.max(0, indBalance.get(k) ?? 0)
+      : (indBalance.get(k) ?? 0);
+    const growth = roundToCents(prevBalance * effectiveReturn);
     growthMap.set(k, growth);
-    indBal.set(k, roundToCents(prevBal + growth));
+    indBalance.set(k, roundToCents(prevBalance + growth));
   }
   return growthMap;
 }
@@ -109,16 +109,16 @@ export function applyIndividualGrowth(
  * get one — see `buildProjectionState`).
  */
 export function accrueIndividualBasis(
-  indAccts: IndividualAccountInput[],
+  indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBasis: Map<string, RothBasisState>,
-  indContribs: Map<string, number>,
+  indContributions: Map<string, number>,
 ): void {
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const k = indKey(ia);
     const state = indBasis.get(k);
     if (!state) continue;
-    const contribution = indContribs.get(k) ?? 0;
+    const contribution = indContributions.get(k) ?? 0;
     indBasis.set(k, accrueContributionBasis(state, contribution));
   }
 }
@@ -133,15 +133,16 @@ export function accrueIndividualBasis(
  * `buildIndividualYearBalances`'s output (`roth.basisDrawn`).
  */
 export function depleteIndividualBasis(input: {
-  indAccts: IndividualAccountInput[];
+  indAccounts: IndividualAccountInput[];
   indKey: IndKeyFn;
   indBasis: Map<string, RothBasisState>;
-  preWithdrawalBal: Map<string, number>;
+  preWithdrawalBalance: Map<string, number>;
   withdrawals: Map<string, number>;
 }): Map<string, BasisDraw> {
-  const { indAccts, indKey, indBasis, preWithdrawalBal, withdrawals } = input;
+  const { indAccounts, indKey, indBasis, preWithdrawalBalance, withdrawals } =
+    input;
   const draws = new Map<string, BasisDraw>();
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const k = indKey(ia);
     const state = indBasis.get(k);
     if (!state) continue;
@@ -152,7 +153,7 @@ export function depleteIndividualBasis(input: {
     const draw = drawFromBasis({
       state,
       orderingRule,
-      balanceBeforeWithdrawal: preWithdrawalBal.get(k) ?? 0,
+      balanceBeforeWithdrawal: preWithdrawalBalance.get(k) ?? 0,
       withdrawal,
     });
     draws.set(k, draw);

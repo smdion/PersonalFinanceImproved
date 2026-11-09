@@ -61,7 +61,7 @@ function convert(c: { traditional: number; preTax: number; afterTax: number }) {
     irmaaBrackets: {},
     filingStatus: "MFJ",
     balances,
-    acctBal: accountBalancesFromTaxBuckets(balances),
+    accountBalance: accountBalancesFromTaxBuckets(balances),
   });
   return { ...r, balances };
 }

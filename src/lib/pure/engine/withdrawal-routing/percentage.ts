@@ -119,9 +119,9 @@ export function routeWithdrawalsPercentage(
       } else if (!getAccountTypeConfig(category).supportsRothSplit) {
         // Non-split accounts (e.g. brokerage): neither roth nor traditional
       } else {
-        const bal = balances[category];
-        const tradBalance = getTraditionalBalance(bal);
-        const rothBalance = getRothBalance(bal);
+        const balance = balances[category];
+        const tradBalance = getTraditionalBalance(balance);
+        const rothBalance = getRothBalance(balance);
         const taxPref = config.withdrawalTaxPreference[category];
         if (taxPref === "traditional" || taxPref === null) {
           tradWithdrawal = roundToCents(Math.min(withdrawal, tradBalance));

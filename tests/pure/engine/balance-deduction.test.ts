@@ -27,7 +27,7 @@ import {
 
 /** Buckets and per-account balances that agree: 401k 300k/100k, IRA
  *  100k/0, HSA 30k, brokerage 120k with 80k basis. */
-function start(): { balances: TaxBuckets; acctBal: AccountBalances } {
+function start(): { balances: TaxBuckets; accountBalance: AccountBalances } {
   return {
     balances: {
       preTax: 400000,
@@ -36,7 +36,7 @@ function start(): { balances: TaxBuckets; acctBal: AccountBalances } {
       afterTax: 120000,
       afterTaxBasis: 80000,
     },
-    acctBal: {
+    accountBalance: {
       "401k": {
         structure: "roth_traditional",
         traditional: 300000,
@@ -52,7 +52,7 @@ function start(): { balances: TaxBuckets; acctBal: AccountBalances } {
 
 describe("deductWithdrawals (pins current behavior)", () => {
   it("takes each slot from its own bucket and account", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     deductWithdrawals({
       slots: [
         makeDecumulationSlot("401k", {
@@ -64,7 +64,7 @@ describe("deductWithdrawals (pins current behavior)", () => {
         makeDecumulationSlot("brokerage", { withdrawal: 15000 }),
       ],
       balances,
-      acctBal,
+      accountBalance,
       brokerageBasisPortion: 9000,
     });
     // Rounded to cents: 400,000 - 20,000.004 = 379,999.996 -> 380,000.00.
@@ -75,18 +75,21 @@ describe("deductWithdrawals (pins current behavior)", () => {
       afterTax: 105000,
       afterTaxBasis: 71000,
     });
-    expect(acctBal["401k"]).toEqual({
+    expect(accountBalance["401k"]).toEqual({
       structure: "roth_traditional",
       traditional: 280000,
       roth: 95000,
     });
-    expect(acctBal.ira).toEqual({
+    expect(accountBalance.ira).toEqual({
       structure: "roth_traditional",
       traditional: 100000,
       roth: 0,
     });
-    expect(acctBal.hsa).toEqual({ structure: "single_bucket", balance: 28000 });
-    expect(acctBal.brokerage).toEqual({
+    expect(accountBalance.hsa).toEqual({
+      structure: "single_bucket",
+      balance: 28000,
+    });
+    expect(accountBalance.brokerage).toEqual({
       structure: "basis_tracking",
       balance: 105000,
       basis: 71000,
@@ -94,16 +97,16 @@ describe("deductWithdrawals (pins current behavior)", () => {
   });
 
   it("a basis portion above the basis floors basis at 0; balances may go negative", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     deductWithdrawals({
       slots: [makeDecumulationSlot("brokerage", { withdrawal: 130000 })],
       balances,
-      acctBal,
+      accountBalance,
       brokerageBasisPortion: 90000,
     });
     expect(balances.afterTax).toBe(-10000);
     expect(balances.afterTaxBasis).toBe(0);
-    expect(acctBal.brokerage).toEqual({
+    expect(accountBalance.brokerage).toEqual({
       structure: "basis_tracking",
       balance: -10000,
       basis: 0,
@@ -111,15 +114,15 @@ describe("deductWithdrawals (pins current behavior)", () => {
   });
 
   it("a roth_traditional slot reads its split, not `withdrawal`", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     deductWithdrawals({
       slots: [makeDecumulationSlot("ira", { withdrawal: 50000 })],
       balances,
-      acctBal,
+      accountBalance,
       brokerageBasisPortion: 0,
     });
     expect(balances.preTax).toBe(400000);
-    expect(acctBal.ira).toMatchObject({ traditional: 100000, roth: 0 });
+    expect(accountBalance.ira).toMatchObject({ traditional: 100000, roth: 0 });
   });
 });
 
@@ -132,19 +135,19 @@ describe("clampBalances (pins current behavior)", () => {
       afterTax: 50,
       afterTaxBasis: 80,
     };
-    const { acctBal } = start();
-    acctBal["401k"] = {
+    const { accountBalance } = start();
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: -3,
       roth: 7,
     };
-    acctBal.hsa = { structure: "single_bucket", balance: -2 };
-    acctBal.brokerage = {
+    accountBalance.hsa = { structure: "single_bucket", balance: -2 };
+    accountBalance.brokerage = {
       structure: "basis_tracking",
       balance: -10,
       basis: 40,
     };
-    clampBalances(balances, acctBal);
+    clampBalances(balances, accountBalance);
     expect(balances).toEqual({
       preTax: 0,
       taxFree: 10,
@@ -152,10 +155,10 @@ describe("clampBalances (pins current behavior)", () => {
       afterTax: 50,
       afterTaxBasis: 50,
     });
-    expect(acctBal["401k"]).toMatchObject({ traditional: 0, roth: 7 });
-    expect(acctBal.hsa).toMatchObject({ balance: 0 });
+    expect(accountBalance["401k"]).toMatchObject({ traditional: 0, roth: 7 });
+    expect(accountBalance.hsa).toMatchObject({ balance: 0 });
     // Balance floored first, then basis capped at the floored balance.
-    expect(acctBal.brokerage).toMatchObject({ balance: 0, basis: 0 });
+    expect(accountBalance.brokerage).toMatchObject({ balance: 0, basis: 0 });
   });
 
   it("a negative bucket basis stays negative (only capped above)", () => {
@@ -166,7 +169,7 @@ describe("clampBalances (pins current behavior)", () => {
       afterTax: 100,
       afterTaxBasis: -20,
     };
-    clampBalances(balances, start().acctBal);
+    clampBalances(balances, start().accountBalance);
     expect(balances.afterTaxBasis).toBe(-20);
   });
 });
@@ -200,7 +203,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     new Map(accts.map((ia) => [indKey(ia), ia.startingBalance]));
 
   it("returns 0 and changes nothing when the RMD didn't override routing", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const excess = reinvestRmdExcess(
       "reinvest",
       false,
@@ -208,14 +211,14 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       50000,
       10000,
       balances,
-      acctBal,
+      accountBalance,
     );
     expect(excess).toBe(0);
     expect(balances).toEqual(start().balances);
   });
 
   it("returns 0 when the withdrawal is exactly need plus tax", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     expect(
       reinvestRmdExcess(
         "reinvest",
@@ -224,13 +227,13 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
         50000,
         10000,
         balances,
-        acctBal,
+        accountBalance,
       ),
     ).toBe(0);
   });
 
   it("reinvest: the excess lands in brokerage as basis, split over the Retirement brokerages by balance", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const accts = accounts();
     const indBal = indBalOf(accts);
     // 90,000 drawn - 50,000 need - 10,000 tax = 30,000 excess.
@@ -241,7 +244,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       50000,
       10000,
       balances,
-      acctBal,
+      accountBalance,
       accts,
       indBal,
       indKey,
@@ -249,7 +252,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(excess).toBe(30000);
     expect(balances.afterTax).toBe(150000);
     expect(balances.afterTaxBasis).toBe(110000);
-    expect(acctBal.brokerage).toEqual({
+    expect(accountBalance.brokerage).toEqual({
       structure: "basis_tracking",
       balance: 150000,
       basis: 110000,
@@ -261,7 +264,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   });
 
   it("reinvest: a chosen target account takes it all; rounding remainder goes to the first", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const accts = accounts();
     accts[1] = { ...accts[1]!, rmdExcessTarget: true };
     const indBal = indBalOf(accts);
@@ -272,7 +275,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       50000,
       0,
       balances,
-      acctBal,
+      accountBalance,
       accts,
       indBal,
       indKey,
@@ -282,7 +285,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   });
 
   it("reinvest: three equal targets split 100 as 33.33 x 3 plus a 0.01 remainder on the first", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const accts = accounts().slice(0, 2);
     accts.push({ ...accts[1]!, name: "Retirement brokerage C" });
     accts[0] = { ...accts[0]!, startingBalance: 10000 };
@@ -294,7 +297,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       0,
       0,
       balances,
-      acctBal,
+      accountBalance,
       accts,
       indBal,
       indKey,
@@ -305,7 +308,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   });
 
   it("reinvest: Retirement targets all at $0 -> the first takes it all", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const accts = accounts().map((ia, i) =>
       i < 2 ? { ...ia, startingBalance: 0 } : ia,
     );
@@ -317,7 +320,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       0,
       0,
       balances,
-      acctBal,
+      accountBalance,
       accts,
       indBal,
       indKey,
@@ -327,7 +330,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   });
 
   it("reinvest: no Retirement brokerage -> aggregate only, the Portfolio account untouched", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const accts = accounts().slice(2);
     const indBal = indBalOf(accts);
     reinvestRmdExcess(
@@ -337,7 +340,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       0,
       0,
       balances,
-      acctBal,
+      accountBalance,
       accts,
       indBal,
       indKey,
@@ -347,7 +350,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   });
 
   it("spend: returns the excess but changes no balance", () => {
-    const { balances, acctBal } = start();
+    const { balances, accountBalance } = start();
     const excess = reinvestRmdExcess(
       "spend",
       true,
@@ -355,23 +358,27 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
       50000,
       10000,
       balances,
-      acctBal,
+      accountBalance,
     );
     expect(excess).toBe(30000);
     expect(balances).toEqual(start().balances);
-    expect(acctBal).toEqual(start().acctBal);
+    expect(accountBalance).toEqual(start().accountBalance);
   });
 });
 
 describe("trackDepletions (pins current behavior)", () => {
   it("records each sub-bucket at or below 0 once, with the year and age", () => {
-    const { acctBal } = start();
-    acctBal.ira = { structure: "roth_traditional", traditional: 0, roth: 0 };
-    acctBal.hsa = { structure: "single_bucket", balance: -0.5 };
+    const { accountBalance } = start();
+    accountBalance.ira = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 0,
+    };
+    accountBalance.hsa = { structure: "single_bucket", balance: -0.5 };
     const tracked = new Set<string>();
     const depletions: ProjectionResult["accountDepletions"] = [];
-    trackDepletions(acctBal, tracked, depletions, 2040, 80);
-    trackDepletions(acctBal, tracked, depletions, 2041, 81);
+    trackDepletions(accountBalance, tracked, depletions, 2040, 80);
+    trackDepletions(accountBalance, tracked, depletions, 2041, 81);
     expect(depletions).toEqual(PINNED_DEPLETIONS);
     expect([...tracked].sort()).toEqual(
       ["403b_roth", "403b_trad", "hsa", "ira_roth", "ira_trad"].sort(),
@@ -415,9 +422,11 @@ describe("cleanupDust (pins current behavior)", () => {
       afterTax: 0.09,
       afterTaxBasis: 0.05,
     };
-    const { acctBal } = start();
+    const { accountBalance } = start();
     const indBal = new Map([[indKey(accts[0]!), 0.4]]);
-    expect(cleanupDust(balances, acctBal, accts, indKey, indBal)).toBe(true);
+    expect(cleanupDust(balances, accountBalance, accts, indKey, indBal)).toBe(
+      true,
+    );
     expect(balances).toEqual({
       preTax: 0,
       taxFree: 0,
@@ -426,8 +435,8 @@ describe("cleanupDust (pins current behavior)", () => {
       afterTaxBasis: 0,
     });
     // Per-account balances are zeroed from the bucket total alone.
-    expect(acctBal["401k"]).toMatchObject({ traditional: 0, roth: 0 });
-    expect(acctBal.brokerage).toMatchObject({ balance: 0, basis: 0 });
+    expect(accountBalance["401k"]).toMatchObject({ traditional: 0, roth: 0 });
+    expect(accountBalance.brokerage).toMatchObject({ balance: 0, basis: 0 });
     expect(indBal.get(indKey(accts[0]!))).toBe(0);
   });
 
@@ -439,11 +448,11 @@ describe("cleanupDust (pins current behavior)", () => {
       afterTax: 0,
       afterTaxBasis: 0,
     };
-    const { acctBal } = start();
-    expect(cleanupDust(balances, acctBal, accts, indKey, new Map())).toBe(
-      false,
-    );
+    const { accountBalance } = start();
+    expect(
+      cleanupDust(balances, accountBalance, accts, indKey, new Map()),
+    ).toBe(false);
     expect(balances.preTax).toBe(0.5);
-    expect(acctBal["401k"]).toMatchObject({ traditional: 300000 });
+    expect(accountBalance["401k"]).toMatchObject({ traditional: 300000 });
   });
 });

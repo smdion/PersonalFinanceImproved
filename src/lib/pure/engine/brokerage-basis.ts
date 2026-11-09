@@ -34,9 +34,9 @@ export type BrokerageBasis = Map<string, number>;
 
 /** Accounts whose balance structure tracks cost basis (brokerage). */
 function basisTrackedAccounts(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
 ): IndividualAccountInput[] {
-  return indAccts.filter(
+  return indAccounts.filter(
     (ia) =>
       getAccountTypeConfig(ia.category).balanceStructure === "basis_tracking",
   );
@@ -49,14 +49,14 @@ function basisTrackedAccounts(
  * predate per-account basis, or an account whose basis was never entered.
  */
 export function seedBrokerageBasis(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
   aggregateBasis: number,
 ): BrokerageBasis {
-  const accts = basisTrackedAccounts(indAccts);
+  const accounts = basisTrackedAccounts(indAccounts);
   const basis: BrokerageBasis = new Map();
   let known = 0;
-  for (const ia of accts) {
+  for (const ia of accounts) {
     if (ia.startingBasis == null) continue;
     const b = roundToCents(
       Math.max(0, Math.min(ia.startingBasis, Math.max(0, ia.startingBalance))),
@@ -64,7 +64,7 @@ export function seedBrokerageBasis(
     basis.set(indKey(ia), b);
     known += b;
   }
-  const missing = accts.filter((ia) => ia.startingBasis == null);
+  const missing = accounts.filter((ia) => ia.startingBasis == null);
   const rest = Math.max(0, aggregateBasis - known);
   const total = missing.reduce(
     (s, ia) => s + Math.max(0, ia.startingBalance),
@@ -84,30 +84,30 @@ export function seedBrokerageBasis(
  *  hold nothing (callers fall back to the aggregate ratio — a 0 would price
  *  any unattributed money as all gain). */
 export function groupBasisRatio(
-  accts: readonly IndividualAccountInput[],
+  accounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
 ): number | undefined {
-  let bal = 0;
+  let balance = 0;
   let b = 0;
-  for (const ia of basisTrackedAccounts(accts)) {
+  for (const ia of basisTrackedAccounts(accounts)) {
     const k = indKey(ia);
-    bal += Math.max(0, indBal.get(k) ?? 0);
+    balance += Math.max(0, indBalance.get(k) ?? 0);
     b += basis.get(k) ?? 0;
   }
-  return bal > 0 ? Math.min(1, Math.max(0, b / bal)) : undefined;
+  return balance > 0 ? Math.min(1, Math.max(0, b / balance)) : undefined;
 }
 
 function brokerageBalances(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
 ): Map<string, number> {
   return new Map(
-    basisTrackedAccounts(indAccts).map((ia) => [
+    basisTrackedAccounts(indAccounts).map((ia) => [
       indKey(ia),
-      Math.max(0, indBal.get(indKey(ia)) ?? 0),
+      Math.max(0, indBalance.get(indKey(ia)) ?? 0),
     ]),
   );
 }
@@ -115,16 +115,16 @@ function brokerageBalances(
 /** Run `mutate` (money out); any brokerage account whose balance fell
  *  gives up basis at its own ratio before the change. */
 export function followDraws<T>(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
   mutate: () => T,
 ): T {
-  const before = brokerageBalances(indAccts, indKey, indBal);
+  const before = brokerageBalances(indAccounts, indKey, indBalance);
   const result = mutate();
   for (const [k, was] of before) {
-    const now = Math.max(0, indBal.get(k) ?? 0);
+    const now = Math.max(0, indBalance.get(k) ?? 0);
     if (now >= was || was <= 0) continue;
     const b = basis.get(k) ?? 0;
     basis.set(k, roundToCents(Math.max(0, b - (was - now) * (b / was))));
@@ -135,16 +135,16 @@ export function followDraws<T>(
 /** Run `mutate` (money in); every brokerage account's increase is new
  *  basis (cash contributed or reinvested). */
 export function followInflows<T>(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
   mutate: () => T,
 ): T {
-  const before = brokerageBalances(indAccts, indKey, indBal);
+  const before = brokerageBalances(indAccounts, indKey, indBalance);
   const result = mutate();
   for (const [k, was] of before) {
-    const now = Math.max(0, indBal.get(k) ?? 0);
+    const now = Math.max(0, indBalance.get(k) ?? 0);
     if (now > was) basis.set(k, roundToCents((basis.get(k) ?? 0) + now - was));
   }
   return result;
@@ -159,17 +159,17 @@ export function followInflows<T>(
  * most the increase.
  */
 export function followReconciliation<T>(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
   aggregateBasis: number,
   mutate: () => T,
 ): T {
-  const before = brokerageBalances(indAccts, indKey, indBal);
-  const result = followDraws(indAccts, indKey, indBal, basis, mutate);
+  const before = brokerageBalances(indAccounts, indKey, indBalance);
+  const result = followDraws(indAccounts, indKey, indBalance, basis, mutate);
   const raised = [...before]
-    .map(([k, was]) => [k, Math.max(0, indBal.get(k) ?? 0) - was] as const)
+    .map(([k, was]) => [k, Math.max(0, indBalance.get(k) ?? 0) - was] as const)
     .filter(([, inc]) => inc > 0);
   if (raised.length === 0) return result;
   let accountsBasis = 0;
@@ -195,23 +195,23 @@ export function followReconciliation<T>(
  * surfaced as a diagnostic, like balance drift.
  */
 export function syncAggregateBasis(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
   balances: TaxBuckets,
-  acctBal: AccountBalances,
+  accountBalance: AccountBalances,
   diagnostics: string[],
 ): void {
-  const accts = basisTrackedAccounts(indAccts);
-  if (accts.length === 0) return;
+  const accounts = basisTrackedAccounts(indAccounts);
+  if (accounts.length === 0) return;
   // The accounts' sum is the truth only when they hold all the brokerage
   // money. They normally do (overflow has a Retirement home — the
   // projection-only brokerage when there's no real one); if some money
   // still lives only in the aggregate, keep the aggregate's basis and say
   // so rather than price it as all gain.
-  const held = accts.reduce(
-    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+  const held = accounts.reduce(
+    (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
     0,
   );
   if (Math.abs(held - balances.afterTax) > 1) {
@@ -222,10 +222,10 @@ export function syncAggregateBasis(
   }
   let total = 0;
   const byCategory = new Map<string, number>();
-  for (const ia of accts) {
+  for (const ia of accounts) {
     const k = indKey(ia);
     const b = roundToCents(
-      Math.min(basis.get(k) ?? 0, Math.max(0, indBal.get(k) ?? 0)),
+      Math.min(basis.get(k) ?? 0, Math.max(0, indBalance.get(k) ?? 0)),
     );
     basis.set(k, b);
     total += b;
@@ -239,9 +239,9 @@ export function syncAggregateBasis(
     );
   balances.afterTaxBasis = Math.min(total, balances.afterTax);
   for (const [cat, b] of byCategory) {
-    const bal = acctBal[cat as keyof AccountBalances];
-    if (bal.structure === "basis_tracking")
-      setBasis(bal, roundToCents(Math.min(b, bal.balance)));
+    const balance = accountBalance[cat as keyof AccountBalances];
+    if (balance.structure === "basis_tracking")
+      setBasis(balance, roundToCents(Math.min(b, balance.balance)));
   }
 }
 
@@ -251,15 +251,15 @@ export function syncAggregateBasis(
  *  account (brokerage money then lives only in the aggregate, e.g. built
  *  from overflow) — callers fall back to the aggregate ratio. */
 export function retirementBrokerageBasisRatio(
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   basis: BrokerageBasis,
 ): number | undefined {
-  const accts = basisTrackedAccounts(indAccts).filter((ia) =>
+  const accounts = basisTrackedAccounts(indAccounts).filter((ia) =>
     isRetirementMoney(ia.parentCategory),
   );
-  return accts.length > 0
-    ? groupBasisRatio(accts, indKey, indBal, basis)
+  return accounts.length > 0
+    ? groupBasisRatio(accounts, indKey, indBalance, basis)
     : undefined;
 }

@@ -16,16 +16,16 @@ export function decumulationPortfolioContributions(
   state: ProjectionLoopState,
   ctx: ProjectionContext,
   indKey: ProjectionContext["indKey"],
-  indAccts: ProjectionContext["indAccts"],
-  indBal: ProjectionLoopState["indBal"],
+  indAccounts: ProjectionContext["indAccounts"],
+  indBalance: ProjectionLoopState["indBalance"],
 ) {
   // Portfolio contributions after retirement, for the Portfolio page only:
   // never added to balances (Portfolio accounts are read-only inputs here;
   // parentCategory sets the boundary).
   const { brokerageContributionRamp, limitGrowthRate } = input;
   const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
-  let decumBrokerageContrib = 0;
-  const decumContribByAccount = new Map<string, number>();
+  let decumBrokerageContribution = 0;
+  const decumContributionByAccount = new Map<string, number>();
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
@@ -36,20 +36,20 @@ export function decumulationPortfolioContributions(
     for (const spec of portfolioSpecs) {
       const amount = roundToCents(spec.baseAnnual * lgf);
       if (amount <= 0) continue;
-      decumBrokerageContrib += amount;
+      decumBrokerageContribution += amount;
       if (spec.accountName) {
         // The spec's account from state.specToAccount (owner-aware, as accumulation
         // matches it), so two owners' same-named accounts don't collide; by name
         // only when the spec has no entry.
         const matchedKey = state.specToAccount.get(specKeyOf(spec));
         const matchingAccount = matchedKey
-          ? ctx.indAccts.find((ia) => indKey(ia) === matchedKey)
-          : ctx.indAccts.find((ia) => ia.name === spec.accountName);
+          ? ctx.indAccounts.find((ia) => indKey(ia) === matchedKey)
+          : ctx.indAccounts.find((ia) => ia.name === spec.accountName);
         if (matchingAccount) {
           const k = indKey(matchingAccount);
-          decumContribByAccount.set(
+          decumContributionByAccount.set(
             k,
-            (decumContribByAccount.get(k) ?? 0) + amount,
+            (decumContributionByAccount.get(k) ?? 0) + amount,
           );
         }
       }
@@ -62,30 +62,38 @@ export function decumulationPortfolioContributions(
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (decumRampAmount > 0) {
-    decumBrokerageContrib += decumRampAmount;
+    decumBrokerageContribution += decumRampAmount;
     // The ramp spread over brokerages by balance (Portfolio ones first; the
     // projection-only one only with no real brokerage), as accumulation does.
-    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const brokerages = indAccounts.filter((ia) =>
+      isOverflowTarget(ia.category),
+    );
     const realBrokerages = brokerages.filter((ia) => !ia.projectedOnly);
-    const rampAccts =
+    const rampAccounts =
       realBrokerages.length > 0
         ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)
         : brokerages;
-    const rampTotal = rampAccts.reduce(
-      (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
+    const rampTotal = rampAccounts.reduce(
+      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
       0,
     );
-    for (const ia of rampAccts) {
+    for (const ia of rampAccounts) {
       const k = indKey(ia);
       const weight =
-        rampTotal > 0 ? (indBal.get(k) ?? 0) / rampTotal : 1 / rampAccts.length;
+        rampTotal > 0
+          ? (indBalance.get(k) ?? 0) / rampTotal
+          : 1 / rampAccounts.length;
       const portion = roundToCents(decumRampAmount * weight);
-      decumContribByAccount.set(
+      decumContributionByAccount.set(
         k,
-        (decumContribByAccount.get(k) ?? 0) + portion,
+        (decumContributionByAccount.get(k) ?? 0) + portion,
       );
     }
   }
 
-  return { decumBrokerageContrib, decumContribByAccount, decumRampAmount };
+  return {
+    decumBrokerageContribution,
+    decumContributionByAccount,
+    decumRampAmount,
+  };
 }

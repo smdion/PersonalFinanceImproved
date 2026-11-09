@@ -58,7 +58,7 @@ export function priceYearTax(
   brokerageBasisRatio: ReturnType<
     typeof deriveBasisRankingInputs
   >["brokerageBasisRatio"],
-  taxEst: ReturnType<typeof yearNeed>["taxEst"],
+  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
   ssIncome: number,
 ) {
   // One pricing call, shared with withdrawal-solver.ts's estimate and used
@@ -87,7 +87,7 @@ export function priceYearTax(
   // Taxable Social Security from this year's post-RMD income (the first
   // pass only supplies that income), then the year priced with it. Muni
   // bond interest isn't tracked, so no taxExemptInterest is passed.
-  let { taxableSS } = taxEst;
+  let { taxableSS } = taxEstimate;
   let taxFromSlots = priceTax(taxableSS);
   if (filingStatus && ssIncome > 0) {
     taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
@@ -104,7 +104,7 @@ export function pricedYearParts(
   slots: ReturnType<typeof routeForMode>["slots"],
   balances: ProjectionLoopState["balances"],
   ssSurplus: number,
-  taxEst: ReturnType<typeof yearNeed>["taxEst"],
+  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
   rmdOverrodeRouting: boolean,
   afterTaxNeed: number,
   state: ProjectionLoopState,
@@ -132,7 +132,7 @@ export function pricedYearParts(
   const surplusCredit = (tax: number) =>
     roundToCents(Math.min(ssSurplus, Math.max(0, tax)));
 
-  let { grossUpFactor } = taxEst;
+  let { grossUpFactor } = taxEstimate;
   // grossUpFactor after the RMD (diagnostics): an RMD can add Traditional
   // tax the estimate didn't see. Penalty cost counts too (RMD dollars carry
   // none). Nothing is grossed up when the strategy fixed the withdrawal.
@@ -165,11 +165,11 @@ export function pricedYearParts(
 export function settleYearDraws(
   slots: ReturnType<typeof routeForMode>["slots"],
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   brokerageBasisPortion: number,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   brokBasis: ProjectionLoopState["brokBasis"],
   config: ReturnType<typeof resolveDecumulationConfig>,
   ctx: ProjectionContext,
@@ -186,14 +186,14 @@ export function settleYearDraws(
   age: number,
 ) {
   // Deduct withdrawals from tax buckets and per-account balances
-  deductWithdrawals({ slots, balances, acctBal, brokerageBasisPortion });
+  deductWithdrawals({ slots, balances, accountBalance, brokerageBasisPortion });
 
   // Ensure no negative balances
-  clampBalances(balances, acctBal);
+  clampBalances(balances, accountBalance);
 
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.
-  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+  followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
     applyLumpSums(config.lumpSums, ctx, state),
   );
 
@@ -204,9 +204,9 @@ export function settleYearDraws(
     taxFromSlots.taxCost - surplusCredit(taxFromSlots.taxCost),
   );
   const rmdExcessAmount = followInflows(
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     brokBasis,
     () =>
       reinvestRmdExcess(
@@ -216,22 +216,28 @@ export function settleYearDraws(
         afterTaxNeed,
         withdrawalTax,
         balances,
-        acctBal,
-        hasIndividualAccounts ? indAccts : undefined,
-        hasIndividualAccounts ? indBal : undefined,
+        accountBalance,
+        hasIndividualAccounts ? indAccounts : undefined,
+        hasIndividualAccounts ? indBalance : undefined,
         hasIndividualAccounts ? indKey : undefined,
       ),
   );
 
   // Clamp individual account balances
   if (hasIndividualAccounts) {
-    followDraws(indAccts, indKey, indBal, brokBasis, () =>
-      clampIndividualBalances(indAccts, indKey, indBal),
+    followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+      clampIndividualBalances(indAccounts, indKey, indBalance),
     );
   }
 
   // Track per-account depletions
-  trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
+  trackDepletions(
+    accountBalance,
+    depletionTracked,
+    accountDepletions,
+    year,
+    age,
+  );
 
   return { rmdExcessAmount };
 }
@@ -242,9 +248,9 @@ export function yearRothConversion(
   config: ReturnType<typeof resolveDecumulationConfig>,
   hasIndividualAccounts: boolean,
   rmdStartAgeByPerson: ProjectionContext["rmdStartAgeByPerson"],
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   ctx: ProjectionContext,
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   indKey: ProjectionContext["indKey"],
   year: number,
   balances: ProjectionLoopState["balances"],
@@ -263,7 +269,7 @@ export function yearRothConversion(
   enableIrmaaAwareness: ProjectionContext["input"]["enableIrmaaAwareness"],
   grownIrmaaBracketsForCap: ReturnType<typeof growIrmaaBrackets>,
   filingStatus: ProjectionContext["input"]["filingStatus"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   nonRetirement: PreYearSetup["nonRetirement"],
 ) {
   // RMD-aware conversion smoothing (rmd-smoothing.ts), sized each year from
@@ -277,13 +283,16 @@ export function yearRothConversion(
   ) {
     const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(
       ([personId, { startAge, birthYear }]) => {
-        const personTraditionalBalance = indAccts
+        const personTraditionalBalance = indAccounts
           .filter(
             (ia) =>
               rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
               isPreTaxType(ia.taxType),
           )
-          .reduce((s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0), 0);
+          .reduce(
+            (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
+            0,
+          );
         return {
           personId,
           currentAge: ageInYear(birthYear, year),
@@ -312,40 +321,50 @@ export function yearRothConversion(
 
   // The Roth conversion (roth-conversion.ts); its tax is paid from
   // retirement brokerage money (basis leaves at the account's own ratio).
-  const rothResult = followDraws(indAccts, indKey, indBal, brokBasis, () =>
-    performRothConversion({
-      // The conversion's tax comes out of retirement brokerage money.
-      brokerageBasisRatio: hasIndividualAccounts
-        ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
-        : undefined,
-      enableRothConversions: taxRates.enableRothConversions,
-      taxBrackets: grownTaxBrackets,
-      taxMultiplier: taxRates.taxMultiplier,
-      standardDeduction: grownStandardDeduction,
-      rothConversionTarget: config.rothConversionTarget,
-      // The fallback when config.rothConversionTarget is unset:
-      // resolvedConversionTarget, the same chain the routing reservation used
-      // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
-      rothBracketTarget: resolvedConversionTarget,
-      totalTraditionalWithdrawal,
-      taxableSS,
-      rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-      brokerageGainsPortion,
-      irmaaAwareRothConversions:
-        input.irmaaAwareRothConversions ??
-        (enableIrmaaAwareness ? true : undefined),
-      irmaaBrackets: grownIrmaaBracketsForCap,
-      filingStatus,
-      balances,
-      acctBal,
-      // Portfolio-parented money stays out of the conversion and its tax.
-      nonRetirement,
-      indAccts: hasIndividualAccounts ? indAccts : undefined,
-      indBal: hasIndividualAccounts ? indBal : undefined,
-      indKey: hasIndividualAccounts ? indKey : undefined,
-      rmdSmoothingTarget,
-      rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
-    }),
+  const rothResult = followDraws(
+    indAccounts,
+    indKey,
+    indBalance,
+    brokBasis,
+    () =>
+      performRothConversion({
+        // The conversion's tax comes out of retirement brokerage money.
+        brokerageBasisRatio: hasIndividualAccounts
+          ? retirementBrokerageBasisRatio(
+              indAccounts,
+              indKey,
+              indBalance,
+              brokBasis,
+            )
+          : undefined,
+        enableRothConversions: taxRates.enableRothConversions,
+        taxBrackets: grownTaxBrackets,
+        taxMultiplier: taxRates.taxMultiplier,
+        standardDeduction: grownStandardDeduction,
+        rothConversionTarget: config.rothConversionTarget,
+        // The fallback when config.rothConversionTarget is unset:
+        // resolvedConversionTarget, the same chain the routing reservation used
+        // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
+        rothBracketTarget: resolvedConversionTarget,
+        totalTraditionalWithdrawal,
+        taxableSS,
+        rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+        brokerageGainsPortion,
+        irmaaAwareRothConversions:
+          input.irmaaAwareRothConversions ??
+          (enableIrmaaAwareness ? true : undefined),
+        irmaaBrackets: grownIrmaaBracketsForCap,
+        filingStatus,
+        balances,
+        accountBalance,
+        // Portfolio-parented money stays out of the conversion and its tax.
+        nonRetirement,
+        indAccounts: hasIndividualAccounts ? indAccounts : undefined,
+        indBalance: hasIndividualAccounts ? indBalance : undefined,
+        indKey: hasIndividualAccounts ? indKey : undefined,
+        rmdSmoothingTarget,
+        rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
+      }),
   );
   const {
     rothConversionAmount,

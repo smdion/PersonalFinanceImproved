@@ -67,13 +67,13 @@ export function brokerageGoalDraws(
   year: number,
   balances: ProjectionLoopState["balances"],
   hasIndividualAccounts: boolean,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   routeWarnings: string[],
   brokBasis: ProjectionLoopState["brokBasis"],
   decumulationDefaults: ProjectionContext["input"]["decumulationDefaults"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
 ) {
   const yearGoals = brokerageGoalsByYear.get(year) ?? [];
@@ -87,7 +87,7 @@ export function brokerageGoalDraws(
         goal.targetAmount,
         balances.afterTax,
         hasIndividualAccounts
-          ? goalFundingBalance(indAccts, indKey, indBal)
+          ? goalFundingBalance(indAccounts, indKey, indBalance)
           : balances.afterTax,
       ),
     );
@@ -110,9 +110,9 @@ export function brokerageGoalDraws(
     const basisRatio =
       (hasIndividualAccounts
         ? groupBasisRatio(
-            goalFundingAccounts(indAccts),
+            goalFundingAccounts(indAccounts),
             indKey,
-            indBal,
+            indBalance,
             brokBasis,
           )
         : undefined) ??
@@ -130,16 +130,16 @@ export function brokerageGoalDraws(
     balances.afterTaxBasis = roundToCents(
       Math.max(0, balances.afterTaxBasis - basisPortion),
     );
-    addBalance(acctBal[OVERFLOW_CATEGORY], -drawAmount);
+    addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
     setBasis(
-      acctBal[OVERFLOW_CATEGORY],
+      accountBalance[OVERFLOW_CATEGORY],
       roundToCents(
-        Math.max(0, getBasis(acctBal[OVERFLOW_CATEGORY]) - basisPortion),
+        Math.max(0, getBasis(accountBalance[OVERFLOW_CATEGORY]) - basisPortion),
       ),
     );
     if (hasIndividualAccounts) {
-      followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal),
+      followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+        distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),
       );
     }
     goalWithdrawals.push({

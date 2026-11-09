@@ -47,7 +47,7 @@ export function runAccumulationYear(
     brokerageGoalsByYear,
     sortedAccOverrides,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
     indParentCat,
     hasPerPersonSalary,
@@ -59,13 +59,13 @@ export function runAccumulationYear(
   const contributionSpecs = setup.yearSpecs ?? state.contributionSpecs;
   const {
     balances,
-    acctBal,
+    accountBalance,
     activeEmployerMatchRateByCategory,
     activeBaseYearContributions,
     activeBaseYearEmployerMatch,
     activeEmployerMatchByParentCat,
     accumulationDefaults,
-    indBal,
+    indBalance,
     indBasis,
     brokBasis,
     specToAccount,
@@ -90,7 +90,7 @@ export function runAccumulationYear(
   // IRS limits grow annually
   const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
 
-  const { useRealContribs, proRate, lateYearCut, totalLateYearCut } =
+  const { useRealContributions, proRate, lateYearCut, totalLateYearCut } =
     yearZeroBasis(
       yearIndex,
       setup,
@@ -101,7 +101,7 @@ export function runAccumulationYear(
     );
   const { targetContribution, yearEmployerMatch, personPay, contribution } =
     yearContributionTarget(
-      useRealContribs,
+      useRealContributions,
       activeBaseYearContributions,
       proRate,
       totalLateYearCut,
@@ -129,12 +129,12 @@ export function runAccumulationYear(
     yearEmployerMatch,
     hasPerPersonSalary,
     projectedSalaryByPerson,
-    useRealContribs,
+    useRealContributions,
     activeBaseYearContributions,
   );
   const { slots, routeWarnings, specOverflow, rateCeilingScale } =
     routeYearSlots(
-      useRealContribs,
+      useRealContributions,
       activeBaseYearContributions,
       yearEmployerMatch,
       proRate,
@@ -156,7 +156,7 @@ export function runAccumulationYear(
     totalTaxAdvSpace,
   } = yearContributionTotals(
     slots,
-    useRealContribs,
+    useRealContributions,
     contributionSpecs,
     specOverflow,
     state,
@@ -169,26 +169,26 @@ export function runAccumulationYear(
   const { rampAmount } = creditYearContributions(
     slots,
     balances,
-    acctBal,
+    accountBalance,
     yearIndex,
     brokerageContributionRamp,
     contribution,
     OVERFLOW_CATEGORY,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     brokBasis,
     config,
     ctx,
     state,
   );
-  const { indContribs, indMatch, indIntentional, indOverflow, indRamp } =
+  const { indContributions, indMatch, indIntentional, indOverflow, indRamp } =
     distributeYearContributions(
       hasIndividualAccounts,
       contributionSpecs,
-      indAccts,
+      indAccounts,
       indKey,
-      indBal,
+      indBalance,
       brokBasis,
       slots,
       indParentCat,
@@ -226,9 +226,9 @@ export function runAccumulationYear(
     yearIndex === 0
       ? Math.pow(1 + returnRate, firstYearFraction) - 1
       : returnRate;
-  applyGrowth({ effectiveReturn, balances, acctBal });
+  applyGrowth({ effectiveReturn, balances, accountBalance });
   const indGrowth = hasIndividualAccounts
-    ? applyIndividualGrowth(indAccts, indKey, indBal, effectiveReturn)
+    ? applyIndividualGrowth(indAccounts, indKey, indBalance, effectiveReturn)
     : new Map<string, number>();
 
   const { goalWithdrawals } = brokerageGoalDraws(
@@ -236,23 +236,23 @@ export function runAccumulationYear(
     year,
     balances,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     routeWarnings,
     brokBasis,
     decumulationDefaults,
-    acctBal,
+    accountBalance,
     OVERFLOW_CATEGORY,
   );
   const { indYearBalances, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
       hasIndividualAccounts,
-      indAccts,
+      indAccounts,
       indKey,
-      indBal,
+      indBalance,
       indParentCat,
-      indContribs,
+      indContributions,
       indMatch,
       indGrowth,
       indIntentional,
@@ -263,7 +263,7 @@ export function runAccumulationYear(
       gapRun,
       routeWarnings,
       balances,
-      acctBal,
+      accountBalance,
       year,
       retirementYear,
       age,
@@ -276,9 +276,9 @@ export function runAccumulationYear(
     projectedSalary: roundToCents(projectedSalary),
     projectedSalaryByPerson: hasPerPersonSalary
       ? Object.fromEntries(
-          Array.from(projectedSalaryByPerson.entries()).map(([pid, sal]) => [
+          Array.from(projectedSalaryByPerson.entries()).map(([pid, salary]) => [
             pid,
-            roundToCents(sal),
+            roundToCents(salary),
           ]),
         )
       : undefined,
@@ -305,7 +305,7 @@ export function runAccumulationYear(
     retirementBalance,
     allAccountsBalance,
     balanceByTaxType: { ...balances },
-    balanceByAccount: cloneAccountBalances(acctBal),
+    balanceByAccount: cloneAccountBalances(accountBalance),
     individualAccountBalances: indYearBalances,
     returnRate: effectiveReturn,
     annualizedReturnRate:

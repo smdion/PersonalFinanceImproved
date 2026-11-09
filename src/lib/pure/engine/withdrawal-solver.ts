@@ -98,7 +98,7 @@ interface TaxEstimationInput {
   /** Current balances by tax bucket */
   balances: TaxBuckets;
   /** Current per-account balances */
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   /** Every account's balance, Portfolio-parented ones included
    *  (PreYearSetup.totalBalance): the physical pool the target never
    *  exceeds. The search stops sooner, at what the router can reach (the
@@ -130,9 +130,9 @@ interface TaxEstimationInput {
    *  (distributeWithdrawals + depleteIndividualBasis), against CLONED
    *  indBalance/indBasis so the estimate can never mutate real state. Omitted
    *  ⇒ rothTaxableGrowth stays 0, same as before this pass. */
-  indAccts?: IndividualAccountInput[];
+  indAccounts?: IndividualAccountInput[];
   indKey?: IndKeyFn;
-  indBal?: Map<string, number>;
+  indBalance?: Map<string, number>;
   indBasis?: Map<string, RothBasisState>;
   /** Projected calendar year -- required alongside the indAccounts/indBalance/
    *  indBasis quartet above to compute Roth qualification (age gate). */
@@ -157,24 +157,24 @@ function evaluateCost(
     config,
     taxRates,
     balances,
-    acctBal,
+    accountBalance,
     eligibility,
     nonRetirement,
-    indAccts,
+    indAccounts,
     indKey,
-    indBal,
+    indBalance,
     indBasis,
     year,
     filingStatus,
   } = input;
   const hasIndTracking =
-    indAccts != null &&
+    indAccounts != null &&
     indKey != null &&
-    indBal != null &&
+    indBalance != null &&
     indBasis != null &&
     year != null;
 
-  const clonedAcctBal = cloneAccountBalances(acctBal);
+  const clonedAccountBalance = cloneAccountBalances(accountBalance);
   // Same basis-derived ranking inputs the real
   // execution passes (deriveBasisRankingInputs's docblock) — no
   // magiBeforeThisDraw here, as in the real execution: routeForMode falls
@@ -183,15 +183,15 @@ function evaluateCost(
     balances,
     brokerageBasisRatio: input.brokerageBasisRatio,
     indBasis: hasIndTracking ? indBasis : undefined,
-    indAccts: hasIndTracking ? indAccts : undefined,
+    indAccounts: hasIndTracking ? indAccounts : undefined,
     indKey: hasIndTracking ? indKey : undefined,
-    indBal: hasIndTracking ? indBal : undefined,
+    indBalance: hasIndTracking ? indBalance : undefined,
     year: hasIndTracking ? year : undefined,
   });
   const routeResult = routeForMode(
     trialWithdrawal,
     config,
-    clonedAcctBal,
+    clonedAccountBalance,
     {
       taxBrackets: taxRates.taxBrackets,
       // The resolved (possibly per-year) value, as the real router reads
@@ -220,25 +220,25 @@ function evaluateCost(
   let rothTaxableGrowth = 0;
   let iterPenaltyCost = 0;
   if (hasIndTracking) {
-    const clonedIndBal = new Map(indBal);
+    const clonedIndBalance = new Map(indBalance);
     const clonedIndBasis = new Map(indBasis);
-    const preWithdrawalIndBal = new Map(clonedIndBal);
-    const { decIndWithdrawal } = distributeWithdrawals(
+    const preWithdrawalIndBalance = new Map(clonedIndBalance);
+    const { decumulationIndWithdrawal } = distributeWithdrawals(
       routeResult.slots,
-      indAccts,
+      indAccounts,
       indKey,
-      clonedIndBal,
+      clonedIndBalance,
       eligibility,
     );
     const basisDraws = depleteIndividualBasis({
-      indAccts,
+      indAccounts,
       indKey,
       indBasis: clonedIndBasis,
-      preWithdrawalBal: preWithdrawalIndBal,
-      withdrawals: decIndWithdrawal,
+      preWithdrawalBalance: preWithdrawalIndBalance,
+      withdrawals: decumulationIndWithdrawal,
     });
     rothTaxableGrowth = splitRothWithdrawalForTax({
-      accounts: indAccts.map((ia) => ({
+      accounts: indAccounts.map((ia) => ({
         indKey: indKey(ia),
         ownerBirthYear: ia.ownerBirthYear,
       })),
@@ -248,7 +248,7 @@ function evaluateCost(
     if (eligibility) {
       iterPenaltyCost = computeEarlyWithdrawalPenalty({
         exposure: eligibility,
-        withdrawnByKey: decIndWithdrawal,
+        withdrawnByKey: decumulationIndWithdrawal,
       }).penaltyCost;
     }
   }
@@ -376,8 +376,8 @@ function fixedWithdrawalEstimate(
   );
   const figures = {
     taxableSS,
-    estTax: evalResult.taxCost,
-    estPenalty: evalResult.penaltyCost,
+    estimatedTax: evalResult.taxCost,
+    estimatedPenalty: evalResult.penaltyCost,
     effectiveTaxRate,
     // Nothing is grossed up: the withdrawal is the amount.
     grossUpFactor: 1,
@@ -536,8 +536,8 @@ export function estimateWithdrawalTaxCost(
 
   const figures = {
     taxableSS: trial.e.routedWithSS,
-    estTax: trial.e.taxCost,
-    estPenalty: trial.e.penaltyCost,
+    estimatedTax: trial.e.taxCost,
+    estimatedPenalty: trial.e.penaltyCost,
     effectiveTaxRate,
     grossUpFactor,
     grossedUpNeed,

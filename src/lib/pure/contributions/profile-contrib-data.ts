@@ -3,7 +3,7 @@
 import { safeDivide, roundToCents, sumBy } from "@/lib/utils/math";
 import type {
   ContributionSpec,
-  RetirementContribSlice,
+  RetirementContributionSlice,
 } from "@/lib/pure/engine/types";
 import {
   type AccountCategory,
@@ -48,7 +48,7 @@ type ProfileContributionData = {
   employerMatchRateByCategory: Record<AccountCategory, number>;
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
   /** Base-year amounts and match rates over retirement money only. */
-  retirementOnly: RetirementContribSlice;
+  retirementOnly: RetirementContributionSlice;
   salaryByPerson: Record<number, number>;
   combinedSalary: number;
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
