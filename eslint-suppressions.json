@@ -6492,9 +6492,6 @@
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-abbreviation": {
       "count": 4
     }
@@ -6503,14 +6500,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
     "ratchet/no-abbreviation": {
       "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/projection/engine-input.ts": {
@@ -6518,30 +6509,14 @@
       "count": 1
     }
   },
-  "src/server/routers/projection/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/routers/projection/monte-carlo.ts": {
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-abbreviation": {
       "count": 4
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/routers/projection/presets.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6552,14 +6527,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3

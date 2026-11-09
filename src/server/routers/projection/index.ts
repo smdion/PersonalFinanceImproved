@@ -1,35 +1,6 @@
 /**
- * Projection router for long-term financial forecasting.
- *
- * This file is a pure `mergeRouters` composition — all endpoint bodies live
- * in the sibling sub-router files, one per endpoint family:
- *
- * - `scenarios.ts`    — `computeProjection`
- * - `metadata.ts`     — `getProjectionMetadata` (the same response, no engine run)
- * - `coast-fire.ts`   — `computeCoastFire`, `computeCoastFireMC`
- * - `monte-carlo.ts`  — `computeMonteCarloProjection`,
- *                       `updateGlidePathAllocations`, `updateClampBounds`
- * - `monte-carlo-peek.ts` — `peekMonteCarloSummary` (the dashboard tile)
- * - `strategy.ts`     — `computeStrategyComparison`, `analyzeStrategy`,
- *                       `updateAssetClassOverrides`
- * - `stress-test.ts`  — `computeStressTest`
- * - `presets.ts`      — `updateInflationOverrides`
- * - `relocation.ts`   — `computeRelocationFiProjection`
- * - `withdrawal-bracket-optimizer.ts` — `computeWithdrawalBracketOptimizer`
- * - `coast-fire-probe.ts` — `computeCoastFireProbe`
- * - `tax-optimization.ts` — `projectTaxYears`, `compareWithdrawalStrategies`,
- *                           `rothConversionWhatIf`
- * - `social-security.ts` — `sweepSocialSecurityClaimingAges`
- *
- * Shared Zod schemas + helper builders live in `_shared.ts`.
- *
- * `coast-fire.ts` is split from `scenarios.ts` to keep files under ~500
- * lines. `withdrawal-bracket-optimizer.ts` (multi-year withdrawal-policy
- * optimizer) is its own file for the same reason, not appended to the
- * already-large `coast-fire.ts`. `coast-fire-probe.ts` (Coast FIRE
- * custom-age picker) is separate for the same reason again, AND because
- * its result shape genuinely differs from `computeCoastFireMC`'s (see
- * that file's own docblock).
+ * Projection router: a pure `mergeRouters` composition of the sibling sub-router files,
+ * one per endpoint family (each kept under ~500 lines). Shared schemas live in `_shared.ts`.
  */
 import { mergeRouters } from "../../trpc";
 import { coastFireRouter } from "./coast-fire";

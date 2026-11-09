@@ -1,15 +1,7 @@
 /**
- * Coast FIRE — Custom Age probe.
- *
- * `computeCoastFireMC`/`findCoastFireAge` only ever answer "what's the
- * earliest passing age" (binary search) or "does today work" (the
- * search's own `stopNowResult`). This endpoint answers a third question:
- * "what happens if I stop at age N specifically," for any N the household
- * picks. Split into its own file (not a param bolted onto
- * `computeCoastFireMC`) because the result shape is genuinely different —
- * see `CoastFireProbeResult`'s docblock — and because `coast-fire.ts` is
- * already at 521 lines, over CONTRIBUTING.md § Composed Router Convention's ~500-line
- * guideline.
+ * Coast FIRE Custom Age probe: "what happens if I stop at age N" for any N, where
+ * `computeCoastFireMC` answers only the earliest passing age or "today". Its own file:
+ * the result shape differs (see `CoastFireProbeResult`).
  */
 import {
   planEndAge as planEndAgeOf,
@@ -49,12 +41,8 @@ import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.s
 import { writeStamp } from "@/lib/utils/clock";
 
 /**
- * Deliberately NOT `CoastFireSimulationResult` (computeCoastFireMC's shape).
- * `status`/`coastFireAge`/`warning`/`probesRun`/`stopNow*` are all
- * binary-search concepts a single probe doesn't have an answer for —
- * most importantly, `status: "found"` cannot represent a FAILING probe,
- * and the single most valuable answer this endpoint gives is "no, that
- * age doesn't work." `passes` carries that instead, as a plain boolean.
+ * Not `CoastFireSimulationResult`: its binary-search fields have no meaning for one probe,
+ * and `status: "found"` can't express a failing age. `passes` carries that answer.
  */
 type CoastFireProbeResult = {
   probeAge: number;
@@ -69,16 +57,9 @@ type CoastFireProbeResult = {
 
 export const coastFireProbeRouter = createTRPCRouter({
   /**
-   * Coast FIRE — Custom Age probe
-   *
-   * Runs a single Monte Carlo simulation with contributions (and employer
-   * match) zeroed from `probeAge` onward, answering "what happens if I
-   * stop at this specific age" for any age the household picks — not just
-   * the binary search's earliest-passing-age or "today." Reuses the same
-   * `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s
-   * binary search already uses; no new simulation logic. Returns
-   * `CoastFireProbeResult`, deliberately NOT `computeCoastFireMC`'s
-   * `CoastFireSimulationResult` shape — see that type's own docblock for why.
+   * One Simulation run with contributions and employer match zeroed from `probeAge` on,
+   * via `buildCoastFireProfileSwitches` (computeCoastFireMC's probe mechanism).
+   * Returns `CoastFireProbeResult`.
    */
   computeCoastFireProbe: protectedProcedure
     .use(expensiveRateLimitMiddleware)
@@ -89,10 +70,8 @@ export const coastFireProbeRouter = createTRPCRouter({
         decumulationOverrides: decumulationOverrideSchema,
         selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
-        /** The age to probe. Validated server-side below against the
-         *  RESOLVED engine input's own currentAge/retirementAge — client
-         *  bounds aren't trustworthy, and buildCoastFireProfileSwitches
-         *  has no guard of its own against an out-of-range age. */
+        /** The age to probe; validated below against the resolved engine input's
+         *  currentAge/retirementAge (buildCoastFireProfileSwitches has no guard). */
         probeAge: z.number().int(),
         /** Progress-polling key — see `getMonteCarloProgress`'s docblock. */
         runId: z.string().optional(),
@@ -147,13 +126,8 @@ export const coastFireProbeRouter = createTRPCRouter({
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
 
-      // Own hashEngineInput `kind` -- "coastFireProbe", never
-      // "coastFireMc". hashEngineInput hashes this DERIVED payload, not
-      // the raw tRPC input, so reusing computeCoastFireMC's "coastFireMc"
-      // kind here would let a probe's writeProjectionCache silently
-      // overwrite the real binary-search result under the same cache row.
-      // The kind union exists precisely so differently-shaped results can't
-      // collide like that.
+      // Own hashEngineInput kind: the hash covers the derived payload, so sharing
+      // "coastFireMc" would let a probe overwrite the binary-search result's cache row.
       const inputHash = hashEngineInput("coastFireProbe", {
         engineInput,
         mcAssetClasses,

@@ -1,13 +1,6 @@
 /**
- * Coast FIRE endpoints: deterministic + Monte Carlo validation.
- *
- * Contains `computeCoastFire` (deterministic binary search for the
- * earliest age at which stopping contributions still funds expenses)
- * and `computeCoastFireMC` (Monte Carlo validation variant).
- *
- * Split out of `scenarios.ts` to keep individual router files
- * under ~500 lines (Composed Router convention, CONTRIBUTING.md § Composed Router Convention). Shared
- * schemas + helpers remain in `_shared.ts`.
+ * Coast FIRE endpoints: `computeCoastFire` (deterministic binary search for the earliest
+ * age stopping contributions still funds expenses) and `computeCoastFireMC` (Simulation).
  */
 import {
   planEndAge as planEndAgeOf,
@@ -54,22 +47,15 @@ type CoastFireSimulationResult = {
   status: "already_coast" | "unreachable" | "found";
   successRate: number;
   stopNowSuccessRate: number;
-  /** % of stop-now trials that failed specifically because a year's need
-   *  went unfunded due to penalty-exposed money being excluded —
-   *  distinguishes "can't legally reach the
-   *  money before 59½" from "genuinely ran out" when stopNowSuccessRate is
-   *  low, since both look identical in the raw success rate alone. */
+  /** % of stop-now trials failing because penalty-exposed money was excluded:
+   *  tells "can't reach the money before 59½" from "ran out" when stopNowSuccessRate is low. */
   stopNowPenaltyAvoidedShortfallRate: number;
   /** Median dollar shortfall (today's dollars) among stop-now trials that
    *  hit a penalty-avoided shortfall -- see MonteCarloResult's
    *  medianPenaltyAvoidedShortfallPV. */
   stopNowMedianPenaltyAvoidedShortfallPV: number;
-  /** Full MC result for stopping contributions AT THE CURRENT AGE
-   *  specifically -- lets the chart/table render a genuine "Coast FIRE
-   *  (Today)" scenario, not just the found/passing age. Null when the
-   *  found answer's own coastAge already IS the current age (status
-   *  already_coast) -- in that case `mcResult` already covers "today", no
-   *  need to duplicate the (large) payload. */
+  /** Full Simulation result for stopping at the current age, for a "Coast FIRE (Today)"
+   *  scenario. Null when coastAge is already the current age (`mcResult` covers it). */
   stopNowMcResult: ReturnType<typeof calculateMonteCarlo> | null;
   spendingStabilityRate: number;
   confidenceThreshold: number;
@@ -80,16 +66,9 @@ type CoastFireSimulationResult = {
 
 export const coastFireRouter = createTRPCRouter({
   /**
-   * Coast FIRE
-   *
-   * Finds the earliest age at which contributions can stop and the plan
-   * still funds expenses through end of plan. Uses the same engine payload
-   * as computeProjection, then binary-searches candidate "coast ages" via
-   * ~log₂(retirementAge - currentAge) engine runs.
-   *
-   * Success criterion: the plan judge passes it (`assessPlan`) AND the
-   * strategy's first-year spending covers the stated need. See
-   * `findCoastFireAge` for the full algorithm.
+   * Earliest age contributions can stop with the plan still funded through its end:
+   * binary search on computeProjection's payload, passing when `assessPlan` passes and
+   * first-year spending covers the need (see `findCoastFireAge`).
    */
   computeCoastFire: protectedProcedure
     .input(
@@ -115,11 +94,9 @@ export const coastFireRouter = createTRPCRouter({
 
       const result = findCoastFireAge(engineInput);
 
-      // Deflate nominal values to today's dollars for display (matches the
-      // convention in retirement-card.tsx:118-134). Sustainable withdrawal and
-      // retirement-year expenses land at retirementAge; end balance lands at
-      // projectionEndAge. The calculator stays pure; deflation is a display
-      // concern and happens at the router boundary.
+      // Deflate to today's dollars for display (as the retirement card does):
+      // withdrawal and expenses at retirementAge, end balance at projectionEndAge.
+      // The calculator stays pure; deflation happens at the router boundary.
       const yearsToRetirement = Math.max(
         0,
         planRetirementAgeOf(engineInput) - engineInput.currentAge,
@@ -147,23 +124,9 @@ export const coastFireRouter = createTRPCRouter({
     }),
 
   /**
-   * Coast FIRE — Monte Carlo validation
-   *
-   * Finds the earliest age at which stopping contributions still produces
-   * a ≥90% Monte Carlo success rate. Binary searches candidate ages in
-   * [currentAge, retirementAge), running `calculateMonteCarlo` at each
-   * probe with `COMPARISON_SEED` (common random numbers across probes for
-   * variance reduction) and a hardcoded "default" MC preset for
-   * reproducibility.
-   *
-   * Per monotonicity of MC success rate in coast age is
-   * *approximate*, not strict (IRMAA/ACA/LTCG cliffs can break it). After
-   * binary search returns `lo`, we re-probe `lo - 1` as a sanity check.
-   * If the re-probe also passes, the true earliest age may be lower but
-   * we return the search result honestly with a warning.
-   *
-   * Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock
-   * (profiled). Rate-limited via `expensiveRateLimitMiddleware`.
+   * Earliest age stopping contributions keeps ≥90% Simulation success: binary search with
+   * `COMPARISON_SEED` and the default preset. Monotonicity is approximate (tax cliffs), so
+   * `lo - 1` is re-probed and a pass returns a warning. Rate-limited (~5-6 probes).
    */
   computeCoastFireMC: protectedProcedure
     .use(expensiveRateLimitMiddleware)
@@ -178,22 +141,14 @@ export const coastFireRouter = createTRPCRouter({
         forceRefresh: z.boolean().optional(),
         /** Read-only cache peek — never runs the (expensive) binary search, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
         peekOnly: z.boolean().optional(),
-        /** Progress-polling key — see `getMonteCarloProgress` /
-         *  `runMonteCarloOffThread`'s docblocks. This search runs SEVERAL
-         *  probes sequentially (stop-now, stop-late, binary search steps, a
-         *  boundary re-probe, a final probe), not one job — passing the
-         *  same id to every `probeSimulation()` call means progress naturally
-         *  resets to 0 as each new probe starts and climbs to `numTrials`
-         *  as it runs, since only one worker job is ever active at a time. */
+        /** Progress-polling key (see `getMonteCarloProgress`). Probes run one at a time
+         *  under the same id, so progress resets to 0 at each probe's start. */
         runId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Fetch the engine payload + MC-specific tables in parallel. Mirrors
-      // computeMonteCarloProjection for the "default" preset only — no
-      // user-adjustable preset, no asset class overrides, no inflation
-      // overrides. Coast FIRE MC uses defaults for reproducibility.
-      // Coast FIRE's Simulation runs on the default preset.
+      // Engine payload + Simulation tables in parallel, like computeMonteCarloProjection
+      // but on the default preset with no overrides, for reproducibility.
       const [{ payload }, simulation] = await Promise.all([
         prepareProjectionRun(ctx, {
           selection: input.selection,
@@ -228,11 +183,8 @@ export const coastFireRouter = createTRPCRouter({
         ) ?? undefined;
       const inflationRisk = simulation.effectiveInflationRisk;
 
-      // The probe seed is a fixed constant (common random numbers across
-      // probes, for variance reduction within one search), not a per-run
-      // random seed — so unlike computeProjection/computeMonteCarloProjection
-      // this cache doesn't need to persist a seed; the whole search is
-      // already a pure function of its inputs.
+      // The probe seed is a fixed constant, so the whole search is a pure function
+      // of its inputs and this cache stores no seed.
       const inputHash = hashEngineInput("coastFireMc", {
         engineInput,
         mcAssetClasses,
@@ -267,12 +219,9 @@ export const coastFireRouter = createTRPCRouter({
       const CONFIDENCE = SIMULATION_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
 
-      // Probe helper: run MC with a profile switch at `coastAge` that zeros
-      // contributions AND employer match from that year forward. Pre-coast
-      // years use the user's actual configured plan (specs/realContribs/rate)
-      // so the pre-coast-year balance accumulates normally. Shared seed
-      // across probes = common random numbers = consistent variance across
-      // candidate ages.
+      // Probe: zero contributions and employer match from `coastAge` on; earlier
+      // years use the configured plan. One shared seed across probes (common random
+      // numbers) keeps candidate ages comparable.
       let probesRun = 0;
       const probeSimulation = (coastAge: number) => {
         probesRun += 1;
@@ -326,10 +275,8 @@ export const coastFireRouter = createTRPCRouter({
         return { result, computedAt: writeStamp().toISOString() };
       }
 
-      // Probe stopping today — captured for every branch so the client can
-      // show "Stopping today: X% MC" alongside the found age. This is the
-      // key signal: when deterministic says "already coast" but MC says
-      // "need age N," the gap is quantified by stopNowResult.successRate.
+      // Probe stopping today on every branch, so the client shows "Stopping today: X%"
+      // next to the found age (quantifies a deterministic-vs-Simulation gap).
       const stopNowResult = await probeSimulation(engineInput.currentAge);
       const stopNowSuccessRate = stopNowResult.successRate;
       if (passes(stopNowSuccessRate)) {

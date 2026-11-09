@@ -1,9 +1,6 @@
 /**
- * App-level Monte Carlo inflation overrides.
- *
- * Pure CRUD — no engine payload, no `fetchRetirementData`. This sub-router has
- * zero overlap with the compute endpoints (monte-carlo / scenarios / strategy /
- * stress-test), which is why it is naturally its own file.
+ * App-level Simulation inflation overrides: pure CRUD, with no engine payload or
+ * `fetchRetirementData`.
  */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
