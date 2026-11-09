@@ -90,6 +90,7 @@ describe("recommendations that defer to a more precise one", () => {
           coverage: 1,
           knownValue: 100_000,
           unlinkedValue: 0,
+          unlinkedAccountsValue: 0,
           classes: [],
           expenseRatio: 0.0005,
           costCoverage: 1,

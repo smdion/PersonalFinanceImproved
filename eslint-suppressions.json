@@ -5324,7 +5324,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 14
+      "count": 12
     }
   },
   "src/lib/pure/advice/milestones/investing.ts": {
@@ -5332,7 +5332,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/pure/advice/milestones/journey.ts": {

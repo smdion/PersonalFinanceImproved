@@ -262,7 +262,7 @@ export type MilestoneInput = {
     /** Dollars in fund categories not linked to any asset class. */
     unlinkedValue: number;
     /** Dollars in SimpleFIN accounts not linked to a Ledgr account. */
-    unlinkedAccountsValue?: number;
+    unlinkedAccountsValue: number;
     classes: {
       name: string;
       share: number;

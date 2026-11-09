@@ -134,8 +134,8 @@ export function investing(input: MilestoneInput): MilestoneResult[] {
             h.unlinkedValue > 0
               ? `${formatCurrency(h.unlinkedValue)} of holdings aren't linked to an asset class and aren't counted — link them on Benchmarks`
               : null,
-            (h.unlinkedAccountsValue ?? 0) > 0
-              ? `${formatCurrency(h.unlinkedAccountsValue!)} in SimpleFIN accounts not linked to Ledgr is left out`
+            h.unlinkedAccountsValue > 0
+              ? `${formatCurrency(h.unlinkedAccountsValue)} in SimpleFIN accounts not linked to Ledgr is left out`
               : null,
           ]
             .filter(Boolean)

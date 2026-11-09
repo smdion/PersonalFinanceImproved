@@ -592,6 +592,7 @@ describe("investing (Bogleheads)", () => {
     coverage: 0.95,
     knownValue: extra.knownValue ?? 100_000,
     unlinkedValue: extra.unlinkedValue ?? 0,
+    unlinkedAccountsValue: 0,
     classes,
     expenseRatio: 0.0005,
     costCoverage: 0.9,
@@ -1009,6 +1010,8 @@ describe("input builders", () => {
       limit,
       employeeContrib,
       totalContrib,
+      payrollDeductedContrib: 0,
+      nonPayrollContrib: 0,
     });
     const people = [
       {
@@ -1082,6 +1085,8 @@ describe("input builders", () => {
       limit,
       employeeContrib,
       totalContrib,
+      payrollDeductedContrib: 0,
+      nonPayrollContrib: 0,
       hsaCoverageType,
     });
     expect(
@@ -1116,6 +1121,8 @@ describe("input builders", () => {
       limit: 4_400,
       employeeContrib,
       totalContrib: employeeContrib,
+      payrollDeductedContrib: 0,
+      nonPayrollContrib: 0,
       hsaCoverageType,
     });
     const people = [
@@ -1154,6 +1161,8 @@ describe("input builders", () => {
               limit: 0,
               employeeContrib: 20_000,
               totalContrib: 20_000,
+              payrollDeductedContrib: 0,
+              nonPayrollContrib: 0,
             },
           ],
         },
@@ -1213,6 +1222,8 @@ describe("input builders", () => {
       limit: 23_500,
       employeeContrib: 15_000,
       totalContrib: 20_000,
+      payrollDeductedContrib: 0,
+      nonPayrollContrib: 0,
       employerMatch: 5_000,
       employerMatchAvailable: 7_500,
       parentCategory: "Retirement",
@@ -1714,6 +1725,7 @@ describe("recommendations use what Ledgr knows", () => {
     coverage: 1,
     knownValue: 100_000,
     unlinkedValue: 0,
+    unlinkedAccountsValue: 0,
     classes: [
       {
         name: "US stocks",
@@ -1789,6 +1801,8 @@ describe("input builders: the context recommendations use", () => {
     limit: 23_500,
     employeeContrib: 10_000,
     totalContrib: 10_000,
+    payrollDeductedContrib: 0,
+    nonPayrollContrib: 0,
     ...o,
   });
 

@@ -159,8 +159,8 @@ type LimitAccount = {
   employeeContrib: number;
   totalContrib: number;
   /** A year's contributions through payroll, and outside it. */
-  payrollDeductedContrib?: number;
-  nonPayrollContrib?: number;
+  payrollDeductedContrib: number;
+  nonPayrollContrib: number;
   /** HSA coverage behind the limit; null/absent when not set. */
   hsaCoverageType?: string | null;
 };
@@ -202,9 +202,9 @@ export function milestoneLimits(
   );
   // Through payroll or outside it, from where the money goes today.
   const route = (a: LimitAccount): boolean | null =>
-    (a.payrollDeductedContrib ?? 0) > 0
+    a.payrollDeductedContrib > 0
       ? true
-      : (a.nonPayrollContrib ?? 0) > 0
+      : a.nonPayrollContrib > 0
         ? false
         : null;
   const add = (owner: string, a: LimitAccount, checksLeft: number | null) => {
