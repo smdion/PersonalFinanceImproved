@@ -1,5 +1,5 @@
 /**
- * contribAccountsFor takes its figures by name. Several share a type
+ * contributionAccountsFor takes its figures by name. Several share a type
  * (salary and total compensation, this year's and last year's limits, age
  * and periods per year): each is given a distinct value here, so reading
  * one in another's place moves a figure. Invented household: one person,

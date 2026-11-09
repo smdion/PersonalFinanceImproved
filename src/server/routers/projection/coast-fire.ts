@@ -201,7 +201,7 @@ export const coastFireRouter = createTRPCRouter({
          *  `runMonteCarloOffThread`'s docblocks. This search runs SEVERAL
          *  probes sequentially (stop-now, stop-late, binary search steps, a
          *  boundary re-probe, a final probe), not one job — passing the
-         *  same id to every `probeMC()` call means progress naturally
+         *  same id to every `probeSimulation()` call means progress naturally
          *  resets to 0 as each new probe starts and climbs to `numTrials`
          *  as it runs, since only one worker job is ever active at a time. */
         runId: z.string().optional(),

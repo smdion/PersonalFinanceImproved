@@ -584,7 +584,7 @@ export async function computeContributionSummary(
         categoryMap.set(cat, entry);
       }
 
-      // Determine limits per category — uses resolveContribLimit with HSA coverage from raw data
+      // Determine limits per category — uses resolveContributionLimit with HSA coverage from raw data
       // Takes the raw DB category key (categoryKey), not the display label
       // Coverage across every row of the type — family if any row is
       // family — the same rule the label and the cap use.

@@ -189,9 +189,9 @@ export const CHART_COLORS = {
   avgWealth: "#9ca3af", // gray-400
   prodigiousWealth: "#facc15", // yellow-400
   aawScore: "#059669", // emerald-600
-  // Monte Carlo percentile bands. mcGrid/mcAxis are the general chart
+  // Monte Carlo percentile bands. simulationGrid/simulationAxis are the general chart
   // grid/axis defaults (used well beyond MC charts — see chart-defaults.tsx).
-  // mcBandOuter/mcBandInner/mcBandMiddle/mcMedian are the fan-band palette
+  // simulationBandOuter/simulationBandInner/simulationBandMiddle/simulationMedian are the fan-band palette
   // shared by projection-chart.tsx and spending-stability-chart.tsx, which
   // had each independently hardcoded this exact violet set locally before
   // being consolidated here.
@@ -242,7 +242,7 @@ export const CHART_COLORS = {
   wdComparisonGrid: "#374151", // gray-700
   wdComparisonAxis: "#9ca3af", // gray-400
   wdComparisonTooltipBg: "#1f2937", // gray-800
-  // Projection chart axis line (distinct from tick/grid — see mcGrid/mcAxis)
+  // Projection chart axis line (distinct from tick/grid — see simulationGrid/simulationAxis)
   axisLine: "#d1d5db", // gray-300
   // Projection chart reference-line markers (age axis + legend swatch)
   ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
@@ -286,8 +286,8 @@ export const CHART_COLORS = {
  * fill) in dark mode. Spread over `CHART_COLORS` in the chart component:
  *   const c = { ...CHART_COLORS, ...chartLinePalette(dark) };
  * Light values are the originals; dark values step 600→400 to clear 3:1
- * against `#1e293b` (and, for mcMedian, against the ~`#343360`
- * mcBandMiddle@0.2 fill it's drawn over). Non-line series stay in
+ * against `#1e293b` (and, for simulationMedian, against the ~`#343360`
+ * simulationBandMiddle@0.2 fill it's drawn over). Non-line series stay in
  * CHART_COLORS.
  */
 export function chartLinePalette(dark: boolean) {

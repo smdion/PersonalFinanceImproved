@@ -1,7 +1,7 @@
 /**
  * Enforces DESIGN.md's WCAG 1.4.11 floor: every dark-mode data-carrying
  * chart-line color in `chartLinePalette` must clear 3:1 against the dark
- * card background (and, for mcMedian, against the mcBandMiddle@0.2 fill it
+ * card background (and, for simulationMedian, against the simulationBandMiddle@0.2 fill it
  * is drawn over). Without this the DESIGN.md rule is prose with no teeth.
  */
 import { describe, it, expect } from "vitest";

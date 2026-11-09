@@ -307,7 +307,7 @@ export async function computeRelocationAnalysis(
   // summary path (aggregateContributionsByCategory: bonus checks per
   // account's fromBonus, the per-account match pay, incomplete
   // accounts). `contribs` is always resolveProfile's output, never the
-  // raw activeContribs rows, which carry no value of their own. Jobs are
+  // raw activeContributions rows, which carry no value of their own. Jobs are
   // the arm's profile-patched ones, so a profile's pay schedule counts.
   const computeContribTotals = (
     contribs: (ContribRowWithActiveFields & CapPassed)[],

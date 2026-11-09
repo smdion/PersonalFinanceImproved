@@ -52,7 +52,7 @@ export function canDeleteContribProfile(
 
 /**
  * Check if a salary profile can be deleted. Twin of
- * canDeleteContribProfile — no sentinel id, same last-one-standing rule.
+ * canDeleteContributionProfile — no sentinel id, same last-one-standing rule.
  */
 export function canDeleteSalaryProfile(
   activeProfileId: number | null,
@@ -75,7 +75,7 @@ export function canDeleteSalaryProfile(
 
 /**
  * Check if a retirement profile can be deleted. Twin of
- * canDeleteContribProfile/canDeleteSalaryProfile — no sentinel id, same
+ * canDeleteContributionProfile/canDeleteSalaryProfile — no sentinel id, same
  * last-one-standing rule. "Used by a Plan" lives in the router, same as
  * the other two, which has to name the offending Plans in its message.
  */

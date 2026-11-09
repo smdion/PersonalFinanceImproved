@@ -7,7 +7,7 @@ interface ActiveContribLite {
 }
 
 /**
- * accumulationOrder: distinct category names from activeContribs in their
+ * accumulationOrder: distinct category names from activeContributions in their
  * allocationPriority order (lower = higher priority = filled first). The
  * validateContributionOrder() helper compares this against the CFP
  * heuristic.

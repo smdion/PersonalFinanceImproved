@@ -192,7 +192,7 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
 /**
  * Computes per-account, per-dollar penalty exposure for one projected year.
  *
- * `indBal` supplies each account's *current* projected balance (not its
+ * `indBalance` supplies each account's *current* projected balance (not its
  * `startingBalance` — that's an accumulation-phase input, stale by the time
  * decumulation runs). Each account's own `ownerBirthYear` and `ruleOf55`
  * ("now" resolution, threaded by `engine-payload/individual-accounts.ts`) are
@@ -406,11 +406,11 @@ export function computeWithdrawalEligibility(input: {
  * overlap on the same dollar and can be summed together safely by
  * `subtractExcluded`, `balance-utils.ts`).
  *
- * Portfolio-parented accounts are NOT removed from `indAccts`/`indBal`
+ * Portfolio-parented accounts are NOT removed from `indAccts`/`indBalance`
  * themselves — they still receive contributions and growth normally; only
  * the routing-time VIEW computed here excludes their balance. Mirrors
  * `computeWithdrawalEligibility`'s "recomputed fresh every year from
- * current indBal" discipline, not a persistent removal.
+ * current indBalance" discipline, not a persistent removal.
  */
 export type NonRetirementExclusion = {
   total: Record<AccountCategory, number>;

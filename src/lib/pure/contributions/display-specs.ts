@@ -120,7 +120,7 @@ export function buildContributionDisplaySpecs(
       employerMatchValue: toNumber(c.employerMatchValue),
       employerMatchRate: storedMatchRate(c.employerMatchRate),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
-      employerMatchTaxTreatment: "pre_tax", // not used by ContribDisplaySpec
+      employerMatchTaxTreatment: "pre_tax", // not used by ContributionDisplaySpec
     })),
   );
 

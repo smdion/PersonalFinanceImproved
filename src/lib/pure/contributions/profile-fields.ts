@@ -26,7 +26,7 @@ export function getIncompleteContribAccountIds(
 
 /**
  * Classify why a linked contribution account resolves the way it does for
- * one (profile, column) pair — reusing resolveContribFieldDisplayState so
+ * one (profile, column) pair — reusing resolveContributionFieldDisplayState so
  * this can't drift from the Compare view/Profile Manager's own "why is this
  * $0" logic (RULES.md Rule 6: those two already had to be de-duplicated
  * once). Checked in this order because each check can only be meaningful

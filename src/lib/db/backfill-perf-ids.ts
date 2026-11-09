@@ -43,9 +43,9 @@ export async function backfillPerformanceAccountIds(db: Db) {
         return (
           labelLower.includes(typeLabel) &&
           (pa.ownerPersonId === contrib.personId ||
-            // Guard against personName being "" (joint contrib / unresolved
+            // Guard against personName being "" (joint contribution / unresolved
             // person) — String.includes("") is always true, which would
-            // otherwise match this contrib to ANY performance account of
+            // otherwise match this contribution to ANY performance account of
             // the right type regardless of actual ownership.
             (personName !== "" && labelLower.includes(personName)))
         );

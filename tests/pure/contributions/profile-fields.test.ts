@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
 
 // ---------------------------------------------------------------------------
-// classifyContribResolution
+// classifyContributionResolution
 // ---------------------------------------------------------------------------
 
 describe("classifyContribResolution", () => {

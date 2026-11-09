@@ -4,7 +4,7 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
 
 /**
- * Simple Dietz return: gainLoss / (beginBal + netFlows/2).
+ * Simple Dietz return: gainLoss / (beginBalance + netFlows/2).
  * contribs = totalContributions (employee + employer combined).
  * Returns null when denominator is zero (no capital at risk).
  */

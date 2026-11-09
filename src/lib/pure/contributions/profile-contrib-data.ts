@@ -167,7 +167,7 @@ export function buildProfileContribData(
   // no resolvable job/pay period can't produce a real spec (periodsPerYear
   // would be a guess) — it's dropped and reported via
   // specBuilderIncompleteIds instead, per the method-gated incomplete
-  // treatment (see resolveContribPeriods).
+  // treatment (see resolveContributionPeriods).
   const specBuilderIncompleteIds: number[] = [];
   const contributionSpecs: ContributionSpec[] = activeContribs
     .filter((c) => {

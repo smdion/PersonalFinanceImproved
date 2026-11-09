@@ -1,6 +1,6 @@
 /**
  * Tests for pure profile management, active job detection, and profile linking logic.
- * Covers: canDeleteBudgetProfile, canDeleteContribProfile, canRemoveColumn,
+ * Covers: canDeleteBudgetProfile, canDeleteContributionProfile, canRemoveColumn,
  * findActiveJob, filterActiveJobs, canDeletePerformanceAccount.
  */
 import { describe, it, expect } from "vitest";
@@ -390,7 +390,7 @@ describe("resolveContribFieldDisplayState", () => {
     // not "does an entry object exist" — otherwise this cell falls through
     // to rendering the literal string "undefined" (see git history/PR for
     // the live bug this regression test locks in).
-    // displayNameCustom isn't part of the narrow ContribAccountActiveFields
+    // displayNameCustom isn't part of the narrow ContributionAccountActiveFields
     // type this function reads, but real stored entries carry it alongside
     // these fields — build it as a loosely-typed record to simulate that.
     const entry: Record<string, unknown> = { displayNameCustom: "Custom name" };

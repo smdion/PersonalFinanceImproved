@@ -11,7 +11,7 @@
  *
  * `contributionProfile.compareData` is the one data source this and the
  * swap-time diff share. Each cell resolves its display state (value, amber
- * when set, DISABLED badge) with resolveContribFieldDisplayState, per cell.
+ * when set, DISABLED badge) with resolveContributionFieldDisplayState, per cell.
  */
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
