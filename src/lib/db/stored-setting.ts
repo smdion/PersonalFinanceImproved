@@ -7,26 +7,33 @@ import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import type { DbOrTx } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
-import { logWarnOnce } from "@/lib/logger";
+import {
+  passOnAsStored,
+  readStoredShape,
+  type StoredShapeRead,
+} from "@/lib/db/stored-shape";
 
-/** The stored value itself, never a parsed copy. `source` names it in the
- *  log (`app_settings.<key>`, `<table>.<column>`); a refused value is
- *  logged once per process per source and passed on as stored. */
+/** The stored value itself (`readStoredShape`). `source` names it in the
+ *  log (`app_settings.<key>`, `<table>.<column>`); a refused value is logged
+ *  once per process per source and passed on as stored. */
 export function readStoredValue<S extends z.ZodType>(
   source: string,
   value: unknown,
   shape: S,
 ): z.output<S> {
-  const issues = shape.safeParse(value).error?.issues;
-  if (issues)
-    logWarnOnce("stored_value_unexpected_shape", source, {
-      source,
-      issues: issues
-        .slice(0, 5)
-        .map((i) => `${i.path.join(".")}: ${i.message}`),
-    });
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the value its writer's shape was checked against just above; a refused one passes on as stored (any install loads)
-  return value as z.output<S>;
+  return passOnAsStored(checkStoredValue(source, value, shape));
+}
+
+function checkStoredValue<S extends z.ZodType>(
+  source: string,
+  value: unknown,
+  shape: S,
+): StoredShapeRead<z.output<S>> {
+  return readStoredShape(value, shape, {
+    event: "stored_value_unexpected_shape",
+    key: () => source,
+    data: (issues) => ({ source, issues: issues.slice(0, 5) }),
+  });
 }
 
 /** An app_settings value, read as `readStoredValue` reads one. */

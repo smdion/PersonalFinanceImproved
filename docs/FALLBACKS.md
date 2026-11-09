@@ -71,6 +71,8 @@ Each stays on every install until its migration and transform ship (planned for 
 
 Every server read of `contribution_active_fields` goes through `readContributionActiveFields`. The Salary Profile rows the paycheck and projection math read (`server/data/salaries.ts` `fetchSalaryProfile`, `engine-payload/load.ts`, `profile-switches.ts`) go through `checkSalaryEntries`; the router's editor reads and writers keep the raw row. The writers keep the raw root: `patchEntry` in `routers/contribution-profiles.ts`, `services/contributions/account-edits.ts`, `server/data/delete-references.ts` (removing a deleted record's entries), `refreshEntryRates` in `services/contributions/match-writes.ts`, the profile duplicate in `services/profiles/profile-lifecycle.ts`, and the startup backfill. They write the whole root back, so a reader that dropped a key would change stored data.
 
+The four stored-shape readers (`lib/db/stored-setting.ts`, `stored-strategy-key.ts`, `stored-salary-entries.ts`, `stored-active-fields.ts`) check through one reader, `lib/db/stored-shape.ts` `readStoredShape`: it takes any value, returns a fitting one as itself, and logs a refused one once per process and marks it as stored. `passOnAsStored` is the one place a refused value passes on; once a shape's migration converts every row, its reader throws on a refused read instead. A reader is tested against a JSON-null, array, scalar and double-encoded-string root from its first commit.
+
 ## Missing money shown as $0 (household-math work, v0.11)
 
 Changing one moves a figure for a household whose data is missing, so each stays until it gets a real absent state (RULES Known Gaps).

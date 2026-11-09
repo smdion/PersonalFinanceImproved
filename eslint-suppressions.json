@@ -2787,6 +2787,11 @@
       "count": 2
     }
   },
+  "src/components/savings/transactions/all-transactions-tab.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
   "src/components/savings/transactions/editor.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
@@ -2812,11 +2817,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    }
-  },
-  "src/components/savings/transactions/all-transactions-tab.tsx": {
-    "max-lines-per-function": {
-      "count": 1
     }
   },
   "src/components/savings/upcoming-goals.tsx": {

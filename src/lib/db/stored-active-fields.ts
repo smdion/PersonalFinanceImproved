@@ -8,8 +8,11 @@ import {
   EMPLOYER_MATCH_TYPE_VALUES,
 } from "@/lib/config/enum-values";
 import { contributionActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
-import type { EntityFieldMap } from "@/lib/db/schema";
-import { logWarnOnce } from "@/lib/logger";
+import {
+  passOnAsStored,
+  readStoredShape,
+  type StoredShapeLog,
+} from "@/lib/db/stored-shape";
 
 /** The write schema takes any string here; a read holds them to their sets. */
 const closedSetValues = z.object({
@@ -29,36 +32,40 @@ export type ContributionActiveFieldsRoot = {
   deductions: Record<string, Record<string, unknown>>;
 };
 
+/** A root a hand edit left as something other than an object. */
+const objectRoot = z.custom<Record<string, unknown>>(
+  (root) => typeof root === "object" && root !== null && !Array.isArray(root),
+  { message: "not an object", path: ["root"] },
+);
+
 /** Logs a refused row once per process, not on every read. */
-function warnOnce(profileId: number | undefined, issues: string[]): void {
-  logWarnOnce(
-    "contribution_active_fields_unexpected_shape",
-    `${profileId}|${issues.join(";")}`,
-    { profileId, issues },
-  );
+function refusedRow(profileId: number | undefined): StoredShapeLog {
+  return {
+    event: "contribution_active_fields_unexpected_shape",
+    key: (issues) => `${profileId}|${issues.join(";")}`,
+    data: (issues) => ({ profileId, issues }),
+  };
 }
 
 /** Both buckets, each `{}` when the profile sets nothing in it; a root that
  *  isn't an object (a hand-edited JSON null) reads as empty. */
 export function readContributionActiveFields(
-  stored: EntityFieldMap,
+  stored: unknown,
   profileId?: number,
 ): ContributionActiveFieldsRoot {
-  const root: unknown = stored;
-  if (typeof root !== "object" || root === null || Array.isArray(root)) {
-    warnOnce(profileId, ["root: not an object"]);
-    return { contributionAccounts: {}, deductions: {} };
-  }
-  const issues = [contributionActiveFieldsSchema, closedSetValues].flatMap(
-    (schema) => schema.safeParse(stored).error?.issues ?? [],
+  const root = readStoredShape(stored, objectRoot, refusedRow(profileId));
+  if (!root.fits) return { contributionAccounts: {}, deductions: {} };
+  // As stored, a bucket the schema defaults may be missing.
+  const fields: Partial<ContributionActiveFieldsRoot> = passOnAsStored(
+    readStoredShape(
+      root.value,
+      contributionActiveFieldsSchema,
+      refusedRow(profileId),
+      [closedSetValues],
+    ),
   );
-  if (issues.length > 0)
-    warnOnce(
-      profileId,
-      issues.map((i) => `${i.path.join(".")}: ${i.message}`),
-    );
   return {
-    contributionAccounts: stored.contributionAccounts ?? {},
-    deductions: stored.deductions ?? {},
+    contributionAccounts: fields.contributionAccounts ?? {},
+    deductions: fields.deductions ?? {},
   };
 }
