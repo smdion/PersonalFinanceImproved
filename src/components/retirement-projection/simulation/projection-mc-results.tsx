@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { maskAmountsInText } from "@/lib/utils/format";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
-import type { ProjectionState } from "./projection-table-types";
+import type { ProjectionState } from "../projection-table-types";
 import { SimulationBar } from "./mc-simulation-bar";
 
 /** MC loading, errors, warnings, and compact summary bar. */

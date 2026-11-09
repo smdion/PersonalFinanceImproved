@@ -3,7 +3,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
-import type { ProjectionState } from "./projection-table-types";
+import type { ProjectionState } from "../projection-table-types";
 import {
   formatCurrency,
   formatPercent,

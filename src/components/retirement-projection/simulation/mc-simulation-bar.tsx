@@ -2,10 +2,10 @@
 import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
-import { ControlZone } from "./pill-btn";
+import { ControlZone } from "../pill-btn";
 import { formatPercent } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
-import type { ProjectionState } from "./projection-table-types";
+import type { ProjectionState } from "../projection-table-types";
 import {
   SimulationRateTiles,
   SimulationRunTiles,

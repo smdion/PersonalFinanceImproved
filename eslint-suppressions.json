@@ -1987,22 +1987,22 @@
       "count": 2
     }
   },
-  "src/components/retirement-projection/mc-asset-class-section.tsx": {
+  "src/components/retirement-projection/simulation/mc-asset-class-section.tsx": {
     "ratchet/no-raw-button": {
       "count": 4
     }
   },
-  "src/components/retirement-projection/mc-asset-classes.tsx": {
+  "src/components/retirement-projection/simulation/mc-asset-classes.tsx": {
     "ratchet/no-raw-input": {
       "count": 2
     }
   },
-  "src/components/retirement-projection/mc-assumptions-toggle.tsx": {
+  "src/components/retirement-projection/simulation/mc-assumptions-toggle.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-bounds.tsx": {
+  "src/components/retirement-projection/simulation/mc-bounds.tsx": {
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -2010,12 +2010,12 @@
       "count": 2
     }
   },
-  "src/components/retirement-projection/mc-glide-path-section.tsx": {
+  "src/components/retirement-projection/simulation/mc-glide-path-section.tsx": {
     "ratchet/no-raw-button": {
       "count": 3
     }
   },
-  "src/components/retirement-projection/mc-glide-path.tsx": {
+  "src/components/retirement-projection/simulation/mc-glide-path.tsx": {
     "ratchet/no-raw-input": {
       "count": 1
     },
@@ -2023,7 +2023,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-scenario-inputs.tsx": {
+  "src/components/retirement-projection/simulation/mc-scenario-inputs.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -2037,12 +2037,12 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-simulation-bar.tsx": {
+  "src/components/retirement-projection/simulation/mc-simulation-bar.tsx": {
     "ratchet/no-abbreviation": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-summary-tiles.tsx": {
+  "src/components/retirement-projection/simulation/mc-summary-tiles.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
     },
@@ -2232,7 +2232,7 @@
       "count": 3
     }
   },
-  "src/components/retirement-projection/projection-mc-results.tsx": {
+  "src/components/retirement-projection/simulation/projection-mc-results.tsx": {
     "ratchet/no-abbreviation": {
       "count": 3
     }

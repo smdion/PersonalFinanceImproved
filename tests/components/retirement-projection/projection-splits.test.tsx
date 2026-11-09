@@ -430,7 +430,7 @@ describe("ProjectionChart", () => {
 describe("McResultsSection", () => {
   it("returns null when not in MC mode", async () => {
     const { McResultsSection } =
-      await import("@/components/retirement-projection/projection-mc-results");
+      await import("@/components/retirement-projection/simulation/projection-mc-results");
     const { container } = render(
       <McResultsSection
         state={baseMockState({ projectionMode: "deterministic" })}
@@ -441,7 +441,7 @@ describe("McResultsSection", () => {
 
   it("renders empty while MC is loading (spinner is in ProjectionLoader)", async () => {
     const { McResultsSection } =
-      await import("@/components/retirement-projection/projection-mc-results");
+      await import("@/components/retirement-projection/simulation/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       simulationLoading: true,
@@ -453,7 +453,7 @@ describe("McResultsSection", () => {
 
   it("shows error message on MC failure", async () => {
     const { McResultsSection } =
-      await import("@/components/retirement-projection/projection-mc-results");
+      await import("@/components/retirement-projection/simulation/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: { message: "Timeout" } },
@@ -464,7 +464,7 @@ describe("McResultsSection", () => {
 
   it("shows no-data message when no MC results", async () => {
     const { McResultsSection } =
-      await import("@/components/retirement-projection/projection-mc-results");
+      await import("@/components/retirement-projection/simulation/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: null },

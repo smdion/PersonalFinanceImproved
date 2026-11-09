@@ -1,6 +1,6 @@
 import type { DollarBasis } from "@/lib/config/enum-values";
 import type { ProjectionState } from "../projection-table-types";
-import { McResultsSection } from "../projection-mc-results";
+import { McResultsSection } from "../simulation/projection-mc-results";
 import { SimulationOffNotice } from "./engine-notices";
 import { HeroKpisPanel } from "./hero-panel";
 import { ComputeControls } from "./compute-controls";

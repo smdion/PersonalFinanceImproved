@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { McResultsSection } from "@/components/retirement-projection/projection-mc-results";
+import { McResultsSection } from "@/components/retirement-projection/simulation/projection-mc-results";
 import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
 import { resetTrpcMock, utilsCalls } from "../trpc-mock";
 
