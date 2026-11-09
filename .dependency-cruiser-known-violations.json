@@ -141,7 +141,7 @@
   },
   {
     "rule": "ui-never-runs-infra",
-    "from": "src/components/portfolio/contribution-accounts-types.ts",
+    "from": "src/components/contributions/contribution-accounts-types.ts",
     "to": "src/lib/db/schema.ts"
   }
 ]

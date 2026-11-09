@@ -1,5 +1,5 @@
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
-import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import { RothRouteSelect } from "@/components/contributions/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
 import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";

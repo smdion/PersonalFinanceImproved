@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { CreateAccountForm } from "@/components/portfolio/contribution-accounts-create-form";
+import { CreateAccountForm } from "@/components/contributions/contribution-accounts-create-form";
 import { FormField, FormSelect } from "@/components/forms";
 import type { AccountCategory } from "@/lib/config/account-types";
 

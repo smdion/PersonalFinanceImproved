@@ -18,7 +18,7 @@ import { Tabs } from "@/components/ui/tabs";
 import {
   ContributionAccountForm,
   type ContribAccountFormValues,
-} from "@/components/paycheck/contrib-account-form";
+} from "@/components/contributions/contrib-account-form";
 import { ProfileDetailPanel } from "./profile-detail-panel";
 import { ProfileEditor } from "./profile-editor";
 import { ProfileInlineEditor } from "./profile-inline-editor";

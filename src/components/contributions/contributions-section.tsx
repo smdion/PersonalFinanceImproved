@@ -7,13 +7,13 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { AccountBadge } from "@/components/ui/account-badge";
 import { SlidePanel } from "@/components/ui/slide-panel";
-import { SectionHeader } from "./section-header";
+import { SectionHeader } from "../paycheck/section-header";
 import { ContributionCard } from "./contrib-card";
 import {
   ContributionAccountForm,
   type ContribAccountFormValues,
 } from "./contrib-account-form";
-import type { RawContrib, JointContrib } from "./types";
+import type { RawContrib, JointContrib } from "../paycheck/types";
 import {
   CONTRIBUTION_METHOD_LABELS_SHORT,
   TAX_TREATMENT_LABELS as TAX_LABELS,

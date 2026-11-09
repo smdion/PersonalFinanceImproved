@@ -40,7 +40,7 @@ import {
   AccountLiveSection,
   AccountLiveSummary,
   type AccountInsight,
-} from "./account-live-data";
+} from "../portfolio/account-live-data";
 import type { Holding } from "@/components/investments/fund-holding-row";
 
 export function AccountCard({

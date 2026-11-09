@@ -2,7 +2,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
 import { FocusTarget } from "@/components/ui/focus-target";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
+import { ContributionAccountsSettings } from "@/components/contributions/contribution-accounts";
 import { CardBoundary } from "@/components/dashboard/utils";
 
 export type PortfolioSettingsSectionsProps = {

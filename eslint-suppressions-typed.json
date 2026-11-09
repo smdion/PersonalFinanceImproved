@@ -109,12 +109,12 @@
       "count": 2
     }
   },
-  "src/components/portfolio/contribution-accounts-card.tsx": {
+  "src/components/contributions/contribution-accounts-card.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
   },
-  "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
+  "src/components/contributions/contribution-accounts-contrib-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }

@@ -1,4 +1,4 @@
-import type { ContributionCardProps } from "./types";
+import type { ContributionCardProps } from "../paycheck/types";
 import { Toggle } from "@/components/ui/toggle";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

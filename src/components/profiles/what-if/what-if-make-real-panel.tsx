@@ -7,7 +7,7 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import {
   ContributionAccountForm,
   type ContribAccountFormValues,
-} from "@/components/paycheck/contrib-account-form";
+} from "@/components/contributions/contrib-account-form";
 import { type ContributionAddition } from "./what-if-editors";
 import type { Dispatch, SetStateAction } from "react";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
-import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import { RothRouteSelect } from "@/components/contributions/roth-route-select";
 import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import {
   matchFigureForForm,
@@ -21,7 +21,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineAccountType } from "./inline-account-type";
 import { InstitutionPicker } from "./institution-picker";
 import { trpc } from "@/lib/trpc";
-import type { ContributionCardProps } from "./types";
+import type { ContributionCardProps } from "../paycheck/types";
 import { isOverflowTarget, getDisplayConfig } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,

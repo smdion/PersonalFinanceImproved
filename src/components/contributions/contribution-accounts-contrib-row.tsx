@@ -31,7 +31,7 @@ import {
 } from "@/lib/pure/contributions/match-display";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
-import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import { RothRouteSelect } from "@/components/contributions/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
 import { LabelOptions } from "@/components/ui/label-options";
 

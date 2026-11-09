@@ -21,7 +21,7 @@ import {
   householdPeriodsPerYear,
   type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
-import { FundingBar } from "./funding-bar";
+import { FundingBar } from "../paycheck/funding-bar";
 import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import {
   categoriesWithIrsLimit,

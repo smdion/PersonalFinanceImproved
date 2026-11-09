@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ContributionCard } from "@/components/paycheck/contrib-card";
+import { ContributionCard } from "@/components/contributions/contrib-card";
 import type { RawContrib } from "@/components/paycheck/types";
 
 // No query is registered: performanceAccounts.list has no data.
@@ -49,7 +49,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("@/components/paycheck/inline-account-type", () => ({
+vi.mock("@/components/contributions/inline-account-type", () => ({
   InlineAccountType: ({ value }: { value: string }) => <span>{value}</span>,
 }));
 

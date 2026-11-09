@@ -20,7 +20,7 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { type ContribAccountFormValues } from "@/components/paycheck/contrib-account-form";
+import { type ContribAccountFormValues } from "@/components/contributions/contrib-account-form";
 import {
   useBudgetDerivedData,
   type SavingsGoalEntry,

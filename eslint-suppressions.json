@@ -1381,7 +1381,7 @@
       "count": 2
     }
   },
-  "src/components/paycheck/contrib-account-form.tsx": {
+  "src/components/contributions/contrib-account-form.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 15
     },
@@ -1401,12 +1401,12 @@
       "count": 2
     }
   },
-  "src/components/paycheck/contrib-card-auto-max.tsx": {
+  "src/components/contributions/contrib-card-auto-max.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },
-  "src/components/paycheck/contrib-card.tsx": {
+  "src/components/contributions/contrib-card.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1414,7 +1414,7 @@
       "count": 3
     }
   },
-  "src/components/paycheck/contribution-snapshot.tsx": {
+  "src/components/contributions/contribution-snapshot.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -1422,7 +1422,7 @@
       "count": 3
     }
   },
-  "src/components/paycheck/contributions-section.tsx": {
+  "src/components/contributions/contributions-section.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1451,7 +1451,7 @@
       "count": 1
     }
   },
-  "src/components/paycheck/inline-account-type.tsx": {
+  "src/components/contributions/inline-account-type.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1459,7 +1459,7 @@
       "count": 1
     }
   },
-  "src/components/paycheck/institution-picker.tsx": {
+  "src/components/contributions/institution-picker.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1511,7 +1511,7 @@
       "count": 15
     }
   },
-  "src/components/paycheck/roth-route-select.tsx": {
+  "src/components/contributions/roth-route-select.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
@@ -1703,7 +1703,7 @@
       "count": 1
     }
   },
-  "src/components/portfolio/contribution-accounts-card.tsx": {
+  "src/components/contributions/contribution-accounts-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1726,7 +1726,7 @@
       "count": 6
     }
   },
-  "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
+  "src/components/contributions/contribution-accounts-contrib-row.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },
@@ -1746,7 +1746,7 @@
       "count": 2
     }
   },
-  "src/components/portfolio/contribution-accounts-create-form.tsx": {
+  "src/components/contributions/contribution-accounts-create-form.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
@@ -1766,7 +1766,7 @@
       "count": 1
     }
   },
-  "src/components/portfolio/contribution-accounts-inline.tsx": {
+  "src/components/contributions/contribution-accounts-inline.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -1774,7 +1774,7 @@
       "count": 1
     }
   },
-  "src/components/portfolio/contribution-accounts-sub-account.tsx": {
+  "src/components/contributions/contribution-accounts-sub-account.tsx": {
     "ratchet/no-raw-button": {
       "count": 5
     },
@@ -1785,7 +1785,7 @@
       "count": 7
     }
   },
-  "src/components/portfolio/contribution-accounts-types.ts": {
+  "src/components/contributions/contribution-accounts-types.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -1793,7 +1793,7 @@
       "count": 2
     }
   },
-  "src/components/portfolio/contribution-accounts.tsx": {
+  "src/components/contributions/contribution-accounts.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
@@ -1885,7 +1885,7 @@
       "count": 1
     }
   },
-  "src/components/portfolio/unlinked-contribs-banner.tsx": {
+  "src/components/contributions/unlinked-contribs-banner.tsx": {
     "ratchet/no-abbreviation": {
       "count": 3
     },
@@ -1893,7 +1893,7 @@
       "count": 3
     }
   },
-  "src/components/portfolio/use-contribution-accounts-mutations.ts": {
+  "src/components/contributions/use-contribution-accounts-mutations.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 15
     },

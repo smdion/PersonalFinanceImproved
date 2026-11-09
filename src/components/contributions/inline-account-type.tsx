@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AccountBadge } from "@/components/ui/account-badge";
 import { getAllCategories } from "@/lib/config/account-types";
-import type { AccountCategory } from "./types";
+import type { AccountCategory } from "../paycheck/types";
 
 export function InlineAccountType({
   value,

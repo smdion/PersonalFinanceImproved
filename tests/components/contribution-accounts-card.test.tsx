@@ -1,18 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { AccountCard } from "@/components/portfolio/contribution-accounts-card";
+import { AccountCard } from "@/components/contributions/contribution-accounts-card";
 import { pressKey } from "./keyboard";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
-vi.mock("@/components/portfolio/contribution-accounts-inline", () => ({
+vi.mock("@/components/contributions/contribution-accounts-inline", () => ({
   InlineText: ({ value }: { value: string }) => <span>{value}</span>,
   InlineSelect: ({ value }: { value: string }) => <span>{value}</span>,
 }));
 
-vi.mock("@/components/portfolio/contribution-accounts-sub-account", () => ({
+vi.mock("@/components/contributions/contribution-accounts-sub-account", () => ({
   SubAccountRow: () => (
     <tr data-testid="sub-account-row">
       <td>SubAccount</td>
@@ -24,7 +24,7 @@ vi.mock("@/components/portfolio/contribution-accounts-sub-account", () => ({
   AddSubAccountForm: () => <div data-testid="add-sub-form">Add Sub</div>,
 }));
 
-vi.mock("@/components/portfolio/contribution-accounts-contrib-row", () => ({
+vi.mock("@/components/contributions/contribution-accounts-contrib-row", () => ({
   ContributionRow: () => (
     <tr data-testid="contrib-row">
       <td>Contribution</td>
