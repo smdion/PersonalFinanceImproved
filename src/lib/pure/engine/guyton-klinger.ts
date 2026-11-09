@@ -1,23 +1,7 @@
 /**
- * Guyton-Klinger — dynamic spending guardrails.
- *
- * Adjusts spending dynamically based on portfolio performance during
- * decumulation. Implements upper/lower guardrails and the withdrawal rule
- * (skip inflation after a loss year).
- *
- * The guardrails judge the WITHDRAWAL rate — what the portfolio pays
- * (spending less Social Security) over its balance — at the start and each
- * year after, as Guyton and Klinger define it. Judged on total spending,
- * the rate was overstated by everything Social Security covers once it
- * starts. Consistently, a raise or cut moves spending by its percentage of
- * that portfolio draw, not of all spending. And a change in Social Security
- * (it starting, a second person's starting) isn't market news: the anchor
- * rate is rescaled by the same step, so the guardrails react only to how
- * the portfolio has done. Benefits are compared in today's dollars, so its
- * cost-of-living raise is never read as such a change.
- *
- * Cross-year state (initialWithdrawalRate, priorYearReturn, baseSpending)
- * is owned by the orchestrator and passed in each year.
+ * Guyton-Klinger guardrails on the withdrawal rate (spending less Social Security, over balance).
+ * Raises and cuts move the portfolio draw; an SS change (in today's dollars) rescales the anchor
+ * instead. Cross-year state is owned by the orchestrator and passed in each year.
  */
 import { roundToCents } from "../../utils/math";
 import type {
@@ -90,11 +74,8 @@ interface GuytonKlingerResult {
   ssIncomeJudged: number | null;
 }
 
-/** The anchor rescaled for a change in Social Security — a benefit starting
- *  or stopping, compared in today's dollars so a cost-of-living raise isn't
- *  one: the portfolio's share of the same spending before and after, both
- *  benefits at this year's prices. Unchanged when either share is zero (no
- *  rate to compare). */
+/** The anchor rescaled for a Social Security change: the portfolio's share of the same spending
+ *  before and after, both benefits at this year's prices. Unchanged when either share is zero. */
 function rescaleForSocialSecurity(
   anchor: number,
   spending: number,
@@ -115,17 +96,8 @@ function rescaleForSocialSecurity(
 // ---------------------------------------------------------------------------
 
 /**
- * Apply Guyton-Klinger dynamic spending guardrails.
- *
- * Returns adjusted expenses and updated cross-year state.
- * Does NOT mutate any input.
- *
- * Exported for direct unit testing only (see guyton-klinger.test.ts's
- * lower-level state/guardrail coverage) — production code must go through
- * `applyGuytonKlingerStrategy`, the only function that conforms to the
- * spending-strategy dispatcher contract. Every other strategy module
- * exposes exactly one public function; importing this one outside a test
- * file creates a second, non-conforming entry point.
+ * Applies the guardrails without mutating input. Exported for unit tests only: production goes
+ * through `applyGuytonKlingerStrategy`, the dispatcher-conforming entry point.
  */
 export function applyGuytonKlinger(
   input: GuytonKlingerInput,
@@ -158,10 +130,9 @@ export function applyGuytonKlinger(
     Math.max(0, spending - input.ssIncome);
 
   if (initialWithdrawalRate === null) {
-    // First decumulation year the portfolio pays anything: capture the
-    // initial rate. While Social Security covers all of spending there's
-    // no rate to anchor to (a 0 anchor would read every later draw as over
-    // the lower guardrail) — wait.
+    // First year the portfolio pays anything: capture the initial rate.
+    // While Social Security covers all spending there's no rate to anchor
+    // to (a 0 anchor would trip the lower guardrail), so wait.
     const share = portfolioShare(projectedExpenses);
     if (share <= 0)
       return {
@@ -181,14 +152,9 @@ export function applyGuytonKlinger(
     };
   }
 
-  // A year the portfolio pays nothing (Social Security covers all of
-  // spending) has no rate to judge — and no withdrawal rule, as in the
-  // years before the first anchor. The anchor carries through unchanged,
-  // and so does the Social Security it reflects (`ssIncomeJudged`): the
-  // first year the portfolio pays again rescales from the pre-cover level,
-  // so what the market did meanwhile still counts. Dropping the anchor and
-  // re-anchoring on that first small draw would instead read ordinary
-  // spending growth as a doubled withdrawal rate — a cut a year.
+  // A year SS covers all spending has no rate and no withdrawal rule; the anchor and its
+  // `ssIncomeJudged` carry through, so the next paying year rescales from the pre-cover level
+  // instead of reading spending growth as a jump in the rate.
   const covered = (spending: number) => ({
     projectedExpenses: spending,
     guardrailTriggered,

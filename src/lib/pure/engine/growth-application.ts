@@ -1,9 +1,6 @@
 /**
- * Growth Application — applies return rate to all balance structures.
- *
- * Used in both accumulation and decumulation phases. Grows market values
- * by the effective return rate while preserving cost basis (brokerage basis
- * does NOT grow — only market value does).
+ * Applies the return rate to every balance structure in both phases. Market value grows; cost
+ * basis does not.
  */
 import type {
   TaxBuckets,
@@ -24,16 +21,8 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve the effective return rate for a given age from a sparse
- * age→rate map (populated only at configured breakpoint ages, e.g. "Age
- * 39") — the breakpoint at or below the requested age
- * (returnRateAtAge), throws if nothing qualifies, then floors at
- * `MIN_RETURN_RATE`. Shared so the real
- * per-year growth application and any forward-looking projection (e.g. the
- * RMD-smoothing lookahead) can't quietly diverge on how a sparse
- * map is resolved — Single Computation Path, `docs/RULES.md`. The
- * `MIN_RETURN_RATE` floor travels WITH the lookup, not as a separate step
- * a caller might forget to apply.
+ * Return rate for an age from a sparse breakpoint map: the breakpoint at or below `age`, throws
+ * if none, floored at `MIN_RETURN_RATE`. Shared by growth and lookaheads (RMD smoothing).
  */
 export function resolveReturnRateForAge(
   returnRateMap: Map<number, number>,

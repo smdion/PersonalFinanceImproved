@@ -27,11 +27,8 @@ export function portfolioFirst<T>(
 }
 
 /**
- * Retirement money first: the items that aren't Portfolio-parented, or every
- * item when there are none. Money the retirement plan routes (IRS overflow,
- * the contribution ramp, lump sums with no named account) must land where
- * retirement can spend it — Portfolio-parented accounts are never withdrawn
- * from for retirement spending.
+ * Retirement money first: items that aren't Portfolio-parented, or all items when none are.
+ * Retirement-routed money must land where retirement spending can withdraw it.
  */
 export function retirementFirst<T>(
   items: readonly T[],
@@ -41,10 +38,8 @@ export function retirementFirst<T>(
   return retirement.length > 0 ? retirement : [...items];
 }
 
-/** Creates the standard composite key function. It includes `ownerPersonId`,
- *  so two people's same-named accounts in one category/taxType stay apart:
- *  eligibility (Rule of 55, 59½) is per owner. A joint account (no
- *  `ownerPersonId`) keys on `"joint"`. */
+/** The standard composite key. Includes `ownerPersonId` (eligibility is per owner); a joint
+ *  account keys on `"joint"`. */
 export function makeIndKey(): IndKeyFn {
   return (ia) =>
     `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
@@ -95,18 +90,12 @@ export function applyIndividualGrowth(
   return growthMap;
 }
 
-// Tracked Roth basis: thin per-account loops. All arithmetic delegates to
-// the pure module (@/lib/pure/accounts/roth-basis-tracking); these branch on
-// rothOrderingRules and call its functions, and own no basis math of their
-// own.
+// Tracked Roth basis: thin per-account loops that branch on rothOrderingRules
+// and delegate all basis math to @/lib/pure/accounts/roth-basis-tracking.
 
 /**
- * Grows tracked basis by this accumulation year's contributions.
- * `indContributions` is the same map `distributeContributions` returns —
- * already excludes employer match (see roth-basis-tracking.ts's
- * docblock for why that exclusion is load-bearing). Mutates `indBasis`
- * in place; no-op for accounts with no entry (non-Roth accounts never
- * get one — see `buildProjectionState`).
+ * Grows tracked basis by this year's contributions (`indContributions` excludes employer match).
+ * Mutates `indBasis`; accounts with no entry (non-Roth) are skipped.
  */
 export function accrueIndividualBasis(
   indAccounts: IndividualAccountInput[],
@@ -124,13 +113,8 @@ export function accrueIndividualBasis(
 }
 
 /**
- * Depletes tracked basis by however much of each account's withdrawal
- * this year was actually basis, per the account category's own
- * `rothOrderingRules`. Must run AFTER `distributeWithdrawals` — needs
- * both the pre-withdrawal balance (for the pro-rata ratio) and the actual
- * per-account withdrawal amount it returned. Mutates `indBasis` in place.
- * Returns the per-account `BasisDraw`s for the caller to attach to
- * `buildIndividualYearBalances`'s output (`roth.basisDrawn`).
+ * Depletes tracked basis by the basis share of each withdrawal (`rothOrderingRules`). Run after
+ * `distributeWithdrawals`. Mutates `indBasis`; returns the `BasisDraw`s (`roth.basisDrawn`).
  */
 export function depleteIndividualBasis(input: {
   indAccounts: IndividualAccountInput[];

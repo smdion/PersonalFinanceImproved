@@ -172,9 +172,8 @@ export function distributeContributions(
 
     const distributeSpecs = (allSpecs: typeof catSpecs, slotAmount: number) => {
       // Portfolio-parented specs get their own amount first: the retirement
-      // rate ceiling never scales them (AccumulationSlot.portfolioContrib),
-      // so a scaled-down slot comes out of the retirement specs only.
-      // Unscaled, every spec gets its raw amount either way.
+      // rate ceiling never scales them, so a scaled-down slot comes out of
+      // the retirement specs only.
       let remaining = slotAmount;
       for (const sp of allSpecs) {
         if (isRetirementMoney(sp.parentCategory)) continue;
@@ -240,10 +239,9 @@ export function distributeContributions(
         distributeSpecs(typeSpecs, slotAmount);
       }
     } else {
-      // The overflow target's slot also carries this year's IRS overflow
-      // (routeFromSpecs adds it there); Step 4 routes that part, so only the
-      // specs' own contributions are spread here — distributing the whole
-      // slot counted the overflow twice.
+      // The overflow target's slot also carries this year's IRS overflow,
+      // which Step 4 routes, so only the specs' own contributions are
+      // spread here.
       distributeSpecs(
         catSpecs,
         isOverflowTarget(slot.category)
@@ -303,13 +301,9 @@ export function distributeContributions(
 
   // --- Step 4: Distribute overflow to brokerage accounts by allocationPriority ---
   if (overflowToBrokerage > 0) {
-    // Overflow is retirement money (contributions past the IRS limits):
-    // Retirement-parented brokerage specs/accounts first.
-    // The accounts decide (a Retirement brokerage with no spec of its own
-    // still takes overflow before any Portfolio one); specs only order and
-    // cap it within those accounts. The projection-only retirement
-    // brokerage counts: with no real Retirement brokerage it's where
-    // retirement money lands, so overflow never becomes Portfolio money.
+    // Overflow is retirement money: Retirement-parented brokerage accounts first (specs only
+    // order and cap within them), including the projection-only retirement brokerage, so
+    // overflow never becomes Portfolio money.
     const brokAccounts = retirementFirst(
       indAccounts.filter((ia) => isOverflowTarget(ia.category)),
       (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
@@ -415,11 +409,9 @@ export function distributeContributions(
 
   // --- Step 6: Distribute ramp to brokerage accounts ---
   if (rampAmount > 0) {
-    // The ramp (the Brokerage page's yearly increase) is Portfolio
-    // savings: the parent is chosen first (Portfolio brokerages when there
-    // are any), then within it the brokerages with specs of their own. The
-    // projection-only retirement brokerage takes it only when the household
-    // has no brokerage at all.
+    // The ramp is Portfolio savings: Portfolio brokerages when there are any, then those with
+    // specs of their own. The projection-only retirement brokerage takes it only when the
+    // household has no brokerage at all.
     const parentOf = (ia: IndividualAccountInput) =>
       indParentCat.get(indKey(ia)) ?? ia.parentCategory;
     const brokerages = indAccounts.filter((ia) =>

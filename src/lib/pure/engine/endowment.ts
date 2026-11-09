@@ -1,10 +1,6 @@
 /**
- * Endowment — Morningstar Method 6.
- *
- * Withdraw a fixed percentage of the N-year rolling average portfolio
- * balance, with a floor to prevent severe cuts. Smooths volatility
- * like an endowment fund's spending rule.
- * SWR: 5.7% (40/60 portfolio, 90% success, 30 years).
+ * Endowment (Morningstar Method 6): a fixed share of the N-year rolling average balance, with a
+ * floor. SWR 5.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
 import {

@@ -1,26 +1,7 @@
 /**
- * Withdrawals in a year someone with a job isn't working: one person has
- * retired and the other works on, or a job ended before its holder's
- * retirement. In ordinary saving years the plan takes pay as covering the
- * budget, so spending never touches balances. With a paycheck gone that no
- * longer holds, so the shortfall comes out of the accounts:
- *
- *   spending − (pay + Social Security − contributions − tax on that income)
- *
- * Spending leaves out budget lines that are contributions (they're the
- * contributions, and a stopped person's are zeroed already).
- *
- * The draw runs through the same routing, eligibility, Roth growth split,
- * penalty and tax pricing as a retirement year (one path, not a copy): the
- * money stays subject to each owner's age, and someone still working has no
- * Rule of 55 on their own plan. The draw pays what it adds to the year's tax:
- * the tax on everything less the tax on the income alone.
- *
- * Two household choices (Retirement Profile): stop saving these years, and
- * don't draw, so spending comes down to what's coming in.
- *
- * Not modelled yet: RMDs before the plan's withdrawal year; a year with one
- * due says so.
+ * Withdrawals in a year a job-holder isn't working: spending − (pay + SS − contributions − tax),
+ * through the retirement year's routing, eligibility, penalty and tax pricing. RMDs before the
+ * plan's withdrawal year are not modelled; a year with one due says so.
  */
 import type { DecumulationSlot } from "./types/routing";
 import type { GapYearDraw } from "./types/gap-year-draw";
