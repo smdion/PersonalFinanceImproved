@@ -50,3 +50,28 @@ vi.mock("next/dynamic", async (importOriginal) => {
   return { default: tracked };
 });
 export { loadingChunks };
+
+/** Suspense fallbacks on screen: a boundary still waiting. Each fallback is
+ *  wrapped in a marker that counts itself while mounted and adds no DOM,
+ *  so settle (screen-mount.tsx) can wait until none is shown. */
+const suspenseFallbacks = vi.hoisted(() => ({ shown: 0 }));
+vi.mock("react", async (importOriginal) => {
+  const React = await importOriginal<typeof import("react")>();
+  function FallbackMarker({ children }: { children?: React.ReactNode }) {
+    React.useLayoutEffect(() => {
+      suspenseFallbacks.shown++;
+      return () => {
+        suspenseFallbacks.shown--;
+      };
+    }, []);
+    return children ?? null;
+  }
+  function Suspense(props: React.SuspenseProps) {
+    return React.createElement(React.Suspense, {
+      ...props,
+      fallback: React.createElement(FallbackMarker, null, props.fallback),
+    });
+  }
+  return { ...React, Suspense, default: { ...React, Suspense } };
+});
+export { suspenseFallbacks };
