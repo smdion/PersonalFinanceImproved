@@ -4,7 +4,7 @@
  * only decreases: `performRothConversion` records no per-account conversion basis.
  */
 import { roundToCents } from "@/lib/utils/math";
-import type { RothBasisMeta } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { RothBasisMeta } from "@/lib/pure/accounts/account-balances.types";
 
 /** Running per-account Roth basis state for one projected year. */
 export type RothBasisState = {

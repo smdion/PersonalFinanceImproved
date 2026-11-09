@@ -2400,7 +2400,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 11
-    },
+    }
+  },
+  "src/components/retirement-projection/use-projection-state.types.ts": {
     "ratchet/no-string-closed-set-field": {
       "count": 3
     }

@@ -23,8 +23,11 @@ import {
   computeRothIraAccess,
   computeHsaAccess,
   type EarlyAccessSlice,
-  type SeparationSource,
 } from "@/lib/pure/accounts/early-access";
+import type {
+  RothBasisMeta,
+  RuleOf55Status,
+} from "@/lib/pure/accounts/account-balances.types";
 
 export type PersonInfo = { id: number; name: string; birthYear: number };
 
@@ -61,26 +64,6 @@ type RothBasisRow = {
    *  reviewed/confirmed by the user for its own year. */
   isSeeded: boolean;
   updatedAt: Date;
-};
-
-export type RothBasisMeta = {
-  year: number;
-  contributionBasis: number;
-  conversionBasis: number;
-  latestConversionYear: number | null;
-  isSeeded: boolean;
-  /** `Date` server-side, ISO `string` once serialized to the client (no superjson);
-   *  nothing in this module or the projection reads it. */
-  updatedAt: Date | string;
-};
-
-export type RuleOf55Status = {
-  eligible: boolean | null; // null = unknown (no separation data)
-  separationYear: number | null;
-  source: SeparationSource;
-  /** Only when source is "active": the earliest known non-speculative future endDate
-   *  among linked jobs, capping the "at retirement" assumed separation; else null. */
-  knownFutureSeparationYear: number | null;
 };
 
 /** Plain age-threshold status (no separation concept): IRA at 59½, HSA at 65.

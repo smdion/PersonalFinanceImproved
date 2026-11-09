@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { projectRuleOf55 } from "@/lib/pure/accounts/tax-bucket-projection";
-import type { RuleOf55Status } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { RuleOf55Status } from "@/lib/pure/accounts/account-balances.types";
 
 describe("projectRuleOf55 — forceIneligible", () => {
   it("source 'active': forceIneligible overrides the recomputed eligible=true", () => {

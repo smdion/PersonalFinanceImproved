@@ -13,10 +13,8 @@ import { useProjectionReport } from "./projection-card/use-projection-report";
 import { ReportControls } from "./projection-card/report-controls";
 import { ProjectionResults } from "./projection-card/projection-results";
 import { TableArea } from "./projection-card/table-area";
-import {
-  useProjectionState,
-  type EngineContributionRate,
-} from "./use-projection-state";
+import { useProjectionState } from "./use-projection-state";
+import type { EngineContributionRate } from "./use-projection-state.types";
 
 // ---------------------------------------------------------------------------
 // Main Component

@@ -11,9 +11,9 @@ import {
 import { dominantFailureReason } from "@/lib/pure/retirement/plan-outcome";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { rowTotal } from "./utils";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
+import { KpiCard } from "./kpi-card";
 import { CoastFireCard } from "@/components/retirement-projection/coast-fire-card";
 import {
   WITHDRAWAL_STRATEGY_CONFIG,
@@ -21,34 +21,6 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import { SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD } from "@/lib/constants";
 import { simulationDollars } from "@/lib/pure/simulation/dollars";
-
-// ---------------------------------------------------------------------------
-// Unified card chrome — matches projection-mc-results.tsx summary bar
-// ---------------------------------------------------------------------------
-
-export function KpiCard({
-  label,
-  tooltip,
-  children,
-  className = "",
-}: {
-  label: string;
-  tooltip?: (string | React.ReactNode)[];
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`border-subtle bg-surface-primary/40 flex flex-col rounded-lg border px-3 py-2.5 ${className}`}
-    >
-      <div className="text-caption text-faint flex items-center gap-1 font-semibold tracking-wider uppercase">
-        {label}
-        {tooltip && <HelpTip maxWidth={420} lines={tooltip} />}
-      </div>
-      <div className="mt-2 flex flex-1 flex-col">{children}</div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Compact ring — no colored background, just the ring + inline label

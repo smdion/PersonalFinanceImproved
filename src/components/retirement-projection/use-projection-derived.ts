@@ -31,7 +31,7 @@ import type {
   UseProjectionStateProps,
   EngineContributionRate,
   AccountBreakdown,
-} from "./use-projection-state";
+} from "./use-projection-state.types";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
 import {
   ROTH_CONVERSION_BRACKET_PRESETS,

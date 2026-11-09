@@ -55,7 +55,7 @@ import {
 } from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { getAccountTypeConfig } from "@/lib/config/account-types";
-import type { RuleOf55Status } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { RuleOf55Status } from "@/lib/pure/accounts/account-balances.types";
 
 // ---------------------------------------------------------------------------
 // Inputs: one invented owner, one account, one plan year

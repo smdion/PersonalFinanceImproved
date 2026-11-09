@@ -46,26 +46,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/components/retirement-projection/coast-fire-card.tsx",
-    "to": "src/components/retirement-projection/projection-hero-kpis.tsx"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/components/retirement-projection/use-projection-derived.ts",
-    "to": "src/components/retirement-projection/use-projection-queries.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/components/retirement-projection/use-projection-derived.ts",
-    "to": "src/components/retirement-projection/use-projection-state.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/components/retirement-projection/use-projection-queries.ts",
-    "to": "src/components/retirement-projection/use-projection-state.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/db/pg/contribution-profiles.ts",
     "to": "src/lib/db/pg/scenarios.ts"
   },
@@ -73,11 +53,6 @@
     "rule": "no-circular",
     "from": "src/lib/db/pg/retirement.ts",
     "to": "src/lib/db/pg/contribution-profiles.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/accounts/account-balances.types.ts",
-    "to": "src/lib/pure/accounts/tax-bucket-analysis.ts"
   },
   {
     "rule": "pure-has-no-io",

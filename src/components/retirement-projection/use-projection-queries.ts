@@ -21,7 +21,7 @@ import type {
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
-import type { UseProjectionStateProps } from "./use-projection-state";
+import type { UseProjectionStateProps } from "./use-projection-state.types";
 import { filterYearByParentCategory } from "./utils";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 

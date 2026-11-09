@@ -11,7 +11,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { AccountDetailRow } from "./tax-buckets-account-row";
 import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-bucket-analysis";
 import { FocusTarget } from "@/components/ui/focus-target";
-import { KpiCard } from "@/components/retirement-projection/projection-hero-kpis";
+import { KpiCard } from "@/components/retirement-projection/kpi-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";

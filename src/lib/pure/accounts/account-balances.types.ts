@@ -4,10 +4,27 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
-import type {
-  RuleOf55Status,
-  RothBasisMeta,
-} from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { SeparationSource } from "@/lib/pure/accounts/early-access";
+
+export type RothBasisMeta = {
+  year: number;
+  contributionBasis: number;
+  conversionBasis: number;
+  latestConversionYear: number | null;
+  isSeeded: boolean;
+  /** `Date` server-side, ISO `string` once serialized to the client (no superjson);
+   *  nothing in this module or the projection reads it. */
+  updatedAt: Date | string;
+};
+
+export type RuleOf55Status = {
+  eligible: boolean | null; // null = unknown (no separation data)
+  separationYear: number | null;
+  source: SeparationSource;
+  /** Only when source is "active": the earliest known non-speculative future endDate
+   *  among linked jobs, capping the "at retirement" assumed separation; else null. */
+  knownFutureSeparationYear: number | null;
+};
 
 /** Per-tax-bucket breakdown used throughout retirement projection */
 export type TaxBuckets = {

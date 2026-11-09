@@ -30,9 +30,11 @@ import type {
   AccountAnalysisEntry,
   AgeThresholdStatus,
   PersonInfo,
+} from "@/lib/pure/accounts/tax-bucket-analysis";
+import type {
   RothBasisMeta,
   RuleOf55Status,
-} from "@/lib/pure/accounts/tax-bucket-analysis";
+} from "@/lib/pure/accounts/account-balances.types";
 import { ageInYear } from "@/lib/utils/date";
 
 function matchKey(
