@@ -5816,9 +5816,6 @@
     "ratchet/max-comment-lines": {
       "count": 4
     },
-    "ratchet/no-guarded-division": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 8
     }
@@ -7843,9 +7840,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 8
-    },
-    "ratchet/no-guarded-division": {
-      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1

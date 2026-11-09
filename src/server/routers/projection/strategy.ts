@@ -54,7 +54,7 @@ import {
 } from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/percent";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
@@ -84,6 +84,12 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
+
+/** The mean of `values`; 0 when there are none. */
+function average(values: readonly number[]): number {
+  const total = values.reduce((s, v) => s + v, 0);
+  return safeDivide(total, values.length, 0);
+}
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -276,10 +282,7 @@ export const strategyRouter = createTRPCRouter({
             // strategies whether Social Security comes out of a strategy's
             // amount or on top of it (withdrawals alone aren't).
             const spendings = decumulationYears.map(strategySpending);
-            const avgWithdrawal =
-              withdrawals.length > 0
-                ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
-                : 0;
+            const avgWithdrawal = average(withdrawals);
 
             // Run lightweight MC (200 trials) for success rate + spending stability
             let successRate: number | null = null;
@@ -328,11 +331,7 @@ export const strategyRouter = createTRPCRouter({
               // withdrawn) — a Single Computation Path risk with no UI
               // consumer to justify it.
               year1Spending: roundToCents(spendings[0] ?? 0),
-              avgAnnualSpending: roundToCents(
-                spendings.length > 0
-                  ? spendings.reduce((s, v) => s + v, 0) / spendings.length
-                  : 0,
-              ),
+              avgAnnualSpending: roundToCents(average(spendings)),
               year1Withdrawal: decumulationYears[0]?.totalWithdrawal ?? 0,
               avgAnnualWithdrawal: roundToCents(avgWithdrawal),
               minAnnualWithdrawal:

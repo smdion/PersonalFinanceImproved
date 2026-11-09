@@ -21,7 +21,7 @@ import {
   setRoth,
   setBalance,
 } from "../../config/account-balance";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, safeDivide } from "../../utils/math";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
@@ -70,7 +70,7 @@ export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   const totalGroups = Object.keys(groupCounts).length;
   const fracByGroup: Record<string, number> = {};
   for (const group of Object.keys(groupCounts)) {
-    fracByGroup[group] = totalGroups > 0 ? 1 / totalGroups : 0;
+    fracByGroup[group] = safeDivide(1, totalGroups, 0);
   }
 
   return Object.fromEntries(
@@ -190,7 +190,7 @@ export function subtractExcluded(
     const reachable = exposure?.reachableByCategory[cat];
     const total = getTotalBalance(balance);
     if (reachable != null && total > reachable) {
-      const keep = total > 0 ? Math.max(0, reachable) / total : 0;
+      const keep = safeDivide(Math.max(0, reachable), total, 0);
       if (balance.structure === "roth_traditional") {
         setTraditional(balance, roundToCents(balance.traditional * keep));
         setRoth(balance, roundToCents(balance.roth * keep));
