@@ -61,15 +61,19 @@ export const decumulationOverrideArraySchema = z.array(
       .enum(["bracket_filling", "waterfall", "percentage"])
       .optional(),
     withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    // Per-category fields set only some categories (the engine's Partial).
     withdrawalSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number())
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
       .optional(),
     withdrawalTaxPreference: z
-      .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
+      .partialRecord(
+        z.enum(accountCategoryEnum()),
+        z.enum(["traditional", "roth"]),
+      )
       .optional(),
     // Dollar cap per account per year; excess need moves to the next account.
     withdrawalAccountCaps: z
-      .record(z.enum(accountCategoryEnum()), z.number())
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
       .optional(),
     // Cross-account dollar cap per tax type (e.g. Traditional ≤ $80k/year).
     withdrawalTaxTypeCaps: z

@@ -85,3 +85,43 @@ describe("prepareEngineInput", () => {
     expect(out.decumulationDefaults.withdrawalRoutingMode).toBe("percentage");
   });
 });
+
+describe('the saved "Changes by year" with per-category fields', () => {
+  it("applies a saved set that sets only some categories (a tax split, a withdrawal tax preference)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const accumulation = [
+        { year: 2031, taxSplits: { "401k": 0.5 }, accountCaps: { ira: 3000 } },
+      ];
+      const decumulation = [
+        {
+          year: 2045,
+          withdrawalTaxPreference: { "401k": "roth" },
+          withdrawalSplits: { brokerage: 1 },
+          withdrawalAccountCaps: { "401k": 40000 },
+        },
+      ];
+      await ctx.caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: accumulation,
+      });
+      await ctx.caller.retirement.projectionOverrides.save({
+        overrideType: "decumulation",
+        overrides: decumulation,
+      });
+      const out = await prepareEngineInput(
+        ctx.rawDb,
+        {
+          settings: SETTINGS,
+          distributionTaxRates: RATES,
+          baseEngineInput: {},
+        },
+        { decumulationDefaults: NO_CLIENT },
+      );
+      expect(out.accumulationOverrides).toEqual(accumulation);
+      expect(out.decumulationOverrides).toEqual(decumulation);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});

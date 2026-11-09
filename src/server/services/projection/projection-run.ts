@@ -64,13 +64,16 @@ export const accumulationOverrideArraySchema = z.array(
     contributionRate: z.number().min(0).max(1).optional(),
     routingMode: z.enum(["waterfall", "percentage"]).optional(),
     accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    // Per-category fields set only some categories (the engine's Partial).
     accountSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number())
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
       .optional(),
     taxSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+      .partialRecord(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
       .optional(),
-    accountCaps: z.record(z.enum(accountCategoryEnum()), z.number()).optional(),
+    accountCaps: z
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
     taxTypeCaps: z
       .object({
         traditional: z.number().optional(),
