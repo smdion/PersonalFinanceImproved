@@ -8,7 +8,7 @@
  * without a cost leaves the suggestion incomplete — its value is reported
  * so the household can judge.
  */
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 
 /** Price within this of $1 counts as a stable-value (money market) holding. */
 const STABLE_PRICE_TOLERANCE = 0.005;
@@ -36,7 +36,7 @@ export function suggestCostBasis(holdings: readonly CostHolding[]): {
       continue;
     }
     const value = h.reportedMarketValue ?? 0;
-    const price = h.shares !== 0 ? value / h.shares : 0;
+    const price = safeDivide(value, h.shares, 0);
     if (h.shares > 0 && Math.abs(price - 1) <= STABLE_PRICE_TOLERANCE) {
       suggested += value;
       known++;

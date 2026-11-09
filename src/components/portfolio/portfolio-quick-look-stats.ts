@@ -198,18 +198,18 @@ export function derivePortfolioQuickLookStats(
   }
 
   // Average change per snapshot period
-  const avgDelta =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.delta, 0) / changes.length
-      : 0;
-  const avgDeltaPercent =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.deltaPct, 0) / changes.length
-      : 0;
-  const avgDays =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.days, 0) / changes.length
-      : 7;
+  const averageOf = (
+    pick: (c: (typeof changes)[number]) => number,
+    empty: number,
+  ) =>
+    safeDivide(
+      changes.reduce((s, c) => s + pick(c), 0),
+      changes.length,
+      empty,
+    );
+  const avgDelta = averageOf((c) => c.delta, 0);
+  const avgDeltaPercent = averageOf((c) => c.deltaPct, 0);
+  const avgDays = averageOf((c) => c.days, 7);
 
   // Best/worst month — separate picks for $ vs %
   const byMonthDollar = new Map<string, number>();

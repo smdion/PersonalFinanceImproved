@@ -668,9 +668,7 @@ export function specFrac({
 }: SpecFracInput): number {
   return specTotal > 0
     ? baseAnnual / specTotal
-    : specCount > 0
-      ? 1 / specCount
-      : 1;
+    : canonicalSafeDivide(1, specCount, 1);
 }
 
 export function matchFracOf({

@@ -138,7 +138,7 @@ export function checkpoints(
           : "behind",
     value: { kind: "multiple", amount: current },
     target: { kind: "multiple", amount: target },
-    progress: target > 0 ? Math.min(1, current / target) : 1,
+    progress: Math.min(1, safeDivide(current, target, 1)),
     headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for your household's average age, ${Math.round(now.age)}`,
     note: notes.length ? notes.join(" · ") : null,
     nextStep:

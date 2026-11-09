@@ -1,4 +1,5 @@
 import { toNumber } from "@/lib/utils/numbers";
+import { safeDivide } from "@/lib/utils/math";
 import { calendarYear } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
@@ -59,11 +60,8 @@ export function yearEndWealthMetrics(
 
   for (const row of history) {
     // Average age for this year
-    const avgAge =
-      birthYears.length > 0
-        ? birthYears.reduce((s, by) => s + (row.year - by), 0) /
-          birthYears.length
-        : 0;
+    const ageSum = birthYears.reduce((s, by) => s + (row.year - by), 0);
+    const avgAge = safeDivide(ageSum, birthYears.length, 0);
 
     // One income definition for both the wealth formula and lifetime
     // earnings: gross pretax income (AGI only where gross wasn't recorded).
