@@ -5656,7 +5656,7 @@
       "count": 5
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 5
     }
   },
   "src/lib/pure/accounts/portfolio-labels.ts": {
@@ -5804,7 +5804,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 12
+      "count": 14
     }
   },
   "src/lib/pure/advice/milestones/investing.ts": {
@@ -5974,9 +5974,17 @@
       "count": 1
     }
   },
+  "src/lib/pure/budget/annual-total.ts": {
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
+    }
+  },
   "src/lib/pure/budget/budget.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/lib/pure/budget/budget.types.ts": {
@@ -6100,7 +6108,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 4
     }
   },
   "src/lib/pure/contributions/contribution-order.ts": {
@@ -6181,6 +6189,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 5
     }
   },
   "src/lib/pure/contributions/joint-accounts.ts": {
@@ -6354,7 +6365,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 8
     }
   },
   "src/lib/pure/engine/bracket-growth.ts": {
@@ -6403,7 +6414,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 4
     }
   },
   "src/lib/pure/engine/endowment.ts": {
@@ -6585,7 +6596,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 7
     }
   },
   "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
@@ -6731,7 +6742,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 5
     }
   },
   "src/lib/pure/engine/rmd-smoothing.ts": {
@@ -6921,6 +6932,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
     }
   },
   "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": {
@@ -7231,7 +7245,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 2
     }
   },
   "src/lib/pure/net-worth/snapshot-suggestions.ts": {
@@ -7291,6 +7305,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 2
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/lib/pure/paycheck/high-income-line.ts": {
@@ -7322,6 +7339,11 @@
       "count": 4
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/paycheck-lines.ts": {
+    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
@@ -7485,6 +7507,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
@@ -7627,6 +7652,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 6
     }
   },
   "src/lib/pure/simulation/return-rate-breakpoints.ts": {
@@ -7692,7 +7720,7 @@
   },
   "src/lib/pure/sync/budget-preview.ts": {
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 7
     }
   },
   "src/lib/pure/sync/feed-data-date.ts": {
@@ -8203,7 +8231,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 2
+      "count": 3
     }
   },
   "src/server/routers/budget/columns.ts": {
@@ -8264,6 +8292,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 5
     }
   },
   "src/server/routers/contribution-profiles.ts": {
@@ -8366,6 +8397,9 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 4
     }
   },
   "src/server/routers/networth/history.ts": {
@@ -8570,7 +8604,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 3
     }
   },
   "src/server/routers/projection/stress-test.ts": {
@@ -8638,7 +8672,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 5
     }
   },
   "src/server/routers/savings/api-links.ts": {
@@ -8944,7 +8978,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/services/budget/annual-expenses.ts": {
@@ -9227,7 +9261,7 @@
       "count": 11
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/services/performance/finalize-year.ts": {
@@ -9347,6 +9381,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 2
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/server/services/projection/engine-payload/expense-endings.ts": {
@@ -9422,7 +9459,7 @@
       "count": 4
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 3
     }
   },
   "src/server/services/projection/projection-metadata.ts": {
@@ -9451,6 +9488,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 4
     }
   },
   "src/server/services/savings/savings-allocation.ts": {

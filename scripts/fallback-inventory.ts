@@ -4,7 +4,7 @@
  * A site is `?? <default>`, `|| <default>`, `??=` / `||=`, a `catch` (or a
  * promise `.catch`) that returns a value, or a `default:` branch. The
  * ratchet (`ratchet/no-unregistered-fallback`) counts a subset; `counted`
- * marks it here with the same exemptions (index reads and accumulator seeds).
+ * marks it here with the same exemptions (Map `.get` reads and accumulator seeds).
  *
  * Usage:  pnpm tsx scripts/fallback-inventory.ts           (counts by kind and area)
  *         pnpm tsx scripts/fallback-inventory.ts --list    (every site, tab-separated)
@@ -65,10 +65,10 @@ function unwrap(node: ts.Expression): ts.Expression {
   return n;
 }
 
-/** `a[i]` or `m.get(k)`: the read noUncheckedIndexedAccess makes nullable. */
-export function isIndexRead(node: ts.Expression): boolean {
+/** `m.get(k)`: a sparse Map read, no entry meaning none (owner FQ1, N6). A
+ *  computed record read (`rec[k] ?? 0`) is counted. */
+export function isMapGet(node: ts.Expression): boolean {
   const n = unwrap(node);
-  if (ts.isElementAccessExpression(n)) return true;
   return (
     ts.isCallExpression(n) &&
     ts.isPropertyAccessExpression(n.expression) &&
@@ -129,13 +129,9 @@ export function sitesIn(file: string, text: string): Site[] {
         const shape = defaultKind(node.right);
         // `a || b` with a non-literal right is control flow, not a default.
         if (sign === "??" || shape !== "expression") {
-          const exempt = isIndexRead(node.left) || isAccumulatorSeed(node);
+          const exempt = isMapGet(node.left) || isAccumulatorSeed(node);
           const counted = shape === "0" && area === "money" && !exempt;
-          add(
-            node,
-            `${sign} ${shape}${exempt ? " (index/seed)" : ""}`,
-            counted,
-          );
+          add(node, `${sign} ${shape}${exempt ? " (map/seed)" : ""}`, counted);
         }
       }
       if (
@@ -159,7 +155,7 @@ export function sitesIn(file: string, text: string): Site[] {
         const body = handler.body;
         const valued = ts.isBlock(body)
           ? returnsValue(body)
-          : !ts.isCallExpression(body) && !ts.isVoidExpression(body);
+          : !ts.isVoidExpression(body);
         if (valued) add(node, ".catch returns a value", true);
       }
     }

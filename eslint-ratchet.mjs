@@ -264,10 +264,10 @@ function unwrapTs(node) {
   return n.type === "ChainExpression" ? n.expression : n;
 }
 
-/** `a[i]` or `m.get(k)`: the read noUncheckedIndexedAccess makes nullable. */
-function isIndexRead(node) {
+/** `m.get(k)`: a sparse Map read, no entry meaning none (owner FQ1, N6). A
+ *  computed record read (`rec[k] ?? 0`) is counted. */
+function isMapGet(node) {
   const n = unwrapTs(node);
-  if (n.type === "MemberExpression") return n.computed;
   return (
     n.type === "CallExpression" &&
     n.callee.type === "MemberExpression" &&
@@ -661,7 +661,7 @@ export const ratchetPlugin = {
           LogicalExpression(node) {
             if (!zeroDefaults || !/^(\?\?|\|\|)$/.test(node.operator)) return;
             if (node.right.type !== "Literal" || node.right.value !== 0) return;
-            if (isIndexRead(node.left) || isAccumulatorSeed(node, sourceCode))
+            if (isMapGet(node.left) || isAccumulatorSeed(node, sourceCode))
               return;
             report(node, `\`${node.operator} 0\` in money code`);
           },
@@ -675,8 +675,7 @@ export const ratchetPlugin = {
             const valued =
               body.type === "BlockStatement"
                 ? returnsValue(body)
-                : body.type !== "CallExpression" &&
-                  body.type !== "UnaryExpression";
+                : body.type !== "UnaryExpression" || body.operator !== "void";
             if (valued) report(node, ".catch returns a value");
           },
           "CallExpression[callee.name=/^readMaybe[A-Z]/]"(node) {

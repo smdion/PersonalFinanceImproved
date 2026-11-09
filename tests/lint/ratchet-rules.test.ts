@@ -228,14 +228,17 @@ describe("ratchet/no-unregistered-fallback (docs/FALLBACKS.md)", () => {
     "const a = row.amount ?? 0;",
     "const b = row.amount || 0;",
     "const c = byId.get(id) ?? 0;",
-    "const d = amounts[i] ?? 0;",
+    "const d = limits[key] ?? 0;",
     "total.sum = (total.sum ?? 0) + v;",
+    "out[k] = (out[k] ?? 0) + v;",
     "const e = row.name ?? '';",
     "try { f(); } catch { return null; }",
     "try { f(); } catch (e) { log(e); throw e; }",
     "try { f(); } catch { const g = () => 1; }",
     "p.catch(() => null);",
-    "p.catch((e) => log(e));",
+    "p.catch(() => fallbackRows());",
+    "p.catch((e) => void log(e));",
+    "p.catch((e) => { log(e); });",
     "const h = readMaybeEncrypted(row.config);",
   ].join("\n");
   const lines = (zeroDefaults: boolean) =>
@@ -255,12 +258,12 @@ describe("ratchet/no-unregistered-fallback (docs/FALLBACKS.md)", () => {
       )
       .map((m) => m.line - 1);
 
-  it("counts ?? 0 and || 0 in money code, not index reads or seeds", () => {
-    expect(lines(true)).toEqual([1, 2, 7, 10, 12]);
+  it("counts ?? 0 and || 0 in money code, record reads included, not Map reads or seeds", () => {
+    expect(lines(true)).toEqual([1, 2, 4, 8, 11, 12, 15]);
   });
 
-  it("counts value-returning catches and readMaybe* calls everywhere", () => {
-    expect(lines(false)).toEqual([7, 10, 12]);
+  it("counts value-returning catches (a call's value too) and readMaybe* calls everywhere", () => {
+    expect(lines(false)).toEqual([8, 11, 12, 15]);
   });
 
   it("agrees with scripts/fallback-inventory.ts on what is counted", () => {

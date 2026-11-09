@@ -18,12 +18,12 @@ The inventory is generated: `pnpm tsx scripts/fallback-inventory.ts` counts ever
 `ratchet/no-unregistered-fallback` (`eslint-ratchet.mjs`) counts, per file in `eslint-suppressions.json`:
 
 - `?? 0` and `|| 0` in money paths (`src/lib/pure`, `src/server/services`, `src/server/data`, `src/server/routers`);
-- a `catch` (or a promise `.catch`) that returns a value, anywhere in `src/`;
+- a `catch` (or a promise `.catch`, including `.catch(() => call())`, which returns the call's value) that returns a value, anywhere in `src/`;
 - a call to a plaintext-or-encrypted reader (`readMaybe*`), anywhere in `src/`.
 
-Exempt by AST pattern: an index read (`a[i] ?? 0`, `m.get(k) ?? 0`, which `noUncheckedIndexedAccess` makes nullable) and an accumulator seed (`x = (x ?? 0) + v`). The counts only fall. A new site either gets a real absent state (a `null` the caller shows as missing, a thrown error, a warning) or is registered here under its pattern in the commit that adds it, with a `Ratchet-raise:` trailer.
+Exempt by AST pattern: a sparse Map read (`m.get(k) ?? 0`, owner FQ1) and an accumulator seed (`x = (x ?? 0) + v`, `out[k] = (out[k] ?? 0) + v`). A record read (`rec[k] ?? 0`, `limits[key] ?? 0`) in a money path is counted (owner N6). The counts only fall. A new site either gets a real absent state (a `null` the caller shows as missing, a thrown error, a warning) or is registered here under its pattern in the commit that adds it, with a `Ratchet-raise:` trailer.
 
-Counts when the ratchet landed: 329 sites in 172 files; money paths 261 (`lib/pure` 157, `server/routers` 64, `server/services` 29, `server/data` 11), the UI 34 in aggregate, the rest 34.
+Counts when the ratchet landed: 329 sites in 172 files; money paths 261 (`lib/pure` 157, `server/routers` 64, `server/services` 29, `server/data` 11), the UI 34 in aggregate, the rest 34. After v0.10.5's deletions (326), owner N6 narrowed the exemption to Map reads and seeds and counted `.catch(() => call())`, re-recorded once at 398 (money paths 330, the UI 34, the rest 34).
 
 ## Absent states (kept)
 
