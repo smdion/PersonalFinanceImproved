@@ -9,7 +9,7 @@ import {
 } from "@/lib/config/enum-values";
 import { contributionActiveFieldsSchema } from "@/lib/db/json-schemas";
 import type { EntityFieldMap } from "@/lib/db/schema";
-import { log } from "@/lib/logger";
+import { logWarnOnce } from "@/lib/logger";
 
 /** The write schema takes any string here; a read holds them to their sets. */
 const closedSetValues = z.object({
@@ -29,17 +29,13 @@ export type ContributionActiveFieldsRoot = {
   deductions: Record<string, Record<string, unknown>>;
 };
 
-const warned = new Set<string>();
-
 /** Logs a refused row once per process, not on every read. */
 function warnOnce(profileId: number | undefined, issues: string[]): void {
-  const key = `${profileId}|${issues.join(";")}`;
-  if (warned.has(key)) return;
-  warned.add(key);
-  log("warn", "contribution_active_fields_unexpected_shape", {
-    profileId,
-    issues,
-  });
+  logWarnOnce(
+    "contribution_active_fields_unexpected_shape",
+    `${profileId}|${issues.join(";")}`,
+    { profileId, issues },
+  );
 }
 
 /** Both buckets, each `{}` when the profile sets nothing in it; a root that
