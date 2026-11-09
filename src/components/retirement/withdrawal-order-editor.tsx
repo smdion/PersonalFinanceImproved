@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Account-order reorder control shared by the Retirement page's per-session
- * Withdrawal Routing panel (retirement-projection/decumulation-config.tsx) and the
- * Retirement Profile's persisted default in Taxes in Retirement
- * (retirement/sections/taxes.tsx). Both edit the SAME `withdrawalOrder`
- * array the engine reads — the session panel writes a transient override,
- * the settings panel writes the saved household default.
+ * Account-order control for the `withdrawalOrder` array the engine reads: a session override in
+ * Withdrawal Routing, the saved default in the profile's Taxes in Retirement panel.
  */
 import { AccountBadge } from "@/components/ui/account-badge";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -19,16 +15,9 @@ export function WithdrawalOrderEditor({
 }: {
   order: AccountCategory[];
   onChange: (order: AccountCategory[]) => void;
-  /** When set, only these categories are shown and reordered — used by
-   *  bracket_filling's "Traditional Account Order" sub-control, which edits
-   *  the SAME underlying `withdrawalOrder` waterfall's full editor writes
-   *  (single source of truth — the engine's Phase 1 loop reads
-   *  `withdrawalOrder` filtered to Traditional-preference categories
-   *  regardless of which UI wrote it), just restricted to the subset that
-   *  actually affects bracket_filling. A swap permutes only the filtered
-   *  categories' OCCUPANTS — every other category (brokerage/HSA) keeps its
-   *  exact position in the full array. Omitted ⇒ the unrestricted
-   *  full-order editor. */
+  /** Show and reorder only these categories (bracket_filling's Traditional order) within the full
+   *  `withdrawalOrder`; a swap permutes only their slots, others keep their positions.
+   *  Omitted = full-order editor. */
   filter?: AccountCategory[];
   disabled?: boolean;
 }) {

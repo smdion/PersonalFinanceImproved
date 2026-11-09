@@ -36,10 +36,8 @@ export function AuthSettings() {
           <strong>RBAC Groups</strong> to map group names to permissions.
         </p>
 
-        {/* Moved here from the RBAC Groups section — this is the one place
-         *  the Authentik OIDC provider setup walkthrough lives now (was
-         *  duplicated across both sections before the Access Control
-         *  consolidation made the overlap visible). */}
+        {/* The one place the Authentik OIDC provider setup walkthrough
+         *  lives. */}
         <div className="bg-surface-sunken mb-4 rounded-lg border p-4">
           <h4 className="text-primary mb-2 text-sm font-semibold">
             Authentik OIDC Provider Setup

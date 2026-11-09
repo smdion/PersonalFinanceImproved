@@ -18,11 +18,9 @@ export interface RawGoal {
   apiCategoryId?: string | null;
   apiCategoryName?: string | null;
   isApiSyncEnabled?: boolean | null;
-  /** The linked category's real current-month `budgeted` amount, resolved
-   *  server-side from the same month-scoped cache snapshot `current`
-   *  comes from — `null` when not API-linked or no fresh sync data for
-   *  this month. Feeds `projectGoalBalances`' month-0 math; see
-   *  `ProjectionGoalInput.currentMonthBudgeted`'s own docblock. */
+  /** The linked category's current-month `budgeted` amount, from the same cache snapshot as
+   *  `current`; `null` when not API-linked or no fresh sync data this month. Feeds
+   *  `projectGoalBalances`' month-0 math. */
   currentMonthBudgeted?: number | null;
 }
 

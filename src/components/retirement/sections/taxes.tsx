@@ -1,18 +1,6 @@
 /**
- * Taxes in Retirement panel.
- *
- * The `filingStatus` placeholder in the "Auto" option is derived locally from
- * `settings.filingStatus` (identical to the old `const filingStatus =
- * settings.filingStatus` in the parent). `selectedScenario` is plumbed through
- * so the brokerage LTCG rate still reads off the active scenario.
- *
- * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer):
- * deliberately a plain prop, not a tRPC query owned by this
- * component. This file is documented (retirement-sections-smoke.test.tsx) as
- * a pure presentational leaf — "Settings + callback props in, JSX out" — and
- * the parent (retirement-profile-tab.tsx) already owns every other query
- * this tab depends on, same pattern as `CoastFireCard` receiving
- * `coastFireMcResult` as a prop rather than querying it itself.
+ * Taxes in Retirement panel, a presentational leaf (props in, JSX out): the parent owns every
+ * query, including `bracketOptimizerResult`. `selectedScenario` supplies the brokerage LTCG rate.
  */
 "use client";
 
@@ -77,12 +65,8 @@ export function TaxesSection({
   const id = useId();
   const filingStatus = settings.filingStatus;
 
-  // Persisted withdrawal ORDER / SPLITS defaults (this profile's saved
-  // household choice). NULL columns fall back to the config defaults — the
-  // same resolution `buildDecumulationDefaults` does server-side. The order
-  // editor writes each swap straight through (discrete gesture, like the
-  // routing-mode select); the splits grid keeps a local draft and writes
-  // once on Save to avoid a mutation per keystroke.
+  // Saved withdrawal order/splits; NULL falls back to config defaults (as
+  // `buildDecumulationDefaults` does). Order swaps save at once; splits on Save.
   const persistedOrder =
     (settings.withdrawalOrder as AccountCategory[] | null) ??
     getDefaultDecumulationOrder();

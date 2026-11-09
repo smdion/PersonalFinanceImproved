@@ -112,10 +112,8 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     }
   };
 
-  /** Copies every known limit type from `copyFrom` into the (empty) active
-   *  year in one shot — offered next to the group headers below when the
-   *  active year has no rows at all yet, as a faster alternative to the
-   *  per-row "+ Set" fallback each group already supports. */
+  /** Copies every limit type from `copyFrom` into the active year; offered only while that
+   *  year has no rows. */
   const handleCopyYear = async () => {
     if (!copyFrom || yearData.length > 0) return;
     const sourceData = (query.data ?? []).filter((l) => l.taxYear === copyFrom);

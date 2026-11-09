@@ -1,21 +1,7 @@
 /**
- * Per-phase budget profile + column selection.
- *
- * This is the middle child block of Retirement budget and strategy: it
- * renders the decumulation-phase Budget Source picker (profile dropdown +
- * column picker or weighted summary) alongside the Salary Override inline
- * edit. Returns null if there are no budget profiles at all.
- *
- * The block also shows an amber "strategy X computes spending from ..."
- * banner when the active withdrawal strategy doesn't consume the budget /
- * withdrawal rate / post-retirement raise — and also
- * disables the budget-source select/column select/salary-override edit in
- * that case too (previously only dimmed via opacity, still fully editable
- * underneath — same class of bug as raise-and-rate.tsx's two fields, found
- * alongside it). This component also had no `isEditable`/admin gating at
- * all until the same pass — every other section in this tab disables for
- * non-admins; this one let a non-admin interact freely and only failed
- * silently at the (adminProcedure-gated) mutation layer.
+ * Decumulation Budget Source picker (profile + column or weighted summary) and Salary Override.
+ * Null without budget profiles. When the strategy ignores the budget, an amber banner shows and
+ * the controls are disabled; they also follow `isEditable`.
  */
 "use client";
 
@@ -53,15 +39,8 @@ export function PerPhaseBudgetSection({
   if (!meta) return null;
   const { incomeSource } = meta;
   const { usesWithdrawalRate, usesPostRetirementRaise } = meta;
-  // Branch on usesWithdrawalRate, not incomeSource -- incomeSource labels
-  // Guyton-Klinger "rate" (a UI-framing distinction), but GK's actual
-  // year-1 spending IS budget-seeded (initialWithdrawalRate is DERIVED
-  // FROM the budget, not an independent setting) and every subsequent
-  // year is a guardrail adjustment of that, same as Fixed/Forgo/Spending
-  // Decline. usesWithdrawalRate already correctly separates the 4
-  // genuinely budget-seeded strategies from the 4 that aren't (RMD-based,
-  // Constant %, Endowment, Vanguard Dynamic) -- same fix already applied
-  // in mc-simulation-assumptions.tsx for this exact distinction.
+  // Branch on usesWithdrawalRate, not incomeSource: incomeSource labels Guyton-Klinger "rate",
+  // but its year-1 spending is derived from the budget, like Fixed/Forgo/Spending Decline.
   const budgetNotUsed = !usesWithdrawalRate;
   const profiles = budgetProfileSummaries;
   if (profiles.length === 0) return null;

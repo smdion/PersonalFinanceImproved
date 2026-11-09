@@ -192,25 +192,25 @@
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 405,
     "src/components/retirement/retirement-profile-tab.tsx": 505,
-    "src/components/retirement/sections/taxes.tsx": 557,
-    "src/components/savings/api-sync-section.tsx": 603,
+    "src/components/retirement/sections/taxes.tsx": 541,
+    "src/components/savings/api-sync-section.tsx": 590,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 230,
     "src/components/savings/extra-paycheck-month-overrides.tsx": 263,
-    "src/components/savings/extra-paycheck-rules-editor.tsx": 666,
+    "src/components/savings/extra-paycheck-rules-editor.tsx": 639,
     "src/components/savings/extra-paycheck-rules.tsx": 385,
     "src/components/savings/fund-card-menu.tsx": 143,
     "src/components/savings/fund-card-progress.tsx": 304,
     "src/components/savings/fund-card-sub-goals.tsx": 214,
     "src/components/savings/fund-card-summary.tsx": 147,
-    "src/components/savings/fund-card.tsx": 549,
-    "src/components/savings/fund-management-section.tsx": 653,
+    "src/components/savings/fund-card.tsx": 547,
+    "src/components/savings/fund-management-section.tsx": 639,
     "src/components/savings/fund-transaction-list.tsx": 440,
     "src/components/savings/savings-trajectory-table.tsx": 549,
     "src/components/savings/transactions/editor.tsx": 366,
     "src/components/savings/transactions/filters.tsx": 207,
-    "src/components/savings/transactions/row.tsx": 594,
-    "src/components/savings/transactions/tab.tsx": 670,
+    "src/components/savings/transactions/row.tsx": 592,
+    "src/components/savings/transactions/tab.tsx": 662,
     "src/components/settings/general.tsx": 448,
     "src/components/settings/integrations-simplefin.tsx": 438,
     "src/components/settings/integrations.tsx": 706,
@@ -765,24 +765,24 @@
       "IncomeSection": 162
     },
     "src/components/retirement/sections/per-phase-budget.tsx": {
-      "PerPhaseBudgetSection": 160
+      "PerPhaseBudgetSection": 153
     },
     "src/components/retirement/sections/rmd-handling.tsx": {
       "RmdHandlingSection": 218
     },
     "src/components/retirement/sections/social-security.tsx": {
-      "SocialSecuritySection": 242
+      "SocialSecuritySection": 239
     },
     "src/components/retirement/sections/strategy-params.tsx": {
       "StrategyParamsSection": 222,
       "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 476
+      "TaxesSection": 472
     },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,
-      "useApiSync": 335
+      "useApiSync": 324
     },
     "src/components/savings/contribution-grid.tsx": {
       "ContributionGrid": 221,
@@ -798,7 +798,7 @@
       "FundCard": 364
     },
     "src/components/savings/fund-management-section.tsx": {
-      "FundManagementSection": 493
+      "FundManagementSection": 488
     },
     "src/components/savings/fund-mini-chart.tsx": {
       "FundMiniChart": 186
@@ -824,7 +824,7 @@
       "SavingsTrajectoryTable.map()": 236
     },
     "src/components/savings/transactions/tab.tsx": {
-      "AllTransactionsTab": 631
+      "AllTransactionsTab": 623
     },
     "src/components/savings/upcoming-goals.tsx": {
       "UpcomingGoals": 187
@@ -833,7 +833,7 @@
       "BracketTableEditor": 183
     },
     "src/components/settings/contribution-limits.tsx": {
-      "ContributionLimitsSettings": 320
+      "ContributionLimitsSettings": 318
     },
     "src/components/settings/data-sources.tsx": {
       "DataSourcesSettings": 161

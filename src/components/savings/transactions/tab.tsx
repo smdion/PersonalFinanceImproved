@@ -154,10 +154,8 @@ export function AllTransactionsTab({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Age-based nudge — catches what the sync-presence suggestion banner
-  // can't: non-API-linked goals (no real-transaction signal to check
-  // against at all) and rows older than the sync's transaction lookback
-  // window. Pure UI, computed from data already in props — no new query.
+  // Age-based nudge for what the sync-presence suggestions can't see:
+  // non-API-linked goals and rows older than the sync's lookback window.
   const AGE_NUDGE_MONTHS = 2;
   const monthsAgo = (dateStr: string): number => {
     const d = new Date(dateStr + "T00:00:00");
@@ -191,11 +189,8 @@ export function AllTransactionsTab({
   // includes contributions, recurring expansion, and overrides — matching the Goals table.
   // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
-  // GoalProjection.balances[0] is always the current calendar month — must match
-  // src/app/(dashboard)/savings/savings-content.tsx's monthDates construction exactly (that
-  // file previously skipped the current month once the 1st had passed, which
-  // silently dropped current-month planned transactions from the trajectory —
-  // this index math has to stay in lockstep with it).
+  // GoalProjection.balances[0] is the current calendar month, as built by
+  // savings-content.tsx's monthDates; this index math must match it.
   const projectionStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const getBalanceAfter = (
     goalId: number,
@@ -473,11 +468,8 @@ export function AllTransactionsTab({
         </div>
       )}
 
-      {/* Settlement suggestions — presence-based hints only; never auto-applied.
-          A real transaction posted in the linked category on/after the planned
-          date means the live balance already reflects it, so the placeholder's
-          forecasting job is done. Dismissing just hides it for this session;
-          it reappears next load until settled or the underlying data changes. */}
+      {/* Settlement hints, never auto-applied: a real transaction in the linked category on/after
+          the planned date is already in the live balance. Dismissing hides it for this session. */}
       <SettlementSuggestions
         canEdit={canEdit}
         suggestions={suggestions}

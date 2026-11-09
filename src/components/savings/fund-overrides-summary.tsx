@@ -89,10 +89,8 @@ function addMonths(monthStr: string, n: number): string {
 }
 
 /**
- * Split ranges into past and current pieces at the `thisMonth` boundary.
- * A range that starts before `thisMonth` and ends on/after it straddles the
- * boundary and must be cut into two ranges so `handleClearRange` never
- * deletes past months when clearing a "current" range (and vice versa).
+ * Split ranges at `thisMonth` into past and current pieces, so `handleClearRange` never deletes
+ * past months when clearing a "current" range (or the reverse).
  */
 function splitRangesByMonth(
   ranges: OverrideRange[],

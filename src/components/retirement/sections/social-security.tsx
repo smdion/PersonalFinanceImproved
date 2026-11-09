@@ -29,13 +29,8 @@ type Props = {
    *  server-side. See retirementProfilePeople.upsertHouseholdFields. */
   upsertHouseholdFields: UpsertProfileHouseholdFieldsMutation;
   isEditable: IsEditable;
-  /** Threaded straight into `ClaimingAgeExplorer`'s sweep query — the
-   *  household's REAL pinned contribution/salary profile, so a household
-   *  viewing a non-default pin gets a claiming-age comparison computed
-   *  against the plan they're actually looking at, not silently against
-   *  the global default. Not required (undefined = use the global
-   *  default, same as every other projection endpoint's optional-id
-   *  convention). */
+  /** Passed to `ClaimingAgeExplorer`'s sweep so it uses the profiles being viewed;
+   *  undefined = the active profile. */
   contributionProfileId?: number;
   salaryProfileId?: number;
 };
@@ -66,11 +61,8 @@ export function SocialSecuritySection({
         })
       : (() => {
           const pia = parseAnnualPia(perPersonSettings?.[0]?.socialSecurityPia);
-          // Same identity as the person the PIA/monthly-benefit fields
-          // above actually read from and write to — settings.personId is
-          // a second, potentially-stale source of truth for "who is this"
-          // (see build-engine-payload.ts's stale-scalar comments; the same
-          // class of bug applies to identity, not just values).
+          // The person the PIA/monthly-benefit fields above read and write;
+          // settings.personId is only a fallback (it can be stale).
           const personId =
             perPersonSettings?.[0]?.personId ?? settings.personId;
           return pia != null ? [{ personId, name: null, pia }] : [];

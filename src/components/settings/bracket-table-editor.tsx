@@ -1,15 +1,9 @@
 "use client";
 
 /**
- * Generic year + filing-status bracket editor shared by the IRMAA and LTCG
- * settings tabs (the two were ~85% identical copies that had already
- * drifted). Owns the year picker / copy-from-year / empty state / delete
- * confirmation / 3-column card+table shell; each consumer supplies its
- * column definitions, default brackets, and thin CRUD callbacks (so this
- * stays tRPC-agnostic and simply typed).
- *
- * `tax_brackets` is a third, less-similar variant (withholding JSON shape,
- * 2×3 rows/year) — deliberately NOT folded in here.
+ * Year + filing-status bracket editor shared by the IRMAA and LTCG settings tabs. Owns the year
+ * picker, copy-from-year, empty state, delete confirmation and card/table shell; consumers supply
+ * columns, default brackets and CRUD callbacks (so this stays tRPC-agnostic).
  */
 import { useState } from "react";
 import { AddYearPanel, DeleteYearConfirm } from "./tax-year-actions";

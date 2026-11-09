@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Settings → General → Data sources: every source behind the sidebar's
- * "Data" indicator, with its rhythm, last update, problems and what was
- * collected. The statuses come from the sidebar's own hook
- * (useDataSourceStatuses), so the two always agree — no polling.
+ * Settings → General → Data sources: every source behind the sidebar's "Data" indicator, with its
+ * rhythm, last update, problems and collected data, from the sidebar's own useDataSourceStatuses.
  */
 import { FocusLink } from "@/components/ui/focus-link";
 import { trpc } from "@/lib/trpc";

@@ -2330,12 +2330,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -2343,36 +2337,17 @@
       "count": 2
     }
   },
-  "src/components/retirement/sections/raise-and-rate.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/components/retirement/sections/rmd-handling.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/components/retirement/sections/settings-patch.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/retirement/sections/social-security.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/retirement/sections/strategy-params.tsx": {
@@ -2381,9 +2356,6 @@
     },
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 1
@@ -2396,9 +2368,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-config-reach-through": {
       "count": 1
     },
@@ -2406,16 +2375,6 @@
       "count": 7
     },
     "ratchet/no-raw-input": {
-      "count": 1
-    }
-  },
-  "src/components/retirement/sections/timeline.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/retirement/sections/types.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -2428,9 +2387,6 @@
     }
   },
   "src/components/retirement/withdrawal-order-editor.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -2451,12 +2407,6 @@
   "src/components/savings/api-sync-section.tsx": {
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
     }
   },
   "src/components/savings/budget-capacity-bar.tsx": {
@@ -2515,9 +2465,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -2564,9 +2511,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -2577,9 +2521,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -2597,9 +2538,6 @@
     }
   },
   "src/components/savings/fund-overrides-summary.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 5
     }
@@ -2691,9 +2629,6 @@
     }
   },
   "src/components/savings/transactions/row.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -2707,17 +2642,6 @@
   "src/components/savings/transactions/tab.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/savings/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/savings/upcoming-goals.tsx": {
@@ -2729,20 +2653,11 @@
     }
   },
   "src/components/settings/access-control.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
   "src/components/settings/auth-settings.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -2752,9 +2667,6 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -2768,9 +2680,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -2780,9 +2689,6 @@
   },
   "src/components/settings/data-sources.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -2795,9 +2701,6 @@
     }
   },
   "src/components/settings/debug.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },

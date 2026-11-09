@@ -8,10 +8,8 @@ import { Popover } from "@/components/ui/popover";
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 
-// Code-split the per-fund Recharts mini chart. All
-// FundCard instances on the page share a single chunk, so the recharts
-// payload is fetched once when the savings page hydrates instead of being
-// inlined in the page bundle. ssr:false because Recharts isn't SSR-friendly.
+// Code-split Recharts mini chart: every FundCard shares one chunk fetched on
+// hydrate. ssr:false because Recharts isn't SSR-friendly.
 const FundMiniChart = dynamic(
   () => import("./fund-mini-chart").then((m) => ({ default: m.FundMiniChart })),
   {

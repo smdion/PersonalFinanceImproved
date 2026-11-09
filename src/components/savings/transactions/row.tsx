@@ -25,10 +25,8 @@ export function balanceAfterCell(
   getBalanceAfter: (goalId: number, dateStr: string) => number | undefined,
   tx: PlannedTransaction,
 ) {
-  // Transfer rows are collapsed to a single leg (deduped by
-  // transferPairId), so a per-fund balance here would reflect
-  // only whichever leg survived. Suppress it to avoid showing
-  // an ambiguous balance for a two-fund movement.
+  // Transfer rows show one leg (deduped by transferPairId), so a
+  // per-fund balance would be ambiguous; suppress it.
   if (isTransfer)
     return (
       <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">

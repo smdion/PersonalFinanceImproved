@@ -1,18 +1,7 @@
 /**
- * Post-Retirement Raise + Withdrawal Rate side-by-side row.
- *
- * Each input is dimmed to 40% opacity AND made read-only when the active
- * withdrawal strategy doesn't use it (the strategy registry's
- * `usesPostRetirementRaise` / `usesWithdrawalRate` flags) — editing a value
- * the active strategy ignores used to still work silently (the wrapper
- * dimmed but `isEditable` stayed unconditional, so the field looked like a
- * live input, accepted edits, and did nothing).
- * The Withdrawal Rate label and help text also flip between "Withdrawal
- * Rate" / "Initial Withdrawal Rate" depending on the strategy's
- * `incomeSource`.
- *
- * The `decimalToWhole` helper lives in `./helpers` and is shared across the
- * retirement sections that need it (not duplicated locally).
+ * Post-Retirement Raise + Withdrawal Rate row. Each input is dimmed and read-only when the active
+ * strategy ignores it (`usesPostRetirementRaise`/`usesWithdrawalRate`); the rate label reads
+ * "Initial Withdrawal Rate" or "Withdrawal Rate" depending on the strategy's `incomeSource`.
  */
 "use client";
 

@@ -1,10 +1,6 @@
 /**
- * Timeline section. Shows
- * per-person retirement ages (multi-person households) or a single retirement
- * age plus the shared Plan-Through end age. Lives in the left column of the
- * Timeline+Income sunken box; this component only renders the Timeline inner
- * block, keeping the outer wrapper at the call site so Income can sit next
- * to it inside the same rounded container.
+ * Timeline section: per-person (or single) retirement ages plus the shared Plan-Through end age.
+ * Renders only the inner block; the call site owns the wrapper it shares with Income.
  */
 "use client";
 

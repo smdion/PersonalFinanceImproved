@@ -65,8 +65,6 @@ export type UpsertProfileHouseholdFieldsMutation = {
   mutate: (input: ProfilePeople["upsertHouseholdFields"]) => void;
 };
 
-/** Whether the current user may edit `retirement_settings` via
- *  `retirementSettings.upsert` (adminProcedure server-side). Sections use
- *  this to render read-only instead of hiding controls entirely — a
- *  non-admin can still see the values, just not change them. */
+/** Whether the user may edit `retirement_settings` (upsert is adminProcedure). When false,
+ *  sections render read-only rather than hiding controls. */
 export type IsEditable = boolean;

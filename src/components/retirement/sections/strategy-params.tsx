@@ -1,12 +1,6 @@
 /**
- * Strategy-specific parameter controls.
- *
- * Data-driven from the withdrawal strategy registry: given the active
- * strategy, we look up its `paramFields` (boolean / number / percent / the
- * special rollingYears variant) and render the matching editor, reading
- * and writing each field's own column (`paramFields[].column`). A sibling
- * of the Retirement budget and strategy section, so its orchestrator
- * stays compact.
+ * Strategy-specific parameter controls, driven by the active strategy's registry `paramFields`
+ * (boolean/number/percent/rollingYears); each field reads and writes its own `column`.
  */
 "use client";
 

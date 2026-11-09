@@ -61,10 +61,8 @@ export interface FundManagementCallbacks {
 }
 
 interface FundManagementSectionProps {
-  /** The real active budget profile — funding (monthlyContribution/
-   *  allocationPercent) is per-profile with no shared default, and every
-   *  number on this page reflects the active profile (see savings/savings-content.tsx's
-   *  activeProfileId comment), so inline funding edits here write to it. */
+  /** The active budget profile; funding (monthlyContribution/allocationPercent) is per-profile,
+   *  so inline funding edits write to it. */
   activeProfileId: number | null;
   rawGoals: RawGoal[];
   goalProjections: GoalProjection[];
@@ -90,10 +88,8 @@ interface FundManagementSectionProps {
     }
   >;
   canEdit: boolean;
-  /** Same padlock as the Budget page's Savings tab / this page's Allocations
-   *  tab (EDIT_LOCK_KEYS.profileEditLocked) — funding-field edits made from a
-   *  fund card must respect the same lock as every other surface that edits
-   *  this exact data, or locking one surface doesn't actually protect it. */
+  /** The shared EDIT_LOCK_KEYS.profileEditLocked padlock; fund-card funding edits respect it like
+   *  every other surface that edits this data. */
   fundingLocked?: boolean;
   /** From AllocationEditorSection — piped through to FundCard */
   onEditMonth: (monthDate: Date) => void;
@@ -113,10 +109,8 @@ interface FundManagementSectionProps {
     goalMet: boolean,
   ) => void;
   onPushPreview: (items: PushPreviewItem[], goalId?: number) => void;
-  /** Single shared mutation instance from useApiSync() — see pushMutation
-   *  in ApiSyncSection for why this must not be a second, independent
-   *  useMutation() call (the page's bulk "Pull In New Pay →" button and
-   *  this section's per-goal buttons need to share one pending state). */
+  /** The single mutation instance from useApiSync(), so the bulk "Pull In New Pay" button and the
+   *  per-goal buttons share one pending state. */
   recalculateAllocation: ReturnType<
     typeof trpc.savings.recalculateAllocation.useMutation
   >;
@@ -129,11 +123,8 @@ interface FundManagementSectionProps {
    *  recalculate/lock-in; null/undefined uses the active profile (see the
    *  savings page's recalcProfileId for the full explanation). */
   recalcProfileId?: number | null;
-  /** The Contribution/Salary Profile selection the live pool preview these
-   *  buttons implicitly promise was computed from — see the savings page's
-   *  recalcIncomeParams for the full explanation (without this, a per-goal Recalculate/Update % click silently used the
-   *  household's globally-active profile instead, same bug as the page's
-   *  bulk buttons). */
+  /** The Contribution/Salary Profile selection the live pool preview was computed from, so
+   *  per-goal Recalculate/Update % use the same profiles. */
   recalcIncomeParams?: RecalcIncomeParams;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
@@ -231,13 +222,8 @@ export function FundManagementSection({
   const { onUpdateTx: updateTxFn, isPending: updateTxPendingFlag } =
     useUpdatePlannedTx();
 
-  // Undoable delete for planned transactions.
-  // PlannedTransactions are single-row, no cascade — safe to re-create on
-  // undo. We capture the full row (looked up by id from the in-memory list)
-  // before firing the delete, and stash it in the undo callback so the toast
-  // action can replay the create with the original payload. The new row
-  // gets a new auto-id, which is acceptable here because nothing references
-  // planned transactions by id.
+  // Undoable delete: planned transactions are single rows with no cascade and nothing references
+  // them by id, so undo re-creates the captured row (with a new id).
   const deleteTx = useCallback(
     (params: { id: number }) => {
       const row = plannedTransactions.find((t) => t.id === params.id);
