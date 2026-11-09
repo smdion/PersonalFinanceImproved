@@ -3,15 +3,9 @@ import { MS_PER_DAY } from "../../constants";
 import { payPeriodLabel } from "../../config/display-labels";
 
 /**
- * Walks `anchorPayDate` forward or backward by `intervalDays` until it lands
- * on the first payday on or after `referenceDate` (inclusive — the result
- * may equal `referenceDate` exactly). Used to align an arbitrary known
- * payday to the start of whichever year is being analyzed, before walking
- * paydays forward from there.
- *
- * NOT used by findNextPayDate, which needs the payday strictly after (not
- * on) its reference date — a different boundary, kept separate deliberately
- * rather than folded into this same helper.
+ * Walks `anchorPayDate` by `intervalDays` to the first payday on or after `referenceDate`
+ * (inclusive), aligning a known payday to the start of the year being analyzed.
+ * findNextPayDate needs a strictly-after boundary, so it keeps its own loop.
  */
 export function alignPaydayOnOrAfter(
   anchorPayDate: Date,
@@ -30,10 +24,8 @@ export function alignPaydayOnOrAfter(
 }
 
 /**
- * Paychecks so far this year: walked from the job's anchor payday when it
- * has one, else estimated from the month. One rule for every view that
- * pro-rates a paycheck plan (Contributions' YTD / Year-End Estimate, the
- * Dashboard's Saved This Year).
+ * Paychecks so far this year: walked from the job's anchor payday when it has one, else
+ * estimated from the month. Shared by every view that pro-rates a paycheck plan.
  */
 export function periodsElapsedYtd(
   asOfDate: Date,
@@ -95,10 +87,8 @@ export function monthsElapsedYtd(asOfDate: Date): number {
 }
 
 /**
- * Months done this year for a monthly contribution, given the day its
- * latest contribution actually arrived (YYYY-MM-DD, if known): a month
- * whose contribution has posted is done even before the 15th, so the rest
- * of the year isn't counted from a month that's already in.
+ * Months done this year for a monthly contribution. A month whose contribution has posted
+ * (`latestContributionDay`, YYYY-MM-DD) counts as done even before the 15th.
  */
 export function monthsDoneYtd(
   asOfDate: Date,
@@ -205,11 +195,8 @@ export function countPeriodsElapsed(
 }
 
 /**
- * Finds the next upcoming pay date after asOfDate.
- *
- * For biweekly/weekly: walks forward from the anchor payday in the appropriate interval.
- * For semimonthly: next 1st or 15th.
- * For monthly: next 1st.
+ * Next pay date after asOfDate: biweekly/weekly walk from the anchor payday; semimonthly is
+ * the next 1st or 15th; monthly the next 1st.
  */
 export function findNextPayDate(
   asOfDate: Date,
@@ -221,10 +208,8 @@ export function findNextPayDate(
   if (payPeriod === "biweekly" || payPeriod === "weekly") {
     const interval = payPeriod === "biweekly" ? 14 : 7;
     let payday = new Date(anchorPayDate);
-    // Walk backward past asOfDate, then forward to find first date > asOfDate.
-    // Deliberately NOT alignPaydayOnOrAfter — that helper's boundary is
-    // inclusive (payday may equal referenceDate); this needs the payday
-    // strictly after asOfDate, so it keeps its own loop.
+    // Walk back past asOfDate, then forward to the first date > asOfDate (strictly after,
+    // unlike alignPaydayOnOrAfter's inclusive boundary).
     while (payday > asOfDate)
       payday = new Date(payday.getTime() - interval * msPerDay);
     while (payday <= asOfDate)

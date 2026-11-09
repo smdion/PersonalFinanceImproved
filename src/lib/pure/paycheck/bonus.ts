@@ -49,13 +49,9 @@ export function takesFromBonusCheck(account: {
 }
 
 /**
- * What a bonus check takes for one contribution account: a percent-of-pay
- * account its rate of the bonus, a fixed-amount account its regular
- * per-period dollars, an account not paid through payroll — or not set to be
- * taken from bonus checks (`fromBonus`, a Contribution Profile election) —
- * nothing. The one rule, and the one gate, for money contributed from bonus
- * checks: the paycheck, the contribution summary and the retirement
- * projection all use it.
+ * What a bonus check takes for one account: percent-of-pay its rate of the bonus,
+ * fixed-amount its per-period dollars; nothing if not payroll or not `fromBonus`.
+ * The one rule for bonus-check contributions (paycheck, summary, projection).
  */
 export function bonusCheckContribution(
   account: {
@@ -74,15 +70,9 @@ export function bonusCheckContribution(
 }
 
 /**
- * Estimates net bonus pay using the IRS supplemental flat withholding method.
- *
- * Bonus gross = salary × bonus% × (months worked in bonus year / 12).
- * Federal withholding uses the supplemental flat rate (e.g. 22%), NOT the marginal bracket rate.
- * FICA is applied to the bonus's FICA wages; SS only on the wage-base room the year's regular
- * FICA wages leave.
- *
- * The bonus check takes each contribution account's bonus-check amount
- * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
+ * Net bonus pay: gross = salary × bonus% × (months in bonus year / 12); federal
+ * withholding at the supplemental flat rate, not the marginal rate. Contributions
+ * come out per bonusCheckContribution.
  */
 export function calculateBonus(
   input: PaycheckInput,
@@ -149,10 +139,8 @@ export function calculateBonus(
     bonusFederalTaxable * input.supplementalTaxRate,
   );
 
-  // FICA on bonus. Its FICA wages are the bonus less any FICA-exempt
-  // payroll contribution the bonus check takes (HSA, within the cap the
-  // regular checks haven't used). SS only on the wage-base room the year's
-  // regular FICA wages leave.
+  // FICA wages: the bonus less FICA-exempt contributions it takes (HSA, within the
+  // cap regular checks left). SS only on the wage-base room regular wages leave.
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;

@@ -4,14 +4,8 @@ import { MS_PER_DAY } from "../../constants";
 import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
 
 /**
- * Finds months with 3 paydays (only applies to biweekly pay).
- *
- * Biweekly = 26 paychecks/year, but 12 months × 2 = 24. The extra 2 paychecks land in months
- * that happen to have 3 Fridays (or whatever the payday is). These "extra paycheck months" are
- * useful for budgeting — users can plan to save or invest the 3rd check.
- *
- * Algorithm: starting from a known anchor payday, walk forward in 14-day increments through the
- * calendar year, counting how many paydays fall in each month. Months with ≥ 3 are reported.
+ * Months with 3 paydays (biweekly only: 26 checks vs 24), found by walking 14-day steps
+ * from a known anchor payday through the calendar year.
  */
 export function findExtraPaycheckMonths(
   asOfDate: Date,
@@ -118,12 +112,9 @@ export function getExtraPaycheckMonthKeys(
 }
 
 /**
- * Whether a job's extra (3rd biweekly) paycheck currently lands in Budget
- * mode (stays as regular income) rather than Savings mode (routed per
- * `rules`/`overrides`). No rules configured yet defaults to Budget mode —
- * `enabled` only has meaning once there's something to enable/disable.
- * Loosely typed (not `ExtraPaycheckRoutingData`) so calculator code never
- * needs to import from a schema file — see CONTRIBUTING.md's pure-calculator rule.
+ * Whether a job's extra (3rd biweekly) paycheck stays regular income (Budget mode) rather than
+ * routed per `rules`/`overrides`. No rules means Budget mode. Loosely typed so calculator code
+ * never imports a schema file (CONTRIBUTING.md's pure-calculator rule).
  */
 export function isExtraPaycheckBudgetMode(
   routing: { rules?: unknown[]; enabled?: boolean } | null | undefined,

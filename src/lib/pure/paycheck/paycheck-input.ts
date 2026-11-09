@@ -1,21 +1,7 @@
 /**
- * Shared tail of "build a PaycheckInput" — the mechanical field mapping
- * from already-resolved values (salary, bonus terms, contribution accounts,
- * deductions, tax brackets, limits) into the calculator's input shape.
- *
- * Consolidated per audit Batch 9 Finding 3, scoped deliberately narrow:
- * this covers ONLY the object-construction tail, not the upstream
- * resolution logic. The paycheck summary (computePaycheckSummary) and job-net-pay.ts's
- * computeJobNetPayPerCheck resolve salary/contributions/deductions through
- * genuinely different pipelines — the summary applies What-If sandbox edits, and bonus-term/deduction overrides;
- * computeJobNetPayPerCheck resolves against the active Contribution
- * Profile's active fields too (job tax-inputs, deductions, contributions,
- * and salary all resolve the same way there as everywhere else in this
- * system — there is no field-level carve-out; see the Contribution Profile
- * plan's governing principle). Both pipelines land on the SAME resolved
- * shape by the time they reach this file, which is why only the
- * object-construction tail — mapping already-resolved values onto
- * PaycheckInput's fields — needs to be, and is, shared here.
+ * Maps already-resolved values (salary, bonus terms, contributions, deductions, brackets, limits)
+ * onto PaycheckInput. Callers resolve through their own pipelines (computePaycheckSummary with
+ * What-If edits; computeJobNetPayPerCheck) and share only this construction tail.
  */
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 import type {
@@ -29,15 +15,9 @@ import { toNumber } from "@/lib/utils/numbers";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 
 /**
- * Every field but `startDate` now comes from the resolved Salary Profile
- * entry, not a raw `jobs` column — `| undefined` reflects "no entry for
- * this job in the active profile at all." Callers only reach this builder
- * after already establishing the job/entry is complete (the paycheck
- * summary's bracketRow gate; job-net-pay.ts's computeJobNetPayPerCheck throws first) —
- * `undefined` here would mean that contract was violated upstream, not a
- * real "field genuinely missing" state (a complete entry always has every
- * field, even when the value itself is `null` — e.g. `anchorPayDate: null`
- * meaning "no anchor, use start date").
+ * Fields from the resolved Salary Profile entry (`startDate` from the job). Callers pass only a
+ * complete entry, so `undefined` means a broken upstream contract; `null` is a real value
+ * (`anchorPayDate: null` = no anchor, use start date).
  */
 export interface JobForPaycheckInput {
   payPeriod: PaycheckInput["payPeriod"] | undefined;
@@ -66,10 +46,8 @@ export interface ResolvedPaycheckInputs {
 }
 
 /**
- * Maps already-resolved job/salary/contribution/deduction values onto a
- * PaycheckInput. `bonusMultiplier` treats a genuinely unset (null) value as
- * 1× (not 0×) — computeBonusGross draws the same distinction between
- * "0 = no bonus this cycle" and "null = unset".
+ * Maps resolved job/salary/contribution/deduction values onto a PaycheckInput. A null
+ * `bonusMultiplier` means unset and reads as 1×, not 0× (as in computeBonusGross).
  */
 export function buildPaycheckInputForJob(
   job: JobForPaycheckInput,
@@ -79,10 +57,8 @@ export function buildPaycheckInputForJob(
     annualSalary: resolved.salary,
     payPeriod: job.payPeriod!,
     payWeek: job.payWeek!,
-    // `?? job.startDate` only ever fires for a real, complete-entry `null`
-    // ("no anchor, use start date") — `job.anchorPayDate` can't be
-    // `undefined` here without violating this builder's completeness
-    // contract (see JobForPaycheckInput's docblock).
+    // `null` means "no anchor, use start date"; `undefined` can't reach here (see
+    // JobForPaycheckInput).
     anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
     supplementalTaxRate: requireLimit(
       resolved.limitsMap,

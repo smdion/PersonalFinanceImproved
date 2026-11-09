@@ -1,20 +1,7 @@
 /**
- * "Check against your pay stub": one check's figures from a real stub
- * (any subset) against what Ledgr figures for the same check, with the
- * likely cause of each difference and where to fix it. Nothing is stored.
- *
- * Rules:
- * - Compare the stub with Ledgr's own federal taxable wages and FICA wages
- *   (never "taxable gross − gross").
- * - Social Security / Medicare wages: the stub's wage boxes when given;
- *   otherwise worked back from the tax (tax ÷ rate) with a rate-sized
- *   tolerance. Social Security is compared for the check's own period and
- *   skipped once the year's pay has passed the wage base; the Medicare
- *   back-solve is skipped once Additional Medicare withholding applies.
- * - Federal withholding: a band of a few dollars, and only once federal
- *   taxable wages match (withholding follows them).
- * - A gap explained by deductions: a subset-sum over the person's lines,
- *   capped at MAX_LINES; more than one combination is reported as such.
+ * "Check against your pay stub": one check's figures from a real stub (any subset) against
+ * Ledgr's own taxable and FICA wages, withholding and deductions, with each difference's likely
+ * cause and where to fix it. Nothing is stored.
  */
 import { formatCurrency } from "@/lib/utils/format";
 import {
@@ -338,10 +325,8 @@ export function checkPaystub(
   };
 }
 
-/** Which check of `year` a pay date is (1-based), counted from the job's
- *  anchor payday — the same anchor the paycheck's year schedule is built
- *  from (its anchor payday, else its start date). Today's date gives the
- *  latest check so far. */
+/** Which check of `year` a pay date is (1-based), counted from the anchor the year schedule
+ *  uses (anchor payday, else start date). Today's date gives the latest check so far. */
 export function paystubCheckNumber(
   payDate: Date,
   payPeriod: string,
@@ -352,11 +337,9 @@ export function paystubCheckNumber(
   return Math.min(Math.max(n, 1), periodsPerYear);
 }
 
-/** Ledgr's figures for check `n` of the year — a regular check, or the
- *  bonus check (paid on its own, at the supplemental rate). Wages and
- *  withholding are the same on every regular check; Social Security,
- *  Medicare (Additional Medicare above the threshold) and net pay are the
- *  check's own. */
+/** Ledgr's figures for check `n` of the year, regular or the bonus check (supplemental rate).
+ *  Wages and withholding match on every regular check; Social Security, Medicare (with
+ *  Additional Medicare above the threshold) and net pay are the check's own. */
 export function ledgrCheckFor(
   paycheck: PaycheckResult,
   rates: FicaRates,
