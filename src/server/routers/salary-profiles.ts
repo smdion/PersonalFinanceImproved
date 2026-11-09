@@ -49,6 +49,8 @@ import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/lib/pure/household/compensation";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { fetchSalaryProfile } from "@/server/data/salaries";
+import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import {
   createProfile,
@@ -109,11 +111,11 @@ async function refreshExtraPaycheckRoutingIfActive(
       const profile = rows[0];
       if (!profile) return undefined;
 
-      const salaries = { ...(profile.salaries as SalaryEntryMap) };
+      const salaries = { ...checkSalaryEntries(profile).salaries };
       let anyRefreshed = false;
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
-        if (!routing?.rules?.length) continue; // a stored entry is cast, not parsed
+        if (!routing?.rules?.length) continue; // a refused entry is read as stored
         const jobId = Number(jobIdStr);
         const refreshed = await computeJobNetPayPerCheck(tx, jobId, scope.asOf);
         salaries[jobIdStr] = {
@@ -212,7 +214,7 @@ export const salaryProfileRouter = createTRPCRouter({
       .orderBy(schema.salaryProfiles.createdAt);
 
     return profiles.map((p) => {
-      const salaries = p.salaries as SalaryEntryMap;
+      const salaries = checkSalaryEntries(p).salaries;
       const { pinnedCount, pinnedSalaryTotal } = summarizeEntries(salaries);
       return {
         id: p.id,
@@ -233,14 +235,10 @@ export const salaryProfileRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const rows = await ctx.db
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.id));
-      const profile = rows[0];
+      const profile = await fetchSalaryProfile(ctx.db, input.id);
       if (!profile) return null;
 
-      const salaries = profile.salaries as SalaryEntryMap;
+      const salaries = profile.salaries;
       const salaryProfileActiveMap = new Map(
         Object.entries(salaries).map(([jobId, entry]) => [
           Number(jobId),
@@ -492,7 +490,7 @@ export const salaryProfileRouter = createTRPCRouter({
             message: "Profile not found",
           });
 
-        const salaries = profile.salaries as SalaryEntryMap;
+        const salaries = checkSalaryEntries(profile).salaries;
         const key = String(input.jobId);
         const mergedEntry: Record<string, unknown> = { ...salaries[key] };
         for (const field of input.unset ?? []) delete mergedEntry[field];
@@ -555,7 +553,7 @@ export const salaryProfileRouter = createTRPCRouter({
             message: "Profile not found",
           });
 
-        const salaries = { ...(profile.salaries as SalaryEntryMap) };
+        const salaries = { ...checkSalaryEntries(profile).salaries };
         delete salaries[String(input.jobId)];
 
         const rows = await tx

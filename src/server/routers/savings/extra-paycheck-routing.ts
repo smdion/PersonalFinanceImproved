@@ -9,7 +9,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
+import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
@@ -52,7 +52,7 @@ async function writeJobExtraPaycheckRouting(
       message: "The active Salary Profile no longer exists.",
     });
   }
-  const salaries = row.salaries as SalaryEntryMap;
+  const { salaries } = checkSalaryEntries(row);
   const key = String(jobId);
   const entry = salaries[key];
   if (!entry) {

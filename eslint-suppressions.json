@@ -7897,9 +7897,6 @@
     }
   },
   "src/server/routers/salary-profiles.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
-    },
     "ratchet/max-comment-lines": {
       "count": 12
     },
@@ -7930,9 +7927,6 @@
     }
   },
   "src/server/routers/savings/extra-paycheck-routing.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 3
     }
