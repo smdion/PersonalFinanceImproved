@@ -7035,19 +7035,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 4
-    }
-  },
-  "src/server/services/savings/savings-allocation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/services/savings/summary.ts": {
@@ -7057,9 +7046,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -7068,64 +7054,23 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 6
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-clock-read": {
       "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/services/simulation/simulation-preset.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/services/sync/api-balance-resolution.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/services/sync/apply-pull-mapping.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     }
   },
   "src/server/services/sync/budget-api-push.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/server/services/sync/fill-ledger.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/services/sync/loan-feed.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/services/sync/preview.ts": {
@@ -7134,9 +7079,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -7148,17 +7090,11 @@
   "src/server/services/sync/simplefin.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/services/sync/sync-all.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     },
     "ratchet/no-clock-read": {
       "count": 1

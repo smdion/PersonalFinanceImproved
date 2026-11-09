@@ -152,12 +152,9 @@ export async function computeRelocationAnalysis(
 
   if (allBudgetProfiles.length === 0) return { result: null, budgetInfo: null };
 
-  // Build per-profile column totals — resolved through the same
-  // contribution-account chain computeActiveSummary/build-engine-payload.ts
-  // use (see resolveLinkedBudgetItemAmounts) rather than raw `amounts`,
-  // which is intentionally stale for contribution-linked items. Active
-  // profiles throughout, matching this endpoint's
-  // documented "control arm" salary resolution below.
+  // Per-profile column totals through the contribution-account chain
+  // (resolveLinkedBudgetItemAmounts), not raw `amounts`, which is stale for
+  // contribution-linked items. Active profiles, as the salary control arm below.
   const profileSummaries = await Promise.all(
     allBudgetProfiles.map(async (p) => {
       const items = allBudgetItems.filter((i) => i.profileId === p.id);
@@ -289,12 +286,9 @@ export async function computeRelocationAnalysis(
       (c.jobId === null && people.some((p) => p.id === c.personId)),
   );
 
-  // Yearly contributions and employer match for one arm — the one
-  // summary path (aggregateContributionsByCategory: bonus checks per
-  // account's fromBonus, the per-account match pay, incomplete
-  // accounts). `contribs` is always resolveProfile's output, never the
-  // raw activeContributions rows, which carry no value of their own. Jobs are
-  // the arm's profile-patched ones, so a profile's pay schedule counts.
+  // Yearly contributions and match for one arm via the one summary path
+  // (aggregateContributionsByCategory). `contribs` is resolveProfile's output;
+  // jobs are the arm's profile-patched ones, so its pay schedule counts.
   const computeContributionTotals = (
     contribs: (ContribRowWithActiveFields & CapPassed)[],
     salaries: typeof jobSalaries,
@@ -330,10 +324,9 @@ export async function computeRelocationAnalysis(
     };
   };
 
-  // Resolve contribution profiles for each scenario. No profile (or a
-  // stale id that no longer exists) resolves against an empty active-fields
-  // map — accounts carry no value of their own anymore, so this correctly
-  // yields zero contributions rather than a "live" reading of the raw rows.
+  // Resolve contribution profiles per scenario. No profile (or a missing id)
+  // resolves against an empty active-fields map: zero contributions, since
+  // accounts carry no value of their own.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
@@ -427,16 +420,9 @@ export async function computeRelocationAnalysis(
       : toNumber(settings.withdrawalRate),
     inflationRate: toNumber(settings.annualInflation),
     nominalReturnRate: avgReturnRate,
-    // Known limitation (deliberately not fixed — see TODO.md): this is
-    // the household `retirement_settings` scalar, NOT the per-person /
-    // PIA-aware resolution `build-engine-payload.ts` uses
-    // (`personAnnualAmount` + `parseAnnualPia`). This proc doesn't even
-    // fetch `retirement_profile_people`. Low impact for a coarse
-    // relocation-vs-stay FI comparison: the same SS figure is applied
-    // to both arms, so it largely cancels in the reported delta. Wiring
-    // the full per-person/PIA resolution here isn't proportionate to
-    // that; revisit if the relocation tool ever surfaces an absolute
-    // (not just comparative) retirement number.
+    // Known limitation: the household scalar, not build-engine-payload's
+    // per-person/PIA resolution; the same figure goes to both arms, so it mostly
+    // cancels in the reported delta.
     socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
     asOfDate: referenceDate,
   });

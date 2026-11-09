@@ -412,12 +412,12 @@
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 445,
     "src/server/services/projection/projection-cache.ts": 183,
-    "src/server/services/projection/relocation-analysis.ts": 470,
-    "src/server/services/savings/summary.ts": 371,
-    "src/server/services/simulation/mc-inputs.ts": 114,
-    "src/server/services/sync/budget-api-push.ts": 434,
-    "src/server/services/sync/preview.ts": 455,
-    "src/server/services/sync/sync-all.ts": 259,
+    "src/server/services/projection/relocation-analysis.ts": 456,
+    "src/server/services/savings/summary.ts": 332,
+    "src/server/services/simulation/mc-inputs.ts": 113,
+    "src/server/services/sync/budget-api-push.ts": 409,
+    "src/server/services/sync/preview.ts": 434,
+    "src/server/services/sync/sync-all.ts": 253,
     "src/server/trpc.ts": 572
   },
   "functions": {
@@ -1087,19 +1087,19 @@
       "buildProfileSwitches": 276
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 374
+      "computeRelocationAnalysis": 360
     },
     "src/server/services/savings/summary.ts": {
-      "computeSavingsSummary": 350
+      "computeSavingsSummary": 311
     },
     "src/server/services/sync/budget-api-push.ts": {
-      "pushSnapshotToBudgetApi": 237
+      "pushSnapshotToBudgetApi": 234
     },
     "src/server/services/sync/preview.ts": {
-      "computeSyncPreview": 422
+      "computeSyncPreview": 401
     },
     "src/server/services/sync/sync-all.ts": {
-      "syncAll": 234
+      "syncAll": 228
     }
   }
 }

@@ -1,24 +1,7 @@
 /**
- * Host-side client for the Monte Carlo worker_threads worker
- * (src/workers/monte-carlo-worker.ts). See that file's docblock for why
- * this exists — moving calculateMonteCarlo() off the main event-loop
- * thread so a running simulation doesn't block every other request on
- * this single-instance server.
- *
- * Design: ONE persistent, lazily
- * spawned worker with an in-process FIFO queue, NOT a pool and NOT
- * spawn-per-call. The container is resource-limited to cpus: 1.0
- * (docs/ops/OPS.md) so multiple workers buy no real parallelism — the fix
- * is OS-level preemption of one worker thread in favor of the main thread,
- * which a single worker already gets. A pool (or spawn-per-call) would
- * only add repeated V8-isolate-startup + bundle-reparse cost, which
- * matters here because `analyzeStrategy` alone can trigger 3+
- * calculateMonteCarlo calls in a single request (strategy.ts:224,406,577).
- *
- * All 6 calculateMonteCarlo call sites in the app route through
- * `runMonteCarloOffThread` — no exceptions (RULES.md single-computation-
- * path: the whole point of this change is "the server never blocks on MC,"
- * which a left-behind synchronous call site would silently defeat).
+ * Host-side client for the simulation worker (src/workers/monte-carlo-worker.ts): one persistent,
+ * lazily spawned worker with a FIFO queue (the container has one CPU, so a pool adds only startup
+ * cost). Every calculateMonteCarlo call site goes through `runMonteCarloOffThread`.
  */
 import { Worker } from "node:worker_threads";
 import path from "node:path";
@@ -41,23 +24,17 @@ type QueuedJob = {
   reject: (err: Error) => void;
 };
 
-// Bundled by esbuild (Dockerfile) to sit next to server.js in the runner
-// image — see .next/standalone layout. In dev (`next dev`), esbuild's
-// output isn't rebuilt automatically; `pnpm build:mc-worker` (added to
-// package.json) produces it once and `next dev` picks up the same
-// checked-in-gitignored file. See Dockerfile comment for the build step.
+// Bundled by esbuild (Dockerfile) next to server.js in the runner image; in
+// dev, `pnpm build:mc-worker` produces it once for `next dev`.
 const WORKER_PATH = path.join(process.cwd(), "monte-carlo-worker.js");
 
 let worker: Worker | null = null;
 const queue: QueuedJob[] = [];
 let activeJob: QueuedJob | null = null;
 
-// runId -> progress, for the polling procedure (projection.getMonteCarloProgress).
-// Single-instance app (docs/ops/OPS.md) — an in-memory Map is the right
-// weight here, no Redis/pubsub needed. Entries are removed as soon as
-// their job settles; the sweep below is only a backstop for a runId whose
-// caller never polls again (e.g. tab closed mid-run) so this can never
-// grow unbounded.
+// runId -> progress, for projection.getMonteCarloProgress (single instance, so
+// in memory). Entries go when their job settles; the TTL sweep below catches a
+// runId never polled again.
 const PROGRESS_TTL_MS = 5 * 60 * 1000;
 const progressMap = new Map<
   string,
@@ -159,14 +136,8 @@ function runNext() {
 }
 
 /**
- * Run calculateMonteCarlo() on the shared worker thread instead of inline.
- * Queues behind any currently-running simulation — see module docblock for
- * why this is one worker + a queue, not a pool.
- *
- * `runId`, if given, is the key `getMonteCarloProgress` polls under —
- * pass the same id the client used to kick off the request. Omit it for
- * call sites that don't need live progress (the caller still gets the
- * correct result, just no progress reporting).
+ * Run calculateMonteCarlo() on the shared worker thread, queued behind any running simulation.
+ * `runId`, if given, is the key `getMonteCarloProgress` polls under; omit it for no progress.
  */
 export function runMonteCarloOffThread(
   input: MonteCarloInput,

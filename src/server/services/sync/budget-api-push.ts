@@ -1,18 +1,7 @@
 /**
- * Shared helper for pushing portfolio snapshot balances to a budget API
- * (YNAB / Actual). Single computation path used by:
- *   - networth.portfolioSnapshots.create (auto-push on new snapshot)
- *   - sync.resyncPortfolioPush  (re-push an existing snapshot)
- *
- * Aggregates by remoteAccountId, computes (snapshotSum - liveYnabBalance) per
- * group, posts one transaction per group with a `snapshot:{id}` memo tag.
- *
- * Modes:
- *   create  - skip groups whose remoteAccountId already has a snapshot:{id} tag
- *   resync  - delete existing snapshot:{id} tags first, then recompute and post
- *
- * Errors abort the run and trigger cleanup of any transactions created during
- * the run. Cleanup of pre-resync deletes is not possible (YNAB delete is final).
+ * Pushes portfolio snapshot balances to a budget API: per remoteAccountId, one transaction of
+ * (snapshot sum − live balance) tagged `snapshot:{id}`. `create` skips tagged groups; `resync`
+ * deletes the tags first. An error aborts and deletes the run's own new transactions.
  */
 
 import { randomUUID } from "node:crypto";
@@ -50,10 +39,8 @@ export function snapshotMemoTag(snapshotId: number): string {
 }
 
 /**
- * Build the memo posted on YNAB transactions. The snapshot tag is the
- * idempotency key; contributor labels list each ledger-side mapping that
- * fed into this group's total. The transaction date carries snapshot
- * timing - it does not need to be repeated in the memo.
+ * The memo posted on budget transactions: the snapshot tag is the idempotency key, followed by
+ * the contributing mappings' labels (the transaction date carries the timing).
  */
 function buildMemo(snapshotId: number, contributorLabels: string[]): string {
   const tag = snapshotMemoTag(snapshotId);
@@ -61,18 +48,9 @@ function buildMemo(snapshotId: number, contributorLabels: string[]): string {
 }
 
 /**
- * Aggregate snapshot balances into one entry per remoteAccountId.
- *
- * Dedupes by `(remoteAccountId, performanceAccountId)` so a perf account
- * referenced by multiple mappings within the same group is counted once.
- * This handles the legitimate case where two ledger-side accounts share a
- * single performance account (e.g. two IRAs aggregated under one perf row).
- *
- * Requires `performanceAccountId` on every push mapping. Mappings missing
- * the typed field are skipped — re-link the mapping in Settings → Integrations
- * if you see them in prod.
- *
- * Pure function - no I/O.
+ * One entry per remoteAccountId, deduped by `(remoteAccountId, performanceAccountId)` so a perf
+ * account behind several mappings in a group counts once. Mappings without a
+ * `performanceAccountId` are skipped (re-link them in Settings → Integrations). Pure.
  */
 function aggregateMappings(
   mappings: AccountMapping[],
@@ -168,15 +146,14 @@ export async function pushSnapshotToBudgetApi(input: {
   }
 
   const tag = snapshotMemoTag(snapshotId);
-  // since_date for the transaction list query - broad enough to catch any
-  // previously-tagged transaction. Tracking accounts have low transaction
+  // since_date for the transaction list query: broad enough to catch any
+  // already-tagged transaction. Tracking accounts have low transaction
   // volume so a 10-year window is cheap.
   const sinceDate = `${asOfYear(input.asOfDate) - 10}-01-01`;
 
   // ── Phase 1: scan + (resync only) cleanup ──────────────────────────────
-  // Per RULES §Single Computation Path: only scan accounts we are about to
-  // touch (the current mapping set). Orphan tags from removed mappings are
-  // intentionally left alone.
+  // Only the accounts in the current mapping set are scanned; orphan tags from
+  // removed mappings are left alone.
   const skippedRemoteAccountIds = new Set<string>();
   let groupsCleaned = 0;
   const cleanupFailures: Array<{ transactionId: string; error: string }> = [];
@@ -287,10 +264,8 @@ export async function pushSnapshotToBudgetApi(input: {
       ) {
         continue;
       }
-      // Always read the balance live (for resync, the cache is stale: we
-      // just deleted transactions), as of the snapshot's own date: what's
-      // dated after it, or the budget app's clock, mustn't move the
-      // adjustment.
+      // Read the balance live (resync just deleted transactions, so the cache is
+      // stale), as of the snapshot's date, so later-dated activity can't move it.
       const currentBalance = await client.getAccountBalance(
         group.remoteAccountId,
         snapshotDate,

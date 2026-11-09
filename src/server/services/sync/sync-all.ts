@@ -74,16 +74,13 @@ export async function syncAll(
     const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
 
     // ── Drift detection ──
-    // Diff cached account list against new fetch. Surfaces broken
-    // mappings (deleted remote accounts), renames, and newly-added
-    // remote accounts. Result is attached to the sync response so
-    // the UI can render actionable callouts.
+    // Diff the cached account list against the new fetch (broken mappings,
+    // renames, new remote accounts) for the UI's callouts.
     const driftReport = detectDrift(cachedAccountsBefore, accounts, mappings);
 
     // ── Phase 2: Single-transaction commit ──
-    // Cache writes + lastSyncedAt + asset-pull loop share one transaction. If
-    // ANY asset write fails (unmapped type, DB constraint, missing row), the
-    // entire sync rolls back and the sync returns failure to the user.
+    // Cache writes, lastSyncedAt and the asset-pull loop share one transaction:
+    // any asset write failure rolls back the whole sync and reports failure.
     const assetsPulled = await ctx.db.transaction(async (tx) => {
       await cacheSet(tx, service, "accounts", accounts);
       await cacheSet(tx, service, "categories", categories);
@@ -153,10 +150,8 @@ export async function syncAll(
             });
         }
 
-        // Step 2: backfill prior months from cached month detail entries.
-        // Old months/YYYY-MM-01 entries accumulate in budget_api_cache from
-        // past syncs. We harvest them once into savings_monthly, then prune
-        // them in step 3. Only writes rows that don't already exist.
+        // Step 2: harvest prior months' cached month details into savings_monthly
+        // (only rows that don't exist yet); step 3 prunes them.
         const priorMonthCaches = await tx
           .select({
             cacheKey: schema.budgetApiCache.cacheKey,
@@ -198,10 +193,9 @@ export async function syncAll(
           }
         }
 
-        // Step 3: prune prior months/YYYY-MM-01 cache entries now that the
-        // data lives in savings_monthly. Current month is preserved — other
-        // code paths (budget actuals, getPreview) read it. Note: intentional
-        // policy — callers must not assume prior-month cache entries exist.
+        // Step 3: prune prior months' cache entries (now in savings_monthly); the
+        // current month stays for budget actuals and getPreview. Callers must not
+        // assume prior-month entries exist.
         if (harvested) {
           await tx
             .delete(schema.budgetApiCache)

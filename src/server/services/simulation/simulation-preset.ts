@@ -1,17 +1,7 @@
 /**
- * What a Simulation preset means — one definition for every reader: the
- * Simulation, Coast FIRE, the strategy comparison and analyzer, the
- * projection's stock share and the glide-path warning.
- *
- * A named preset (Aggressive, Default, Conservative) sets the returns
- * (its per-class return overrides, else the class's return × its
- * multiplier), the volatility, the glide path, the inflation spread and the
- * return clamps. Custom is the household's own table values, unadjusted,
- * with `glide_path_allocations` as its glide path. A named preset with no
- * glide path of its own falls back to that table.
- *
- * The household's saved asset-class changes (`mc_asset_class_overrides`)
- * apply on top of any preset.
+ * What a Simulation preset means, for every reader. A named preset sets returns, volatility,
+ * glide path (else `glide_path_allocations`), inflation spread and clamps; Custom is the table
+ * values unadjusted. Saved asset-class changes (`mc_asset_class_overrides`) apply on top.
  */
 import { eq } from "drizzle-orm";
 import { SK_SIMULATION_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
@@ -133,10 +123,8 @@ export async function loadSimulationPreset(
 }
 
 /**
- * The asset classes under a preset. Precedence: `overrides` (a run's own,
- * then the saved ones) > preset return overrides > preset multiplier >
- * table values. A class missing from a preset's return overrides takes the
- * multiplier (0.5 when the preset's multiplier is zero).
+ * The asset classes under a preset. Precedence: `overrides` (the run's, then saved) > preset
+ * return overrides > preset multiplier (0.5 when it is zero) > table values.
  */
 export function presetAssetClasses<
   T extends { id: number; name: string; meanReturn: number; stdDev: number },

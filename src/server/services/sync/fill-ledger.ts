@@ -1,8 +1,6 @@
 /**
- * Which SimpleFIN transactions a saved Performance / basis fill already
- * counted (see lib/pure/investments/flow-suggestions.ts). One app setting, per scope
- * and year: each row's baseline day (fixed at its first fill) and the
- * counted transaction ids with how each was counted.
+ * Which SimpleFIN transactions a saved Performance / basis fill already counted: one app setting
+ * per scope and year, each row's baseline day (fixed at its first fill) and counted ids with how.
  */
 import { z } from "zod/v4";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";

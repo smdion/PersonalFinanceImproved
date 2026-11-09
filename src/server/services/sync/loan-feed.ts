@@ -1,8 +1,6 @@
 /**
- * A SimpleFIN feed as a mortgage's balance. It writes the same
- * mortgage_loans.api_balance a budget pull does, so every reader follows
- * through computeMortgageBalance; while a feed is included, budget pulls
- * leave that loan alone.
+ * A SimpleFIN feed as a mortgage's balance, written to mortgage_loans.api_balance like a budget
+ * pull so every reader follows via computeMortgageBalance; budget pulls skip a feed-included loan.
  */
 import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
