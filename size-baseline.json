@@ -127,11 +127,11 @@
     "src/components/portfolio/contribution-accounts.tsx": 414,
     "src/components/portfolio/new-snapshot-form.tsx": 710,
     "src/components/portfolio/portfolio-chart.tsx": 460,
-    "src/components/retirement-projection/account-notes.ts": 267,
+    "src/components/retirement-projection/account-notes.ts": 223,
     "src/components/retirement-projection/assumption-row.tsx": 27,
-    "src/components/retirement-projection/coast-fire-card.tsx": 413,
-    "src/components/retirement-projection/decumulation-config.tsx": 468,
-    "src/components/retirement-projection/index.tsx": 165,
+    "src/components/retirement-projection/coast-fire-card.tsx": 391,
+    "src/components/retirement-projection/decumulation-config.tsx": 440,
+    "src/components/retirement-projection/index.tsx": 161,
     "src/components/retirement-projection/mc-asset-class-section.tsx": 99,
     "src/components/retirement-projection/mc-asset-classes.tsx": 137,
     "src/components/retirement-projection/mc-assumptions-overview.tsx": 89,
@@ -142,7 +142,7 @@
     "src/components/retirement-projection/mc-glide-path.tsx": 107,
     "src/components/retirement-projection/mc-outcome-distribution.tsx": 92,
     "src/components/retirement-projection/mc-preset-multipliers.tsx": 32,
-    "src/components/retirement-projection/mc-scenario-inputs.tsx": 154,
+    "src/components/retirement-projection/mc-scenario-inputs.tsx": 137,
     "src/components/retirement-projection/mc-scenario-section.tsx": 94,
     "src/components/retirement-projection/mc-simulation-assumptions.tsx": 157,
     "src/components/retirement-projection/mc-simulation-types.ts": 30,
@@ -152,7 +152,7 @@
     "src/components/retirement-projection/override-options.ts": 67,
     "src/components/retirement-projection/override-wizard-steps.tsx": 209,
     "src/components/retirement-projection/overrides-list.tsx": 126,
-    "src/components/retirement-projection/overrides-panel.tsx": 385,
+    "src/components/retirement-projection/overrides-panel.tsx": 382,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
     "src/components/retirement-projection/projection-card/compute-controls.tsx": 61,
@@ -696,10 +696,10 @@
       "PortfolioQuickLook": 296
     },
     "src/components/portfolio/use-contribution-accounts-mutations.ts": {
-      "useContributionAccountsMutations": 279
+      "useContributionAccountsMutations": 273
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
-      "DecumulationConfig": 351
+      "DecumulationConfig": 338
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 159

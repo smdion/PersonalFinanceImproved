@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Redesigned overrides panel — unified wizard pattern.
- *
- * Instead of three dense sections with 20+ fields each, this uses a
- * step-by-step flow: pick year → pick what to change → fill in 1-3 fields.
- * Saved overrides display as clean, scannable cards.
+ * Overrides panel as a step-by-step wizard: pick year → pick what to change
+ * → fill in 1-3 fields. Saved overrides display as cards.
  */
 import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";

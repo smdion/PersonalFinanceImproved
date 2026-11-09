@@ -72,11 +72,9 @@ export function ProjectionCard(props: ProjectionCardProps) {
     hasIndividualAccountData,
   } = state;
 
-  // If the active scenario's result has no per-person data (Simple-tax-mode
-  // MC scenarios like Rate-Seeded) while a specific person is still
-  // selected from a previous scenario, snap back to Joint rather than
-  // leaving the user stuck on a view that would render $0 everywhere with
-  // no indication why — see the matching disabled-pill guard below.
+  // A result with no per-person data (Simple-tax-mode MC scenarios) while a
+  // person is still selected would render $0 everywhere: snap back to Joint.
+  // Matches the disabled-pill guard below.
   useEffect(() => {
     if (!result || !isPersonFiltered) return;
     if (!hasIndividualAccountData) setPersonFilter("all");
@@ -129,11 +127,9 @@ export function ProjectionCard(props: ProjectionCardProps) {
               slim progress strip during MC-only loading (real content visible above) */}
           <ProjectionLoaderStrip state={state} />
 
-          {/* TABLE — skeleton while engine is loading or in action state,
-              real table otherwise. Same DOM position always. The advisor
-              report is a purpose-built document, not a printout of the
-              interactive table — print:hidden whenever "advisor" mode is
-              active (it renders its own simplified table instead). */}
+          {/* TABLE — skeleton while loading or in action state, real table
+              otherwise. Hidden in print for "advisor" mode, which renders
+              its own simplified table. */}
           <TableArea
             reportMode={report.reportMode}
             state={state}

@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * useContributionAccountsMutations — extracted from contribution-accounts.tsx.
- *
- * Owns: the 7 tRPC mutations + the two partial-updater helpers
- * (handlePerfUpdate, handleContribUpdate) + the link-contrib helper.
- * The parent component still owns query calls and UI state.
+ * The contribution-accounts panel's mutations, partial-update helpers (handlePerfUpdate,
+ * handleContribUpdate) and link helper; the parent owns queries and UI state.
  */
 
 import type {
@@ -25,12 +22,9 @@ type ContributionRecord =
 type PerfAccountRecord =
   RouterOutputs["performance"]["performanceAccounts"]["list"][number];
 
-/** Contribution-account fields a Contribution Profile can own (see
- *  contribAccountActiveFieldsSchema) that this page also exposes editors
- *  for. Editing one of these routes into the active profile instead of the
- *  raw account row — everything else here (accountType, personId, jobId,
- *  taxTreatment, ownership, isActive, etc.) has no profile-level fallback
- *  and always writes the raw row directly. */
+/** Profile-ownable contribution-account fields this page edits; edits route
+ *  into the active profile. All other fields have no profile-level fallback
+ *  and always write the raw row. */
 const PROFILE_OWNED_CONTRIBUTION_FIELDS = [
   "employerMatchType",
   "employerMatchValue",
@@ -205,18 +199,12 @@ export function useContributionAccountsMutations({
       rothRoute: RothIraRoute;
     }>,
   ) => {
-    // Route profile-owned fields (employer match terms, autoMaximize) into
-    // the active Contribution Profile when one is in effect, so an edit made
-    // here lands in the same place the Paycheck/Budget pages write to —
-    // otherwise this raw write is silently shadowed by the profile's own
-    // resolved value everywhere else in the app (see applyContribActiveFields).
+    // With a Contribution Profile active, profile-owned fields write into it, as the
+    // Paycheck/Budget pages do; a raw-row write would be shadowed by the profile.
     if (activeContributionProfileId != null) {
-      // contribAccountActiveFieldsSchema has no `null` variant for these
-      // fields (a profile entry is either set or absent, never explicitly
-      // nulled) — a "clear" edit (e.g. blanking Match %) has no profile-level
-      // representation, so it's dropped here rather than sent as an invalid
-      // value. It still isn't written to the raw row either, since that
-      // would be silently shadowed by whatever the profile already holds.
+      // A profile entry is set or absent, never null, so a "clear" edit (blank
+      // Match %) is dropped here, and not written to the raw row either, which
+      // the profile would shadow.
       const profileFields: Partial<{
         employerMatchType: string;
         employerMatchValue: string | number;

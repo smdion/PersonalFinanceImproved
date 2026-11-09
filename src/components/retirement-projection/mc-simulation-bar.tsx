@@ -43,15 +43,9 @@ export function SimulationBar({
   clearProjectionCacheMutation,
   setShowAssumptions,
 }: SimulationBarProps) {
-  // First decumulation year — the same year Guyton-Klinger's
-  // anchor rate below is captured from, and also the source
-  // for the "starting income" tile: `spending` is what the
-  // household spends that year under the ACTIVE strategy (per
-  // coast-fire.ts's docblock — for every strategy but the 4
-  // budget-continuation ones this is real, strategy-computed
-  // math, not an echo of a flat rate setting), so this reflects
-  // whatever withdrawal strategy/override is actually driving
-  // the household's plan, not si.withdrawalRate.
+  // First decumulation year: Guyton-Klinger's anchor rate is captured from it,
+  // and its `spending` (under the active strategy and overrides, not
+  // si.withdrawalRate) feeds the "starting income" tile.
   let firstDecumYear: EngineDecumulationYear | null = null;
   if (result) {
     const years = result.projectionByYear;

@@ -2,11 +2,9 @@ import type { ReactNode } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/utils/format";
 
-/** A balance column cell in the projection table (by tax type or by
- *  account): the amount in its column color with its breakdown tooltip.
- *  Shared by the working-year and retirement rows; each phase builds its
- *  own tooltip, since what moved a balance differs (contributions vs
- *  withdrawals). `amount` is already in display dollars. */
+/** A projection-table balance cell: the amount (display dollars) in its column
+ *  color with a breakdown tooltip. Working-year and retirement rows each build
+ *  their own tooltip (contributions vs withdrawals). */
 export function BalanceCell({
   amount,
   color,

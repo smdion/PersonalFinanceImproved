@@ -9,26 +9,9 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
   const strategy = inputs.withdrawalStrategy as WithdrawalStrategyType;
   const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
   const isDynamic = strategy !== "fixed";
-  // None of the 9 strategies actually
-  // read this rate to compute spending (Finding 0) — the old
-  // copy here claimed Fixed uses it directly (`isDynamic`
-  // false branch) and every dynamic strategy "adjusts this
-  // yearly," which is also wrong for the 4 balance-derived
-  // strategies (they never read this field at all, seeded or
-  // otherwise) and imprecise for Guyton-Klinger (its guardrail
-  // rate is self-derived, not seeded from this field either).
-  //
-  // Branch on `usesWithdrawalRate` (not `incomeSource`) for the
-  // budget-vs-balance split — `incomeSource` classifies
-  // Guyton-Klinger as "rate" (a UI-framing label, its own
-  // config docs a portfolio-linked rate as the primary
-  // control), but GK's actual spending IS budget-seeded and
-  // guardrail-adjusted every year, same as Fixed/Forgo/
-  // Spending-Decline (verified against guyton-klinger.ts and
-  // methodology/decumulation-content.tsx's grouping).
-  // `usesWithdrawalRate` correctly groups GK with the other 3
-  // budget-continuation strategies; only RMD/Constant %/
-  // Endowment/Vanguard Dynamic are truly balance-derived.
+  // No strategy reads this rate to compute spending. `usesWithdrawalRate` (not
+  // `incomeSource`) splits budget-seeded strategies (Fixed, Forgo, Spending-
+  // Decline, Guyton-Klinger) from the 4 balance-derived ones.
   const isBudgetSeeded = cfg?.usesWithdrawalRate === true;
   const rateTip =
     cfg?.incomeSource === "formula"

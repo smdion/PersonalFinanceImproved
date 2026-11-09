@@ -1,14 +1,8 @@
 "use client";
 
 /**
- * CoastFireCard — compact 5th hero KPI card.
- *
- * Displays the deterministic Coast FIRE age (fast, always shown). When the
- * user triggers the Coast FIRE scenario view (via the chart scenario toggle
- * OR the "Validate with Monte Carlo" button on this card), the same
- * `computeCoastFireMC` query runs once — and its result (binary-searched
- * MC-true age + success rate) powers both this card AND the chart's MC fan
- * bands. Single MC run, no duplication.
+ * Coast FIRE hero KPI card: the deterministic age always; once the scenario view or "Validate"
+ * runs `computeCoastFireMC`, that one result powers this card and the chart's fan bands.
  */
 
 import { DEFAULT_SIMULATION } from "@/lib/constants";
@@ -42,11 +36,9 @@ type CoastFireSimulationResult = Pick<
   | "warning"
 >;
 
-/** Below this fraction of stop-now trials hitting a penalty-avoided
- *  shortfall, the "why stopping today fails" explanation isn't worth
- *  surfacing — too small a share of outcomes to be the real story. Single
- *  source for both the KPI card's tooltip line and its short headline
- *  caption (previously duplicated as a literal `0.05` in each). */
+/** Below this share of stop-now trials hitting a penalty-avoided shortfall,
+ *  "why stopping today fails" isn't surfaced. Used by both the tooltip line
+ *  and the headline caption. */
 const COAST_FIRE_GAP_MATERIALITY_THRESHOLD = 0.05;
 
 function hasCoastFireGapAmount(simulation: CoastFireSimulationResult): boolean {
@@ -68,11 +60,9 @@ interface CoastFireCardProps {
   input: CoastFireInput;
   /** A Coast FIRE age as its year and whose age it is. */
   ageLabel: (age: number) => string;
-  /** Pass-down of the Coast FIRE MC binary-search result from
-   *  use-projection-queries.ts. On demand by default — fires
-   *  once the household selects a Coast FIRE scenario, not on page load —
-   *  so this card usually shows deterministic-only at first; the headline
-   *  automatically upgrades to combined once the MC result arrives. */
+  /** Coast FIRE simulation result from use-projection-queries.ts. It runs on
+   *  demand (once a Coast FIRE scenario is selected), so the card shows the
+   *  deterministic age first and upgrades to combined when it arrives. */
   coastFireMcResult?: CoastFireSimulationResult;
   /** True while the shared coast MC query is fetching. */
   coastFireSimulationLoading?: boolean;
@@ -158,10 +148,8 @@ export function CoastFireCard({
 }
 
 /**
- * Combined headline when the simulated result is available. Refuses to
- * show "Already ✓" unless BOTH the baseline and simulated answers agree.
- * Shows the more conservative of the two ages otherwise, plus any hard
- * "unreachable" verdict.
+ * Combined headline once the simulated result is available: "Already ✓" only when baseline and
+ * simulated agree; otherwise the more conservative age, plus any hard "unreachable" verdict.
  */
 function CombinedStatus({
   det,
@@ -210,14 +198,9 @@ function CombinedStatus({
     );
   }
 
-  // Baseline passes stopping today; simulated doesn't. Baseline is a
-  // SINGLE expected-return path (identical math to the Baseline scenario) — it has
-  // no way to see that real returns vary, so it can't detect a case that
-  // only breaks under variance. Simulated (1,000 randomized sequences) is
-  // the one actually answering "does this work in practice." Kept to ONE
-  // short line here (with a "?" for the full explanation + dollar figure,
-  // via KpiCard's tooltip prop above) so this card doesn't blow out the
-  // shared row height of the other 4 hero KPI cards next to it.
+  // Baseline passes stopping today; simulated doesn't. Baseline is one expected-return path
+  // and can't see variance; the simulation answers "does this work in practice." One short
+  // line here keeps the hero row height; the full explanation is in the "?" tooltip.
   if (det.status === "already_coast" && mc.status === "found") {
     const hasGapAmount = hasCoastFireGapAmount(mc);
     const shortLine = hasGapAmount
@@ -354,10 +337,8 @@ function DeterministicStatus({
 }
 
 /**
- * Simulated detail line (Option D format) — shown whenever the simulated
- * Coast FIRE result is available. Always shows "Stopping today: X%
- * simulated" so the user sees the raw confidence at the current age, and
- * indicates the age needed for the confidence threshold if there's a gap.
+ * Simulated detail line, shown whenever the simulated result is available: always "Stopping
+ * today: X% simulated", plus the age needed for the confidence threshold if there's a gap.
  */
 function SimulatedDetail({
   mc,
@@ -395,11 +376,8 @@ function SimulatedDetail({
         {formatPercent(mc.stopNowSuccessRate, 0)} simulated
       </span>
       <span className="text-faint ml-1">{tail}</span>
-      {/* Full "why" (with the dollar figure) lives in KpiCard's tooltip
-          ("?") now, not inline here -- an earlier version added a 2-line
-          paragraph in this spot which, stacked with CombinedStatus's own
-          explanation above, roughly doubled this card's height relative to
-          its 4 siblings in the hero KPI row. */}
+      {/* The full "why" (with the dollar figure) lives in KpiCard's "?"
+          tooltip, keeping this card's height in line with its hero-row siblings. */}
       {mc.warning && (
         <div className="mt-0.5 text-yellow-500">⚠ non-monotone</div>
       )}

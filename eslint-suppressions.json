@@ -1825,9 +1825,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 3
     },
@@ -1835,16 +1832,8 @@
       "count": 3
     }
   },
-  "src/components/portfolio/use-portfolio-snapshot-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/components/portfolio/use-snapshot-sync-pending.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
@@ -1860,9 +1849,6 @@
     }
   },
   "src/components/retirement-projection/account-notes.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-config-reach-through": {
       "count": 1
     },
@@ -1870,20 +1856,9 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/balance-cell.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/coast-fire-card.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-abbreviation": {
       "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/decumulation-config.tsx": {
@@ -1893,25 +1868,14 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-config-reach-through": {
       "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 2
     },
     "ratchet/no-raw-input": {
       "count": 1
-    }
-  },
-  "src/components/retirement-projection/index.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/lump-sum-form.tsx": {
@@ -1977,12 +1941,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -1993,18 +1951,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-simulation-bar.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/mc-summary-tiles.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     }
@@ -2044,9 +1991,6 @@
     },
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/pill-btn.tsx": {
