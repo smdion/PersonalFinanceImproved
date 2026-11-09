@@ -15,7 +15,7 @@ import {
 } from "@/lib/config/enum-values";
 
 /** glide_path_allocations rows → the glide path, by age (the shape the
- *  Simulation's buildMcInputs builds from the same table). */
+ *  Simulation's buildSimulationInputs builds from the same table). */
 export function glidePathFromRows(
   rows: readonly {
     age: number;

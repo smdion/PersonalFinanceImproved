@@ -261,7 +261,7 @@ describe('answer key: "vs budget" compares delivered spending', () => {
     //   year 3 20,000 (all that's left), years 4-30 deliver 0.
     // The budget line stays 40,000 (0% inflation). "vs budget" counts a
     // trial stable when delivered spending is at least 75% of the budget
-    // every retirement year (MC_SPENDING_STABILITY_THRESHOLD, Ledgr's
+    // every retirement year (SIMULATION_SPENDING_STABILITY_THRESHOLD, Ledgr's
     // choice): year 3 is 20,000 / 40,000 = 50% and year 4 is 0%, so no
     // trial is stable: "vs budget" 0 of 5 = 0%, with year 3's ratio 0.5 and
     // year 4's 0. Today `strategySpending` returns Fixed's target

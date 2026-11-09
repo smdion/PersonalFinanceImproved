@@ -5,7 +5,7 @@ import { classifyContribResolution } from "@/lib/pure/contributions/profile-fiel
 // classifyContributionResolution
 // ---------------------------------------------------------------------------
 
-describe("classifyContribResolution", () => {
+describe("classifyContributionResolution", () => {
   const rawIds = new Set([1, 2, 3]);
 
   it("returns account_unavailable when the account isn't in the global active fetch", () => {

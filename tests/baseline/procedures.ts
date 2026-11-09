@@ -50,7 +50,7 @@ const loan = (build: (loanId: number) => unknown) => (ctx: ProcedureContext) =>
 const none = () => ({});
 
 /** The active Contribution and Salary Profiles, which every page sends
- *  (useEffectiveContribProfileId, useEffectiveSalaryProfileId). */
+ *  (useEffectiveContributionProfileId, useEffectiveSalaryProfileId). */
 const active = ({ ids }: ProcedureContext) => ({
   contributionProfileId: ids.contributionProfile,
   salaryProfileId: ids.salaryProfile,

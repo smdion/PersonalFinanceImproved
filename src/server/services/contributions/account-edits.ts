@@ -129,7 +129,7 @@ function mergeContributionAccountEdit(
  * value of their own (see applyContribActiveFields), so the caller must
  * have already resolved which profile this edit belongs to (same
  * local selection → active profile precedence the
- * rest of the page uses; see resolveEffectiveContribProfileIdForItem in
+ * rest of the page uses; see resolveEffectiveContributionProfileIdForItem in
  * routers/budget/item-amounts.ts).
  *
  * Callers editing more than one account should use

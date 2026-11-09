@@ -74,7 +74,7 @@ const snapshot = () =>
     priorYearLimitsRecord: lastYear,
   });
 
-describe("contribAccountsFor reads each figure from its own field", () => {
+describe("contributionAccountsFor reads each figure from its own field", () => {
   it("salary sizes the contribution; total compensation is the rate's base", () => {
     const { accounts, result } = snapshot();
     expect(accounts[0]!.annualContribution).toBe(10000);

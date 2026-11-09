@@ -256,7 +256,7 @@ export async function computeBudgetActiveSummary(
       apiSyncDirection: i.apiSyncDirection,
       contributionAccountId: i.contributionAccountId,
       // Per-column reason a linked item's amount is $0 (one per column,
-      // from the same active profiles). See classifyContribResolution.
+      // from the same active profiles). See classifyContributionResolution.
       contribStatus: resolvedItemsById.get(i.id)?.contribStatus ?? null,
     };
   });

@@ -30,7 +30,7 @@ export type MonteCarloPercentileBand = {
      *  (it's held from then on, so it's the same every year). */
     gkAnchorRange?: { p25: number; p75: number };
   };
-  /** % of trials whose ratio fell below MC_SPENDING_STABILITY_THRESHOLD in
+  /** % of trials whose ratio fell below SIMULATION_SPENDING_STABILITY_THRESHOLD in
    *  THIS specific year — only populated on `spendingStabilityBands`
    *  entries (undefined elsewhere). Percentile bands alone can hide a real,
    *  concentrated deviation: if only e.g. 8% of trials breach the floor in

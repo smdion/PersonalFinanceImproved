@@ -38,9 +38,9 @@
 //  13.  App config / admin ......... appSettings, localAdmins
 //  14.  Scenarios (relocation) ..... relocationScenarios, scenarios
 //  15.  Monte Carlo ................ assetClassParams, assetClassCorrelations,
-//                                    glidePathAllocations, mcPresets,
-//                                    mcPresetGlidePaths, mcPresetReturnOverrides,
-//                                    mcUserPresets
+//                                    glidePathAllocations, simulationPresets,
+//                                    simulationPresetGlidePaths, simulationPresetReturnOverrides,
+//                                    simulationUserPresets
 //  16.  Contribution profiles ...... contributionProfiles, salaryProfiles
 //  17.  State versions (backup) .... stateVersions, stateVersionTables, changeLog
 //

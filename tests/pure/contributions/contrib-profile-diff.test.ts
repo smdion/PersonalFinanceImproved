@@ -11,7 +11,7 @@ const account = (overrides: Partial<DiffAccount> = {}): DiffAccount => ({
   ...overrides,
 });
 
-describe("diffContribProfileSwap", () => {
+describe("diffContributionProfileSwap", () => {
   it("produces no lines when neither profile touches the account", () => {
     const lines = diffContribProfileSwap({}, {}, [account()]);
     expect(lines).toEqual([]);
@@ -105,7 +105,7 @@ describe("diffContribProfileSwap", () => {
   });
 });
 
-describe("diffContribProfileSwap — taken from bonus checks", () => {
+describe("diffContributionProfileSwap — taken from bonus checks", () => {
   it("a fromBonus difference is a line; absent and false are the same", () => {
     const value = {
       contributionValue: "8",
@@ -128,7 +128,7 @@ describe("diffContribProfileSwap — taken from bonus checks", () => {
   });
 });
 
-describe("diffContribProfileSwap — Roth IRA route", () => {
+describe("diffContributionProfileSwap — Roth IRA route", () => {
   it("a route difference is a line; absent and direct are the same", () => {
     const value = {
       contributionValue: "625",

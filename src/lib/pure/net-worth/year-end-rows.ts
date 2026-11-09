@@ -20,7 +20,7 @@ export type CategoryPerformance = {
   gainLoss: number;
   distributions: number;
   /** Portion of employerMatch that is a purchase-price discount (e.g. ESPP),
-   *  not real cash — see isDiscountBasisEmployerContrib(). 0 when no
+   *  not real cash — see isDiscountBasisEmployerContribution(). 0 when no
    *  discount-kind account contributes to this category/year. */
   employerMatchDiscount: number;
 };

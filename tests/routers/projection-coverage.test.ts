@@ -2342,7 +2342,7 @@ describe("projection router — computeCoastFireProbe", () => {
       expect(response.result?.probeAge).toBe(40);
       expect(typeof response.result?.successRate).toBe("number");
       expect(typeof response.result?.passes).toBe("boolean");
-      // Deliberately NOT a CoastFireMcResult shape -- see coast-fire-probe.ts's
+      // Deliberately NOT a CoastFireSimulationResult shape -- see coast-fire-probe.ts's
       // docblock (status: "found" can't represent a failing probe).
       expect(response.result).not.toHaveProperty("status");
       expect(response.result).not.toHaveProperty("coastFireAge");

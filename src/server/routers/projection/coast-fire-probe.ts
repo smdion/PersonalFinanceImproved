@@ -54,7 +54,7 @@ import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.s
 import { writeStamp } from "@/lib/utils/clock";
 
 /**
- * Deliberately NOT `CoastFireMcResult` (computeCoastFireMC's shape).
+ * Deliberately NOT `CoastFireSimulationResult` (computeCoastFireMC's shape).
  * `status`/`coastFireAge`/`warning`/`probesRun`/`stopNow*` are all
  * binary-search concepts a single probe doesn't have an answer for —
  * most importantly, `status: "found"` cannot represent a FAILING probe,
@@ -83,7 +83,7 @@ export const coastFireProbeRouter = createTRPCRouter({
    * `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s
    * binary search already uses; no new simulation logic. Returns
    * `CoastFireProbeResult`, deliberately NOT `computeCoastFireMC`'s
-   * `CoastFireMcResult` shape — see that type's own docblock for why.
+   * `CoastFireSimulationResult` shape — see that type's own docblock for why.
    */
   computeCoastFireProbe: protectedProcedure
     .use(expensiveRateLimitMiddleware)

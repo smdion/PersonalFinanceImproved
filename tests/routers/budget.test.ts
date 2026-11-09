@@ -1623,7 +1623,7 @@ describe("budget router", () => {
   // -------------------------------------------------------------------------
   // contribStatus — why a linked item's amount is $0 for a given column,
   // distinguishing genuinely-zero from causes the "PC" badge used to be
-  // unable to tell apart (classifyContribResolution).
+  // unable to tell apart (classifyContributionResolution).
   // -------------------------------------------------------------------------
 
   describe("contribStatus on linked items", () => {
@@ -1680,7 +1680,7 @@ describe("budget router", () => {
     });
 
     // "inactive_in_sandbox" is exercised directly against
-    // classifyContribResolution (tests/pure/contributions/profile-fields.test.ts)
+    // classifyContributionResolution (tests/pure/contributions/profile-fields.test.ts)
     // rather than end-to-end here: zSandboxContribActiveFields
     // (lib/pure/household/what-if.schema.ts) only accepts { contributionValue }, so
     // isActive is stripped before it ever reaches the resolver — a What-If

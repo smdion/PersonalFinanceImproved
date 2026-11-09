@@ -2,7 +2,7 @@
 import type { contributionPay } from "@/lib/pure/household/compensation";
 import type { ContributionAccountRow } from "./contribution-account-row";
 
-/** contribAccountsFor's input, by name: several of its figures share a
+/** contributionAccountsFor's input, by name: several of its figures share a
  *  type (salary and total compensation; this year's and last year's IRS
  *  limits), so a positional swap would compile and move a figure. */
 export type PersonContributionAccountsInput<R extends ContributionAccountRow> =

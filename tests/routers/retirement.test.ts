@@ -1547,7 +1547,7 @@ describe("retirement router -- all optional inputs combined", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Contribution Profile plan: computeContribTotals must use the per-arm
+// Contribution Profile plan: computeContributionTotals must use the per-arm
 // resolved (profile-patched) jobs, not the outer raw activeJobs, for
 // fixed_per_period annualization — a per-arm payPeriod active field
 // previously had no effect on the relocation comparison's contribution math.
