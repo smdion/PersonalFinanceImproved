@@ -3,7 +3,11 @@
  */
 import { describe, it, expect } from "vitest";
 import { z, ZodError } from "zod/v4";
-import { errorText, friendlyMutationError } from "@/lib/utils/mutation-error";
+import {
+  errorText,
+  friendlyMutationError,
+  serverSentence,
+} from "@/lib/utils/mutation-error";
 
 describe("friendlyMutationError", () => {
   it("passes a hand-written BAD_REQUEST message straight through", () => {
@@ -130,5 +134,42 @@ describe("errorText", () => {
     expect(errorText({ message: "x", data: { userMessage: null } })).toBe("x");
     expect(errorText("boom", "unknown error")).toBe("unknown error");
     expect(errorText(null)).toBe("Unknown error");
+  });
+});
+
+describe("serverSentence (the one rule for loads and saves)", () => {
+  it("is a failed service's userMessage", () => {
+    expect(
+      serverSentence({
+        message: "ECONNRESET",
+        data: { code: "BAD_GATEWAY", userMessage: "YNAB didn't answer." },
+      }),
+    ).toBe("YNAB didn't answer.");
+  });
+
+  it("is a hand-written BAD_REQUEST's message, never a Zod dump", () => {
+    expect(
+      serverSentence({
+        message: "Pick a date.",
+        data: { code: "BAD_REQUEST" },
+      }),
+    ).toBe("Pick a date.");
+    expect(
+      serverSentence({
+        message: '[{"path":["x"]}]',
+        data: { code: "BAD_REQUEST", zodError: { formErrors: ["bad"] } },
+      }),
+    ).toBeNull();
+  });
+
+  it("is null for anything else (driver strings, network drops)", () => {
+    expect(
+      serverSentence({
+        message: 'relation "x" does not exist',
+        data: { code: "INTERNAL_SERVER_ERROR" },
+      }),
+    ).toBeNull();
+    expect(serverSentence({ message: "Failed to fetch" })).toBeNull();
+    expect(serverSentence(null)).toBeNull();
   });
 });

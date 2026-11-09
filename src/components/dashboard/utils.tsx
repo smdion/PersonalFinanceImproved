@@ -39,6 +39,7 @@ export function CardQueryBoundary({
   return (
     <QueryBoundary
       query={query}
+      what={title}
       fallback={<CardPulse />}
       frame={(body) => <Card title={title}>{body}</Card>}
     />

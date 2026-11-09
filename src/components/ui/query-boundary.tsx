@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { demoSessionEndedMessage } from "@/lib/utils/demo-session";
-import { errorText } from "@/lib/utils/mutation-error";
+import { serverSentence } from "@/lib/utils/mutation-error";
 
 /** How long a load runs before the "still loading" line shows. */
 export const SLOW_LOAD_MS = 20_000;
@@ -29,7 +29,7 @@ export type QueryBoundaryProps = {
   query: Queries;
   /** Today's loading look, shown unchanged while loading. */
   fallback: ReactNode;
-  /** What failed, for "Failed to load <what>: <message>". */
+  /** What failed, for "Couldn't load <what>. Try again." */
   what?: string;
   /** Wraps the state's body, such as a card with its title. */
   frame?: (body: ReactNode) => ReactNode;
@@ -49,9 +49,22 @@ export function queryPending(query: Queries): boolean {
   return listOf(query).some((q) => q.isLoading || Boolean(q.error));
 }
 
-function failureText(error: unknown, what: string | undefined): string {
-  const message = errorText(error, "");
-  return `Failed to load${what ? ` ${what}` : ""}${message ? `: ${message}` : ""}`;
+/** A failed load in words (owner Q18): the server's own sentence when it
+ *  wrote one, else "Couldn't load <what>. Try again." */
+function loadFailureText(error: unknown, what: string | undefined) {
+  return (
+    serverSentence(error) ??
+    `Couldn't load ${what ?? "this section"}. Try again.`
+  );
+}
+
+/** Logs a failed load's raw error to the browser console once (the screen
+ *  shows only the rule's sentence; UI code never imports the server log). */
+function useLogLoadFailure(error: unknown, what: string | undefined) {
+  useEffect(() => {
+    if (!error) return;
+    console.warn("load_failed", what ?? null, error);
+  }, [error, what]);
 }
 
 function StillLoading() {
@@ -80,13 +93,14 @@ export function QueryBoundary({
   const queries = listOf(query);
   const failed = queries.filter((q) => Boolean(q.error));
   const [first] = failed;
+  useLogLoadFailure(first?.error, what);
   if (first) {
     const ended = demoSessionEndedMessage(first.error);
     const retrying = failed.some((q) => q.isFetching);
     return frame(
       <div role="alert" className="flex flex-wrap items-center gap-2">
         <p className="text-sm text-red-600">
-          {ended ?? failureText(first.error, what)}
+          {ended ?? loadFailureText(first.error, what)}
         </p>
         {!ended && (
           <Button

@@ -8021,7 +8021,7 @@
   },
   "src/lib/utils/mutation-error.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 1

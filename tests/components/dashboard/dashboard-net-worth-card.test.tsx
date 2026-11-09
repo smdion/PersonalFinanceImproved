@@ -74,7 +74,9 @@ describe("NetWorthCard smoke", () => {
       error: new Error("x"),
     });
     render(<NetWorthCard />);
-    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load Net Worth. Try again."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 

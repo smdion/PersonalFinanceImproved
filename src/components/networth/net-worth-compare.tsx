@@ -7,6 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 
 type PresetKey = "1m" | "3m" | "6m" | "ytd" | "1y" | "yoy" | "custom";
 
@@ -107,7 +108,7 @@ export function NetWorthCompare({
         ? customTo
         : presetDates.to;
 
-  const { data, isLoading, error } = trpc.networth.computeComparison.useQuery(
+  const { data, ...comparison } = trpc.networth.computeComparison.useQuery(
     { dateFrom, dateTo, useMarketValue },
     { enabled: !!dateFrom && !!dateTo && dateFrom < dateTo },
   );
@@ -200,17 +201,17 @@ export function NetWorthCompare({
         </div>
       )}
 
-      {/* Loading / error */}
-      {isLoading && (
-        <div className="space-y-2">
-          <Skeleton className="h-16" />
-          <Skeleton className="h-32" />
-        </div>
-      )}
-      {error && (
-        <p className="text-sm text-red-500">
-          Failed to load comparison: {error.message}
-        </p>
+      {queryPending(comparison) && (
+        <QueryBoundary
+          query={comparison}
+          what="the comparison"
+          fallback={
+            <div className="space-y-2">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-32" />
+            </div>
+          }
+        />
       )}
       {dateFrom >= dateTo && (
         <p className="text-sm text-yellow-600">

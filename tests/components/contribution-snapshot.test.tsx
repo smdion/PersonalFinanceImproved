@@ -129,11 +129,11 @@ describe("ContributionSnapshot", () => {
     expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
-  it("renders an error message on query error", () => {
+  it("renders the failure and Retry on query error", () => {
     setQueryState(SUMMARY, { error: new Error("boom") });
     render(<ContributionSnapshot />);
     expect(
-      screen.getByText("Failed to load contribution snapshot"),
+      screen.getByText("Couldn't load the contribution snapshot. Try again."),
     ).toBeInTheDocument();
   });
 

@@ -83,8 +83,8 @@ export function ContributionsContent() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   // Before the early returns (hooks): the switches are shared app-wide.
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(
@@ -106,25 +106,19 @@ export function ContributionsContent() {
     { enabled: !!selectedProfileId },
   );
 
-  if (highIncomeError) {
+  if (highIncomeError)
     return (
-      <div>
-        <PageHeader
-          title="Contributions"
-          subtitle="Household contribution breakdown and savings rates"
-        />
-        <Card>
-          <p className="py-8 text-center text-sm text-red-500">
-            Failed to load the high-income line
-          </p>
-        </Card>
-      </div>
+      <ContributionsQueryBoundary
+        query={highIncome}
+        what="the high-income line"
+      />
     );
-  }
 
-  // The high-income line's own failure has its card above.
+  // The high-income line's own failure has its boundary above.
   if (queryPending(summary) || highIncomeThreshold === undefined)
-    return <ContributionsQueryBoundary query={summary} />;
+    return (
+      <ContributionsQueryBoundary query={summary} what="contribution data" />
+    );
 
   const people = data?.people ?? [];
   const priorYearWindow = data?.priorYearWindow ?? null;

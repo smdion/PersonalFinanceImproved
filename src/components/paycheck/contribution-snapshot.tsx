@@ -22,6 +22,7 @@ import {
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
@@ -53,27 +54,26 @@ export function ContributionSnapshot() {
       : {}),
     ...salaryProfileInput,
   };
-  const { data, isLoading, error } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
+  const summary = trpc.contribution.computeSummary.useQuery(contribInput);
+  const { data } = summary;
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
-      highIncomeThreshold,
+      highIncome.threshold,
     ),
   );
 
-  if (error || highIncomeError)
+  if (queryPending([summary, highIncome]) || highIncome.threshold === undefined)
     return (
-      <p className="text-sm text-red-500">
-        Failed to load contribution snapshot
-      </p>
-    );
-  if (isLoading || highIncomeThreshold === undefined)
-    return (
-      <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
+      <QueryBoundary
+        query={[summary, highIncome]}
+        what="the contribution snapshot"
+        fallback={
+          <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
+        }
+      />
     );
   if (!data?.people.length) return null;
 

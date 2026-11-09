@@ -166,7 +166,9 @@ describe("FinancialCheckupCard smoke", () => {
     };
     contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
-    expect(screen.getByText("Failed to load")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load Financial Checkup. Try again."),
+    ).toBeInTheDocument();
   });
 
   it("shows the emergency fund months from the engine", () => {

@@ -202,7 +202,9 @@ describe("ContributionsCard smoke", () => {
       error: new Error("x"),
     });
     render(<ContributionsCard />);
-    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load Contributions. Try again."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 

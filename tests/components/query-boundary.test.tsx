@@ -88,7 +88,7 @@ describe("QueryBoundary", () => {
     expect(load).not.toHaveBeenCalled();
   });
 
-  it("a failed query shows its message and a Retry that refetches", async () => {
+  it("a failed query says what didn't load, never the raw error, and Retry refetches", async () => {
     let fail = true;
     const load = vi.fn(async () => {
       if (fail) throw new Error("the server is down");
@@ -96,8 +96,9 @@ describe("QueryBoundary", () => {
     });
     renderPage(load);
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Failed to load the figures: the server is down",
+      "Couldn't load the figures. Try again.",
     );
+    expect(screen.queryByText(/the server is down/)).toBeNull();
     expect(screen.queryByText("skeleton")).toBeNull();
     fail = false;
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -105,7 +106,7 @@ describe("QueryBoundary", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
-  it("an error with no message says only what failed", () => {
+  it("with no `what`, it names the section", () => {
     render(
       <QueryBoundary
         query={loading({ error: true, isLoading: false, isFetching: false })}
@@ -113,7 +114,7 @@ describe("QueryBoundary", () => {
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /^Failed to loadRetry$/,
+      /^Couldn't load this section\. Try again\.Retry$/,
     );
   });
 
@@ -131,7 +132,7 @@ describe("QueryBoundary", () => {
     });
     render(<QueryBoundary query={[ok, a, b]} fallback={<p>skeleton</p>} />);
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Failed to load: a broke",
+      "Couldn't load this section. Try again.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(a.refetch).toHaveBeenCalledTimes(1);
@@ -154,7 +155,7 @@ describe("QueryBoundary", () => {
       <QueryBoundary query={[waiting, gate]} fallback={<p>skeleton</p>} />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Failed to load: profiles broke",
+      "Couldn't load this section. Try again.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(gate[1]!.refetch).toHaveBeenCalledTimes(1);
@@ -215,7 +216,40 @@ describe("QueryBoundary", () => {
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Failed to load budget: YNAB didn't answer. Nothing was changed.",
+      /^YNAB didn't answer\. Nothing was changed\.Retry$/,
+    );
+  });
+
+  it("a hand-written BAD_REQUEST shows its own sentence; a driver error doesn't", () => {
+    const bad = Object.assign(new Error("Pick a start date first."), {
+      data: { code: "BAD_REQUEST" },
+    });
+    const { rerender } = render(
+      <QueryBoundary
+        query={loading({ error: bad, isLoading: false, isFetching: false })}
+        what="budget"
+        fallback={<p>skeleton</p>}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Pick a start date first.",
+    );
+    const internal = Object.assign(new Error('relation "x" does not exist'), {
+      data: { code: "INTERNAL_SERVER_ERROR" },
+    });
+    rerender(
+      <QueryBoundary
+        query={loading({
+          error: internal,
+          isLoading: false,
+          isFetching: false,
+        })}
+        what="budget"
+        fallback={<p>skeleton</p>}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Couldn't load budget. Try again.",
     );
   });
 
@@ -234,6 +268,8 @@ describe("QueryBoundary", () => {
       />,
     );
     expect(screen.getByText("Net Worth")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Failed to load: x");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Couldn't load Net Worth. Try again.",
+    );
   });
 });
