@@ -21,10 +21,9 @@ const FLOW_KINDS: ReadonlySet<InvestmentTransactionKind> = new Set([
 ]);
 
 /**
- * One account's money since a snapshot, split three ways: added or taken
- * out (contributions, withdrawals), moved between the household's own
- * accounts (transfers — they net out across the household, but do change
- * this account), and, by subtraction from the balance change, markets.
+ * One account's money since a snapshot: added or taken out, moved between own
+ * accounts (nets out household-wide but changes this account), and markets (the
+ * rest of the balance change).
  */
 export function accountFlowsSince(
   rows: readonly FlowRow[],

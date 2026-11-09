@@ -1,11 +1,7 @@
 /**
- * What the household records alongside a Performance account row
- * (account_performance `note`, `estimated_fields`, `accepted_checks`):
- * where the figures came from, which are still estimates, and which
- * reconciliation gaps are on purpose.
- *
- * Stored JSON is parsed entry by entry — one bad entry (a hand edit, a
- * field renamed in a later version) drops only itself.
+ * What the household records with a Performance row (`note`, `estimated_fields`,
+ * `accepted_checks`): figure sources, estimates, and accepted gaps. Stored JSON is
+ * parsed entry by entry, so a bad entry drops only itself.
  */
 import { z } from "zod/v4";
 import {
@@ -33,7 +29,7 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /** A gap accepted as on purpose: the gap (dollars), why, and when. For
  *  `transfers` the amount is the row's own rollover ("no tracked other
- *  side"). The check comes back when the gap is no longer this one. */
+ *  side"). The check comes back when the gap differs from this one. */
 export const acceptedCheckSchema = z.object({
   amount: z.number().finite(),
   note: z.string().trim().min(1).max(280),

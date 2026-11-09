@@ -73,11 +73,8 @@ function tokens(name: string): Set<string> {
 }
 
 /**
- * The registered series whose name best matches `name` (e.g. a plan-only
- * "… Index 2060 NL Fund H" → the registered "… Index 2060 Fund"). Every
- * number in the name (target years, index numbers) must match; at least
- * `minScore` of the words must overlap. A suggestion only — the household
- * confirms it.
+ * The registered series best matching `name`: every number in it must match and at
+ * least `minScore` of the words overlap. A suggestion the household confirms.
  */
 export function suggestStandIn(
   name: string,

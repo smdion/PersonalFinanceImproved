@@ -84,10 +84,8 @@ export function performanceAnnualRows(
     annualRows.map((r) => annualKey(r.year, r.category)),
   );
 
-  // Resolve parentCategory from master performance_accounts table.
-  // account_performance.parent_category is a legacy field that may not match
-  // the canonical parentCategory on the master record (e.g. HSA/ESPP accounts
-  // store "HSA"/"Brokerage" but master says "Retirement").
+  // parentCategory comes from the master performance_accounts row:
+  // account_performance.parent_category can disagree with it.
   for (const a of accounts) {
     a.parentCategory = resolveMaster(a, perfLookups).parentCategory;
   }
@@ -372,15 +370,9 @@ export function addRetirementRollup(
   }
   const retYears = Array.from(retYearsSet).sort((a, b) => a - b);
 
-  // Retirement is always a computed rollup, never a stored per-category
-  // row a user finalizes directly (unlike Portfolio, which legitimately
-  // copies stored data when exactly one category exists for a year) — so
-  // any pre-existing "Retirement" row here (e.g. a stray historical
-  // import) must not be allowed to silently shadow the fresh one pushed
-  // below. Array.find() elsewhere always returns the FIRST match for a
-  // given year, so leaving a stale row in place — even with a correct
-  // endingBalance — would keep serving its stale isCurrentYear/isFinalized
-  // flags forever, invisibly, since nothing else here ever inspects it.
+  // Retirement is always a computed rollup, so drop any stored "Retirement" row:
+  // readers take the first match per year, and a stored one would shadow the
+  // fresh row pushed below.
   for (let i = annualRows.length - 1; i >= 0; i--) {
     if (annualRows[i]!.category === PERF_CATEGORY_RETIREMENT)
       annualRows.splice(i, 1);
