@@ -115,7 +115,7 @@
     "src/components/onboarding/wizard-saves.ts": 153,
     "src/components/onboarding/wizard-state.ts": 32,
     "src/components/paycheck/contrib-account-form.tsx": 609,
-    "src/components/paycheck/contrib-card.tsx": 539,
+    "src/components/paycheck/contrib-card.tsx": 366,
     "src/components/paycheck/contribution-snapshot.tsx": 615,
     "src/components/paycheck/contributions-section.tsx": 431,
     "src/components/paycheck/person-paycheck.tsx": 453,

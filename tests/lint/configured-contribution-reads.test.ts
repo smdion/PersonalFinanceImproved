@@ -20,7 +20,7 @@ const CLIENT_DIRS = ["src/components", "src/app", "src/lib/hooks"];
 
 /** file → number of numeric reads of the configured value, and why. */
 const ALLOWED: Record<string, { count: number; why: string }> = {
-  "src/components/paycheck/contrib-card.tsx": {
+  "src/components/paycheck/contrib-card-auto-max.tsx": {
     count: 1,
     why: "auto-max preview: today's setting vs the most it can be",
   },

@@ -1795,14 +1795,19 @@
       "count": 2
     }
   },
-  "src/components/paycheck/contrib-card.tsx": {
+  "src/components/paycheck/contrib-card-auto-max.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
+    }
+  },
+  "src/components/paycheck/contrib-card.tsx": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
     },
-    "ratchet/no-jsx-iife": {
+    "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-raw-button": {
