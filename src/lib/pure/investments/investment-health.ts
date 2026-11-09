@@ -7,6 +7,7 @@ import {
   HOLDINGS_GAP_GRACE_DAYS,
   HOLDINGS_STALE_DAYS,
 } from "@/lib/config/investment-health";
+import { MS_PER_DAY } from "@/lib/constants";
 
 type AccountHealthInput = {
   label: string;
@@ -27,12 +28,10 @@ type HealthIssue = {
   message: string;
 };
 
-const DAY_MS = 86_400_000;
-
 function daysBetween(fromDay: string, toDay: string): number {
   return Math.round(
     (Date.parse(`${toDay}T00:00:00Z`) - Date.parse(`${fromDay}T00:00:00Z`)) /
-      DAY_MS,
+      MS_PER_DAY,
   );
 }
 

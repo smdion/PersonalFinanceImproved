@@ -9,6 +9,7 @@ import * as schema from "@/lib/db/schema";
 import { BudgetApiError } from "@/lib/budget-api/errors";
 import { isSimplefinReplayMode } from "./client";
 import type { Db } from "@/lib/db";
+import { MS_PER_DAY } from "@/lib/constants";
 
 const SERVICE = "simplefin";
 /** Hard stop below SimpleFIN Bridge's ~24/day quota, leaving headroom. */
@@ -16,7 +17,6 @@ export const SIMPLEFIN_DAILY_REQUEST_LIMIT = 20;
 /** Minimum gap between manual "Sync Now" requests. */
 export const SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS = 10 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** bad_response: SimpleFIN answered in a shape Ledgr can't read; it counts
  *  against the quota like every real request. */
@@ -86,7 +86,7 @@ export async function countSimplefinRequestsLastDay(
         eq(schema.syncRequestLog.service, SERVICE),
         gte(
           schema.syncRequestLog.requestedAt,
-          new Date(now.getTime() - DAY_MS),
+          new Date(now.getTime() - MS_PER_DAY),
         ),
         ne(schema.syncRequestLog.outcome, "replay"),
         ne(schema.syncRequestLog.outcome, "skipped_quota"),

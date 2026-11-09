@@ -6,13 +6,13 @@
  * A projection starts from today's balances, so it can't answer this
  * itself; a finalized year is a starting point it can't move.
  */
-const DAY_MS = 86_400_000;
+import { MS_PER_DAY } from "@/lib/constants";
 
 /** Share of `year` gone by at the end of `day` (YYYY-MM-DD). */
 export function yearFraction(day: string, year: number): number {
   const start = Date.UTC(year, 0, 1);
   const end = Date.UTC(year + 1, 0, 1);
-  const at = Date.parse(`${day}T00:00:00Z`) + DAY_MS;
+  const at = Date.parse(`${day}T00:00:00Z`) + MS_PER_DAY;
   return Math.min(1, Math.max(0, (at - start) / (end - start)));
 }
 

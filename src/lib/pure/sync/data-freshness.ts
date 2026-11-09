@@ -7,6 +7,7 @@ import {
   type DataSourceDefinition,
   type DataSourceKey,
 } from "@/lib/config/data-sources";
+import { MS_PER_DAY } from "@/lib/constants";
 
 /** What is known about one source right now. Absent = not in use (not connected / never entered). */
 type DataSourceInput = {
@@ -34,8 +35,6 @@ function parseRaw(raw: string): Date {
   return new Date(raw.includes("T") ? raw : raw + "T00:00:00");
 }
 
-const DAY_MS = 86_400_000;
-
 /**
  * Each in-use source's status for the sidebar, in registry order. A source
  * needs attention only when it is late for its own rhythm or its last run
@@ -52,7 +51,7 @@ export function evaluateDataSources(
     const last = input.lastUpdated ? parseRaw(input.lastUpdated) : null;
     const valid = last && !Number.isNaN(last.getTime()) ? last : null;
     const ageDays = valid
-      ? Math.max(0, Math.floor((now.getTime() - valid.getTime()) / DAY_MS))
+      ? Math.max(0, Math.floor((now.getTime() - valid.getTime()) / MS_PER_DAY))
       : null;
 
     let reason: string | null = null;

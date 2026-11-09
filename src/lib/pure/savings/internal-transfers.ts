@@ -12,6 +12,7 @@
  */
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { isPreTaxType, isTaxFreeBucket } from "@/lib/config/account-types";
+import { MS_PER_DAY } from "@/lib/constants";
 
 export type TransferCandidate = {
   id: number;
@@ -33,7 +34,6 @@ export type TransferMatch = {
 };
 
 const MAX_DAYS = 5;
-const DAY_MS = 86_400_000;
 
 export function matchInternalTransfers(
   rows: readonly TransferCandidate[],
@@ -57,7 +57,7 @@ export function matchInternalTransfers(
       if (o.simplefinAccountId === i.simplefinAccountId) continue;
       if (Math.round((o.amount + i.amount) * 100) !== 0) continue;
       const days =
-        Math.abs(Date.parse(o.posted) - Date.parse(i.posted)) / DAY_MS;
+        Math.abs(Date.parse(o.posted) - Date.parse(i.posted)) / MS_PER_DAY;
       if (days > MAX_DAYS) continue;
       const sameOwner =
         o.ownerPersonId !== null && o.ownerPersonId === i.ownerPersonId;
