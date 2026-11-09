@@ -370,9 +370,9 @@
     "src/server/routers/projection/coast-fire.ts": 374,
     "src/server/routers/projection/monte-carlo.ts": 491,
     "src/server/routers/projection/relocation.ts": 607,
-    "src/server/routers/projection/scenarios.ts": 140,
-    "src/server/routers/projection/strategy.ts": 823,
-    "src/server/routers/projection/tax-optimization.ts": 515,
+    "src/server/routers/projection/scenarios.ts": 126,
+    "src/server/routers/projection/strategy.ts": 763,
+    "src/server/routers/projection/tax-optimization.ts": 448,
     "src/server/routers/retirement/index.ts": 17,
     "src/server/routers/salary-profiles.ts": 597,
     "src/server/routers/savings/api-sync.ts": 243,
@@ -1035,8 +1035,8 @@
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 448
     },
     "src/server/routers/projection/strategy.ts": {
-      "strategyRouter.analyzeStrategy.query()": 404,
-      "strategyRouter.computeStrategyComparison.query()": 265
+      "strategyRouter.analyzeStrategy.query()": 388,
+      "strategyRouter.computeStrategyComparison.query()": 241
     },
     "src/server/routers/savings/api-sync.ts": {
       "apiSyncProcedures.pushContributionsToApi.mutation()": 201

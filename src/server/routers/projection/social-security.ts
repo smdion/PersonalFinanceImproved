@@ -23,28 +23,9 @@ import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.s
 
 export const socialSecurityRouter = createTRPCRouter({
   /**
-   * Claiming-age sweep for one person: runs the household's real
-   * projection at each candidate claiming age (default 62-70) and ranks
-   * by final net worth, excluding any candidate that depletes the
-   * portfolio. See `sweepClaimingAges` for the full algorithm — this
-   * endpoint only resolves the household's real `ProjectionInput` and
-   * passes the caller's `pia` through.
-   *
-   * `decumulationDefaults` follows the same optional-with-DB-fallback
-   * pattern every other projection endpoint uses (see
-   * `decumulationDefaultsInputSchema`'s own docblock) — a caller that
-   * omits it gets the household's own persisted withdrawal settings.
-   * `selection` carries the page's profile and budget picks: Social
-   * Security data lives per Retirement Profile, and depletion excludes a
-   * candidate age, so the picks can change which age is recommended.
-   *
-   * NOTE for step 7 (UI): for a household that has NOT opted into PIA for
-   * this person, every candidate this sweep returns still replaces their
-   * real flat `socialSecurityMonthly` benefit with a PIA-derived one
-   * (`sweepClaimingAges` unconditionally overrides the scalar SS fields
-   * per candidate) — the UI must not present these candidates as directly
-   * comparable to the household's actual on-screen projection unless
-   * they've opted in.
+   * Claiming-age sweep for one person on the household's real projection (`sweepClaimingAges`).
+   * Omitted `decumulationDefaults` = persisted settings; `selection` = the page's picks. Every
+   * candidate uses a PIA-derived benefit, so it isn't comparable for a non-PIA household.
    */
   sweepSocialSecurityClaimingAges: protectedProcedure
     .input(
@@ -81,14 +62,9 @@ export const socialSecurityRouter = createTRPCRouter({
       const { perPersonSettings } = payload;
       const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
-      // Multi-person households need every candidate's FULL entries array
-      // rebuilt through the shared helper, not just this person's own
-      // entry patched in place — a spouse's spousal top-up depends on this
-      // person's claiming age (and, symmetrically, this person's own
-      // amount can depend on the spouse's stored data). The single-person
-      // path stays on `sweepClaimingAges`'s default scalar-override
-      // builder, which is already correct (no spousal math is possible
-      // with one person).
+      // Multi-person: rebuild every candidate's FULL entries array via the shared helper,
+      // since spousal top-ups depend on this person's claiming age. Single-person uses
+      // `sweepClaimingAges`'s default scalar-override builder.
       const buildCandidateInput =
         perPersonSettings.length > 1
           ? (claimingAge: number): ProjectionInput => {

@@ -6535,15 +6535,7 @@
     }
   },
   "src/server/routers/projection/scenarios.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
-      "count": 2
-    }
-  },
-  "src/server/routers/projection/social-security.ts": {
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
@@ -6554,47 +6546,19 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
     "ratchet/no-abbreviation": {
       "count": 8
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/server/routers/projection/stress-test.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/projection/tax-optimization.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
-    "ratchet/max-comment-lines": {
-      "count": 11
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 5
-    }
-  },
-  "src/server/routers/projection/withdrawal-bracket-optimizer.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/retirement/profile-people.ts": {

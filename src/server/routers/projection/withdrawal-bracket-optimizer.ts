@@ -1,19 +1,6 @@
 /**
- * Multi-year withdrawal-policy optimizer, Phase 3 — router endpoint.
- *
- * Modeled directly on `computeCoastFire` (`coast-fire.ts:90-112`): same
- * input shape (fetch household data via `fetchRetirementData`/
- * `buildEnginePayload`, same as every other scenario endpoint),
- * `protectedProcedure.query`, no `expensiveRateLimitMiddleware`, no
- * server-side projection cache — advisor round 1 confirmed this matches
- * Coast FIRE's own precedent for a synchronous, cheap, uncached search.
- * Split into its own file (not added to `coast-fire.ts`, already at 521
- * lines, over CONTRIBUTING.md § Composed Router Convention's ~500-line guideline).
- *
- * Client-side cache policy (staleTime/refetchOnMount) is a Phase 4
- * concern — standard tRPC query semantics already cache client-side by
- * default via TanStack Query; there is no server-side cache here to begin
- * with, so nothing here needs to decide that.
+ * Multi-year withdrawal-policy optimizer endpoint: a synchronous, uncached query
+ * over the same `fetchRetirementData` / `buildEnginePayload` input as Coast FIRE.
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -29,19 +16,9 @@ import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.s
 
 export const withdrawalBracketOptimizerRouter = createTRPCRouter({
   /**
-   * Multi-year withdrawal-policy optimizer
-   *
-   * `retirementProfileId` (like `contributionProfileId`/`salaryProfileId`)
-   * is threaded straight into `fetchRetirementData`/`buildEnginePayload` —
-   * a household viewing a non-active Retirement Profile must get a
-   * recommendation computed against THAT profile's data, not silently
-   * against the active one.
-   *
-   * Searches the household's own real marginal bracket rates for the
-   * `rothBracketTarget` that minimizes lifetime tax cost (plus a
-   * terminal-value penalty for Traditional money left unconverted),
-   * subject to still funding spending need through end of plan. See
-   * `optimizeRothBracketTarget` for the full scoring/ranking algorithm.
+   * Finds the `rothBracketTarget` minimizing lifetime tax (plus a penalty for unconverted
+   * Traditional money) while still funding spending, against the requested profile's data.
+   * See `optimizeRothBracketTarget` for the scoring.
    */
   computeWithdrawalBracketOptimizer: protectedProcedure
     .input(
