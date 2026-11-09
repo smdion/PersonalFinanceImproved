@@ -361,7 +361,7 @@
     "src/server/routers/milestones.ts": 50,
     "src/server/routers/networth/comparison.ts": 245,
     "src/server/routers/networth/index.ts": 19,
-    "src/server/routers/networth/portfolio-snapshots.ts": 328,
+    "src/server/routers/networth/portfolio-snapshots.ts": 61,
     "src/server/routers/networth/snapshots.ts": 303,
     "src/server/routers/networth/summary.ts": 267,
     "src/server/routers/performance/finalize-year.ts": 36,
@@ -401,6 +401,7 @@
     "src/server/services/investments/current-balances.ts": 465,
     "src/server/services/investments/sec-facts.ts": 576,
     "src/server/services/net-worth/other-assets.ts": 85,
+    "src/server/services/net-worth/snapshot-write.ts": 291,
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 120,
     "src/server/services/paycheck/job-net-pay.ts": 259,
@@ -1016,9 +1017,6 @@
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
     },
-    "src/server/routers/networth/portfolio-snapshots.ts": {
-      "portfolioSnapshotProcedures.create.mutation()": 257
-    },
     "src/server/routers/networth/snapshots.ts": {
       "snapshotProcedures.listSnapshots.query()": 213
     },
@@ -1052,6 +1050,9 @@
     },
     "src/server/services/investments/sec-facts.ts": {
       "refreshOne": 203
+    },
+    "src/server/services/net-worth/snapshot-write.ts": {
+      "createPortfolioSnapshot": 270
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 492

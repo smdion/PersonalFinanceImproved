@@ -5099,20 +5099,6 @@
       "count": 2
     }
   },
-  "src/server/routers/networth/portfolio-snapshots.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
-    "ratchet/no-clock-read": {
-      "count": 1
-    }
-  },
   "src/server/routers/networth/snapshots.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5517,6 +5503,20 @@
       "count": 5
     },
     "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/server/services/net-worth/snapshot-write.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 3
+    },
+    "ratchet/no-clock-read": {
       "count": 1
     }
   },
