@@ -13,7 +13,7 @@ import {
 } from "./employer-match";
 import {
   jobPayFor,
-  resolveContribPeriods,
+  resolveContributionPeriods,
   annualContributionWithBonus,
   type ContributionRow,
   type JobRef,
@@ -73,7 +73,7 @@ export function buildContributionDisplaySpecs(
       : activeJobs.find((j) => j.personId === c.personId);
     const js = jobPayFor(c, jobSalaries);
     const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
       c.contributionMethod,
       job,
     );

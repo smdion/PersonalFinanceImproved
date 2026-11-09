@@ -4470,9 +4470,6 @@
   "src/lib/constants.ts": {
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     }
   },
   "src/lib/constants/settings-keys.ts": {
@@ -4873,9 +4870,6 @@
   "src/lib/hooks/use-active-contrib-profile.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -5608,9 +5602,6 @@
   "src/lib/pure/contributions/contribution-rows.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -7277,9 +7268,6 @@
   "src/lib/utils/date.ts": {
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-lint-violation-ok": {
       "count": 2

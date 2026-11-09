@@ -51,7 +51,7 @@ import {
   newCategoryMap,
 } from "@/lib/pure/contributions/account-type-snapshots";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { isPriorYearContribWindow } from "@/lib/utils/date";
+import { isPriorYearContributionWindow } from "@/lib/utils/date";
 import { ageOnDate } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/household/profiles";
@@ -89,7 +89,7 @@ export async function computeContributionSummary(
   input: z.output<typeof zContributionSummaryInput>,
 ) {
   const currentYear = ctx.scope.asOf.getFullYear();
-  const inPriorYearWindow = isPriorYearContribWindow(ctx.scope.asOf);
+  const inPriorYearWindow = isPriorYearContributionWindow(ctx.scope.asOf);
   const priorYear = currentYear - 1;
 
   const [

@@ -16,7 +16,7 @@ import {
 import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
-import { useActiveContribProfile } from "./use-active-contrib-profile";
+import { useActiveContributionProfile } from "./use-active-contrib-profile";
 import { useActiveSalaryProfile } from "./use-active-salary-profile";
 import { useActiveRetirementProfile } from "./use-active-retirement-profile";
 import { useBudgetProfilesList } from "./use-budget-profiles-list";
@@ -53,7 +53,7 @@ export function usePlanNamesUsing(): (
 export function usePlans() {
   const plans = usePlanList();
   const utils = trpc.useUtils();
-  const [contribution] = useActiveContribProfile();
+  const [contribution] = useActiveContributionProfile();
   const [salary] = useActiveSalaryProfile();
   const [retirement] = useActiveRetirementProfile();
   const { data: budgetProfiles } = useBudgetProfilesList();

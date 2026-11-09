@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
   contributionRowAmounts,
-  resolveContribPeriods,
+  resolveContributionPeriods,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 
@@ -42,11 +42,11 @@ const pay = [
 describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () => {
   it("resolves the job's real pay periods for every method", () => {
     expect(
-      resolveContribPeriods("fixed_monthly", { payPeriod: "biweekly" })
+      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
         .periodsPerYear,
     ).toBe(26);
     expect(
-      resolveContribPeriods("fixed_monthly", { payPeriod: "biweekly" })
+      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
         .incomplete,
     ).toBe(false);
   });

@@ -16,7 +16,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import {
   jobPayFor,
   annualContributionWithBonus,
-  resolveContribPeriods,
+  resolveContributionPeriods,
   type ContributionRow,
 } from "./contribution-rows";
 import { aggregateContributionsByCategory } from "./category-totals";
@@ -207,7 +207,7 @@ export function buildProfileContribData(
       } else if (method === "fixed_per_period") {
         value = cv;
         const job = activeJobs.find((j) => j.id === c.jobId);
-        const resolved = resolveContribPeriods(method, job);
+        const resolved = resolveContributionPeriods(method, job);
         if (resolved.incomplete) {
           specBuilderIncompleteIds.push(c.id);
           return null;
@@ -228,7 +228,7 @@ export function buildProfileContribData(
           annualContributionWithBonus(
             c,
             js ?? { salary: 0 },
-            resolveContribPeriods(method, job).periodsPerYear,
+            resolveContributionPeriods(method, job).periodsPerYear,
           ),
         );
       }

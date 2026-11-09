@@ -8,7 +8,7 @@ import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
@@ -115,7 +115,7 @@ export function ScenarioBar() {
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  const [, setActiveContributionId] = useActiveContribProfile();
+  const [, setActiveContributionId] = useActiveContributionProfile();
   const [, setActiveSalaryId] = useActiveSalaryProfile();
   const [, setActiveRetirementId] = useActiveRetirementProfile();
 

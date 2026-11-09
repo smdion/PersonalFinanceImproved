@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import {
@@ -53,7 +53,7 @@ export function PaycheckContent() {
   const taxYearOverride = taxYearSetting ?? undefined;
   const setTaxYearOverride = (year: number | undefined) =>
     setTaxYearSetting(year ?? null);
-  const [contributionProfileId] = useActiveContribProfile();
+  const [contributionProfileId] = useActiveContributionProfile();
   const utils = trpc.useUtils();
 
   /** Same shared lock as the Budget page's four profile tabs and the

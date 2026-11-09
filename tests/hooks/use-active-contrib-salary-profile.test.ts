@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import {
   mutationCalls,
@@ -29,7 +29,7 @@ vi.mock("@/lib/trpc", async () => ({
 
 describe.each([
   {
-    hook: useActiveContribProfile,
+    hook: useActiveContributionProfile,
     router: "contributionProfile" as const,
     settingKey: "active_contrib_profile_id",
   },

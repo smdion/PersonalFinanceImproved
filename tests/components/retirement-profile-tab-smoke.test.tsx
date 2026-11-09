@@ -41,7 +41,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-contrib-profile", () => ({
-  useActiveContribProfile: () => [null, vi.fn()],
+  useActiveContributionProfile: () => [null, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
   useActiveSalaryProfile: () => [null, vi.fn()],

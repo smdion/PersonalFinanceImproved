@@ -174,7 +174,7 @@ export const DEFAULT_ENDOWMENT_ROLLING_YEARS = 10;
 
 /** Success-rate threshold above which a Monte Carlo plan is considered
  *  "confident" (e.g. Coast FIRE reachability, strategy diagnosis). */
-export const MC_CONFIDENCE_THRESHOLD = 0.9;
+export const SIMULATION_CONFIDENCE_THRESHOLD = 0.9;
 
 /** Default per-year return clamps for Monte Carlo trials (max 50% loss,
  *  max 100% gain), shared by the calculator's own default and the server

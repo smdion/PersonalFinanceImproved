@@ -38,7 +38,7 @@ export function ageInYear(birthYear: number, year: number): number {
  * (January 1 through April 15). During this window, IRA and HSA contributions
  * can be designated for the prior tax year.
  */
-export function isPriorYearContribWindow(date: Date): boolean {
+export function isPriorYearContributionWindow(date: Date): boolean {
   const month = date.getMonth(); // 0-indexed
   const day = date.getDate();
   return month < 3 || (month === 3 && day <= 15);

@@ -2,7 +2,7 @@
 
 import { trpc } from "@/lib/trpc";
 import { useEffectiveProfileId } from "./use-effective-profile-id";
-import { useActiveContribProfile } from "./use-active-contrib-profile";
+import { useActiveContributionProfile } from "./use-active-contrib-profile";
 
 /**
  * The Contribution Profile axis, resolved once: the active setting.
@@ -18,7 +18,7 @@ export function useEffectiveContributionProfileId(): {
   /** `{ contributionProfileId }` when set, `{}` otherwise — spread into query input. */
   queryInput: { contributionProfileId?: number };
 } {
-  const [activeContributionProfileId] = useActiveContribProfile();
+  const [activeContributionProfileId] = useActiveContributionProfile();
   const { data: contributionProfiles } =
     trpc.contributionProfile.list.useQuery();
   const { profileId } = useEffectiveProfileId("contribution", {

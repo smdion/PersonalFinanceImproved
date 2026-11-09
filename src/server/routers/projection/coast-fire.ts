@@ -28,7 +28,7 @@ import * as schema from "@/lib/db/schema";
 import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
-import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
+import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
@@ -264,7 +264,7 @@ export const coastFireRouter = createTRPCRouter({
         return { result: null, computedAt: null };
       }
 
-      const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
+      const CONFIDENCE = SIMULATION_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
 
       // Probe helper: run MC with a profile switch at `coastAge` that zeros

@@ -52,7 +52,7 @@ export function resolveJoblessPeriodsPerYear(
  * jobless account) — `undefined` means no job could be resolved for this
  * row at all.
  */
-export function resolveContribPeriods(
+export function resolveContributionPeriods(
   method: string,
   job: { payPeriod: string | undefined } | undefined,
 ): { periodsPerYear: number; incomplete: boolean } {
@@ -193,7 +193,7 @@ export function contributionRowAmounts(
       ? activeJobs.find((j) => j.id === c.jobId)
       : activeJobs.find((j) => j.personId === c.personId);
     const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
       c.contributionMethod,
       job,
     );

@@ -2,14 +2,14 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useCloneProfile } from "@/components/budget/use-clone-profile";
 
 export function useProfileManagerState() {
   const utils = trpc.useUtils();
   const planNamesUsing = usePlanNamesUsing();
   const [activeContributionId, setActiveContributionId] =
-    useActiveContribProfile();
+    useActiveContributionProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
   const { data: compareData } = trpc.contributionProfile.compareData.useQuery();

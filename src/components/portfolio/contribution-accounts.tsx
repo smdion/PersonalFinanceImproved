@@ -28,7 +28,7 @@ import { useContributionAccountsMutations } from "./use-contribution-accounts-mu
 import { UnlinkedContributionsBanner } from "./unlinked-contribs-banner";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import { useScrollToFocus } from "@/components/ui/focus-target";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import type { Holding } from "@/components/investments/fund-holding-row";
 
@@ -71,7 +71,7 @@ export function ContributionAccountsSettings() {
   // same profile entry the Paycheck/Budget pages write into, not the raw
   // account row, or an edit made here would be silently shadowed by the
   // active profile everywhere else in the app.
-  const [storedActiveContributionProfileId] = useActiveContribProfile();
+  const [storedActiveContributionProfileId] = useActiveContributionProfile();
   const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
   const { profileId: activeContributionProfileId } = useEffectiveProfileId(

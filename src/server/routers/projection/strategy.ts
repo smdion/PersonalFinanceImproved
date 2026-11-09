@@ -53,7 +53,7 @@ import {
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
 import { formatPercent } from "@/lib/utils/percent";
-import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
+import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
@@ -509,7 +509,7 @@ export const strategyRouter = createTRPCRouter({
       // --- Diagnose ---
       type DiagnosisGoal = "survival" | "smoothness" | "healthy";
       let primaryGoal: DiagnosisGoal = "healthy";
-      if (baseline.successRate < MC_CONFIDENCE_THRESHOLD)
+      if (baseline.successRate < SIMULATION_CONFIDENCE_THRESHOLD)
         primaryGoal = "survival";
       else if (baseline.stabilityRate < 0.5) primaryGoal = "smoothness";
       const targetMetric: "survival" | "smoothness" =

@@ -5,7 +5,7 @@
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
 import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
@@ -50,7 +50,7 @@ export function ContributionsContent() {
   const utils = trpc.useUtils();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<ContributionPeriod>("annual");
-  const [activeProfileId] = useActiveContribProfile();
+  const [activeProfileId] = useActiveContributionProfile();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   // the active profile — the primary summary below must stay

@@ -24,7 +24,7 @@ import {
 import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
 import {
   resolveJoblessPeriodsPerYear,
-  resolveContribPeriods,
+  resolveContributionPeriods,
 } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
@@ -149,7 +149,7 @@ export async function resolveLinkedBudgetItemAmounts<
     let incomplete: boolean;
     if (c.jobId) {
       const job = activeJobs.find((j) => j.id === c.jobId);
-      const resolved = resolveContribPeriods(c.contributionMethod, job);
+      const resolved = resolveContributionPeriods(c.contributionMethod, job);
       jobPeriodsPerYear = resolved.periodsPerYear;
       incomplete = resolved.incomplete;
     } else {

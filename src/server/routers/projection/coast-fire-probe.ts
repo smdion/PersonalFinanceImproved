@@ -30,7 +30,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
-import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
+import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
@@ -201,12 +201,12 @@ export const coastFireProbeRouter = createTRPCRouter({
       const result: CoastFireProbeResult = {
         probeAge: input.probeAge,
         successRate: mcResult.successRate,
-        passes: mcResult.successRate >= MC_CONFIDENCE_THRESHOLD,
+        passes: mcResult.successRate >= SIMULATION_CONFIDENCE_THRESHOLD,
         spendingStabilityRate: mcResult.spendingStabilityRate,
         penaltyAvoidedShortfallRate: mcResult.penaltyAvoidedShortfallRate,
         medianPenaltyAvoidedShortfallPV:
           mcResult.medianPenaltyAvoidedShortfallPV,
-        confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
+        confidenceThreshold: SIMULATION_CONFIDENCE_THRESHOLD,
         mcResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);

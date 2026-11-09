@@ -14,7 +14,7 @@ import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
  * Use this instead of calling usePersistedSetting('active_contrib_profile_id')
  * directly — it adds deleted-profile detection.
  */
-export function useActiveContribProfile(): [
+export function useActiveContributionProfile(): [
   number | null,
   (id: number | null) => void,
 ] {

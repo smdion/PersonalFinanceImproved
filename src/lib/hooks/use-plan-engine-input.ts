@@ -21,7 +21,7 @@ import { useMemo } from "react";
 import type { BoundaryQuery } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -57,7 +57,7 @@ export function usePlanEngineInput(): {
     snapshotId: number | null;
   };
 } {
-  const [activeContributionId] = useActiveContribProfile();
+  const [activeContributionId] = useActiveContributionProfile();
   const [activeSalaryId] = useActiveSalaryProfile();
   const [activeRetirementId] = useActiveRetirementProfile();
   const contributionProfiles = trpc.contributionProfile.list.useQuery();

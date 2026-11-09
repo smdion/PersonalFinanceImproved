@@ -41,7 +41,7 @@ import {
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import {
   annualContributionWithBonus,
-  resolveContribPeriods,
+  resolveContributionPeriods,
 } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 
@@ -101,7 +101,7 @@ export async function loadContributionMix(
       ? contributionPay(comp.salary, comp.terms, comp.bonusOverride)
       : { salary: 0, bonusGross: 0 };
     const salary = pay.salary;
-    const { periodsPerYear } = resolveContribPeriods(
+    const { periodsPerYear } = resolveContributionPeriods(
       c.contributionMethod,
       job ? { payPeriod: job.payPeriod ?? undefined } : undefined,
     );
