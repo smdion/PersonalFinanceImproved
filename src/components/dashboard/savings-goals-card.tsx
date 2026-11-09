@@ -16,6 +16,7 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
+import { renderEfundNeeded } from "./savings-goals-card-efund";
 
 function SavingsGoalsCardImpl() {
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
@@ -290,19 +291,7 @@ function SavingsGoalsCardImpl() {
             )}
             <div className="flex justify-between font-medium">
               <span className="text-muted">Needed</span>
-              {(() => {
-                const needed = efund.neededAfterRepay;
-                const funded = needed <= 0.005;
-                return (
-                  <span className={funded ? "text-green-600" : "text-red-600"}>
-                    {funded
-                      ? needed < -0.005
-                        ? `${formatCurrency(Math.abs(needed))} surplus`
-                        : "Funded"
-                      : formatCurrency(needed)}
-                  </span>
-                );
-              })()}
+              {renderEfundNeeded(efund)}
             </div>
           </div>
         </div>

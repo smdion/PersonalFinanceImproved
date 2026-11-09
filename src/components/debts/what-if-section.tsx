@@ -172,34 +172,12 @@ export function WhatIfSection({
                   </td>
                   <td className="px-2 py-2 text-center">
                     {scenarioRow &&
-                      (() => {
-                        const index = whatIfScenarios.findIndex(
-                          (sc) => sc.id === scenarioRow.id,
-                        );
-                        return (
-                          <div className="flex justify-center gap-0.5">
-                            <button
-                              onClick={() => handleSwap(index, index - 1)}
-                              disabled={index <= 0 || reorderMut.isPending}
-                              className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
-                              title="Move up"
-                            >
-                              &#9650;
-                            </button>
-                            <button
-                              onClick={() => handleSwap(index, index + 1)}
-                              disabled={
-                                index >= whatIfScenarios.length - 1 ||
-                                reorderMut.isPending
-                              }
-                              className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
-                              title="Move down"
-                            >
-                              &#9660;
-                            </button>
-                          </div>
-                        );
-                      })()}
+                      renderReorderButtons(
+                        handleSwap,
+                        reorderMut,
+                        scenarioRow,
+                        whatIfScenarios,
+                      )}
                   </td>
                   <td className="py-2 pl-4 text-right">
                     {scenarioRow && (
@@ -310,5 +288,35 @@ export function WhatIfSection({
         </p>
       )}
     </Card>
+  );
+}
+
+/** A scenario row's move up and move down buttons. */
+function renderReorderButtons(
+  handleSwap: (indexA: number, indexB: number) => Promise<void>,
+  reorderMut: { isPending: boolean },
+  scenarioRow: WhatIfScenarioRow,
+  whatIfScenarios: WhatIfScenarioRow[],
+) {
+  const index = whatIfScenarios.findIndex((sc) => sc.id === scenarioRow.id);
+  return (
+    <div className="flex justify-center gap-0.5">
+      <button
+        onClick={() => handleSwap(index, index - 1)}
+        disabled={index <= 0 || reorderMut.isPending}
+        className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
+        title="Move up"
+      >
+        &#9650;
+      </button>
+      <button
+        onClick={() => handleSwap(index, index + 1)}
+        disabled={index >= whatIfScenarios.length - 1 || reorderMut.isPending}
+        className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
+        title="Move down"
+      >
+        &#9660;
+      </button>
+    </div>
   );
 }

@@ -110,23 +110,7 @@ export function BudgetProfileSidebar({
             }
             metaTag={
               apiService && apiLinkedProfileId === p.id
-                ? (() => {
-                    // columnLabels is stored jsonb, typed by a cast here.
-                    const mode =
-                      (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-                      `Mode ${apiLinkedColumnIndex}`;
-                    return (
-                      <Badge
-                        color="blue"
-                        case="normal"
-                        subtle
-                        className="shrink-0"
-                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService)}`}
-                      >
-                        ⇄ {budgetApiServiceLabel(apiService)} → {mode}
-                      </Badge>
-                    );
-                  })()
+                ? renderApiLinkBadge(apiLinkedColumnIndex, apiService, p)
                 : undefined
             }
             meta={
@@ -142,5 +126,28 @@ export function BudgetProfileSidebar({
         );
       })}
     </div>
+  );
+}
+
+/** A profile row's badge naming the budget API mode it syncs with. */
+function renderApiLinkBadge(
+  apiLinkedColumnIndex: number,
+  apiService: string,
+  p: BudgetProfileListEntry,
+) {
+  // columnLabels is stored jsonb, typed by a cast here.
+  const mode =
+    (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
+    `Mode ${apiLinkedColumnIndex}`;
+  return (
+    <Badge
+      color="blue"
+      case="normal"
+      subtle
+      className="shrink-0"
+      title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService)}`}
+    >
+      ⇄ {budgetApiServiceLabel(apiService)} → {mode}
+    </Badge>
   );
 }

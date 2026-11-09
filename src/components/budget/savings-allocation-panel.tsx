@@ -3,13 +3,14 @@
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { FormError } from "@/components/ui/form-error";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
+import { renderStoredTotal } from "./savings-allocation-totals";
+import { renderProfileTotals } from "./savings-allocation-totals";
 
 /**
  * Every savings goal's allocationPercent/monthlyContribution is owned
@@ -158,43 +159,7 @@ export function SavingsAllocationPanel({
                   </Badge>
                 )}
               </div>
-              {summary &&
-                (() => {
-                  const isWeighted =
-                    !!p.columnMonths && p.columnMonths.length > 0;
-                  // Weighted profiles blend to a "typical month" across
-                  // modes — both this profile's spending AND its take-home
-                  // pay are blended the same way, server-side.
-                  const unspent = p.unspentMonthly;
-                  return (
-                    <div className="text-caption text-muted mt-0.5 space-y-0.5">
-                      <div className="flex gap-2">
-                        <span>
-                          Allocated:{" "}
-                          {formatCurrency(summary.totalMonthlyAllocation)}/mo
-                        </span>
-                        {summary.fundedGoalCount > 0 && (
-                          <span>
-                            {summary.fundedGoalCount} goal
-                            {summary.fundedGoalCount !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-                      {unspent != null && (
-                        <div>
-                          Unspent{isWeighted ? " (blended)" : ""}:{" "}
-                          <span
-                            className={
-                              unspent >= 0 ? "text-emerald-600" : "text-red-600"
-                            }
-                          >
-                            {formatCurrency(unspent)}/mo
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+              {summary && renderProfileTotals(p, summary)}
             </button>
           );
         })}
@@ -397,25 +362,7 @@ function SavingsAllocationTable({
               <span className="text-faint font-normal">/mo</span>
             </span>
           </span>
-          {(() => {
-            const storedTotal = sumBy(rows, (r) => r.monthlyContribution);
-            const diff = livePoolEstimate - storedTotal;
-            return (
-              <span className="text-faint">
-                · stored allocations total {formatCurrency(storedTotal)}/mo
-                {Math.abs(diff) > 0.01 && (
-                  <span
-                    className={
-                      diff > 0 ? "ml-1 text-emerald-600" : "ml-1 text-red-600"
-                    }
-                  >
-                    ({diff > 0 ? "+" : ""}
-                    {formatCurrency(diff)} {diff > 0 ? "unspent" : "over"})
-                  </span>
-                )}
-              </span>
-            );
-          })()}
+          {renderStoredTotal(livePoolEstimate, rows)}
           <HelpTip text="Live pool is take-home pay minus budgeted expenses for the active mode, right now. The %/$ table below is what's stored per goal for this profile — 'Pull In New Pay' recomputes it from the live pool." />
         </div>
       )}

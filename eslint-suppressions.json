@@ -897,9 +897,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/budget/budget-pull-ynab-modal.tsx": {
@@ -1026,9 +1023,6 @@
       "count": 6
     },
     "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-jsx-iife": {
       "count": 2
     },
     "ratchet/no-raw-button": {
@@ -1307,9 +1301,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/dashboard/savings-rate-breakdown.tsx": {
@@ -1383,9 +1374,6 @@
   },
   "src/components/debts/what-if-section.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-jsx-iife": {
       "count": 1
     },
     "ratchet/no-raw-button": {

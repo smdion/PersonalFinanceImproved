@@ -63,7 +63,7 @@
     "src/components/budget/salary-profile-entry.tsx": 259,
     "src/components/budget/salary-profile-list.tsx": 190,
     "src/components/budget/salary-profile-manager.tsx": 170,
-    "src/components/budget/savings-allocation-panel.tsx": 526,
+    "src/components/budget/savings-allocation-panel.tsx": 473,
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 154,
     "src/components/contributions/profile-manager/inline-account-cells.tsx": 229,
     "src/components/contributions/profile-manager/inline-deduction-cells.tsx": 171,
@@ -88,7 +88,7 @@
     "src/components/dashboard/retirement-card-rows.tsx": 115,
     "src/components/dashboard/retirement-card-stats.tsx": 200,
     "src/components/dashboard/retirement-card.tsx": 179,
-    "src/components/dashboard/savings-goals-card.tsx": 420,
+    "src/components/dashboard/savings-goals-card.tsx": 409,
     "src/components/debts/debts-card.tsx": 530,
     "src/components/debts/mortgage-settings.tsx": 800,
     "src/components/help/help-content.tsx": 1030,
@@ -525,8 +525,8 @@
       "BudgetSummaryTable": 517
     },
     "src/components/budget/savings-allocation-panel.tsx": {
-      "SavingsAllocationPanel": 201,
-      "SavingsAllocationTable": 294
+      "SavingsAllocationPanel": 165,
+      "SavingsAllocationTable": 276
     },
     "src/components/budget/use-budget-item-mutations.ts": {
       "useBudgetItemMutations": 183
@@ -546,7 +546,7 @@
       "LivingCostsCardImpl": 581
     },
     "src/components/dashboard/savings-goals-card.tsx": {
-      "SavingsGoalsCardImpl": 399
+      "SavingsGoalsCardImpl": 387
     },
     "src/components/debts/debts-card.tsx": {
       "DebtsCard": 475
@@ -562,7 +562,7 @@
       "RefinanceImpact": 182
     },
     "src/components/debts/what-if-section.tsx": {
-      "WhatIfSection": 304
+      "WhatIfSection": 282
     },
     "src/components/help/help-content.tsx": {
       "HelpContent": 978
