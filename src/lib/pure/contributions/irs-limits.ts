@@ -78,10 +78,8 @@ export function irsLimitOrNull(
 }
 
 /**
- * What sizes a person's FICA-exempt caps: the limits for a tax year and the
- * person's age at Dec 31 of that year (catch-up eligibility). Age null when
- * the person isn't known — the cap then can't be sized (see
- * payrollFicaExemptCap), never guessed at age 0.
+ * A tax year's limits and the person's age at Dec 31 (catch-up), for FICA-exempt caps.
+ * Age null when unknown: the cap then can't be sized, never guessed at age 0.
  */
 export function ficaCapContext(
   limits: Record<string, number>,
@@ -96,16 +94,9 @@ export function ficaCapContext(
 }
 
 /**
- * The yearly cap on an account's payroll contributions that are not FICA
- * wages (account-type config `payrollFicaExempt` — HSA via a §125
- * cafeteria plan, IRS Pub 15 / 15-B): the IRS limit for the person's
- * coverage and age, less the employer's money, which counts toward the
- * same limit. `null` = contributions to this account type are FICA wages.
- *
- * When the coverage isn't recorded (an account type whose limit depends on
- * it) or the limit isn't in the tax data, the cap can't be sized, so the
- * whole payroll contribution is treated as exempt (Infinity) rather than
- * guessed at the lower limit. One rule for the paycheck and the annual tax.
+ * Yearly cap on payroll contributions that aren't FICA wages (`payrollFicaExempt`, e.g. §125
+ * HSA): the IRS limit for coverage and age less employer money. `null` = FICA wages;
+ * Infinity when coverage or the limit is unknown. Paycheck and annual tax share this rule.
  */
 export function payrollFicaExemptCap(
   accountType: string,

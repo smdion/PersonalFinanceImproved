@@ -1,23 +1,7 @@
 /**
- * The matched mix — the household's own fund weights, month by month,
- * priced with a plain index fund per composition bucket
- * (BUCKET_INDEX_PROXIES). Built as a synthetic monthly price level that
- * goes through the same simulateIndex as every benchmark (one computation
- * path), so it replays the same deposits and withdrawals.
- *
- * Weights for a month: in the observed window the actual holdings on the
- * month's first observed day (shares drift with prices — the daily data
- * says where they really were); otherwise the entered period covering the
- * month's first day (constant weights, i.e. rebalanced monthly). Accounts
- * are weighted by their beginning-of-year balance. An account kept per part
- * (accountSplits — a joint IRA with one feed per person) is built per part
- * the same way and the parts combined by their snapshot shares
- * (partSharesOn); when every part with money has daily data that month,
- * that is the account's pooled daily mix. A month counts only
- * when every account with money that year is covered and the share with a
- * known mix and an index proxy reaches HOLDINGS_MIN_COVERAGE; the rest is
- * reported as excluded. Fund mixes are today's facts — a target-date fund
- * glides, so older years are approximate (the UI says so).
+ * The matched mix: the household's monthly fund weights, priced by one index fund per bucket
+ * through simulateIndex like every benchmark. Weights: observed holdings, else the entered
+ * period; parts combined by share. A month counts at HOLDINGS_MIN_COVERAGE; past years approximate.
  */
 import { BUCKET_INDEX_PROXIES } from "@/lib/config/benchmarks";
 import {

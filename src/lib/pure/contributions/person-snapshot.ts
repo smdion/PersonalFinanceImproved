@@ -46,11 +46,8 @@ export function personPay(
     effectiveSalaryMap,
   );
   const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
-  // Base salary + the bonus (each account takes from it only when
-  // set to, fromBonus) —
-  // the paycheck's way (contributionPay / bonusCheckContribution).
-  // This year's figures: the pinned bonus when there is one, like
-  // the paycheck (SalaryEntry.bonusOverride).
+  // Base salary + the bonus for accounts set to take from it, the paycheck's
+  // way; this year uses the pinned bonus when there is one (bonusOverride).
   const pay = contributionPay(dbSalary, bonusTerms, comp.bonusOverride);
   const salary = pay.salary;
   // Total compensation this year (salary + this year's bonus) — the

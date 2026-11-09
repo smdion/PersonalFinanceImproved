@@ -40,14 +40,9 @@ export type AccountTypeSnapshot = {
   /** HSA contributions (taxTreatment: "hsa"). Tracked separately from
    *  tradContrib since HSA isn't Traditional/pre-tax retirement money. */
   hsaContrib: number;
-  /** Contributions NOT deducted from the paycheck (IRA, manually-funded
-   *  brokerage/HSA) — money that already reached net take-home pay before
-   *  being moved into the account. Same isPayrollDeducted resolution
-   *  the paycheck summary's calculator input uses (see buildContribAccounts):
-   *  explicit column value, else job-linked defaults to payroll-deducted.
-   *  Distinct from tax TREATMENT — a Roth 401k is post-tax but still
-   *  payroll-deducted, so it belongs in payrollDeductedContrib, not here,
-   *  same as a Traditional 401k. */
+  /** Contributions not deducted from the paycheck (IRA, manually-funded brokerage/HSA), resolved
+   *  like buildContribAccounts' isPayrollDeducted. Not tax treatment: a Roth 401k is post-tax
+   *  but payroll-deducted, so it is not here. */
   nonPayrollContrib: number;
   /** The complement of nonPayrollContrib — deducted from the paycheck
    *  before net pay is computed, regardless of tax treatment. */

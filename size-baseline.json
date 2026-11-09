@@ -259,15 +259,15 @@
     "src/lib/pure/contributions/contribution-order.ts": 83,
     "src/lib/pure/contributions/contribution-rows.ts": 194,
     "src/lib/pure/contributions/display-specs.ts": 139,
-    "src/lib/pure/contributions/irs-limits.ts": 219,
+    "src/lib/pure/contributions/irs-limits.ts": 210,
     "src/lib/pure/contributions/joint-accounts.ts": 176,
     "src/lib/pure/contributions/paycheck-accounts.ts": 157,
-    "src/lib/pure/contributions/person-snapshot.ts": 218,
-    "src/lib/pure/contributions/profile-contrib-data.ts": 330,
-    "src/lib/pure/contributions/profile-fields.ts": 53,
-    "src/lib/pure/contributions/roth-ira.ts": 541,
-    "src/lib/pure/contributions/savings-rate.ts": 145,
-    "src/lib/pure/contributions/summary.types.ts": 111,
+    "src/lib/pure/contributions/person-snapshot.ts": 215,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 325,
+    "src/lib/pure/contributions/profile-fields.ts": 45,
+    "src/lib/pure/contributions/roth-ira.ts": 510,
+    "src/lib/pure/contributions/savings-rate.ts": 140,
+    "src/lib/pure/contributions/summary.types.ts": 106,
     "src/lib/pure/contributions/view-metrics.ts": 190,
     "src/lib/pure/contributions/ytd-actuals.ts": 146,
     "src/lib/pure/debts/debt-balance.ts": 28,
@@ -939,7 +939,7 @@
       "capContributionsByLimitGroup": 272
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 236
+      "buildProfileContribData": 234
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189

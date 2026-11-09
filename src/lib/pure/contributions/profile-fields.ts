@@ -6,11 +6,8 @@ import {
 } from "@/lib/pure/household/profiles";
 
 /**
- * Which of these accounts have no active value set under the given
- * profile's active fields — the "incomplete profile" surface for the UI.
- * Not a blocker: an incomplete profile still works everywhere (those
- * accounts are simply excluded from calculations by applyContribActiveFields),
- * this is purely for surfacing the gap so it's never a silent one.
+ * Accounts with no active value under the profile's active fields, surfaced as an incomplete
+ * profile in the UI; not a blocker (applyContribActiveFields leaves them out).
  */
 export function getIncompleteContribAccountIds(
   rows: { id: number }[],
@@ -25,14 +22,9 @@ export function getIncompleteContribAccountIds(
 }
 
 /**
- * Classify why a linked contribution account resolves the way it does for
- * one (profile, column) pair — reusing resolveContributionFieldDisplayState so
- * this can't drift from the Compare view/Profile Manager's own "why is this
- * $0" logic (RULES.md Rule 6: those two already had to be de-duplicated
- * once). Checked in this order because each check can only be meaningful
- * once the earlier ones have passed: an account absent from the global
- * active fetch has no per-profile active fields to look at; a profile with
- * no value for it was never a candidate for the sandbox layer to disable.
+ * Why a linked contribution account resolves as it does for one (profile, column), via
+ * resolveContributionFieldDisplayState like the Compare view. Checks run in order: absent
+ * from the active fetch, then no value in the profile, then disabled by the sandbox.
  */
 export function classifyContributionResolution(
   accountId: number,

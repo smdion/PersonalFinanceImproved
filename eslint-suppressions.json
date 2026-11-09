@@ -5352,9 +5352,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 11
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -5373,9 +5370,6 @@
   "src/lib/pure/contributions/matched-mix.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/contributions/paycheck-accounts.ts": {
@@ -5390,9 +5384,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }
@@ -5403,9 +5394,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-abbreviation": {
       "count": 4
@@ -5421,22 +5409,13 @@
     }
   },
   "src/lib/pure/contributions/profile-fields.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/lib/pure/contributions/roth-ira.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 8
     },
     "ratchet/no-string-closed-set-field": {
       "count": 8
@@ -5446,9 +5425,6 @@
     }
   },
   "src/lib/pure/contributions/savings-rate.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -5457,9 +5433,6 @@
     }
   },
   "src/lib/pure/contributions/summary.types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     }

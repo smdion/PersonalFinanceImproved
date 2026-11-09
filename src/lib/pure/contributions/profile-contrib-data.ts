@@ -86,11 +86,8 @@ type ContributionInputRow = {
 };
 
 /**
- * Build engine contribution data (specs, employer match, base-year amounts)
- * from a resolved contribution profile.
- *
- * This is the same logic that buildEnginePayload() uses inline for the default
- * profile, extracted so it can be called for each profile-switch year.
+ * Engine contribution data (specs, employer match, base-year amounts) from a resolved
+ * contribution profile, for each profile-switch year.
  */
 export function buildProfileContribData(
   activeContributions: (ContributionInputRow & CapPassed)[],
@@ -164,11 +161,9 @@ export function buildProfileContribData(
     ) as Record<AccountCategory, number>;
   const employerMatchRateByCategory = matchRates(employerMatchByCategory);
 
-  // Build per-account contribution specs. A `fixed_per_period` account with
-  // no resolvable job/pay period can't produce a real spec (periodsPerYear
-  // would be a guess) — it's dropped and reported via
-  // specBuilderIncompleteIds instead, per the method-gated incomplete
-  // treatment (see resolveContributionPeriods).
+  // Per-account specs. A `fixed_per_period` account with no resolvable pay
+  // period is dropped and reported in specBuilderIncompleteIds instead (see
+  // resolveContributionPeriods).
   const specBuilderIncompleteIds: number[] = [];
   const contributionSpecs: ContributionSpec[] = activeContributions
     .filter((c) => {
