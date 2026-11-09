@@ -1,9 +1,6 @@
-// IRS Uniform Lifetime Table for Required Minimum Distributions (RMDs).
-// Source: IRS Publication 590-B, Table III (Uniform Lifetime).
-// SECURE 2.0 Act start-age rules applied via getRmdStartAge().
-//
-// Philosophy: Config declares, code executes. The engine imports these
-// tables and never hardcodes RMD-specific knowledge.
+// IRS Uniform Lifetime Table for Required Minimum Distributions (IRS Pub 590-B, Table III);
+// SECURE 2.0 start ages via getRmdStartAge(). The engine imports these and hardcodes no RMD
+// knowledge.
 import { roundToCents } from "../utils/math";
 
 /** IRS Uniform Lifetime Table — divisor by age (ages 72–120). */
@@ -69,16 +66,9 @@ export function getRmdFactor(age: number): number | null {
   return UNIFORM_LIFETIME_TABLE[age] ?? null;
 }
 
-/**
- * The RMD formula itself — prior-year-end Traditional balance ÷ the
- * Uniform Lifetime Table divisor for this year's age. Extracted so
- * rmd-enforcement.ts's real per-year enforcement and
- * decumulation-year.ts's per-person QCD-ordering hoist (which needs the
- * amount before enforceRmd runs) can't independently drift on the same
- * formula (Single Computation Path,
- * docs/RULES.md). Returns null when there's no valid divisor for `age`
- * (below the table) — callers decide what "no RMD" means for their case.
- */
+/** The RMD: prior-year-end Traditional balance ÷ this age's Uniform Lifetime divisor, shared by
+ *  enforcement and the QCD-ordering hoist (docs/RULES.md Single Computation Path). null when
+ *  `age` is below the table; callers decide what "no RMD" means. */
 export function computeRmdAmount(
   priorYearEndTradBalance: number,
   age: number,
@@ -88,12 +78,7 @@ export function computeRmdAmount(
   return roundToCents(priorYearEndTradBalance / factor);
 }
 
-/**
- * SECURE 2.0 Act RMD start age based on birth year.
- * - Born ≤ 1950: age 72
- * - Born 1951–1959: age 73
- * - Born ≥ 1960: age 75
- */
+/** SECURE 2.0 RMD start age: 72 if born ≤ 1950, 73 for 1951–1959, 75 if born ≥ 1960. */
 export function getRmdStartAge(birthYear: number): number {
   if (birthYear <= 1950) return 72;
   if (birthYear <= 1959) return 73;

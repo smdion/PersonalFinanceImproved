@@ -1,14 +1,5 @@
-// Social Security taxation — IRS provisional-income formula (IRC §86).
-//
-// Enacted 1993 (OBRA '93 added the 85% tier); the $25k/$32k/$34k/$44k
-// thresholds and the 50%/85% inclusion rates have never been indexed to
-// inflation, which is why an increasing share of retirees pay tax on SS
-// over time (bracket creep by design, not oversight — see IRC §86(c)).
-//
-// Moved out of engine/tax-estimation.ts into a config module so
-// the "no {MFJ|Single|HOH} object literal outside src/lib/config/" lint
-// guard (tests/lint/violations.test.ts) covers it, and so it has the same
-// home every other tax figure in the app has.
+// Social Security taxation: the IRS provisional-income formula (IRC §86). The $25k/$32k/$34k/$44k
+// thresholds and 50%/85% inclusion rates are not indexed to inflation (IRC §86(c)).
 
 import {
   filingTable,
