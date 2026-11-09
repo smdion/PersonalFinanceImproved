@@ -3,7 +3,7 @@
  * tables: today's credentials, with the backup's links and sync state.
  */
 import { sql } from "drizzle-orm";
-import { queryRaw } from "./compat";
+import { queryRaw } from "../compat";
 import { VERSION_TABLES } from "./version-tables";
 
 type Row = Record<string, unknown>;

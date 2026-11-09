@@ -8,8 +8,8 @@ import { describe, it, expect } from "vitest";
 import {
   convertV0810ProfileSets,
   type V0810Tables,
-} from "@/lib/db/v0810-profile-sets";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+} from "@/lib/db/migrate/v0810-profile-sets";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 
 const entry = (over: Record<string, unknown> = {}) => ({
   salary: 90_000,

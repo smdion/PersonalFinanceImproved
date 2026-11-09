@@ -38,7 +38,7 @@ import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { percentile } from "@/lib/pure/simulation/trial-summary";
 import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
-import { readSimulationPresetsFile } from "@/lib/db/reference-data";
+import { readSimulationPresetsFile } from "@/lib/db/migrate/reference-data";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 
 /** `A × Bᵀ` for square matrices. */

@@ -13,8 +13,8 @@ import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { seedHousehold, type Household } from "../baseline/seed";
 import { HOUSEHOLDS } from "../baseline/households";
-import { exportBackup } from "@/lib/db/version-logic";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+import { exportBackup } from "@/lib/db/backup/version-logic";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import pgJournal from "../../drizzle/meta/_journal.json";
 
 const V0101 = "0013_v097_loan_feed";

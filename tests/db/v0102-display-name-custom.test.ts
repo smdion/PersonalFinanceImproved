@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
-import { renameDisplayNameActive } from "@/lib/db/v0102-display-name-custom";
+import { renameDisplayNameActive } from "@/lib/db/migrate/v0102-display-name-custom";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { RENAME_CASES } from "./display-name-custom-cases";
 

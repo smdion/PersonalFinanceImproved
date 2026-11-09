@@ -12,12 +12,12 @@ import { tmpdir } from "node:os";
 import type {
   ConverterTables,
   DataConverter,
-} from "@/lib/db/migration-converters";
+} from "@/lib/db/migrate/migration-converters";
 
 const hook = vi.hoisted(() => ({
   converters: {} as Record<string, DataConverter>,
 }));
-vi.mock("@/lib/db/migration-converters", async (importOriginal) => ({
+vi.mock("@/lib/db/migrate/migration-converters", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   MIGRATION_CONVERTERS: hook.converters,
 }));
@@ -25,7 +25,7 @@ vi.mock("@/lib/db/migration-converters", async (importOriginal) => ({
 import {
   runConverterPg,
   runConverterSqlite,
-} from "@/lib/db/migration-converters";
+} from "@/lib/db/migrate/migration-converters";
 import { runSQLite } from "../../db-migrate";
 
 const TAG = "0015_v0102_dead_data";

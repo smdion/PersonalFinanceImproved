@@ -6,7 +6,7 @@ import {
   TAX_DATA_FORMAT_VERSION,
   type TaxDataFile,
   type TaxDataYear,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
 import {

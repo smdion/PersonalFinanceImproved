@@ -15,7 +15,7 @@ import {
 import {
   assembleTaxData,
   readTaxDataDir,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import { staleTaxDataFiles } from "../../scripts/tax-data-schema";
 
 const file = readTaxData();

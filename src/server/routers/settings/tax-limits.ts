@@ -17,12 +17,12 @@ import {
 import {
   sameReferenceValue,
   shippedReferenceRows,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import {
   approvedCommunityFile,
   readTaxDataFile,
   reconcileReferenceData,
-} from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-data";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
 import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
@@ -33,7 +33,7 @@ import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
 
-// --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
+// --- Where a figure came from (lib/db/migrate/reference-reconcile-core.ts) ---
 
 type RefTable = (typeof SHIPPED_KEY)[keyof typeof SHIPPED_KEY];
 /** Each table's natural key and value column, as the reconcile sees them. */

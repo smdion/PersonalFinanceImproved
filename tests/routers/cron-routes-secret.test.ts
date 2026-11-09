@@ -44,7 +44,9 @@ vi.mock("@/lib/tax-data/sync", () => ({
   taxDataCheckDue: vi.fn().mockResolvedValue(true),
   checkForTaxDataUpdate: m.checkForTaxDataUpdate,
 }));
-vi.mock("@/lib/db/version-logic", () => ({ createVersion: m.createVersion }));
+vi.mock("@/lib/db/backup/version-logic", () => ({
+  createVersion: m.createVersion,
+}));
 vi.mock("@/lib/sec/connection", () => ({
   getSecConnection: vi.fn().mockResolvedValue({ id: 1 }),
 }));
@@ -52,13 +54,13 @@ vi.mock("@/lib/sec/facts-sync", () => ({
   secFactsRefreshDue: vi.fn().mockResolvedValue(true),
   syncSecurityFacts: m.syncSecurityFacts,
 }));
-vi.mock("@/lib/db/backfill-perf-ids", () => ({
+vi.mock("@/lib/db/migrate/backfill-perf-ids", () => ({
   backfillPerformanceAccountIds: m.backfillPerformanceAccountIds,
 }));
-vi.mock("@/lib/db/backfill-local-ids", () => ({
+vi.mock("@/lib/db/migrate/backfill-local-ids", () => ({
   backfillMappingLocalIds: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/db/backfill-joint-person-id", () => ({
+vi.mock("@/lib/db/migrate/backfill-joint-person-id", () => ({
   backfillJointPersonId: vi.fn().mockResolvedValue(undefined),
 }));
 

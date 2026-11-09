@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { MIGRATION_STAMP_SUBQUERY as appStamp } from "@/lib/db/demo-schema-marker";
+import { MIGRATION_STAMP_SUBQUERY as appStamp } from "@/lib/db/migrate/demo-schema-marker";
 
 describe("demo schema marker", () => {
   it("stamps the last migration hash, not just the count (a squash resets the count)", () => {

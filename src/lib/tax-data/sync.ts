@@ -18,11 +18,11 @@ import {
 import {
   TAX_DATA_FORMAT_VERSION,
   type TaxDataFile,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import {
   previewCommunityTaxData,
   readTaxDataFile,
-} from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-data";
 import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
 import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";

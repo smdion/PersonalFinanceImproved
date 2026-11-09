@@ -3,7 +3,10 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { createTRPCRouter, adminProcedure } from "../trpc";
-import { VERSION_TABLE_NAMES, EXCLUDED_TABLES } from "@/lib/db/version-tables";
+import {
+  VERSION_TABLE_NAMES,
+  EXCLUDED_TABLES,
+} from "@/lib/db/backup/version-tables";
 import { isPostgres } from "@/lib/db/dialect";
 import { queryRaw } from "@/lib/db/compat";
 import { log } from "@/lib/logger";

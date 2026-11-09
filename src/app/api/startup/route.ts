@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { backfillPerformanceAccountIds } from "@/lib/db/backfill-perf-ids";
-import { backfillMappingLocalIds } from "@/lib/db/backfill-local-ids";
-import { backfillJointPersonId } from "@/lib/db/backfill-joint-person-id";
+import { backfillPerformanceAccountIds } from "@/lib/db/migrate/backfill-perf-ids";
+import { backfillMappingLocalIds } from "@/lib/db/migrate/backfill-local-ids";
+import { backfillJointPersonId } from "@/lib/db/migrate/backfill-joint-person-id";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
 

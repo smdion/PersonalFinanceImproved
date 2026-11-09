@@ -5,7 +5,7 @@
  */
 
 import { and, eq, isNotNull } from "drizzle-orm";
-import * as schema from "./schema";
+import * as schema from "../schema";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 

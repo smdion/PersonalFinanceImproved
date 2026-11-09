@@ -6,8 +6,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { sql, type SQL } from "drizzle-orm";
-import { execRaw, queryRaw } from "./compat";
-import { isPostgres } from "./dialect";
+import { execRaw, queryRaw } from "../compat";
+import { isPostgres } from "../dialect";
 import { log } from "@/lib/logger";
 import {
   reconcileReferenceRows,

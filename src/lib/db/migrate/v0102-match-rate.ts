@@ -6,7 +6,7 @@ import {
   PERCENT_MATCH as PERCENT,
   effectiveMatchType,
   rateFromPercent,
-} from "../utils/match-rate";
+} from "../../utils/match-rate";
 import {
   isEmpty,
   isRow,

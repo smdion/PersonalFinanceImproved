@@ -16,8 +16,9 @@ const admin = { asAdmin: true };
 
 async function app() {
   const schema = await import("@/lib/db/schema");
-  const versions = await import("@/lib/db/version-logic");
-  const { ClosedSetRefusal } = await import("@/lib/db/closed-set-columns");
+  const versions = await import("@/lib/db/backup/version-logic");
+  const { ClosedSetRefusal } =
+    await import("@/lib/db/backup/closed-set-columns");
   return { schema, ClosedSetRefusal, ...versions };
 }
 

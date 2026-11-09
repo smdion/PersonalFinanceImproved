@@ -32,7 +32,7 @@
   {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/tax-data-publication.ts",
-    "to": "src/lib/db/reference-data.ts"
+    "to": "src/lib/db/migrate/reference-data.ts"
   },
   {
     "rule": "foundation-is-the-floor",

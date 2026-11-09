@@ -30,7 +30,7 @@ import { TAX_DATA_SECTIONS } from "../src/lib/config/tax-data-publication";
 import {
   TAX_DATA_DIR,
   readTaxDataDir,
-} from "../src/lib/db/reference-reconcile-core";
+} from "../src/lib/db/migrate/reference-reconcile-core";
 import {
   taxDataStatus,
   taxYearDeadline,

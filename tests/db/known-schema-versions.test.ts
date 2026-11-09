@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { KNOWN_SCHEMA_VERSIONS } from "@/lib/db/backup-transforms";
+import { KNOWN_SCHEMA_VERSIONS } from "@/lib/db/backup/backup-transforms";
 import v0100 from "../fixtures/known-schema-versions-v0.10.0.json";
 
 const journalTags = (dir: string): string[] =>

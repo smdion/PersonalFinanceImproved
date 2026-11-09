@@ -11,7 +11,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
-import { DEAD_SETTING_KEYS } from "@/lib/db/v0102-dead-data";
+import { DEAD_SETTING_KEYS } from "@/lib/db/migrate/v0102-dead-data";
 
 const TAG = "0015_v0102_dead_data";
 const REPO = process.cwd();

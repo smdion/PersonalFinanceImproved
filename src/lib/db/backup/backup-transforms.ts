@@ -5,11 +5,11 @@
  */
 
 import { log } from "@/lib/logger";
-import { convertV0810ProfileSets } from "./v0810-profile-sets";
-import { renameDisplayNameActive } from "./v0102-display-name-custom";
-import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
-import { convertBackupInOrder } from "./migration-converters";
-import pgJournal from "../../../drizzle/meta/_journal.json";
+import { convertV0810ProfileSets } from "../migrate/v0810-profile-sets";
+import { renameDisplayNameActive } from "../migrate/v0102-display-name-custom";
+import { dropDeadHoldingLinkAndSettings } from "../migrate/v0102-dead-data";
+import { convertBackupInOrder } from "../migrate/migration-converters";
+import pgJournal from "../../../../drizzle/meta/_journal.json";
 import { writeStamp } from "@/lib/utils/clock";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */

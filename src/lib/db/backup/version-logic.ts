@@ -8,8 +8,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import * as schema from "./schema";
-import { isPostgres } from "./dialect";
+import * as schema from "../schema";
+import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
 import {
   truncateTables,
@@ -18,8 +18,8 @@ import {
   validateColumns,
   queryRaw,
   execRaw,
-} from "./compat";
-import { reconcileReferenceData } from "./reference-data";
+} from "../compat";
+import { reconcileReferenceData } from "../migrate/reference-data";
 import {
   VERSION_TABLE_NAMES,
   VERSION_TABLES,
@@ -412,7 +412,7 @@ async function importBackupPg(
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
-  const { pool } = await import("./index");
+  const { pool } = await import("../index");
   if (!pool)
     throw new Error(
       "PG pool not available — importBackupPg requires PostgreSQL",

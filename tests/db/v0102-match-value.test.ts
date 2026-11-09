@@ -10,14 +10,14 @@ import { describe, it, expect, vi } from "vitest";
 import {
   MATCH_VALUE_CONVERTER,
   MATCH_VALUE_TAG,
-} from "@/lib/db/v0102-match-value";
-import { MATCH_RATE_TAG } from "@/lib/db/v0102-match-rate";
+} from "@/lib/db/migrate/v0102-match-value";
+import { MATCH_RATE_TAG } from "@/lib/db/migrate/v0102-match-rate";
 import {
   MIGRATION_CONVERTERS,
   convertBackup,
   convertBackupInOrder,
-} from "@/lib/db/migration-converters";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+} from "@/lib/db/migrate/migration-converters";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { storedMatchRate } from "@/lib/pure/contributions/employer-match";

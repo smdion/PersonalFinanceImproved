@@ -12,7 +12,7 @@ import {
   reconcileReferenceRowsSync,
   seedSimulationPresetsSync,
   SIMULATION_PRESET_TABLES,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";

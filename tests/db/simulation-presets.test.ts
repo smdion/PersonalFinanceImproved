@@ -10,8 +10,8 @@ import {
   seedSimulationPresetsSync,
   SIMULATION_PRESET_TABLES,
   type SimulationPresetsFile,
-} from "@/lib/db/reference-reconcile-core";
-import { readSimulationPresetsFile } from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-reconcile-core";
+import { readSimulationPresetsFile } from "@/lib/db/migrate/reference-data";
 import { interpolateAllocations } from "@/lib/pure/simulation/random";
 import { COMPOSITION_BUCKET_VALUES } from "@/lib/config/enum-values";
 

@@ -12,9 +12,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
-import { MATCH_RATE_TAG } from "@/lib/db/v0102-match-rate";
-import { MATCH_VALUE_TAG } from "@/lib/db/v0102-match-value";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+import { MATCH_RATE_TAG } from "@/lib/db/migrate/v0102-match-rate";
+import { MATCH_VALUE_TAG } from "@/lib/db/migrate/v0102-match-value";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
 

@@ -1,7 +1,7 @@
 /** When each yearly tax table is published and by when a release must carry it, for CI and the
  *  "tax data is behind" notice. A `due` month from July on falls in the year before the tax
  *  year (IRS/CMS publish ahead); an earlier month in the tax year itself (HHS's FPL). */
-import type { ReferenceTable } from "@/lib/db/reference-data";
+import type { ReferenceTable } from "@/lib/db/migrate/reference-data";
 
 export type TaxDataSection = {
   table: Exclude<ReferenceTable, "tax_params">;

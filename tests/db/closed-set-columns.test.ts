@@ -9,15 +9,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import * as pgSchema from "@/lib/db/schema-pg";
-import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
+import { VERSION_TABLE_NAMES } from "@/lib/db/backup/version-tables";
 import {
   ClosedSetRefusal,
   closedSetColumns,
   checkImportedValues,
   checkRestoredValues,
-} from "@/lib/db/closed-set-columns";
+} from "@/lib/db/backup/closed-set-columns";
 import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
-import { VERSION_PREVIEW_WITHHELD_TABLES } from "@/lib/db/version-tables";
+import { VERSION_PREVIEW_WITHHELD_TABLES } from "@/lib/db/backup/version-tables";
 import { log } from "@/lib/logger";
 
 vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));

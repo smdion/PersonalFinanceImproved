@@ -7,8 +7,8 @@ import {
   DEMO_SCHEMA_MARKER_PREFIX,
   DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SQL,
-} from "@/lib/db/demo-schema-marker";
-import { applyReferenceData } from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/demo-schema-marker";
+import { applyReferenceData } from "@/lib/db/migrate/reference-data";
 import * as schema from "@/lib/db/schema";
 import { pool, type db as appDb } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";

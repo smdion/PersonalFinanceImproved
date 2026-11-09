@@ -169,12 +169,12 @@
       "count": 1
     }
   },
-  "src/lib/db/reference-reconcile-core.ts": {
+  "src/lib/db/migrate/reference-reconcile-core.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 6
     }
   },
-  "src/lib/db/version-logic.ts": {
+  "src/lib/db/backup/version-logic.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }

@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   REBUILT_ON_RESTORE,
   transformBackupToCurrentSchema,
-} from "@/lib/db/backup-transforms";
+} from "@/lib/db/backup/backup-transforms";
 
 const CURRENT = "0004_v085_investments";
 

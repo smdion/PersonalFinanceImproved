@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type * as schema from "./schema";
-import { queryRaw } from "./compat";
+import type * as schema from "../schema";
+import { queryRaw } from "../compat";
 import { VERSION_TABLE_NAMES, tablesFromBackup } from "./version-tables";
 import { REBUILT_ON_RESTORE } from "./backup-transforms";
 

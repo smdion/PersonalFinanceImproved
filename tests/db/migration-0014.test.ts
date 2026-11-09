@@ -10,7 +10,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
-import { renameDisplayNameActive } from "@/lib/db/v0102-display-name-custom";
+import { renameDisplayNameActive } from "@/lib/db/migrate/v0102-display-name-custom";
 import { RENAME_CASES } from "./display-name-custom-cases";
 
 const TAG = "0014_v0102_display_name_custom";

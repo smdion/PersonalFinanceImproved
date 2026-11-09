@@ -5,7 +5,7 @@ import {
   transformBackupToCurrentSchema,
   KNOWN_SCHEMA_VERSIONS,
   schemaEra,
-} from "@/lib/db/backup-transforms";
+} from "@/lib/db/backup/backup-transforms";
 
 const CURRENT_VERSION = "0000_v3_initial_schema"; // v0.4.0 squashed
 

@@ -6,10 +6,10 @@
  */
 
 import { eq, sql } from "drizzle-orm";
-import * as schema from "./schema";
+import * as schema from "../schema";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
 import { log } from "@/lib/logger";
-import type { AccountMapping } from "./schema";
+import type { AccountMapping } from "../schema";
 import type { Db } from "@/lib/db";
 
 export async function backfillMappingLocalIds(db: Db) {

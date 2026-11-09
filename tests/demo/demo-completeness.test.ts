@@ -15,10 +15,10 @@ import { getTableName } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { seedProfile } from "@/server/services/demo/demo-seed";
-import { applyReferenceData } from "@/lib/db/reference-data";
+import { applyReferenceData } from "@/lib/db/migrate/reference-data";
 import { DEMO_PROFILES } from "@/lib/demo";
 import * as pgSchema from "@/lib/db/schema-pg";
-import { DEMO_SHARED_TABLES } from "@/lib/db/demo-schema-marker";
+import { DEMO_SHARED_TABLES } from "@/lib/db/migrate/demo-schema-marker";
 import {
   ALL,
   DEMO_DATA_TABLES,

@@ -11,7 +11,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as prettier from "prettier";
 import { fileURLToPath } from "url";
-import { readTaxDataDir } from "../src/lib/db/reference-reconcile-core";
+import { readTaxDataDir } from "../src/lib/db/migrate/reference-reconcile-core";
 import {
   TAX_DATA_SCHEMA_DIR,
   buildKeyTable,

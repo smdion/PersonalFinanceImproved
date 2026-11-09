@@ -20,7 +20,7 @@ import type {
   HsaCoverageType,
   AccountOwnership,
 } from "@/lib/config/enum-values";
-import type { TaxDataOrigin } from "../reference-reconcile-core";
+import type { TaxDataOrigin } from "../migrate/reference-reconcile-core";
 import { jobs, people } from "./people";
 import { performanceAccounts } from "./performance";
 
@@ -117,7 +117,7 @@ export const contributionAccounts = pgTable(
 /**
  * Where a reference figure came from (tax-data file, carried forward, the
  * sync, or the household) — the reconcile updates shipped figures and never
- * the household's (lib/db/reference-reconcile-core.ts).
+ * the household's (lib/db/migrate/reference-reconcile-core.ts).
  */
 export const referenceOriginColumns = {
   origin: text("origin").$type<TaxDataOrigin>().notNull().default("user"),

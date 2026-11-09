@@ -632,7 +632,7 @@ The rules are RULES.md § Data-Driven Architecture.
 | `src/lib/pure/simulation/dollars.ts`                | The Simulation's outcomes in a view's dollars (today's or nominal)                               |
 | `src/lib/config/eligibility-reason.ts`              | `EligibilityReason`: what decided a withdrawal's eligibility, with its age, year or basis        |
 | `src/lib/config/eligibility-labels.ts`              | `describeEligibility`: the one wording of an `EligibilityReason`, formatted in the browser       |
-| `src/lib/db/version-tables.ts`                      | Each versioned table and its scope (household, logins, installation); the restore lists follow   |
+| `src/lib/db/backup/version-tables.ts`               | Each versioned table and its scope (household, logins, installation); the restore lists follow   |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
@@ -901,7 +901,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 
 A migration that rewrites data runs **one converter** both on a live
 database (`db-migrate.ts`, inside the migration's transaction: registered by
-tag in `MIGRATION_CONVERTERS` (`src/lib/db/migration-converters.ts`), it runs
+tag in `MIGRATION_CONVERTERS` (`src/lib/db/migrate/migration-converters.ts`), it runs
 in the pending loop and both squash replays, before the tag's SQL when that
 drops what it reads, after it when that adds what it writes) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
@@ -942,7 +942,7 @@ is past it); any other error stops the replay.
 
 A restore or import checks a backup's rows after the transforms and the
 credentials fence, before anything is written (`checkRestoredValues` and
-`checkImportedValues`, `src/lib/db/closed-set-columns.ts`). The table there lists every text column
+`checkImportedValues`, `src/lib/db/backup/closed-set-columns.ts`). The table there lists every text column
 of a versioned table that holds a set the config defines (a test walks the
 schema's union-typed columns). A value outside its set takes the column's
 default where the owner named one (withdrawal strategy, routing mode,

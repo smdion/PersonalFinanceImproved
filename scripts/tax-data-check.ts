@@ -10,7 +10,7 @@ import * as fs from "fs";
 import {
   TAX_DATA_DIR,
   assembleTaxData,
-} from "../src/lib/db/reference-reconcile-core";
+} from "../src/lib/db/migrate/reference-reconcile-core";
 import { validateTaxDataFile } from "../src/lib/tax-data/validate";
 import { staleTaxDataFiles } from "./tax-data-schema";
 

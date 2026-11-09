@@ -33,7 +33,7 @@ import {
   shippedReferenceRows,
   sameReferenceValue,
   type TaxDataFile,
-} from "../src/lib/db/reference-reconcile-core";
+} from "../src/lib/db/migrate/reference-reconcile-core";
 import { validateTaxDataFile } from "../src/lib/tax-data/validate";
 import {
   packSignedTaxData,

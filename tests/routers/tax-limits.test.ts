@@ -13,7 +13,7 @@ import { and, eq } from "drizzle-orm";
 import {
   applyReferenceData,
   reconcileTaxDataFiles,
-} from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-data";
 import * as schema from "@/lib/db/schema-sqlite";
 import { decimalText } from "./decimal-text";
 

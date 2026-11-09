@@ -4,7 +4,7 @@
  */
 import { TAX_LIMIT_KEYS } from "@/lib/config/tax-limit-keys";
 import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
-import type { TaxDataFile } from "@/lib/db/reference-reconcile-core";
+import type { TaxDataFile } from "@/lib/db/migrate/reference-reconcile-core";
 
 /** Where the generated schemas go (relative to the repo root). */
 export const TAX_DATA_SCHEMA_DIR = "tax-data/schema";

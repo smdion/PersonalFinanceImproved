@@ -11,8 +11,8 @@ import * as path from "path";
 import { fileURLToPath } from "node:url";
 import type { ClientBase } from "pg";
 import type BetterSqlite3 from "better-sqlite3";
-import { VERSION_TABLE_NAMES } from "../src/lib/db/version-tables";
-import { writeBackupFile } from "../src/lib/db/backup-file";
+import { VERSION_TABLE_NAMES } from "../src/lib/db/backup/version-tables";
+import { writeBackupFile } from "../src/lib/db/backup/backup-file";
 import { loadEnvFile } from "../src/lib/db/env-file";
 
 function getDialect(): "postgresql" | "sqlite" {
@@ -44,7 +44,7 @@ function readSchemaVersion(): string {
   }
 }
 
-// VERSION_TABLE_NAMES imported from src/lib/db/version-tables.ts (canonical registry)
+// VERSION_TABLE_NAMES imported from src/lib/db/backup/version-tables.ts (canonical registry)
 
 /** A table this schema doesn't have yet exports empty; any other read error fails the export. */
 function tableReadError(tableName: string, err: unknown): Error {
@@ -167,7 +167,7 @@ async function run() {
     exportedAt: new Date().toISOString(),
     tables,
     // "postgres", not "postgresql" — matches BackupData.sourceDialect in
-    // src/lib/db/version-logic.ts, which importBackupPg's jsonb encoding
+    // src/lib/db/backup/version-logic.ts, which importBackupPg's jsonb encoding
     // branches on.
     sourceDialect: dialect === "postgresql" ? "postgres" : "sqlite",
   };

@@ -139,7 +139,7 @@ Every structural change (add column, add table, add index, change type, add cons
 
 ### 3. Update backup-transforms.ts
 
-If the change adds a new column to an existing table, existing backup files (`.json` exports) won't have that column. `src/lib/db/backup-transforms.ts` must be updated to handle the missing column with an appropriate default.
+If the change adds a new column to an existing table, existing backup files (`.json` exports) won't have that column. `src/lib/db/backup/backup-transforms.ts` must be updated to handle the missing column with an appropriate default.
 
 Check the existing transform registry. The new transform must handle all prior versions that lack the new column.
 

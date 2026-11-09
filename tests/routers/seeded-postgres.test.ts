@@ -185,7 +185,7 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
       // settings, which would collide with the first-run rows the migrator
       // writes into public (the "Current" profiles and their settings).
       const { DEMO_SHARED_TABLES } =
-        await import("@/lib/db/demo-schema-marker");
+        await import("@/lib/db/migrate/demo-schema-marker");
       const { rows } = await admin.query<{ tablename: string }>(
         "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT tablename = ANY($1::text[])",
         [DEMO_SHARED_TABLES],
@@ -194,7 +194,8 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
         `TRUNCATE ${rows.map((row) => `public."${row.tablename}"`).join(", ")} RESTART IDENTITY CASCADE`,
       );
       const { db } = await import("@/lib/db");
-      const { applyReferenceData } = await import("@/lib/db/reference-data");
+      const { applyReferenceData } =
+        await import("@/lib/db/migrate/reference-data");
       const { seedProfile } = await import("@/server/services/demo/demo-seed");
       await applyReferenceData(db);
       await seedProfile(db, profile, new Date());

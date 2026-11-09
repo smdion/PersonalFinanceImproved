@@ -8,15 +8,15 @@ import { describe, it, expect } from "vitest";
 import {
   MATCH_RATE_CONVERTER,
   MATCH_RATE_TAG,
-} from "@/lib/db/v0102-match-rate";
-import { MATCH_VALUE_TAG } from "@/lib/db/v0102-match-value";
+} from "@/lib/db/migrate/v0102-match-rate";
+import { MATCH_VALUE_TAG } from "@/lib/db/migrate/v0102-match-value";
 import { effectiveMatchType, rateFromPercent } from "@/lib/utils/match-rate";
 import { entryWithMatchRate } from "@/lib/pure/contributions/match-writes";
 import {
   MIGRATION_CONVERTERS,
   convertBackup,
-} from "@/lib/db/migration-converters";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+} from "@/lib/db/migrate/migration-converters";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { ACCOUNT_CASES, PROFILE_CASES, NOT_JSON } from "./match-rate-cases";

@@ -9,8 +9,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 
-vi.mock("../../src/lib/db/backup-file", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../src/lib/db/backup-file")>()),
+vi.mock("../../src/lib/db/backup/backup-file", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../../src/lib/db/backup/backup-file")
+  >()),
   restrictBackupFile: () => {
     throw new Error("EPERM: operation not permitted, chmod");
   },

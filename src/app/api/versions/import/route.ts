@@ -3,10 +3,10 @@ import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
-import { importBackup, type BackupData } from "@/lib/db/version-logic";
+import { importBackup, type BackupData } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
-import { ClosedSetRefusal } from "@/lib/db/closed-set-columns";
+import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data

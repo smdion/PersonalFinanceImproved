@@ -4,8 +4,8 @@
  * once backup-transforms has brought them to today's schema.
  */
 import { getTableColumns, getTableName, type Table } from "drizzle-orm";
-import * as schema from "./schema-pg";
-import { TAX_DATA_ORIGIN_VALUES } from "./reference-reconcile-core";
+import * as schema from "../schema-pg";
+import { TAX_DATA_ORIGIN_VALUES } from "../migrate/reference-reconcile-core";
 import { log } from "@/lib/logger";
 import {
   getAllCategories,

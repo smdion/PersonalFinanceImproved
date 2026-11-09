@@ -3320,29 +3320,19 @@
       "count": 2
     }
   },
-  "src/lib/db/backfill-joint-person-id.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/lib/db/backfill-local-ids.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
-    }
-  },
-  "src/lib/db/backfill-perf-ids.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
-  "src/lib/db/backup-transforms.ts": {
+  "src/lib/db/backup/backup-transforms.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 23
     },
     "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/lib/db/backup/version-logic.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 8
+    },
+    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
@@ -3351,22 +3341,35 @@
       "count": 9
     }
   },
-  "src/lib/db/converter-rows.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
   "src/lib/db/index.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },
-  "src/lib/db/shapes/json-schemas.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 2
+  "src/lib/db/migrate/backfill-joint-person-id.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
     }
   },
-  "src/lib/db/reference-data.ts": {
+  "src/lib/db/migrate/backfill-local-ids.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/no-abbreviation": {
+      "count": 6
+    }
+  },
+  "src/lib/db/migrate/backfill-perf-ids.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 1
+    }
+  },
+  "src/lib/db/migrate/converter-rows.ts": {
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/lib/db/migrate/reference-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
@@ -3374,7 +3377,7 @@
       "count": 2
     }
   },
-  "src/lib/db/reference-reconcile-core.ts": {
+  "src/lib/db/migrate/reference-reconcile-core.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 7
     },
@@ -3388,9 +3391,15 @@
       "count": 1
     }
   },
-  "src/lib/db/shapes/salary-entry-edit.ts": {
+  "src/lib/db/migrate/v0810-profile-sets.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
     }
   },
   "src/lib/db/schema.ts": {
@@ -3401,6 +3410,16 @@
   "src/lib/db/serial-client.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 1
+    }
+  },
+  "src/lib/db/shapes/json-schemas.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 2
+    }
+  },
+  "src/lib/db/shapes/salary-entry-edit.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
     }
   },
   "src/lib/db/sqlite-transactions.ts": {
@@ -3414,25 +3433,6 @@
   "src/lib/db/stored-strategy-key.ts": {
     "ratchet/no-history-comment": {
       "count": 2
-    }
-  },
-  "src/lib/db/v0810-profile-sets.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/db/version-logic.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/demo/profiles/recently-retired.ts": {

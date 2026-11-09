@@ -19,7 +19,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
-import { MATCH_RATE_TAG } from "@/lib/db/v0102-match-rate";
+import { MATCH_RATE_TAG } from "@/lib/db/migrate/v0102-match-rate";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
 
 const REPO = process.cwd();

@@ -13,12 +13,12 @@ import {
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { TaxDataFile } from "@/lib/db/reference-reconcile-core";
+import type { TaxDataFile } from "@/lib/db/migrate/reference-reconcile-core";
 import {
   applyCommunityTaxData,
   previewCommunityTaxData,
   readTaxDataFile,
-} from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-data";
 import { verifyTaxDataSignature } from "@/lib/tax-data/signature";
 import { validateTaxDataFile } from "@/lib/tax-data/validate";
 import { describeTaxDataChanges } from "@/lib/tax-data/describe";

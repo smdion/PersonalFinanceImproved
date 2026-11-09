@@ -4,7 +4,7 @@
  */
 
 import { eq, isNull } from "drizzle-orm";
-import * as schema from "./schema";
+import * as schema from "../schema";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";

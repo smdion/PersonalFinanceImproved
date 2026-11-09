@@ -5,7 +5,7 @@
 
 import { sql, getTableColumns } from "drizzle-orm";
 import { isPostgres } from "./dialect";
-import { VERSION_TABLES } from "./version-tables";
+import { VERSION_TABLES } from "./backup/version-tables";
 import * as pgSchema from "./schema-pg";
 import * as sqliteSchema from "./schema-sqlite";
 

@@ -7,7 +7,7 @@ import Database from "better-sqlite3";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
-import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
+import { VERSION_TABLE_NAMES } from "@/lib/db/backup/version-tables";
 import { readTablesSqlite } from "../../scripts/export-backup";
 
 const first = VERSION_TABLE_NAMES[0]!;

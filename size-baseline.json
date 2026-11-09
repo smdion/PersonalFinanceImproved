@@ -225,12 +225,12 @@
     "src/lib/config/milestones.ts": 664,
     "src/lib/config/withdrawal-strategies.ts": 757,
     "src/lib/constants.ts": 349,
-    "src/lib/db/backup-transforms.ts": 986,
+    "src/lib/db/backup/backup-transforms.ts": 986,
+    "src/lib/db/backup/version-logic.ts": 557,
+    "src/lib/db/migrate/reference-reconcile-core.ts": 752,
     "src/lib/db/pg/api-sync.ts": 550,
     "src/lib/db/pg/retirement.ts": 497,
-    "src/lib/db/reference-reconcile-core.ts": 752,
     "src/lib/db/shapes/json-schemas.ts": 376,
-    "src/lib/db/version-logic.ts": 557,
     "src/lib/demo/profiles/debt-payoff.ts": 446,
     "src/lib/demo/profiles/dual-income-family.ts": 866,
     "src/lib/demo/profiles/early-retirement.ts": 666,
@@ -905,13 +905,13 @@
     "src/components/upkeep/utility-feed-card.tsx": {
       "UtilityFeedCard": 219
     },
-    "src/lib/db/backup-transforms.ts": {
+    "src/lib/db/backup/backup-transforms.ts": {
       "transformV07xToCurrent": 185
     },
-    "src/lib/db/reference-reconcile-core.ts": {
+    "src/lib/db/migrate/reference-reconcile-core.ts": {
       "reconcileSteps": 165
     },
-    "src/lib/db/v0810-profile-sets.ts": {
+    "src/lib/db/migrate/v0810-profile-sets.ts": {
       "convertV0810ProfileSets": 260
     },
     "src/lib/hooks/use-paycheck-person-views.ts": {

@@ -35,8 +35,8 @@ import {
   exportBackup,
   importBackup,
   type BackupData,
-} from "@/lib/db/version-logic";
-import { KNOWN_SCHEMA_VERSIONS } from "@/lib/db/backup-transforms";
+} from "@/lib/db/backup/version-logic";
+import { KNOWN_SCHEMA_VERSIONS } from "@/lib/db/backup/backup-transforms";
 import sqliteJournal from "../../drizzle-sqlite/meta/_journal.json";
 
 const DIR = path.resolve("tests/fixtures/frozen-backups");

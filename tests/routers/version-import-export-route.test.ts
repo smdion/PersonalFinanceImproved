@@ -20,7 +20,7 @@ const ORIGINAL_ENV = { ...process.env };
 
 vi.mock("@/lib/db", () => ({ db: {} }));
 vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
-vi.mock("@/lib/db/version-logic", () => ({
+vi.mock("@/lib/db/backup/version-logic", () => ({
   exportBackup: vi.fn().mockResolvedValue({
     schemaVersion: "0001",
     exportedAt: "2026-01-01T00:00:00.000Z",
@@ -156,7 +156,7 @@ describe("/api/versions/import settles the first-admin gate", () => {
     vi.stubEnv("NODE_ENV", "development");
 
     const { POST } = await import("@/app/api/versions/import/route");
-    const { importBackup } = await import("@/lib/db/version-logic");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
     const { settleFirstRunGate } = await import("@/server/data/first-run");
     const body = new FormData();
     const backup = {
@@ -205,7 +205,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     const { auth } = await import("@/server/auth");
     vi.mocked(auth).mockResolvedValueOnce(session as never);
     const { POST } = await import("@/app/api/versions/import/route");
-    const { importBackup } = await import("@/lib/db/version-logic");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
     vi.mocked(importBackup).mockClear();
     const res = await POST(
       new Request("http://localhost/api/versions/import", {
@@ -261,9 +261,10 @@ describe("/api/versions/import: a backup refused over its closed-set values", ()
     process.env.ALLOW_DEV_MODE = "true";
     vi.stubEnv("NODE_ENV", "development");
     const { POST } = await import("@/app/api/versions/import/route");
-    const { importBackup } = await import("@/lib/db/version-logic");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
     const { settleFirstRunGate } = await import("@/server/data/first-run");
-    const { ClosedSetRefusal } = await import("@/lib/db/closed-set-columns");
+    const { ClosedSetRefusal } =
+      await import("@/lib/db/backup/closed-set-columns");
     vi.mocked(settleFirstRunGate).mockClear();
     vi.mocked(importBackup).mockRejectedValueOnce(
       new ClosedSetRefusal(
