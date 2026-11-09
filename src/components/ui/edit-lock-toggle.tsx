@@ -4,12 +4,8 @@ import { Lock, LockOpen } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 /**
- * The padlock edit lock — one shared control for every table/panel that is
- * editable in place, so every surface uses the same icon, sizing, wording
- * and default-locked behaviour.
- *
- * Locked is always the default: an editable panel opens read-only and the
- * user opts in to editing by unlocking it.
+ * The padlock edit lock shared by every in-place-editable table/panel. Locked is the default: a
+ * panel opens read-only until the user unlocks it.
  */
 export function EditLockToggle({
   locked,
@@ -18,11 +14,7 @@ export function EditLockToggle({
 }: {
   locked: boolean;
   onToggle: () => void;
-  /** Pass `!canEdit` — the toggle becomes a static, non-interactive lock
-   *  with a tooltip explaining why, rather than the clickable toggle. Was
-   *  silently hidden entirely before the design plan's §05 review flagged
-   *  it as a consistency gap ("Says why it's locked out") next to the
-   *  Retirement tab and Budget managers, which already explain themselves. */
+  /** Pass `!canEdit`: renders a static lock with a tooltip explaining why, not the toggle. */
   disabled?: boolean;
 }) {
   if (disabled) {
@@ -65,18 +57,11 @@ export function EditLockToggle({
  * one panel must not silently unlock another.
  */
 export const EDIT_LOCK_KEYS = {
-  /** One shared lock for every profile-editing surface in the app: all four
-   *  Budget page tabs (Salary, Contribution, Budget, Savings), the
-   *  standalone Savings page's allocation editor, and the Paycheck page's
-   *  Salary/Contribution profile editing — they all edit the same
-   *  underlying Salary/Contribution/Budget/Savings Profile data (just from
-   *  different pages), so one padlock covers all of it rather than several
-   *  independent locks that can drift out of sync with each other. */
+  /** One lock for every surface that edits Salary/Contribution/Budget/Savings Profile data (Budget
+   *  page tabs, Savings allocations, Paycheck profile editing). */
   profileEditLocked: "ledgr:budget:locked",
-  /** Portfolio page — inline fixing of a wrong balance in the latest
-   *  snapshot (Snapshot History → expand latest row). Its own lock: it
-   *  edits portfolio-snapshot data, unrelated to the profile surfaces
-   *  above, and shouldn't unlock (or be unlocked by) them. */
+  /** Portfolio: fixing a balance in the latest snapshot. Separate from the profile lock, since it
+   *  edits unrelated data. */
   portfolioSnapshotEditLocked: "ledgr:portfolio-snapshot:locked",
 } as const;
 

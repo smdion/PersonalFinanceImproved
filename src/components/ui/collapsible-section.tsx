@@ -3,11 +3,8 @@
 import type { ReactNode } from "react";
 
 /**
- * A page section that opens and closes from a full-width header bar —
- * "▶ Title  (count)        Click to expand". The open state belongs to the
- * caller, so a deep link can open it. The body sits in a card joined to
- * the bar. Used by Portfolio's Snapshot History, Account & Contribution
- * Settings and Holding history.
+ * A page section opened from a full-width header bar ("▶ Title (count)  Click to expand"), body
+ * in a card joined to the bar. The caller owns the open state, so a deep link can open it.
  */
 export function CollapsibleSection({
   title,

@@ -11,10 +11,8 @@ export type PushPreviewItem = {
   field: string;
   currentYnab: number;
   newValue: number;
-  /** True when this is a percentage-based savings goal whose stored amount
-   *  no longer matches what a live recalc would produce (e.g. income
-   *  changed since it was last recalculated) — surfaced so the user can
-   *  go recalculate before pushing an outdated number. */
+  /** A percentage-based goal whose stored amount differs from a live recalc (e.g. income
+   *  changed), so the user can recalculate before pushing. */
   stale?: boolean;
 };
 
@@ -68,13 +66,9 @@ export function PushPreviewModal({
       : "Pushing...";
 
   const titleId = useId();
-  // Push sends one request per changed item to the connected budget API
-  // (YNAB or Actual), so a full push can take well over 30 seconds — show
-  // elapsed time so it's clear the app is still working, not stuck.
-  // setState only ever happens from the interval's own callback (never
-  // synchronously in the effect body) — the parent unmounts this modal once
-  // the mutation settles (see BudgetPushYnabModal/BudgetPullYnabModal), so a
-  // fresh mount next time starts elapsedSeconds at 0 with no reset needed.
+  // A push sends one request per item and can take over 30 seconds, so show elapsed time.
+  // The parent unmounts this modal when the mutation settles, so each mount starts at 0
+  // and setState happens only in the interval callback.
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
     if (!isPending) return;

@@ -218,7 +218,7 @@
     "src/components/settings/integrations/portfolio-mapping-lists.tsx": 333,
     "src/components/settings/integrations/portfolio-section.tsx": 328,
     "src/components/tools/relocation/large-purchase-fields.tsx": 214,
-    "src/components/tools/relocation/projection-table.tsx": 416,
+    "src/components/tools/relocation/projection-table.tsx": 411,
     "src/lib/budget-api/actual-client.ts": 764,
     "src/lib/budget-api/ynab-client.ts": 484,
     "src/lib/config/account-types.ts": 837,
@@ -891,7 +891,7 @@
       "RelocationLargePurchases": 198
     },
     "src/components/tools/relocation/metrics-and-banner.tsx": {
-      "RelocationMetricsAndBanner": 170
+      "RelocationMetricsAndBanner": 168
     },
     "src/components/tools/relocation/projection-table.tsx": {
       "ComparisonTable": 217
@@ -900,7 +900,7 @@
       "RelocationYearAdjustments": 234
     },
     "src/components/ui/push-preview-modal.tsx": {
-      "PushPreviewModal": 198
+      "PushPreviewModal": 194
     },
     "src/components/upkeep/utility-feed-card.tsx": {
       "UtilityFeedCard": 219

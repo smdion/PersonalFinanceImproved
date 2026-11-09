@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
 
 /**
- * One line of a figures or settings panel: label on the left (may wrap, with
- * an optional hint line under it), value in a right-aligned column. Every
- * row uses the same two-column grid, so values line up down a panel no
- * matter how long a label is or whether a value is editable.
+ * One line of a figures or settings panel: label (may wrap, optional hint below) and a
+ * right-aligned value, on a shared two-column grid so values line up down the panel.
  */
 export function FieldRow({
   label,

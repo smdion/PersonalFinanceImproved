@@ -26,11 +26,8 @@ function assign(heights: readonly number[], columns: number): number[] {
 }
 
 /**
- * Cards in two columns of about equal height, in reading order. Placed by
- * a guess first, then by their measured heights once rendered — only when
- * the set of cards changes, never when one opens a row (a card jumping
- * columns mid-click would be worse than an uneven bottom). One column on
- * small screens.
+ * Cards in two roughly equal-height columns, in reading order (one column on small screens).
+ * Re-placed by measured height only when the set of cards changes, so no card jumps mid-click.
  */
 export function BalancedColumns({
   items,

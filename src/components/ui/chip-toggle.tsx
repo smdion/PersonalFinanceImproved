@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * A small on/off chip for a setting that sits inside dense content (a card
- * line, a summary banner), where a full Toggle switch is too heavy: ✓ and
- * solid blue when on (like SegmentedControl's
- * selected option), muted when off. Same role and state as Toggle (a switch).
+ * Small on/off chip for dense content where a Toggle is too heavy: ✓ and solid blue when on,
+ * muted when off. Same switch role and state as Toggle.
  */
 export function ChipToggle({
   isChecked,

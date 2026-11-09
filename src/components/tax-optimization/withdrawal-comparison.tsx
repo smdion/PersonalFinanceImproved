@@ -1,31 +1,9 @@
 "use client";
 
 /**
- * Side-by-side lifetime-tax comparison of withdrawal-sequencing
- * strategies (roadmap #2). Runs `compareWithdrawalStrategies` with three
- * fixed presets that are cleanly expressible through `withdrawalRoutingMode`
- * + `withdrawalOrder`:
- *  - Traditional first → waterfall, pre-tax categories drained first
- *  - Brokerage first   → waterfall, taxable drained first
- *  - Bracket Filling   → bracket_filling (the engine's dynamic mode) —
- *    labeled from the SAME `WITHDRAWAL_ROUTING_MODE_LABELS` map the
- *    Retirement page's Withdrawal Routing panel and the Taxes-in-Retirement
- *    profile section use. This used to be hardcoded here as "Tax-optimized"
- *    — a name that appeared nowhere else, so a household that saw it win
- *    had no way to find or set it on their profile.
- * ("Roth first" is deliberately omitted — it needs a tax-preference
- * override, not a category order, which this procedure doesn't take.)
- *
- * The server also returns a 4th row, "Your current settings" (`isCurrentPlan`)
- * — the household's REAL resolved routing mode (session override, else the
- * persisted profile default), scored the identical way. It can coincide
- * with one of the three presets or differ from all of them (e.g. a
- * household on a custom waterfall order); either way it's the household's
- * actual plan, not a guess matched by mode string. When it DOES coincide
- * with a preset (the common case — most households are on Bracket
- * Filling), the two rows would otherwise show identical numbers with no
- * acknowledgment they're the same thing; `matchesCurrentPlan` annotates
- * the preset row instead of leaving that silently redundant.
+ * Lifetime-tax comparison of withdrawal presets (Traditional first, Brokerage first, Bracket
+ * Filling via `WITHDRAWAL_ROUTING_MODE_LABELS`) plus the server's "Your current settings" row;
+ * a preset that is the same run as the current plan is annotated (`matchesCurrentPlan`).
  */
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import type { RouterInputs } from "@/lib/trpc";
@@ -62,13 +40,9 @@ function presetStrategies(): RouterInputs["projection"]["compareWithdrawalStrate
   ];
 }
 
-/** A named preset's row and "Your current settings" can legitimately describe
- *  the exact same run — e.g. a household already on Bracket Filling.
- *  Matches on BOTH the config (mode, and for waterfall, the resolved
- *  order) AND the computed output (lifetime tax, within a cent — the
- *  same tolerance convention used elsewhere for candidate scoring — and
- *  the depletion year): a config match with a different number would be
- *  a real bug worth surfacing, not something to silently annotate away. */
+/** A preset row and "Your current settings" are the same run when config (mode, waterfall order)
+ *  AND output (lifetime tax within a cent, depletion year) match; a config match with different
+ *  numbers is a bug to surface, not annotate. */
 function ordersMatch(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((c, i) => c === b[i]);
 }

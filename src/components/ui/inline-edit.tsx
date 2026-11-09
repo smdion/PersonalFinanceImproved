@@ -19,10 +19,8 @@ type InlineEditProps = {
    *  container wider. Opt-in — for tight rows (e.g. a profile list) where
    *  a long value must yield space to its siblings. */
   truncate?: boolean;
-  /** Suppress the little pencil affordance on the display button. Opt-in —
-   *  for surfaces where a section-level control (an `EditLockToggle`
-   *  padlock) already signals "this area is editable", so a pencil on every
-   *  value is redundant clutter. Click-to-edit still works. */
+  /** Hide the pencil icon where a section-level `EditLockToggle` already signals editability.
+   *  Click-to-edit still works. */
   hideEditIcon?: boolean;
   /** What the value is, for screen readers (e.g. "Bonus percent"). */
   ariaLabel?: string;

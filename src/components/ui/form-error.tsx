@@ -1,15 +1,8 @@
 "use client";
 
 /**
- * Inline form error display component.
- *
- * Usage:
- *   <FormError error={mutation.error} />
- *   <FormError message="Name is required" />
- *   <FormError error={mutation.error} prefix="Failed to save" />
- *
- * Renders nothing when there is no error. Shows a tRPC error's
- * `data.userMessage` when a service failed (errorText), else its message.
+ * Inline form error, from `error` or `message` (optional `prefix`). Renders nothing without an
+ * error; shows a tRPC error's `data.userMessage` when present (errorText), else its message.
  */
 
 import { errorText } from "@/lib/utils/mutation-error";

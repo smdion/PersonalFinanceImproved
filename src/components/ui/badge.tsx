@@ -1,19 +1,7 @@
 /**
- * Badge — the one tinted-pill primitive for status, labels, tags, and
- * counts. Every ad-hoc `<span className="bg-x-50 text-x-700 px-1 rounded">`
- * should be one of these.
- *
- * Theme-awareness is free: the project's `--c-*` color primitives are
- * swapped per theme (`globals.css`), so `bg-blue-100 text-blue-700` renders
- * as a light pill in light mode and a dark-tinted pill in dark mode with no
- * `dark:` prefixes. Do not add `dark:` overrides at call sites — if a shade
- * looks wrong in one theme, fix the primitive, not the badge.
- *
- * Contrast: every `color` clears WCAG AA (4.5:1) in BOTH themes for the
- * filled and subtle treatments.
- *
- * For account-type badges (401k, IRA, …) use `AccountBadge` — it derives
- * its color from the account-types config.
+ * Badge: the one tinted-pill primitive for status, labels, tags and counts (account types use
+ * `AccountBadge`). Theme comes from the `--c-*` primitives, so never add `dark:` at call sites;
+ * every `color` clears WCAG AA in both themes.
  */
 
 type BadgeColor =

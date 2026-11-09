@@ -2932,24 +2932,6 @@
       "count": 2
     }
   },
-  "src/components/tax-optimization/withdrawal-comparison.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/taxes/roth-ira-section.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/taxes/tax-breakdown.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/tools/relocation/budget-selectors.tsx": {
     "max-lines-per-function": {
       "count": 1
@@ -2977,16 +2959,10 @@
   "src/components/tools/relocation/metrics-and-banner.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/tools/relocation/projection-table.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -3012,85 +2988,14 @@
       "count": 3
     }
   },
-  "src/components/ui/badge.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/balanced-columns.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/ui/card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },
-  "src/components/ui/chip-toggle.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/collapsible-section.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/confirm-dialog.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/date-input.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/edit-lock-toggle.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/components/ui/field-row.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/form-error.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/inline-edit.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/profile-sidebar.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
   "src/components/ui/push-preview-modal.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/ui/toggle.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/ui/tooltip.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/upkeep/add-utility-form.tsx": {
@@ -3105,9 +3010,6 @@
   },
   "src/components/upkeep/utility-feed-card.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-input": {

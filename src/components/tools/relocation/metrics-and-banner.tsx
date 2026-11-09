@@ -25,10 +25,8 @@ export function RelocationMetricsAndBanner({
   engineResult,
   moveYear,
 }: Props) {
-  // Use the engine's pair of FI targets together, or the calculator's pair
-  // together — never mix one engine-derived value with one calculator-derived
-  // value, since that was silently subtracting two different formulas
-  // (Single Computation Path violation).
+  // Use both FI targets from the engine or both from the calculator, never
+  // one of each (that would subtract two different formulas).
   const relocFiTarget =
     engineResult?.relocationFiTarget ?? r.relocationFiTarget;
   const currentFiTargetForDelta =

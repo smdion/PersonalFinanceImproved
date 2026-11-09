@@ -1,16 +1,8 @@
 "use client";
 
 /**
- * Shared left-rail profile list — the `grid-cols-[240px_1fr]` master-detail
- * shell every profile-manager surface (Budget, Contribution, Salary and
- * Retirement) uses, with a list of profiles on the left and the selected
- * one's editor on the right.
- *
- * Rename is one gesture everywhere: the name renders as a click-to-edit
- * `InlineEdit` — the same always-visible affordance the app
- * uses for quick value edits elsewhere — driven by a single `onRename`
- * callback. A consumer that omits `onRename` (Savings, whose rail reuses
- * Budget profiles and is select-only) renders a plain, non-editable name.
+ * Left-rail profile list for every profile manager's master-detail shell. The name is a
+ * click-to-edit `InlineEdit` driven by `onRename`; without `onRename` it is plain text.
  */
 
 import { Badge } from "@/components/ui/badge";
@@ -19,16 +11,11 @@ import { asButton } from "./as-button";
 
 type ProfileListRowProps = {
   name: string;
-  /** Highlighted as the one currently being viewed/edited — not
-   *  necessarily the same as `isActive` (Contribution's sidebar already
-   *  distinguishes "viewing" from "globally active"; Retirement's Plan-pin
-   *  "active in this Plan" case needs the same split). */
+  /** The profile being viewed/edited, which need not be the active one (`isActive`). */
   isSelected: boolean;
   isActive: boolean;
-  /** Defaults to "ACTIVE" (Budget/Contribution's existing copy). Pass an
-   *  override for a more specific badge — e.g. Retirement's "Active in
-   *  this Plan" when a session Plan is pinning this profile rather than
-   *  it being the household's globally-active one. */
+  /** Defaults to "ACTIVE"; pass a more specific badge, e.g. Retirement's "Active in this Plan"
+   *  when a session Plan selects this profile. */
   activeLabel?: string;
   onSelect: () => void;
 
@@ -46,10 +33,8 @@ type ProfileListRowProps = {
   /** Type-specific summary line (Budget: $/yr + mode count; Contribution:
    *  contributions + employer match; Salary: job count or description). */
   meta?: React.ReactNode;
-  /** Type-specific tag that leads the meta line — reference detail, not a
-   *  status you scan the list by, so it sits on the secondary line rather
-   *  than competing with the name (Budget's API-link indicator is the only
-   *  current user). Best rendered as a subtle (no-fill) Badge. */
+  /** Type-specific reference tag leading the meta line (e.g. Budget's API link), best as a
+   *  subtle (no-fill) Badge. */
   metaTag?: React.ReactNode;
 };
 
@@ -76,10 +61,8 @@ export function ProfileListRow({
           : "hover:bg-surface-sunken border border-transparent"
       }`}
     >
-      {/* flex-wrap so on the narrow rail (no hover) the always-visible
-          actions drop to their own line instead of squeezing the name;
-          on md+ the actions collapse to hover/focus reveal and never
-          wrap. */}
+      {/* flex-wrap: on the narrow rail the visible actions drop to their own
+          line; on md+ they appear on hover/focus and never wrap. */}
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           {onRename ? (
@@ -159,10 +142,8 @@ export function ProfileListRow({
   );
 }
 
-/** Shared "Profiles" header — title + optional "+ New" trigger. Omit
- *  `onCreate` for a profile type with no bare-create path (Retirement:
- *  Duplicate is the only creation route, docblock in
- *  retirement-profile-manager.tsx explains why). */
+/** Shared "Profiles" header: title + optional "+ New". Omit `onCreate` for a profile type with no
+ *  bare create (Retirement creates only by Duplicate). */
 export function ProfileSidebarHeader({
   title = "Profiles",
   onCreate,

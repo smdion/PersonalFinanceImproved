@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * This year's household tax, line by line — the Taxes page. The household
- * tax (calculateHouseholdTax) on household annual income, plus withholding
- * so far from the year schedule and the tax notes (e.g. Additional
- * Medicare owed at filing). The dashboard shows only the two-line summary.
+ * Taxes page: this year's household tax line by line (calculateHouseholdTax on annual income),
+ * withholding so far from the year schedule, and tax notes (e.g. Additional Medicare at filing).
  */
 import { Card } from "@/components/ui/card";
 import { FilingStatusRow } from "@/components/taxes/filing-status-row";
