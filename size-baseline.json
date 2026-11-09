@@ -372,7 +372,7 @@
     "src/server/routers/projection/relocation.ts": 648,
     "src/server/routers/projection/scenarios.ts": 140,
     "src/server/routers/projection/strategy.ts": 824,
-    "src/server/routers/projection/tax-optimization.ts": 526,
+    "src/server/routers/projection/tax-optimization.ts": 515,
     "src/server/routers/retirement/index.ts": 17,
     "src/server/routers/salary-profiles.ts": 599,
     "src/server/routers/savings/api-sync.ts": 243,

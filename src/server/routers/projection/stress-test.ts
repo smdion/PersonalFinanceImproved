@@ -10,11 +10,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
-import {
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
-} from "./_shared";
-import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { prepareEngineInput } from "./engine-input";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const stressTestRouter = createTRPCRouter({
@@ -46,12 +42,7 @@ export const stressTestRouter = createTRPCRouter({
       });
       if (!payload) return { scenarios: [], retirementAge: null };
 
-      const {
-        settings,
-        distributionTaxRates,
-        baseEngineInput,
-        planRetirementAge,
-      } = payload;
+      const { baseEngineInput, planRetirementAge } = payload;
 
       // Resolved via the shared builder — the household's real routing
       // mode, order/splits, RMD/QCD handling, discretionary order, and
@@ -63,19 +54,19 @@ export const stressTestRouter = createTRPCRouter({
       // hand-built the object inline and silently dropped rmdExcessHandling/
       // qcdMaximize/rmdSmoothingEnabled/discretionaryWithdrawalOrder to
       // engine defaults regardless of what was configured.
-      const decumulationDefaults = buildDecumulationDefaults(
-        settings,
-        { withdrawalTaxPreference: {} },
-        distributionTaxRates,
-      );
+      const {
+        decumulationDefaults,
+        accumulationOverrides,
+        decumulationOverrides,
+      } = await prepareEngineInput(ctx.db, payload, {
+        decumulationDefaults: { withdrawalTaxPreference: {} },
+      });
       const scenarios = runStressTestScenarios({
         baseEngineInput,
         decumulationDefaults,
         // The household's saved "Changes by year" (D6).
-        ...((await resolveProjectionOverrides(ctx.db, {})) as {
-          accumulationOverrides: ProjectionInput["accumulationOverrides"];
-          decumulationOverrides: ProjectionInput["decumulationOverrides"];
-        }),
+        accumulationOverrides,
+        decumulationOverrides,
       });
 
       return {

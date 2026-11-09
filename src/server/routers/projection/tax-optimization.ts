@@ -33,7 +33,6 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
-  AccumulationOverride,
   DecumulationOverride,
   RoutingMode,
 } from "@/lib/pure/engine/types";
@@ -44,9 +43,8 @@ import { prepareProjectionRun } from "@/server/services/projection/projection-ru
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
@@ -133,23 +131,14 @@ async function runProjection(
   if (!payload) return null;
   if (payload.notConfigured) return payload.notConfigured;
 
-  const { settings, distributionTaxRates, baseEngineInput } = payload;
-  // Omitted "Changes by year" = the household's saved rows.
-  const overrides = await resolveProjectionOverrides(ctx.db, input);
-
+  const { distributionTaxRates } = payload;
+  const resolved = await prepareEngineInput(ctx.db, payload, input);
   const engineInput = {
-    ...baseEngineInput,
-    decumulationDefaults: buildDecumulationDefaults(
-      settings,
-      input.decumulationDefaults,
-      distributionTaxRates,
-    ),
-    accumulationOverrides:
-      overrides.accumulationOverrides as AccumulationOverride[],
+    ...resolved,
     // The what-if's fields win over the saved rows' (a saved later-year
     // row must not quietly undo the comparison).
     decumulationOverrides: withControlledOverrides(
-      overrides.decumulationOverrides as DecumulationOverride[],
+      resolved.decumulationOverrides,
       extraDecumulationOverrides,
     ),
   };

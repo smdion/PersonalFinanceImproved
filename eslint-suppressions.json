@@ -7855,9 +7855,6 @@
     }
   },
   "src/server/routers/projection/stress-test.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 3
     },
@@ -7867,7 +7864,7 @@
   },
   "src/server/routers/projection/tax-optimization.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
+      "count": 6
     },
     "ratchet/max-comment-lines": {
       "count": 11
