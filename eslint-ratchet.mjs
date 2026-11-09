@@ -309,6 +309,9 @@ function returnsValue(block) {
   return found;
 }
 
+// The finders' escape hatch (RULES § Data-Driven Architecture, owner Q10c).
+const VIOLATION_OK = /lint-violation-ok(:[ \t]*\S)?/g;
+
 const FALLBACK_MESSAGE =
   "Unregistered fallback. Register its pattern in docs/FALLBACKS.md, or make the absent state real (RULES review rule 4).";
 
@@ -386,6 +389,32 @@ const customRules = {
                 loc: comment.loc,
                 message: `History in a comment ("${match[0]}"). State what is true now; history goes in the commit.`,
               });
+          }
+        },
+      };
+    },
+  },
+  "no-lint-violation-ok": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Each lint-violation-ok escape is counted." },
+      schema: [],
+    },
+    create(context) {
+      const sourceCode = context.sourceCode;
+      return {
+        Program() {
+          for (const comment of sourceCode.getAllComments()) {
+            const start = comment.range[0] + 2;
+            for (const match of comment.value.matchAll(VIOLATION_OK)) {
+              const at = sourceCode.getLocFromIndex(start + match.index);
+              context.report({
+                loc: { start: at, end: { ...at, column: at.column + 17 } },
+                message: match[1]
+                  ? "`lint-violation-ok` silences a violations finder. Each one is counted; a new one needs a Ratchet-raise with its reason."
+                  : "`lint-violation-ok` with no reason. Write `// lint-violation-ok: <reason>` on one line.",
+              });
+            }
           }
         },
       };
@@ -801,6 +830,14 @@ export const ratchetConfig = [
     rules: {
       "ratchet/no-unregistered-fallback": ["error", { zeroDefaults: true }],
     },
+  },
+  {
+    // Owner Q10c: every escape the finders honor, wherever they read. The
+    // finders' own file names the marker rather than using it.
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "scripts/**/*.ts"],
+    ignores: ["tests/lint/violations.test.ts"],
+    plugins: { ratchet: ratchetPlugin },
+    rules: { "ratchet/no-lint-violation-ok": "error" },
   },
   {
     // The helpers themselves.

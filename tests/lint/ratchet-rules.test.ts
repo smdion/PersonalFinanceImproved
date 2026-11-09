@@ -190,6 +190,59 @@ describe("ratchet/no-abbreviation", () => {
   }, 30_000);
 });
 
+describe("ratchet/no-lint-violation-ok (owner Q10c)", () => {
+  it("counts each escape in a line, block or JSX comment, with a reason or without", () => {
+    const messages = linter.verify(
+      [
+        "const a = 1; // lint-violation-ok: fixture",
+        "/* lint-violation-ok: one */ /* lint-violation-ok:two */",
+        "/**",
+        " * lint-violation-ok: first, lint-violation-ok: second",
+        " */",
+        "const b = <div>{/* lint-violation-ok: JSX */}</div>;",
+        "// the reason is missing. lint-violation-ok",
+        "const c = 'lint-violation-ok: in a string, not a comment';",
+      ].join("\n"),
+      [
+        {
+          files: ["**/*.jsx"],
+          plugins: { ratchet: ratchetPlugin },
+          languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+          rules: { "ratchet/no-lint-violation-ok": "error" },
+        },
+      ],
+      "component.jsx",
+    );
+    expect(messages.map((m) => [m.line, m.column])).toEqual([
+      [1, 17],
+      [2, 4],
+      [2, 33],
+      [4, 4],
+      [4, 30],
+      [6, 20],
+      [7, 27],
+    ]);
+    expect(messages.at(-1)!.message).toContain("no reason");
+    expect(messages[0]!.message).not.toContain("no reason");
+  });
+
+  it("covers src, tests and scripts, not the finders' own file", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const a = 1; // lint-violation-ok: fixture\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-lint-violation-ok",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(await counted("tests/demo/part.test.ts")).toBe(true);
+    expect(await counted("scripts/demo-part.ts")).toBe(true);
+    expect(await counted("tests/lint/violations.test.ts")).toBe(false);
+  }, 30_000);
+});
+
 describe("ratchet/no-clock-read", () => {
   it("counts new Date() with no argument, also inside a call, and Date.now()", () => {
     expect(

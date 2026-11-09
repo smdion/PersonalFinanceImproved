@@ -62,6 +62,9 @@
     },
     "ratchet/no-unlabeled-control": {
       "count": 2
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-sections.tsx": {
@@ -491,6 +494,9 @@
     },
     "ratchet/no-raw-button": {
       "count": 5
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/portfolio/page.tsx": {
@@ -658,6 +664,9 @@
   "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/tax-buckets/tax-buckets-sections.tsx": {
@@ -2253,6 +2262,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/components/performance/update-performance-form.tsx": {
@@ -2270,6 +2282,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 6
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/components/performance/year-range-picker.tsx": {
@@ -2357,6 +2372,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 6
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
@@ -2515,6 +2533,9 @@
     },
     "ratchet/no-raw-button": {
       "count": 2
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 2
     }
   },
   "src/components/portfolio/snapshot-draft.ts": {
@@ -2528,6 +2549,11 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/components/portfolio/summary-table.tsx": {
+    "ratchet/no-lint-violation-ok": {
       "count": 1
     }
   },
@@ -2586,6 +2612,9 @@
   "src/components/retirement-projection/account-notes.ts": {
     "ratchet/max-comment-lines": {
       "count": 9
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/balance-cell.tsx": {
@@ -5689,6 +5718,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 2
     }
   },
   "src/lib/pure/advice/report/executive-summary.ts": {
@@ -5737,6 +5769,9 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 2
     }
   },
   "src/lib/pure/advice/report/year-table.ts": {
@@ -6875,6 +6910,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 6
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
     }
   },
   "src/lib/pure/investments/fund-findings.ts": {
@@ -7155,6 +7193,11 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/paycheck/taxable-wages.ts": {
+    "ratchet/no-lint-violation-ok": {
       "count": 1
     }
   },
@@ -7763,6 +7806,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-lint-violation-ok": {
+      "count": 2
     }
   },
   "src/lib/utils/demo-session.ts": {
@@ -9383,6 +9429,31 @@
   },
   "src/workers/monte-carlo-worker.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    }
+  },
+  "tests/pure/investments/deposit-check.test.ts": {
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    }
+  },
+  "tests/routers/account-insights.test.ts": {
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    }
+  },
+  "tests/routers/investment-suggestions.test.ts": {
+    "ratchet/no-lint-violation-ok": {
+      "count": 2
+    }
+  },
+  "tests/routers/investments.test.ts": {
+    "ratchet/no-lint-violation-ok": {
+      "count": 1
+    }
+  },
+  "tests/routers/roth-ira-inputs.test.ts": {
+    "ratchet/no-lint-violation-ok": {
       "count": 1
     }
   }

@@ -43,9 +43,9 @@ function describeTierRate(
     if (source === "roth") {
       return "cheapest available — already-taxed Roth contributions are always tax-free, or this is Roth growth taxed at your current 0% bracket";
     }
-    // `source` is WithdrawalTier's cost-ranking source kind, not an
-    // AccountCategory — coincidentally overlapping strings, different
-    // domain, no account-types.ts predicate applies. lint-violation-ok
+    // lint-violation-ok: `source` is WithdrawalTier's cost-ranking kind, not
+    // an AccountCategory; the strings overlap, so no account-types.ts
+    // predicate applies.
     if (source === "brokerage") {
       return "cheapest available — inside your 0% capital-gains bracket, so these gains aren't taxed";
     }
