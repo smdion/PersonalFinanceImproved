@@ -1,34 +1,9 @@
 "use client";
 
 /**
- * The assumptions band sits directly above the Retirement Projection
- * chart so the household can "play" with the projection without going
- * back and forth to the Budget page's Retirement Profiles tab.
- *
- * Copies the Paycheck page's pattern exactly, per §05's explicit finding
- * that a new mechanism (an unsaved draft, a Play-toggle fork) wasn't
- * needed — the app already has one:
- *   - A selector that switches the active Retirement profile (same write
- *     as the header's picker — there's no "viewing another profile" here)
- *   - The SAME shared padlock every profile surface uses (EditLockToggle,
- *     EDIT_LOCK_KEYS.profileEditLocked)
- *   - Unlocked -> click a chip -> writes straight to the profile, then
- *     invalidates. No draft, no dirty state, no Save button.
- *
- * Non-admin exploration (§08 "Non-admins can explore, not save") is
- * DEFERRED — out of scope for this pass. Non-admins see the same
- * always-locked, read-only summary the Retirement tab (Income section)
- * already gives them, with the disabled padlock explaining why (closing
- * the §05 consistency gap alongside Paycheck's — see edit-lock-toggle.tsx).
- *
- * Only chips with a REAL, currently-writable `retirement_settings` /
- * `retirement_profile_people` field are included. The design plan's §06
- * taxonomy also named a "Healthcare — pre-65 annual cost" chip; no such
- * column exists on either table (healthcare cost lives, if anywhere, as a
- * budget line item, not a retirement setting) — verified against the
- * schema before implementing, and dropped rather than invented. Routing
- * mode is similarly dropped: its UI doesn't currently exist as a chip-sized
- * control to link out to.
+ * Assumptions band above the Retirement Projection chart: an active-profile selector, the shared
+ * edit padlock, and chips that write straight to the profile (no draft, no Save). Non-admins see
+ * it locked. Only fields with a writable `retirement_settings`/`retirement_profile_people` column.
  */
 
 import { useState, type ReactNode } from "react";

@@ -1,11 +1,6 @@
 /**
- * Income section. Sits in
- * the left column of the Projection Assumptions card alongside Timeline,
- * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
- * and the Contribution Profile picker.
- *
- * The `decimalToWhole` helper lives in `./helpers` and is shared across the
- * retirement sections that need it (not duplicated locally).
+ * Income section (left column of Projection Assumptions, beside Timeline): Household Salary
+ * (read-only), Pre-Retirement Raise, Salary Cap, and the Contribution Profile picker.
  */
 "use client";
 
@@ -27,10 +22,8 @@ import { decimalToWhole } from "./helpers";
 type Props = {
   settings: Settings;
   combinedSalary: number | null | undefined;
-  /** id/name for every household member — joined against salaryByPerson to
-   *  build the hover breakdown. Omit (or leave salaryByPerson empty) for a
-   *  single-person household; the breakdown only adds value once there's
-   *  more than one number to break down. */
+  /** id/name for every household member, joined against salaryByPerson for the hover
+   *  breakdown. Omit (or leave salaryByPerson empty) for a single-person household. */
   people?: { id: number; name: string }[];
   /** personId -> that person's share of combinedSalary. Same aggregate
    *  (totalComp, includes bonus) as combinedSalary itself — the per-person
@@ -42,10 +35,8 @@ type Props = {
   perPersonSettings?: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
-  /** Per-person "Pre-Retirement Raise" writer. `wholePercent` is a
-   *  whole-number string ("3"), same shape `handleSettingPercentUpdate`
-   *  receives — the handler converts it to a decimal. Required whenever
-   *  `perPersonSettings` has more than one entry. */
+  /** Per-person "Pre-Retirement Raise" writer; `wholePercent` is a whole-number string ("3")
+   *  that the handler converts to a decimal. Required when `perPersonSettings` has 2+ entries. */
   handlePerPersonRaiseRate?: (personId: number, wholePercent: string) => void;
   contributionProfiles: ContributionProfile[];
   contributionProfileId: number | null;

@@ -1,11 +1,6 @@
 /**
- * Investment Returns Glide Path panel. Shows
- * Now/At-Retirement/Post-Retirement/Avg rates plus a
- * darker-is-higher gradient bar summarising the age-based glide path.
- *
- * The entire panel is guarded on `returnRateSummary` being truthy (same guard
- * as the original inline `{returnRateSummary && (...)}` — kept inside the
- * component so the parent can still pass the possibly-null field directly).
+ * Investment Returns Glide Path panel: Now/At-Retirement/Post-Retirement/Avg rates plus a
+ * darker-is-higher gradient bar. Renders nothing when `returnRateSummary` is null.
  */
 "use client";
 

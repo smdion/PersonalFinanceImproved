@@ -188,10 +188,10 @@
     "src/components/retirement-projection/use-projection-derived.ts": 620,
     "src/components/retirement-projection/use-projection-queries.ts": 815,
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
-    "src/components/retirement-projection/utils.ts": 868,
+    "src/components/retirement-projection/utils.ts": 798,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
-    "src/components/retirement/assumptions-band.tsx": 430,
-    "src/components/retirement/retirement-profile-tab.tsx": 557,
+    "src/components/retirement/assumptions-band.tsx": 405,
+    "src/components/retirement/retirement-profile-tab.tsx": 505,
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
@@ -747,7 +747,7 @@
       "useProjectionState": 284
     },
     "src/components/retirement-projection/utils.ts": {
-      "filterYearByParentCategory": 241
+      "filterYearByParentCategory": 209
     },
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 477
@@ -756,10 +756,10 @@
       "AssumptionsBand": 326
     },
     "src/components/retirement/retirement-profile-manager.tsx": {
-      "RetirementProfileManager": 270
+      "RetirementProfileManager": 261
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 485
+      "RetirementProfileTab": 451
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 162

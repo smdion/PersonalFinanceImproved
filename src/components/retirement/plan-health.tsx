@@ -1,31 +1,9 @@
 "use client";
 
 /**
- * PlanHealthCard — single point of UI integration for the plan-health
- * helpers (account order, strategy recommendation, glide path) and the
- * rosy-assumption detector. Renders 0-N callouts based on the user's plan
- * state.
- *
- * Each callout uses a distinct severity color and a one-line action.
- * The card is intentionally minimal (no charts, no interactivity)
- * because its purpose is to surface analytical findings the helpers
- * already computed — not to be a feature surface itself.
- *
- * To use:
- *   <PlanHealthCard
- *     accumulationOrder={settings.accountOrder}
- *     currentAge={primaryAge}
- *     stockAllocationPercent={...}
- *     returnRate={settings.returnRate}
- *     inflationRate={settings.inflationRate}
- *     salaryGrowthRate={settings.salaryGrowthRate}
- *     retirementHorizonYears={settings.endAge - settings.retirementAge}
- *     hasBudgetLink={!!data.accumulationBudgetProfileId}
- *   />
- *
- * Each prop is optional — the card only renders the callouts whose
- * inputs are present, so call sites can pass a partial set as the
- * data becomes available.
+ * PlanHealthCard: 0-N callouts from the plan-health helpers (account order, strategy, glide path)
+ * and the rosy-assumption detector. Every prop is optional; a callout renders only when its
+ * inputs are present.
  */
 
 import { Card } from "@/components/ui/card";
@@ -174,14 +152,8 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
 }
 
 /**
- * Stress test panel. Compares the user's
- * current assumptions against the canonical conservative / baseline /
- * optimistic scenarios from src/lib/pure/simulation/stress-test.ts.
- *
- * Fires the projection.computeStressTest endpoint which re-runs the
- * deterministic engine three times (once per scenario). The resulting
- * nest egg per scenario is rendered alongside the parameter set so
- * users see real outcomes, not just inputs.
+ * Stress test panel: projection.computeStressTest reruns the deterministic engine once per
+ * conservative/baseline/optimistic scenario; each nest egg shows beside its parameters.
  */
 function StressTestPanel({
   userReturnRate,

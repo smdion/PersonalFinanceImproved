@@ -1,8 +1,4 @@
-/**
- * Shared helpers for retirement section components.
- *
- * Previously duplicated in income.tsx and raise-and-rate.tsx.
- */
+/** Shared helpers for retirement section components. */
 import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */

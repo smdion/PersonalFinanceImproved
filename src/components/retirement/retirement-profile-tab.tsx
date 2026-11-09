@@ -1,27 +1,9 @@
 "use client";
 
 /**
- * Retirement Profile tab panel — the "Projection Assumptions" card, moved
- * off the Retirement page onto the Budget page. Straight relocation of a
- * singleton settings editor, not a new profile type: `retirement_settings`
- * still has no name/multi-row shape,
- * still reads/writes through `retirementSettings.upsert` and
- * `projection.getProjectionMetadata` exactly as it did on the
- * Retirement page. This component owns that data-fetching independently
- * (its own `getProjectionMetadata` query, its own persisted-setting state)
- * rather than threading it through `budget-content.tsx`'s existing
- * `budget.computeActiveSummary` query, which is a different shape entirely.
- *
- * The decumulation-budget persisted-setting keys
- * (`retirement_dec_budget_profile_id` / `retirement_decumulation_budget_column`
- * / `retirement_dec_expense_override`) are unchanged from the Retirement
- * page — they're read from `app_settings` (server-side, cross-page), so the
- * Retirement page's `ProjectionCard` (which stayed put) keeps reading the
- * same values this tab writes.
- *
- * Edit controls are gated on `isAdmin(user)` (RULES.md §Permission rule 1 —
- * `retirementSettings.upsert` is `adminProcedure`), carried over unchanged
- * from the Retirement-page fix (Group B).
+ * Retirement Profile tab panel (the Budget page's "Projection Assumptions" card). Runs its own
+ * `getProjectionMetadata` query and writes via `retirementSettings.upsert`; the decumulation-budget
+ * keys live in `app_settings`, shared with the Retirement page. Edits are admin-only.
  */
 
 import { useMemo, useCallback, useRef } from "react";
@@ -73,13 +55,8 @@ import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 export function RetirementProfileTab({
   profileId,
 }: {
-  /** View a specific retirement profile without it needing to be the
-   *  household's globally-active one — same "view without activating"
-   *  contract contributionProfileId/salaryProfileId already have on
-   *  computeProjection (phase 4 of the Retirement Profiles migration).
-   *  Omit to fall back to the active profile (server-side resolution),
-   *  matching this component's original behavior before it had a sibling
-   *  list to view non-active profiles from. */
+  /** Retirement profile to view without activating it; omit to use the active profile
+   *  (resolved server-side). */
   profileId?: number | null;
 } = {}) {
   const currentYear = new Date().getFullYear();
@@ -165,39 +142,15 @@ export function RetirementProfileTab({
     { placeholderData: (prev) => prev },
   );
   const { data } = metadata;
-  // Multi-year withdrawal-policy optimizer — queried
-  // here (not inside TaxesSection, a documented pure-presentational leaf)
-  // so it can be passed down as a plain prop, same pattern as CoastFireCard
-  // receiving coastFireMcResult. Queried with `baseInput` — NOT `{}` (a
-  // prior version passed `{}` on the reasoning that "no accumulation/
-  // decumulation overrides need threading," which is true but doesn't
-  // cover `retirementProfileId`/`contributionProfileId`/`salaryProfileId`:
-  // those aren't overrides, they're WHICH household data to resolve
-  // against, and dropping them meant this always ran against the active
-  // profile/global pins even when viewing a different one. `baseInput`
-  // already carries all three (see its own comments above) and is the
-  // same object `getProjectionMetadata` builds its query from, so this can't
-  // drift from what the rest of the tab is showing. staleTime of a few
-  // minutes (not `staleTime: 0` + refetchOnMount: "always"): a household's
-  // balances don't meaningfully change mid-session, matching
-  // plan-health.tsx's stress-test query precedent — explicit, not left to
-  // the query library's default (which would otherwise silently serve a
-  // possibly-very-stale cached response on remount).
+  // Withdrawal-policy optimizer, queried here and passed to TaxesSection as a prop. `baseInput`
+  // carries the viewed profile ids, so it resolves the same data as getProjectionMetadata.
+  // Explicit 5-minute staleTime: balances don't change meaningfully mid-session.
   const bracketOptimizerQuery =
     trpc.projection.computeWithdrawalBracketOptimizer.useQuery(baseInput, {
       staleTime: 5 * 60 * 1000,
     });
-  // This tab holds many separate InlineEdit fields (Timeline, Rule of 55,
-  // Raise-and-Rate, Strategy Params, SS, Taxes, Healthcare), but they all
-  // funnel through this ONE upsertSettings mutation, called once per field
-  // as the household edits. Nothing on THIS page ever shows a recompute is
-  // happening — the Retirement page's ProjectionCard (where the actual
-  // recalculation UI lives) isn't mounted here, so utils.projection.
-  // invalidate() above just marks the data stale for next time, silently
-  // ("does it wait till the portfolio page
-  // is reloaded?" — yes, and there was no confirmation it even queued).
-  // Debounced so a quick burst of edits (several fields in a row) collapses
-  // into ONE toast after saves settle, not one per field.
+  // Every InlineEdit here saves through upsertSettings and nothing on this page shows the
+  // recompute, so a toast confirms it is queued. Debounced: a burst of edits gives one toast.
   const recalcToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notifyRecalcQueued = useCallback(() => {
     if (recalcToastTimer.current) clearTimeout(recalcToastTimer.current);
@@ -264,18 +217,13 @@ export function RetirementProfileTab({
       notifyRecalcQueued();
     },
   });
-  // Same TypeScript inference gap as the Retirement page had — tRPC's
-  // inferred input uses the specific withdrawalStrategy enum union and omits
-  // null from optional strategy fields; our Settings layer mirrors the raw
-  // DB shape (string / string|null). buildSettingsPatch only ever sends
-  // fields Zod accepts.
+  // tRPC infers the narrow withdrawalStrategy union and drops null from optional fields, while
+  // Settings mirrors the raw DB shape; buildSettingsPatch only sends fields Zod accepts.
   const upsertSettingsMutation =
     upsertSettings as unknown as UpsertSettingsMutation; // eslint-disable-line no-restricted-syntax
 
-  // Only ever called with "retirementAge" (single-person household) or
-  // "endAge" ("Projection Through") — both per-person-stored fields on
-  // `retirement_profile_people`, not `retirement_settings`. See the
-  // mutations' docblocks for why this can't go through upsertSettings.
+  // Only called with "retirementAge" or "endAge", both stored per person on
+  // `retirement_profile_people`, so they can't go through upsertSettings.
   const handleRetirementSettingUpdate = useCallback(
     (field: string, value: string) => {
       const settings = data && "settings" in data ? data.settings : null;

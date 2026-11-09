@@ -55,40 +55,9 @@ export const ROTH_CONVERSION_BRACKET_PRESETS = [
   "0.35",
 ];
 
-// Centralized tooltip accent-color lookup — every
-// projection tooltip color, chart or table, single-select or hand-rolled
-// JSX, resolves through here.
-//
-// Corrected twice in the same pass. First pass (wrong): treated "hard to
-// read depending on theme" as a missing-theme-override problem and swapped
-// every broken shade for one of globals.css's `--c-<color>-<shade>`
-// PAGE-theme-remapped overrides. Second pass (this one): these tooltips
-// (both this chart's own hand-rolled Recharts tooltip AND the table's
-// shared `Tooltip` UI primitive, see ui/tooltip.tsx's TOOLTIP_SURFACE_
-// CLASSES) render on a surface that's deliberately dark REGARDLESS of the
-// page's own light/dark setting (bg-slate-900 / dark:bg-slate-700 — both
-// dark, neither theme-adaptive). Routing tooltip TEXT through the
-// PAGE-theme system was solving the wrong layer: the container doesn't
-// track page theme, so text that does track it can end up chosen for the
-// wrong (light-page-assuming) background regardless of which shade number
-// gets picked. Every value below is therefore a STATIC shade -- one with
-// NO `--c-*` override in globals.css, so it resolves to Tailwind's plain
-// default and stays the same fixed, dark-surface-legible color no matter
-// what the page's own theme is set to (the exact "readable on a dark
-// background" role Tailwind's own 300-400 tier exists for). `red` is the
-// one exception: every red-* shade IS remapped (no static option exists in
-// this app), so red-400 is used deliberately -- its own light-page-mode
-// value is still light/saturated enough to read on a dark surface, unlike
-// the darker 600-800 tier (chosen for text-on-white, not text-on-dark).
-//
-// This is the OPPOSITE selection rule from ordinary page content (badges,
-// status text, borders), which correctly SHOULD use the `--c-*` system so
-// it tracks the page's own theme. Don't "fix" these shades again by
-// routing them through `--c-*` overrides — that regresses back to the
-// first, wrong pass. If a NEW tooltip surface is added that IS
-// theme-adaptive (like a page-background card, not a hover tooltip), it
-// needs its OWN color choices via the normal `--c-*`-remapped classes,
-// not this map.
+// Tooltip accent colors for every projection tooltip. Tooltip surfaces are always dark,
+// so these are STATIC shades with no `--c-*` override in globals.css (red-400 is remapped
+// but still reads on dark). Theme-adaptive surfaces use `--c-*` classes, not this map.
 export const tipColorClass: Record<TipColor, string> = {
   green: "text-green-400",
   blue: "text-blue-400",
@@ -194,22 +163,16 @@ export function rowTotal(yearRow: {
   return roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
 }
 
-/** A year narrowed to one parent category's accounts: balances,
- *  contributions and withdrawals are that view's. The engine's
- *  retirementBalance / allAccountsBalance are left as the engine reported
- *  them (they describe the plan, not the view). */
+/** A year narrowed to one parent category's accounts. The engine's
+ *  retirementBalance / allAccountsBalance stay as reported (they describe the
+ *  plan, not the view). */
 export function filterYearByParentCategory(
   yearRow: EngineYearProjection,
   parentCategory: string,
 ): EngineYearProjection {
-  // No individual-account data to filter by at all (MC "Simple" tax mode —
-  // see monte-carlo.ts's Simple-mode block — has no per-account/parent-
-  // category structure left once it collapses to one fictional bucket).
-  // Filtering by parent category is meaningless here; returning `yearRow`
-  // unchanged is the honest degradation, not zeroing every balance/
-  // withdrawal field below to match an empty account list (Rate-Seeded
-  // showed $0 balances everywhere because this function was doing exactly
-  // that).
+  // No individual-account data (MC "Simple" tax mode collapses to one
+  // fictional bucket): filtering is meaningless, so return the year unchanged
+  // rather than zeroing every balance.
   if (yearRow.individualAccountBalances.length === 0) return yearRow;
   const filtered = yearRow.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
@@ -277,12 +240,9 @@ export function filterYearByParentCategory(
     }
   }
   if (yearRow.phase !== "decumulation") {
-    // Contributions rescoped to the same accounts as the balances: the
-    // engine routes per category (a household-wide brokerage slot holds a
-    // Portfolio account's money too), so each slot and total is rebuilt from
-    // what the kept accounts actually received. Routing flags (caps,
-    // remaining space, overflow amounts) stay household-wide — they describe
-    // a real global constraint, as for withdrawals below.
+    // Contributions rebuilt from what the kept accounts received (the engine
+    // routes per category). Routing flags (caps, remaining space, overflow)
+    // stay household-wide, as for withdrawals below.
     const sum = (
       rows: typeof filtered,
       pick: (ia: (typeof filtered)[number]) => number,
@@ -331,18 +291,9 @@ export function filterYearByParentCategory(
     };
   }
 
-  // Rescope withdrawals to the same account subset as the balances above —
-  // otherwise a filtered "After-tax: $32k" balance sits next to an
-  // unfiltered "Brokerage: -$30k" withdrawal that was mostly drawn from a
-  // Portfolio-parented account this page never shows, making it look like
-  // the account is being overdrawn. `slots` has no per-account structure
-  // in the engine (it's a per-category routing decision), so this sums the
-  // withdrawal each filtered *account* actually recorded rather than
-  // re-deriving what routing would have decided for a smaller pool — the
-  // routing-decision flags below (cappedByAccount/cappedByTaxType/
-  // remainingNeed) are left as the true household-wide values since they
-  // reflect a real global constraint (bracket-filling, account limits) that
-  // doesn't change based on this page's display-only account grouping.
+  // Withdrawals rescoped to the balances' account subset by summing what each
+  // kept account recorded. Routing flags (cappedByAccount/cappedByTaxType/
+  // remainingNeed) stay household-wide: they reflect a real global constraint.
   const filteredSlots = yearRow.slots.map((slot) => {
     const catIabs = filtered.filter((ia) => ia.category === slot.category);
     const cfg = getAccountTypeConfig(slot.category);
@@ -396,24 +347,9 @@ export function filterYearByParentCategory(
     filteredSlots.reduce((s, sl) => s + sl.rothWithdrawal, 0),
   );
 
-  // Rescope targetWithdrawal/taxCost by the SAME filtered/unfiltered ratio
-  // as the slots above, instead of leaving them at their household-wide
-  // values. Leaving targetWithdrawal
-  // household-wide while totalWithdrawal is Retirement-scoped meant a
-  // FULLY-funded plan could still compare as "underfunded" — the amber
-  // withdrawal-cell coloring, the tooltip's "Eff. rate = tax / withdrawal"
-  // claim, and a literal false SHORTFALL string in diag mode all read off
-  // that same mismatch. taxCost is prorated the same way, matching the
-  // proration this function already applies to basis/gains above —
-  // effectiveTaxRate (taxCost/totalWithdrawal) is invariant under a
-  // shared scale factor, so it stays correct with no separate change.
-  // projectedExpenses/rmdAmount/qcdAmount/rmdExcessAmount are
-  // DELIBERATELY left household-wide: RMD is a real IRS obligation on the
-  // full Traditional balance regardless of account grouping (same
-  // rationale rmd-smoothing.ts's docblock gives for never scoping the
-  // balance an RMD is measured against), and projectedExpenses is the
-  // household's real stated spending need, independent of which accounts
-  // this display-only filter happens to be scoped to.
+  // targetWithdrawal/taxCost scale by the same ratio as the slots, so a fully
+  // funded scoped plan never reads as underfunded (effectiveTaxRate is
+  // unchanged). Expenses and RMD/QCD figures stay household-wide obligations.
   const targetRatio = canonicalSafeDivide(
     totalWithdrawal,
     yearRow.totalWithdrawal,
@@ -643,11 +579,8 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-// Moved to lib/pure/advice/report/withdrawal-strategy-narrative.ts so
-// the retirement advisor report can reuse them without a pure module
-// importing this component-layer file — re-exported here so the existing
-// tooltip call sites (projection-table-decum-row.tsx) don't need to change
-// their import path.
+// Re-exported from lib/pure so the advisor report and the tooltip call sites
+// share one implementation.
 export {
   formatDiscretionaryTierBreakdown,
   formatRmdDivisorDetail,
@@ -779,9 +712,7 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Guardrail/strategy event styling, shared by the Balance chart's
-// ReferenceLine markers and the table's "Total Withdrawals" tooltip so the
-// two never drift on color or wording.
+// Guardrail/strategy event styling, shared by chart markers and table tooltip.
 // ---------------------------------------------------------------------------
 
 type StrategyEventStyle = {
@@ -791,9 +722,8 @@ type StrategyEventStyle = {
 };
 
 /** Per-strategy spending-adjustment event styling, keyed by
- *  `EngineDecumulationYear.strategyAction`. Percent context (raise/cut/
- *  ceiling/floor %) comes straight from the household's own settings —
- *  the actual % applied that year, not a guess. */
+ *  `EngineDecumulationYear.strategyAction`. Percent context comes from the
+ *  household's own settings (the % actually applied that year). */
 export function buildStrategyEventStyle(
   engineSettings:
     | {
