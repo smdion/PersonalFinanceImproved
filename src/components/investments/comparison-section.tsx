@@ -56,7 +56,7 @@ function windowLabel(w: { value: number; annualized: boolean } | null) {
   return `${formatPercent(w.value, 1)}${w.annualized ? " a year" : " so far"}`;
 }
 
-type ComparisonData = RouterOutputs["investments"]["getComparison"];
+type ComparisonData = RouterOutputs["investments"]["computeComparison"];
 
 /** One chart point per year end: your balance, what you put in, and each index run. */
 function chartPoints(
@@ -109,7 +109,7 @@ function RangeCell({
 
 export function ComparisonSection() {
   const [fromYear, setFromYear] = useState<number | undefined>(undefined);
-  const { data, isLoading } = trpc.investments.getComparison.useQuery({
+  const { data, isLoading } = trpc.investments.computeComparison.useQuery({
     fromYear,
   });
   // Shared with the Performance page's index column.
@@ -123,7 +123,7 @@ export function ComparisonSection() {
   const fullYears = (data?.years ?? [])
     .filter((y) => !y.partial)
     .map((y) => y.year);
-  const { data: expected } = trpc.investments.getYearReturnRanges.useQuery(
+  const { data: expected } = trpc.investments.computeYearReturnRanges.useQuery(
     { preset: simulationPreset, years: fullYears },
     { enabled: fullYears.length > 0 },
   );

@@ -141,7 +141,7 @@ export const investmentComparisonRouter = createTRPCRouter({
   /** The range of one year's return the Simulation expects for each year,
    *  at the primary person's age that year on the chosen preset's glide path —
    *  today's assumptions, not what was known then. */
-  getYearReturnRanges: portfolioProcedure
+  computeYearReturnRanges: portfolioProcedure
     .input(
       z.object({
         preset: z.enum(SIMULATION_PRESET_KEYS),
@@ -177,7 +177,7 @@ export const investmentComparisonRouter = createTRPCRouter({
       };
     }),
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
-  getComparison: portfolioProcedure
+  computeComparison: portfolioProcedure
     .input(z.object({ fromYear: z.number().int().optional() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.accountPerformance);

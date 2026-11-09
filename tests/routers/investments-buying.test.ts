@@ -18,7 +18,7 @@ function monthDay(back: number, day = 15): string {
   return calendarDateOf(d);
 }
 
-describe("investments.getBuyingMonths", () => {
+describe("investments.computeBuyingMonths", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
 
   beforeAll(async () => {
@@ -85,7 +85,7 @@ describe("investments.getBuyingMonths", () => {
   afterAll(() => ctx.cleanup());
 
   it("bought, then a covered month without a deposit", async () => {
-    expect(await ctx.caller.investments.getBuyingMonths()).toEqual([
+    expect(await ctx.caller.investments.computeBuyingMonths()).toEqual([
       { month: monthDay(2).slice(0, 7), state: "invested" },
       { month: monthDay(1).slice(0, 7), state: "notInvested" },
     ]);
@@ -95,7 +95,9 @@ describe("investments.getBuyingMonths", () => {
     const viewer = await createTestCaller(
       createViewerSessionWithPermissions([]),
     );
-    await expect(viewer.caller.investments.getBuyingMonths()).rejects.toThrow();
+    await expect(
+      viewer.caller.investments.computeBuyingMonths(),
+    ).rejects.toThrow();
     viewer.cleanup();
   });
 });

@@ -35,8 +35,8 @@ const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
   ["dashboard: networth.computeSummary", (c) => c.networth.computeSummary()],
   ["assets: assets.computeSummary", (c) => c.assets.computeSummary({})],
   [
-    "benchmarks: investments.getComparison",
-    (c) => c.investments.getComparison({}),
+    "benchmarks: investments.computeComparison",
+    (c) => c.investments.computeComparison({}),
   ],
   [
     "benchmarks: investments.getHoldingsOverview",

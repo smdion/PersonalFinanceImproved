@@ -201,7 +201,7 @@ describe("investments router", () => {
   });
 
   it("reports holdings an account stopped sending", async () => {
-    const health = await ctx.caller.investments.getHealth();
+    const health = await ctx.caller.investments.computeHealth();
     expect(health.issues).toContainEqual(
       expect.objectContaining({
         account: "Example Bank sf-ira",
@@ -213,8 +213,11 @@ describe("investments router", () => {
   it("splits only when stored transactions reach back to the snapshot", async () => {
     // No complete ingest recorded yet → coverage unknown.
     expect(
-      (await ctx.caller.investments.getSnapshotFlows({ since: daysAgo(10) }))
-        .covered,
+      (
+        await ctx.caller.investments.computeSnapshotFlows({
+          since: daysAgo(10),
+        })
+      ).covered,
     ).toBe(false);
     ctx.db
       .insert(sqliteSchema.appSettings)
@@ -223,7 +226,7 @@ describe("investments router", () => {
         value: new Date().toISOString(),
       })
       .run();
-    const recent = await ctx.caller.investments.getSnapshotFlows({
+    const recent = await ctx.caller.investments.computeSnapshotFlows({
       since: daysAgo(10),
     });
     expect(recent.covered).toBe(true);
@@ -233,8 +236,11 @@ describe("investments router", () => {
     ).toBe(true);
     // A snapshot older than SimpleFIN's 90-day window can't be split.
     expect(
-      (await ctx.caller.investments.getSnapshotFlows({ since: daysAgo(120) }))
-        .covered,
+      (
+        await ctx.caller.investments.computeSnapshotFlows({
+          since: daysAgo(120),
+        })
+      ).covered,
     ).toBe(false);
   });
 
@@ -261,7 +267,7 @@ describe("investments router", () => {
       })
       .returning()
       .get().id;
-    const flows = await ctx.caller.investments.getSnapshotFlows({
+    const flows = await ctx.caller.investments.computeSnapshotFlows({
       since: daysAgo(10),
     });
     expect(flows.recent.some((r) => r.id === id)).toBe(false);
@@ -414,7 +420,7 @@ describe("investments router", () => {
       /Example Old Plan/,
     );
     // A Performance fill leaves it out instead of counting new money.
-    const fill = await ctx.caller.investments.suggestPerformance({ year });
+    const fill = await ctx.caller.investments.listPerformanceFills({ year });
     const receiving = fill.accounts.find((x) =>
       x.leftOut?.from.includes("Example Old Plan"),
     );
@@ -431,18 +437,22 @@ describe("investments router", () => {
     ]) {
       const other = await createTestCaller(session);
       try {
-        await expect(other.caller.investments.getHealth()).rejects.toThrow();
         await expect(
-          other.caller.investments.getSnapshotFlows({ since: "2026-01-01" }),
+          other.caller.investments.computeHealth(),
         ).rejects.toThrow();
         await expect(
-          other.caller.investments.getAccountInsights(),
+          other.caller.investments.computeSnapshotFlows({
+            since: "2026-01-01",
+          }),
+        ).rejects.toThrow();
+        await expect(
+          other.caller.investments.computeAccountInsights(),
         ).rejects.toThrow();
         await expect(
           other.caller.investments.getHoldingsOverview(),
         ).rejects.toThrow();
         await expect(
-          other.caller.investments.suggestPerformance({ year: 2026 }),
+          other.caller.investments.listPerformanceFills({ year: 2026 }),
         ).rejects.toThrow();
       } finally {
         other.cleanup();
@@ -453,7 +463,7 @@ describe("investments router", () => {
     );
     try {
       await expect(
-        allowed.caller.investments.getAccountInsights(),
+        allowed.caller.investments.computeAccountInsights(),
       ).resolves.toEqual([]);
     } finally {
       allowed.cleanup();

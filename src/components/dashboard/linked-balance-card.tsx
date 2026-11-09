@@ -281,7 +281,7 @@ function LinkedBalanceCardImpl() {
   // What was paid in since the snapshot needs the portfolio permission.
   const canSeeActivity = hasPermission(useUser(), "portfolio");
   const flowsSince = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
-  const { data: flows } = trpc.investments.getSnapshotFlows.useQuery(
+  const { data: flows } = trpc.investments.computeSnapshotFlows.useQuery(
     { since: flowsSince ?? "" },
     { enabled: isConnected && canSeeActivity && !!flowsSince },
   );

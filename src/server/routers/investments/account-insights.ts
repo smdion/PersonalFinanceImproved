@@ -30,7 +30,7 @@ import {
 import { valueHoldings } from "@/server/services/investments/holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
-  getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
+  computeAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
     const today = utcDayOf(ctx.scope.asOf);
     const since = addDays(today, -RECENT_ACTIVITY_DAYS);
     const [context, accounts, mix, holdings, coverage, perfRows] =

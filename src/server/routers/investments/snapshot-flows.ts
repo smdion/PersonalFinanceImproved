@@ -27,7 +27,7 @@ export const investmentSnapshotFlowsRouter = createTRPCRouter({
    * accounts (the Live Balance change's scope), whether stored transactions
    * reach back that far, and the latest few money movements.
    */
-  getSnapshotFlows: portfolioProcedure
+  computeSnapshotFlows: portfolioProcedure
     .input(z.object({ since: z.iso.date() }))
     .query(async ({ ctx, input }) => {
       const [linked, coverageStart, rows] = await Promise.all([

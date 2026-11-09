@@ -73,9 +73,12 @@ export function useMilestones(): {
   const holdings = trpc.investments.getHoldingsOverview.useQuery(undefined, {
     enabled: withHoldings,
   });
-  const buyingMonths = trpc.investments.getBuyingMonths.useQuery(undefined, {
-    enabled: withHoldings,
-  });
+  const buyingMonths = trpc.investments.computeBuyingMonths.useQuery(
+    undefined,
+    {
+      enabled: withHoldings,
+    },
+  );
   const brokerageGoals = trpc.brokerage.listGoals.useQuery(undefined, {
     enabled: withBrokerageGoals,
   });

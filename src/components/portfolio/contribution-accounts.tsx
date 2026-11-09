@@ -44,7 +44,7 @@ export function ContributionAccountsSettings() {
     trpc.networth.portfolioSnapshots.getLatest.useQuery();
   // SimpleFIN detail per account — hidden (no error) without the portfolio
   // permission these need.
-  const { data: insights } = trpc.investments.getAccountInsights.useQuery(
+  const { data: insights } = trpc.investments.computeAccountInsights.useQuery(
     undefined,
     { retry: false },
   );

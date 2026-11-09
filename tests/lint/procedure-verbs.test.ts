@@ -16,8 +16,6 @@ const VERB = /^(?:get|list|compute)(?:[A-Z]|$)/;
 /** Queries named before the rule; each is renamed with its callers. */
 const OFF_PREFIX_KNOWN = [
   "contributionProfile.compareData",
-  "investments.suggestBasis",
-  "investments.suggestPerformance",
   "investments.suggestSnapshot",
   "projection.analyzeStrategy",
   "projection.compareWithdrawalStrategies",

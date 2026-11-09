@@ -30,7 +30,7 @@ export function useDataSourceStatuses() {
   const { data: taxDataStatus } = trpc.settings.taxData.getStatus.useQuery();
   const user = useUser();
   // Holdings checks name accounts and values: portfolio permission only.
-  const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
+  const { data: investmentHealth } = trpc.investments.computeHealth.useQuery(
     undefined,
     {
       enabled: !!simplefinStatus?.connected && hasPermission(user, "portfolio"),

@@ -487,7 +487,7 @@ export function buildMilestoneInput(raw: {
     filingStatus?: string;
   } | null;
   highIncomeThreshold: number;
-  /** SimpleFIN deposit months (investments.getBuyingMonths). */
+  /** SimpleFIN deposit months (investments.computeBuyingMonths). */
   buyingMonths?: BuyingMonth[] | null;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;

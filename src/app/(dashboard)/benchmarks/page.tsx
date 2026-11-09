@@ -10,7 +10,7 @@ import { BenchmarksContent } from "./benchmarks-content";
 export default async function BenchmarksPage() {
   const dehydratedState = await prefetchForPage(async (helpers) => {
     await Promise.all([
-      helpers.investments.getComparison.prefetch({}).catch(() => undefined),
+      helpers.investments.computeComparison.prefetch({}).catch(() => undefined),
     ]);
   });
 

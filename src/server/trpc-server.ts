@@ -59,7 +59,7 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
     h.sync.getSyncStatus.prefetch(),
     h.simplefin.getStatus.prefetch(),
     h.sec.getStatus.prefetch(),
-    h.investments.getHealth.prefetch(),
+    h.investments.computeHealth.prefetch(),
     h.contributionProfile.list.prefetch(),
     h.contributionProfile.compareData.prefetch(),
     h.salaryProfile.list.prefetch(),

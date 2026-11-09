@@ -16,7 +16,7 @@ import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: fixture dates compared as UTC days
 
-describe("getAccountInsights", () => {
+describe("computeAccountInsights", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
   let plan: number;
   let ira: number;
@@ -161,7 +161,7 @@ describe("getAccountInsights", () => {
   });
 
   it("reports live balance, link coverage and the deposit check per account", async () => {
-    const rows = await ctx.caller.investments.getAccountInsights();
+    const rows = await ctx.caller.investments.computeAccountInsights();
     const by = new Map(rows.map((r) => [r.performanceAccountId, r]));
     expect(by.get(plan)).toMatchObject({
       status: "linked",

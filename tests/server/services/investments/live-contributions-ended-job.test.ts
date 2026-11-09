@@ -129,7 +129,7 @@ async function figures(seeded: Awaited<ReturnType<typeof seedDana>>) {
   const live = (await loadLiveContributions(ctx.db as never, REQUEST)).find(
     (c) => c.performanceAccountId === perfId,
   )!;
-  const savings = await ctx.caller.investments.getSavingsThisYear();
+  const savings = await ctx.caller.investments.computeSavingsThisYear();
   return { then, live, pace: toPaceInput(live), savings };
 }
 

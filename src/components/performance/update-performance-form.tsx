@@ -40,7 +40,7 @@ export function UpdatePerformanceForm({
   });
 
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.suggestPerformance.useQuery(
+  const { data: suggestions } = trpc.investments.listPerformanceFills.useQuery(
     { year: currentYear },
     { retry: false },
   );

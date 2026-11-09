@@ -225,7 +225,7 @@ describe("investment suggestions", () => {
   afterAll(() => ctx.cleanup());
 
   it("adds what came in since the last update onto each Performance row", async () => {
-    const s = await ctx.caller.investments.suggestPerformance({ year: 2026 });
+    const s = await ctx.caller.investments.listPerformanceFills({ year: 2026 });
     const by = new Map(s.accounts.map((a) => [a.accountPerformanceId, a]));
 
     // Alice: $500 deposited; the conversion is a move within her own row.
@@ -260,8 +260,8 @@ describe("investment suggestions", () => {
     vi.setSystemTime(new Date("2026-10-12T12:00:00"));
     try {
       const [pace, perf] = await Promise.all([
-        ctx.caller.investments.getSavingsThisYear(),
-        ctx.caller.investments.suggestPerformance({ year: 2026 }),
+        ctx.caller.investments.computeSavingsThisYear(),
+        ctx.caller.investments.listPerformanceFills({ year: 2026 }),
       ]);
       const brokerage = perf.accounts.find(
         (a) => a.accountPerformanceId === ap.brokerage,
@@ -284,7 +284,7 @@ describe("investment suggestions", () => {
   });
 
   it("offers only what a saved fill hasn't counted, late arrivals included", async () => {
-    const before = await ctx.caller.investments.suggestPerformance({
+    const before = await ctx.caller.investments.listPerformanceFills({
       year: 2026,
     });
     const bobRow = before.accounts.find(
@@ -312,7 +312,7 @@ describe("investment suggestions", () => {
     // A row that arrives afterwards, dated before the save.
     addTx(feeds.bRoth!, "late", "2026-03-14", "40", "DEPOSIT");
 
-    const after = await ctx.caller.investments.suggestPerformance({
+    const after = await ctx.caller.investments.listPerformanceFills({
       year: 2026,
     });
     const bob = after.accounts.find((a) => a.accountPerformanceId === ap.bob)!;
@@ -323,7 +323,7 @@ describe("investment suggestions", () => {
 
   it("adds Roth contributions and conversions to each person's basis, less money taken out", async () => {
     addTx(feeds.bRoth!, "w1", "2026-03-20", "-100", "WITHDRAWAL");
-    const s = await ctx.caller.investments.suggestBasis({ year: 2026 });
+    const s = await ctx.caller.investments.listBasisFills({ year: 2026 });
     const by = new Map(s.accounts.map((a) => [a.ownerPersonId, a]));
     expect(by.get(alice)).toMatchObject({
       accountBasisId: basis.alice,
@@ -346,7 +346,7 @@ describe("investment suggestions", () => {
   });
 
   it("records a basis fill so it isn't offered again", async () => {
-    const s = await ctx.caller.investments.suggestBasis({ year: 2026 });
+    const s = await ctx.caller.investments.listBasisFills({ year: 2026 });
     const row = s.accounts.find((a) => a.ownerPersonId === bob)!;
     await ctx.caller.taxBuckets.batchUpdateRothBasis({
       entries: [
@@ -365,7 +365,7 @@ describe("investment suggestions", () => {
         counted: row.counted,
       },
     });
-    const again = await ctx.caller.investments.suggestBasis({ year: 2026 });
+    const again = await ctx.caller.investments.listBasisFills({ year: 2026 });
     expect(
       again.accounts.find((a) => a.ownerPersonId === bob)?.added.count,
     ).toBe(0);
@@ -381,7 +381,7 @@ describe("investment suggestions", () => {
 
   it("counts from the start of the year when a row still holds last year's basis", async () => {
     const alice2026 = (
-      await ctx.caller.investments.suggestBasis({ year: 2026 })
+      await ctx.caller.investments.listBasisFills({ year: 2026 })
     ).accounts.find((a) => a.ownerPersonId === alice)!;
     expect(alice2026.baseline).toBe("2026-03-01");
     ctx.db
@@ -396,7 +396,7 @@ describe("investment suggestions", () => {
       })
       .run();
     const again = (
-      await ctx.caller.investments.suggestBasis({ year: 2026 })
+      await ctx.caller.investments.listBasisFills({ year: 2026 })
     ).accounts.find((a) => a.ownerPersonId === alice)!;
     expect(again.baseline).toBe("2025-12-31");
   });
@@ -459,7 +459,7 @@ describe("investment suggestions", () => {
       .set({ value: "2026-03-01T12:00:00Z" })
       .where(eq(sqliteSchema.appSettings.key, "performance_last_updated"))
       .run();
-    const s = await ctx.caller.investments.suggestPerformance({ year: 2026 });
+    const s = await ctx.caller.investments.listPerformanceFills({ year: 2026 });
     const hsaRow = s.accounts.find((a) => a.accountPerformanceId === row)!;
     const to =
       new Date().toISOString().slice(0, 10) < "2026-12-31" // lint-violation-ok: compared as UTC days, as the router does
@@ -492,7 +492,7 @@ describe("investment suggestions", () => {
         estimatedThrough: { [row]: hsaRow.estimate!.through },
       },
     });
-    const again = await ctx.caller.investments.suggestPerformance({
+    const again = await ctx.caller.investments.listPerformanceFills({
       year: 2026,
     });
     expect(
@@ -517,7 +517,7 @@ describe("investment suggestions", () => {
       .where(eq(sqliteSchema.appSettings.key, "simplefin_fill_ledger"))
       .run();
     const linked = (
-      await ctx.caller.investments.suggestPerformance({ year: 2026 })
+      await ctx.caller.investments.listPerformanceFills({ year: 2026 })
     ).accounts.find((a) => a.accountPerformanceId === row)!;
     expect(linked).toMatchObject({
       feed: "linked",
@@ -535,7 +535,7 @@ describe("investment suggestions", () => {
       .run();
     const snap = await ctx.caller.investments.suggestSnapshot();
     expect(snap.amounts.some((r) => r.amount === 6100)).toBe(false);
-    const insights = await ctx.caller.investments.getAccountInsights();
+    const insights = await ctx.caller.investments.computeAccountInsights();
     expect(insights.every((i) => i.live?.total !== 6100)).toBe(true);
     const listed = await ctx.caller.simplefin.listAccounts();
     expect(listed.find((r) => r.id === feeds.brk)).toMatchObject({
@@ -555,7 +555,7 @@ describe("investment suggestions", () => {
     try {
       const { loadLiveContributions, liveYearToDate } =
         await import("@/server/services/investments/live-contributions");
-      const perf = await ctx.caller.investments.suggestPerformance({
+      const perf = await ctx.caller.investments.listPerformanceFills({
         year: 2026,
       });
       const row = perf.accounts.find(
@@ -590,7 +590,7 @@ describe("investment suggestions", () => {
     );
     try {
       await expect(
-        other.caller.investments.suggestPerformance({ year: 2026 }),
+        other.caller.investments.listPerformanceFills({ year: 2026 }),
       ).rejects.toThrow();
     } finally {
       other.cleanup();

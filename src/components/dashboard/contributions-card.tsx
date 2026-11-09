@@ -133,7 +133,7 @@ function ContributionsCardImpl() {
   const { data } = summary;
   // Live status per tracked account (needs the portfolio permission; the
   // card works without it).
-  const { data: pace } = trpc.investments.getSavingsThisYear.useQuery(
+  const { data: pace } = trpc.investments.computeSavingsThisYear.useQuery(
     undefined,
     { retry: false },
   );

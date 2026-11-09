@@ -36,7 +36,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 }));
 
 const CONTRIB = "contribution.computeSummary";
-const PACE = "investments.getSavingsThisYear";
+const PACE = "investments.computeSavingsThisYear";
 /** What contribution.computeSummary answers. */
 function contribQueryIs({
   data,
@@ -50,7 +50,7 @@ function contribQueryIs({
   setQuery(CONTRIB, data);
   setQueryState(CONTRIB, { isLoading, error });
 }
-/** What investments.getSavingsThisYear answers. */
+/** What investments.computeSavingsThisYear answers. */
 function paceQueryIs({ data }: { data: MockOutput<typeof PACE> | undefined }) {
   setQuery(PACE, data);
 }

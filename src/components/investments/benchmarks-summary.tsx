@@ -20,7 +20,7 @@ import { formatPercent } from "@/lib/utils/format";
 export function BenchmarksSummary() {
   const { results } = useMilestones();
   // The same query and benchmark choice as the comparison card below.
-  const { data } = trpc.investments.getComparison.useQuery({
+  const { data } = trpc.investments.computeComparison.useQuery({
     fromYear: undefined,
   });
   const [benchmarkKey] = usePersistedSetting<string>(
