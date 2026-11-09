@@ -1,18 +1,6 @@
 /**
- * The materialized values that hang off a portfolio snapshot's balances,
- * re-derived in exactly one place so the fresh-snapshot path
- * (`portfolioSnapshots.create`) and the latest-snapshot single-balance
- * edit path (`portfolioSnapshots.updateAccount` with `amount`) can never
- * drift (RULES §Single Computation Path).
- *
- * Two concerns, both idempotent:
- *  - `refreshSnapshotYearDerivatives` — `account_performance.ending_balance`
- *    for the snapshot's year + the `annual_performance` category rollups,
- *    when the snapshot is that year's latest and the year isn't finalized.
- *  - `pushSnapshotIfConfigured` — post the snapshot's balances to the
- *    active budget API (YNAB / Actual), if one is configured with account
- *    mappings. `mode: "create"` skips groups already tagged for this
- *    snapshot; `mode: "resync"` deletes the prior tag and re-posts.
+ * The values derived from a portfolio snapshot's balances (Performance ending balances and
+ * rollups, the budget-API push), in one place for both the create and single-balance edit paths.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -98,27 +86,9 @@ export async function loadYearEndSnapshots(
 }
 
 /**
- * Re-derive `account_performance.ending_balance` for the snapshot's year
- * from the snapshot's balances, then bring that year's `annual_performance`
- * rollups in step.
- *
- * Only the year's latest snapshot sets its ending balances: a back-dated
- * snapshot (an earlier date in a year that already has a later one) is
- * history, not the year's current figure. A finalized year is left alone —
- * its year-end figures are settled in Performance, and a snapshot added
- * later doesn't reopen them.
- *
- * `accounts` is the FULL resolved account set for the snapshot — every row
- * that contributes to a perf-account total, already carrying the same
- * closed-master zeroing the row insert used, so this total is never a
- * second, independently-derived view.
- *
- * Does NOT stamp `performance_last_updated` — a snapshot save is
- * independent of performance tracking; only explicit performance edits
- * move that date.
- *
- * Must run inside the same transaction as the balance write. Says whether
- * Performance followed the snapshot, or why not.
+ * Re-derive the year's `ending_balance` and `annual_performance` rollups from the snapshot when
+ * it is the year's latest and the year isn't finalized; `accounts` is the full resolved set.
+ * Leaves `performance_last_updated` alone. Run inside the balance write's transaction.
  */
 type SnapshotPerformanceSync = "synced" | "earlier-snapshot" | "year-finalized";
 
@@ -167,7 +137,7 @@ export async function refreshSnapshotYearDerivatives(
       }
       updatedPerfIds.add(accountPerf.performanceAccountId);
       const newBalance = perfTotals.get(accountPerf.performanceAccountId)!;
-      // A snapshot is a real balance: the ending is no longer an estimate.
+      // A snapshot is a real balance, so the ending is not an estimate.
       await tx
         .update(schema.accountPerformance)
         .set({
@@ -192,10 +162,8 @@ type SnapshotPushResult = {
 };
 
 /**
- * Post a snapshot's balances to the active budget API's tracking accounts,
- * if one is configured with mappings. Never throws — a budget-API failure
- * must not roll back an already-committed snapshot write; the caller
- * decides how loudly to surface `error`.
+ * Post a snapshot's balances to the active budget API, if configured with mappings. Never throws:
+ * a budget-API failure must not roll back a committed snapshot; the caller surfaces `error`.
  */
 export async function pushSnapshotIfConfigured(
   db: DbOrTx,

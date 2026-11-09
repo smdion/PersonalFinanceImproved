@@ -1,10 +1,7 @@
 /**
- * Market prices from Tiingo, fetched on demand and kept in memory — a
- * few requests per held fund a day, inside the free tier: month-end
- * total-return series for benchmarks (12 h), today's close for valuing
- * holdings (6 h). Recent daily closes, for dating and rolling forward
- * linked balances, are kept in the database instead (see
- * getDailyMarketCloses).
+ * Tiingo market prices, fetched on demand and cached in memory within the free tier: month-end
+ * total-return series for benchmarks (12 h), today's close for holdings (6 h). Recent daily
+ * closes are stored in the database instead (getDailyMarketCloses).
  */
 import "server-only";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
@@ -100,12 +97,9 @@ const lastAsked = new Map<string, number>();
 const inFlight = new Map<string, Promise<DailySeries | null>>();
 
 /**
- * Day → close from `from` on, as a total-return series. Closes are kept in
- * the database (market_closes): each is fetched from Tiingo once, so a
- * restart or a rate limit never loses them. Tiingo is asked only for what's
- * missing — the latest close, or an older start — and at most every half
- * hour per ticker. Null when nothing is stored and Tiingo can't be asked.
- * `latest` is the request's valuation date: the close it expects stored.
+ * Day → close from `from` on, as a total-return series stored in market_closes; Tiingo is asked
+ * only for what's missing, at most every half hour per ticker. Null when nothing is stored and
+ * Tiingo can't be asked. `latest` is the valuation date: the close it expects stored.
  */
 export async function getDailyMarketCloses(
   db: Db,

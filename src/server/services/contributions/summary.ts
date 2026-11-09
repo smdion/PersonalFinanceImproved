@@ -200,10 +200,9 @@ export async function computeContributionSummary(
   for (const l of priorYearLimitsRaw)
     priorYearLimitsRecord[l.limitType] = toNumber(l.value);
 
-  // Two independent axes: Salary Profile fills salary gaps left by the
-  // The What-If sandbox's salaries; the Contribution Profile sets
-  // account/job fields only. No explicit salaryProfileId
-  // falls back to the globally-active profile.
+  // Salaries come from the What-If sandbox first; the Salary Profile (no
+  // salaryProfileId = the active one) fills the gaps. The Contribution Profile
+  // sets account/job fields only.
   const effectiveSalaryMap = applySandboxSalaryEntries(
     input?.sandboxSalaryEntries,
     new Map(),
@@ -471,10 +470,8 @@ export async function computeContributionSummary(
           entry.ytdContributions += contributionActual.contributions;
           entry.ytdEmployerMatch += contributionActual.employerMatch;
         }
-        // Blended = actual YTD + stale-gap fill + projected remaining.
-        // Stale gap: periods between last performance update and today,
-        // filled at current projected rate. Actuals are trusted (may
-        // reflect old contribution rates or salary changes).
+        // Blended = actual YTD + stale-gap fill (periods since the last performance
+        // update, at the current projected rate) + projected remaining.
         const remaining = contribRemainingFraction(
           rawContribution.contributionMethod,
           {
@@ -490,10 +487,8 @@ export async function computeContributionSummary(
         const ytdEmp = contributionActual?.contributions ?? 0;
         const ytdMatch = contributionActual?.employerMatch ?? 0;
         if (ytdEmp > 0 || ytdMatch > 0) {
-          // Compute stale gap from performance freshness date.
-          // Only applies to payroll-cadence contributions (percent_of_salary,
-          // fixed_per_period). Monthly/annual contributions follow their own
-          // schedule — a biweekly payday gap doesn't mean they're stale.
+          // Stale gap from the performance freshness date: payroll-cadence methods
+          // only; monthly/annual contributions follow their own schedule.
           let stalePeriods = 0;
           const isPayrollCadence =
             rawContribution.contributionMethod === "percent_of_salary" ||
@@ -560,10 +555,8 @@ export async function computeContributionSummary(
         entry.match += account.employerMatch;
         entry.matchAvailable +=
           account.employerMatchAvailable ?? account.employerMatch;
-        // Four-way tax-treatment split — after_tax and hsa must NOT be
-        // folded into "trad" (that used to silently mislabel taxable
-        // brokerage and HSA dollars as Traditional/pre-tax).
-        // Bonus-check money lands in the same bucket as the account's.
+        // Four-way tax-treatment split: after_tax and hsa are never folded into
+        // "trad". Bonus-check money lands in the same bucket as the account's.
         const withBonus = account.annualContribution + bonusEmp;
         if (isTaxFree(account.taxTreatment)) entry.taxFree += withBonus;
         else if (isAfterTaxTreatment(account.taxTreatment))
@@ -582,10 +575,8 @@ export async function computeContributionSummary(
         categoryMap.set(cat, entry);
       }
 
-      // Determine limits per category — uses resolveContributionLimit with HSA coverage from raw data
-      // Takes the raw DB category key (categoryKey), not the display label
-      // Coverage across every row of the type — family if any row is
-      // family — the same rule the label and the cap use.
+      // Limits per raw DB category key (not the display label). HSA coverage is
+      // family if any row of the type is family, as the label and cap use.
       const { accountTypes } = accountTypeSnapshots(
         rawContribs,
         resolveContributionLimit,
@@ -617,10 +608,9 @@ export async function computeContributionSummary(
         categoryMap,
       );
 
-      // Year-to-date share of a FULL year (checks paid ÷ checks a
-      // year): this page's yearly figures are full-year rates. Not the
-      // snapshot's ytdRatio, which divides by the checks this job pays
-      // this year (it projects this year's own total).
+      // Year-to-date share of a FULL year (checks paid ÷ checks a year): this
+      // page's yearly figures are full-year rates. Not the snapshot's ytdRatio,
+      // which divides by the checks this job pays this year.
       const ytdRatioForTotals = safeDivide(
         checksPaidYtd(
           asOfDate,
@@ -633,10 +623,8 @@ export async function computeContributionSummary(
         0,
       );
 
-      // Salary is a flat number under the active Salary Profile — no
-      // mid-year timeline to blend across any more (see
-      // resolveCompensation's docblock), so blended and projected total
-      // compensation are the same figure.
+      // Salary is a flat number under the active Salary Profile, so blended and
+      // projected total compensation are the same figure.
       const blendedTotalCompensation = totalCompensation;
 
       const totalsViews = computeViewAwareTotals({

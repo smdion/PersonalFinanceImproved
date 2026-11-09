@@ -68,8 +68,8 @@ async function targetByAssetClass(
   glidePath: { age: number; allocations: Record<number, number> }[];
   currentGlidePath:
     { age: number; allocations: Record<number, number> }[] | null;
-  /** The saved current glide path names an asset class that no longer
-   *  exists, so the target falls back to the retirement glide path. */
+  /** The saved current glide path names a missing asset class, so the
+   *  target falls back to the retirement glide path. */
   currentGlidePathStale: boolean;
 }> {
   const [[person], rows, [currentRow], activeClasses] = await Promise.all([
@@ -198,10 +198,8 @@ export async function valueHoldings(
 }
 
 /**
- * Money in the account that isn't in any reported position (an HSA's cash
- * balance, a brokerage's settlement cash): the feed's balance less the
- * positions as the institution valued them, only when both are from the
- * same day (otherwise price moves would read as cash). null = can't tell.
+ * Cash not in any reported position (HSA cash, brokerage settlement): feed balance less the
+ * positions as the institution valued them, only when both are same-day. null = can't tell.
  */
 function uninvestedCash(
   account: { balance: number | null; balanceDay: string | null } | undefined,
@@ -240,10 +238,9 @@ export async function loadHoldingsOverview(db: Db, asOf: Date) {
     valueHoldings(db, holdings, asOf),
     loadBucketLinks(db),
   ]);
-  // Only SimpleFIN accounts linked to a Ledgr account count — an unlinked
-  // feed (a duplicate connection, an old replay, an account Ledgr doesn't
-  // track) would otherwise count the same money twice. Their dollars are
-  // reported so the page can say what's left out.
+  // Only SimpleFIN accounts linked to a Ledgr account count: an unlinked feed
+  // would count the same money twice. Their dollars are reported so the page
+  // can say what's left out.
   const isLinked = (simplefinAccountId: number) =>
     accounts.get(simplefinAccountId)?.performanceAccountId != null;
   const valued = allValued.filter((v) => isLinked(v.simplefinAccountId));

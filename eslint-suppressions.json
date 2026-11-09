@@ -6781,14 +6781,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
     },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
     "ratchet/no-abbreviation": {
       "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -6801,14 +6795,8 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
@@ -6816,9 +6804,6 @@
   },
   "src/server/services/debts/other-liabilities.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6836,9 +6821,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/services/investments/current-balances.ts": {
@@ -6846,9 +6828,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-clock-read": {
@@ -6859,13 +6838,7 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
@@ -6873,17 +6846,11 @@
     }
   },
   "src/server/services/investments/live-contributions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
   },
   "src/server/services/investments/market-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-clock-read": {
       "count": 8
     },
@@ -6891,18 +6858,7 @@
       "count": 3
     }
   },
-  "src/server/services/net-worth/other-assets.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/server/services/net-worth/snapshot-derivatives.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6911,21 +6867,10 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-clock-read": {
       "count": 2
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/services/paycheck/household-totals.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

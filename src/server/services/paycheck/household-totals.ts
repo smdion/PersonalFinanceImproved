@@ -49,11 +49,9 @@ export function householdTotals(
   limitsRecord: Record<string, number>,
   taxYear: number,
 ) {
-  // Household annual income and tax. Federal on the combined income
-  // with ONE standard deduction; FICA per person on FICA wages;
-  // Additional Medicare on the household's combined Medicare wages
-  // above the filing status's liability threshold.
-  // Everyone with pay this year — a current job, or one that ended.
+  // Household income and tax: federal on combined income with ONE standard
+  // deduction; FICA per person; Additional Medicare on combined Medicare wages
+  // above the threshold. Earners = everyone with pay this year.
   const earners = results.filter((r) => r.earnings);
   const householdIncome =
     earners.length > 0

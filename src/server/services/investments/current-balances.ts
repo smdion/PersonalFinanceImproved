@@ -1,8 +1,6 @@
 /**
- * The Current Balances figures: the most accurate balance for each tracked
- * account (lib/pure/accounts/current-balances.ts), part by part, with the market day
- * each feed's data really is from (lib/pure/sync/feed-data-date.ts). Reads only
- * — nothing here is written to a snapshot or to Performance.
+ * Current Balances: the most accurate balance per tracked account, part by part, with the
+ * market day each feed's data is from. Read-only: nothing is written to a snapshot or Performance.
  */
 import { and, desc, eq, gte, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

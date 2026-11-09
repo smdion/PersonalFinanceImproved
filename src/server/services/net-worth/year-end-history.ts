@@ -60,21 +60,9 @@ import { yearEndWealthMetrics } from "@/lib/pure/net-worth/year-end-metrics";
 // ---------------------------------------------------------------------------
 
 /**
- * Build unified year-end history rows from net_worth_annual + annual_performance.
- *
- * This is the single source of truth for historical year-end data, used by both
- * the historical and networth routers. It:
- * 1. Reads all finalized net_worth_annual rows
- * 2. Overlays portfolio data from finalized annual_performance (source of truth)
- * 3. Appends a current-year YTD row from live app state if not yet finalized
- *
- * Eliminates the duplicated logic that previously existed in both routers.
- *
- * Results are cached for 5 seconds to deduplicate concurrent calls (e.g. NetWorth
- * page fires getSummary + getHistory in parallel, both of which call this function).
- * The cache is keyed by the as-of day and the full targeting (budget profile,
- * column, session salaries), so a Plan-pinned or profile-scoped call only ever
- * reads a result built with exactly the same inputs.
+ * Unified year-end history rows: finalized net_worth_annual, overlaid with finalized
+ * annual_performance, plus a live current-year YTD row if not finalized. Cached 5 s, keyed by
+ * the as-of day and the full targeting, so concurrent page calls share one build.
  */
 type YearEndHistoryTargeting = BudgetTargeting;
 
@@ -154,10 +142,8 @@ export async function buildYearEndHistory(
       .orderBy(asc(schema.homeImprovementItems.year)),
   ]);
 
-  // Bonus terms have no live value on a job any more — resolve against the
-  // globally-ACTIVE Salary Profile (this builds a permanent net_worth_annual
-  // record, a "recorded fact," same philosophy as savings.ts's
-  // computeJobNetPayPerCheck).
+  // Bonus terms resolve against the globally-ACTIVE Salary Profile: this
+  // builds a permanent net_worth_annual record, a recorded fact.
   const activeSalaryProfileId = Number(
     settings.find((s) => s.key === SK_ACTIVE_SALARY_PROFILE_ID)?.value ?? NaN,
   );
@@ -197,10 +183,8 @@ export async function buildYearEndHistory(
     return master;
   }
 
-  // Sum employer_contributions per performance category, but only for
-  // accounts whose employer money is a purchase-price discount (e.g. ESPP),
-  // not a real cash match. Used to backfill CategoryPerformance.employerMatchDiscount
-  // without touching the existing employerMatch accumulation logic.
+  // Sum employer_contributions per performance category for accounts whose
+  // employer money is a purchase-price discount (e.g. ESPP), not a cash match.
   function sumDiscountEmployerByCategory(
     rows: typeof accountPerfRows,
   ): Map<string, number> {
@@ -220,10 +204,9 @@ export async function buildYearEndHistory(
     return sums;
   }
 
-  // Build performance portfolio breakdown by year
-  // (from account_performance ending balances, grouped by accountType)
-  // Includes ALL years with account data, not just finalized — so historical page
-  // can show portfolio breakdown even for years without finalized annual rows.
+  // Performance portfolio breakdown by year from account_performance ending
+  // balances, grouped by accountType, for every year with account data
+  // (finalized or not).
   const {
     perfPortfolioByYear,
     allPerfAccountYears,
@@ -231,21 +214,9 @@ export async function buildYearEndHistory(
     perfByCategoryByYear,
   } = yearEndPerformance(accountPerfRows, annualPerfRows, resolveHistoryMaster);
 
-  // 3. Backfill employerMatchDiscount onto perfByCategoryByYear for every
-  // year, whether yearEndPerformance (year-end-rows.ts) filled it from its
-  // branch 1 (finalized) or branch 2 (fallback) — a finalized row has no
-  // per-account breakdown to derive this from, so it's always recomputed
-  // fresh from account_performance rows here instead. Every other field
-  // (contributions, employerMatch, gainLoss, endingBalance) keeps reading
-  // from its original source untouched.
-  //
-  // Only merges onto category keys that already exist in a year's map —
-  // never creates a new partial CategoryPerformance object (which would be
-  // missing gainLoss/endingBalance and produce NaN downstream). Note: a
-  // partially-finalized year can already drop an entire non-finalized
-  // category from this map (see yearEndPerformance's year-level `.has(year)`
-  // check in its branch 2) — this backfill doesn't fix that gap, just avoids
-  // making it worse.
+  // 3. Backfill employerMatchDiscount from account_performance for every year
+  // (a finalized row has no per-account breakdown). Merge only onto existing
+  // category keys: a new partial CategoryPerformance would yield NaN downstream.
   for (const [year, yearMap] of perfByCategoryByYear.entries()) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const discountSums = sumDiscountEmployerByCategory(yearAccounts);
@@ -306,11 +277,9 @@ export async function buildYearEndHistory(
     const perfStamp = findStoredStamp(settings, "performance_last_updated");
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
-    // Typed figure + the debts list + mapped credit cards
-    // (server/services/debts/other-liabilities.ts). Only computed for the CURRENT (isCurrent: true) row; a
-    // finalized past year always reads otherLiabilities from the stored
-    // net_worth_annual row instead (below), which finalizeYear (routers/performance/finalize-year.ts)
-    // writes with this same addition baked in at finalize time.
+    // Typed figure + debts list + mapped credit cards, for the current row only;
+    // a finalized past year reads otherLiabilities from its stored
+    // net_worth_annual row (below), written by finalizeYear the same way.
     const otherLiabilities = (
       await getEffectiveOtherLiabilities(db, { asOf: asOfDate })
     ).total;
@@ -431,11 +400,8 @@ export async function buildYearEndHistory(
       perfByAccount: perfByAccountByYear.get(currentYear) ?? [],
       perfLastUpdated: perfStamp ?? null,
       snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
-      // Calendar-day difference, not a raw ms/86400000 divide — the old
-      // version parsed the date-only snapshotDate as UTC midnight against
-      // Date.now() (a real instant), which reads a same-day snapshot as
-      // already 1 day old for part of every day. Compare local calendar
-      // dates instead.
+      // Local calendar-day difference: the date-only snapshotDate parsed as UTC
+      // midnight would read a same-day snapshot as a day old part of every day.
       snapshotAgeDays: snapshotData
         ? Math.round(
             (localMidnight(asOfDate).getTime() -
@@ -539,10 +505,9 @@ export async function buildYearEndHistory(
           // excluded, not defaulted to a guessed period count.
           if (job.payPeriod == null) continue;
           const ppy = payPeriodConfig(job.payPeriod)?.periodsPerYear ?? 12;
-          // The checks this job has paid out of the ones it pays THIS year
-          // (a job started this year has fewer — none before its start), so
-          // YTD ÷ ratio is this year's own total. Contributions' ytdRatio
-          // divides by a full year's checks instead (full-year rates).
+          // Checks this job has paid out of the ones it pays THIS year (none before
+          // its start), so YTD ÷ ratio is this year's own total. Contributions' ytdRatio
+          // divides by a full year's checks instead.
           const anchor = job.anchorPayDate ?? job.startDate;
           const paid = checksPaidYtd(
             asOf,

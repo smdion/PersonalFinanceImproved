@@ -1,10 +1,7 @@
 /**
- * Money put away so far this year per tracked account, live: what
- * Performance records, what SimpleFIN has seen since the last fill (or the
- * paycheck estimate for an account without transactions), and what's on its
- * way (the plan between the latest posted transaction and today). The
- * Contributions page's Actual YTD / Year-End Estimate views and its
- * per-account status read this — one computation, see contribution router.
+ * Money put away so far this year per tracked account, live: Performance, SimpleFIN since the
+ * last fill (or the paycheck estimate), and the plan from the latest posted transaction to today.
+ * Read by the Contributions page's Actual YTD / Year-End Estimate views and per-account status.
  */
 import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

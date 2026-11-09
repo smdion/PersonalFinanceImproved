@@ -393,14 +393,14 @@
     "src/server/services/contributions/account-edits.ts": 215,
     "src/server/services/contributions/caps.ts": 326,
     "src/server/services/contributions/live-data.ts": 85,
-    "src/server/services/contributions/profile.ts": 367,
-    "src/server/services/contributions/summary.ts": 731,
-    "src/server/services/debts/other-liabilities.ts": 64,
-    "src/server/services/demo/demo-seed.ts": 467,
-    "src/server/services/investments/current-balances.ts": 467,
-    "src/server/services/net-worth/other-assets.ts": 91,
-    "src/server/services/net-worth/year-end-history.ts": 622,
-    "src/server/services/paycheck/household-totals.ts": 122,
+    "src/server/services/contributions/profile.ts": 310,
+    "src/server/services/contributions/summary.ts": 719,
+    "src/server/services/debts/other-liabilities.ts": 54,
+    "src/server/services/demo/demo-seed.ts": 462,
+    "src/server/services/investments/current-balances.ts": 465,
+    "src/server/services/net-worth/other-assets.ts": 85,
+    "src/server/services/net-worth/year-end-history.ts": 587,
+    "src/server/services/paycheck/household-totals.ts": 120,
     "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/paycheck/summary.ts": 685,
     "src/server/services/performance/finalize-year.ts": 449,
@@ -1051,20 +1051,20 @@
       "loadContributionMix": 182
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 645,
-      "computeContributionSummary.results.map()": 423
+      "computeContributionSummary": 633,
+      "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
-      "seedProfile": 451
+      "seedProfile": 446
     },
     "src/server/services/investments/current-balances.ts": {
       "computeCurrentBalances": 375
     },
     "src/server/services/investments/holdings-overview.ts": {
-      "loadHoldingsOverview": 158
+      "loadHoldingsOverview": 157
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 515
+      "buildYearEndHistory": 492
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 223

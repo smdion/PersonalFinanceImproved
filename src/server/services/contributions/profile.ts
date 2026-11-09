@@ -19,14 +19,8 @@ import type { Db } from "@/lib/db";
 import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
 
 /**
- * Resolve a profile against live data, returning effective contribs + salaries.
- *
- * `liveJobSalaries` already reflects the globally active Salary Profile
- * (resolved once by the caller, e.g. loadLiveContribData).
- *
- * Generic over the row shapes so callers can hand in their own richer row
- * types (e.g. full contribution_accounts rows) and get them back unchanged
- * apart from the applied overrides.
+ * Resolve a profile against live data (`liveJobSalaries` already reflects the active
+ * Salary Profile); generic so callers get their own row types back with fields applied.
  */
 export function resolveProfile<
   C extends { id: number },
@@ -61,10 +55,8 @@ export function resolveProfile<
   const activeContribs = liveContribs
     .map((c) => {
       const activeFields = accountActiveFields[String(c.id)];
-      // An entry can legitimately exist for isActive/displayNameCustom/match
-      // fields alone — contributionValue is the specific thing with no
-      // fallback, so that's what determines whether this account resolves
-      // to anything at all.
+      // An entry may hold only other fields; without contributionValue the account
+      // resolves to nothing.
       if (!activeFields || activeFields.contributionValue === undefined)
         return null;
       return {
@@ -81,13 +73,8 @@ export function resolveProfile<
     .filter((c): c is NonNullable<typeof c> => c !== null)
     .filter((c) => c.isActive !== false);
 
-  // Jobs carry no Contribution-Profile-owned fields any more — the deleted
-  // `jobs` active-fields bucket used to let a profile patch employer name /
-  // bonus pay date / bonus-contribution flags; the bonus date moved to the
-  // Salary Profile entry, the flags became each account's own `fromBonus`
-  // election, and employerName lost its profile-override path (see
-  // RULES.md). Pay schedule comes straight from the resolved Salary
-  // Profile entry, same axis as salary itself.
+  // Jobs carry no Contribution-Profile-owned fields; pay schedule comes from the resolved
+  // Salary Profile entry, the same axis as salary.
   const patchedJobs = mergeSalaryProfileJobFields(
     liveJobs,
     salaryProfileActiveMap,
@@ -116,13 +103,8 @@ export function resolveProfile<
 }
 
 /**
- * Apply a contribution profile's active fields to raw DB contribution
- * account rows. Merges all active fields onto the row generically — both DB
- * columns and profile-only fields (e.g. displayNameCustom). The Zod
- * .strict() schema on the write path prevents invalid fields from entering.
- * Rows marked isActive=false are filtered out.
- *
- * accountActiveFields shape: { "accountId": { field: value, ... } }
+ * Contribution rows with a profile's active fields merged on (DB columns and profile-only
+ * fields like displayNameCustom); `isActive=false` rows are filtered out.
  */
 export type ContribRowWithActiveFields =
   typeof schema.contributionAccounts.$inferSelect & {
@@ -141,13 +123,8 @@ export function applyContribActiveFields(
   )[],
   accountActiveFields: Record<string, Record<string, unknown>>,
   /**
-   * Callers layer this twice: once against a profile's active fields (raw
-   * account rows in, nothing resolved yet — the default), then again against
-   * the What-If sandbox's edits (already-resolved rows in, from the first
-   * pass). Pass `true` for that second layer so a row with no entry at THIS
-   * layer stays resolved with whatever the first layer gave it, instead of
-   * being excluded for having no value at this specific layer. See
-   * getIncompleteContribAccountIds for surfacing a missing value to the UI.
+   * `true` for the What-If sandbox layer over already-resolved rows: a row with no entry
+   * at this layer keeps its earlier value instead of being excluded.
    */
   isOverlay = false,
 ): ContribRowWithActiveFields[] {
@@ -176,14 +153,9 @@ export function applyContribActiveFields(
 }
 
 /**
- * Build a synthetic (no DB row) contribution account for the What-If tab's
- * hand-added hypothetical accounts. Negative `id`s so they can never
- * collide with a real autoincrement id; every field this app's calculators
- * actually read is filled in with the same defaults
- * `contributionAccountInput` (settings/contribution-accounts.ts) would use for a
- * freshly-created real row — no employer match, default tax treatment for
- * the chosen account type. One copy for the paycheck and contribution
- * summaries and budget.ts. */
+ * Synthetic (no DB row) account for a What-If hypothetical: negative `id` so it never
+ * collides, with the defaults `contributionAccountInput` uses for a new real row.
+ */
 export function buildSandboxContribRow(
   addition: {
     personId: number;
@@ -232,15 +204,8 @@ type DeductionRowWithActiveFields =
   };
 
 /**
- * Apply a contribution profile's deduction active fields to raw DB
- * deduction rows. `paycheck_deductions` carries no `amountPerPeriod` column
- * of its own (Stage B dropped it) — same no-base-value, exclude-if-absent
- * rule as applyContribActiveFields: a deduction with no active-field entry
- * under this profile has no resolvable amount and is excluded, not passed
- * through with a stale/zero value. See getIncompleteDeductionIds for
- * surfacing the gap to the UI.
- *
- * deductionActiveFields shape: { "deductionId": { amountPerPeriod: value } }
+ * Apply a profile's deduction active fields (`{ "deductionId": { amountPerPeriod } }`):
+ * a deduction with no entry has no amount and is excluded, not passed through as zero.
  */
 export function applyDeductionActiveFields(
   deductions: (typeof schema.paycheckDeductions.$inferSelect)[],
@@ -251,11 +216,8 @@ export function applyDeductionActiveFields(
       const activeFields = deductionActiveFields[String(deduction.id)];
       if (!activeFields || activeFields.amountPerPeriod === undefined)
         return null;
-      // Unconditional merge, not pickEntityActiveFields's presence filter —
-      // amountPerPeriod is no longer a real `paycheck_deductions` column
-      // (Stage B dropped it), so a `field in deduction` check would always
-      // be false and silently drop it. Same unconditional-spread pattern
-      // applyContribActiveFields already uses for contributionValue/Method.
+      // Unconditional spread: amountPerPeriod isn't a `paycheck_deductions` column, so
+      // pickEntityActiveFields's `field in deduction` filter would drop it.
       return { ...deduction, ...activeFields } as DeductionRowWithActiveFields;
     })
     .filter((d): d is DeductionRowWithActiveFields => d !== null);
@@ -278,23 +240,9 @@ export async function fetchContributionProfile(
 }
 
 /**
- * Load a contribution profile by ID and apply its active fields to raw DB
- * rows. Returns modified contribs (+ deductions, when `allDeductions` is
- * passed) plus jobs merged with their resolved Salary Profile fields (see
- * mergeSalaryProfileJobFields) — or the originals if no profile is
- * selected / the row is gone.
- *
- * `allDeductions` is optional and deliberately not threaded through
- * everywhere this function is called (budget.ts, build-engine-payload.ts
- * don't need deduction data) — only the paycheck summary passes it.
- * See the Contribution Profile plan's Ground Rules: widening this
- * function's deduction support is scoped to its actual consumer, not
- * `resolveProfile` generally.
- *
- * `salaryProfileActiveMap` is the caller's own resolved Salary Profile —
- * an independent axis from Contribution Profile, never re-derived here.
- * Every existing caller already loads this map for its own comp
- * resolution (resolveCompensation) before calling this function.
+ * Load a profile by ID and apply its active fields: contribs (+ deductions when
+ * `allDeductions` is passed) and jobs merged with the caller's `salaryProfileActiveMap`.
+ * With no profile selected (or the row gone) no contribution resolves.
  */
 export async function loadAndApplyContribProfile(
   db: Db,
@@ -322,11 +270,7 @@ export async function loadAndApplyContribProfile(
 }
 
 /**
- * Synchronous variant of `loadAndApplyContribProfile` — applies a
- * pre-fetched profile row without issuing any DB queries.
- *
- * Used by `buildEnginePayload` when the profile row was already fetched
- * in the `fetchRetirementData` parallel batch.
+ * Synchronous `loadAndApplyContribProfile` for an already-fetched profile row (no DB).
  */
 export function applyContribProfileRow(
   profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
@@ -344,9 +288,8 @@ export function applyContribProfileRow(
 } {
   const jobs = mergeSalaryProfileJobFields(allJobs, salaryProfileActiveMap);
   if (!profile) {
-    // No profile at all — nothing resolves (same "no fallback" rule as a
-    // profile with empty active fields; there is no longer a live account
-    // value to fall back to for accounts OR deductions).
+    // No profile at all: nothing resolves (same "no fallback" rule as a
+    // profile with empty active fields; accounts and deductions have no live value).
     return {
       contribs: applyContribActiveFields(allContribs, {}),
       jobs,

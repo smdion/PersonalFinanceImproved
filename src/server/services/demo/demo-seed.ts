@@ -37,12 +37,9 @@ export async function seedProfile(
     .insert(schema.jobs)
     .values(personRows.map((p) => speculativeJobValues(p.id, seededOn)));
 
-  // 2. Jobs — a job carries no salary/bonus/payroll terms of its own; insert
-  // the (now purely structural) job row, then collect a COMPLETE Salary Profile
-  // entry (all 17 fields — salary, bonus terms, the payroll-config fields that
-  // used to live on the job row, and extraPaycheckRouting) to give it in a demo
-  // Salary Profile below — a profile entry is all-or-nothing, never a partial
-  // pin (mirrors the "Demo Contribution" profile pattern).
+  // 2. Jobs: insert the structural job row, then collect a complete Salary
+  // Profile entry (all 17 fields) for the demo Salary Profile below; a
+  // profile entry is all-or-nothing, never partial.
   const salaryPinsByJobId: Record<string, SalaryEntry> = {};
   const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {
@@ -169,11 +166,9 @@ export async function seedProfile(
     .returning();
   const _perfIdByLabel = new Map(perfRows.map((r) => [r.accountLabel, r.id]));
 
-  // 8. Contribution accounts — accounts carry no value of their own, so
-  // every demo account needs an explicit Contribution Profile active-field
-  // entry or it would render as $0/incomplete. Insert the accounts first
-  // (capturing their real ids), then seed one demo Contribution Profile
-  // whose active fields cover all of them, and make it the active profile.
+  // 8. Contribution accounts carry no value of their own: insert them, then
+  // seed a demo Contribution Profile whose active fields cover every one (or
+  // it renders $0/incomplete), and make it the active profile.
   const contributionActiveFieldsByAccountId: Record<
     string,
     { contributionValue: string; contributionMethod: string }
