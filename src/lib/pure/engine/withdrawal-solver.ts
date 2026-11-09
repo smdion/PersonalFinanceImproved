@@ -1,24 +1,7 @@
 /**
- * Withdrawal tax gross-up — the SS-torpedo convergence loop that resolves
- * decumulation-year.ts's circular dependency: the amount that needs to be
- * withdrawn depends on the tax cost of withdrawing it, and the tax cost
- * depends on the withdrawal amount.
- *
- * Lives in its own file because it calls withdrawal-routing/index.ts's
- * routeForMode — and withdrawal-routing/caps.ts imports
- * incomeCapForMarginalRate from tax-estimation.ts, so estimateWithdrawalTaxCost
- * living in tax-estimation.ts would create an import cycle. This file sits
- * above both: it imports the pure tax math from tax-estimation.ts and the
- * real router from withdrawal-routing/, and neither imports this file back.
- *
- * The estimate and the real execution call the same routeForMode +
- * computeTaxFromSlots (splits, the Roth-bracket overlay and account caps
- * included), so they differ only on what's genuinely unknowable
- * pre-routing: RMD enforcement and Roth conversions, both of
- * which happen strictly after routing and are re-applied to taxCost/
- * grossUpFactor post-hoc in decumulation-year.ts (see its "post-RMD"
- * recompute). That residual gap is accepted, not fixed — RMD amount and
- * Roth-conversion elections are not knowable before routing.
+ * Withdrawal tax gross-up: sizes the year's withdrawal against its own tax cost via
+ * the real routeForMode + computeTaxFromSlots. Its own file to avoid an import
+ * cycle; RMDs and conversions are applied after routing (decumulation-year.ts).
  */
 import type { ResolvedDecumulationConfig } from "./types/decumulation";
 import type {
@@ -64,10 +47,8 @@ interface TaxEstimationInput {
   fixedGrossWithdrawal?: number;
   /** Social Security income for this year */
   ssIncome: number;
-  /** Social Security beyond this year's spending. It pays the year's tax
-   *  first, so only the rest needs a withdrawal; never banked past that.
-   *  0 in a `fixedGrossWithdrawal` year (Social Security is on top of the
-   *  amount by definition). */
+  /** Social Security beyond this year's spending; it pays the year's tax first
+   *  and is never banked past that. 0 in a `fixedGrossWithdrawal` year. */
   ssSurplus: number;
   /** Filing status for SS taxation thresholds */
   filingStatus: ReturnFilingStatus | null | undefined;
@@ -87,49 +68,31 @@ interface TaxEstimationInput {
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
-    /** Household's annual standard deduction — see `RouteBracketInfo.standardDeduction`
-     *  (withdrawal-routing/types.ts). Declared here (not just structurally passed
-     *  through) so it's a documented contract, not a field the next reader
-     *  could "clean up" by destructuring and dropping — this module's own
-     *  header docblock is a record of exactly that failure mode happening
-     *  before (the routing-divergence fixes). */
+    /** Household's annual standard deduction; see
+     *  `RouteBracketInfo.standardDeduction`. Must reach the router. */
     standardDeduction?: number;
   };
   /** Current balances by tax bucket */
   balances: TaxBuckets;
   /** Current per-account balances */
   accountBalance: AccountBalances;
-  /** Every account's balance, Portfolio-parented ones included
-   *  (PreYearSetup.totalBalance): the physical pool the target never
-   *  exceeds. The search stops sooner, at what the router can reach (the
-   *  router-exhaustion stop below), and routing records the rest as
-   *  `nonRetirementShortfall`. */
+  /** Every account's balance, Portfolio-parented included: the pool the target
+   *  never exceeds. The search stops sooner, at what the router can reach;
+   *  routing records the rest as `nonRetirementShortfall`. */
   totalBalance: number;
   /** The year's brokerage basis ratio for retirement withdrawals
    *  (brokerage-basis.ts) — the same one the real execution prices with.
    *  Omitted: the aggregate ratio. */
   brokerageBasisRatio?: number;
-  /** Withdrawal-ordering eligibility for this year — passed straight
-   *  through to `routeForMode`. MUST be the
-   *  same record `decumulation-year.ts`'s real execution passes to its own
-   *  `routeForMode` call: the single-dispatch invariant this module's
-   *  header docblock documents applies to this parameter too — a mismatch
-   *  here would desync the withdrawal-solver estimate's slot mix from the real
-   *  router's, the same class of bug the routeForMode extraction fixed for
-   *  the routing-mode-specific rules. */
+  /** This year's withdrawal eligibility, passed to `routeForMode`. Must be the
+   *  record the real year passes, or the estimate's slot mix differs. */
   eligibility?: EligibilityRecord;
-  /** Portfolio-parented ("non-retirement") exclusion for this year
-   *  — passed straight through to `routeForMode`, same single-dispatch
-   *  invariant as `eligibility` above: MUST be the same record
-   *  `decumulation-year.ts`'s real execution passes to its own
-   *  `routeForMode` call, or this estimate and the real router disagree
-   *  about how much money is available. */
+  /** This year's Portfolio-parented exclusion, passed to `routeForMode`. Must be
+   *  the record the real year passes, like `eligibility`. */
   nonRetirement?: NonRetirementExclusion;
-  /** Individual-account state for Roth growth-vs-basis taxability —
-   *  this estimate must slice the SAME way the real execution does
-   *  (distributeWithdrawals + depleteIndividualBasis), against CLONED
-   *  indBalance/indBasis so the estimate can never mutate real state. Omitted
-   *  ⇒ rothTaxableGrowth stays 0, same as before this pass. */
+  /** Individual-account state for Roth growth-vs-basis taxability, sliced as
+   *  the real year does against cloned maps (never mutated). Omitted ⇒
+   *  rothTaxableGrowth stays 0. */
   indAccounts?: IndividualAccountInput[];
   indKey?: IndKeyFn;
   indBalance?: Map<string, number>;
@@ -139,15 +102,9 @@ interface TaxEstimationInput {
   year?: number;
 }
 
-/** One trial evaluation: cost (tax + penalty) of withdrawing exactly
- *  `trialWithdrawal`, routed and sliced EXACTLY the way the real execution
- *  will (routeForMode -> distributeWithdrawals -> depleteIndividualBasis ->
- *  splitRothWithdrawalForTax -> computeEarlyWithdrawalPenalty ->
- *  computeTaxFromSlots), against CLONED balances so this never mutates real
- *  state. One closure, so the convergence loop below repeats this exact
- *  pipeline rather than a second hand-copy of it — RULES.md's
- *  single-computation-path rule applies within a function's own retries,
- *  not just across files. */
+/** Cost (tax + penalty) of withdrawing exactly `trialWithdrawal`, through the same
+ *  pipeline as the real year (routeForMode → … → computeTaxFromSlots) on cloned
+ *  balances. Every solver trial uses this one function. */
 function evaluateCost(
   trialWithdrawal: number,
   laggedTaxableSS: number,
@@ -175,10 +132,8 @@ function evaluateCost(
     year != null;
 
   const clonedAccountBalance = cloneAccountBalances(accountBalance);
-  // Same basis-derived ranking inputs the real
-  // execution passes (deriveBasisRankingInputs's docblock) — no
-  // magiBeforeThisDraw here, as in the real execution: routeForMode falls
-  // back to its own ordinary-income floor.
+  // Same basis-derived ranking inputs as the real year; no magiBeforeThisDraw,
+  // so routeForMode uses its own ordinary-income floor.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: input.brokerageBasisRatio,
@@ -263,11 +218,8 @@ function evaluateCost(
       rothTaxableGrowth,
       penaltyCost: iterPenaltyCost,
     });
-  // Routing above read the caller's taxable Social Security (its bracket
-  // caps only; `evaluateAtOwnSS` brings that figure to this trial's own);
-  // the COST always uses this trial's own share, as the real year prices it
-  // (with no filing status the flat 85% estimate stands, the conservative
-  // side).
+  // Routing read the caller's taxable SS (bracket caps only); the cost uses this
+  // trial's own share, as the real year prices it. No filing status ⇒ flat 85%.
   let taxResult = price(laggedTaxableSS);
   let taxableSS = laggedTaxableSS;
   if (filingStatus && input.ssIncome > 0) {
@@ -318,17 +270,9 @@ const SS_ROUTING_TOLERANCE = 1;
 const FIRST_TRIAL_SS_SHARE = 0.85;
 
 /**
- * `evaluateCost` at W, with routing's bracket caps reading W's OWN taxable
- * Social Security rather than a seed's. The two are coupled: the taxable
- * share depends on the Traditional draw, and with a Bracket Ceiling the
- * Traditional room is the income cap less that share. Routed with a stale
- * (higher) share, the same W draws more Roth and costs less, so a trial can
- * look like it meets the need when the routing it would really get falls
- * short (hundreds of dollars a year in the torpedo zone). Iterated on the
- * average of the routed and priced shares: plain substitution oscillates
- * there, since the map's slope is close to -1. Without Social Security, or
- * without a filing status (the flat estimate stands), the share never moves
- * and this is one evaluation.
+ * `evaluateCost` with routing's bracket caps reading W's own taxable SS, which
+ * itself depends on the Traditional draw. Iterates on the average of routed and
+ * priced shares (plain substitution oscillates: slope near -1).
  */
 function evaluateAtOwnSS(W: number, seedSS: number, input: TaxEstimationInput) {
   let e = evaluateCost(W, seedSS, input);
@@ -357,10 +301,9 @@ function withStatus(figures: SolverFigures, shortfall: number) {
 }
 
 /**
- * A fixed gross withdrawal (Social Security on top): no solving. W is costed at
- * its own taxable Social Security share; the after-tax need comes from the FULL
- * amount (cut to what's there, it would hide running out); the shortfall is
- * the amount less what left the portfolio, as the year measures it.
+ * Fixed gross withdrawal (SS on top): no solving. The after-tax need comes from
+ * the full amount, so running out shows; the shortfall is the amount less what
+ * left the portfolio.
  */
 function fixedWithdrawalEstimate(
   input: TaxEstimationInput,
@@ -392,42 +335,9 @@ function fixedWithdrawalEstimate(
 }
 
 /**
- * Resolves decumulation-year.ts's circular dependency — the withdrawal
- * amount depends on its own tax+penalty cost, which depends on the
- * withdrawal amount — by finding, to the cent, a W where the after-tax
- * proceeds cross the need: `delivered(W) - cost(W) >= afterTaxNeed`, where
- * `delivered` is what the router could actually move. (Proceeds aren't
- * monotone, so this is a crossing, not necessarily the smallest W.)
- *
- * `cost(W)` is NOT well behaved: routing tier switches and tax-table cliffs
- * make it jump, the early-withdrawal penalty adds kinks, and it isn't
- * monotone.
- * Each trial routes at its own taxable Social Security (`evaluateAtOwnSS`),
- * a fixed point reached to a dollar, not exactly. Costs are rounded to
- * cents, so a slope measured over a few cents is noise (a "rate" of
- * 0.99999999 sent a plain secant step to billions, and the balance cap then
- * accepted a trial that over-delivered by millions as if it were the
- * answer). The solver therefore assumes nothing about shape:
- *   - It keeps a bracket: `lo`, the largest trial that under-delivers, and
- *     `hi`, the smallest that over-delivers. A secant step is taken only
- *     when it lands strictly inside the bracket and the bracket halved
- *     within the last two steps; otherwise it bisects (Brent's safeguard:
- *     a secant crawling toward one end can't use up the trial cap).
- *   - No secant over less than $1: below that the slope is rounding noise,
- *     so it takes a Picard step (`W = need + cost(W)`) instead.
- *   - It stops short of the need only when a trial at `totalBalance`
- *     (or one the router can deliver no more of) still under-delivers.
- *     Otherwise an unconverged search returns `hi`, the smallest W found
- *     that meets the need; over a cost jump that over-delivers (spending
- *     above the budget) by at most the jump, never by an unbounded secant
- *     step. A shortfall at `lo` would be worse: the plan judge would read a
- *     solver artifact as a failed year.
- * Secant on the smooth stretches keeps the usual year at ~3 trials.
- *
- * The returned `taxableSS` is the figure the accepted trial routed with, so
- * the real year (which routes with it, then prices its own share from the
- * slots) reproduces the accepted trial exactly. Social Security's surplus,
- * when spending is under it, pays tax first: the equation is on `netCost`.
+ * Finds W with `delivered(W) - netCost(W) >= afterTaxNeed`, where cost jumps and
+ * isn't monotone: a bracket search (secant inside it, else bisect; Picard under a
+ * $1 span) returning `hi`, short of the need only when no larger W delivers more.
  */
 export function estimateWithdrawalTaxCost(
   input: TaxEstimationInput,
@@ -437,11 +347,8 @@ export function estimateWithdrawalTaxCost(
     return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
   const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  // At most 20 trials (each may route a few times, evaluateAtOwnSS).
-  // Smooth years exit in ~3; the cap only binds where bisection is needed
-  // across a cost jump, and 20 halvings take a five-figure bracket to
-  // under $0.10 — inside the $1 of the need a year may stop at. Short of
-  // the need, the gap is reported as unmet.
+  // Smooth years exit in ~3 trials; 20 halvings take a five-figure bracket under
+  // $0.10, inside the $1 a year may stop at. Short of the need, the gap is unmet.
   const MAX_TRIALS = 20;
   // Below this span, a secant slope between two cent-rounded costs is noise.
   const MIN_SECANT_SPAN = 1;
@@ -468,12 +375,9 @@ export function estimateWithdrawalTaxCost(
     const residual = residualOf(trial);
     if (Math.abs(residual) <= RESIDUAL_TOLERANCE) break;
     if (residual > 0) {
-      // Short of the need, and no larger trial can do better: all the pool
-      // holds is asked for, or the router delivered no more than at a
-      // smaller trial. A router that falls short of the NEED alone (W =
-      // need) still gets its delivered money grossed up. Once more W
-      // delivers nothing more, the smaller trial is the answer: asking for
-      // money that can't be reached only inflates the routed shortfall.
+      // Short of the need and no larger trial can do better: the whole pool is
+      // asked for, or more W delivered nothing more (then the smaller trial wins;
+      // asking for unreachable money only inflates the routed shortfall).
       if (trial.W >= totalBalance - 0.01) break;
       if (
         trial.e.routedUnmet > 0.01 &&
@@ -523,11 +427,8 @@ export function estimateWithdrawalTaxCost(
 
   const targetWithdrawal = trial.W;
   const totalCost = trial.e.totalCost;
-  // Reporting-only from here -- grossUpFactor/effectiveTaxRate/grossedUpNeed
-  // don't DRIVE targetWithdrawal (the search above sized it directly);
-  // they're derived from the accepted evaluation for display/diagnostics,
-  // matching what decumulation-year.ts's own post-RMD recompute already
-  // treats them as.
+  // Reporting only: grossUpFactor/effectiveTaxRate/grossedUpNeed come from the
+  // accepted evaluation and don't drive targetWithdrawal.
   const effectiveTaxRate =
     afterTaxNeed > 0 ? totalCost / (afterTaxNeed + totalCost) : 0;
   const grossUpFactor =

@@ -315,7 +315,7 @@
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
     "src/lib/pure/engine/withdrawal-routing/types.ts": 72,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
-    "src/lib/pure/engine/withdrawal-solver.ts": 554,
+    "src/lib/pure/engine/withdrawal-solver.ts": 455,
     "src/lib/pure/household/compensation.ts": 368,
     "src/lib/pure/household/retirement-profile.ts": 104,
     "src/lib/pure/investments/finalize-year.ts": 194,
@@ -978,7 +978,7 @@
       "routeWithdrawalsPercentage": 186
     },
     "src/lib/pure/engine/withdrawal-solver.ts": {
-      "evaluateCost": 160
+      "evaluateCost": 155
     },
     "src/lib/pure/investments/performance-annual-rows.ts": {
       "performanceAnnualRows": 325
