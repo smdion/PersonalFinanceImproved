@@ -117,14 +117,14 @@ describe("useBudgetDerivedData — getCatTotals editMode consistency", () => {
  *
  * THE BUG. contribByCanonicalPerCol aggregated ALL contribution accounts
  * of a given keyword into one pool, including ones already linked to a
- * budget item — so matchContrib("brokerage") returned the SUM of both
+ * budget item — so matchContribution("brokerage") returned the SUM of both
  * accounts ($950), not just the unlinked one, and getCatTotals folded that
  * fuzzy sum into the category total on top of the linked item's own real
  * resolved amount — silently disagreeing with the server-computed total.
  *
  * THE FIX. Accounts already linked to a budget item (rawItems[].
  * contributionAccountId) are excluded from the fuzzy pool entirely, and
- * matchContrib's result never feeds getCatTotals's total at all — it's
+ * matchContribution's result never feeds getCatTotals's total at all — it's
  * badge/tooltip-only display for genuinely unlinked items.
  */
 describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accounts", () => {

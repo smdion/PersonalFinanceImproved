@@ -235,7 +235,7 @@ describe("useContributionAccountsMutations", () => {
   });
 
   // ---------------------------------------------------------------------
-  // handleLinkContrib
+  // handleLinkContribution
   // ---------------------------------------------------------------------
 
   it("handleContribUpdate saves a Roth IRA route to the active Contribution Profile — direct as absent, never on the account row", async () => {

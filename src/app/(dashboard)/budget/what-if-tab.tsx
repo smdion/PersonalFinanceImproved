@@ -363,7 +363,7 @@ export function WhatIfTab({
       // A deduction has no live amount of its own any more — the value the
       // user was previewing gets carried into the currently-effective
       // Contribution Profile's deductions active field, same "make real"
-      // pattern setContribAccountActiveFields already uses above.
+      // pattern setContributionAccountActiveFields already uses above.
       if (created && addition && contribId != null) {
         setDeductionActiveFields.mutate(
           {

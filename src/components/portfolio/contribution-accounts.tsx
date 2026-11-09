@@ -5,7 +5,7 @@
  *
  * Fetches all portfolio data via tRPC and orchestrates CRUD mutations via
  * useContributionAccountsMutations. Renders the collapsible panel with
- * UnlinkedContribsBanner + AccountCard list.
+ * UnlinkedContributionsBanner + AccountCard list.
  */
 
 import React, { useRef, useState, useMemo } from "react";

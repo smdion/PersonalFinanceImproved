@@ -11,7 +11,7 @@
  * Rate" / "Initial Withdrawal Rate" depending on the strategy's
  * `incomeSource`.
  *
- * The `decToWhole` helper lives in `./helpers` and is shared across the
+ * The `decimalToWhole` helper lives in `./helpers` and is shared across the
  * retirement sections that need it (not duplicated locally).
  */
 "use client";

@@ -4,7 +4,7 @@
  * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
  * and the Contribution Profile picker.
  *
- * The `decToWhole` helper lives in `./helpers` and is shared across the
+ * The `decimalToWhole` helper lives in `./helpers` and is shared across the
  * retirement sections that need it (not duplicated locally).
  */
 "use client";

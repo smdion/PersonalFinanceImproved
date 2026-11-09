@@ -5,7 +5,7 @@
  *
  * Owns: the payroll breakdown (one per column, same pay in each),
  * category/item derivation, sinking-fund list, API-actuals map,
- * matchContrib, and getCatTotals.
+ * matchContribution, and getCatTotals.
  *
  * All hooks run unconditionally (before early returns in the parent).
  * When `data` is null/undefined, outputs default to safe empty values.
@@ -124,7 +124,7 @@ export function useBudgetDerivedData({
   );
 
   // ---- Raw items ----
-  // Declared before contribByCanonicalPerCol so the fuzzy-match pool below
+  // Declared before contributionByCanonicalPerCol so the fuzzy-match pool below
   // can exclude accounts already linked to a budget item.
 
   const allColumnResults =
@@ -193,7 +193,7 @@ export function useBudgetDerivedData({
     });
   }, [perColumnPaycheckData, linkedContributionAccountIds]);
 
-  // matchContrib is a display-only estimate for UNLINKED items (the "PC"
+  // matchContribution is a display-only estimate for UNLINKED items (the "PC"
   // badge/tooltip) — it must never feed getCatTotals's total below, or the
   // page's own category subtotal disagrees with the server-computed
   // calculateBudget total (RULES.md Single Computation Path).
@@ -240,7 +240,7 @@ export function useBudgetDerivedData({
           // contribAmounts is the server's own per-column figure (every
           // column from the active profiles); contribAmount is only the
           // selected column's value and is the last resort before raw
-          // amounts. Fuzzy name-matching (matchContrib) never contributes
+          // amounts. Fuzzy name-matching (matchContribution) never contributes
           // here — it's a badge/tooltip-only estimate for UNLINKED items,
           // and folding it into the total would make this page's own
           // subtotal disagree with the server-computed calculateBudget

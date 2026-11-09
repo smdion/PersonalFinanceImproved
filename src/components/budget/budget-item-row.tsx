@@ -28,9 +28,9 @@ type BudgetItemRowProps = {
   categoryNames: string[];
   currentCategory: string;
   contribMonthly: number | null;
-  /** Why a LINKED item's contribMonthly is what it is for the column being
+  /** Why a LINKED item's contributionMonthly is what it is for the column being
    *  viewed — "ok" for a normal resolved value. Ignored for unlinked items
-   *  (their contribMonthly is always the fuzzy match, never classified). */
+   *  (their contributionMonthly is always the fuzzy match, never classified). */
   contribStatus?: ContribResolutionStatus;
   canEdit?: boolean;
   apiActual?: { activity: number; balance: number; budgeted: number } | null;
