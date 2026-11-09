@@ -1,9 +1,6 @@
 /**
- * Combines the shared tax-bucket extraction (src/lib/pure/accounts/tax-buckets.ts)
- * with rothBasis rows and the early-access helper (Rule of 55 / Roth
- * ordering rules) into the per-account view the Tax Buckets analysis page
- * needs. Kept as its own pure function — not inline in the router handler —
- * per RULES.md's Pure Business Logic Boundary.
+ * The Tax Buckets page's per-account view: tax-bucket extraction plus rothBasis rows and
+ * early access (Rule of 55 / Roth ordering).
  */
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -72,12 +69,8 @@ export type RothBasisMeta = {
   conversionBasis: number;
   latestConversionYear: number | null;
   isSeeded: boolean;
-  /** `Date` when constructed server-side; arrives as an ISO `string` once
-   *  serialized over the wire to the client (no superjson transformer on
-   *  this tRPC setup) — same dual-shape `isoDateOnly()` in
-   *  tax-buckets-content.tsx already handles. Neither this module nor
-   *  tax-bucket-projection.ts reads this field, so the exact runtime shape
-   *  never matters to them. */
+  /** `Date` server-side, ISO `string` once serialized to the client (no superjson);
+   *  nothing in this module or the projection reads it. */
   updatedAt: Date | string;
 };
 
@@ -85,21 +78,13 @@ export type RuleOf55Status = {
   eligible: boolean | null; // null = unknown (no separation data)
   separationYear: number | null;
   source: SeparationSource;
-  /** Only set when source is "active" (still employed, not yet separated):
-   *  the earliest real (non-speculative) future endDate among this
-   *  account's linked jobs, if one is on record. Used by the "at
-   *  retirement" projection to cap an assumed retirement-transition
-   *  separation at a job's own already-known planned end date, rather than
-   *  assuming employment runs all the way to the household's retirement
-   *  transition. Null when no linked job has a known future end date. */
+  /** Only when source is "active": the earliest known non-speculative future endDate
+   *  among linked jobs, capping the "at retirement" assumed separation; else null. */
   knownFutureSeparationYear: number | null;
 };
 
-/** A simple age-threshold status — unlike RuleOf55Status, there's no
- *  employer/separation concept involved, just "have they hit this age
- *  yet." Used for IRA (59½, the penalty-free-withdrawal age) and HSA (65,
- *  the non-medical-penalty age) — never for 401k/403b, which use
- *  RuleOf55Status instead since Rule of 55 can free those funds earlier. */
+/** Plain age-threshold status (no separation concept): IRA at 59½, HSA at 65.
+ *  401k/403b use RuleOf55Status instead. */
 export type AgeThresholdStatus = {
   thresholdAge: number;
   eligible: boolean;
@@ -119,11 +104,8 @@ export type AccountAnalysisEntry = {
   /** Only present for 401k/403b accounts. */
   ruleOf55: RuleOf55Status | null;
   rothBasisMeta: RothBasisMeta | null;
-  /** Raw `performance_accounts.costBasis` for a Brokerage-category account
-   *  (null otherwise). Carried as its own field — not re-derived by
-   *  scanning `slices` for a "Cost basis"-labeled entry — so a UI label
-   *  rename can never silently break the "at retirement" projection's
-   *  carry-forward the way string-matching against a rendered label would. */
+  /** Raw `performance_accounts.costBasis` for a Brokerage account (else null), its own
+   *  field so the projection never string-matches a slice label. */
   costBasis: number | null;
   /** IRA (59½) or HSA (65) age-gate status — null for every other
    *  category (401k/403b use `ruleOf55` instead; Brokerage has no age
@@ -291,13 +273,8 @@ export function computeTaxBucketAnalysis(input: {
     }
 
     if (entry.ownerPersonId == null) {
-      // Joint account, no single owner — Roth/401k/Traditional-IRA rules
-      // all need an age to gate on and stay unattributed here (see
-      // RULES.md-flagged v1 design note). Brokerage's Cost basis/Growth
-      // split needs no person at all — computeBrokerageAccess only takes
-      // balance + costBasis — so it isn't blocked by the same gap. HSA
-      // (modeled as general spending, not medical) DOES need an age for
-      // its 65 gate, so it stays unattributed here same as Roth/401k.
+      // Joint account, no single owner: age-gated rules (Roth, 401k, IRA, HSA)
+      // stay unattributed; the brokerage basis/growth split needs no person.
       if (costBasis != null) {
         slices = computeBrokerageAccess(entry.amount, costBasis);
       }

@@ -5057,9 +5057,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 16
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 5
     },
@@ -5068,30 +5065,16 @@
     }
   },
   "src/lib/pure/accounts/portfolio-labels.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
   "src/lib/pure/accounts/portfolio.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
-  "src/lib/pure/accounts/roth-basis-rollover.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/pure/accounts/roth-basis-tracking.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-guarded-division": {
       "count": 2
     }
@@ -5107,9 +5090,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1

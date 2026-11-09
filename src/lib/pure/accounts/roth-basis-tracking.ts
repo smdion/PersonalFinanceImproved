@@ -1,33 +1,7 @@
 /**
- * Tracked (not snapshot) Roth basis draw-down: seeded from the one-time
- * `rothBasisMeta` snapshot, a running, per-account, per-projected-year
- * balance that GROWS with modeled
- * contributions (accumulation phase) and SHRINKS as withdrawals actually
- * take basis dollars (decumulation phase).
- *
- * This module answers "how much basis is left, and how much of THIS
- * withdrawal was basis" — a different question from
- * `eligibility.ts` ("is this account gated this year"), so it's
- * a separate module with a separate consumer (the accumulation-phase
- * handler only needs this one).
- *
- * Deliberately NOT a second call to `early-access.ts`'s
- * `computeRothIraAccess`/`computeEmployerPlanRothAccess`: those slice a
- * *balance* (answering "of this account's current balance, how much is
- * basis"); `drawFromBasis` slices a *flow* (answering "of the $X just
- * withdrawn, how much was basis"). Feeding a withdrawal amount into the
- * balance-slicing predicates as if it were the balance would silently
- * produce the wrong answer for pro-rata accounts, where the basis fraction
- * of a distribution depends on the basis/balance ratio, not the raw basis
- * figure. `drawFromBasis` is the dollar-flow dual of the same ordering
- * rules those predicates already encode — same rule, different question —
- * verified against them by the "full distribution" equivalence test in
- * `tests/pure/accounts/roth-basis-tracking.test.ts`.
- *
- * Conversion basis is DECREMENT-ONLY: `performRothConversion`
- * (engine/roth-conversion.ts) records no per-account conversion basis, so
- * there is nothing to accrue from (a known engine gap, and a likely
- * contributor to the `[DIAG] Roth divergence` warning).
+ * Tracked Roth basis per account and projected year: seeded from `rothBasisMeta`, grown by
+ * contributions, drawn down by withdrawals (slicing a flow, not a balance). Conversion basis
+ * only decreases: `performRothConversion` records no per-account conversion basis.
  */
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisMeta } from "@/lib/pure/accounts/tax-bucket-analysis";
@@ -44,11 +18,8 @@ export type RothBasisState = {
   /** From `account_basis.isSeeded` — a carried-forward, never-reviewed
    *  row. Carried into the UI disclosure, not acted on differently here. */
   isSeeded: boolean;
-  /** `sourceYear != null && sourceYear < projectionStartYear`. Years
-   *  between the basis row and the projection's own year 0 are not
-   *  modeled by the engine, so tracked basis understates real basis by
-   *  whatever was contributed in that unmodeled gap. Surfaced, never
-   *  silently swallowed — see `IndividualAccountYearBalance.roth.basisUncertain`. */
+  /** `sourceYear < projectionStartYear`: years before the projection aren't modeled,
+   *  so tracked basis understates real basis; surfaced as `roth.basisUncertain`. */
   stale: boolean;
 };
 
@@ -67,11 +38,8 @@ const ZERO_DRAW: BasisDraw = {
   growthDrawn: 0,
 };
 
-/** Seeds tracked basis from the "now" snapshot (`rothBasisMeta`, threaded
- *  per-account by `engine-payload/individual-accounts.ts`). `meta == null`
- *  (no `account_basis` row at all) seeds an all-zero state rather than
- *  crashing or inventing a figure — basis then grows purely from modeled
- *  contributions going forward. */
+/** Seeds tracked basis from the "now" `rothBasisMeta`; `meta == null` (no
+ *  `account_basis` row) seeds all zeros, grown by modeled contributions. */
 export function initRothBasisState(
   meta: RothBasisMeta | null,
   projectionStartYear: number,
@@ -96,11 +64,8 @@ export function initRothBasisState(
   };
 }
 
-/** Adds one projected accumulation year's contribution to the running
- *  contribution-basis total. `contributionThisYear` must already exclude
- *  employer match — match is never Roth basis, regardless of which
- *  tax-type row it lands on (same rule `tax-bucket-projection.ts`'s
- *  `projectContributionBasis` enforces). Never mutates `state`. */
+/** Adds one accumulation year's contribution to contribution basis. Must exclude
+ *  employer match (never Roth basis). Never mutates `state`. */
 export function accrueContributionBasis(
   state: RothBasisState,
   contributionThisYear: number,
@@ -115,19 +80,9 @@ export function accrueContributionBasis(
 }
 
 /**
- * Slices ONE account's withdrawal into contribution-basis / conversion-
- * basis / growth, by the account category's own `rothOrderingRules`
- * (`getAccountTypeConfig(category).rothOrderingRules` — read, never
- * hardcoded). Pure — does not mutate `input.state`.
- *
- * `basis_first` (IRA-type — Roth IRA ordering): contribution basis is
- * drawn before conversion basis, before growth — the same ordering
- * `early-access.ts`'s `computeRothIraAccess` encodes as balance slices.
- *
- * `pro_rata` (401k/403b Roth sub-election — IRS pro-rata rule): the basis
- * fraction of THIS withdrawal is proportional to the basis/balance ratio
- * immediately before the withdrawal, same rule
- * `computeEmployerPlanRothAccess` encodes for the balance as a whole.
+ * Slices one withdrawal into contribution basis / conversion basis / growth by the category's
+ * `rothOrderingRules`: `basis_first` in that order, `pro_rata` by the basis/balance ratio just
+ * before the draw. Never mutates `input.state`.
  */
 export function drawFromBasis(input: {
   state: RothBasisState;
@@ -168,10 +123,8 @@ export function drawFromBasis(input: {
   return { contributionDrawn, conversionDrawn, growthDrawn };
 }
 
-/** Applies a `BasisDraw` computed by `drawFromBasis`, decrementing the
- *  running totals. Floors at 0 (a rounding residual should never push
- *  basis negative, but this is the same defensive floor `subtractPenaltyExposed`/
- *  drift-safety, not an expected path). Never mutates `state`. */
+/** Applies a `BasisDraw`, decrementing the running totals, floored at 0 against
+ *  rounding residue. Never mutates `state`. */
 export function applyBasisDraw(
   state: RothBasisState,
   draw: BasisDraw,
@@ -189,14 +142,9 @@ export function applyBasisDraw(
   };
 }
 
-/** Market losses can push an account's balance below its tracked basis.
- *  `early-access.ts`'s predicates already `Math.min` basis against balance
- *  (`computeRothIraAccess`'s `cappedContribution`/`cappedConversion`,
- *  `computeEmployerPlanRothAccess`'s `basisFraction`) — this mirrors that
- *  same contribution-then-conversion clamp order so tracked state and the
- *  balance-slicing predicates never disagree about how much basis a
- *  shrunk account can still have. Also the hook for a zeroed-out (dust-
- *  cleaned) account: `balance === 0` clamps both fields to 0. */
+/** Caps basis at the balance after market losses, contribution then conversion (the
+ *  order `early-access.ts` uses), so tracked state and the predicates agree;
+ *  `balance === 0` clamps both to 0. */
 export function clampBasisToBalance(
   state: RothBasisState,
   balance: number,

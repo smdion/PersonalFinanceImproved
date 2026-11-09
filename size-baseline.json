@@ -236,7 +236,7 @@
     "src/lib/demo/profiles/early-retirement.ts": 666,
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
-    "src/lib/pure/accounts/eligibility.ts": 465,
+    "src/lib/pure/accounts/eligibility.ts": 365,
     "src/lib/pure/accounts/tax-bucket-projection.ts": 523,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/foo.ts": 387,
@@ -920,10 +920,10 @@
       "usePaycheckPersonViews": 243
     },
     "src/lib/pure/accounts/eligibility.ts": {
-      "computeWithdrawalEligibility": 182
+      "computeWithdrawalEligibility": 180
     },
     "src/lib/pure/accounts/tax-bucket-analysis.ts": {
-      "computeTaxBucketAnalysis": 244
+      "computeTaxBucketAnalysis": 239
     },
     "src/lib/pure/accounts/tax-bucket-projection.ts": {
       "computeTaxBucketProjection": 280,
