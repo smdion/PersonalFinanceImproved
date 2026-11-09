@@ -74,10 +74,8 @@ export function journey(
     }),
   );
 
-  // Finalized years compare against gross income (salary + bonus, as
-  // recorded); projected years only have the engine's projected salary —
-  // the engine carries no per-year gross figure — so the "on pace" year
-  // can come a little early for a household with a large bonus.
+  // Finalized years use gross income (salary + bonus); projected years only have
+  // projected salary, so "on pace" can come early for a large-bonus household.
   out.push(
     growthMilestone("moneyWorksHarder", input, now, {
       past: (y) => y.grossIncome,

@@ -1,9 +1,6 @@
 /**
- * When each milestone was first reached — the `milestone_first_reached`
- * setting. `since` is the day recording began: milestones already reached
- * then are kept without a date (they were reached at some earlier, unknown
- * time — unless the yearly history dates them), so only ones reached later
- * are "new". A milestone stays recorded if it later slips back.
+ * When each milestone was first reached (`milestone_first_reached`). Ones already reached at
+ * `since` have no date unless history dates them; only later ones are "new". Never unrecorded.
  */
 import { z } from "zod/v4";
 

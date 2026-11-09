@@ -1,8 +1,6 @@
 /**
- * Backdoor Roth and pro-rata recommendations — adapters over the Roth IRA
- * view judged once in lib/pure/contributions/roth-ira.ts (buildRothIraView). Only maps
- * fields and picks urgency from the dated windows in config; no rule is
- * judged here.
+ * Backdoor Roth and pro-rata recommendations mapped from `buildRothIraView`; urgency comes
+ * from config's dated windows. No rule is judged here.
  */
 import { ROTH_RECOMMENDATION_WINDOWS as W } from "@/lib/config/recommendations";
 import type {
@@ -56,8 +54,8 @@ export function recommendationsFromRothIra(
           action: advice.action,
           context,
           impact: null,
-          // Someone contributes directly: the fix is their route, set
-          // with the contribution elections; otherwise the Roth IRA check.
+          // Someone contributes directly: point to their route, set with
+          // the contribution elections; otherwise the Roth IRA check.
           focus: view.routes.some((r) => r.route === "direct")
             ? { topic: "contributionElections" }
             : { topic: "rothIra" },

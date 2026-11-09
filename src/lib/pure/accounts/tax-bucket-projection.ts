@@ -1,22 +1,7 @@
 /**
- * Projects the "now" Tax Buckets analysis forward to the household's one
- * modeled retirement transition, using the real retirement projection
- * engine's per-account `individualAccountBalances`. A second, additive view
- * alongside `computeTaxBucketAnalysis`'s "now" view (`tax-bucket-analysis.ts`)
- * — never merged with it.
- *
- * "At retirement" deliberately assumes the plan is followed (contributions
- * continue as configured, no early separation) — the opposite premise of
- * "now", which only ever counts a real, already-happened separation. Both
- * premises are correct for their own question; keeping them in separate
- * functions/entries is what keeps that distinction visible instead of
- * silently blended.
- *
- * The match key
- * is deliberately the same `(name, category, taxType, ownerPersonId)` tuple
- * `computeTaxBucketBreakdown` groups `accountRollup` on, so a rollup entry
- * and an engine row that represent the same real account always merge
- * identically on both sides instead of drifting apart.
+ * The Tax Buckets view at the retirement transition, from the engine's per-account balances,
+ * assuming the plan is followed (unlike "now", which counts only real separations). Matched
+ * on the same `(name, category, taxType, ownerPersonId)` key `computeTaxBucketBreakdown` uses.
  */
 import type {
   EngineAccumulationYear,
@@ -60,30 +45,21 @@ function matchKey(
 }
 
 type TaxBucketProjectionResult = {
-  /** Null when the projection has no modeled accumulation phase at all —
-   *  e.g. the household is already past its retirement transition in the
-   *  active projection. The page must say so explicitly rather than
-   *  rendering an empty or zeroed-out view. */
+  /** Null when the projection has no accumulation phase (already past the transition);
+   *  the page says so rather than showing a zeroed view. */
   transitionYear: number | null;
   entries: AccountAnalysisEntry[];
-  /** "Now" accounts with no matching projected row — carried forward
-   *  unchanged in `entries` rather than defaulting to a zero balance, but
-   *  named here so the page can flag them instead of presenting a
-   *  same-as-now figure as if it were actually projected. */
+  /** "Now" accounts with no projected row, carried unchanged in `entries` and named
+   *  here so the page flags them as not projected. */
   unmatchedAccountNames: string[];
-  /** Accounts whose projected Roth basis rests on a basis entry older than
-   *  the current year — the gap between that entry's year and now isn't
-   *  modeled by the projection engine, so the projected total may
-   *  understate real accessible basis. */
+  /** Accounts whose Roth basis entry predates the current year; the unmodeled gap
+   *  may understate the projected basis. */
   staleBasisAccountNames: string[];
 };
 
-/** contributionBasis + every taxFree-bucket `contribution` from the basis
- *  row's own year through the transition year, inclusive. Deliberately NOT
- *  a hardcoded "year 0" or "year 1" — the basis row's year is whatever
- *  `selectCurrentRothBasisRow` last picked, which can be behind the
- *  current year. Deliberately excludes `employerMatch` — never Roth basis,
- *  regardless of which tax-type row it lands on. */
+/** contributionBasis + every taxFree-bucket `contribution` from the basis row's year
+ *  (which may lag the current year) through the transition year, inclusive. Employer
+ *  match is excluded: never Roth basis. */
 function projectContributionBasis(
   rothBasisMeta: RothBasisMeta | null,
   contributionByYear: Map<number, number> | undefined,
@@ -100,10 +76,8 @@ function projectContributionBasis(
   return sum;
 }
 
-/** Roth basis at the transition: the engine's own per-account figures
- *  (accrual, gap-year draws and draw order all in them), so this page and
- *  the projection read one number. A row without them (no tracked basis)
- *  falls back to `projectContributionBasis`. */
+/** Roth basis at the transition: the engine's per-account figures, so the page and the
+ *  projection read one number; without them, `projectContributionBasis`. */
 function transitionRothBasis(
   rothBasisMeta: RothBasisMeta | null,
   projectedRoth: {
@@ -128,11 +102,8 @@ function transitionRothBasis(
   };
 }
 
-/** The brokerage's cost basis at the transition: the engine's own
- *  per-account basis (brokerage-basis.ts — contributions, overflow, ramp
- *  and lump sums, exactly as the projection moves them), so this page and
- *  the projection's capital-gains tax read one figure. A row without it
- *  (no per-account basis tracked) falls back to `projectCostBasis`. */
+/** Brokerage cost basis at the transition: the engine's per-account basis, so the page
+ *  and capital-gains tax read one figure; without it, `projectCostBasis`. */
 function transitionCostBasis(
   costBasis: number,
   projectedCostBasis: number | undefined,
@@ -157,15 +128,8 @@ function transitionCostBasis(
   );
 }
 
-/** Brokerage cost basis + every dollar contributed from the current year
- *  (year 0 — a live "as of today" snapshot, unlike Roth's dated basis row)
- *  through the transition year, inclusive. Year 0's `contribution` is the
- *  *remaining* part of this year not yet contributed as of today, so
- *  including it (not skipping it) is what keeps this from undercounting —
- *  same reasoning as the Roth basis projection above. Every dollar that
- *  lands in a taxable brokerage account is after-tax money, so all of
- *  `contribution` (intentional + overflow + ramp alike) is real cost basis
- *  — there's no employer-match-style component to exclude here. */
+/** Brokerage cost basis + every contribution from year 0 (the rest of this year) through
+ *  the transition year, inclusive. All brokerage money is after-tax, so all of it is basis. */
 function projectCostBasis(
   costBasis: number | null,
   contributionByYear: Map<number, number> | undefined,
@@ -183,43 +147,20 @@ function projectCostBasis(
   return sum;
 }
 
-/** Substitutes a future assumed year as the separation year for a
- *  still-active job (source "active") and re-evaluates Rule of 55 from
- *  there. A job with a real, already-known future end date caps the
- *  assumed separation at that date instead of assuming employment runs all
- *  the way to `assumedYear`. Any other source (already separated, or
- *  genuinely no data) is reused unchanged — the future can't move a real
- *  past separation, and can't manufacture data that doesn't exist.
- *
- *  Exported — the retirement projection engine's withdrawal eligibility
- *  reuses this as its "will this person have separated by projected year
- *  N" resolver. `assumedYear` is any assumed future year, not only the
- *  household's retirement transition. */
+/** Rule of 55 for an assumed future year: a still-active job ("active") separates at
+ *  `assumedYear`, capped by a known end date; any other source is reused unchanged.
+ *  The engine's withdrawal eligibility reuses this too. */
 export function projectRuleOf55(
   now: RuleOf55Status | null,
   assumedYear: number,
   birthYear: number,
   opts?: {
-    /** Rule of 55 forecasting override — forces the PROJECTED
-     *  verdict to ineligible, applied AFTER the recompute below so it can
-     *  never be silently discarded by it (the bug a first attempt at this
-     *  feature hit: mutating `now.eligible` before this function ran did
-     *  nothing, because the `source === "active"` branch recomputes
-     *  `eligible` from scratch and ignores whatever `now.eligible` was).
-     *  One-directional by construction — this can only ever push `eligible`
-     *  from true to false, never the reverse. `separationYear`/`source`/
-     *  `knownFutureSeparationYear` are preserved, so the UI can still show
-     *  "separates 2034" alongside "ineligible". Both call sites (eligibility.ts,
-     *  computeTaxBucketProjection below) must pass this identically or the
-     *  Tax Buckets page and the retirement engine would disagree about the
-     *  same account (Single Computation Path). Never applied to the "now"
-     *  view (tax-bucket-analysis.ts) — this is a forecasting assumption
-     *  about a future year, not a correction to today's real status. */
+    /** Forces the projected verdict to ineligible, applied after the recompute below;
+     *  keeps separation fields for display. Both callers must pass it identically; never
+     *  applied to the "now" view (a forecasting assumption, not today's status). */
     forceIneligible?: boolean;
-    /** The year the account's owner plans to retire. A still-active job
-     *  ends no later than that — someone who retires at 50 has separated
-     *  at 50, not in whichever later year is being projected, so the plan
-     *  doesn't become Rule-of-55 eligible at 55. Absent = no cap. */
+    /** Owner's planned retirement year: a still-active job ends by then, so retiring at
+     *  50 isn't Rule-of-55 eligible at 55. Absent = no cap. */
     ownerRetirementYear?: number;
   },
 ): RuleOf55Status | null {
@@ -245,17 +186,9 @@ export function computeTaxBucketProjection(input: {
   nowEntries: AccountAnalysisEntry[];
   projectionByYear: EngineYearProjection[];
   people: PersonInfo[];
-  /** Rule of 55 forecasting override, keyed by personId — same
-   *  contract as `projectRuleOf55`'s `opts.forceIneligible` and
-   *  `IndividualAccountInput.ruleOf55ForceIneligible`. Must be populated
-   *  from the SAME per-person setting the retirement engine reads
-   *  (`perPersonSettings[].ruleOf55Override === false`), or this page and
-   *  the retirement projection would disagree about the same account's
-   *  eligibility (Single Computation Path). Deliberately NOT threaded onto
-   *  `PersonInfo` — that type is shared with `computeTaxBucketAnalysis`'s
-   *  "now" path, and the override must never reach "now" (see
-   *  `projectRuleOf55`'s docblock: this is a forecasting assumption about a
-   *  future year, not a correction to today's real status). */
+  /** Rule of 55 forecasting override by personId, from the same setting the engine reads
+   *  (`ruleOf55Override === false`). Kept off `PersonInfo`, which the "now" path shares
+   *  and must never see it. */
   ruleOf55OverrideByPersonId?: Map<number, boolean>;
   /** Each person's planned retirement year — the same figure the engine
    *  puts on each account (`IndividualAccountInput.ownerRetirementYear`),
@@ -370,11 +303,8 @@ export function computeTaxBucketProjection(input: {
     }
 
     if (now.ownerPersonId == null) {
-      // Joint account, no single owner — Roth/401k/Traditional-IRA rules
-      // all need an age to project against and stay unattributed here.
-      // Brokerage's Cost basis/Growth split needs no person at all, so it
-      // isn't blocked by the same gap — project it the same way the owned
-      // branch below does.
+      // Joint account, no single owner: age-gated rules stay unattributed; the
+      // brokerage basis/growth split needs no person, so project it as below.
       let projectedCostBasis: number | null = now.costBasis;
       if (now.costBasis != null) {
         projectedCostBasis = transitionCostBasis(

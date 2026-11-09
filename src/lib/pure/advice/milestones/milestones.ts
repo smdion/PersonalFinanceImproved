@@ -1,16 +1,7 @@
 /**
- * Milestones — the one place financial rules and milestones are judged.
- *
- * The Milestones page, the dashboard Financial Checkup and the Retirement
- * card's readiness row all read `evaluateMilestones()`; none of them judges
- * a rule on its own. Pure: callers gather the household's figures (yearly
- * history, the live contribution/savings/mortgage summaries, the deterministic
- * projection, linked holdings) and pass them in. Thresholds and wording live
- * in `lib/config/milestones.ts`.
- *
- * Reached dates come from the yearly history (finalized years, plus the
- * current year for point-in-time balances); expected dates come from the
- * Retirement projection — the same run the dashboard Retirement card shows.
+ * Milestones: the one place financial rules and milestones are judged (`evaluateMilestones()`),
+ * for every surface. Pure: callers pass the household's figures; thresholds and wording are in
+ * `lib/config/milestones.ts`. Reached dates from yearly history, expected from the projection.
  */
 import {
   FIDELITY_CHECKPOINTS,

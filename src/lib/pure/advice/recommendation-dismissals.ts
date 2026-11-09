@@ -1,8 +1,6 @@
 /**
- * Dismissed and snoozed recommendations — household-wide (app_settings
- * `recommendation_dismissals`, admin-written, validated on write with
- * `dismissalsSchema`). A dismissal remembers the urgency it was made at:
- * if the recommendation escalates (soon → now) it comes back.
+ * Household-wide dismissed and snoozed recommendations (`recommendation_dismissals`). A
+ * dismissal keeps its urgency: if the recommendation escalates (soon → now) it comes back.
  */
 import { z } from "zod/v4";
 import { calendarDateOf } from "@/lib/utils/calendar-date";

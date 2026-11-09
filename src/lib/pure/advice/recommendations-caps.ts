@@ -1,9 +1,7 @@
 /**
- * IRS-limit recommendations — adapters over the cap pass's verdicts that
- * the contribution summary already carries per account type (capMessages,
- * overBy). Only maps fields: a contribution over its limit is an error to
- * fix (excess deferrals are taxed and must be refunded), so it ranks first
- * until it's changed; a missing owner or HSA coverage type comes soon.
+ * IRS-limit recommendations mapped from the cap verdicts the contribution summary carries.
+ * Over a limit is an error (excess deferrals must be refunded) ranked first; a missing owner
+ * or HSA coverage type comes soon.
  */
 import { getLimitGroup } from "@/lib/config/account-types";
 import type { Recommendation } from "@/lib/pure/advice/recommendations";

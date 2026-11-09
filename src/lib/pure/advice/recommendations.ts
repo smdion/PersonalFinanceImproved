@@ -1,8 +1,6 @@
 /**
- * Recommendations — one ranked list of what to do next, gathered from
- * results other engines already judged (the Milestones engine today). Each
- * source is an adapter that only maps fields: nothing here judges a rule
- * or works out a dollar figure.
+ * One ranked list of what to do next, mapped from results other engines already judged
+ * (Milestones). Nothing here judges a rule or computes a dollar figure.
  */
 import {
   MILESTONE_RECOMMENDATIONS,
@@ -43,10 +41,8 @@ export type Recommendation = {
 };
 
 /**
- * What a yearly amount grows to by the last year of the given return rates
- * (the plan's, year by year), each year's amount added at that year's end.
- * A per-year impact or yearly saving only: a one-time impact is money moved
- * (a rebalance, a sale), not money gained, so it has no retirement value.
+ * A yearly amount (impact or saving) compounded to the last of the plan's yearly rates, added
+ * at each year's end. One-time impacts move money rather than gain it, so they have no value.
  */
 export function retirementValue(
   r: Pick<Recommendation, "impact" | "yearlySaving">,

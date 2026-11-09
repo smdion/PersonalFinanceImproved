@@ -5102,9 +5102,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5116,9 +5113,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -5127,16 +5121,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/lib/pure/advice/goldilocks.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/advice/milestone-first-reached.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/advice/milestones/custom-goals.ts": {
@@ -5148,9 +5132,6 @@
     }
   },
   "src/lib/pure/advice/milestones/foo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 6
     }
@@ -5166,9 +5147,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     },
     "ratchet/no-abbreviation": {
       "count": 2
@@ -5188,20 +5166,7 @@
       "count": 2
     }
   },
-  "src/lib/pure/advice/milestones/journey.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/advice/milestones/milestones.shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/pure/advice/milestones/milestones.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -5212,9 +5177,6 @@
   "src/lib/pure/advice/milestones/milestones.types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     },
     "ratchet/no-abbreviation": {
       "count": 2
@@ -5228,45 +5190,15 @@
   "src/lib/pure/advice/recommendation-dismissals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/advice/recommendations-caps.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/advice/recommendations-roth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/lib/pure/advice/recommendations.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/advice/report/aca-irmaa-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/advice/report/action-items.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

@@ -1,12 +1,6 @@
-/** Action-items section of the advisor report — recommendations derived
- *  from STRUCTURED engine/Monte Carlo fields only (irmaaCost,
- *  acaMagiHeadroom, acaSubsidyPreserved, rmdShortfallAmount/
- *  rmdExcessAmount, penaltyAvoidedShortfallRate), never by pattern-
- *  matching the free-form `warnings[]` strings — those have no typed
- *  link to this code and could drift silently if matched on text
- *  (RULES.md single-computation-path). The engine's own warnings are
- *  passed through separately, verbatim, as disclosures rather than
- *  parsed into recommendations. */
+/** Advisor report action items, from structured engine and simulation fields only, never
+ *  by matching `warnings[]` text; the engine's warnings pass through verbatim as
+ *  disclosures. */
 import type {
   ProjectionResult,
   EngineDecumulationYear,

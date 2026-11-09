@@ -74,11 +74,9 @@ function limitStep(
   const open = rows.filter(
     (r) => r.contributed < r.limit * LIMIT_FILLED_TOLERANCE,
   );
-  // Money Guy's step 6: reaching a 25% retirement investing rate (the
-  // Retirement category only — Portfolio money is step 7's) before the
-  // plans are maxed also completes the step. (Their "if you don't have a
-  // high income" has no number; the high-income line only decides
-  // whether the match counts toward the 25%.)
+  // Step 6 also completes at a 25% Retirement-category investing rate before the
+  // plans are maxed (Portfolio money is step 7's); high income only decides
+  // whether the match counts toward the 25%.
   const unlimitedNote =
     step === 6 && (input.retirementUnlimited ?? 0) > 0
       ? `Plus ${formatCurrency(input.retirementUnlimited!)} a year into retirement accounts without an IRS limit`
@@ -229,10 +227,8 @@ export function foo(
   return out;
 }
 
-/** FOO step 3 — high-interest debt, judged per debt against Money Guy's
- *  line for its owner's age (lib/config/debts.ts). Card balances mapped
- *  from the budget aren't judged (usually paid in full each month); a card
- *  on the debts list is a balance carried. */
+/** FOO step 3: each debt against Money Guy's line for its owner's age. Budget-mapped
+ *  card balances aren't judged (usually paid in full); a listed card is carried debt. */
 function highInterestDebtStep(
   input: MilestoneInput,
   now: MilestoneYear,
