@@ -40,6 +40,7 @@ if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
     tests/baseline/router-baseline-postgres.test.ts tests/baseline/pins-postgres.test.ts; do
     step "PostgreSQL: $t" pnpm -s test "$t"
   done
+  step "PostgreSQL: the router suite against its known failures" pnpm -s tsx scripts/check-router-postgres.ts
 else
   echo "== PostgreSQL suites"
   echo "   skipped: TEST_DATABASE_URL is not set"

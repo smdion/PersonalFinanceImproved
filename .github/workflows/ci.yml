@@ -669,17 +669,11 @@ jobs:
 
       # tests/routers/ as the SQLite unit job runs it, with every caller on
       # its own PostgreSQL database copied from a migrated template
-      # (tests/routers/postgres-router-db.ts). The files that are PostgreSQL
-      # or SQLite tests already run elsewhere. A failure must be on the
+      # (tests/routers/postgres-router-db.ts). A failure must be on the
       # known list, with its reason, and a listed test must still fail.
       - name: Router suite on PostgreSQL (against its known failures)
         if: env.RUN == 'true' && (matrix.part == 'routers')
-        run: |
-          files=$(ls tests/routers/*.test.ts | grep -v -e '-postgres\.test\.ts$' -e '/fresh-install\.test\.ts$' -e '/test-database-lock\.test\.ts$')
-          pnpm vitest run --project=node $files --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/router-postgres.json" || true
-          pnpm tsx scripts/check-router-postgres.ts "$RUNNER_TEMP/router-postgres.json"
-        env:
-          LEDGR_ROUTER_DIALECT: postgres
+        run: pnpm tsx scripts/check-router-postgres.ts
 
   # Known vulnerabilities in the production dependencies (owner Q5): a high
   # or critical advisory fails a pull request into main; on a push it is
