@@ -89,6 +89,10 @@ export const plannedTransactionProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Refused for an extra-paycheck (rule) row; a transfer's other leg takes the same date,
+     * description and recurrence and the mirrored amount. Returns the row.
+     */
     update: savingsProcedure
       .input(
         z
@@ -161,6 +165,9 @@ export const plannedTransactionProcedures = {
           return updated;
         });
       }),
+    /**
+     * Refused for an extra-paycheck (rule) row; deleting either leg of a transfer deletes both.
+     */
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -207,6 +214,9 @@ export const plannedTransactionProcedures = {
         }),
       )
       .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
+    /**
+     * Settle several occurrences in one transaction; a transfer's legs settle together.
+     */
     settleMany: savingsProcedure
       .input(
         z.object({

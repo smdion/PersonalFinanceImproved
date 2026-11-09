@@ -8,6 +8,10 @@ import { zCalendarDate } from "@/lib/utils/zod-fields";
 export const transferProcedures = {
   // ══ TRANSFERS (paired planned transactions) ══
   transfers: createTRPCRouter({
+    /**
+     * A transfer between two funds: a withdrawal and a deposit written together under one pair id.
+     * Refused within one fund. Returns both legs.
+     */
     create: savingsProcedure
       .input(
         z.object({

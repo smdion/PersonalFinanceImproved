@@ -23,6 +23,7 @@ const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
 export const brokerageRouter = createTRPCRouter({
   // ══ GOALS ══
 
+  /** The active brokerage goals, by target year then priority. */
   listGoals: protectedProcedure.query(({ ctx }) => listBrokerageGoals(ctx)),
 
   createGoal: brokerageProcedure
@@ -81,6 +82,10 @@ export const brokerageRouter = createTRPCRouter({
 
   // ══ SUMMARY (goals + API-resolved balances for brokerage page) ══
 
+  /**
+   * Active brokerage goals, the budget lines that fund a contribution account, and with a budget
+   * API mapped, each snapshot account's balance from it where mapped, else the snapshot's.
+   */
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [goals, budgetLinkRows] = await Promise.all([
       ctx.db
