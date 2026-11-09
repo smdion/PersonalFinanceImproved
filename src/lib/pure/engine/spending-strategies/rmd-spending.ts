@@ -2,13 +2,13 @@
  * RMD-Based Spending (Morningstar Method 2): the IRS RMD factor for the age times a multiplier;
  * fixed-real spending before RMD age. SWR 5.4% (40/60 portfolio, 90% success, 30 years).
  */
-import { roundToCents } from "../../utils/math";
-import { getRmdFactor } from "../../config/rmd-tables";
+import { roundToCents } from "../../../utils/math";
+import { getRmdFactor } from "../../../config/rmd-tables";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   RmdSpendingParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applyRmdSpending(
   params: RmdSpendingParams | Record<string, number | boolean>,

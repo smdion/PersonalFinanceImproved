@@ -2,11 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   applyGuytonKlinger,
   applyGuytonKlingerStrategy,
-} from "@/lib/pure/engine/guyton-klinger";
+} from "@/lib/pure/engine/spending-strategies/guyton-klinger";
 import type {
   GuytonKlingerInput,
   GuytonKlingerParams,
-} from "@/lib/pure/engine/guyton-klinger";
+} from "@/lib/pure/engine/spending-strategies/guyton-klinger";
 import { initialCrossYearState } from "@/lib/pure/engine/spending-strategy";
 
 const DEFAULT_PARAMS: GuytonKlingerParams = {

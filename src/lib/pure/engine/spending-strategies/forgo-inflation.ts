@@ -6,7 +6,7 @@ import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   ForgoInflationParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applyForgoInflation(
   _params: ForgoInflationParams | Record<string, number | boolean>,

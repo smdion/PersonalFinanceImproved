@@ -204,7 +204,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/constant-percentage.ts": {
+  "src/lib/pure/engine/spending-strategies/constant-percentage.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
@@ -214,12 +214,12 @@
       "count": 4
     }
   },
-  "src/lib/pure/engine/endowment.ts": {
+  "src/lib/pure/engine/spending-strategies/endowment.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }
   },
-  "src/lib/pure/engine/guyton-klinger.ts": {
+  "src/lib/pure/engine/spending-strategies/guyton-klinger.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 5
     }

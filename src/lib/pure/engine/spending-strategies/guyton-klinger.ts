@@ -3,12 +3,12 @@
  * Raises and cuts move the portfolio draw; an SS change (in today's dollars) rescales the anchor
  * instead. Cross-year state is owned by the orchestrator and passed in each year.
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   GuytonKlingerStrategyParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 // ---------------------------------------------------------------------------
 // Types

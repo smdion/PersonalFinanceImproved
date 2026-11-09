@@ -456,7 +456,7 @@
     "src/lib/pure/engine/contribution-routing.ts:capSpecs",
     "src/lib/pure/engine/contribution-routing.ts:slotLimits",
     "src/lib/pure/engine/gap-year-draw.ts:shortfallFloor",
-    "src/lib/pure/engine/guyton-klinger.ts:applyGuytonKlingerStrategy",
+    "src/lib/pure/engine/spending-strategies/guyton-klinger.ts:applyGuytonKlingerStrategy",
     "src/lib/pure/engine/individual-accounts/ledger.ts:accrueIndividualBasis",
     "src/lib/pure/engine/individual-accounts/ledger.ts:depleteIndividualBasis",
     "src/lib/pure/engine/individual-accounts/ledger.ts:makeIndKey",

@@ -2,17 +2,17 @@
  * Endowment (Morningstar Method 6): a fixed share of the N-year rolling average balance, with a
  * floor. SWR 5.7% (40/60 portfolio, 90% success, 30 years).
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import {
   DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
   DEFAULT_STRATEGY_FLOOR_PERCENT,
   DEFAULT_ENDOWMENT_ROLLING_YEARS,
-} from "../../constants";
+} from "../../../constants";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   EndowmentParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applyEndowment(
   params: EndowmentParams | Record<string, number | boolean>,

@@ -80,46 +80,6 @@
     "to": "src/lib/pure/accounts/tax-bucket-analysis.ts"
   },
   {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/constant-percentage.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/endowment.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/forgo-inflation.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/guyton-klinger.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/rmd-spending.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/spending-decline.ts",
-    "to": "src/lib/pure/engine/spending-strategy.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/spending-strategy.ts",
-    "to": "src/lib/pure/engine/vanguard-dynamic.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/pure/engine/spending-strategy.ts",
-    "to": "src/lib/pure/engine/vpw.ts"
-  },
-  {
     "rule": "pure-has-no-io",
     "from": "src/lib/pure/budget/utility-cost-feed.ts",
     "to": "src/lib/budget-api/types.ts"
@@ -156,6 +116,11 @@
   },
   {
     "rule": "ui-never-bundles-zod",
+    "from": "src/app/(dashboard)/milestones/use-first-reached.ts",
+    "to": "src/lib/pure/advice/milestone-first-reached.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
     "from": "src/app/(dashboard)/paycheck/paycheck-content.tsx",
     "to": "src/lib/db/shapes/profile-fields.ts"
   },
@@ -188,11 +153,6 @@
     "rule": "ui-never-bundles-zod",
     "from": "src/components/performance/update-performance-form.tsx",
     "to": "src/lib/pure/investments/performance-annotations.ts"
-  },
-  {
-    "rule": "ui-never-bundles-zod",
-    "from": "src/app/(dashboard)/milestones/use-first-reached.ts",
-    "to": "src/lib/pure/advice/milestone-first-reached.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

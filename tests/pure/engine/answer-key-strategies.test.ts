@@ -81,9 +81,11 @@ import { cents, runOneYear, xfail } from "../../fixtures/answer-key";
 import {
   applySpendingStrategy,
   initialCrossYearState,
-  type SpendingCrossYearState,
-  type SpendingStrategyInput,
 } from "@/lib/pure/engine/spending-strategy";
+import type {
+  SpendingCrossYearState,
+  SpendingStrategyInput,
+} from "@/lib/pure/engine/types/spending-strategy";
 import { calculateProjection } from "@/lib/pure/engine";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type {

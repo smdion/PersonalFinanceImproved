@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { buildInflationPath } from "@/lib/pure/engine/inflation-path";
 import { taxGrowthFactor } from "@/lib/pure/engine/bracket-growth";
-import { applySpendingDecline } from "@/lib/pure/engine/spending-decline";
+import { applySpendingDecline } from "@/lib/pure/engine/spending-strategies/spending-decline";
 
 const plan = {
   inflationRate: 0.03,

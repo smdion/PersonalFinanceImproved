@@ -3,12 +3,12 @@
  * balance, with a ceiling and floor on year-over-year spending changes.
  * SWR: 4.7% (40/60 portfolio, 90% success, 30 years).
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   VanguardDynamicParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applyVanguardDynamic(
   params: VanguardDynamicParams | Record<string, number | boolean>,

@@ -2,12 +2,12 @@
  * Spending Decline (Morningstar Method 4): real spending falls by a fixed rate (2% from EBRI
  * data). SWR 5.0% (40/60 portfolio, 90% success, 30 years).
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   SpendingDeclineParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applySpendingDecline(
   params: SpendingDeclineParams | Record<string, number | boolean>,

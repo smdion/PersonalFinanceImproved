@@ -3,87 +3,19 @@
  * A new strategy is one engine file plus one dispatcher case; the orchestrator owns cross-year state.
  */
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import { applyForgoInflation } from "./forgo-inflation";
-import { applySpendingDecline } from "./spending-decline";
-import { applyConstantPercentage } from "./constant-percentage";
-import { applyEndowment } from "./endowment";
-import { applyVanguardDynamic } from "./vanguard-dynamic";
-import { applyRmdSpending } from "./rmd-spending";
-import { applyGuytonKlingerStrategy } from "./guyton-klinger";
-import { applyVpw } from "./vpw";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export interface SpendingStrategyInput {
-  /** Current projected expenses (already inflation-adjusted by orchestrator). */
-  projectedExpenses: number;
-  /** Total portfolio balance at start of year (pre-withdrawal). */
-  portfolioBalance: number;
-  /** Effective inflation rate applied this year (post-retirement raise rate). */
-  effectiveInflation: number;
-  /** CPI inflation rate — used for inflation-adjusted floors to maintain real
-   *  purchasing power independently of the post-retirement raise setting. */
-  cpiInflation: number;
-  /** A trial's realized CPI since retirement began; null/absent = the plan's
-   *  flat `cpiInflation` every year. */
-  cpiGrowthSinceStart?: number | null;
-  /** Whether a budget override is active this year. */
-  hasBudgetOverride: boolean;
-  /** Year index (0-based from projection start). */
-  yearIndex: number;
-  /** The plan's age this year (the primary person's). */
-  age: number;
-  /** Primary person's age (for RMD factor lookup). Falls back to `age` if not provided. */
-  primaryPersonAge?: number;
-  /** The youngest person's age (VPW: a couple uses the younger spouse's). */
-  youngestAge?: number;
-  /** Social Security paid this year (what it covers of spending). */
-  ssIncome?: number;
-  /** The same benefits in today's dollars, and this year's growth since
-   *  the input's year — Guyton-Klinger compares benefits in today's dollars
-   *  so a cost-of-living raise never reads as a benefit starting. */
-  ssIncomeToday?: number;
-  ssGrowthFactor?: number;
-  /** This year's stock share of the portfolio (0–1), from the allocation
-   *  glide path; absent when the household has no asset classes. */
-  stockShare?: number;
-  /** Cross-year state from the orchestrator. */
-  crossYearState: SpendingCrossYearState;
-}
-
-export interface SpendingCrossYearState {
-  /** Initial withdrawal rate (set on first decumulation year). */
-  initialWithdrawalRate: number | null;
-  /** Initial withdrawal dollar amount (set on first decumulation year). */
-  initialWithdrawalAmount: number | null;
-  /** Prior year's portfolio return rate. Null for first year. */
-  priorYearReturn: number | null;
-  /** Prior year's spending amount. Null for first year. */
-  priorYearSpending: number | null;
-  /** Balance history for endowment rolling average. */
-  balanceHistory: number[];
-  /** Count of decumulation years elapsed (for spending decline). */
-  decumulationYearCount: number;
-  /** Social Security in today's dollars that Guyton-Klinger's anchor reflects (rescaled when a
-   *  benefit starts or stops). Null before the first decumulation year. */
-  priorYearSsIncome: number | null;
-}
-
-export interface SpendingStrategyResult {
-  /** This year's amount — spending, or the portfolio withdrawal (see
-   *  `amountKind`). */
-  projectedExpenses: number;
-  /** Whether the amount is household spending (SS pays part; default) or the portfolio draw.
-   *  May switch by year; the household's `ssInAmount` can still treat a portfolio_withdrawal
-   *  amount as spending. */
-  amountKind?: "spending" | "portfolio_withdrawal";
-  /** Action label (e.g. 'increase', 'decrease', 'floor_applied'). */
-  action: string | null;
-  /** Updates to merge into cross-year state. */
-  updatedState: Partial<SpendingCrossYearState>;
-}
+import { applyForgoInflation } from "./spending-strategies/forgo-inflation";
+import { applySpendingDecline } from "./spending-strategies/spending-decline";
+import { applyConstantPercentage } from "./spending-strategies/constant-percentage";
+import { applyEndowment } from "./spending-strategies/endowment";
+import { applyVanguardDynamic } from "./spending-strategies/vanguard-dynamic";
+import { applyRmdSpending } from "./spending-strategies/rmd-spending";
+import { applyGuytonKlingerStrategy } from "./spending-strategies/guyton-klinger";
+import { applyVpw } from "./spending-strategies/vpw";
+import type {
+  SpendingCrossYearState,
+  SpendingStrategyInput,
+  SpendingStrategyResult,
+} from "./types/spending-strategy";
 
 /** Create a fresh cross-year state for the start of a projection. */
 export function initialCrossYearState(): SpendingCrossYearState {
@@ -96,65 +28,6 @@ export function initialCrossYearState(): SpendingCrossYearState {
     decumulationYearCount: 0,
     priorYearSsIncome: null,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Per-strategy typed params — one interface per strategy that has params
-// ---------------------------------------------------------------------------
-
-/** Forgo Inflation After Loss: no configurable params. */
-export type ForgoInflationParams = Record<string, never>;
-
-/** RMD-Based Spending params. */
-export interface RmdSpendingParams {
-  rmdMultiplier: number;
-}
-
-/** Guyton-Klinger guardrail params. */
-export interface GuytonKlingerStrategyParams {
-  upperGuardrail: number;
-  lowerGuardrail: number;
-  increasePercent: number;
-  decreasePercent: number;
-  skipInflationAfterLoss: boolean;
-}
-
-/** Spending Decline params. */
-export interface SpendingDeclineParams {
-  annualDeclineRate: number;
-}
-
-/** Constant Percentage params. */
-export interface ConstantPercentageParams {
-  withdrawalPercent: number;
-  floorPercent: number;
-}
-
-/** Endowment params. */
-export interface EndowmentParams {
-  withdrawalPercent: number;
-  rollingYears: number;
-  floorPercent: number;
-}
-
-/** Variable Percentage Withdrawal params. */
-export interface VpwParams {
-  /** The most the percentage reaches. */
-  cap: number;
-  /** The age the table runs to. */
-  endAge: number;
-  /** Real returns VPW assumes for stocks and bonds. */
-  stockReturn: number;
-  bondReturn: number;
-  /** Stock share used when the projection has no allocation. */
-  stockShare: number;
-}
-
-/** Vanguard Dynamic (Floor & Ceiling) params. */
-export interface VanguardDynamicParams {
-  basePercent: number;
-  ceilingPercent: number;
-  floorPercent: number;
 }
 
 // ---------------------------------------------------------------------------

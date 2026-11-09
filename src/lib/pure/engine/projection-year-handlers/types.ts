@@ -22,7 +22,7 @@ import type {
   AccumulationOverride,
 } from "../types/accumulation";
 import type { DecumulationOverride } from "../types/decumulation";
-import type { SpendingCrossYearState } from "../spending-strategy";
+import type { SpendingCrossYearState } from "../types/spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-accounts/ledger";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";

@@ -4022,11 +4022,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/engine/constant-percentage.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/contribution-routing.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -4042,11 +4037,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
-    }
-  },
-  "src/lib/pure/engine/endowment.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/expense-endings.ts": {
@@ -4070,14 +4060,6 @@
   },
   "src/lib/pure/engine/growth-application.ts": {
     "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/guyton-klinger.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
@@ -4299,11 +4281,6 @@
       "count": 5
     }
   },
-  "src/lib/pure/engine/rmd-spending.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/roth-conversion.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -4315,7 +4292,40 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/spending-decline.ts": {
+  "src/lib/pure/engine/spending-strategies/constant-percentage.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/endowment.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/guyton-klinger.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/rmd-spending.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/spending-decline.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/vanguard-dynamic.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/engine/spending-strategies/vpw.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
@@ -4339,16 +4349,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
-    }
-  },
-  "src/lib/pure/engine/vanguard-dynamic.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/vpw.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/withdrawal-cost-ranking.ts": {

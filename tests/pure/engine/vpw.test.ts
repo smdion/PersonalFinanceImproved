@@ -4,7 +4,7 @@
  * glide path.
  */
 import { describe, it, expect } from "vitest";
-import { applyVpw, vpwRate } from "@/lib/pure/engine/vpw";
+import { applyVpw, vpwRate } from "@/lib/pure/engine/spending-strategies/vpw";
 import { initialCrossYearState } from "@/lib/pure/engine/spending-strategy";
 import { getStrategyDefaults } from "@/lib/config/withdrawal-strategies";
 import { VPW_STOCK_SHARES, VPW_TABLE } from "../../fixtures/vpw-table";

@@ -2,16 +2,16 @@
  * Constant Percentage (Morningstar Method 5): a fixed share of the current balance each year,
  * floored at floorPercent of the initial withdrawal. SWR 5.7% (40/60, 90% success, 30 years).
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import {
   DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
   DEFAULT_STRATEGY_FLOOR_PERCENT,
-} from "../../constants";
+} from "../../../constants";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   ConstantPercentageParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 export function applyConstantPercentage(
   params: ConstantPercentageParams | Record<string, number | boolean>,

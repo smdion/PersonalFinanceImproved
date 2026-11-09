@@ -3,12 +3,12 @@
  * n = endAge − younger spouse's age, r = blended real return; capped at 10%.
  * Gross withdrawal; SS and pensions come on top unless `ssInAmount` says otherwise.
  */
-import { roundToCents } from "../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
   VpwParams,
-} from "./spending-strategy";
+} from "../types/spending-strategy";
 
 /** The VPW percentage for `n` withdrawals left at real return `r`. */
 export function vpwRate(r: number, n: number): number {
