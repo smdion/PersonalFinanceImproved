@@ -295,9 +295,6 @@
     "ratchet/no-abbreviation": {
       "count": 3
     },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
     "ratchet/no-jsx-iife": {
       "count": 3
     },
@@ -1358,12 +1355,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 5
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
     }
   },
   "src/components/dashboard/financial-checkup-card.tsx": {
@@ -2060,9 +2051,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 4
-    },
-    "ratchet/no-guarded-division": {
-      "count": 1
     },
     "ratchet/no-jsx-iife": {
       "count": 2

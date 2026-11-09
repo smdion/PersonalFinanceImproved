@@ -29,6 +29,13 @@ export function getContribMultiplier(
   }
 }
 
+/** The household's paychecks a year for its totals: the people's
+ *  average, 26 when no one is counted. */
+export function householdPeriodsPerYear(periods: readonly number[]): number {
+  const total = periods.reduce((sum, n) => sum + n, 0);
+  return safeDivide(total, periods.length, 26);
+}
+
 /** An annual amount in the chosen period, by division; no pay periods
  *  gives $0 per paycheck, as getContribMultiplier does. */
 export function toContributionPeriod(

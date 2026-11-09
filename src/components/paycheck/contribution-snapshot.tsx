@@ -6,7 +6,6 @@ import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +18,7 @@ import {
   ContribPeriodToggle,
   getContribMultiplier,
   getPeriodSuffix,
+  householdPeriodsPerYear,
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
@@ -92,11 +92,9 @@ export function ContributionSnapshot() {
     if (!allTypes.includes(jat.accountType)) allTypes.push(jat.accountType);
   }
 
-  // Use average periodsPerYear for household totals
-  const avgPeriodsPerYear =
-    activePeople.length > 0
-      ? sumBy(activePeople, (p) => p.periodsPerYear!) / activePeople.length
-      : 26;
+  const avgPeriodsPerYear = householdPeriodsPerYear(
+    activePeople.map((p) => p.periodsPerYear!),
+  );
   const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
 
   // Household totals: the same calculation as every savings rate

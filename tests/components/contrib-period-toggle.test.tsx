@@ -8,6 +8,7 @@ import {
   ContribPeriodToggle,
   getContribMultiplier,
   getPeriodSuffix,
+  householdPeriodsPerYear,
   toContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 
@@ -48,5 +49,12 @@ describe("toContributionPeriod", () => {
   it("gives $0 per paycheck when a person has no pay periods", () => {
     expect(toContributionPeriod(12_000, 0, "paycheck")).toBe(0);
     expect(getContribMultiplier("paycheck", 0)).toBe(0);
+  });
+});
+
+describe("householdPeriodsPerYear", () => {
+  it("averages the people's paychecks a year, 26 with no one", () => {
+    expect(householdPeriodsPerYear([26, 24])).toBe(25);
+    expect(householdPeriodsPerYear([])).toBe(26);
   });
 });

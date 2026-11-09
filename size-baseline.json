@@ -24,7 +24,7 @@
     "src/app/(dashboard)/budget/what-if-savings-step.tsx": 49,
     "src/app/(dashboard)/budget/what-if-step.tsx": 67,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 622,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 964,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 963,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 935,
     "src/app/(dashboard)/house/house-content.tsx": 733,
@@ -80,7 +80,7 @@
     "src/components/contributions/profile-manager/use-inline-editor.ts": 213,
     "src/components/contributions/profile-manager/use-new-profile-save.ts": 121,
     "src/components/contributions/profile-manager/use-profile-manager-state.ts": 101,
-    "src/components/dashboard/contributions-card.tsx": 653,
+    "src/components/dashboard/contributions-card.tsx": 577,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 677,
     "src/components/dashboard/retirement-card-figures.ts": 130,
@@ -116,7 +116,7 @@
     "src/components/onboarding/wizard-state.ts": 32,
     "src/components/paycheck/contrib-account-form.tsx": 613,
     "src/components/paycheck/contrib-card.tsx": 539,
-    "src/components/paycheck/contribution-snapshot.tsx": 716,
+    "src/components/paycheck/contribution-snapshot.tsx": 714,
     "src/components/paycheck/contributions-section.tsx": 429,
     "src/components/paycheck/person-paycheck.tsx": 453,
     "src/components/performance/update-performance-form.tsx": 852,
@@ -447,7 +447,7 @@
       "WhatIfTab": 548
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
-      "ContributionsContent": 874,
+      "ContributionsContent": 872,
       "ContributionsContent.map()": 234,
       "ContributionsContent.map().map()": 169
     },
@@ -532,7 +532,7 @@
       "useBudgetItemMutations": 182
     },
     "src/components/dashboard/contributions-card.tsx": {
-      "ContributionsCardImpl": 529,
+      "ContributionsCardImpl": 527,
       "ContributionsCardImpl.map()": 266,
       "ContributionsCardImpl.map().map()": 251
     },
@@ -628,7 +628,7 @@
       "ContribCard.iife()": 182
     },
     "src/components/paycheck/contribution-snapshot.tsx": {
-      "ContributionSnapshot": 674,
+      "ContributionSnapshot": 672,
       "ContributionSnapshot.map()": 490,
       "ContributionSnapshot.map().map()": 315
     },

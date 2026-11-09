@@ -7,16 +7,20 @@ import { useId } from "react";
 import { ChartSummaryText } from "@/components/charts/chart-summary-text";
 import { fundingBarSummary } from "./funding-bar.summary";
 
+/** The bar toward an account's IRS limit. `limitMarker` also draws the
+ *  100% line when no match is drawn beyond it (the Dashboard's card). */
 export function FundingBar({
   pct,
   matchPct,
   matchCountsTowardLimit,
   accountType,
+  limitMarker = false,
 }: {
   pct: number;
   matchPct?: number;
   matchCountsTowardLimit?: boolean;
   accountType?: string;
+  limitMarker?: boolean;
 }) {
   const showMatchBeyond = (matchPct ?? 0) > 0 && !matchCountsTowardLimit;
   const employeeClamped = Math.min(pct, 1);
@@ -44,11 +48,22 @@ export function FundingBar({
     "aria-describedby": summaryId,
   } as const;
   const described = <ChartSummaryText id={summaryId} text={summary.text} />;
+  const marker = (left: number) => (
+    <div
+      className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
+      style={{ left: `${left}%` }}
+      title="100% IRS annual limit"
+    />
+  );
 
   if (!showMatchBeyond) {
     return (
       <div
-        className="bg-surface-strong h-2 w-full rounded-full"
+        className={
+          limitMarker
+            ? "bg-surface-strong relative h-2 w-full rounded-full"
+            : "bg-surface-strong h-2 w-full rounded-full"
+        }
         title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
         {...named}
       >
@@ -57,6 +72,7 @@ export function FundingBar({
           className={`${color} h-2 rounded-full transition-all`}
           style={{ width: `${employeeClamped * 100}%` }}
         />
+        {limitMarker && marker(100)}
       </div>
     );
   }
@@ -85,12 +101,7 @@ export function FundingBar({
         style={{ left: `${employeeWidth}%`, width: `${matchWidth}%` }}
         title={`Employer match (does not count toward IRS limit)`}
       />
-      {/* IRS limit marker line */}
-      <div
-        className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
-        style={{ left: `${limitPosition}%` }}
-        title="Vertical line = 100% IRS annual limit"
-      />
+      {marker(limitPosition)}
     </div>
   );
 }

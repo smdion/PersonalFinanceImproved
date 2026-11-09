@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import {
   ContribPeriodToggle,
   getPeriodSuffix,
+  householdPeriodsPerYear,
   toContributionPeriod,
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
@@ -152,11 +153,9 @@ export function ContributionsContent() {
     0,
   );
 
-  const avgPeriodsPerYear =
-    activePeople.length > 0
-      ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
-        activePeople.length
-      : 26;
+  const avgPeriodsPerYear = householdPeriodsPerYear(
+    activePeople.map((p) => p.periodsPerYear),
+  );
 
   // Household totals and rates: the same calculation as the Financial
   // Checkup (householdSavings — joint accounts per view; YTD divides by pay
