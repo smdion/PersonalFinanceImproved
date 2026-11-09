@@ -8,7 +8,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Badge } from "@/components/ui/badge";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { formatCurrency } from "@/lib/utils/format";
 import type { Settings, BudgetProfileSummaries, IsEditable } from "./types";
 
@@ -35,7 +35,7 @@ export function PerPhaseBudgetSection({
   setDecumulationBudgetCol,
   isEditable,
 }: Props) {
-  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const meta = storedStrategyConfig(settings.withdrawalStrategy);
   if (!meta) return null;
   const { incomeSource } = meta;
   const { usesWithdrawalRate, usesPostRetirementRaise } = meta;

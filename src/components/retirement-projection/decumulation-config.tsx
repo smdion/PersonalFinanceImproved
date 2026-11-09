@@ -1,7 +1,7 @@
 "use client";
 
 /** Withdrawal strategy configuration panel — bracket filling, waterfall, and percentage routing modes with account order and tax preference editors. */
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
@@ -126,7 +126,7 @@ export function DecumulationConfig({
 }: DecumulationConfigProps) {
   const strategyKey = (activeSpendingStrategy ??
     "fixed") as WithdrawalStrategyType;
-  const strategyCfg = STRATEGY_CONFIG_BY_STORED_KEY[strategyKey];
+  const strategyCfg = storedStrategyConfig(strategyKey);
   const isDynamic = strategyKey !== "fixed";
   const persistedModeLabel =
     persistedWithdrawalRoutingMode &&

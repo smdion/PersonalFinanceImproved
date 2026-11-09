@@ -16,7 +16,7 @@ import {
   checkImportedValues,
   checkRestoredValues,
 } from "@/lib/db/backup/closed-set-columns";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { VERSION_PREVIEW_WITHHELD_TABLES } from "@/lib/db/backup/version-tables";
 import { log } from "@/lib/logger";
 
@@ -374,13 +374,13 @@ describe("the follow-up defaults and refusals", () => {
 
 describe("the stored-strategy lookup", () => {
   it("finds a current key and nothing for an Object member's name", () => {
-    expect(STRATEGY_CONFIG_BY_STORED_KEY["fixed"]?.label).toBe("Fixed Real");
+    expect(storedStrategyConfig("fixed")?.label).toBe("Fixed Real");
     for (const key of [
       "constructor",
       "toString",
       "__proto__",
       "hasOwnProperty",
     ])
-      expect(STRATEGY_CONFIG_BY_STORED_KEY[key]).toBeUndefined();
+      expect(storedStrategyConfig(key)).toBeUndefined();
   });
 });

@@ -183,14 +183,14 @@
     "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": 228,
     "src/components/retirement-projection/projection-table.tsx": 432,
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": 319,
-    "src/components/retirement-projection/spending-stability-chart.tsx": 526,
+    "src/components/retirement-projection/spending-stability-chart.tsx": 525,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 620,
     "src/components/retirement-projection/use-projection-queries.ts": 815,
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/utils.ts": 798,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
-    "src/components/retirement/assumptions-band.tsx": 405,
+    "src/components/retirement/assumptions-band.tsx": 404,
     "src/components/retirement/retirement-profile-tab.tsx": 505,
     "src/components/retirement/sections/taxes.tsx": 541,
     "src/components/savings/api-sync-section.tsx": 590,
@@ -729,7 +729,7 @@
       "ReportAssumptionsSummary": 263
     },
     "src/components/retirement-projection/spending-stability-chart.tsx": {
-      "SpendingStabilityChart": 490
+      "SpendingStabilityChart": 489
     },
     "src/components/retirement-projection/tooltip-renderer.tsx": {
       "renderTooltip": 327
@@ -753,7 +753,7 @@
       "WithdrawalComparisonCard": 477
     },
     "src/components/retirement/assumptions-band.tsx": {
-      "AssumptionsBand": 326
+      "AssumptionsBand": 325
     },
     "src/components/retirement/retirement-profile-manager.tsx": {
       "RetirementProfileManager": 261

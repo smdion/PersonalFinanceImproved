@@ -1,5 +1,5 @@
 import type { SimulationInputs } from "./mc-simulation-types";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { AssumptionRow } from "./assumption-row";
@@ -7,7 +7,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 export function withdrawalRateRows(inputs: SimulationInputs) {
   const strategy = inputs.withdrawalStrategy as WithdrawalStrategyType;
-  const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
+  const cfg = storedStrategyConfig(strategy);
   const isDynamic = strategy !== "fixed";
   // No strategy reads this rate to compute spending. `usesWithdrawalRate` (not
   // `incomeSource`) splits budget-seeded strategies (Fixed, Forgo, Spending-

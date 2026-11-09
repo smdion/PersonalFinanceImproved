@@ -1,6 +1,6 @@
 /** The Simulation bar's stat tiles and run controls. */
 import { HelpTip } from "@/components/ui/help-tip";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import type { ProjectionState } from "./projection-table-types";
@@ -123,7 +123,7 @@ export function SimulationRunTiles({
             )}
             <HelpTip
               maxWidth={260}
-              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${STRATEGY_CONFIG_BY_STORED_KEY[si.withdrawalStrategy]?.label ?? si.withdrawalStrategy}) and any changes you set for that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
+              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${storedStrategyConfig(si.withdrawalStrategy)?.label ?? si.withdrawalStrategy}) and any changes you set for that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
             />
           </div>
           <div className="text-micro text-faint">starting income</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { useEffect, useRef } from "react";
 
@@ -59,7 +59,7 @@ export function SpendingStabilityChart({
   // applied ONCE via the shared showStabilityBars toggle (the BASELINE pill)
   // and never after the user's first interaction, so it can't fight them.
   const reactsToVolatility =
-    STRATEGY_CONFIG_BY_STORED_KEY[engineSettings?.withdrawalStrategy ?? "fixed"]
+    storedStrategyConfig(engineSettings?.withdrawalStrategy ?? "fixed")
       ?.reactsToVolatility ?? false;
   const appliedSmartDefault = useRef(false);
   useEffect(() => {
@@ -103,8 +103,7 @@ export function SpendingStabilityChart({
   const activeStrategy =
     engineSettings.withdrawalStrategy as WithdrawalStrategyType;
   const usesPostRetirementRaise =
-    STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.usesPostRetirementRaise ??
-    true;
+    storedStrategyConfig(activeStrategy)?.usesPostRetirementRaise ?? true;
 
   const hasSimulationData = !!simulationStabilityBands;
   const simulationBandMap = isStrategy
@@ -235,8 +234,8 @@ export function SpendingStabilityChart({
         {reactsToVolatility && !showBars && (
           <>
             {" "}
-            {(STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.label ??
-              activeStrategy) + "’s"}{" "}
+            {(storedStrategyConfig(activeStrategy)?.label ?? activeStrategy) +
+              "’s"}{" "}
             own guardrail mechanism needs real return volatility to trigger, so
             the deterministic bars are hidden here by default (they&apos;d just
             be a flat, uneventful line) — look at the Confidence Band below for
