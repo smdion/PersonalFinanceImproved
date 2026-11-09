@@ -344,8 +344,8 @@
     "src/lib/sec/facts-sync.ts": 576,
     "src/lib/simplefin/client.ts": 458,
     "src/lib/simplefin/ingest.ts": 522,
-    "src/lib/simplefin/sync.ts": 596,
-    "src/lib/tax-data/validate.ts": 411,
+    "src/lib/simplefin/sync.ts": 553,
+    "src/lib/tax-data/validate.ts": 395,
     "src/lib/utils/colors.ts": 425,
     "src/server/data/budget-profiles.ts": 37,
     "src/server/data/investments.ts": 632,
@@ -1002,7 +1002,7 @@
       "refreshOne": 203
     },
     "src/lib/simplefin/sync.ts": {
-      "runSimplefinSync": 192
+      "runSimplefinSync": 190
     },
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163

@@ -1,8 +1,6 @@
 /**
- * The checks every tax-data file must pass: CI on the shipped file
- * (tests/config/tax-data-file.test.ts), the app on a community update, so a
- * validly signed but wrong file is refused. A file comes as parsed JSON cast
- * to TaxDataFile: each `?.`/`??` keeps a malformed one a problem, not a throw.
+ * The checks every tax-data file must pass (CI and community updates). Input is
+ * parsed JSON cast to TaxDataFile, so `?.`/`??` turn malformed data into problems.
  */
 import {
   TAX_DATA_FORMAT_VERSION,
@@ -105,14 +103,8 @@ function repeatsIn(
 }
 
 /**
- * Whether `next`'s exception (`pick` finds it: a section's, or one
- * limit's) excuses what a check found against `prev`. It counts when it's
- * the year's own (not the same as `prev`'s), or when it's carried over
- * from a `prev` that needed it against `older` too (`broke`: the same
- * check found something there), like a freeze lasting several years
- * (IRMAA's 2011-2017). An exception copied along with a whole file, from
- * a year that needed none, doesn't count. `older` is the shipped year
- * before `prev` (none: a carried exception never counts).
+ * Whether `next`'s exception (from `pick`) excuses a finding against `prev`: when
+ * it differs from `prev`'s, or is carried from a `prev` that `broke` against `older`.
  */
 function exceptionCounts(
   older: TaxDataYear | undefined,
@@ -129,15 +121,9 @@ function exceptionCounts(
 }
 
 /**
- * The indexed tables in `next` that repeat the prior year's (`prev`), in
- * full: each withholding table (the 1040 brackets are derived from the
- * standard ones), each status's LTCG and IRMAA table, IRMAA's surcharges
- * on their own, and the poverty guidelines (`fpl`, sizes 1-8). An indexed
- * table moves every year, so a repeat was copied and not updated. Tables
- * only: a single `limits` value can legitimately repeat (the 401(k) limit
- * was $16,500 in 2009, 2010 and 2011). A blank table (no figures yet) is
- * left to the blank checks. The section's `exception` (reason and source)
- * ships a table that really repeats, when it counts (`exceptionCounts`).
+ * Indexed tables in `next` that repeat `prev`'s in full: they move every year, so a
+ * repeat was copied. Single limits may repeat, blank tables go to the blank checks,
+ * and a section `exception` that counts (`exceptionCounts`) allows a real repeat.
  */
 function copiedTables(
   older: TaxDataYear | undefined,
@@ -242,10 +228,8 @@ export function unknownTaxDataKeys(file: TaxDataFile): string[] {
   );
 }
 
-/** Every problem with the file, as readable lines (empty = valid).
- *  Unknown keys are a problem only when `unknownKeys` is "reject" (CI on
- *  the shipped file); a community update may carry keys a newer Ledgr
- *  uses. */
+/** Every problem with the file as readable lines (empty = valid). Unknown keys
+ *  are a problem only with `unknownKeys: "reject"` (CI on the shipped file). */
 export function validateTaxDataFile(
   file: TaxDataFile,
   {

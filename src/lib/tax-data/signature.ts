@@ -1,13 +1,7 @@
 /**
- * Signing and verifying a tax-data file. A signature covers the file's
- * exact bytes, prefixed so it can't be reused for anything else; the
- * signatures are JSON `[{ keyId, sig }]` (base64), so a release can carry
- * one per key during a rotation; the release asset packs the file's exact
- * text with them. A file verifies when any
- * bundled key's signature checks out — checked before the file is parsed.
- *
- * No `server-only` guard: scripts/tax-data-publish.ts signs with it outside
- * Next, where that package throws. Keep it out of client components.
+ * Signs and verifies a tax-data file's exact bytes; it verifies when any bundled
+ * key's signature checks out. No `server-only`: scripts/tax-data-publish.ts uses it
+ * outside Next. Keep it out of client components.
  */
 import { createPrivateKey, createPublicKey, sign, verify } from "crypto";
 import { TAX_DATA_PUBLIC_KEYS } from "@/lib/config/tax-data-sync";

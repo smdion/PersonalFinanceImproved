@@ -1,9 +1,5 @@
-// Tiingo client — end-of-day market data (benchmark/index price history).
-// API: https://www.tiingo.com/documentation/end-of-day
-//
-// Auth is a single API token sent as `Authorization: Token <key>`. The host
-// is fixed (never user-supplied), so unlike the SimpleFIN client there is no
-// SSRF surface to guard.
+// Tiingo end-of-day market data client (https://www.tiingo.com/documentation/end-of-day).
+// Auth is `Authorization: Token <key>`; the host is fixed, so there's no SSRF surface.
 
 import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
 import type { z } from "zod/v4";

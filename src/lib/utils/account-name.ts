@@ -1,15 +1,8 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 
 /**
- * Build a programmatic account label from structured fields.
- * Formula: {Owner} {Label?} {SubType || Type} ({Institution})
- * Uses displayLabel from config for proper casing (e.g. 'hsa' → 'HSA').
- *
- * Examples:
- *   Alice + 401k + Fidelity          → "Alice 401k (Fidelity)"
- *   Bob + ESPP subType + UBS        → "Bob ESPP (UBS)"
- *   Joint + "Long Term" label + brokerage + Vanguard → "Long Term Brokerage (Vanguard)"
- *   Joint + IRA + Vanguard          → "IRA (Vanguard)"
+ * Programmatic account label: {Owner?} {Label?} {SubType || Type} ({Institution}),
+ * cased by the config displayLabel (e.g. "Alice 401k (Fidelity)").
  */
 export function buildAccountLabel(params: {
   ownerName?: string | null;
@@ -56,9 +49,8 @@ export function accountDisplayName(
 
   // Priority 2: programmatic label (stored on performanceAccounts)
   if (account.accountLabel) {
-    // Rebuild with the correct prefix when the stored label doesn't already
-    // start with it. This corrects labels stored before the joint-prefix rule
-    // was introduced without requiring a DB migration.
+    // Rebuild with the correct prefix when the stored label doesn't start
+    // with it, so labels stored without the joint prefix still display right.
     if (
       effectiveOwner &&
       !account.accountLabel.startsWith(effectiveOwner) &&

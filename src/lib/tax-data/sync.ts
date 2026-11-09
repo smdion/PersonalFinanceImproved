@@ -1,14 +1,7 @@
 /**
- * Community tax-data updates: download the project's signed tax-data
- * release, verify it, and when it's newer than anything this install has,
- * keep it for an admin to review (tax_data_updates). Nothing is applied
- * here — an admin approves the changes in Settings → Reference Data.
- *
- * Outbound: one plain GET of the release asset from github.com; nothing
- * about the household is sent. Off unless an admin
- * turned it on (SK_TAX_DATA_SYNC_ENABLED), and always off with
- * LEDGR_TAX_DATA_SYNC=off or in demo-only mode. Behind a proxy, set
- * NODE_USE_ENV_PROXY=1 (Node's fetch ignores HTTPS_PROXY otherwise).
+ * Community tax-data updates: download and verify the signed release (one plain
+ * GET, no household data) and keep a newer one for admin review. Off unless enabled;
+ * forced off by LEDGR_TAX_DATA_SYNC=off or demo. Proxies need NODE_USE_ENV_PROXY=1.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

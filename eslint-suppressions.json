@@ -5462,18 +5462,7 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/tax-data/schema.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5481,18 +5470,12 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
   },
   "src/lib/tax-data/sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
@@ -5505,15 +5488,9 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     }
   },
   "src/lib/tiingo/client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-clock-read": {
       "count": 3
     }
@@ -5526,18 +5503,7 @@
       "count": 1
     }
   },
-  "src/lib/trpc.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/utils/account-name.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     }

@@ -1,10 +1,6 @@
 /**
- * What contributors see of the tax-data format, generated from the key
- * list (lib/config/tax-limit-keys.ts, which includes the account config's
- * `irsLimitKeys`): the JSON Schemas the tax-data files point to (editor
- * autocomplete and red squiggles — one for a year file, one for
- * `index.json`) and the key table in `tax-data/README.md`.
- * `pnpm tax-data:schema` writes them; a test fails when any is stale.
+ * Generates the tax-data JSON Schemas and the README key table from the key list
+ * (`pnpm tax-data:schema`; a test fails when they're stale).
  */
 import { TAX_LIMIT_KEYS } from "@/lib/config/tax-limit-keys";
 import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
