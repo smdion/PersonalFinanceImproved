@@ -388,6 +388,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/house/house-content.tsx": {
@@ -1961,6 +1964,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/paycheck/contrib-card.tsx": {
@@ -2341,6 +2347,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/portfolio/account-live-data.tsx": {
@@ -2418,6 +2427,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/portfolio/contribution-accounts-inline.tsx": {
@@ -2462,6 +2474,9 @@
     },
     "ratchet/no-raw-button": {
       "count": 2
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/portfolio/new-snapshot-form.tsx": {
@@ -2615,6 +2630,9 @@
     },
     "ratchet/no-lint-violation-ok": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/balance-cell.tsx": {
@@ -2651,6 +2669,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 6
     }
   },
   "src/components/retirement-projection/index.tsx": {
@@ -2982,6 +3003,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-accum-row.tsx": {
@@ -2990,6 +3014,9 @@
     },
     "ratchet/no-abbreviation": {
       "count": 26
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-contrib-methodology.tsx": {
@@ -3004,6 +3031,9 @@
     },
     "ratchet/no-raw-button": {
       "count": 4
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
@@ -3025,6 +3055,9 @@
       "count": 6
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-config-reach-through": {
       "count": 1
     }
   },
@@ -3267,6 +3300,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 9
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/components/retirement-projection/withdrawal-comparison.tsx": {
@@ -3447,6 +3483,9 @@
       "count": 7
     },
     "ratchet/no-raw-input": {
+      "count": 1
+    },
+    "ratchet/no-config-reach-through": {
       "count": 1
     }
   },
@@ -5927,6 +5966,9 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 1
     }
   },
   "src/lib/pure/contributions/contribution-rows.ts": {
@@ -6220,6 +6262,9 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
+    },
+    "ratchet/no-config-reach-through": {
+      "count": 2
     }
   },
   "src/lib/pure/engine/endowment.ts": {

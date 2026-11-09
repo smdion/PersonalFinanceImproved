@@ -190,6 +190,23 @@ describe("ratchet/no-abbreviation", () => {
   }, 30_000);
 });
 
+describe("ratchet/no-config-reach-through", () => {
+  it("counts displayLabel read off the config entry, not through getDisplayConfig (owner Q10b)", () => {
+    expect(
+      reported(
+        "no-config-reach-through",
+        [
+          "const a = getAccountTypeConfig(t).displayLabel;",
+          "const b = ACCOUNT_TYPE_CONFIG[t].displayLabel;",
+          "const c = getAccountTypeConfig(t)?.displayLabel;",
+          "const d = getDisplayConfig(t, subType).displayLabel;",
+          "const e = getAccountTypeConfig(t).supportsRothSplit;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+});
+
 describe("ratchet/no-lint-violation-ok (owner Q10c)", () => {
   it("counts each escape in a line, block or JSX comment, with a reason or without", () => {
     const messages = linter.verify(

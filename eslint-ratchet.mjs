@@ -20,6 +20,8 @@ const HELPER_FIELDS = [
   "nonMedicalPenaltyRate",
   "displayGroup",
   "payrollFicaExempt",
+  // Read through getDisplayConfig(type, subType) (owner Q10b).
+  "displayLabel",
 ].join("|");
 
 /** Fields whose value is a member of a closed set (account categories,
@@ -621,7 +623,7 @@ export const ratchetPlugin = {
     "no-config-reach-through": selectorRule(
       "An account-type field with its own helper is read through the helper.",
       `MemberExpression[property.name=/^(${HELPER_FIELDS})$/]:matches([object.callee.name='getAccountTypeConfig'], [object.object.name='ACCOUNT_TYPE_CONFIG'])`,
-      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, …), not the config entry.",
+      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, getDisplayConfig(…).displayLabel, …), not the config entry.",
     ),
     "no-string-closed-set-field": selectorRule(
       "A field holding a closed set's value is typed by the set, not string.",
