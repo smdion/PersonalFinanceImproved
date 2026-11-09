@@ -57,6 +57,7 @@ import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { loadStoredStamp } from "@/lib/db/stored-setting";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   isOverflowTarget,
@@ -99,7 +100,7 @@ export async function computeContributionSummary(
     priorYearLimitsRaw,
     perfAccounts,
     currentYearPerfActuals,
-    perfLastUpdatedRows,
+    perfStamp,
   ] = await Promise.all([
     ctx.scope.load(getAllPeople),
     ctx.db.select().from(schema.jobs),
@@ -134,18 +135,10 @@ export async function computeContributionSummary(
       })
       .from(schema.accountPerformance)
       .where(eq(schema.accountPerformance.year, currentYear)),
-    ctx.db
-      .select({
-        key: schema.appSettings.key,
-        value: schema.appSettings.value,
-      })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "performance_last_updated")),
+    loadStoredStamp(ctx.db, "performance_last_updated"),
   ]);
 
-  const perfLastUpdated = perfLastUpdatedRows[0]?.value
-    ? new Date(perfLastUpdatedRows[0].value as string)
-    : null;
+  const perfLastUpdated = perfStamp ? new Date(perfStamp) : null;
 
   // Build YTD actuals lookup: performanceAccountId → { contributions, employerMatch }
   const perfActualMap = new Map<

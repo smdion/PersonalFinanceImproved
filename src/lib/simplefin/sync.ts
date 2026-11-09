@@ -30,6 +30,8 @@ import { utcDayOf } from "@/lib/utils/date";
 import { toDecimalColumn } from "@/lib/utils/math";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db, DbOrTx } from "@/lib/db";
+import { loadStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 export type SimplefinConfig = {
   accessUrl: string;
@@ -200,15 +202,13 @@ async function setSimplefinLastError(db: Db, message: string | null) {
 
 /** Read the last recorded SimpleFIN sync error, if any. */
 export async function getSimplefinLastError(db: Db): Promise<string | null> {
-  const rows = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, LAST_ERROR_SETTING_KEY))
-    .limit(1);
-  return (rows[0]?.value as string | undefined) ?? null;
+  return (
+    (await loadStoredSetting(db, LAST_ERROR_SETTING_KEY, z.string())) ?? null
+  );
 }
 
-type PartialSyncState = { date: string; attempts: number };
+const partialSyncState = z.object({ date: z.string(), attempts: z.number() });
+type PartialSyncState = z.infer<typeof partialSyncState>;
 
 /** Increment (or start) today's partial-sync retry counter, returning the
  *  new attempt count for today. Resets to 1 whenever the stored date isn't
@@ -218,12 +218,9 @@ async function bumpPartialSyncAttempts(
   asOfDate: Date,
 ): Promise<number> {
   const today = calendarDateOf(asOfDate);
-  const rows = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, PARTIAL_SYNC_STATE_KEY))
-    .limit(1);
-  const prev = (rows[0]?.value as PartialSyncState | undefined) ?? null;
+  const prev =
+    (await loadStoredSetting(db, PARTIAL_SYNC_STATE_KEY, partialSyncState)) ??
+    null;
   const attempts = prev && prev.date === today ? prev.attempts + 1 : 1;
   const next: PartialSyncState = { date: today, attempts };
   await db

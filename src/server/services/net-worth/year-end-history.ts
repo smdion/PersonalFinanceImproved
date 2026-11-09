@@ -42,6 +42,7 @@ import { isDiscountBasisEmployerContribution } from "@/lib/config/account-types"
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import type { Db } from "@/lib/db";
 import { getLatestSnapshot } from "@/server/data/snapshots";
+import { findStoredStamp } from "@/lib/db/stored-setting";
 import {
   homeFiguresByYear,
   mortgageBalanceByYearFrom,
@@ -302,6 +303,7 @@ export async function buildYearEndHistory(
     }
 
     const setting = parseAppSettings(settings);
+    const perfStamp = findStoredStamp(settings, "performance_last_updated");
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
     // Typed figure + the debts list + mapped credit cards
@@ -427,9 +429,7 @@ export async function buildYearEndHistory(
       perfEndingBalance: perfSummary?.endingBalance ?? null,
       perfReturnPct: perfSummary?.returnPct ?? null,
       perfByAccount: perfByAccountByYear.get(currentYear) ?? [],
-      perfLastUpdated:
-        (settings.find((s) => s.key === "performance_last_updated")
-          ?.value as string) ?? null,
+      perfLastUpdated: perfStamp ?? null,
       snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
       // Calendar-day difference, not a raw ms/86400000 divide — the old
       // version parsed the date-only snapshotDate as UTC midnight against
@@ -530,10 +530,7 @@ export async function buildYearEndHistory(
       // Uses perfLastUpdated as the reference date — annualization should match
       // the point in time when performance data was recorded, not today.
       ytdRatio: (() => {
-        const perfUpdated = settings.find(
-          (s) => s.key === "performance_last_updated",
-        )?.value as string | undefined;
-        const asOf = perfUpdated ? new Date(perfUpdated) : asOfDate;
+        const asOf = perfStamp ? new Date(perfStamp) : asOfDate;
         let totalSalary = 0;
         let weightedRatio = 0;
         for (const job of activeJobs) {

@@ -344,7 +344,7 @@
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
     "src/lib/simplefin/ingest.ts": 530,
-    "src/lib/simplefin/sync.ts": 599,
+    "src/lib/simplefin/sync.ts": 596,
     "src/lib/tax-data/validate.ts": 411,
     "src/lib/utils/colors.ts": 425,
     "src/server/data/budget-profiles.ts": 44,
@@ -378,7 +378,7 @@
     "src/server/routers/savings/api-sync.ts": 243,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 407,
-    "src/server/routers/settings/admin.ts": 411,
+    "src/server/routers/settings/admin.ts": 407,
     "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 783,
     "src/server/routers/simplefin/accounts.ts": 252,
@@ -394,12 +394,12 @@
     "src/server/services/contributions/caps.ts": 338,
     "src/server/services/contributions/live-data.ts": 99,
     "src/server/services/contributions/profile.ts": 367,
-    "src/server/services/contributions/summary.ts": 738,
+    "src/server/services/contributions/summary.ts": 731,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,
     "src/server/services/investments/current-balances.ts": 467,
     "src/server/services/net-worth/other-assets.ts": 91,
-    "src/server/services/net-worth/year-end-history.ts": 625,
+    "src/server/services/net-worth/year-end-history.ts": 622,
     "src/server/services/paycheck/household-totals.ts": 122,
     "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/paycheck/summary.ts": 685,
@@ -1057,7 +1057,7 @@
       "loadContributionMix": 182
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 653,
+      "computeContributionSummary": 645,
       "computeContributionSummary.results.map()": 423
     },
     "src/server/services/demo/demo-seed.ts": {
@@ -1070,7 +1070,7 @@
       "loadHoldingsOverview": 158
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 519
+      "buildYearEndHistory": 515
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 223

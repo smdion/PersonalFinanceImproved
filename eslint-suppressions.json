@@ -7173,7 +7173,7 @@
   },
   "src/lib/simplefin/sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -7986,9 +7986,6 @@
     }
   },
   "src/server/routers/settings/admin.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    },
     "ratchet/max-comment-lines": {
       "count": 1
     },
@@ -8305,7 +8302,7 @@
   },
   "src/server/services/contributions/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 2
@@ -8420,9 +8417,6 @@
     }
   },
   "src/server/services/net-worth/year-end-history.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "max-lines-per-function": {
       "count": 1
     },

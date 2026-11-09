@@ -59,6 +59,7 @@ import type { Db } from "@/lib/db";
 import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
+import { loadStoredStamp } from "@/lib/db/stored-setting";
 
 // --- Zod schemas ---
 
@@ -118,18 +119,13 @@ export const adminProcedures = {
       .from(schema.portfolioSnapshots)
       .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
       .limit(1);
-    const perfSetting = await ctx.db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "performance_last_updated"));
-    const basisSetting = await ctx.db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "basis_last_updated"));
+    const stamp = (key: string) => loadStoredStamp(ctx.db, key);
+    const performanceDate = await stamp("performance_last_updated");
+    const basisDate = await stamp("basis_last_updated");
     return {
       balanceDate: latestSnapshot[0]?.snapshotDate ?? null,
-      performanceDate: (perfSetting[0]?.value as string | undefined) ?? null,
-      basisDate: (basisSetting[0]?.value as string | undefined) ?? null,
+      performanceDate: performanceDate ?? null,
+      basisDate: basisDate ?? null,
     };
   }),
 
@@ -295,10 +291,10 @@ export const adminProcedures = {
       const settings = await ctx.db.select().from(schema.appSettings);
       const map = new Map(settings.map((s) => [s.key, s.value]));
 
+      const storedAdminGroup = map.get(RBAC_ADMIN_GROUP_KEY);
       const adminGroup =
-        (typeof map.get(RBAC_ADMIN_GROUP_KEY) === "string"
-          ? (map.get(RBAC_ADMIN_GROUP_KEY) as string)
-          : null) || "ledgr-admin";
+        (typeof storedAdminGroup === "string" ? storedAdminGroup : null) ||
+        "ledgr-admin";
 
       const permissions = PERMISSIONS.map((perm) => {
         const override = map.get(`${RBAC_SETTINGS_PREFIX}${perm}`);
