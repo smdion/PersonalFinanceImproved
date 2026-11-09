@@ -28,13 +28,14 @@ export function retirementCardFigures(
       >["result"]
     >;
   },
-  mcPeek: RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+  simulationSummary:
+    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
 ) {
   const { settings, irsGroupLimits, portfolioByTaxTypeByParentCat } = projected;
   const retirementResult = {
     ...projected.result,
-    projectionByYear: projected.result.projectionByYear.map((yr) =>
-      filterYearByParentCategory(yr, PERF_CATEGORY_RETIREMENT),
+    projectionByYear: projected.result.projectionByYear.map((yearRow) =>
+      filterYearByParentCategory(yearRow, PERF_CATEGORY_RETIREMENT),
     ),
   };
   const years = retirementResult.projectionByYear;
@@ -42,7 +43,7 @@ export function retirementCardFigures(
     (s) => s.parentCategory === PERF_CATEGORY_RETIREMENT,
   );
   const retPortfolio = portfolioByTaxTypeByParentCat[PERF_CATEGORY_RETIREMENT];
-  const retAge = settings.retirementAge;
+  const retirementAge = settings.retirementAge;
   const endAge = settings.endAge;
   const currentAge = years[0]?.age ?? 0;
   const firstRow = years[0] ?? {
@@ -76,25 +77,25 @@ export function retirementCardFigures(
   // The plan judge: retirement money runs out, or a year falls short.
   const outcome = assessPlan(retirementResult);
   // Sustainable withdrawal in today's dollars, indexed by age from today's.
-  const yearsToRet = Math.max(0, retAge - currentAge);
-  const inflRate = Math.max(0, Number(settings.annualInflation) || 0);
-  const sustainableWd = toTodaysDollars(
+  const yearsToRet = Math.max(0, retirementAge - currentAge);
+  const inflationRate = Math.max(0, Number(settings.annualInflation) || 0);
+  const sustainableWithdrawal = toTodaysDollars(
     retirementResult.sustainableWithdrawal,
-    retAge,
-    flatDeflator(currentAge, inflRate),
+    retirementAge,
+    flatDeflator(currentAge, inflationRate),
   );
   // Already retired: the figure is today's, so the label says today's age.
-  const nestEggAge = Math.max(retAge, currentAge);
+  const nestEggAge = Math.max(retirementAge, currentAge);
   // Simulated when the Retirement page has run one for these inputs, else
   // the baseline — the same rule and figure the page's hero uses.
-  const byYear = flatDeflator(years[0]?.year ?? 0, inflRate);
+  const byYear = flatDeflator(years[0]?.year ?? 0, inflationRate);
   const baseline = baselineNestEgg(years, nestEggAge);
   const nestEgg = baseline
     ? toTodaysDollars(baseline.nominal, baseline.year, byYear)
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
     // Today's dollars, from the Simulation's own per-trial deflation.
-    bands: mcPeek?.result?.todayBands,
+    bands: simulationSummary?.result?.todayBands,
     baseline: nestEgg,
     targetAge: nestEggAge,
     personFiltered: false,
@@ -110,7 +111,7 @@ export function retirementCardFigures(
     settings,
     retirementResult,
     retPortfolio,
-    retAge,
+    retirementAge,
     endAge,
     currentAge,
     yearOf,
@@ -120,7 +121,7 @@ export function retirementCardFigures(
     employerContributions,
     outcome,
     yearsToRet,
-    sustainableWd,
+    sustainableWithdrawal,
     nestEggAge,
     nestEggDisplay,
     totalWithMatch,

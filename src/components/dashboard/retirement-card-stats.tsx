@@ -140,13 +140,14 @@ export function TaxRoomRow({ taxAdvSpace }: { taxAdvSpace: number }) {
 }
 
 export function SimulatedSuccessRow({
-  mcPeek,
+  simulationSummary,
 }: {
-  mcPeek: RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined;
+  simulationSummary:
+    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined;
 }) {
   return (
     <>
-      {mcPeek?.result && (
+      {simulationSummary?.result && (
         <div className="flex justify-between">
           <span className="text-muted">
             Simulated success
@@ -158,10 +159,12 @@ export function SimulatedSuccessRow({
           <FocusLink
             focus={{ topic: "planHealth" }}
             className={`font-medium hover:underline ${
-              STATUS_COLORS[simulationRateTone(mcPeek.result.successRate)].text
+              STATUS_COLORS[
+                simulationRateTone(simulationSummary.result.successRate)
+              ].text
             }`}
           >
-            {formatPercent(mcPeek.result.successRate, 0)}
+            {formatPercent(simulationSummary.result.successRate, 0)}
           </FocusLink>
         </div>
       )}
