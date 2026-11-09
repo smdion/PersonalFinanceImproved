@@ -2310,7 +2310,7 @@ describe("projection router — computeCoastFireProbe", () => {
     }
   });
 
-  it("returns a CoastFireProbeResult (not a CoastFireMcResult) for an in-range age", async () => {
+  it("returns a CoastFireProbeResult (not a CoastFireSimulationResult) for an in-range age", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);

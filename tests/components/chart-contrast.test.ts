@@ -51,7 +51,7 @@ describe("chartLinePalette — WCAG 1.4.11 (>=3:1 in dark mode)", () => {
     },
   );
 
-  it("mcMedian clears 3:1 vs the mcBandMiddle@0.2 fill it's drawn over", () => {
+  it("simulationMedian clears 3:1 vs the simulationBandMiddle@0.2 fill it's drawn over", () => {
     const bandBackdrop = over(
       CHART_COLORS.simulationBandMiddle,
       0.2,

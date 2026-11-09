@@ -34,7 +34,7 @@ describe("canDeleteBudgetProfile", () => {
   });
 });
 
-describe("canDeleteContribProfile", () => {
+describe("canDeleteContributionProfile", () => {
   it("allows deleting a non-active profile when others remain", () => {
     expect(canDeleteContributionProfile(null, 5, 3)).toEqual({ allowed: true });
   });
@@ -343,7 +343,7 @@ describe("canDeletePerformanceAccount", () => {
   });
 });
 
-describe("resolveContribFieldDisplayState", () => {
+describe("resolveContributionFieldDisplayState", () => {
   it("has no value when the profile carries no entry at all", () => {
     expect(resolveContributionFieldDisplayState(null)).toEqual({
       hasValue: false,

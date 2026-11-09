@@ -189,7 +189,7 @@ export const CHART_COLORS = {
   avgWealth: "#9ca3af", // gray-400
   prodigiousWealth: "#facc15", // yellow-400
   aawScore: "#059669", // emerald-600
-  // Monte Carlo percentile bands. simulationGrid/simulationAxis are the general chart
+  // Monte Carlo percentile bands. mcGrid/mcAxis are the general chart
   // grid/axis defaults (used well beyond MC charts — see chart-defaults.tsx).
   // simulationBandOuter/simulationBandInner/simulationBandMiddle/simulationMedian are the fan-band palette
   // shared by projection-chart.tsx and spending-stability-chart.tsx, which
@@ -242,7 +242,7 @@ export const CHART_COLORS = {
   withdrawalComparisonGrid: "#374151", // gray-700
   withdrawalComparisonAxis: "#9ca3af", // gray-400
   withdrawalComparisonTooltipBg: "#1f2937", // gray-800
-  // Projection chart axis line (distinct from tick/grid — see simulationGrid/simulationAxis)
+  // Projection chart axis line (distinct from tick/grid — see mcGrid/mcAxis)
   axisLine: "#d1d5db", // gray-300
   // Projection chart reference-line markers (age axis + legend swatch)
   ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
