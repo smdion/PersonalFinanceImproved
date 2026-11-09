@@ -11,7 +11,9 @@
  * read, which is answered with an empty list until the next recording.
  *
  * YNAB can't be recorded: its answers are built from its published spec
- * 1.88.0 (tests/fixtures/ynab-spec.ts).
+ * 1.88.0 (tests/fixtures/ynab-spec.ts), and its failures (rate limits, a
+ * server_knowledge reset, a deleted category) in tests/fixtures/ynab-failures/,
+ * the counterpart of the Actual recordings.
  *
  * Known wrapper defects are `it.fails`, each naming its v0.11 item.
  */
@@ -19,7 +21,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
-import type { NewBudgetTransaction } from "@/lib/budget-api/types";
+import type {
+  BudgetTransaction,
+  NewBudgetTransaction,
+} from "@/lib/budget-api/types";
 import { BUDGET_PROVIDERS } from "@/lib/budget-api/providers";
 import { resetActualWrapperGates } from "@/lib/budget-api/actual-client";
 import { BudgetApiError } from "@/lib/budget-api/errors";
@@ -50,6 +55,25 @@ const RECORDED = path.resolve("tests/fixtures/actual-recorded");
 function recording(file: string): Pair[] {
   const raw = fs.readFileSync(path.join(RECORDED, `${file}.json`), "utf8");
   return (JSON.parse(raw) as { pairs: Pair[] }).pairs;
+}
+
+const YNAB_FAILURES = path.resolve("tests/fixtures/ynab-failures");
+
+/** A YNAB failure, built from the spec (tests/fixtures/ynab-failures/). */
+function ynabFailure(file: string): Pair[] {
+  const raw = fs.readFileSync(path.join(YNAB_FAILURES, `${file}.json`), "utf8");
+  return (JSON.parse(raw) as { pairs: Pair[] }).pairs;
+}
+
+/** A call whose retries wait on the backoff timer, run to its end: its
+ *  value, or its rejection as a value. */
+async function withRetries(p: Promise<unknown>): Promise<unknown> {
+  const settled = p.then(
+    (v) => v,
+    (e: unknown) => e,
+  );
+  await vi.runAllTimersAsync();
+  return settled;
 }
 
 /** One named pair of endpoints.json. */
@@ -596,6 +620,15 @@ const ynab: World = {
             }),
           ]),
       },
+      {
+        answers: ynabFailure("rate-limited-every-try"),
+        run: (c) => withRetries(c.getAccounts()),
+        check: (r, sent) => {
+          expect(r).toBeInstanceOf(BudgetApiError);
+          expect(r).toMatchObject({ code: "rate-limit", status: 429 });
+          expect(sent.map((s) => s.method)).toEqual(["GET", "GET", "GET"]);
+        },
+      },
     ],
     getAccountBalance: [
       {
@@ -638,6 +671,22 @@ const ynab: World = {
             activity: -152.4,
             goalTarget: 400,
           });
+        },
+      },
+      {
+        answers: ynabFailure("rate-limited-then-answered"),
+        run: (c) => withRetries(c.getCategories(new Date())),
+        check: (r, sent) => {
+          const groups = r as Awaited<
+            ReturnType<BudgetAPIClient["getCategories"]>
+          >;
+          expect(groups.flatMap((g) => g.categories.map((x) => x.id))).toEqual([
+            "cat-groc",
+          ]);
+          expect(sent.map((s) => s.path)).toEqual([
+            `/budgets/${YNAB_BUDGET}/categories`,
+            `/budgets/${YNAB_BUDGET}/categories`,
+          ]);
         },
       },
     ],
@@ -703,6 +752,17 @@ const ynab: World = {
         check: (_r, sent) =>
           expect(sent[0]?.body).toEqual({ category: { budgeted: 43_210 } }),
       },
+      {
+        answers: ynabFailure("deleted-category"),
+        run: (c) =>
+          withRetries(
+            c.updateCategoryBudgeted("2026-12-01", "cat-gone", 43.21),
+          ),
+        check: (r, sent) => {
+          expect(r).toMatchObject({ code: "client", status: 404 });
+          expect(sent.map((s) => s.method)).toEqual(["PATCH"]);
+        },
+      },
     ],
     prepareGoalWrite: [
       {
@@ -742,6 +802,14 @@ const ynab: World = {
           expect(sent.every((s) => s.method === "GET")).toBe(true);
         },
       },
+      {
+        answers: ynabFailure("deleted-category"),
+        run: (c) => withRetries(c.prepareGoalWrite("cat-gone", "monthly", 75)),
+        check: (r, sent) => {
+          expect(r).toMatchObject({ code: "client", status: 404 });
+          expect(sent.map((s) => s.method)).toEqual(["GET"]);
+        },
+      },
     ],
     getTransactions: [
       {
@@ -766,6 +834,24 @@ const ynab: World = {
             }),
           ]),
       },
+      {
+        // Ledgr reads whole lists, never a delta from last_knowledge_of_server,
+        // so a reset can't leave it holding transactions YNAB no longer has.
+        answers: ynabFailure("server-knowledge-reset"),
+        run: async (c) => [
+          await c.getTransactions("2026-10-01"),
+          await c.getTransactions("2026-10-01"),
+        ],
+        check: (r, sent) => {
+          const [before, after] = r as BudgetTransaction[][];
+          expect(before?.map((t) => t.id)).toEqual(["tx-1", "tx-2"]);
+          expect(after?.map((t) => t.id)).toEqual(["tx-1"]);
+          expect(sent.map((s) => s.path)).toEqual([
+            `/budgets/${YNAB_BUDGET}/transactions?since_date=2026-10-01`,
+            `/budgets/${YNAB_BUDGET}/transactions?since_date=2026-10-01`,
+          ]);
+        },
+      },
     ],
     createTransaction: [
       {
@@ -784,6 +870,26 @@ const ynab: World = {
               cleared: "cleared",
             },
           });
+        },
+      },
+      {
+        // A 429 rejects the POST before it runs, so it is sent again, with
+        // the same import_id.
+        answers: ynabFailure("post-rate-limited-then-created"),
+        run: (c) => withRetries(c.createTransaction(tx({}))),
+        check: (r, sent) => {
+          expect(r).toBe("tx-new");
+          expect(sent.map((s) => s.method)).toEqual(["POST", "POST"]);
+          expect(sent[1]?.body).toEqual(sent[0]?.body);
+        },
+      },
+      {
+        // A 503 may have run: the POST isn't sent twice.
+        answers: ynabFailure("post-unavailable"),
+        run: (c) => withRetries(c.createTransaction(tx({}))),
+        check: (r, sent) => {
+          expect(r).toMatchObject({ code: "server", status: 503 });
+          expect(sent.map((s) => s.method)).toEqual(["POST"]);
         },
       },
     ],

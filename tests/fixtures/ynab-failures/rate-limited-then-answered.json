@@ -1,0 +1,61 @@
+{
+  "description": "A read YNAB rate-limits once (429, no Retry-After: YNAB documents none), then answers: GET /categories twice.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/categories",
+      "requestBody": null,
+      "status": 429,
+      "responseBody": {
+        "error": {
+          "id": "429",
+          "name": "too_many_requests",
+          "detail": "Too many requests"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/categories",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": {
+          "category_groups": [
+            {
+              "id": "g-exp",
+              "name": "Expenses",
+              "hidden": false,
+              "deleted": false,
+              "categories": [
+                {
+                  "id": "cat-groc",
+                  "category_group_id": "g-exp",
+                  "name": "Groceries",
+                  "hidden": false,
+                  "internal": false,
+                  "note": null,
+                  "budgeted": 400000,
+                  "activity": -152400,
+                  "balance": 247600,
+                  "goal_type": null,
+                  "goal_target": null,
+                  "goal_cadence": null,
+                  "goal_cadence_frequency": null,
+                  "deleted": false
+                }
+              ]
+            }
+          ],
+          "server_knowledge": 41
+        }
+      }
+    }
+  ]
+}

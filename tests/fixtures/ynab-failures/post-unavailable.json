@@ -1,0 +1,34 @@
+{
+  "description": "A transaction POST answered 503: it may have run, so it is not sent again.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "method": "POST",
+      "path": "/budgets/budget-1/transactions",
+      "requestBody": {
+        "transaction": {
+          "account_id": "acct-1",
+          "date": "2026-10-03",
+          "amount": -19990,
+          "payee_name": "Dup",
+          "memo": "same fingerprint 626787",
+          "cleared": "cleared",
+          "approved": true
+        }
+      },
+      "status": 503,
+      "responseBody": {
+        "error": {
+          "id": "503",
+          "name": "service_unavailable",
+          "detail": "Service unavailable"
+        }
+      }
+    }
+  ]
+}

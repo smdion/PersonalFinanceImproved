@@ -1,0 +1,94 @@
+{
+  "description": "Two full transaction reads around a server_knowledge reset (a budget restored in YNAB): the second answer's server_knowledge (7) is below the first's (1204) and holds only what the restored budget has.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/transactions?since_date=2026-10-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": {
+          "transactions": [
+            {
+              "id": "tx-1",
+              "date": "2026-10-15",
+              "amount": -29350,
+              "memo": null,
+              "cleared": "cleared",
+              "approved": true,
+              "flag_color": null,
+              "account_id": "acct-1",
+              "account_name": "Checking",
+              "payee_id": null,
+              "payee_name": null,
+              "category_id": "cat-groc",
+              "category_name": "Groceries",
+              "transfer_account_id": null,
+              "import_id": null,
+              "deleted": false,
+              "subtransactions": []
+            },
+            {
+              "id": "tx-2",
+              "date": "2026-10-20",
+              "amount": -5000,
+              "memo": null,
+              "cleared": "cleared",
+              "approved": true,
+              "flag_color": null,
+              "account_id": "acct-1",
+              "account_name": "Checking",
+              "payee_id": null,
+              "payee_name": null,
+              "category_id": "cat-groc",
+              "category_name": "Groceries",
+              "transfer_account_id": null,
+              "import_id": null,
+              "deleted": false,
+              "subtransactions": []
+            }
+          ],
+          "server_knowledge": 1204
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/transactions?since_date=2026-10-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": {
+          "transactions": [
+            {
+              "id": "tx-1",
+              "date": "2026-10-15",
+              "amount": -29350,
+              "memo": null,
+              "cleared": "cleared",
+              "approved": true,
+              "flag_color": null,
+              "account_id": "acct-1",
+              "account_name": "Checking",
+              "payee_id": null,
+              "payee_name": null,
+              "category_id": "cat-groc",
+              "category_name": "Groceries",
+              "transfer_account_id": null,
+              "import_id": null,
+              "deleted": false,
+              "subtransactions": []
+            }
+          ],
+          "server_knowledge": 7
+        }
+      }
+    }
+  ]
+}

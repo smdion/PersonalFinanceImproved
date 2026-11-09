@@ -1,0 +1,43 @@
+{
+  "description": "Writes to a category deleted in YNAB: the category read and the month's budgeted PATCH answer 404 resource_not_found.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "name": "goal-read",
+      "method": "GET",
+      "path": "/budgets/budget-1/categories/cat-gone",
+      "requestBody": null,
+      "status": 404,
+      "responseBody": {
+        "error": {
+          "id": "404.2",
+          "name": "resource_not_found",
+          "detail": "Resource not found"
+        }
+      }
+    },
+    {
+      "name": "budgeted-patch",
+      "method": "PATCH",
+      "path": "/budgets/budget-1/months/2026-12-01/categories/cat-gone",
+      "requestBody": {
+        "category": {
+          "budgeted": 43210
+        }
+      },
+      "status": 404,
+      "responseBody": {
+        "error": {
+          "id": "404.2",
+          "name": "resource_not_found",
+          "detail": "Resource not found"
+        }
+      }
+    }
+  ]
+}
