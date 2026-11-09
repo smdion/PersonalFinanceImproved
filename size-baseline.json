@@ -204,9 +204,9 @@
     "src/components/savings/fund-card-sub-goals.tsx": 214,
     "src/components/savings/fund-card-summary.tsx": 147,
     "src/components/savings/fund-card.tsx": 549,
-    "src/components/savings/fund-management-section.tsx": 658,
+    "src/components/savings/fund-management-section.tsx": 653,
     "src/components/savings/fund-transaction-list.tsx": 440,
-    "src/components/savings/savings-trajectory-table.tsx": 553,
+    "src/components/savings/savings-trajectory-table.tsx": 549,
     "src/components/savings/transactions/editor.tsx": 366,
     "src/components/savings/transactions/filters.tsx": 207,
     "src/components/savings/transactions/row.tsx": 594,
@@ -791,7 +791,7 @@
       "DefaultContributionCell": 213
     },
     "src/components/savings/emergency-fund-detail.tsx": {
-      "EmergencyFundDetail": 189
+      "EmergencyFundDetail": 179
     },
     "src/components/savings/extra-paycheck-rules-editor.tsx": {
       "ExtraPaycheckJobPanel": 414
@@ -800,7 +800,7 @@
       "FundCard": 364
     },
     "src/components/savings/fund-management-section.tsx": {
-      "FundManagementSection": 498
+      "FundManagementSection": 493
     },
     "src/components/savings/fund-mini-chart.tsx": {
       "FundMiniChart": 186
@@ -822,8 +822,8 @@
       "SavingsTrajectoryChart": 213
     },
     "src/components/savings/savings-trajectory-table.tsx": {
-      "SavingsTrajectoryTable": 521,
-      "SavingsTrajectoryTable.map()": 240
+      "SavingsTrajectoryTable": 517,
+      "SavingsTrajectoryTable.map()": 236
     },
     "src/components/savings/transactions/tab.tsx": {
       "AllTransactionsTab": 631
@@ -899,7 +899,7 @@
       "ComparisonTable": 217
     },
     "src/components/tools/relocation/year-adjustments.tsx": {
-      "RelocationYearAdjustments": 282
+      "RelocationYearAdjustments": 234
     },
     "src/components/ui/push-preview-modal.tsx": {
       "PushPreviewModal": 198

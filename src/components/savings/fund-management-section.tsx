@@ -466,6 +466,11 @@ export function FundManagementSection({
       ? goalProjections.find((gp) => gp.goalId === timelineGoalId)
       : null;
 
+  // The emergency fund's monthly allocation, for its card.
+  const efundGoalId = rawGoals.find((g) => g.isEmergencyFund)?.id;
+  const efundAllocation =
+    savings.goals.find((g) => g.goalId === efundGoalId)?.monthlyAllocation ?? 0;
+
   return (
     <>
       {/* ── Fund Details ── */}
@@ -509,22 +514,12 @@ export function FundManagementSection({
                   }
                 : undefined
             }
-            monthlyAllocation={(() => {
-              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
-              return (
-                savings.goals.find((g) => g.goalId === efundGoal?.id)
-                  ?.monthlyAllocation ?? 0
-              );
-            })()}
-            poolPercent={(() => {
-              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
-              const allocation =
-                savings.goals.find((g) => g.goalId === efundGoal?.id)
-                  ?.monthlyAllocation ?? 0;
-              return totalMonthlyAllocation > 0
-                ? ((allocation / totalMonthlyAllocation) * 100).toFixed(0)
-                : "0";
-            })()}
+            monthlyAllocation={efundAllocation}
+            poolPercent={
+              totalMonthlyAllocation > 0
+                ? ((efundAllocation / totalMonthlyAllocation) * 100).toFixed(0)
+                : "0"
+            }
             isApiSyncEnabled={
               rawGoals.find((g) => g.isEmergencyFund)?.isApiSyncEnabled ?? false
             }

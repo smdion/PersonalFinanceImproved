@@ -181,60 +181,12 @@ export function RelocationYearAdjustments({
                     ))}
                   </select>
                 </div>
-                {(() => {
-                  const selectedProf = budgetInfo.profiles.find(
-                    (p) => p.id === Number(relocAdjForm.profileId),
-                  );
-                  const labels = selectedProf?.columnLabels ?? [];
-                  const months = selectedProf?.columnMonths ?? null;
-                  const totals = selectedProf?.columnTotals ?? [];
-                  if (months) {
-                    return (
-                      <Badge
-                        color="amber"
-                        size="sm"
-                        case="normal"
-                        className="self-end"
-                      >
-                        Weighted:{" "}
-                        {formatCurrency(
-                          (selectedProf?.weightedAnnualTotal ?? 0) / 12,
-                        )}
-                        /mo
-                      </Badge>
-                    );
-                  }
-                  if (labels.length >= 2) {
-                    return (
-                      <div>
-                        <label
-                          htmlFor={`${id}-column`}
-                          className="text-muted block text-xs"
-                        >
-                          Column
-                        </label>
-                        <select
-                          id={`${id}-column`}
-                          className="rounded border px-2 py-1 text-sm"
-                          value={relocAdjForm.budgetColumn}
-                          onChange={(e) =>
-                            setRelocAdjForm((f) => ({
-                              ...f,
-                              budgetColumn: e.target.value,
-                            }))
-                          }
-                        >
-                          {labels.map((label, index) => (
-                            <option key={label} value={index}>
-                              {label} ({formatCurrency(totals[index] ?? 0)}/mo)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {renderAdjustmentPreview(
+                  budgetInfo,
+                  id,
+                  relocAdjForm,
+                  setRelocAdjForm,
+                )}
               </>
             )}
             <div>
@@ -311,4 +263,55 @@ export function RelocationYearAdjustments({
       )}
     </div>
   );
+}
+
+/** The add form's selected budget profile and column, previewed. */
+function renderAdjustmentPreview(
+  budgetInfo: Props["budgetInfo"],
+  id: string,
+  relocAdjForm: Props["relocAdjForm"],
+  setRelocAdjForm: Props["setRelocAdjForm"],
+) {
+  const selectedProf = budgetInfo.profiles.find(
+    (p) => p.id === Number(relocAdjForm.profileId),
+  );
+  const labels = selectedProf?.columnLabels ?? [];
+  const months = selectedProf?.columnMonths ?? null;
+  const totals = selectedProf?.columnTotals ?? [];
+  if (months) {
+    return (
+      <Badge color="amber" size="sm" case="normal" className="self-end">
+        Weighted:{" "}
+        {formatCurrency((selectedProf?.weightedAnnualTotal ?? 0) / 12)}
+        /mo
+      </Badge>
+    );
+  }
+  if (labels.length >= 2) {
+    return (
+      <div>
+        <label htmlFor={`${id}-column`} className="text-muted block text-xs">
+          Column
+        </label>
+        <select
+          id={`${id}-column`}
+          className="rounded border px-2 py-1 text-sm"
+          value={relocAdjForm.budgetColumn}
+          onChange={(e) =>
+            setRelocAdjForm((f) => ({
+              ...f,
+              budgetColumn: e.target.value,
+            }))
+          }
+        >
+          {labels.map((label, index) => (
+            <option key={label} value={index}>
+              {label} ({formatCurrency(totals[index] ?? 0)}/mo)
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+  return null;
 }

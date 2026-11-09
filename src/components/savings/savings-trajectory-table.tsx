@@ -331,137 +331,133 @@ export function SavingsTrajectoryTable({
                   a.description.localeCompare(b.description),
               );
 
+              const anyNegative = visibleProjections.some(
+                (gp) => (gp.balances[rowIndex] ?? 0) < 0,
+              );
               return (
                 <React.Fragment key={date.toISOString()}>
                   {/* Main month row */}
-                  {(() => {
-                    const anyNegative = visibleProjections.some(
-                      (gp) => (gp.balances[rowIndex] ?? 0) < 0,
-                    );
-                    return (
-                      <tr
-                        className={`hover:bg-surface-elevated/40 border-b transition-colors${anyNegative ? "bg-red-500/5" : ""}`}
-                      >
-                        <td className="bg-surface-primary text-muted sticky left-0 z-10 border-r px-3 py-1.5 text-xs whitespace-nowrap">
-                          {monthLabel(date)}
-                        </td>
-                        {visibleProjections.map((gp) => {
-                          const balance = gp.balances[rowIndex] ?? 0;
-                          const isNegative = balance < 0;
-                          const allocation =
-                            gp.monthlyAllocations[rowIndex] ?? 0;
-                          const fundHasEvents =
-                            (gp.monthEvents[rowIndex] ?? []).length > 0;
-                          const showInlineAllocation =
-                            showAllocations && !fundHasEvents && allocation > 0;
-                          const inlineAllocation = showInlineAllocation ? (
-                            <span className="text-micro ml-1 text-green-500/60 tabular-nums">
-                              +{formatCurrency(allocation)}
-                            </span>
-                          ) : null;
+                  <tr
+                    className={`hover:bg-surface-elevated/40 border-b transition-colors${anyNegative ? "bg-red-500/5" : ""}`}
+                  >
+                    <td className="bg-surface-primary text-muted sticky left-0 z-10 border-r px-3 py-1.5 text-xs whitespace-nowrap">
+                      {monthLabel(date)}
+                    </td>
+                    {visibleProjections.map((gp) => {
+                      const balance = gp.balances[rowIndex] ?? 0;
+                      const isNegative = balance < 0;
+                      const allocation = gp.monthlyAllocations[rowIndex] ?? 0;
+                      const fundHasEvents =
+                        (gp.monthEvents[rowIndex] ?? []).length > 0;
+                      const showInlineAllocation =
+                        showAllocations && !fundHasEvents && allocation > 0;
+                      const inlineAllocation = showInlineAllocation ? (
+                        <span className="text-micro ml-1 text-green-500/60 tabular-nums">
+                          +{formatCurrency(allocation)}
+                        </span>
+                      ) : null;
 
-                          // Fixed-target mode
-                          if (gp.targetMode === "fixed" && gp.target > 0) {
-                            const isFirstFunded =
-                              firstFundedIndex[gp.goalId] === rowIndex;
-                            const isFunded = balance >= gp.target;
-                            let cls =
-                              "text-right px-3 py-1.5 text-xs tabular-nums";
-                            if (isNegative) cls += " text-red-500";
-                            else if (isFunded) cls += " text-green-600";
-                            else cls += " text-primary";
-                            const bg =
-                              isFirstFunded && !isNegative
-                                ? " bg-green-50/60 dark:bg-green-950/20"
-                                : "";
-                            return (
-                              <td key={gp.goalId} className={cls + bg}>
-                                {isFirstFunded && !isNegative && (
-                                  <span className="text-caption mr-1 text-green-500">
-                                    ✓
-                                  </span>
-                                )}
-                                {formatCurrency(balance)}
-                                {inlineAllocation}
-                              </td>
-                            );
-                          }
+                      // Fixed-target mode
+                      if (gp.targetMode === "fixed" && gp.target > 0) {
+                        const isFirstFunded =
+                          firstFundedIndex[gp.goalId] === rowIndex;
+                        const isFunded = balance >= gp.target;
+                        let cls = "text-right px-3 py-1.5 text-xs tabular-nums";
+                        if (isNegative) cls += " text-red-500";
+                        else if (isFunded) cls += " text-green-600";
+                        else cls += " text-primary";
+                        const bg =
+                          isFirstFunded && !isNegative
+                            ? " bg-green-50/60 dark:bg-green-950/20"
+                            : "";
+                        return (
+                          <td key={gp.goalId} className={cls + bg}>
+                            {isFirstFunded && !isNegative && (
+                              <span className="text-caption mr-1 text-green-500">
+                                ✓
+                              </span>
+                            )}
+                            {formatCurrency(balance)}
+                            {inlineAllocation}
+                          </td>
+                        );
+                      }
 
-                          // Revolving mode (ongoing, no fixed target)
-                          if (gp.targetMode === "ongoing") {
-                            const hasWithdrawalThisMonth = (
-                              gp.monthEvents[rowIndex] ?? []
-                            ).some((ev) => ev.amount < 0);
+                      // Revolving mode (ongoing, no fixed target)
+                      if (gp.targetMode === "ongoing") {
+                        const hasWithdrawalThisMonth = (
+                          gp.monthEvents[rowIndex] ?? []
+                        ).some((ev) => ev.amount < 0);
 
-                            if (isNegative) {
-                              return (
-                                <td
-                                  key={gp.goalId}
-                                  className="px-3 py-1.5 text-right text-xs text-red-500 tabular-nums"
-                                >
-                                  {formatCurrency(balance)}
-                                  {inlineAllocation}
-                                </td>
-                              );
-                            }
-
-                            const futureWithdrawalBalance =
-                              nextWithdrawalBalance(gp, rowIndex);
-                            const isAtRisk =
-                              futureWithdrawalBalance !== null &&
-                              futureWithdrawalBalance < 0;
-
-                            if (isAtRisk) {
-                              return (
-                                <td
-                                  key={gp.goalId}
-                                  className="px-3 py-1.5 text-right text-xs text-amber-500 tabular-nums"
-                                >
-                                  {formatCurrency(balance)}
-                                  {inlineAllocation}
-                                </td>
-                              );
-                            }
-
-                            const cls =
-                              "text-right px-3 py-1.5 text-xs tabular-nums" +
-                              (hasWithdrawalThisMonth
-                                ? " text-green-600"
-                                : " text-primary");
-                            return (
-                              <td key={gp.goalId} className={cls}>
-                                {formatCurrency(balance)}
-                                {inlineAllocation}
-                              </td>
-                            );
-                          }
-
-                          // No target, no ongoing mode — neutral
+                        if (isNegative) {
                           return (
                             <td
                               key={gp.goalId}
-                              className={`px-3 py-1.5 text-right text-xs tabular-nums ${
-                                isNegative ? "text-red-500" : "text-primary"
-                              }`}
+                              className="px-3 py-1.5 text-right text-xs text-red-500 tabular-nums"
                             >
                               {formatCurrency(balance)}
                               {inlineAllocation}
                             </td>
                           );
-                        })}
-                        {hiddenProjections.length > 0 && (
-                          <td className="text-faint/50 bg-surface-sunken/40 px-3 py-1.5 text-right text-xs tabular-nums">
-                            {formatCurrency(
-                              hiddenProjections.reduce(
-                                (s, gp) => s + (gp.balances[rowIndex] ?? 0),
-                                0,
-                              ),
-                            )}
+                        }
+
+                        const futureWithdrawalBalance = nextWithdrawalBalance(
+                          gp,
+                          rowIndex,
+                        );
+                        const isAtRisk =
+                          futureWithdrawalBalance !== null &&
+                          futureWithdrawalBalance < 0;
+
+                        if (isAtRisk) {
+                          return (
+                            <td
+                              key={gp.goalId}
+                              className="px-3 py-1.5 text-right text-xs text-amber-500 tabular-nums"
+                            >
+                              {formatCurrency(balance)}
+                              {inlineAllocation}
+                            </td>
+                          );
+                        }
+
+                        const cls =
+                          "text-right px-3 py-1.5 text-xs tabular-nums" +
+                          (hasWithdrawalThisMonth
+                            ? " text-green-600"
+                            : " text-primary");
+                        return (
+                          <td key={gp.goalId} className={cls}>
+                            {formatCurrency(balance)}
+                            {inlineAllocation}
                           </td>
+                        );
+                      }
+
+                      // No target, no ongoing mode — neutral
+                      return (
+                        <td
+                          key={gp.goalId}
+                          className={`px-3 py-1.5 text-right text-xs tabular-nums ${
+                            isNegative ? "text-red-500" : "text-primary"
+                          }`}
+                        >
+                          {formatCurrency(balance)}
+                          {inlineAllocation}
+                        </td>
+                      );
+                    })}
+                    {hiddenProjections.length > 0 && (
+                      <td className="text-faint/50 bg-surface-sunken/40 px-3 py-1.5 text-right text-xs tabular-nums">
+                        {formatCurrency(
+                          hiddenProjections.reduce(
+                            (s, gp) => s + (gp.balances[rowIndex] ?? 0),
+                            0,
+                          ),
                         )}
-                      </tr>
-                    );
-                  })()}
+                      </td>
+                    )}
+                  </tr>
 
                   {/* Allocation sub-row — only when at least one visible fund has events this month */}
                   {showAllocations && rowEvents.length > 0 && (

@@ -3250,9 +3250,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-jsx-iife": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -3358,9 +3355,6 @@
     "ratchet/no-guarded-division": {
       "count": 1
     },
-    "ratchet/no-jsx-iife": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -3443,9 +3437,6 @@
     },
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 2
@@ -3979,9 +3970,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-jsx-iife": {
       "count": 1
     },
     "ratchet/no-raw-button": {

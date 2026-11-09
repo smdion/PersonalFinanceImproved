@@ -96,17 +96,7 @@ export function EmergencyFundDetail({
             Still Needed
             <HelpTip text="How much more you need to save to reach your target months of coverage, after subtracting outstanding self-loan repayment from the target. Pending reimbursements are shown separately below for reference." />
           </p>
-          {(() => {
-            const stillNeeded = efund.neededAfterRepay;
-            const funded = stillNeeded <= 0.005;
-            return (
-              <p
-                className={`text-lg font-semibold ${funded ? "text-green-600" : "text-red-600"}`}
-              >
-                {funded ? "Fully funded" : formatCurrency(stillNeeded)}
-              </p>
-            );
-          })()}
+          {renderStillNeeded(efund)}
         </div>
       </div>
 
@@ -213,5 +203,18 @@ export function EmergencyFundDetail({
         </div>
       )}
     </Card>
+  );
+}
+
+/** What the emergency fund still needs, or that it's fully funded. */
+function renderStillNeeded(efund: EfundData) {
+  const stillNeeded = efund.neededAfterRepay;
+  const funded = stillNeeded <= 0.005;
+  return (
+    <p
+      className={`text-lg font-semibold ${funded ? "text-green-600" : "text-red-600"}`}
+    >
+      {funded ? "Fully funded" : formatCurrency(stillNeeded)}
+    </p>
   );
 }
