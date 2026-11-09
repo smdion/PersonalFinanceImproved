@@ -5912,22 +5912,11 @@
     }
   },
   "src/lib/pure/engine/tax-estimation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 17
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 4
     }
   },
-  "src/lib/pure/engine/types/accumulation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
   "src/lib/pure/engine/types/contribution-spec.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
