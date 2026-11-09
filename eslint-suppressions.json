@@ -5964,9 +5964,6 @@
     }
   },
   "src/lib/pure/engine/withdrawal-routing/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -5978,21 +5975,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/engine/withdrawal-routing/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
     }
   },
   "src/lib/pure/engine/withdrawal-solver.ts": {

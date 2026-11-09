@@ -8,12 +8,9 @@ import { computeBracketTraditionalCap } from "./caps";
 import type { RouteBracketInfo } from "./types";
 
 /**
- * Apply the Roth-bracket-optimization overlay to a waterfall config: caps
- * cross-account traditional withdrawals at the income level that keeps the
- * target marginal bracket, and forces traditional preference on Roth-split
- * categories the user hasn't explicitly set a preference on. No-op (returns
- * the same config) when no rothBracketTarget is configured or there's no
- * bracket data to compute a cap from.
+ * Roth-bracket overlay for waterfall: caps Traditional withdrawals at the target
+ * bracket and forces Traditional preference on unset Roth-split categories.
+ * Returns the same config without a rothBracketTarget or bracket data.
  */
 export function applyRothBracketOverlay(
   config: ResolvedDecumulationConfig,
@@ -27,11 +24,8 @@ export function applyRothBracketOverlay(
     return config;
   }
   const rothOptTraditionalCap = computeBracketTraditionalCap(bracketInfo);
-  // Written as a negation of "< Infinity" (not ">= Infinity") so a NaN cap
-  // (shouldn't happen, but taxableSS/incomeCap are computed values) takes
-  // the same no-overlay path as the original inline logic did — NaN
-  // comparisons are always false either way, but ">=" would silently flip
-  // which branch that lands on.
+  // Negated "< Infinity", not ">= Infinity", so a NaN cap takes the no-overlay
+  // path (NaN comparisons are always false).
   if (!(rothOptTraditionalCap < Infinity)) return config;
 
   const existingTradCap = config.withdrawalTaxTypeCaps.traditional;
@@ -53,18 +47,9 @@ export function applyRothBracketOverlay(
       ...config.withdrawalTaxPreference,
       ...tradOverrides,
     },
-    // Confirmed load-bearing, NOT an oversight: this overlay adds a Traditional
-    // tax-type cap above so the "Roth bracket optimization" this overlay
-    // implements means anything in waterfall mode, `routeWithdrawals`'s
-    // category loop still runs in the user's OWN configured order. If
-    // that order puts a non-Traditional category (e.g. brokerage) ahead
-    // of every Traditional-preference one, `remaining` gets consumed
-    // before the cap ever binds, making the whole overlay a near-no-op —
-    // confirmed against 3 real engine-snapshot fixtures that exercise
-    // exactly this combination. Resetting to the default order guarantees
-    // Traditional actually gets drawn first, which is the entire point of
-    // this overlay. Do not remove without its own dedicated behavior-
-    // change PR and tests, separate from any other withdrawalOrder fix.
+    // Required: with the user's order, a non-Traditional category ahead of
+    // Traditional consumes the need before the cap binds, making the overlay a
+    // no-op. The default order draws Traditional first.
     withdrawalOrder: getDefaultDecumulationOrder(),
   };
 }

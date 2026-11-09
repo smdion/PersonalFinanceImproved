@@ -57,12 +57,9 @@ export function routeWithdrawalsPercentage(
     }
   }
 
-  // Redistribute the excess to accounts with room left, by split — repeated
-  // until it's placed, since an account taking extra can run dry in turn
-  // (one pass left that remainder "unmet" beside full accounts). Accounts
-  // with a 0% split take what's left after the split ones are full: the
-  // split is the mix the household prefers, not a ban on other money.
-  // Accounts a tax-type cap has stopped (below) take no more.
+  // Redistribute the excess by split until placed (an account taking extra can
+  // run dry in turn). 0%-split accounts take what's left once split ones are
+  // full; accounts a tax-type cap has stopped take no more.
   const stopped = new Set<AccountCategory>();
   const roomOf = (c: AccountCategory) => {
     if (stopped.has(c)) return 0;
