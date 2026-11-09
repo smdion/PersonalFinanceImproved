@@ -10,10 +10,8 @@ import { roundToCents } from "@/lib/utils/math";
 type ProjectionInput = Parameters<typeof calculateProjection>[0];
 
 interface StressTestRunInput {
-  // Narrow subset of the engine input, matching what buildEnginePayload
-  // exposes. We intentionally type this loosely because it's spread into
-  // calculateProjection with additional overrides below; TS can't see
-  // through the spread, so we cast at the call boundary.
+  // Engine input subset, as buildEnginePayload exposes it; spread into calculateProjection with
+  // overrides below, so it's cast at the call boundary.
   baseEngineInput: Omit<
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
@@ -22,18 +20,9 @@ interface StressTestRunInput {
    *  omitted = none. */
   accumulationOverrides?: ProjectionInput["accumulationOverrides"];
   decumulationOverrides?: ProjectionInput["decumulationOverrides"];
-  /** Fully resolved by the caller (stress-test.ts) via the shared
-   *  `buildDecumulationDefaults` (_shared.ts) — the household's real
-   *  routing mode, RMD/QCD handling, discretionary order, and active
-   *  strategy + params. Each scenario below overrides only
-   *  `withdrawalRate` (its own controlled variable: conservative /
-   *  baseline / optimistic each test a different rate); everything else
-   *  is the household's actual plan, not a hardcoded one. Deliberately
-   *  NOT built in this file — this helper
-   *  isn't a router under `projection/`, so it doesn't import
-   *  `buildDecumulationDefaults` itself; resolving in the router and
-   *  passing the built object down keeps this a mechanical one-field
-   *  override, same shape the existing tests already exercise. */
+  /** Built by the caller via `buildDecumulationDefaults` (the household's real routing,
+   *  RMD/QCD, order and strategy). Each scenario overrides only `withdrawalRate`; this file
+   *  isn't a router, so it doesn't build it. */
   decumulationDefaults: ProjectionInput["decumulationDefaults"];
 }
 
@@ -51,10 +40,8 @@ interface StressTestScenarioResult {
 }
 
 /**
- * Run the three stress-test scenarios (conservative, baseline, optimistic)
- * against the user's plan. Each scenario overrides returnRates (flat
- * schedule at the scenario's nominal rate), inflationRate, salaryGrowthRate,
- * and withdrawalRate before calling calculateProjection.
+ * Runs the conservative, baseline and optimistic scenarios against the plan, each overriding
+ * returnRates (flat at its nominal rate), inflationRate, salaryGrowthRate and withdrawalRate.
  */
 export function runStressTestScenarios(
   input: StressTestRunInput,

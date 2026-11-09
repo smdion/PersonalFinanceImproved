@@ -41,10 +41,8 @@ export function inferSecurityKind(
 }
 
 /**
- * Identity for a holding. Until a ticker is validated (v0.8.6), a security
- * is identified by institution + description: the same symbol can be a
- * plan pseudo-symbol at one institution, so the raw symbol is never trusted
- * as a ticker on its own.
+ * Identity for a holding: institution + description, since the same symbol can be a plan
+ * pseudo-symbol at one institution and is never trusted as a ticker on its own.
  */
 export function securityIdentity(
   institution: string,
@@ -84,14 +82,9 @@ type ObservationPlan =
     };
 
 /**
- * What to record for one account on one valuation date.
- *
- * - A non-empty holdings list is the account's full position list: every
- *   holding is recorded, and a security held at the previous observation but
- *   missing now is recorded as 0 shares (institutions drop sold positions
- *   rather than sending zero).
- * - A missing or empty list when the account previously held something is
- *   "unknown", not "sold everything" — nothing is recorded.
+ * What to record for one account on one valuation date. A non-empty list is the full position
+ * list (a security held at the last observation but missing now is recorded as 0 shares); a
+ * missing or empty list after holding something is "unknown" and records nothing.
  */
 export function planHoldingObservations(
   institution: string,

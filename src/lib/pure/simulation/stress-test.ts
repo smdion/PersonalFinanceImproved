@@ -1,18 +1,7 @@
 /**
- * Stress test parameter sets for retirement projections.
- *
- * The concern: ledgr accepts user-set return / inflation / salary-growth
- * assumptions with no historical context. A user with rosy assumptions doesn't
- * see the downside. This module exports canonical "conservative" and "optimistic"
- * parameter sets that any UI can pass into the projection engine to render a
- * side-by-side stress test.
- *
- * The numbers below are conservative tail-risk values, not point estimates.
- * They map roughly to the bottom decile of historical 30-year US equity returns
- * after taxes + fees, with elevated inflation and zero real salary growth.
- *
- * NOTE: this module is parameter-only. The UI is responsible for re-running
- * the projection with these inputs and rendering a comparison view.
+ * Stress test parameter sets: canonical "conservative" and "optimistic" assumptions any UI can run
+ * the projection with, side by side. The conservative values are tail risk (roughly the bottom
+ * decile of 30-year US returns after taxes and fees, high inflation, no real salary growth).
  */
 
 import { formatPercent } from "@/lib/utils/format";
@@ -38,10 +27,8 @@ interface StressTestParams {
 }
 
 /**
- * Conservative tail-risk scenario. Approximates the bottom decile of
- * historical US 30-year equity outcomes plus elevated inflation. Use this
- * to ask "what if my real-world experience matches the worst 10% of
- * history?".
+ * Conservative tail-risk scenario: roughly the bottom decile of historical US 30-year equity
+ * outcomes plus elevated inflation.
  */
 export const STRESS_TEST_CONSERVATIVE: StressTestParams = {
   returnRate: 0.05, // 5% nominal — matches Trinity Study tail
@@ -99,14 +86,8 @@ export function getStressTestScenarios(): StressTestParams[] {
 }
 
 /**
- * Detect whether a user-supplied set of assumptions is "rosy" relative to
- * historical norms. Returns warning flags the UI can surface to nudge the
- * user to run the conservative stress test before committing to the plan.
- *
- * Thresholds:
- *   - returnRate > 8% (above a stock-and-bond mix's long-run return)
- *   - inflationRate < 2.5% (below historical floor)
- *   - salaryGrowthRate > 4% (very aggressive career projection)
+ * Flags "rosy" assumptions against historical norms so the UI can nudge toward the conservative
+ * stress test: returnRate > 8%, inflationRate < 2.5%, salaryGrowthRate > 4%.
  */
 export interface RosyAssumptionFlag {
   field: "returnRate" | "inflationRate" | "salaryGrowthRate";

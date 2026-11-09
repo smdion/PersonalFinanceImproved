@@ -1,9 +1,7 @@
 /**
- * The stock share of the portfolio at each age, from an allocation glide
- * path — what VPW sizes its percentage by. An asset class counts as stocks
- * when any of its composition buckets is a stock bucket (the same rule the
- * holdings view uses; a class's buckets carry no weights to split it by).
- * Ages between glide-path points interpolate like the Simulation does.
+ * The stock share at each age from an allocation glide path (what VPW sizes by): a class counts as
+ * stocks when any of its composition buckets is a stock bucket, as in the holdings view. Ages
+ * between points interpolate like the Simulation.
  */
 import {
   interpolateAllocations,

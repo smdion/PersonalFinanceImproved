@@ -1,9 +1,6 @@
 /**
- * Classify SimpleFIN investment-account transaction rows. Pure — no DB or
- * network.
- *
- * Rules live in lib/config/simplefin-transaction-rules.ts. Unmatched rows are
- * `other` and marked uncertain; nothing is dropped.
+ * Classify SimpleFIN investment-account transaction rows by the rules in
+ * lib/config/simplefin-transaction-rules.ts. Unmatched rows are `other` and marked uncertain; nothing is dropped.
  */
 import {
   SIMPLEFIN_TRANSACTION_RULES,

@@ -1,8 +1,6 @@
 /**
- * The range of one year's return the Simulation expects at an age: the
- * middle 90% of its own yearly draws (same asset classes, correlations,
- * glide path and limits), so a real year can be read against what the plan
- * allows for. Seeded: the same plan always gives the same range.
+ * The middle 90% of one year's return the Simulation expects at an age, from its own draws, so a
+ * real year can be read against the plan. Seeded: the same plan always gives the same range.
  */
 import {
   buildCorrelationMatrix,

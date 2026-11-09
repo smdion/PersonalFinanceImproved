@@ -67,13 +67,8 @@ export function runTrials(
   // to terminalBalances, indexed by trial.
   const hadPenaltyAvoidedShortfall: boolean[] = [];
   const trialSucceeded: boolean[] = [];
-  // Dollar magnitude alongside the boolean above -- per trial, the sum of
-  // every decumulation year's penaltyAvoidedShortfall, in TODAY's dollars
-  // (deflated by pvDeflator, same convention as sustainableWithdrawalsPV
-  // below). Lets a caller answer "how much" a household is short by the
-  // 55->59½ gap, not just "how often" -- a bare % rate doesn't tell anyone
-  // what to actually go build. Only meaningful for trials where the
-  // boolean above is true; 0 otherwise.
+  // Per trial, the decumulation years' penaltyAvoidedShortfall summed in today's dollars (by
+  // pvDeflator): how much the 55->59½ gap leaves short. 0 unless the boolean above is true.
   const penaltyAvoidedShortfallAmountsPV: number[] = [];
   const failureAges: number[] = [];
   const failureReasonCounts: Record<PlanFailureReason, number> = {
@@ -101,10 +96,8 @@ export function runTrials(
   const basePostRetirementInflation =
     engineInput.postRetirementInflationRate ?? baseInflation;
 
-  // Report progress every ~2% of trials (min every 20 trials) so the
-  // callback overhead never becomes noticeable against the loop itself,
-  // while still giving a caller something to show a determinate "N/total"
-  // state with.
+  // Report progress every ~2% of trials so the callback overhead stays negligible while a caller
+  // can still show "N/total".
   const progressInterval = Math.max(1, Math.floor(numTrials / 50));
 
   // Run trials
@@ -138,11 +131,8 @@ export function runTrials(
       trialReturnRates.push({ label: `Age ${age}`, rate: annualReturn });
     }
 
-    // Optionally randomize inflation: a shock per year around the
-    // household's own rates. One shock path moves both rates, keeping the
-    // household's gap between the post-retirement raise and inflation, and
-    // the engine reads the same path. No spread = no shocks, exactly the
-    // plan's rates.
+    // Optional inflation risk: one shock per year around the household's rates, moving both
+    // rates together (the engine reads the same path). No spread = the plan's exact rates.
     const inflationShocks =
       inflationRisk && inflationRisk.stdDev > 0
         ? Array.from({ length: numYears }, () =>
@@ -200,11 +190,8 @@ export function runTrials(
       ),
     );
 
-    // One judge (plan-outcome.ts): the trial fails when retirement money
-    // runs out or a year's spending goes unmet (money penalty-locked, only
-    // in Portfolio accounts, or past what routing can reach) — never kept
-    // alive by a terminal balance it couldn't spend. A penalty gap is also
-    // tallied on its own below.
+    // One judge (plan-outcome.ts): fails when retirement money runs out or a year's spending
+    // goes unmet, never kept alive by an unspendable balance. Penalty gaps are tallied too.
     const outcome = assessPlan(result);
     trialSucceeded.push(outcome.succeeded);
     hadPenaltyAvoidedShortfall.push(outcome.failureReason === "penaltyGap");
@@ -227,13 +214,9 @@ export function runTrials(
       failureReasonCounts[outcome.failureReason]++;
     }
 
-    // Spending stability: did withdrawals stay ≥75% of baseline every decumulation year?
-    // For strategies that use post-retirement raise (Fixed, Forgo, G-K, Decline),
-    // use the engine's projectedExpenses as baseline — it already has the correct
-    // inflation applied. For dynamic strategies (Vanguard, Const%, Endowment, RMD),
-    // use year-1 withdrawal grown by the trial's general inflation — "did
-    // spending hold in real terms" is a price question, and these
-    // strategies don't use the post-retirement raise.
+    // Spending stability: withdrawals ≥ the threshold share of baseline every decumulation year.
+    // Baseline: targetWithdrawal for post-retirement-raise strategies; otherwise year-1's
+    // withdrawal grown by the trial's inflation.
     if (tracksGkAnchor) {
       const anchor = gkAnchorRate(result.projectionByYear);
       if (anchor !== null) gkAnchorRates.push(anchor);
@@ -268,19 +251,9 @@ export function runTrials(
         });
       if (isStable) spendingStableCount++;
 
-      // Budget stability: same check but against the user's ACTUAL per-year
-      // budget (y.budgetOnlyExpenses — the engine's own real budget figure
-      // for that specific year, already reflecting any raises/phase
-      // changes the household's Budget Profile defines, and NEVER mutated
-      // by a reactive strategy's guardrail adjustment) rather than a
-      // synthetic flat-inflation reprojection of the day-0 number.
-      // y.projectedExpenses looked right but isn't: for Guyton-Klinger/
-      // Forgo/Spending-Decline it's overwritten by that strategy's own
-      // guardrail target every year, which silently collapsed "vs budget"
-      // into being identical to "vs strategy" (both KPI rings showing the same percentage).
-      // Compared with what the strategy has the household spend
-      // (strategySpending) — the budget is spending, while the gross
-      // withdrawal is net of Social Security and gross of tax.
+      // Budget stability: strategySpending against the year's real budget (budgetOnlyExpenses,
+      // never changed by a strategy's guardrails, unlike projectedExpenses) — spending against
+      // spending, since the gross withdrawal is net of Social Security and gross of tax.
       const isBudgetStable = decumulationYears.every((y) => {
         const baseline = y.budgetOnlyExpenses;
         return (

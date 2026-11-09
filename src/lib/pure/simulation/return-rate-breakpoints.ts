@@ -1,11 +1,6 @@
 /**
- * The return-rate table is a breakpoint table: a row's rate applies from
- * its age up to the next row. `returnRateAtAge` is the one reading of it —
- * the engine (resolveReturnRateForAge), the Monte Carlo fallback,
- * relocation and the realized-vs-assumed card all use it. A row with the
- * same rate as the row before it changes nothing, so it's redundant — the
- * router removes those after every change, keeping one entry per run of
- * equal rates.
+ * The return-rate table as breakpoints: a row's rate applies from its age to the next row.
+ * `returnRateAtAge` is its one reading. The router drops rows repeating the previous rate.
  */
 
 /** What the projection cards say when no breakpoint is at or below the

@@ -1,12 +1,7 @@
 /**
- * Suggest which sub-account each unlinked SimpleFIN account is. Pure;
- * suggestions only — the household confirms each one.
- *
- * A candidate must be at the same institution and of the same account
- * kind (from the SimpleFIN account's name); the tax treatment must agree
- * when the name states one. Among look-alikes (e.g. two people's Roth
- * IRAs) the balance closest to the sub-account's latest snapshot amount
- * wins, and each sub-account is suggested at most once.
+ * Suggests which sub-account each unlinked SimpleFIN account is (the household confirms): same
+ * institution and account kind, matching tax treatment when named. Among look-alikes the balance
+ * closest to the latest snapshot wins; each sub-account is suggested at most once.
  */
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
 import type { AccountCategory } from "@/lib/config/account-types";

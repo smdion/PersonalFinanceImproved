@@ -337,9 +337,9 @@
     "src/lib/pure/retirement/relocation.ts": 469,
     "src/lib/pure/simulation/inflation-risk.ts": 23,
     "src/lib/pure/simulation/monte-carlo.ts": 304,
-    "src/lib/pure/simulation/stress-test-run.ts": 121,
-    "src/lib/pure/simulation/trial-run.ts": 347,
-    "src/lib/pure/simulation/trial-summary.ts": 301,
+    "src/lib/pure/simulation/stress-test-run.ts": 108,
+    "src/lib/pure/simulation/trial-run.ts": 320,
+    "src/lib/pure/simulation/trial-summary.ts": 299,
     "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
@@ -996,7 +996,7 @@
       "calculateBrokerageGoals": 212
     },
     "src/lib/pure/simulation/trial-run.ts": {
-      "runTrials": 331
+      "runTrials": 304
     },
     "src/lib/pure/tax/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199

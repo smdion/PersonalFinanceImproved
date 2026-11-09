@@ -244,10 +244,8 @@ export function trialOutcomes(
   terminalBalancesToday: number[],
   failureReasonCounts: Record<PlanFailureReason, number>,
 ) {
-  // "How much," not just "how often" -- median total shortfall (today's
-  // dollars) among ONLY the trials that actually hit one. Answers the
-  // question a bare rate can't: how much MORE penalty-free money (basis,
-  // brokerage) would close the gap in a typical unlucky trial.
+  // Median total shortfall (today's dollars) among only the trials that hit one: how much
+  // more penalty-free money would close the gap.
   const shortfallAmountsAmongAffected = penaltyAvoidedShortfallAmountsPV
     .filter((_, i) => hadPenaltyAvoidedShortfall[i])
     .sort((a, b) => a - b);
