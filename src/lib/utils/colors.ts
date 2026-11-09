@@ -1,9 +1,6 @@
 /**
- * Centralized color definitions for account types and tax treatments.
- * All pages should use these to ensure consistent visual identity.
- *
- * Account-type colors are derived from ACCOUNT_TYPE_CONFIG — adding a new
- * account type with a `colors` block automatically wires it up here.
+ * Shared colors for account types and tax treatments. Account-type colors come
+ * from ACCOUNT_TYPE_CONFIG's `colors` blocks.
  */
 
 import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
@@ -70,10 +67,8 @@ export function accountTextColor(type: string): string {
 }
 
 // ── Tax-treatment colors (portfolio, balance projection charts) ──
-// Must be visually distinct from each other in stacked bar charts.
-// Echoes account-type hues where possible:
-//   Pre-Tax → blue (like 401k), Tax-Free → purple (like IRA, often Roth),
-//   HSA → green (matches HSA account), After-tax → amber (like Brokerage)
+// Distinct in stacked bars, echoing account-type hues: Pre-Tax blue (401k),
+// Tax-Free violet (IRA), HSA emerald, After-tax orange (Brokerage).
 
 export const TAX_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   preTax: { bg: "bg-blue-500", text: "text-blue-600" },
@@ -93,20 +88,8 @@ export function taxTypeLabel(taxType: string): string {
 }
 
 // ── Status/severity colors (badges, toasts, alert banners) ──
-// Single source of truth for the filled-box shape (bg + text + border) used
-// by Badge, toast.tsx, scenario-indicator.tsx, and plan-health.tsx — these
-// had independently drifted to 4 different shade combinations for the same
-// 4 semantic colors before being consolidated here. Shades are
-// Badge's original values, which carry a deliberate accessibility fix:
-// text-amber-700 fails WCAG AA 4.5:1 contrast on bg-amber-100, so amber
-// uses text-amber-800. A consumer that doesn't
-// render a border (Badge) simply ignores that key.
-//
-// This is a different token than a plain inline status TEXT color with no
-// background (e.g. a standalone "Warning" label) — see DESIGN.md's
-// "Status colors" table, which now mirrors these same shades for full
-// consistency even though a filled box's contrast requirements don't
-// strictly apply to unfilled text.
+// The filled-box shape (bg + text + border); amber uses text-amber-800 because
+// amber-700 fails WCAG AA on bg-amber-100. Consumers without a border ignore it.
 export const STATUS_COLORS: Record<
   "red" | "green" | "amber" | "blue",
   { bg: string; text: string; border: string }
@@ -126,10 +109,8 @@ export const STATUS_COLORS: Record<
 };
 
 // ── Signed-value text colors (gain/loss, over/under budget) ──
-// One place for the red/green a value cell uses to signal its sign, so cells
-// don't each re-inline `n >= 0 ? "text-green-600" : "text-red-600"`. Callers
-// must still pair this with a NON-COLOR cue (a +/- sign, a "▲"/"▼" glyph, or
-// a trailing "over"/"under" word) — color alone fails WCAG 1.4.1.
+// Callers must pair the color with a non-color cue (+/- sign, ▲/▼, "over"/"under"):
+// color alone fails WCAG 1.4.1.
 
 const GAIN = "text-green-600";
 const LOSS = "text-red-600";
@@ -189,12 +170,8 @@ export const CHART_COLORS = {
   avgWealth: "#9ca3af", // gray-400
   prodigiousWealth: "#facc15", // yellow-400
   aawScore: "#059669", // emerald-600
-  // Monte Carlo percentile bands. mcGrid/mcAxis are the general chart
-  // grid/axis defaults (used well beyond MC charts — see chart-defaults.tsx).
-  // simulationBandOuter/simulationBandInner/simulationBandMiddle/simulationMedian are the fan-band palette
-  // shared by projection-chart.tsx and spending-stability-chart.tsx, which
-  // had each independently hardcoded this exact violet set locally before
-  // being consolidated here.
+  // Simulation bands. mcGrid/mcAxis are the general chart grid/axis defaults;
+  // the simulationBand*/simulationMedian violets are the shared fan-band palette.
   mcGrid: "#e5e7eb", // gray-200
   mcAxis: "#6b7280", // gray-500
   simulationBandOuter: "#ede9fe", // violet-100 — 5-10 / 90-95 percentile fan
@@ -219,11 +196,10 @@ export const CHART_COLORS = {
   mixUsEquity: "#4f46e5", // indigo-600
   mixIntlEquity: "#0ea5e9", // sky-500
   mixUsBond: "#10b981", // emerald-500
-  // rose-600 — teal was nearly indistinguishable from US bonds, which it
-  // sits next to in stacked mixes and the glide path chart.
+  // rose-600: teal is nearly indistinguishable from US bonds, its neighbour in
+  // stacked mixes and the glide path chart.
   mixIntlBond: "#e11d48", // rose-600
-  // purple-500 — lime was too close to US bonds and cash for colorblind
-  // readers (they sit next to each other in stacked mixes).
+  // purple-500: lime is too close to US bonds and cash for colorblind readers.
   mixTips: "#a855f7", // purple-500
   mixCash: "#f59e0b", // amber-500
   mixOther: "#9ca3af", // gray-400
@@ -247,24 +223,15 @@ export const CHART_COLORS = {
   // Projection chart reference-line markers (age axis + legend swatch)
   ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
   rmdMarker: "#f59e0b", // amber-500 — RMD start-age marker
-  // Projection chart's decumulation-year income overlay (secondary axis) —
-  // reuses ssMarker's teal for the SS line so the same color means "Social
-  // Security" everywhere on this chart. withdrawalFlow is a new, neutral
-  // slate tone (no existing account-type or tax-bucket hue uses this
-  // family) for total portfolio withdrawal — deliberately NOT blue/violet/
-  // emerald/orange (Traditional/Roth/HSA/After-tax) or teal/amber (SS/RMD
-  // markers above), per DESIGN.md's "distinct hue families, no overlap"
-  // rule — this is an aggregate flow across all tax types, not a specific
-  // account or bucket.
+  // Decumulation overlay: SS reuses ssMarker's teal; total withdrawal uses slate,
+  // a hue family nothing else here uses (DESIGN.md's "distinct hue families").
   withdrawalFlow: "#475569", // slate-600 — total portfolio withdrawal
   // Guyton-Klinger guardrail event markers
   guardrailIncreaseMarker: "#22c55e", // green-500 — spending raised
   guardrailDecreaseMarker: "#ef4444", // red-500 — spending cut
   guardrailSkipInflationMarker: "#f59e0b", // amber-500 — inflation raise skipped
-  // Real, material unmet spending need —
-  // darker than guardrailDecreaseMarker so a genuine "couldn't fund the
-  // need" year reads as distinct from (and worse than) a voluntary
-  // guardrail cut, even when both happen the same year.
+  // Real unmet spending need: darker than guardrailDecreaseMarker so it reads as
+  // worse than a voluntary cut in the same year.
   shortfallMarker: "#dc2626", // red-600 — unmet need
   // Spending-stability chart's deterministic ratio bars
   spendingRatioBar: "#3b82f6", // blue-500
@@ -273,22 +240,15 @@ export const CHART_COLORS = {
   fundChartTarget: "#10b981", // emerald-500 — target reference line + contribution dot
   fundChartZeroLine: "#4b5563", // gray-600
   fundChartDot: "#1f2937", // gray-800 — dot stroke/active-dot fill
-  // Savings trajectory chart tooltip's per-event amount color (lighter
-  // shades than the standard red/green — chosen for contrast against the
-  // tooltip's own light/dark background, see trajectoryChartPalette below)
+  // Savings trajectory tooltip's per-event amounts: lighter shades for contrast
+  // on the tooltip background (see trajectoryChartPalette).
   trajectoryEventNegative: "#f87171", // red-400
   trajectoryEventPositive: "#4ade80", // green-400
 };
 
 /**
- * Theme-aware overrides for data-carrying LINE colors whose single
- * `CHART_COLORS` value fails WCAG 1.4.11 (≥3:1 vs the card / adjacent
- * fill) in dark mode. Spread over `CHART_COLORS` in the chart component:
- *   const c = { ...CHART_COLORS, ...chartLinePalette(dark) };
- * Light values are the originals; dark values step 600→400 to clear 3:1
- * against `#1e293b` (and, for simulationMedian, against the ~`#343360`
- * simulationBandMiddle@0.2 fill it's drawn over). Non-line series stay in
- * CHART_COLORS.
+ * Dark-mode overrides for line colors whose CHART_COLORS value fails WCAG 1.4.11
+ * (3:1) on dark cards: `{ ...CHART_COLORS, ...chartLinePalette(dark) }`.
  */
 export function chartLinePalette(dark: boolean) {
   return {
@@ -299,12 +259,8 @@ export function chartLinePalette(dark: boolean) {
   };
 }
 
-/**
- * Theme-aware hex palette for the savings trajectory chart (grid/axis/
- * tooltip colors that must flip with dark mode). Kept here rather than
- * inline in the component so the file's hex literals stay centralized —
- * see the no-restricted-syntax hardcoded-hex-color lint rule.
- */
+/** Theme-aware hex palette for the savings trajectory chart (grid/axis/tooltip),
+ *  kept here so hex literals stay centralized (no-restricted-syntax rule). */
 export function trajectoryChartPalette(dark: boolean) {
   return {
     grid: dark ? "#374151" : "#e5e7eb",

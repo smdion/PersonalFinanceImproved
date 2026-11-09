@@ -14,20 +14,9 @@ export function getAge(birthDate: Date, asOfDate: Date): number {
 }
 
 /**
- * A person's integer age in a given calendar year — the coarse,
- * calendar-year-granularity convention the retirement projection engine
- * uses everywhere it reasons about age (it projects year-by-year, never by
- * exact date). Deliberately NOT `getAge` above, which is date-precise and
- * wants a real birth date + as-of date; this is `year - birthYear`, nothing
- * more.
- *
- * The convention this implies for age-threshold constants that aren't whole
- * numbers (e.g. `PENALTY_FREE_AGE = 59.5`) is worth stating explicitly:
- * `ageInYear(birthYear, year) >= 59.5` is only ever true when
- * `ageInYear(...) >= 60`, i.e. eligibility starts in the calendar year the
- * person turns 60, not the year they actually turn 59.5. That reads like an
- * off-by-one at first glance; it isn't — it's the correct, conservative
- * interpretation of a mid-year threshold under year-granularity modeling.
+ * Age as `year - birthYear`, the projection engine's year-granularity convention
+ * (not date-precise like getAge). So `>= 59.5` first holds in the year a person
+ * turns 60: a conservative reading of a mid-year threshold, not an off-by-one.
  */
 export function ageInYear(birthYear: number, year: number): number {
   return year - birthYear;
@@ -51,18 +40,8 @@ export function calendarYear(date: string): number {
 }
 
 /**
- * Parse a value that MAY be a bare date-only string ("2020-11-01") as LOCAL // lint-violation-ok: literal date-string format example
- * midnight rather than UTC midnight — `new Date("2020-11-01")` (unguarded) // lint-violation-ok: literal date-string format example
- * parses as UTC, which `.toLocaleDateString()`/`.getMonth()`/etc. then read
- * back as the PRIOR calendar day in any timezone behind UTC (all of the US).
- * A value that already carries a time component (has a "T", e.g. a
- * JSON-serialized full timestamp) is passed through unchanged — appending a
- * second time component would corrupt it.
- *
- * Same guard `formatDate` (`lib/utils/format.ts`) already applies inline;
- * extracted here so call sites that need the `Date` itself (not just a
- * formatted string) — comparisons, `.getFullYear()`, etc. — can share it
- * too, instead of re-deriving the guard or (worse) skipping it.
+ * Parse a bare date-only string as LOCAL midnight (as UTC it reads as the prior
+ * day behind UTC); a value with a "T" time part or a Date passes through unchanged.
  */
 export function parseLocalDateOnly(value: string | Date): Date {
   if (value instanceof Date) return value;
@@ -77,10 +56,8 @@ export function localMidnight(date: Date): Date {
 }
 
 /**
- * UTC calendar day (YYYY-MM-DD) of a timestamp. Institutions report posting
- * dates as UTC timestamps, so posted dates, balance dates and windows are
- * compared as UTC days — an internal key, never compared to a local "today"
- * (use calendarDateOf for that).
+ * UTC calendar day (YYYY-MM-DD) of a timestamp: institutions post in UTC, so this
+ * is an internal key, never compared to a local "today" (use calendarDateOf).
  */
 export function utcDayOf(date: Date): string {
   return date.toISOString().slice(0, 10);

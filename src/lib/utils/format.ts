@@ -36,10 +36,8 @@ export function stripInstitutionSuffix(label: string): string {
 }
 
 /**
- * Resolve an owner display name from a peopleMap.
- * Returns "Joint" for null/undefined ownerPersonId (intentional joint account).
- * Throws if the id is set but missing from the map — that's a data-integrity
- * error (orphan FK), not a display problem.
+ * Owner display name from a peopleMap: "Joint" for a null owner id. Throws when
+ * the id is missing from the map (an orphan FK is a data-integrity error).
  */
 export function personDisplayName(
   ownerPersonId: number | null | undefined,
@@ -82,12 +80,9 @@ export const MASKED_AMOUNT_PATTERN = /^\$[\uE000-\uE007]+$/;
 const maskSalt = Math.floor(Math.random() * 0x100000000);
 
 /**
- * The privacy-mode stand-in for a dollar amount, shaped like a scribbled-out
- * number: "$" + 3–8 squiggle digits (2–3 when `compact`, for chart axes). No
- * "," or "." — their positions would hint at magnitude. Length and glyphs
- * come from a hash of `seed` and the per-load salt, never from the amount's
- * digits, so the mask doesn't hint at size. The same seed gives the same
- * squiggle until reload, so equal amounts on screen look alike.
+ * Privacy-mode stand-in for an amount: "$" + 3–8 squiggles (2–3 if `compact`),
+ * no "," or ".". Shape comes from a hash of `seed` and a per-load salt, never the
+ * digits, so it hides magnitude while equal seeds look alike until reload.
  */
 export function maskedAmount(seed: number | string, compact = false): string {
   // FNV-1a over the seed, then xorshift32 for the picks.
@@ -111,11 +106,9 @@ export function maskedAmount(seed: number | string, compact = false): string {
   return out;
 }
 
-// Module-level so the ~1,000 plain-function formatCurrency call sites need no
-// hook. Only ever set in the browser (PrivacyProvider): on the server this
-// module is shared by every request, so setting it there would leak one
-// user's choice into another's render. The server instead never renders
-// amounts while privacy is on (see prefetchForPage).
+// Module-level so plain formatCurrency calls need no hook. Set only in the
+// browser: on the server it would leak one user's choice into another's render
+// (the server never renders amounts while privacy is on; see prefetchForPage).
 let privacyMode = false;
 
 export function setPrivacyMode(on: boolean): void {
@@ -131,11 +124,8 @@ export function isPrivacyMode(): boolean {
 const DOLLAR_AMOUNT_IN_TEXT = /-?\$\s?-?\d[\d,]*(?:\.\d+)?(?:[kKMB]\b)?/g;
 
 /**
- * Mask every dollar amount inside a pre-built sentence (engine warnings,
- * narratives, methodology text) when privacy mode is on; otherwise returns
- * `text` unchanged. The engine stays pure, so it keeps writing "$1,234" into
- * its strings — masking happens here, at display time. Each match gets its
- * own maskedAmount(), so equal amounts in one sentence look alike.
+ * Masks every dollar amount in a pre-built sentence while privacy mode is on
+ * (the engine stays pure and writes plain amounts); else returns `text` as is.
  */
 export function maskAmountsInText(text: string): string {
   if (!privacyMode) return text;
@@ -243,10 +233,8 @@ export function formatNumber(value: number, decimals = 0): string {
   }).format(value);
 }
 
-/** Display label for a budget API service — shared so a sync toast always
- * names the ACTUAL connected provider instead of a hardcoded "YNAB" (every
- * sync toast used to say "YNAB" literally, even when Actual Budget was the
- * active connected service). */
+/** Display label for a budget API service, so sync toasts name the connected
+ *  provider. */
 export function budgetApiServiceLabel(
   service: string | null | undefined,
 ): string {
@@ -255,45 +243,22 @@ export function budgetApiServiceLabel(
   return "the budget API";
 }
 
-/**
- * Success-toast wording for a push/pull-to-external-API result. Shared by
- * the budget page's sync mutations and the savings page's push-to-API
- * mutation so "Pushed N items to YNAB" / "No changes — already up to date"
- * reads identically everywhere instead of two independently-worded copies.
- */
+/** Success-toast wording for a push/pull to an external budget API, shared so
+ *  every sync toast reads the same. */
 export function formatSyncResultToast(
   count: number,
   action: "push" | "pull",
   destination: string,
-  /** Items that couldn't be pushed even though the request itself
-   * succeeded/didn't error generically — either the provider has no API for
-   * this operation at all, or (Actual specifically) it does but the target
-   * already has incompatible state that can't be safely merged into
-   * without clobbering something configured directly in the provider (see
-   * BudgetApiError's "unsupported"/"conflict" codes). Distinct from
-   * `count === 0`: "already up to date" is actively misleading when the
-   * real reason nothing moved is that the push couldn't land, not that
-   * there was nothing to send. */
+  /** Items the provider can't take (BudgetApiError "unsupported"/"conflict"),
+   *  so a push that couldn't land never reads as "already up to date". */
   skippedUnsupported = 0,
-  /** A request that genuinely failed (network/auth/rate-limit/unexpected
-   *  API shape) — distinct from `skippedUnsupported` (provider explicitly
-   *  rejected the specific write) and from `count === 0` (nothing needed
-   *  sending). Without this, a real failure and "already up to date" were
-   *  indistinguishable to the user — both produced the identical
-   *  misleadingly-calm "No changes — already up to date" message. */
+  /** Requests that failed (network/auth/rate-limit/bad shape), so a failure
+   *  never reads as "already up to date". */
   failed = 0,
   failureMessage?: string,
-  /** Actual Budget has no writable field for a category's goal — pushing a
-   *  goal there only writes a `#template` line into the category's note
-   *  (see ActualClient.prepareGoalWrite's docblock). It does NOT
-   *  become a real budgeted amount until the household manually runs
-   *  Actual's own "Apply Budget Template" action, so a plain "Pushed N
-   *  items" success message reads as "this is already live in Actual,"
-   *  which it isn't (a household saw the success
-   *  toast, checked Actual, and saw no change, reasonably assuming the
-   *  push had silently failed). Set only for `destination === "Actual
-   *  Budget"` pushes of goal amounts; YNAB writes a real structured goal
-   *  field directly, no such caveat applies there. */
+  /** An Actual goal push only writes a `#template` note line, live once the
+   *  household runs "Apply Budget Template"; the toast says so. Set only for
+   *  Actual goal pushes (YNAB writes a real goal field). */
   requiresManualApply = false,
 ): string {
   if (failed > 0 && count === 0) {

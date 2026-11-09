@@ -1,35 +1,7 @@
 /**
- * worker_threads entry point for calculateMonteCarlo().
- *
- * Why this exists: calculateMonteCarlo() is a synchronous, CPU-bound loop
- * (up to numTrials × calculateProjection() calls, each across ~40-60 years)
- * with no `await`/yields. Called directly inside a tRPC handler it blocks
- * Node's single JS event-loop thread for the entire run — not just this
- * request, the WHOLE SERVER, for every user, until it finishes (a real
- * "entire UI freezes" report, then verified by reading the loop, not
- * assumed). Running it on a separate OS thread lets the OS
- * scheduler preempt it in favor of the main thread even under this
- * container's `cpus: 1.0` limit (docs/ops/OPS.md) — there's no real
- * parallelism gain from a second thread on one CPU, but preemption alone
- * is the actual fix: the main thread keeps getting scheduled time instead
- * of running one synchronous callback to completion.
- *
- * This file is NOT part of the Next.js build — it's bundled standalone via
- * esbuild (see Dockerfile) into a self-contained CJS file with every
- * `@/lib/...` import inlined, then copied into the runner image next to
- * `server.js`, the same pattern `db-migrate.ts` already uses for its own
- * one-file compile step. Do not add framework/DB imports here — this
- * process has none of Next's request context, and calculateMonteCarlo
- * itself is a pure calculator (no DB, no tRPC, no React) that never needed
- * any.
- *
- * Protocol (see src/server/services/simulation/monte-carlo-worker-client.ts for the
- * host side): the host posts `{ id, input }`; this worker posts
- * `{ id, type: "progress", done, total }` zero or more times, then exactly
- * one of `{ id, type: "result", result }` or `{ id, type: "error", message }`.
- * One job in flight at a time — the host serializes calls via its own
- * queue, so `id` only needs to distinguish which job a message belongs to
- * for logging/assertions, not to support real concurrency inside this file.
+ * Worker thread for calculateMonteCarlo's CPU-bound loop, off the server's event loop. Bundled
+ * standalone by esbuild (Dockerfile): no framework/DB imports. Host posts `{ id, input }`; this
+ * posts `progress`, then one `result` or `error` (see monte-carlo-worker-client.ts).
  */
 import { parentPort } from "node:worker_threads";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";

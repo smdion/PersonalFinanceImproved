@@ -1,14 +1,7 @@
 /**
- * friendlyMutationError — turns a failed-mutation error into a single
- * user-facing sentence for the global toast (src/app/providers.tsx's
- * MutationCache.onError), or `null` to suppress the toast entirely.
- *
- * The raw `error.message` on a tRPC client error is only safe to show for
- * a hand-written `BAD_REQUEST` (procedures are expected to phrase those for
- * users). Everything else — Zod input-validation dumps, DB constraint
- * strings, `INTERNAL_SERVER_ERROR` internals — gets mapped to friendly copy
- * by its `data.code`. Zod failures arrive as a structured
- * `data.zodError` because trpc.ts's errorFormatter flattens them.
+ * One user-facing sentence for a failed mutation's global toast, or null to
+ * suppress it. Only a hand-written BAD_REQUEST message is shown raw; everything
+ * else maps by `data.code` (Zod failures arrive flattened in `data.zodError`).
  */
 
 type ZodFlattened = {

@@ -346,7 +346,7 @@
     "src/lib/simplefin/ingest.ts": 522,
     "src/lib/simplefin/sync.ts": 553,
     "src/lib/tax-data/validate.ts": 395,
-    "src/lib/utils/colors.ts": 425,
+    "src/lib/utils/colors.ts": 381,
     "src/server/data/budget-profiles.ts": 37,
     "src/server/data/investments.ts": 632,
     "src/server/data/jobs.ts": 17,

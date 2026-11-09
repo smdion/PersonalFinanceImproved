@@ -1,9 +1,7 @@
 /**
- * Credentials never land in the change log. A mutation's raw input is
- * logged for the audit trail (`logMutation`, server/trpc.ts); a value under
- * one of these keys — at any depth — is replaced first. The same list
- * drives the migration that scrubbed rows logged before (drizzle 0007), so
- * add a key here and there together.
+ * Keys whose values (at any depth) are redacted before a mutation's input is
+ * logged (`logMutation`). Drizzle migration 0007 scrubs with the same list, so
+ * change both together.
  */
 export const SECRET_INPUT_KEYS: readonly string[] = [
   "accessToken", // YNAB

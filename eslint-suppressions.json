@@ -5509,23 +5509,7 @@
     }
   },
   "src/lib/utils/colors.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
     "ratchet/no-abbreviation": {
-      "count": 2
-    }
-  },
-  "src/lib/utils/date-keys.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/utils/date.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-lint-violation-ok": {
       "count": 2
     }
   },
@@ -5535,31 +5519,12 @@
     }
   },
   "src/lib/utils/format.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-clock-read": {
-      "count": 1
-    }
-  },
-  "src/lib/utils/math.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/lib/utils/mutation-error.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/utils/redact-secrets.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6412,11 +6377,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
-    }
-  },
-  "src/workers/monte-carlo-worker.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "tests/pure/investments/deposit-check.test.ts": {
