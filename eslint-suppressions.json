@@ -5443,9 +5443,6 @@
     }
   },
   "src/lib/pure/debts/debt-rules.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5456,9 +5453,6 @@
     }
   },
   "src/lib/pure/debts/mortgage.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -5743,48 +5737,14 @@
       "count": 1
     }
   },
-  "src/lib/pure/household/compensation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 11
-    }
-  },
   "src/lib/pure/household/household-income.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
   },
-  "src/lib/pure/household/household-timeline.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/household/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/household/profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-abbreviation": {
       "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/household/raise-history.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/household/retirement-profile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/pure/household/what-if.schema.ts": {

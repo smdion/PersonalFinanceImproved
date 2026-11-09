@@ -1,25 +1,6 @@
 /**
- * Mortgage Calculator
- * Handles multiple loans, refinance chains, extra payments, and what-if scenarios.
- *
- * Key concepts:
- *   - **Multi-loan support**: A household can have multiple mortgages (e.g. primary + rental).
- *     Each loan is amortized independently.
- *   - **Refinance chains**: When a loan is refinanced, the old loan is marked inactive and the
- *     new loan has `refinancedFromId` pointing to the old one. The loan history shows the chain
- *     (e.g. "Original 30yr → Refi 15yr") so users understand their mortgage history.
- *   - **Extra payments**: One-time or recurring principal payments reduce the loan faster. They
- *     are matched to amortization months by date. The calculator compares with-extras vs.
- *     without-extras to show interest saved and months ahead of schedule.
- *   - **What-if scenarios**: "What if I pay $200/month extra?" scenarios are computed by injecting
- *     hypothetical extra payments starting from asOfDate and comparing against the baseline.
- *
- * Amortization formula:
- *   Each month: interest = balance × (annual_rate / 12)
- *               principal = min(monthly_PI - interest, remaining_balance)
- *               extra = min(extra_payment, remaining_balance - principal)
- *               new_balance = balance - principal - extra
- *   Loop terminates when balance reaches $0 or term expires.
+ * Mortgage calculator: amortizes each loan independently, follows refinance chains
+ * (`refinancedFromId`), and compares extra-payment and what-if schedules against the baseline.
  */
 import { utcDayOf } from "../../utils/date";
 import { calendarDateOf } from "../../utils/calendar-date";
@@ -178,15 +159,8 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
 }
 
 /**
- * Amortizes a single loan with actual extra payments and computes current status.
- *
- * Builds two schedules:
- *   1. With extra payments (actual) — shows real payoff timeline
- *   2. Without extra payments (standard) — the original loan terms
- * Comparing the two gives: interest saved, months ahead of schedule.
- *
- * For historical (refinanced) loans, pass `endDate` to truncate the schedule at the
- * refinance date. This ensures we show actual interest paid, not full-term projected.
+ * Amortizes one loan with and without its extra payments (interest saved, months ahead) and
+ * computes current status. `endDate` truncates a refinanced loan at its refinance date.
  */
 function amortizeLoan(
   loan: MortgageLoanInput,
@@ -331,17 +305,8 @@ function amortizeWhatIf(
 }
 
 /**
- * Builds a month-by-month amortization schedule for a single loan.
- *
- * Standard amortization: fixed monthly P&I payment, with interest computed on remaining balance.
- * As balance decreases, more of each payment goes to principal.
- *
- * Extra payments are matched by month and applied as additional principal. If multiple extra
- * payments fall in the same month, they are summed. Extra principal cannot exceed the remaining
- * balance after the base principal payment.
- *
- * The loop terminates when balance drops below $0.005 (half a cent) to avoid floating-point
- * rounding issues that could create an extra month with a fraction-of-a-cent balance.
+ * Month-by-month schedule: fixed P&I, same-month extra payments summed and capped at the balance
+ * left after base principal. Stops below $0.005 so float dust can't add a final month.
  */
 function buildAmortization(
   loan: MortgageLoanInput,

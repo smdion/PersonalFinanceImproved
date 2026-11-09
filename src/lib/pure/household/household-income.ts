@@ -1,18 +1,7 @@
 /**
- * Household annual income — the one yearly earnings model.
- *
- * Every this-year income figure (the annual tax, the Income card, Living
- * Costs, MAGI) reads computeAnnualEarnings / sumHouseholdIncome instead of
- * re-summing salary, so a bonus or a FICA-exempt contribution can't be in
- * one figure and missing from another.
- *
- * A job pays only the checks inside the year (`checks` — fewer for one
- * started or ended this year); every job a person had this year is summed
- * (the paycheck summary). Built from the paycheck calculator's own result: the RESOLVED bonus
- * (`bonusEstimate` — the set bonus if there is one, else the formula), the
- * per-check FICA wages, and each contribution account's yearly amount
- * including what the bonus check takes (bonusCheckContribution — the same
- * rule as annualContributionWithBonus).
+ * Household annual income: the one yearly earnings model every this-year income
+ * figure reads. Built from the paycheck result (resolved bonus, per-check FICA
+ * wages, yearly contributions), counting only each job's checks inside the year.
  */
 import type {
   ContributionAccountInput,
