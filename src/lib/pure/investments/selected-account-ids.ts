@@ -1,16 +1,18 @@
 /** Performance's custom filter: the accounts a stored selection names. */
 
 /** The stored selection as ids: "" = never chosen (default to all);
- *  "none" = explicitly empty selection; else ids joined by commas. */
+ *  "none" = explicitly empty selection; else ids joined by commas (one id
+ *  may be stored as a number). */
 export function selectedAccountIdsFrom(
   stored: unknown,
   all: Set<number>,
 ): Set<number> {
-  return stored === "none"
+  const ids = typeof stored === "number" ? String(stored) : stored;
+  return ids === "none"
     ? new Set<number>()
-    : typeof stored === "string" && stored
+    : typeof ids === "string" && ids
       ? new Set(
-          stored
+          ids
             .split(",")
             .map(Number)
             .filter((n) => !Number.isNaN(n)),

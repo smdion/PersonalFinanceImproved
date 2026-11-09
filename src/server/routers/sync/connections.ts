@@ -246,7 +246,8 @@ export const syncConnectionsRouter = createTRPCRouter({
 
     const parsedStaleHours = Number(staleHoursRow);
     const autoSync = {
-      enabled: autoEnabledRow !== "false",
+      // Off is "false", or false as an earlier PostgreSQL read wrote it back.
+      enabled: autoEnabledRow !== "false" && autoEnabledRow !== false,
       staleHours: Math.max(
         1,
         staleHoursRow == null || !Number.isFinite(parsedStaleHours)

@@ -428,6 +428,22 @@ describe("sync.getSyncStatus with active API", () => {
     expect(result.lastSynced).toBe("2026-03-01T08:30:00Z");
   });
 
+  it.each([
+    ["the string false", "false", false],
+    ["a stored false", false, false],
+    ["the string true", "true", true],
+  ])(
+    "reads automatic sync stored as %s",
+    async (_, value: string | boolean, enabled) => {
+      await caller.settings.appSettings.upsert({
+        key: "sync_auto_enabled",
+        value,
+      });
+      const result = await caller.sync.getSyncStatus();
+      expect(result.autoSync.enabled).toBe(enabled);
+    },
+  );
+
   it("returns not connected when API is active but no connection record", async () => {
     mockGetActiveBudgetApi.mockResolvedValueOnce("actual");
     mockGetApiConnection.mockResolvedValueOnce(null);
