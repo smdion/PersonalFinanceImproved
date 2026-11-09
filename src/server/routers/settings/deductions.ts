@@ -34,6 +34,7 @@ const ficaExemptRequiresPretaxIssue = {
 
 export const deductionsProcedures = {
   deductions: createTRPCRouter({
+    /** Every paycheck deduction line, by job. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -56,6 +57,10 @@ export const deductionsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Edit a deduction's structure (its amount is the Contribution Profile's), at the
+     * contributionProfile permission, like create; a FICA-exempt deduction must be pre-tax.
+     */
     update: contributionProfileProcedure
       .input(
         z
@@ -71,6 +76,7 @@ export const deductionsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Delete a deduction and its entry in every Contribution Profile. */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>

@@ -34,12 +34,16 @@ const jobCreateInput = z.object(jobInput.shape);
 
 export const jobsProcedures = {
   jobs: createTRPCRouter({
+    /** Every job, speculative pegs included, by person then start date. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
         .from(schema.jobs)
         .orderBy(asc(schema.jobs.personId), asc(schema.jobs.startDate)),
     ),
+    /**
+     * Add a job, then rewrite the extra-paycheck rows in Savings and the budget; returns the job.
+     */
     create: adminProcedure
       .input(jobCreateInput)
       .mutation(async ({ ctx, input: jobData }) => {
@@ -52,6 +56,9 @@ export const jobsProcedures = {
         await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
+    /**
+     * Save a job, then rewrite the extra-paycheck rows in Savings and the budget; returns the job.
+     */
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(jobInput.shape))
       .mutation(async ({ ctx, input: { id, ...data } }) => {
@@ -65,6 +72,9 @@ export const jobsProcedures = {
         await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
+    /**
+     * Refused for the speculative job; rewrites the extra-paycheck rows in Savings and the budget.
+     */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
