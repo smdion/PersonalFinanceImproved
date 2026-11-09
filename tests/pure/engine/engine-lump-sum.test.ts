@@ -30,7 +30,7 @@ function makeCtx(
   return {
     hasIndividualAccounts: false,
     indAccts: [],
-    // Keyed by category alone — this test\'s indBal is keyed the same way.
+    // Keyed by category alone — this test\'s indBalance is keyed the same way.
     indKey: (ia: object) => (ia as { category: string }).category,
     rmdStartAgeByPerson: new Map(),
     ...overrides,
@@ -200,7 +200,7 @@ describe("applyLumpSums", () => {
     const ctx = makeCtx({
       hasIndividualAccounts: true,
       indAccts,
-      // Keyed by category alone — this test\'s indBal is keyed the same way.
+      // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });
@@ -249,7 +249,7 @@ describe("updatePerPersonTradBalance", () => {
       rmdStartAgeByPerson: rmdMap,
       hasIndividualAccounts: true,
       indAccts,
-      // Keyed by category alone — this test\'s indBal is keyed the same way.
+      // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });
@@ -267,7 +267,7 @@ describe("updatePerPersonTradBalance", () => {
       rmdStartAgeByPerson: rmdMap,
       hasIndividualAccounts: true,
       indAccts,
-      // Keyed by category alone — this test\'s indBal is keyed the same way.
+      // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });

@@ -40,7 +40,7 @@ import {
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
-/** Every projection here is checked for indBal/acctBal drift (end of file). */
+/** Every projection here is checked for indBalance/accountBalance drift (end of file). */
 const drift = recordDrift(runEngine);
 const calculateProjection = drift.calculate;
 

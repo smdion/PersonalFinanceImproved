@@ -13,7 +13,7 @@ export type LumpSum = {
   targetAccount: AccountCategory;
   taxType?: "traditional" | "roth";
   /** Specific individual account name (e.g., "Long Term Brokerage (Vanguard)").
-   *  When set, the engine adds the lump sum to this exact account in indBal. */
+   *  When set, the engine adds the lump sum to this exact account in indBalance. */
   targetAccountName?: string;
   /** Owner name of the targeted individual account — two
    *  household members can independently choose the same account name (e.g.

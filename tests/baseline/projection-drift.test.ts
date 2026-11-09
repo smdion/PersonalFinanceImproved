@@ -1,6 +1,6 @@
 /**
  * The two balance tracks agree for every baseline household: its
- * projection reports no indBal/acctBal reconciliation warning (the
+ * projection reports no indBalance/accountBalance reconciliation warning (the
  * baseline files keep numbers only, so a warning can't fail them).
  */
 // First: the SQLite harness's mocks, then the baseline's.

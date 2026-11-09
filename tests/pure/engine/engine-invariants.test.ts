@@ -811,7 +811,7 @@ describe("engine invariants", () => {
     });
 
     it("31 — no indBal/acctBal reconciliation diagnostic is emitted for any fixture (v0.7.8 indBal reconciliation follow-up)", () => {
-      // A >$1 indBal/acctBal drift is a structural finding, not rounding, and
+      // A >$1 indBalance/accountBalance drift is a structural finding, not rounding, and
       // reconcileIndividualToAggregate surfaces it as a "[DIAG] indBal/
       // acctBal reconciliation:"-prefixed warning rather than silently
       // absorbing it. This invariant asserts that finding never actually

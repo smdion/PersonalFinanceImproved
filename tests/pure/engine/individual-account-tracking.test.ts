@@ -990,7 +990,7 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
       [indKey(accounts[0]!), 6000],
       [indKey(accounts[1]!), 4000],
     ]);
-    // indBalance sums to 10000; acctBal says 10000.09 -- a 9-cent gap.
+    // indBalance sums to 10000; accountBalance says 10000.09 -- a 9-cent gap.
     const acctBal = baseBalances({
       ira: { structure: "roth_traditional", traditional: 10000.09, roth: 0 },
     });
@@ -1049,7 +1049,7 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
       [indKey(accounts[0]!), 18000],
       [indKey(accounts[1]!), 9000],
     ]);
-    // Sums to 27000; acctBal says 30000 -- a real $3000 gap.
+    // Sums to 27000; accountBalance says 30000 -- a real $3000 gap.
     const acctBal = baseBalances({
       brokerage: { structure: "basis_tracking", balance: 30000, basis: 0 },
     });
