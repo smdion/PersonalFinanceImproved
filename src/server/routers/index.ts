@@ -14,7 +14,7 @@ import { projectionRouter } from "./projection";
 import { performanceRouter } from "./performance";
 import { historicalRouter } from "./historical";
 import { assetsRouter } from "./assets";
-import { utilitiesRouter } from "./utilities";
+import { utilitiesRouter } from "./utility-bills";
 import { debtsRouter } from "./debts";
 import { versionRouter } from "./version";
 import { contributionProfileRouter } from "./contribution-profiles";

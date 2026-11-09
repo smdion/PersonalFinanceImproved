@@ -3656,7 +3656,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/advice/milestones/foo.ts": {
+  "src/lib/pure/advice/milestones/financial-order-of-operations.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 6
     }
@@ -5380,7 +5380,7 @@
       "count": 2
     }
   },
-  "src/server/routers/utilities.ts": {
+  "src/server/routers/utility-bills.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
