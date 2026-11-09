@@ -92,6 +92,7 @@ describe("calculateContributions", () => {
         group: "retirement",
         employerMatch: PERSON_A_SALARY * 0.07 * 0.5, // 50% match capped at 7% = 4,200
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "Roth IRA",
@@ -105,6 +106,7 @@ describe("calculateContributions", () => {
         group: "retirement",
         employerMatch: 0,
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "LT Brokerage",
@@ -118,6 +120,7 @@ describe("calculateContributions", () => {
         group: "taxable",
         employerMatch: 0,
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
     ];
 
@@ -136,6 +139,7 @@ describe("calculateContributions", () => {
         group: "retirement",
         employerMatch: PERSON_B_SALARY * 0.05, // 100% match up to 5% = 5,500
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "Roth 401k",
@@ -149,6 +153,7 @@ describe("calculateContributions", () => {
         group: "retirement",
         employerMatch: 0,
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "Roth IRA",
@@ -162,6 +167,7 @@ describe("calculateContributions", () => {
         group: "retirement",
         employerMatch: 0,
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "HSA",
@@ -175,6 +181,7 @@ describe("calculateContributions", () => {
         group: "hsa",
         employerMatch: 400, // $400/yr employer contribution
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
       {
         name: "ESPP",
@@ -188,6 +195,7 @@ describe("calculateContributions", () => {
         group: "taxable",
         employerMatch: PERSON_B_SALARY * 0.1 * 0.15, // 15% discount = 1,650
         employerMatchTaxTreatment: "pre_tax",
+        employerMatchOnBonus: 0,
       },
     ];
 

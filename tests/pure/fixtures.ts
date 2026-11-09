@@ -108,6 +108,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "retirement",
     employerMatch: 4200.0, // 50% match up to 7% = 3.5% of salary
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "Roth IRA",
@@ -121,6 +122,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "retirement",
     employerMatch: 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "LT Brokerage",
@@ -134,6 +136,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "portfolio",
     employerMatch: 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
 ];
 
@@ -183,6 +186,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "retirement",
     employerMatch: 5500.0, // 100% match up to 5%
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "Roth 401k",
@@ -196,6 +200,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "retirement",
     employerMatch: 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "HSA",
@@ -209,6 +214,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "portfolio",
     employerMatch: 400,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "ESPP",
@@ -222,6 +228,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "portfolio",
     employerMatch: 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
   {
     name: "Roth IRA",
@@ -235,6 +242,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     group: "retirement",
     employerMatch: 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
   },
 ];
 

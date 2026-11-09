@@ -5539,7 +5539,7 @@
       "count": 11
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/debts/other-liabilities.ts": {
