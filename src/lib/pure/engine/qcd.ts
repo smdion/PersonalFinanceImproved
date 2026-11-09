@@ -1,7 +1,7 @@
 /**
  * Qualified Charitable Distributions: an RMD election applied before gross-up and routing, capped
- * by the IRA balance and the annual limit (IRC §408(d)(8)), not by the RMD. Eligibility starts at
- * `AGE_RULES.qcd` (70½), before RMD age; needs individual accounts.
+ * by the IRA balance and the annual limit (IRC §408(d)(8)), not by the RMD. From `AGE_RULES.qcd`,
+ * before RMD age; needs individual accounts. The RMD pools 401(k) and IRA (CALCULATIONS RET-09).
  */
 import { roundToCents } from "../../utils/math";
 
