@@ -28,19 +28,22 @@ describe("the migrator bundle", () => {
       logLevel: "silent",
     });
     const inputs = Object.keys(metafile.inputs);
-    expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual([
-      "db-migrate.ts",
-      "src/lib/db/backup-file.ts",
-      "src/lib/db/converter-rows.ts",
-      "src/lib/db/demo-schema-marker.ts",
-      "src/lib/db/env-file.ts",
-      "src/lib/db/migration-converters.ts",
-      "src/lib/db/reference-reconcile-core.ts",
-      "src/lib/db/v0102-match-rate.ts",
-      "src/lib/db/v0102-match-value.ts",
-      "src/lib/db/version-tables.ts",
-      "src/lib/utils/match-rate.ts",
-    ]);
+    // Sorted on both sides: a moved module keeps its line in this list.
+    expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual(
+      [
+        "db-migrate.ts",
+        "src/lib/db/backup-file.ts",
+        "src/lib/db/converter-rows.ts",
+        "src/lib/db/demo-schema-marker.ts",
+        "src/lib/db/env-file.ts",
+        "src/lib/db/migration-converters.ts",
+        "src/lib/db/reference-reconcile-core.ts",
+        "src/lib/db/v0102-match-rate.ts",
+        "src/lib/db/v0102-match-value.ts",
+        "src/lib/db/version-tables.ts",
+        "src/lib/utils/match-rate.ts",
+      ].sort(),
+    );
     expect(
       inputs.filter((f) => /node_modules\/(next|server-only)\//.test(f)),
     ).toEqual([]);
