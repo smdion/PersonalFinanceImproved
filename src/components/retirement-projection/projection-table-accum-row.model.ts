@@ -13,12 +13,8 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import {
-  catDisplayLabel,
-  itemTaxType,
-  proRateMonths,
-  safeDivide,
-} from "./utils";
+import { catDisplayLabel, itemTaxType, proRateMonths } from "./utils";
+import { safeDivide } from "@/lib/utils/math";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

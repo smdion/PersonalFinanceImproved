@@ -13,7 +13,6 @@ import {
   itemTaxType,
   colKeyParts,
   colBalance,
-  safeDivide,
   colWithdrawal,
   colEngineTaxType,
   slotBucketWithdrawal,
@@ -38,6 +37,7 @@ import {
   bucketSlotMap,
   formatDiscretionaryTierBreakdown,
 } from "@/components/retirement-projection/utils";
+import { safeDivide } from "@/lib/utils/math";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";

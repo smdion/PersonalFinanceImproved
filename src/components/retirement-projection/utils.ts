@@ -25,11 +25,7 @@ import {
   emptyTaxBucketMap,
   TAX_TREATMENT_TO_TAX_TYPE,
 } from "@/lib/config/tax-treatment-buckets";
-import {
-  roundToCents,
-  sumBy,
-  safeDivide as canonicalSafeDivide,
-} from "@/lib/utils/math";
+import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import { formatPercent } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import type {
@@ -350,11 +346,7 @@ export function filterYearByParentCategory(
   // targetWithdrawal/taxCost scale by the same ratio as the slots, so a fully
   // funded scoped plan never reads as underfunded (effectiveTaxRate is
   // unchanged). Expenses and RMD/QCD figures stay household-wide obligations.
-  const targetRatio = canonicalSafeDivide(
-    totalWithdrawal,
-    yearRow.totalWithdrawal,
-    1,
-  );
+  const targetRatio = safeDivide(totalWithdrawal, yearRow.totalWithdrawal, 1);
   const targetWithdrawal = roundToCents(yearRow.targetWithdrawal * targetRatio);
   // Only the withdrawal's tax scales; tax on Social Security is the
   // household's, whichever accounts this view shows.
@@ -431,11 +423,6 @@ export function colBalance(
   if (isRothColumn(treatment)) return getRothBalance(balance);
   if (isTraditionalColumn(treatment)) return getTraditionalBalance(balance);
   return getTotalBalance(balance);
-}
-
-/** Safe division — 0 when the divisor is 0 (`safeDivide` in `@/lib/utils/math`). */
-export function safeDivide(numerator: number, denominator: number): number {
-  return canonicalSafeDivide(numerator, denominator, 0)!;
 }
 
 /** Sum withdrawals for a column key across all slots — data-driven, no if-chains. */
@@ -599,9 +586,7 @@ export function specFrac({
   specTotal,
   specCount,
 }: SpecFracInput): number {
-  return specTotal > 0
-    ? baseAnnual / specTotal
-    : canonicalSafeDivide(1, specCount, 1);
+  return specTotal > 0 ? baseAnnual / specTotal : safeDivide(1, specCount, 1);
 }
 
 export function matchFracOf({

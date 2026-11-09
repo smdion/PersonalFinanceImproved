@@ -176,7 +176,7 @@
     "src/components/retirement-projection/projection-hero-kpis.tsx": 462,
     "src/components/retirement-projection/projection-mc-results.tsx": 108,
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 235,
-    "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 253,
+    "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 248,
     "src/components/retirement-projection/projection-table-accum-row.tsx": 890,
     "src/components/retirement-projection/projection-table-decum-balances.model.ts": 277,
     "src/components/retirement-projection/projection-table-decum-row.tsx": 850,
@@ -188,7 +188,7 @@
     "src/components/retirement-projection/use-projection-derived.ts": 620,
     "src/components/retirement-projection/use-projection-queries.ts": 815,
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
-    "src/components/retirement-projection/utils.ts": 798,
+    "src/components/retirement-projection/utils.ts": 783,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 404,
     "src/components/retirement/retirement-profile-tab.tsx": 505,
@@ -747,7 +747,7 @@
       "useProjectionState": 284
     },
     "src/components/retirement-projection/utils.ts": {
-      "filterYearByParentCategory": 209
+      "filterYearByParentCategory": 205
     },
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 477

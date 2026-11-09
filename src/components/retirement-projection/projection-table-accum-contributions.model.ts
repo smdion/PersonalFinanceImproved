@@ -11,13 +11,8 @@ import {
   getAccountTypeConfig,
   getDisplayConfig,
 } from "@/lib/config/account-types";
-import {
-  itemTaxType,
-  matchFracOf,
-  proRateMonths,
-  safeDivide,
-  specFrac,
-} from "./utils";
+import { itemTaxType, matchFracOf, proRateMonths, specFrac } from "./utils";
+import { safeDivide } from "@/lib/utils/math";
 import { taxTypeLabel } from "@/lib/utils/colors";
 
 /** One account category's contribution tooltip, per contributing account. */

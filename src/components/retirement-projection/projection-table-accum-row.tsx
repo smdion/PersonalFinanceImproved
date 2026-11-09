@@ -34,7 +34,6 @@ import {
   itemTaxType,
   colKeyParts,
   colBalance,
-  safeDivide,
   colEngineTaxType,
   slotBucketContribution,
   slotsColumnBalanceInflow,
@@ -49,6 +48,7 @@ import {
   computeAccountSplits,
   rowTotal,
 } from "./utils";
+import { safeDivide } from "@/lib/utils/math";
 import type { ProjectionState } from "./projection-table-types";
 import {
   renderSimulationCell,
