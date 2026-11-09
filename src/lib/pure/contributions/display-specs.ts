@@ -24,10 +24,8 @@ type PersonRef = { id: number; name: string };
 
 /** Output of buildContributionDisplaySpecs — per-record spec with match. */
 type ContributionDisplaySpec = {
-  /** Source contribution_accounts.id — the only reliable way to look this
-   *  spec's row back up when personId/ownerName can't disambiguate (e.g.
-   *  multiple joint contributions in the same category, where both are
-   *  personId: null and ownerName: null). */
+  /** Source contribution_accounts.id: the only way back to the row when personId and
+   *  ownerName can't tell (several joint rows in a category). */
   id: number;
   category: AccountCategory;
   name: string;
@@ -44,14 +42,8 @@ type ContributionDisplaySpec = {
 };
 
 /**
- * Build per-record contribution display specs from DB rows.
- * Each record gets its own matchAnnual computed individually.
- * Then, within each (person, category) group, total match is redistributed
- * proportionally by contribution amount. This ensures Roth+Traditional 401k
- * for the same person each show their fair share of the employer match.
- *
- * This is the single source of truth for "how do we display per-spec match?"
- * Used by the retirement engine card and available to any other consumer.
+ * Per-record contribution display specs; each (person, category) group's match is shared out
+ * by contribution amount, so Roth and Traditional 401k rows each show their part.
  */
 export function buildContributionDisplaySpecs(
   activeContributions: (ContributionRow & CapPassed)[],

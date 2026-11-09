@@ -7,10 +7,8 @@ interface ActiveContributionLite {
 }
 
 /**
- * accumulationOrder: distinct category names from activeContributions in their
- * allocationPriority order (lower = higher priority = filled first). The
- * validateContributionOrder() helper compares this against the CFP
- * heuristic.
+ * Distinct category names from activeContributions in allocationPriority order (lower is
+ * filled first), compared against the CFP heuristic by validateContributionOrder().
  */
 export function buildAccumulationOrder(
   activeContributions: readonly ActiveContributionLite[],

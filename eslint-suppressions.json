@@ -5243,18 +5243,9 @@
   "src/lib/pure/budget/utility-cost-feed.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/contributions/account-match.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 4
     },
@@ -5274,9 +5265,6 @@
     }
   },
   "src/lib/pure/contributions/accumulation-order.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -5302,16 +5290,8 @@
     }
   },
   "src/lib/pure/contributions/category-totals.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 4
-    }
-  },
-  "src/lib/pure/contributions/contrib-profile-diff.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/contributions/contribution-caps.ts": {
@@ -5320,9 +5300,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-abbreviation": {
       "count": 1
@@ -5338,9 +5315,6 @@
     }
   },
   "src/lib/pure/contributions/contribution-order.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-config-reach-through": {
       "count": 1
     },
@@ -5349,12 +5323,6 @@
     }
   },
   "src/lib/pure/contributions/contribution-rows.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     },
@@ -5362,23 +5330,12 @@
       "count": 3
     }
   },
-  "src/lib/pure/contributions/contribution-totals.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/contributions/controlled-overrides.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/lib/pure/contributions/display-specs.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -5387,12 +5344,6 @@
     }
   },
   "src/lib/pure/contributions/employer-match.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 4
     }

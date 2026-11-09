@@ -96,10 +96,8 @@ export type GroupableMatchRow = {
   /** This row's own annual contribution, already computed by the caller
    *  (via computeAnnualContribution) against `salary` below. */
   annual: number;
-  /** The salary this row's contribution is measured against. Every row in
-   *  the same group is expected to resolve to the same salary (they're the
-   *  same physical account's tax-treatment splits, on the same job) — a
-   *  mismatch is treated as a data-resolution bug, not silently averaged. */
+  /** The salary this row's contribution is measured against; every row in a group
+   *  must resolve the same one (a mismatch is an error, never averaged). */
   salary: number;
   employerMatchType: string | null;
   employerMatchValue: number;
@@ -125,10 +123,8 @@ type GroupedMatchResult = {
   employerMatchTaxTreatment: MatchTaxTreatment;
 };
 
-/** One physical account's match group: its job (or person, for an account
- *  with no job) + account type + parent category. The match is capped per
- *  group (computeGroupedEmployerMatch) and figured on the group's pay
- *  (matchPayGroupsWithBonus). */
+/** One physical account's match group: job (or person, when jobless) + account type +
+ *  parent category. The match is capped per group and figured on the group's pay. */
 export function matchGroupKey(r: {
   jobId: number | null;
   personId: number | null;
@@ -140,11 +136,8 @@ export function matchGroupKey(r: {
 }
 
 /**
- * The match groups whose bonus check takes a deferral (rowTakesFromBonusCheck
- * on any of the group's rows — a Roth/Traditional pair is one account). The
- * employer matches what's deferred, on the pay it came from: a group's match
- * is figured on base salary, plus the bonus for these groups only. The one
- * rule for the match's pay — every match path uses it.
+ * Match groups whose bonus check takes a deferral (on any row): their match is figured on
+ * base salary plus the bonus; others on base salary. Every match path uses this rule.
  */
 export function matchPayGroupsWithBonus(
   rows: readonly {
@@ -160,34 +153,9 @@ export function matchPayGroupsWithBonus(
 }
 
 /**
- * Compute employer match per row, correctly combining Roth/Traditional
- * splits of the same physical account before applying the match cap.
- *
- * `computeEmployerMatch` caps a single row against ONLY that row's own
- * contribution — correct for an account with no tax-treatment split, wrong
- * the moment one physical account is split into a Roth row + a Traditional
- * row (same job/person + accountType), since a real employer match cap
- * applies to the account's combined contribution, not each split
- * separately. This groups rows by resolved job (falling back to person —
- * matches every caller's existing jobless-account convention) +
- * accountType + parentCategory, resolves the single row that's allowed to
- * carry real match config for that group, applies the cap once against the
- * group's combined annual contribution, then redistributes the resulting
- * total back onto each row proportionally by its own contribution share
- * (same distribution math previously only used for display).
- *
- * parentCategory is part of the grouping key so match dollars can never
- * silently cross between Retirement/Portfolio buckets — if a data entry
- * mistake gives two real splits of the same account different
- * parentCategory values, they're treated as separate (unfixed, per-row
- * capped) groups rather than combined.
- *
- * At most one row per group may have a real (`!== "none"`) match type —
- * enforced at the DB layer (see migration adding a partial unique index),
- * but this throws defensively if it somehow arrives here anyway, rather
- * than silently falling back to the broken per-row computation (that
- * fallback would itself be a second computation path, and would invent a
- * number for genuinely ambiguous config instead of surfacing the problem).
+ * Employer match per row, capped once per match group (Roth/Traditional splits combined),
+ * then shared back by contribution. Throws when a group has more than one row with a real
+ * match type, rather than guessing.
  */
 export function computeGroupedEmployerMatch(
   rows: GroupableMatchRow[],
@@ -243,16 +211,9 @@ export function computeGroupedEmployerMatch(
       }
     }
 
-    // Delegate the actual per-type match math to computeEmployerMatch
-    // itself — passing the GROUP's combined annual contribution and a
-    // method that isn't "percent_of_salary" (forcing computeEmployerMatch's
-    // percent_of_contribution branch to derive its rate from
-    // combinedAnnual/salary rather than a single row's own method/value).
-    // This is computed once per group, not once per row — for dollar_match/
-    // fixed_annual that's what prevents two independently-configured
-    // sibling rows from each returning the full flat amount and doubling
-    // it (prevented structurally here, and at the DB layer by the same
-    // constraint that limits a group to at most one match-config row).
+    // Once per group on the combined contribution, with a non-"percent_of_salary"
+    // method so the rate comes from combinedAnnual/salary; flat match types
+    // are counted once, not per sibling row.
     const totalMatch = computeEmployerMatch(
       winner.employerMatchType,
       winner.employerMatchValue,

@@ -27,12 +27,7 @@ type ContributionCategorySummary = {
 };
 
 /**
- * Aggregate contributions and employer match by waterfall category in a single pass.
- * Replaces the duplicate loops in the retirement router that separately compute
- * `employerMatchByCategory` and `contribByCategory`.
- *
- * Returns both the per-category employee contribution summary and the per-category
- * employer match totals. Used by the retirement engine and available to any consumer.
+ * Employee contributions and employer match by waterfall category, in one pass.
  */
 export function aggregateContributionsByCategory(
   activeContributions: (ContributionRow & CapPassed)[],

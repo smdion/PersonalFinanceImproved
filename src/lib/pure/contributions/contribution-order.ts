@@ -21,19 +21,9 @@ type ContributionOrderWarning = {
 };
 
 /**
- * Validate a user's accumulation order against the CFP Financial Order of
- * Operations heuristic. Returns warnings (never throws) so the user can
- * override if they have a good reason.
- *
- * The default-good order (per CFP best practice for high-savings households):
- *   1. Employer-match-eligible contributions (401k/403b up to match)
- *   2. HSA (triple tax advantage)
- *   3. Tax-advantaged retirement (Roth IRA, Traditional IRA, 401k beyond match)
- *   4. After-tax / brokerage (no tax advantage)
- *
- * It doesn't enforce the exact order; it flags two common mistakes:
- *   - Brokerage / taxable accounts come BEFORE any tax-advantaged account
- *   - A triple tax-advantaged type (HSA) comes AFTER another tax-advantaged one
+ * Warnings (never throws) for an accumulation order against the CFP order: match, HSA,
+ * tax-advantaged, then brokerage. Flags only brokerage before any tax-advantaged account, and
+ * HSA after another tax-advantaged one.
  */
 export function validateContributionOrder(
   order: readonly string[],
