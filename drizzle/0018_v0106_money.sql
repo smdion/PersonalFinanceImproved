@@ -1,0 +1,6 @@
+-- v0.10.6 money shapes. No
+-- schema change: the converters in src/lib/db/migrate/v0106-*.ts run after
+-- this SQL, as restore runs them on an older backup.
+-- Per-person retirement rows: a person with a settings row in a profile and
+-- no retirement_profile_people row there gets one, copied from that
+-- settings row. A replay adds nothing: the row is then there.

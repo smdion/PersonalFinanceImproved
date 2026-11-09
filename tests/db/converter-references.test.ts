@@ -133,8 +133,9 @@ describe("a delete other rows still reference", () => {
 
 describe("the restore step's foreign keys", () => {
   it("are the latest PostgreSQL snapshot's", async () => {
-    const tag = pgJournal.entries.at(-1)!.tag;
-    const idx = tag.slice(0, 4);
+    // By the entry's index, as the migrator finds it: a tag's name can be a
+    // placeholder until it lands.
+    const idx = String(pgJournal.entries.at(-1)!.idx).padStart(4, "0");
     const snapshot = (await import(
       `../../drizzle/meta/${idx}_snapshot.json`
     )) as {

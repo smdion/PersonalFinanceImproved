@@ -42,6 +42,7 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/reference-reconcile-core.ts",
         "src/lib/db/migrate/v0102-match-rate.ts",
         "src/lib/db/migrate/v0102-match-value.ts",
+        "src/lib/db/migrate/v0106-retirement-people.ts",
         "src/lib/db/backup/version-tables.ts",
         "src/lib/utils/match-rate.ts",
         "src/lib/crypto-envelope.ts",

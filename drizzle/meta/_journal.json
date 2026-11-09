@@ -127,6 +127,13 @@
       "when": 1793941964388,
       "tag": "0017_v0102_match_value",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794263509040,
+      "tag": "0018_v0106_money",
+      "breakpoints": true
     }
   ]
 }

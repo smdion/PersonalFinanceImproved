@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0017_v0102_match_value`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0018_v0106_money`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -28,6 +28,7 @@
 | 0015 | v0102_dead_data           | yes        | yes    |
 | 0016 | v0102_match_rate          | yes        | yes    |
 | 0017 | v0102_match_value         | yes        | yes    |
+| 0018 | v0106_money               | yes        | yes    |
 
 ## Relations
 

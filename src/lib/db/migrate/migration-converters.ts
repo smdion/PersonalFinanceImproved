@@ -23,6 +23,10 @@ import {
 } from "./converter-writes";
 import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
 import { MATCH_VALUE_CONVERTER, MATCH_VALUE_TAG } from "./v0102-match-value";
+import {
+  MONEY_TAG,
+  RETIREMENT_PEOPLE_CONVERTER,
+} from "./v0106-retirement-people";
 
 /** A table's rows as read: snake_case keys, JSON as object or text. */
 export type ConverterTables = Record<string, readonly unknown[] | undefined>;
@@ -68,6 +72,7 @@ export type TagConverters = DataConverter | readonly DataConverter[];
 export const MIGRATION_CONVERTERS: Readonly<Record<string, TagConverters>> = {
   [MATCH_RATE_TAG]: MATCH_RATE_CONVERTER,
   [MATCH_VALUE_TAG]: MATCH_VALUE_CONVERTER,
+  [MONEY_TAG]: [RETIREMENT_PEOPLE_CONVERTER],
 };
 
 type Phase = DataConverter["runs"];
