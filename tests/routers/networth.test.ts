@@ -125,47 +125,22 @@ describe("networth router", () => {
       await expect(caller.networth.computeSummary()).resolves.toBeDefined();
     });
 
-    it("returns expected top-level properties", async () => {
+    // The figures' presence is in the router baseline (17 households);
+    // these three parts aren't.
+    it("returns the house flag, people and other-asset items", async () => {
       const result = await caller.networth.computeSummary();
-      expect(result).toHaveProperty("result");
-      expect(result).toHaveProperty("portfolioTotal");
-      expect(result).toHaveProperty("cash");
-      expect(result).toHaveProperty("mortgageBalance");
-      expect(result).toHaveProperty("otherAssets");
-      expect(result).toHaveProperty("otherLiabilities");
-      expect(result).toHaveProperty("withdrawalRate");
       expect(result).toHaveProperty("hasHouse");
-      expect(result).toHaveProperty("homeValueEstimated");
-      expect(result).toHaveProperty("homeValueConservative");
       expect(result).toHaveProperty("people");
-      expect(result).toHaveProperty("portfolioAccounts");
       expect(result).toHaveProperty("otherAssetItems");
     });
 
-    it("returns numeric types for portfolio/mortgage/cash fields", async () => {
+    it("with no mortgage, other liabilities or home, those figures are 0", async () => {
       const result = await caller.networth.computeSummary();
-      expect(typeof result.portfolioTotal).toBe("number");
-      expect(typeof result.cash).toBe("number");
-      expect(typeof result.mortgageBalance).toBe("number");
-      expect(typeof result.otherAssets).toBe("number");
-      expect(typeof result.otherLiabilities).toBe("number");
-      expect(typeof result.homeValueEstimated).toBe("number");
-      expect(typeof result.homeValueConservative).toBe("number");
       // With seeded snapshots, portfolioTotal should be > 0
       expect(result.portfolioTotal).toBeGreaterThanOrEqual(0);
       expect(result.mortgageBalance).toBe(0);
       expect(result.otherLiabilities).toBe(0);
       expect(result.homeValueEstimated).toBe(0);
-    });
-
-    it("result object has netWorth and related fields", async () => {
-      const result = await caller.networth.computeSummary();
-      expect(result.result).toHaveProperty("netWorth");
-      expect(result.result).toHaveProperty("netWorthMarket");
-      expect(result.result).toHaveProperty("totalAssets");
-      expect(result.result).toHaveProperty("totalLiabilities");
-      expect(result.result).toHaveProperty("fiProgress");
-      expect(typeof result.result.netWorth).toBe("number");
     });
 
     it("hasHouse is false when no active mortgage exists", async () => {
@@ -292,12 +267,6 @@ describe("networth router", () => {
         dateFrom: "2024-06-01",
         dateTo: "2025-01-20",
       });
-      expect(result).toHaveProperty("from");
-      expect(result).toHaveProperty("to");
-      expect(result).toHaveProperty("absoluteChange");
-      expect(result).toHaveProperty("percentChange");
-      expect(result).toHaveProperty("categories");
-      expect(result).toHaveProperty("portfolioBreakdown");
       expect(result.from.portfolioTotal).toBeCloseTo(120000, 0);
       expect(result.to.portfolioTotal).toBeCloseTo(150000, 0);
       expect(result.absoluteChange).toBeGreaterThan(0);
@@ -345,8 +314,6 @@ describe("networth router", () => {
   describe("listHistory", () => {
     it("returns year-end history array with birth year", async () => {
       const result = await caller.networth.listHistory();
-      expect(result).toHaveProperty("years");
-      expect(result).toHaveProperty("primaryBirthYear");
       expect(Array.isArray(result.years)).toBe(true);
       // dateOfBirth "1990-01-01" → birth year may be 1989 or 1990 depending on date parsing
       expect(result.primaryBirthYear).toBeGreaterThanOrEqual(1989);
@@ -367,7 +334,6 @@ describe("networth router", () => {
         await seedFullData(viewerDb);
         const result = await viewerCaller.networth.computeSummary();
         expect(result).toBeDefined();
-        expect(result.result).toHaveProperty("netWorth");
       } finally {
         viewerCleanup();
       }

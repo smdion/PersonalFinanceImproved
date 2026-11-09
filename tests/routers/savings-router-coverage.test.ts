@@ -112,7 +112,6 @@ describe("savings.computeSummary", () => {
     expect(result).toHaveProperty("savings");
     expect(result).toHaveProperty("goals");
     expect(result).toHaveProperty("budgetTierLabels");
-    expect(result).toHaveProperty("efundTierIndex");
     expect(result).toHaveProperty("plannedTransactions");
     expect(result).toHaveProperty("allocationOverrides");
     expect(Array.isArray(result.goals)).toBe(true);

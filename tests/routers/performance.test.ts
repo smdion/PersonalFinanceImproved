@@ -155,7 +155,6 @@ describe("performance router", () => {
         expect(a).toHaveProperty("parentCategory");
         expect(a).toHaveProperty("isActive");
         expect(a).toHaveProperty("ownershipType");
-        expect(a).toHaveProperty("displayOrder");
       }
     });
   });

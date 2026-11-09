@@ -1303,9 +1303,6 @@ describe("projection router — computeStrategyComparison", () => {
           strat.maxAnnualWithdrawal,
         );
         expect(strat.yearByYear.length).toBeGreaterThan(0);
-        expect(strat.yearByYear[0]).toHaveProperty("age");
-        expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
-        expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
         // Without MC data, successRate should be null
         expect(strat.successRate).toBeNull();
       }
@@ -2027,12 +2024,6 @@ describe("projection router — analyzeStrategy", () => {
       // Recommendations shape (may be empty if plan is already optimal)
       for (const rec of response.recommendations) {
         expect(rec).toHaveProperty("label");
-        expect(rec).toHaveProperty("currentValue");
-        expect(rec).toHaveProperty("adjustedValue");
-        expect(rec).toHaveProperty("successRate");
-        expect(rec).toHaveProperty("stabilityRate");
-        expect(rec).toHaveProperty("successDelta");
-        expect(rec).toHaveProperty("stabilityDelta");
       }
     } finally {
       cleanup();
@@ -2093,8 +2084,6 @@ describe("projection router — computeStressTest", () => {
 
       for (const scenario of response.scenarios) {
         expect(scenario).toHaveProperty("label");
-        expect(scenario).toHaveProperty("nestEggAtRetirement");
-        expect(scenario).toHaveProperty("failureAge");
       }
     } finally {
       cleanup();
