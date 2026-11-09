@@ -39,6 +39,12 @@ export type DataConverter = {
   /** Before the tag's SQL (it drops what the converter reads) or after it
    *  (it adds what the converter writes). */
   readonly runs: "beforeSql" | "afterSql";
+  /** Tables whose row count its writes may raise or lower: the only ones
+   *  scripts/test-migration.sh lets change (besides reference tables). */
+  readonly rowCounts?: {
+    readonly grows?: readonly string[];
+    readonly shrinks?: readonly string[];
+  };
   /** Idempotent: gates on structure or a closed set, rewrites in place only
    *  as a projection, never infers "done" or a unit from a magnitude (DESIGN
    *  § Data-converting migrations: "What a converter may decide by"). */

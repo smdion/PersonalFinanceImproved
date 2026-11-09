@@ -157,7 +157,7 @@ Before deploying any release with schema changes, run the migration test against
 
 ```bash
 # See docs/OPS.md § Release Process (and the private .scratch/docs/ops/OPS.md step 5)
-./scripts/test-migration.sh "$PROD_DATABASE_URL"
+ENCRYPTION_KEY="$PROD_ENCRYPTION_KEY" ./scripts/test-migration.sh "$PROD_DATABASE_URL"
 ```
 
 This is not optional for schema changes that ship to production.
