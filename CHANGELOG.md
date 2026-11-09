@@ -8,6 +8,74 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.5] - 2026-11-09
+
+v0.10.5 tightens what the code says and how it is checked, without changing what Ledgr shows, with one owner-approved correction. Every request now reads the date once and passes it down; every place that asked "is this an HSA or an IRA?" now asks what the account type does; the per-person contribution and paycheck stages moved into pure code; and the words on screen settle on one word per meaning ("Projection", "Retirement budget", "Baseline", "Goals"). Only an admin can now set up an integration, matching the admin-only Integrations page. New checks hold the line: copied code, abbreviations, clock reads, fallbacks, query names and page budgets in bytes each have a count that only falls. A real-data comparison against v0.10.4 found 131 of 131 procedures identical on the release tip, 19 of them compared across a rename.
+
+### Upgrading
+
+- **Pull the new image and restart.** No database changes.
+- **The first projection after upgrading recomputes, once.** The engine's cache key changed (the clock, the account-type fields, the formatter modules and the wording all touch files it reads): cached projections are recomputed and the Simulation draws fresh samples the first time each is opened. No figure changes except the one fixed below.
+- **API:** the connection tests (`sync.testConnection` for YNAB and Actual, `sync.fetchYnabBudgets`, `simplefin.testConnection`, `tiingo.testConnection`, `sec.testConnection`) now answer `{ ok: true, … }` or `{ ok: false, error }` instead of `{ success, … }`, the same shape as every other result. A client that read `success` reads `ok`. **API: 23 queries renamed** so the name says what they answer (`get` reads one stored item or current state, `compute` derives, `list` returns rows); inputs and responses are unchanged. A script that calls `/api/trpc` by an old name must use the new one: `settings.firstRunState` → `settings.getFirstRunState`; `settings.isOnboardingComplete` → `settings.getOnboardingStatus`; `settings.testOidcConnection` → `settings.getOidcStatus`; `settings.taxData.sectionSources` → `settings.taxData.listSectionSources`; `settings.taxData.status` → `settings.taxData.getStatus`; `settings.taxDataSync.preview` → `settings.taxDataSync.computePreview`; `settings.taxDataSync.status` → `settings.taxDataSync.getStatus`; `budget.mortgageItemChoices` → `budget.listMortgageItemChoices`; `contribution.highIncomeLine` → `contribution.computeHighIncomeLine`; `debts.summary` → `debts.computeSummary`; `milestones.firstReached` → `milestones.getFirstReached`; `utilities.previewBudgetApiFeed` → `utilities.computeBudgetApiFeedPreview`; `version.importDataLoss` → `version.listImportDataLoss`; `version.restoreDataLoss` → `version.listRestoreDataLoss`; `investments.getHealth` → `investments.computeHealth`; `investments.getComparison` → `investments.computeComparison`; `investments.getYearReturnRanges` → `investments.computeYearReturnRanges`; `investments.getAccountInsights` → `investments.computeAccountInsights`; `investments.getSavingsThisYear` → `investments.computeSavingsThisYear`; `investments.getSnapshotFlows` → `investments.computeSnapshotFlows`; `investments.getBuyingMonths` → `investments.computeBuyingMonths`; `investments.suggestBasis` → `investments.listBasisSuggestions`; `investments.suggestPerformance` → `investments.listPerformanceSuggestions`.
+- **Permissions:** only an admin can set up an integration (see Changed). A user with the Sync permission keeps every sync they had.
+- **New optional setting:** `LEDGR_ALERT_WEBHOOK_URL` gets a small JSON POST when a nightly job starts failing, once a day while it stays failed, and when it recovers.
+- **Rotating `ENCRYPTION_KEY`:** `pnpm encryption:rotate` (from a checkout, with Ledgr stopped) re-encrypts saved connection credentials and their copies in stored versions; see OPS § Rotating `ENCRYPTION_KEY`. Backups made before a rotation still need the old key.
+
+### Changed
+
+- **Only an admin can set up an integration.** Connecting, testing or removing YNAB, Actual Budget, SimpleFIN, Tiingo or SEC, choosing the active budget app, and changing account links, mappings, skipped categories and name syncs all match the admin-only Integrations page (27 procedures). A viewer with the Sync permission can still run a sync from the header, push a portfolio snapshot again, and refresh SEC fund facts.
+- **Pull requests fail on a known high-severity vulnerability in a production dependency,** and a weekly check watches for new ones.
+- **The screens say one word per meaning** (GLOSSARY § Ledgr terms): the projection card's "Active Plan" is "Baseline"; "Plan Health" is "Projection Health"; "Decumulation Plan" is "Retirement budget and strategy"; Savings' "Plan" tab is "Goals"; "Plan Through" is "Projection Through"; the report says "projection" where it meant the forecast; "MC" is "Simulation"; "customize" and "Override" are gone from the screens. The strategy guide and methodology copy say what each strategy family does with the Retirement budget, the RMD age per law (73, or 75 if born 1960 or later), Vanguard Dynamic's real floor (about 5.3%), and cite Morningstar's 2025 report for what it says. Full list in the smoke test. "Per check" and "Per Period" are "Per paycheck"; the funding bars have a screen-reader name; a failed load says "Couldn't load <what>. Try again." with Retry on every page and card.
+- **Advice text states what is true:** the rosy-return callout, the strategy suggestion ("A common starting point"), the Guyton-Klinger and Vanguard Dynamic rationales, the contribution-order warning (account labels instead of raw keys), the stress test's long-run scenario.
+- **The Assets page total says "Non-Portfolio Assets",** since it leaves out the portfolio; the Net worth total is unchanged.
+- **The Financial Independence card's unused "Expense Scenario" picker is gone** (nothing read it).
+- **A profile switch that names a deleted profile now shows a warning** in the projection's input warnings (it was skipped silently), and **a year whose tax data lacks an IRS limit an earlier year had is named** there too (the limit still reads $0 until v0.11).
+- **A snapshot draft saved before this version isn't offered after upgrading** (drafts now carry a version stamp).
+- **The detailed health check (`/api/health/detailed`, admin) shows each scheduled job's last result,** and `/api/health` reports "degraded" when the app's server code fails to load.
+- **`pnpm release` refuses a release less than 24 hours after the last one** unless `--hotfix "<reason>"` is given (the reason goes in the CHANGELOG).
+- **Backups:** the export, import and migrate scripts load `.env`; the export fails (writing nothing) when a table can't be read instead of writing `[]`; backup files are written readable only by their owner (a mount that refuses chmod no longer stops an upgrade); the import names its target database first; the PostgreSQL sample keeps pre-upgrade backups on a volume.
+- **`pnpm seed`** loads one invented demo household into an empty dev database.
+
+### Fixed
+
+- **Live contribution estimates apply IRS limits tied to pay for a person whose job ended after their last posted contribution** (Contribution Summary's live estimate, savings this year, the Dashboard pace). The job is now judged on the same posted day as the contributions. Example (invented): $90,000 salary, 30% to a 401(k), job ended Oct 15 after a Sep 30 contribution: employee pre-tax $27,000 → $24,500 (the employee limit), per contribution $1,142.31 → $1,046.15, still on its way $10,280.77 → $9,415.38, year-end $14,434.61 → $13,569.22. Where no limit binds, nothing changes.
+- **An unknown or crafted demo cookie no longer names a demo schema** (it reads as no demo, the same as having no cookie).
+- **A JSON-null saved contribution profile no longer breaks net pay or the account-limit check** (it reads as empty, as before this release's stored-shape checks).
+- **73 form fields that had no accessible name now announce one to screen readers** (year, value and note fields in tables, goal and fund editors, Simulation bounds, the portfolio mapping, From/To pickers). Nothing on screen changes; 32 remain for a later release.
+
+### Smoke test
+
+One line per change the release lets you see; everything else should look as before. Run on prod after the deploy.
+
+- [ ] Contribution Summary's live estimate, savings this year and the Dashboard pace, for a person whose job ended after their last posted contribution: the IRS limit tied to pay applies (the one owner-approved figure change).
+- [ ] A profile switch naming a deleted profile, and a year whose tax data lacks an IRS limit an earlier year had: each is named in the projection's warnings.
+- [ ] A snapshot draft saved before the upgrade isn't offered afterwards.
+- [ ] Retirement: the projection pill reads "Baseline", the tab "Projection Health", the heading "Retirement budget and strategy"; "Plan Through" reads "Projection Through"; the guardrail marker reads "Withdrawal rule".
+- [ ] The Retirement report says "projection" throughout, "Post-retirement raise" and "none of the 9".
+- [ ] Dashboard: "Projection Health", pace "Target met" / "Projected by now"; the Contributions card and Paycheck snapshot say "Per paycheck".
+- [ ] Savings' "Plan" tab and card read "Goals"; Specific months reads "Editing May 2026".
+- [ ] Assets: the summary card and total row read "Non-Portfolio Assets".
+- [ ] Plan health's assumed-return callout, the strategy suggestion ("A common starting point:"), the Guyton-Klinger and Vanguard Dynamic rationales, the ACA subsidy tip and the stress test's long-run scenario read their new text.
+- [ ] Methodology and Settings > Debug say "Simulation", not "MC".
+- [ ] Pickers: "Semimonthly", "Married filing jointly", "Head of household", "After-tax", and employer match "No match" / "% of contribution" / "$ match" / "Fixed annual".
+- [ ] The budget app is named "Actual Budget" (Dashboard Net worth footer, a linked Savings fund).
+- [ ] With the server stopped, a page and a dashboard card show "Couldn't load <what>. Try again." with Retry.
+- [ ] Performance's chained return caption reads "Simple Dietz returns"; the RMD-Based guide's strength reads "Self-correcting from RMD age…".
+- [ ] Contributions: a person with no pay period shows $0, not ∞; the period choice moves with the arrow keys.
+- [ ] A screen reader names the year, value and note fields in House, Utilities and Versions tables, the goal and fund editors, the Simulation bounds and asset classes, the portfolio mapping and the From/To pickers.
+- [ ] As a user with Sync but not admin: syncs still run from the header; the Integrations setup stays admin-only.
+- [ ] The first projection after the upgrade recomputes once, then loads as before.
+
+### Under the hood
+
+**Counts (v0.10.4 → v0.10.5, rechecked at the release tip):** abbreviations 1,892 → 339 (first recorded this release); clock reads 137 → 39; identity-predicate imports 17 → 0; retired UI words 6 → 0; query names off-prefix 24 → 15; copied code 32 blocks / 757 lines → 27 / 578; fallbacks first recorded at 329, re-baselined once at 398 for `rec[k] ?? 0` → 394; history comments 254 → 0; comments over three lines 2,144 → 0; JSX IIFEs 30 → 4; hand-guarded divisions 63 → 48; type assertions 884 → 820; `no-unnecessary-condition` 185 → 181; functions over the length limit 261 → 255; raw buttons 561 → 559; config reach-through recorded at 21; page budgets in bytes, re-set once at measured + 2 KB; `src/`: 1,006 files changed, +15,293 / −25,499 lines (the comment sweep included). Unlabeled controls 105 → 32; axe violations on the measured pages 60 → 53.
+
+- Every request reads its date once (`ctx.scope`); write stamps go through `writeStamp()`; `localDateStr` is gone.
+- Account-type behavior fields: `paysMedicalExpenses`, `rothIncomeLimited`, `fundChoiceOpen` (required on every entry); `isHsaCategory`/`isIraCategory` only in Tax Buckets until v0.11.
+- Per-person contribution and paycheck stages in `lib/pure` behind structural row types; `buildLiabilityBracketInput` throws a domain error the service maps to the same `BAD_REQUEST`.
+- Stored shapes parsed once on read with today's behavior as fallback (contribution active fields, strategy key, cached budget months, Salary Profile entries); `docs/FALLBACKS.md` registers every kept fallback; v0.10.6 migrates the old shapes.
+- RULES: every rule names its guard; a public `docs/DECISIONS.md`.
+
 ## [0.10.4] - 2026-11-08
 
 v0.10.4 gives Ledgr's screens one structure: every dashboard page is a thin server page over its `<route>-content` component, components sit in feature folders, and dialogs, popovers, tabs, option groups, charts and loading states each come from one shared piece instead of a copy per screen. The screens look the same: a test records the text of 17 pages for three households, and it holds through the release. What changes is at the keyboard and for screen readers: every dialog closes with Escape and keeps Tab inside it, the rows, headers and cells that only answered a mouse click now take Tab, Enter and Space, tabs and option groups move with the arrow keys, form labels name their controls, and every chart has a spoken summary. A page whose data fails to load now says why and offers Retry, where it showed a skeleton that never ended. A restore or import checks a backup's saved choices before it writes anything, and an unknown saved withdrawal strategy no longer breaks the Retirement settings page.
