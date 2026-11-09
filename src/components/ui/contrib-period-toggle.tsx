@@ -37,7 +37,7 @@ export function householdPeriodsPerYear(periods: readonly number[]): number {
 }
 
 /** An annual amount in the chosen period, by division; no pay periods
- *  gives $0 per paycheck, as getContribMultiplier does. */
+ *  gives $0 per paycheck, as getContributionMultiplier does. */
 export function toContributionPeriod(
   annual: number,
   periodsPerYear: number,

@@ -71,7 +71,7 @@ interface ReportGateResult {
   failure?: ReportGateFailure;
 }
 
-/** Deep-equal via JSON — matches the existing `mcPrefetchRunId`/
+/** Deep-equal via JSON — matches the existing `simulationPrefetchRunId`/
  *  `rateSeededMcRunId` convention in use-projection-queries.ts, which
  *  already serializes these same plain-object query inputs the same way. */
 function deepEqual(a: unknown, b: unknown): boolean {

@@ -14,7 +14,7 @@ import {
 
 const labels = () => screen.getAllByRole("radio").map((b) => b.textContent);
 
-describe("ContribPeriodToggle", () => {
+describe("ContributionPeriodToggle", () => {
   it("says Per paycheck, Monthly, Annual by default (Dashboard, Paycheck)", () => {
     render(<ContributionPeriodToggle value="annual" onChange={vi.fn()} />);
     expect(labels()).toEqual(["Per paycheck", "Monthly", "Annual"]);
