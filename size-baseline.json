@@ -761,7 +761,7 @@
       "useProjectionQueries": 777
     },
     "src/components/retirement-projection/use-projection-state.ts": {
-      "useProjectionState": 284
+      "useProjectionState": 266
     },
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
       "WithdrawalComparisonCard": 477

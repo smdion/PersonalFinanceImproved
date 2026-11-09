@@ -66,6 +66,20 @@ describe("resolveAccumulationConfig", () => {
     expect(config.accountSplits.hsa).toBe(0.15);
   });
 
+  it("leaves every account the set doesn't cap uncapped", () => {
+    const overrides: AccumulationOverride[] = [
+      { year: 2025, accountCaps: { ira: 3000 } },
+    ];
+    const config = resolveAccumulationConfig(2025, defaults, overrides);
+    expect(config.accountCaps).toEqual({
+      "401k": null,
+      "403b": null,
+      hsa: null,
+      ira: 3000,
+      brokerage: null,
+    });
+  });
+
   it("merges accountCaps — a cap holds until a reset", () => {
     // The app writes caps as numbers only (the router's schema); a reset is
     // how a cap is removed.
@@ -148,6 +162,16 @@ describe("resolveDecumulationConfig", () => {
     const config = resolveDecumulationConfig(2050, defaults, []);
     expect(config.withdrawalRate).toBe(0.04);
     expect(config.withdrawalRoutingMode).toBe("bracket_filling");
+  });
+
+  it("leaves every account the set doesn't cap uncapped", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, withdrawalAccountCaps: { "401k": 40000 } },
+    ];
+    const config = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config.withdrawalAccountCaps["401k"]).toBe(40000);
+    expect(config.withdrawalAccountCaps.ira).toBeNull();
+    expect(config.withdrawalAccountCaps.brokerage).toBeNull();
   });
 
   it("applies sticky-forward withdrawalRoutingMode", () => {

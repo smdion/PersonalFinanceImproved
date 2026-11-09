@@ -1,4 +1,5 @@
 /** Projection state — composes form state, data-fetching queries, and derived computations into a single hook, plus override form submission handlers that bridge them. */
+import { enteredCaps } from "./entered-caps";
 import { useCallback } from "react";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -115,17 +116,8 @@ export function useProjectionState(props: UseProjectionStateProps) {
         if (val !== "") ts[groupKey] = parseFloat(val) / 100;
       }
       if (Object.keys(ts).length > 0) o.taxSplits = ts;
-      const caps: Record<AccountCategory, number> = buildCategoryRecord(
-        () => 0,
-      );
-      let hasCaps = false;
-      for (const cat of getAllCategories()) {
-        if (form.accumForm.accountCaps[cat] !== "") {
-          caps[cat] = parseFloat(form.accumForm.accountCaps[cat]);
-          hasCaps = true;
-        }
-      }
-      if (hasCaps) o.accountCaps = caps;
+      const caps = enteredCaps(form.accumForm.accountCaps);
+      if (caps) o.accountCaps = caps;
       const ttc: Partial<Record<"traditional" | "roth", number>> = {};
       if (form.accumForm.taxTypeCaps.traditional !== "")
         ttc.traditional = parseFloat(form.accumForm.taxTypeCaps.traditional);
@@ -220,17 +212,8 @@ export function useProjectionState(props: UseProjectionStateProps) {
         }
       }
       if (Object.keys(prefs).length > 0) o.withdrawalTaxPreference = prefs;
-      const caps: Record<AccountCategory, number> = buildCategoryRecord(
-        () => 0,
-      );
-      let hasWCaps = false;
-      for (const cat of getAllCategories()) {
-        if (form.decumForm.withdrawalAccountCaps[cat] !== "") {
-          caps[cat] = parseFloat(form.decumForm.withdrawalAccountCaps[cat]);
-          hasWCaps = true;
-        }
-      }
-      if (hasWCaps) o.withdrawalAccountCaps = caps;
+      const caps = enteredCaps(form.decumForm.withdrawalAccountCaps);
+      if (caps) o.withdrawalAccountCaps = caps;
       const ttc: Partial<Record<"traditional" | "roth", number>> = {};
       if (form.decumForm.withdrawalTaxTypeCaps.traditional !== "")
         ttc.traditional = parseFloat(
