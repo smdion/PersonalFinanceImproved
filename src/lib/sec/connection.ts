@@ -4,6 +4,7 @@
  * the contact in an encrypted envelope, same pattern as Tiingo.
  */
 import "server-only";
+import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
@@ -12,6 +13,9 @@ import type { Db } from "@/lib/db";
 const SEC_SERVICE = "sec";
 
 type SecConfig = { contactEmail: string };
+const secConfigShape: z.ZodType<SecConfig> = z.object({
+  contactEmail: z.string(),
+});
 
 export async function getSecConnection(db: Db) {
   const rows = await db
@@ -26,8 +30,14 @@ export async function getSecConnection(db: Db) {
 export async function getSecContact(db: Db): Promise<string | null> {
   const conn = await getSecConnection(db);
   if (!conn) return null;
-  // Stored config, cast: a saved one may lack the field.
-  return readMaybeEncrypted<SecConfig>(conn.config).contactEmail ?? null;
+  // A saved config may lack the field (logged, read as stored).
+  return (
+    readMaybeEncrypted(
+      conn.config,
+      "api_connections.config (sec)",
+      secConfigShape,
+    ).contactEmail ?? null
+  );
 }
 
 export async function saveSecConnection(db: Db, contactEmail: string) {

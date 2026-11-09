@@ -3,6 +3,12 @@
  *  not against code execution in the running app. */
 
 import "server-only";
+import type { z } from "zod/v4";
+import {
+  passOnAsStored,
+  readStoredShape,
+  storedValueLog,
+} from "@/lib/db/stored-shape";
 import {
   decryptStringWithKey,
   encryptStringWithKey,
@@ -37,18 +43,36 @@ export function encryptJson(jsonPayload: unknown): EncryptedEnvelope {
 }
 
 /**
- * Decrypt + JSON.parse. Throws if the input isn't a valid envelope.
- * Use isEncryptedEnvelope() to detect plaintext legacy values first.
+ * Decrypt + JSON.parse, checked against `shape` (`readStoredConfig`). Throws if
+ * the input isn't a valid envelope; isEncryptedEnvelope() detects plaintext.
  */
-export function decryptJson<T>(envelope: EncryptedEnvelope): T {
-  return JSON.parse(decryptString(envelope)) as T;
+export function decryptJson<S extends z.ZodType>(
+  envelope: EncryptedEnvelope,
+  source: string,
+  shape: S,
+): z.output<S> {
+  return readStoredConfig(source, JSON.parse(decryptString(envelope)), shape);
 }
 
 /** Read a config value stored as plaintext (returned as-is) or as an encrypted envelope
- *  (decrypted and parsed). Writes always go through encryptJson(). */
-export function readMaybeEncrypted<T>(storedValue: unknown): T {
-  if (isEncryptedEnvelope(storedValue)) {
-    return decryptJson<T>(storedValue);
-  }
-  return storedValue as T;
+ *  (decrypted and parsed), checked against `shape` (`readStoredConfig`). Writes always go
+ *  through encryptJson(). */
+export function readMaybeEncrypted<S extends z.ZodType>(
+  storedValue: unknown,
+  source: string,
+  shape: S,
+): z.output<S> {
+  if (isEncryptedEnvelope(storedValue))
+    return decryptJson(storedValue, source, shape);
+  return readStoredConfig(source, storedValue, shape);
+}
+
+/** A config value as read: a refused one is logged once per source and
+ *  passed on as stored. */
+function readStoredConfig<S extends z.ZodType>(
+  source: string,
+  value: unknown,
+  shape: S,
+): z.output<S> {
+  return passOnAsStored(readStoredShape(value, shape, storedValueLog(source)));
 }

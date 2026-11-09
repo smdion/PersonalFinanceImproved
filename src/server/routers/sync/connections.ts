@@ -18,7 +18,8 @@ import {
   cacheClear,
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
-import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
+import { readActualConfig } from "@/lib/budget-api/stored-config";
+import { encryptJson } from "@/lib/crypto";
 import { checkOutboundUrl } from "@/lib/http/url-safety";
 import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
@@ -49,8 +50,7 @@ export const syncConnectionsRouter = createTRPCRouter({
             // send back so the settings UI can prefill an edit field
             // without requiring the whole credential form to be retyped.
             externalUrl:
-              readMaybeEncrypted<ActualConfig>(actualConn.config).externalUrl ??
-              null,
+              readActualConfig(actualConn.config).externalUrl ?? null,
           }
         : { connected: false, lastSyncedAt: null, externalUrl: null },
     };
@@ -134,7 +134,7 @@ export const syncConnectionsRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No Actual Budget connection configured",
         });
-      const current = readMaybeEncrypted<ActualConfig>(conn.config);
+      const current = readActualConfig(conn.config);
       const next: ActualConfig = { ...current };
       if (input.externalUrl) next.externalUrl = input.externalUrl;
       else delete next.externalUrl;

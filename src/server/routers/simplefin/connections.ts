@@ -31,9 +31,8 @@ import {
   simplefinRequestRecorder,
   stopAtSimplefinQuota,
 } from "@/lib/simplefin/request-log";
-import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
-import type { SimplefinConfig } from "@/server/services/sync/simplefin/sync";
+import { readSimplefinConfig } from "@/server/services/sync/simplefin/config";
 import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
 
@@ -81,7 +80,7 @@ export const connectionsProcedures = {
         };
       }
       try {
-        const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+        const { accessUrl } = readSimplefinConfig(conn.config);
         // A test counts against the daily quota like a sync.
         await stopAtSimplefinQuota(ctx.db, ctx.scope.asOf);
         const { accounts, providerErrors } = await getAccounts(accessUrl, {

@@ -2,30 +2,29 @@
 // client, built from a stored connection (labels: BUDGET_SERVICES).
 
 import "server-only";
-import { readMaybeEncrypted } from "@/lib/crypto";
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 import type { BudgetAPIClient } from "./interface";
-import type { YnabConfig, ActualConfig } from "./types";
+import { readActualConfig, readYnabConfig } from "./stored-config";
 import { YnabClient } from "./ynab-client";
 import { ActualClient } from "./actual-client";
 
 interface BudgetProvider {
   /** The client for a stored `api_connections.config` (plaintext or
-   *  encrypted), or null when a field is missing. Cast, not validated. */
+   *  encrypted), or null when a field is missing; a refused config is logged. */
   createClient(storedConfig: unknown): BudgetAPIClient | null;
 }
 
 export const BUDGET_PROVIDERS = {
   ynab: {
     createClient(storedConfig) {
-      const c = readMaybeEncrypted<YnabConfig>(storedConfig);
+      const c = readYnabConfig(storedConfig);
       if (!c.accessToken || !c.budgetId) return null;
       return new YnabClient(c.accessToken, c.budgetId);
     },
   },
   actual: {
     createClient(storedConfig) {
-      const c = readMaybeEncrypted<ActualConfig>(storedConfig);
+      const c = readActualConfig(storedConfig);
       if (!c.serverUrl || !c.apiKey || !c.budgetSyncId) return null;
       return new ActualClient(c.serverUrl, c.apiKey, c.budgetSyncId);
     },

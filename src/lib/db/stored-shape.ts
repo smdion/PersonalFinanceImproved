@@ -47,6 +47,16 @@ export function readStoredShape<S extends z.ZodType>(
   return { fits: false, asStored: value, issues };
 }
 
+/** How a stored value refused by its shape is logged: once per `source`
+ *  (`app_settings.<key>`, `<table>.<column>`), with its first five issues. */
+export function storedValueLog(source: string): StoredShapeLog {
+  return {
+    event: "stored_value_unexpected_shape",
+    key: () => source,
+    data: (issues) => ({ source, issues: issues.slice(0, 5) }),
+  };
+}
+
 /** The read's value, a refused one passed on as stored: the old stored
  *  shape fallback (docs/FALLBACKS.md). A shape's reader stops calling this
  *  once its migration converts every row, and throws on a refused read. */

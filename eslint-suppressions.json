@@ -3261,7 +3261,7 @@
       "count": 1
     }
   },
-  "src/lib/budget-api/providers.ts": {
+  "src/lib/budget-api/stored-config.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -3324,11 +3324,6 @@
   },
   "src/lib/constants/settings-keys.ts": {
     "ratchet/no-abbreviation": {
-      "count": 2
-    }
-  },
-  "src/lib/crypto.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     }
   },
@@ -5230,12 +5225,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
-    }
-  },
-  "src/server/routers/sync/config.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
+      "count": 2
     }
   },
   "src/server/routers/sync/connections.ts": {
@@ -5243,7 +5233,7 @@
       "count": 4
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 2
     }
   },
   "src/server/routers/sync/expense-comparison.ts": {
@@ -5845,6 +5835,11 @@
       "count": 10
     }
   },
+  "src/server/services/sync/simplefin/config.ts": {
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
   "src/server/services/sync/simplefin/ingest.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5863,9 +5858,6 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },

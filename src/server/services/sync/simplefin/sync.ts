@@ -7,7 +7,8 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { countsInLiveBalance } from "@/lib/pure/sync/simplefin-feeds";
 import { applyLoanFeedBalances } from "@/server/services/sync/loan-feed";
-import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
+import { encryptJson } from "@/lib/crypto";
+import { readSimplefinConfig, type SimplefinConfig } from "./config";
 import {
   getAccounts,
   isSimplefinReplayMode,
@@ -32,10 +33,6 @@ import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db, DbOrTx } from "@/lib/db";
 import { loadStoredSetting } from "@/lib/db/stored-setting";
 import { z } from "zod/v4";
-
-export type SimplefinConfig = {
-  accessUrl: string;
-};
 
 type SimplefinSyncResult = {
   snapshotDate: string;
@@ -347,7 +344,7 @@ export async function runSimplefinSync(
   }
 
   try {
-    const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+    const { accessUrl } = readSimplefinConfig(conn.config);
 
     // The included accounts expected, read BEFORE fetching: one missing
     // from the answer with no error (the provider needn't signal a degraded

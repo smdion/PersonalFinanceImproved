@@ -10,6 +10,7 @@ import * as schema from "@/lib/db/schema";
 import {
   passOnAsStored,
   readStoredShape,
+  storedValueLog,
   type StoredShapeRead,
 } from "@/lib/db/stored-shape";
 
@@ -29,11 +30,7 @@ function checkStoredValue<S extends z.ZodType>(
   value: unknown,
   shape: S,
 ): StoredShapeRead<z.output<S>> {
-  return readStoredShape(value, shape, {
-    event: "stored_value_unexpected_shape",
-    key: () => source,
-    data: (issues) => ({ source, issues: issues.slice(0, 5) }),
-  });
+  return readStoredShape(value, shape, storedValueLog(source));
 }
 
 /** An app_settings value, read as `readStoredValue` reads one. */

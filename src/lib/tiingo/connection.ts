@@ -4,6 +4,7 @@
  * saveSimplefinConnection in server/services/sync/simplefin/sync.ts.
  */
 import "server-only";
+import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
@@ -12,6 +13,9 @@ import type { Db } from "@/lib/db";
 const TIINGO_SERVICE = "tiingo";
 
 type TiingoConfig = { apiKey: string };
+const tiingoConfigShape: z.ZodType<TiingoConfig> = z.object({
+  apiKey: z.string(),
+});
 
 export async function getTiingoConnection(db: Db) {
   const rows = await db
@@ -26,8 +30,14 @@ export async function getTiingoConnection(db: Db) {
 export async function getTiingoApiKey(db: Db): Promise<string | null> {
   const conn = await getTiingoConnection(db);
   if (!conn) return null;
-  // Stored config, cast: a saved one may lack the field.
-  return readMaybeEncrypted<TiingoConfig>(conn.config).apiKey ?? null;
+  // A saved config may lack the field (logged, read as stored).
+  return (
+    readMaybeEncrypted(
+      conn.config,
+      "api_connections.config (tiingo)",
+      tiingoConfigShape,
+    ).apiKey ?? null
+  );
 }
 
 export async function saveTiingoConnection(db: Db, apiKey: string) {
