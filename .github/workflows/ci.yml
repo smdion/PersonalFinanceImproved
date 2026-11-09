@@ -607,6 +607,10 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/integration/backup-fence-postgres.test.ts
 
+      - name: Backup export snapshot on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/scripts/export-backup-snapshot-postgres.test.ts
+
       - name: ENCRYPTION_KEY rotation on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/scripts/rotate-encryption-key-postgres.test.ts

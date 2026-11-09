@@ -8,6 +8,9 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "node:url";
+import type { ClientBase } from "pg";
+import type BetterSqlite3 from "better-sqlite3";
 import { VERSION_TABLE_NAMES } from "../src/lib/db/version-tables";
 import { writeBackupFile } from "../src/lib/db/backup-file";
 import { loadEnvFile } from "../src/lib/db/env-file";
@@ -49,18 +52,16 @@ function tableReadError(tableName: string, err: unknown): Error {
   return new Error(`Reading table "${tableName}" failed: ${reason}`);
 }
 
-async function exportPostgres(): Promise<Record<string, unknown[]>> {
-  const { Pool } = await import("pg");
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl:
-      process.env.DATABASE_SSL === "true"
-        ? { rejectUnauthorized: false }
-        : false,
-  });
-
+/**
+ * Every versioned table, read in one REPEATABLE READ READ ONLY transaction:
+ * one snapshot, so a write that lands mid-export is in all of the tables or
+ * none of them.
+ */
+export async function readTablesPostgres(
+  client: ClientBase,
+): Promise<Record<string, unknown[]>> {
   const tables: Record<string, unknown[]> = {};
-  const client = await pool.connect();
+  await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
     for (const tableName of VERSION_TABLE_NAMES) {
       const { rows: found } = await client.query<{ present: boolean }>(
@@ -79,24 +80,40 @@ async function exportPostgres(): Promise<Record<string, unknown[]>> {
       }
     }
   } finally {
-    client.release();
-    await pool.end();
+    await client.query("ROLLBACK");
   }
   return tables;
 }
 
-function exportSqlite(): Record<string, unknown[]> {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const Database = require("better-sqlite3");
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  const dbPath = process.env.SQLITE_PATH ?? "data/ledgr.db";
-  const sqlite = new Database(dbPath, { readonly: true });
-  sqlite.pragma("journal_mode = WAL");
-
-  const lookup = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE name = ?");
-  const tables: Record<string, unknown[]> = {};
+async function exportPostgres(): Promise<Record<string, unknown[]>> {
+  const { Pool } = await import("pg");
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl:
+      process.env.DATABASE_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : false,
+  });
+  const client = await pool.connect();
   try {
+    return await readTablesPostgres(client);
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+/**
+ * Every versioned table, read in one transaction: SQLite gives each
+ * statement its own snapshot otherwise, so a write between two tables'
+ * reads would land in one and not the other.
+ */
+export function readTablesSqlite(
+  sqlite: BetterSqlite3.Database,
+): Record<string, unknown[]> {
+  const lookup = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE name = ?");
+  return sqlite.transaction(() => {
+    const tables: Record<string, unknown[]> = {};
     for (const tableName of VERSION_TABLE_NAMES) {
       if (lookup.get(tableName) === undefined) {
         tables[tableName] = [];
@@ -110,10 +127,23 @@ function exportSqlite(): Record<string, unknown[]> {
         throw tableReadError(tableName, err);
       }
     }
+    return tables;
+  })();
+}
+
+function exportSqlite(): Record<string, unknown[]> {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const Database = require("better-sqlite3");
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  const dbPath = process.env.SQLITE_PATH ?? "data/ledgr.db";
+  const sqlite = new Database(dbPath, { readonly: true });
+  sqlite.pragma("journal_mode = WAL");
+  try {
+    return readTablesSqlite(sqlite);
   } finally {
     sqlite.close();
   }
-  return tables;
 }
 
 async function run() {
@@ -158,7 +188,10 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  console.error("Export failed:", err);
-  process.exit(1);
-});
+// Guarded so the tests can import the readers above without a run.
+if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
+  run().catch((err) => {
+    console.error("Export failed:", err);
+    process.exit(1);
+  });
+}
