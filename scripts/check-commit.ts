@@ -599,6 +599,16 @@ function tokensOf(
       n.kind <= ts.SyntaxKind.LastJSDocNode
     )
       return;
+    // Prettier wraps a returned expression in parentheses only when it
+    // breaks over lines; they change nothing, so a re-wrap may drop them.
+    if (
+      ts.isParenthesizedExpression(n) &&
+      (n.parent as ts.Node | undefined) !== undefined &&
+      ts.isReturnStatement(n.parent)
+    ) {
+      visit(n.expression);
+      return;
+    }
     const children = n.getChildren(source);
     if (children.length > 0) {
       children.forEach(visit);

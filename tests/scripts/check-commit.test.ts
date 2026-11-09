@@ -710,6 +710,30 @@ describe("notAMove: a procedure's body moves to a service function", () => {
     );
   });
 
+  it("passes a body whose returned expression loses prettier's parentheses, and fails one that changes them", () => {
+    const withReturn = (old: string[], now: string) =>
+      diff({ inService: [...moved.slice(0, 2), now] }).replace(
+        "-      return { rows, total };",
+        old.map((l) => `-      ${l}`).join("\n"),
+      );
+    const wrapped = ["return (", "  rows.length > 0 && total > 0", ");"];
+    expect(
+      notAMove(
+        numstat,
+        withReturn(wrapped, "return rows.length > 0 && total > 0;"),
+      ),
+    ).toBeUndefined();
+    expect(
+      notAMove(
+        numstat,
+        withReturn(
+          ["return (rows.length + 1) * total;"],
+          "return rows.length + 1 * total;",
+        ),
+      ),
+    ).toMatch(/changed line\(s\)|not whole top-level statements/);
+  });
+
   it("fails a body with one statement changed", () => {
     expect(
       notAMove(
