@@ -20,9 +20,8 @@ export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<RoutingMode, string> = {
   percentage: "Percentage",
 };
 
-/** One clause per mode — this exact wording is what "Bracket Filling" (the
- *  engine mode) and "Tax-optimized" (what the comparison used to call the
- *  same mode) had drifted into having their own version of. */
+/** One clause per mode: the one wording every screen that describes a
+ *  mode shows. */
 export const WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS: Record<RoutingMode, string> =
   {
     bracket_filling:

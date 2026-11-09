@@ -556,8 +556,8 @@ export async function buildEnginePayload(
     );
   profileSwitches.push(...activeAgeSteps);
   profileSwitches.sort((a, b) => a.year - b.year);
-  // A switch row that pins a salary adds to the salary overrides, after
-  // the plain rows — the order the engine has always received them in.
+  // A switch row that sets a salary adds to the salary overrides after the
+  // plain rows, so for a year both set, the switch row's salary wins.
   perPersonSalaryOverrides.push(...perPersonSalaryAdds);
   dbSalaryOverrides.push(...householdSalaryAdds);
 

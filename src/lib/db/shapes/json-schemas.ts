@@ -1,6 +1,6 @@
 /**
- * Zod schemas for every JSONB column, each mirroring the column's TypeScript type in schema.ts;
- * parse with them before writing so arbitrary data never reaches a JSONB column.
+ * Zod schemas for every JSONB column, parsed before each write; most mirror the column's type in
+ * schema.ts; app settings, the audit log, backups and the API cache are loose by design.
  */
 
 import { z } from "zod/v4";

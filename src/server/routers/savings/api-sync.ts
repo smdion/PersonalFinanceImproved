@@ -24,6 +24,7 @@ import {
   getEssentialExpenses,
   resolveEfundTierIndex,
 } from "@/lib/pure/savings/efund-expenses";
+import { DEFAULT_EFUND_MONTHS } from "@/lib/pure/savings/efund";
 
 export const apiSyncProcedures = {
   /**
@@ -96,9 +97,8 @@ export const apiSyncProcedures = {
           )
         : 0;
 
-      // Resolve through the same path computeSummary uses — pushing the
-      // raw savings_goals column would push the goal's global default
-      // instead of whatever's actually in effect for the active profile.
+      // Each goal's funding for the active profile, resolved as computeSummary
+      // resolves it (savings_goals holds no funding of its own).
       const resolvedByGoal = await getResolvedGoalAllocations(
         ctx.db,
         toPush,
@@ -131,7 +131,7 @@ export const apiSyncProcedures = {
             // E-fund: the total target amount only. Its goal type is set up
             // once in YNAB; a "target-balance" write never changes it (see
             // YnabClient's writeTargetBalance).
-            const targetMonths = goal.targetMonths ?? 4;
+            const targetMonths = goal.targetMonths ?? DEFAULT_EFUND_MONTHS;
             const targetAmount = targetMonths * essentialExpenses;
             if (targetAmount > 0) {
               prepared.push({

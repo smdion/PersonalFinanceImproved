@@ -23,9 +23,10 @@ export async function getActiveBudgetApi(db: Db): Promise<ActiveBudgetApi> {
   return isBudgetApiService(row.value) ? row.value : "none";
 }
 
-/** @internal Only tests import it (knip --production).
+/**
  * Instantiate the correct BudgetAPIClient based on app settings (active API).
  * Returns null if no budget API is configured or the connection is missing.
+ * @internal Only tests import it (knip --production).
  */
 export async function getBudgetAPIClient(
   db: Db,
@@ -54,7 +55,6 @@ export async function getClientForService(
 
   // conn.config may be plaintext or an encrypted envelope; each provider's
   // createClient reads it with readMaybeEncrypted.
-  if (!Object.hasOwn(BUDGET_PROVIDERS, service)) return null;
   return BUDGET_PROVIDERS[service].createClient(conn.config);
 }
 

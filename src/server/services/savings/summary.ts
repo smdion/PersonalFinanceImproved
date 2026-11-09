@@ -4,7 +4,7 @@ import { asc, sql, lt } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/pure/savings/savings";
-import { calculateEFund } from "@/lib/pure/savings/efund";
+import { calculateEFund, DEFAULT_EFUND_MONTHS } from "@/lib/pure/savings/efund";
 import {
   getEssentialExpenses,
   resolveEfundTierIndex,
@@ -209,7 +209,7 @@ export async function computeSavingsSummary(
       emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
       outstandingSelfLoans,
       essentialMonthlyExpenses,
-      targetMonths: efundGoal.targetMonths ?? 4,
+      targetMonths: efundGoal.targetMonths ?? DEFAULT_EFUND_MONTHS,
       asOfDate: ctx.scope.asOf,
     };
     efundResult = calculateEFund(efundInput);
