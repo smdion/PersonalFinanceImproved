@@ -5,6 +5,7 @@
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
+import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { getAllPeople } from "@/server/data/people";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
@@ -87,7 +88,7 @@ export async function fetchRetirementData(
           .select()
           .from(schema.salaryProfiles)
           .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
-          .then((r) => r[0] ?? null)
+          .then(([row]) => (row ? checkSalaryEntries(row) : null))
       : Promise.resolve(undefined as undefined),
     // Which job funds which performance account (withdrawal eligibility).
     // No isActive filter: a separated employer's inactive link is the
@@ -99,9 +100,8 @@ export async function fetchRetirementData(
       })
       .from(schema.contributionAccounts),
     accountBasisRows: db.select().from(schema.accountBasis),
-    // The Default preset's glide path and which classes are stocks: VPW
-    // sizes its percentage by the stock share. A Simulation run replaces
-    // this with its own preset's.
+    // The Default preset's glide path and stock classes, for VPW's stock
+    // share; a Simulation run replaces this with its own preset's.
     defaultPreset: loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
     classBucketRows: db.select().from(schema.assetClassBuckets),
   };

@@ -16,6 +16,7 @@ import {
 } from "@/lib/pure/contributions/cap-pass";
 import { inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import {
   contributionPay,
   getTotalCompensation,
@@ -24,10 +25,7 @@ import {
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { toNumber } from "@/lib/utils/numbers";
-import type {
-  SalaryEntryMap,
-  SalaryProfileActiveMap,
-} from "@/lib/pure/household/compensation";
+import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";
@@ -76,7 +74,7 @@ export async function loadSwitchProfiles(
           .where(inArray(schema.salaryProfiles.id, switchSalaryProfileIds))
       : [];
   const switchSalaryProfileMap = new Map(
-    switchSalaryProfileRows.map((p) => [p.id, p]),
+    switchSalaryProfileRows.map((p) => [p.id, checkSalaryEntries(p)]),
   );
 
   return {
@@ -229,8 +227,7 @@ export function buildProfileSwitches<
     // specific jobs, not people) — find this person's active job to look
     // up their entry. Assumes one active job per person, same as
     // everywhere else in the app.
-    const switchSalaryEntriesByJob = (salaryProfile?.salaries ??
-      {}) as SalaryEntryMap;
+    const switchSalaryEntriesByJob = salaryProfile?.salaries ?? {};
     const ownJob = activeJobs.find((j) => j.personId === override.personId);
     // Read loosely: the salary math needs only `salary`/bonus terms;
     // ownEntryNormalized below is where the other fields' completeness counts.

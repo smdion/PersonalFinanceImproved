@@ -316,7 +316,7 @@
     "src/lib/pure/engine/withdrawal-routing/types.ts": 120,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
     "src/lib/pure/engine/withdrawal-solver.ts": 554,
-    "src/lib/pure/household/compensation.ts": 369,
+    "src/lib/pure/household/compensation.ts": 368,
     "src/lib/pure/household/retirement-profile.ts": 104,
     "src/lib/pure/investments/finalize-year.ts": 194,
     "src/lib/pure/investments/holding-periods.ts": 433,
@@ -410,7 +410,7 @@
     "src/server/services/profiles/salary-profile.ts": 89,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 911,
     "src/server/services/projection/engine-payload/load.ts": 156,
-    "src/server/services/projection/engine-payload/profile-switches.ts": 509,
+    "src/server/services/projection/engine-payload/profile-switches.ts": 506,
     "src/server/services/projection/projection-cache.ts": 221,
     "src/server/services/projection/relocation-analysis.ts": 477,
     "src/server/services/savings/summary.ts": 370,
@@ -1101,7 +1101,7 @@
       "buildIndividualAccounts": 238
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
-      "buildProfileSwitches": 327
+      "buildProfileSwitches": 326
     },
     "src/server/services/projection/relocation-analysis.ts": {
       "computeRelocationAnalysis": 378

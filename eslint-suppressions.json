@@ -6959,9 +6959,6 @@
     }
   },
   "src/lib/pure/household/compensation.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 11
     }
@@ -8122,7 +8119,7 @@
   },
   "src/server/data/salaries.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/data/settings.ts": {
@@ -9384,7 +9381,7 @@
   },
   "src/server/services/projection/engine-payload/profile-switches.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "max-lines-per-function": {
       "count": 1

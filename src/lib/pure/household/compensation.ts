@@ -216,12 +216,11 @@ export function resolvePersonYearIncome(
  * builds the map from an already-fetched row without issuing a query.
  */
 export function applySalaryProfileRow(
-  profile: { salaries: SalaryEntryMap | null } | null | undefined,
+  profile: { salaries: SalaryEntryMap } | null | undefined,
 ): SalaryProfileActiveMap {
   const map: SalaryProfileActiveMap = new Map();
   if (!profile) return map;
-  const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
-  for (const [jobIdKey, entry] of Object.entries(salaries)) {
+  for (const [jobIdKey, entry] of Object.entries(profile.salaries)) {
     map.set(Number(jobIdKey), entry);
   }
   return map;
