@@ -731,38 +731,18 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
   "src/components/budget/profile-viewing-badge.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
   "src/components/budget/salary-profile-create-panel.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
-    }
-  },
-  "src/components/budget/salary-profile-edit-panel.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/components/budget/salary-profile-edit-rows.tsx": {
@@ -771,26 +751,12 @@
     }
   },
   "src/components/budget/salary-profile-entry.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-input": {
-      "count": 1
-    }
-  },
-  "src/components/budget/salary-profile-manager.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/components/budget/savings-allocation-panel.tsx": {
     "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -805,60 +771,13 @@
       "count": 1
     }
   },
-  "src/components/budget/use-budget-column-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/budget/use-budget-item-mutations.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/budget/use-budget-profile-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/budget/use-budget-sync-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/budget/use-clone-profile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/budget/use-invalidate-budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/components/budget/use-optimistic-mutation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/components/charts/chart-defaults.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/contributions/profile-manager/inline-account-cells.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-button": {

@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * YNAB / API-sync mutations for the budget page.
- *
- * Both mutations bust the computeActiveSummary cache on success since
- * a pull rewrites local budgeted amounts and a push sends the current
- * amounts upstream (no local state change needed for a push, but
- * invalidation ensures any YNAB actuals refreshed upstream are
- * re-fetched on the next load). A failed push busts it too.
+ * YNAB/API sync mutations. Pull and push (even a failed push) invalidate
+ * computeActiveSummary so local amounts and actuals refetch.
  */
 
 import { trpc } from "@/lib/trpc";

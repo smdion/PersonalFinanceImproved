@@ -1,17 +1,8 @@
 "use client";
 
 /**
- * Shared base hook for budget page mutations.
- *
- * Returns a memoized `invalidateSummary` callback every per-section
- * mutation hook uses as its simple `onSuccess` handler, plus a
- * `invalidateSummaryAndProfiles` variant for the small set of mutations
- * that also need the listProfiles cache busted (column months, column
- * contribution profiles). Centralizing invalidation here avoids
- * duplicating the cache-busting logic across the five section hooks.
- *
- * Mirrors the proven pattern at
- * `src/components/settings/integrations/use-invalidate-preview.ts`.
+ * Shared cache invalidation for the budget mutation hooks: `invalidateSummary`
+ * plus variants that also bust profiles or contribution-dependent routers.
  */
 
 import { useCallback } from "react";
@@ -25,12 +16,8 @@ export function useInvalidateBudget(): {
 } {
   const utils = trpc.useUtils();
 
-  // Any structural or essential-flag change to a budget item can shift the
-  // API-actuals matching view (listApiActuals filters by budgetItems) and
-  // the e-fund target on the Savings Goals card (computeSummary sums
-  // essential-expense budget items) — both were previously left stale after
-  // a plain item add/delete/essential-toggle. Every other invalidate* variant below
-  // builds on this one so they can't drift out of sync with it again.
+  // Item changes can shift API-actuals matching and the e-fund target (sums
+  // essential items); every other invalidate* variant builds on this one.
   const invalidateSummary = useCallback(() => {
     utils.budget.computeActiveSummary.invalidate();
     utils.budget.listApiActuals.invalidate();
@@ -46,10 +33,8 @@ export function useInvalidateBudget(): {
     utils.budget.listProfiles.invalidate();
   }, [utils]);
 
-  // Amount edits on a contribution-linked budget item write through to
-  // contribution_accounts, which Paycheck/Contribution/Retirement/
-  // Projection/Savings/Brokerage/settings all read from — bust all of
-  // them so a linked edit shows up everywhere without a manual reload.
+  // Linked-item amount edits write contribution_accounts, read by many
+  // routers; bust them all so the edit shows everywhere.
   const invalidateSummaryAndContributions = useCallback(() => {
     invalidateSummary();
     utils.paycheck.invalidate();

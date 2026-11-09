@@ -1,32 +1,15 @@
 "use client";
 
 /**
- * Shared chart styling defaults for Recharts.
- *
- * Usage: spread these props onto Recharts components for consistent styling.
- * Colors reference CHART_COLORS from @/lib/utils/colors — never define local hex values.
- *
- * @example
- * <CartesianGrid {...gridProps} />
- * <XAxis dataKey="year" {...axisProps} />
- * <YAxis {...axisProps} tickFormatter={compactCurrency} width={65} />
- * <RechartsTooltip {...tooltipProps} formatter={...} />
- * <Legend {...legendProps} />
+ * Shared Recharts styling props to spread onto chart components.
+ * Colors come from CHART_COLORS in @/lib/utils/colors; never define local hex values.
  */
 
 import { CHART_COLORS } from "@/lib/utils/colors";
 
-/* ── Canonical font sizes ────────────────────────────────────────
- * Mirrors the CSS token scale for SVG/inline-style contexts where
- * Tailwind classes can't be applied to Recharts SVG text nodes.
- *
- *   CHART_FONT.tick    : 11px — axis ticks, legend items  (= text-caption)
- *   CHART_FONT.xTick   : 12px — x-axis date/category ticks (= text-xs)
- *   CHART_FONT.tooltip : 12px — tooltip content            (= text-xs)
- *   CHART_FONT.legend  : 11px — legend labels              (= text-caption)
- *   CHART_FONT.label   : 10px — inline bar/line labels     (= text-micro)
- *   CHART_FONT.tiny    :  9px — mini charts / compressed space only
- */
+/* Canonical font sizes (px) for Recharts SVG text, where Tailwind classes can't apply.
+ * Mirrors the CSS tokens: tick/legend = text-caption, xTick/tooltip = text-xs,
+ * label = text-micro; tiny is for mini charts / compressed space only. */
 export const CHART_FONT = {
   xTick: 12,
   tick: 11,

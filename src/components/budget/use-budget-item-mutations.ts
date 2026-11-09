@@ -1,28 +1,9 @@
 "use client";
 
 /**
- * Item-level mutations for the budget page.
- *
- * Covers:
- *   Simple-invalidate: updateBatch (batch amount saves), moveItem,
- *     createItem, convertToGoal.
- *   Optimistic: updateCell (updateItemAmount), deleteItem,
- *     updateItemEssential, updateCategoryEssential.
- *
- * The four optimistic mutations previously each carried their own ~25
- * lines of onMutate/onError/onSettled boilerplate inline — an earlier
- * attempt to DRY them via a shared `createOptimisticOptions` helper
- * (spreading generated options into tRPC's `useMutation`) hit a real
- * TypeScript limitation: the context type returned from onMutate didn't
- * flow through tRPC's `UseMutationOptions` generic cleanly when spread
- * from a helper. `useOptimisticMutation` (`src/lib/hooks/`) sidesteps
- * that by wrapping the mutation object from the outside instead of
- * spreading into tRPC's options, so it isn't subject to the same
- * generic-flow issue.
- *
- * `selectedColumn` is read through a ref so the mutations never
- * re-bind when the active column changes (matching the original inline
- * closure's live-read semantics).
+ * Budget item mutations: updateBatch/moveItem/createItem/convertToGoal invalidate;
+ * updateCell/deleteItem/essential toggles are optimistic via useOptimisticMutation.
+ * `selectedColumn` is a ref so mutations don't re-bind on column change.
  */
 
 import type { MutableRefObject } from "react";
@@ -56,16 +37,9 @@ export function useBudgetItemMutations({ selectedColumnRef }: Options) {
             rawItems: previous.rawItems.map(
               (item: (typeof previous.rawItems)[number]) => {
                 if (item.id !== variables.id) return item;
-                // Linked items display contribAmounts[col] (preferred) or
-                // contribAmount, not amounts[col] — patch those instead so
-                // the optimistic update is actually visible. Skip entirely
-                // when this column's contribStatus isn't "ok":
-                // applyContributionAccountEdit legitimately no-ops whenever
-                // the account isn't fully resolvable for this column (stale
-                // profile FK, unresolved fixed_per_period, sub-cent delta,
-                // not active for this column's profile, etc.), so an
-                // optimistic patch here would show a value the refetch
-                // silently reverts, which reads as a lost edit.
+                // Linked items show contribAmounts[col] or contribAmount, so
+                // patch those; skip when contribStatus isn't "ok", since the
+                // server no-ops then and the refetch would revert the edit.
                 if (item.contributionAccountId) {
                   const status = item.contribStatus?.[variables.colIndex];
                   if (status && status !== "ok") return item;

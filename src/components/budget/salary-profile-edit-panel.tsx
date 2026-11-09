@@ -12,11 +12,8 @@ import { SalaryEditRows } from "./salary-profile-edit-rows";
 import { salaryEntryActions } from "./salary-profile-edit-actions";
 
 /**
- * Unlocked, in-place editor for an existing profile. There is no Save button:
- * every field commits on blur (checkbox-free surface, so blur is the only
- * commit moment), mirroring SavingsAllocationTable's draft/commit pattern —
- * local draft strings only exist so multi-digit typing doesn't fire a
- * mutation per keystroke.
+ * In-place editor for an existing profile, no Save button: every field commits
+ * on blur; local drafts keep multi-digit typing from firing per keystroke.
  */
 export function ProfileEditPanel({
   profileId,
@@ -24,11 +21,9 @@ export function ProfileEditPanel({
   onSaved,
 }: {
   profileId: number;
-  /** Extra-paycheck routing always reads/writes the globally-ACTIVE Salary
-   *  Profile (see writeJobExtraPaycheckRouting's docblock, savings.ts) —
-   *  never a profile a user is merely viewing. The routing editor below
-   *  only renders for that profile; a non-active one shows a note instead,
-   *  so edits here always land where this screen implies they do. */
+  /** Extra-paycheck routing reads/writes only the ACTIVE Salary Profile
+   *  (writeJobExtraPaycheckRouting), so its editor renders only for that
+   *  profile; others show a note. */
   isActiveProfile: boolean;
   onSaved: () => void;
 }) {
@@ -38,10 +33,9 @@ export function ProfileEditPanel({
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
   const { drafts, setDraft, clearDraft } = useDraftCommit();
-  /** personId → jobId, when the user has picked a DIFFERENT job than the
-   *  one the server selected by default (whichever job has an entry, else
-   *  the active one) — the row's job picker. Client-only until a field is
-   *  actually set under that job. */
+  /** personId → jobId when the row's job picker differs from the server's
+   *  default job (one with an entry, else the active one). Client-only until a
+   *  field is set under that job. */
   const [jobOverride, setJobOverride] = useState<Record<number, number>>({});
 
   const updateMutation = trpc.salaryProfile.update.useMutation({
@@ -51,12 +45,8 @@ export function ProfileEditPanel({
     },
     onError: (e) => setError(e.message),
   });
-  // patchEntry/removeEntry replace what used to be a client-side
-  // read-merge-write of the whole `salaries` blob (from a query snapshot
-  // that goes stale the instant a prior commit resolves) posted through
-  // `update`. Two fields committed in quick succession could silently
-  // clobber each other under the old path — these call the server-side
-  // patch procedures directly instead, which merge inside a transaction.
+  // Field-level server patches that merge inside a transaction, so quick
+  // successive commits can't overwrite each other with a stale snapshot.
   const patchEntryMutation = trpc.salaryProfile.patchEntry.useMutation({
     onSuccess: () => {
       setError(null);
@@ -124,10 +114,8 @@ export function ProfileEditPanel({
             <SalaryTableHead />
             <tbody>
               {details.map((rawSd, rowIndex) => {
-                // Job picker lets a row target a DIFFERENT job than the one
-                // the server picked by default (whichever job has an entry,
-                // else the active one) — e.g. setting terms for a job that
-                // already ended, or one that hasn't started yet.
+                // The job picker lets a row target a job other than the
+                // server's default, e.g. one that ended or hasn't started.
                 const override = jobOverride[rawSd.personId];
                 const sd =
                   override !== undefined

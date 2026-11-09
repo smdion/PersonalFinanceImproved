@@ -4,11 +4,8 @@ import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 
 /**
- * Create-new panel. This is the one place a batch form survives: a profile
- * row has to exist before per-job entries have anywhere to go. A new
- * profile starts genuinely empty — no rows, no seeded values, nothing
- * copied from any other profile. Jobs are added to it afterward, in
- * ProfileEditPanel.
+ * Create-new panel, the one batch form: a profile row must exist before job
+ * entries can go in it. Starts empty; jobs are added in ProfileEditPanel.
  */
 export function ProfileCreatePanel({
   onCancel,

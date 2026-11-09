@@ -1,41 +1,8 @@
 "use client";
 
 /**
- * useOptimisticMutation — wraps a tRPC mutation with optimistic update +
- * automatic rollback on error.
- *
- * Without it, scenario overrides + retirement
- * settings round-trip to DB before the UI updates. This hook gives mutation
- * call sites a one-line upgrade path:
- *
- *   // Before
- *   const m = trpc.budget.updateItem.useMutation();
- *   m.mutate({ id, value });
- *
- *   // After
- *   const m = useOptimisticMutation(
- *     trpc.budget.updateItem.useMutation(),
- *     {
- *       optimisticUpdate: (input) => {
- *         const prev = utils.budget.list.getData();
- *         utils.budget.list.setData(undefined, (p) => updateById(p, input));
- *         return prev;
- *       },
- *       rollback: (previousData) => {
- *         utils.budget.list.setData(undefined, previousData);
- *       },
- *     },
- *   );
- *   m.mutate({ id, value });
- *
- * The hook is a thin wrapper around any object exposing
- * { mutate(input, opts?), isPending } — works with tRPC's useMutation
- * return value, manual fetch wrappers, etc.
- *
- * On error it rolls back and lets the failure surface through the app-wide
- * mutation-error toast (providers.tsx's MutationCache.onError →
- * friendlyMutationError); the visible value snapping back is the rollback
- * signal. `undo` adds a "… Undo" toast after a *successful* mutation.
+ * Wraps a mutation ({ mutate, isPending }) with an optimistic cache update and rollback on error.
+ * Errors surface through the app-wide mutation-error toast; `undo` adds an Undo toast on success.
  */
 
 import { useCallback, useRef } from "react";
@@ -43,11 +10,8 @@ import { toast } from "@/lib/hooks/use-toast";
 
 interface OptimisticMutationOptions<TInput, TPrevious> {
   /**
-   * Apply the change to local cache before the mutation fires.
-   * Return the previous state so the rollback can restore it. May be async
-   * (e.g. to `await utils.x.cancel()` before reading/writing cache so an
-   * in-flight refetch can't clobber the optimistic write) — the mutation
-   * itself isn't fired until this resolves.
+   * Apply the change to local cache and return the previous state for rollback.
+   * May be async (e.g. await a query cancel); the mutation fires once it resolves.
    */
   optimisticUpdate: (input: TInput) => TPrevious | Promise<TPrevious>;
   /**
@@ -60,10 +24,8 @@ interface OptimisticMutationOptions<TInput, TPrevious> {
    */
   onSettled?: () => void;
   /**
-   * Optional undo affordance shown as a toast.undo() after a successful
-   * mutation. undoFn receives the original input and should issue the
-   * inverse mutation (e.g., re-create what was deleted, restore previous
-   * value).
+   * Optional Undo toast after a successful mutation; undoFn receives the
+   * original input and should issue the inverse mutation.
    */
   undo?: {
     /** Toast body, e.g., "Removed item" or "Deleted scenario". */
@@ -105,11 +67,8 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
     (input: TInput) => {
       const ordinal = ++callOrdinalRef.current;
 
-      // Optimistically apply, capture previous state. May be async (e.g. an
-      // in-flight-query cancel before reading/writing cache) — the mutation
-      // itself waits for this to resolve. A synchronous optimisticUpdate
-      // still fires the mutation in the same tick (no artificial await),
-      // matching a plain function call's timing exactly.
+      // Apply optimistically and capture previous state. An async update delays
+      // the mutation until it resolves; a sync one fires it in the same tick.
       const proceed = (previous: TPrevious) => {
         inflightRef.current.set(ordinal, previous);
 

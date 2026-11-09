@@ -150,10 +150,8 @@ export function InlineMethodCell({
             // required-and-present, safe to patch alone.
             patchAccount(ad.id, { contributionMethod: val });
           } else {
-            // No value yet — contributionMethod can't be set
-            // alone (required together). Track the pick
-            // locally; the Value field's commit below picks
-            // it up when a real value is finally entered.
+            // No value yet, and contributionMethod can't be set alone: track
+            // the pick locally; the Value field's commit picks it up.
             setDraft(`a${ad.id}:method`, val);
           }
         }}

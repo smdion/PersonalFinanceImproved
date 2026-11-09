@@ -18,10 +18,8 @@ export type Detail = NonNullable<
 >["salaryDetails"][number];
 
 /**
- * Re-target a row at a different job from its jobOptions — used by the job
- * picker so switching jobs shows THAT job's real entry with no second round
- * trip. Falls back to the row unchanged if the id isn't one of this
- * person's jobs.
+ * Re-target a row at another of its jobOptions (no second round trip); returns
+ * the row unchanged if the id isn't one of this person's jobs.
  */
 export function detailForJob(sd: Detail, jobId: number): Detail {
   const opt = sd.jobOptions.find((jo) => jo.id === jobId);
@@ -170,10 +168,8 @@ export function JobPicker({
 }
 
 /**
- * A job's entry in this profile with the Paycheck page's own Withholding,
- * Bonus, Other pay and Extra paycheck sections, saving the same way
- * (salaryEntryEdit → patchEntry), plus Pay schedule, which only this
- * editor shows (the Paycheck page shows the schedule, not its fields).
+ * A job's entry with the Paycheck page's sections (saved via salaryEntryEdit →
+ * patchEntry), plus Pay schedule fields, which only this editor shows.
  */
 export function EntrySections({
   sd,

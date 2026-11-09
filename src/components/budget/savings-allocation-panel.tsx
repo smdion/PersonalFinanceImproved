@@ -13,21 +13,9 @@ import { renderStoredTotal } from "./savings-allocation-totals";
 import { renderProfileTotals } from "./savings-allocation-totals";
 
 /**
- * Every savings goal's allocationPercent/monthlyContribution is owned
- * entirely per budget profile — no shared default a profile falls back to,
- * each profile is its own funding scenario. The profile selection here is
- * the SAME state the Budget Profiles tab's sidebar uses (viewingProfileId,
- * lifted to budget-content.tsx) — picking a profile in either tab keeps it
- * selected when you switch to the other, since both are scoped to the same
- * budget_profile_id. This panel's own left rail is select-only (no
- * create/rename/delete/set-active — those stay exclusive to the Budget
- * Profiles tab) and additionally shows each profile's savings total/funded
- * goal count, which the Budget tab's sidebar doesn't need.
- *
- * Every row is directly editable — there's no "inherited" fallback state.
- * Values are resolved server-side by the same function
- * computeSummary/pushContributionsToApi use, so this panel can't show a
- * number that ends up different from what's actually live elsewhere.
+ * Savings allocations owned per budget profile (no shared default), using the
+ * Budget tab's viewingProfileId; the rail is select-only plus savings totals.
+ * Values resolve server-side like computeSummary/pushContributionsToApi.
  */
 export function SavingsAllocationPanel({
   canEdit,
@@ -41,39 +29,23 @@ export function SavingsAllocationPanel({
   onLocalChange,
 }: {
   canEdit: boolean;
-  /** Owned by budget-content.tsx's single tab-bar padlock — see its
-   *  useEditLock(EDIT_LOCK_KEYS.profileEditLocked) call. The What-If tab's
-   *  sandbox instance of this panel has no such padlock (nothing here
-   *  persists in sandbox mode), so it just passes `false`. */
+  /** From the page's tab-bar padlock (EDIT_LOCK_KEYS.profileEditLocked); the
+   *  What-If sandbox passes `false`. */
   locked: boolean;
   viewingProfileId: number | null;
   onSelectProfile: (id: number) => void;
   /** Sets the given budget profile as globally active (shown as a visible
    *  "Activate" button when viewing a non-active profile). */
   onActivateProfile?: (id: number) => void;
-  /** Take-home pay minus budgeted expenses for the active budget mode, right
-   *  now — the live pool goals are allocated from. Distinct from the %/$
-   *  snapshot below: that's what's stored per goal, this is what's actually
-   *  available to allocate against this month. Null while budget data hasn't
-   *  loaded yet. */
+  /** Take-home minus budgeted expenses for the active mode right now: the
+   *  live pool goals draw from (vs. the stored per-goal snapshot). Null until
+   *  budget data loads. */
   livePoolEstimate?: number | null;
   /** Which budget mode/column livePoolEstimate was computed for, e.g. "Standard". */
   livePoolColumnLabel?: string;
   /**
-   * Rendered inside a hypothetical/preview surface (the What-If tab). The
-   * rail's green "ACTIVE" badge gains a `?` tip there clarifying it marks
-   * the household's real active profile, which is not necessarily the one
-   * this preview is showing — swapping the badge's own label to a
-   * different word ("REAL") was tried first and just traded one piece of
-   * jargon for another with no visible affordance explaining it, so the
-   * label stays "ACTIVE" and the tip carries the distinction instead.
-   *
-   * ALSO redirects the allocation table's writes: when `sandbox` is true
-   * and `onLocalChange` is provided, editing a goal's %/$ calls
-   * `onLocalChange` instead of `savings.goalProfileAllocations.upsert` —
-   * see SavingsAllocationTable's `commit`. Previously this prop was purely
-   * cosmetic (the badge only) while edits still wrote straight to the
-   * database regardless — a sandbox that wasn't actually sandboxed.
+   * What-If preview: the "ACTIVE" badge gets a `?` tip (it marks the real active
+   * profile), and with `onLocalChange` edits call it instead of the upsert.
    */
   sandbox?: boolean;
   /** See `sandbox` above. Called with the parsed allocationPercent/
@@ -89,13 +61,9 @@ export function SavingsAllocationPanel({
     useBudgetProfilesList();
   const { data: summaries } =
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
-  // "Unspent" arrives already computed, per profile, from budget.listProfiles
-  // — take-home pay under the active Contribution/Salary Profiles, minus
-  // that profile's spending, minus its
-  // savings allocations. This panel used to make its own
-  // paycheck.computeSummary query with no input, which server-side means no
-  // profile is applied at all — so the figure silently ignored every active
-  // profile. Do NOT reintroduce a client-side pay query here.
+  // "Unspent" comes per profile from budget.listProfiles (take-home under the
+  // active profiles minus spending and savings). A client pay query here would
+  // apply no profile at all.
 
   if (profilesLoading) {
     return (
@@ -262,11 +230,8 @@ function SavingsAllocationTable({
     );
   }
 
-  // useDraftCommit's drafts are a flat Record<string,string>; this panel
-  // needs two fields per row, so each is keyed "{goalId}:{field}" and
-  // commit() reads/clears both keys together — the two inputs share one
-  // upsert mutation that always sends both allocationPercent and
-  // monthlyContribution.
+  // Drafts are a flat Record, so each row's two fields key as
+  // "{goalId}:{field}"; commit() reads/clears both for the one upsert.
   const draftKey = (
     goalId: number,
     field: "allocationPercent" | "monthlyContribution",
