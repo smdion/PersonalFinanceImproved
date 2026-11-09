@@ -623,6 +623,40 @@ describe("projection router — computeMonteCarloProjection", () => {
     }
   });
 
+  it("the deterministic line compounds below the mix's arithmetic mean (SIM baseline, D5)", async () => {
+    // From 65 the seeded glide path holds 40/60 (Stocks 10% ± 18%, Bonds
+    // 4% ± 6%): arithmetic mean 6.4%. A compounding (median) rate sits
+    // below it whenever there's volatility (SP-10; the portfolio's own
+    // σ²/2 is about 0.27 points here, the classes' Σ w·σ²/2 about 0.69),
+    // so the line is under 6.2% and over 5%. November's S27 (compound the
+    // arithmetic means) survived every test. Which median is right is
+    // v0.11's (answer key K6, decision F2).
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const response = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "custom",
+        taxMode: "simple",
+        seed: 42,
+      });
+      const retired =
+        response.result!.deterministicProjection.projectionByYear.filter(
+          (y) => y.age >= 65,
+        );
+      expect(retired.length).toBeGreaterThan(0);
+      for (const y of retired) {
+        expect(y.returnRate, `${y.year}`).toBeLessThan(0.062);
+        expect(y.returnRate, `${y.year}`).toBeGreaterThan(0.05);
+      }
+    } finally {
+      cleanup();
+    }
+  });
+
   it("runs MC with advanced tax mode", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

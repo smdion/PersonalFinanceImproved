@@ -220,4 +220,33 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
     expect(withExclusion.penaltyAvoidedShortfallRate).toBeGreaterThan(0);
     expect(withoutExclusion.penaltyAvoidedShortfallRate).toBe(0);
   }, 60_000); // two runs of 100 trials: slow under coverage instrumentation in CI
+
+  it("its failing futures fail for the locked money, and the reasons partition the failures (SIM-14)", () => {
+    // DESIGN § the plan judge: a year short while money remains is a
+    // penaltyGap when the money is locked, never "depleted" (November's
+    // S17, every failure counted as depleted, survived every test).
+    const r = calculateMonteCarlo(
+      makeMCInput(
+        makeInput({
+          currentAge: 54,
+          retirementYear: AS_OF.getFullYear() + 1,
+          individualAccounts: makeRothIndividualAccounts(1971),
+        }),
+        {
+          numTrials: 20,
+          seed: 42,
+          assetClasses: IBBOTSON_CLASSES,
+          correlations: STOCK_BOND_CORRELATIONS,
+          glidePath: make5050GlidePath(),
+        },
+      ),
+    );
+    const { depleted, penaltyGap, shortfall } = r.failureReasonRates;
+    expect(r.successRate).toBeLessThan(1);
+    expect(depleted + penaltyGap + shortfall).toBeCloseTo(
+      1 - r.successRate,
+      12,
+    );
+    expect(penaltyGap).toBeGreaterThan(depleted);
+  }, 60_000);
 });

@@ -133,6 +133,24 @@ describe("computeTraditionalIraAccess", () => {
   });
 });
 
+describe("the 59½ line, by attained age (IRC 72(t)(2)(A)(i))", () => {
+  // "On or after the date on which the employee attains age 59½": a
+  // fractional age at the line. November's RT49 (penalty-free from 59)
+  // survived every test, which checked 56 and 60 only. How a projection
+  // year counts the birthday is the year model's (E1/E2, v0.11); this is
+  // the rule itself.
+  it.each([
+    [59, false],
+    [59.49, false],
+    [59.5, true],
+  ])("age %s: penalty-free %s", (age, free) => {
+    expect(computeTraditionalIraAccess(1000, age)[0]!.penaltyFree).toBe(free);
+    expect(
+      computeEmployerPlanPreTaxAccess(1000, age, false)[0]!.penaltyFree,
+    ).toBe(free);
+  });
+});
+
 describe("computeEmployerPlanPreTaxAccess", () => {
   it("is penalty-free once Rule-of-55-eligible, even under 59½ — the case round 2 caught", () => {
     // A 56-year-old, Rule-of-55-eligible for this account: the household's

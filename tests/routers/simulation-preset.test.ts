@@ -125,6 +125,22 @@ describe("simulation presets", () => {
     expect(b!.meanReturn).toBe(0.03);
   });
 
+  it("a class a zero-multiplier preset doesn't override draws at half its table mean", async () => {
+    // simulation-preset.ts's documented fallback (November's S25, a 0.5 →
+    // 1.0 mutant, survived): under a preset whose multiplier is 0 with
+    // return overrides, a class without one takes 0.5 × its table mean
+    // (Conservative's International Bonds, answer key K16).
+    const p = await loadSimulationPreset(ctx.db as never, "default");
+    const [s, b] = presetAssetClasses(classes(), {
+      ...p,
+      returnMultiplier: 0,
+      returnOverrides: new Map([[stocks, 0.03]]),
+      savedAssetOverrides: [],
+    });
+    expect(s!.meanReturn).toBe(0.03);
+    expect(b!.meanReturn).toBe(0.02);
+  });
+
   it("the glide-path check reads the Default preset, not Custom's table", async () => {
     expect(
       computeCurrentStockAllocationPercent(
