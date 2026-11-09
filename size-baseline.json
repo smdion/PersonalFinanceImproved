@@ -351,6 +351,7 @@
     "src/server/data/budget-profiles.ts": 37,
     "src/server/data/investments.ts": 632,
     "src/server/data/jobs.ts": 17,
+    "src/server/data/latest-snapshot.ts": 15,
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 38,
     "src/server/data/snapshots.ts": 105,
