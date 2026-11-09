@@ -104,20 +104,16 @@ export const IRS_LIMIT_GROWTH_RATE_MAX = 0.1;
 export const RMD_EXCISE_TAX_RATE = 0.25;
 
 // ---------------------------------------------------------------------------
-// Early-Access Ages (shared by the Tax Buckets analysis tool and
-// the retirement projection engine's withdrawal-eligibility gate —
-// both consume `src/lib/pure/accounts/early-access.ts`'s leaf predicates, which read
-// these constants)
+// Early-Access Ages (read by `src/lib/pure/accounts/early-access.ts`'s predicates)
 // ---------------------------------------------------------------------------
 
 /** Age at/after which separating from an employer grants penalty-free access
  *  to that employer's 401k/403b (IRC §72(t)(2)(A)(v), the "Rule of 55"). */
 export const RULE_OF_55_AGE = 55;
 
-/** Age at which retirement-account withdrawals become penalty-free generally
- *  (and, with the 5-year clock, "qualified"/tax-free for Roth). Against the
- *  engine's whole-year `ageInYear`, it holds from the year the person turns
- *  60, not 59 — intended, not an off-by-one. */
+/** Age retirement-account withdrawals become penalty-free (and, with the 5-year clock, Roth
+ *  "qualified"). Against the engine's whole-year `ageInYear` it holds from the year the person
+ *  turns 60, not 59: intended. */
 export const PENALTY_FREE_AGE = 59.5;
 
 /** Years a Roth conversion must season before it's penalty-free to withdraw
@@ -125,31 +121,21 @@ export const PENALTY_FREE_AGE = 59.5;
  *  is applied per the user's tracked latest-conversion-year, conservatively). */
 export const ROTH_CONVERSION_SEASONING_YEARS = 5;
 
-/** Age at which HSA withdrawals for non-medical expenses stop incurring the
- *  20% penalty (ordinary income tax still applies — this only removes the
- *  penalty, unlike the Medicare-eligibility age which is a separate, later
- *  threshold). Qualified medical withdrawals are always penalty-free and
- *  tax-free at any age, so this only matters for the non-medical case. */
+/** Age HSA non-medical withdrawals stop incurring the 20% penalty (income tax still applies).
+ *  Qualified medical withdrawals are penalty- and tax-free at any age. */
 export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
 
-/** Age at which a taxpayer qualifies for the additional standard deduction
- *  under IRC §63(f)(1) ("65 or older"). A person is treated as 65 for the
- *  whole tax year if they turn 65 by the first day of the following year, but
- *  the projection works in whole years so a simple `age >= 65` test is used.
- *  Separate from the OBBBA senior deduction (2025–2028, MAGI-phased), which
- *  decumulation years add as well (`return-deductions.ts`). */
+/** Age for the IRC §63(f)(1) additional standard deduction, tested as `age >= 65` in whole
+ *  projection years. Separate from the OBBBA senior deduction (2025–2028, MAGI-phased) that
+ *  decumulation years also add (`return-deductions.ts`). */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
-/** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
- *  (IRC §72(t)): every gated account type but HSA, whose non-medical
- *  penalty is 20% (`HSA_NON_MEDICAL_PENALTY_RATE`). Used by
- *  `src/lib/pure/accounts/early-withdrawal-penalty.ts`. */
+/** 10% early-withdrawal penalty (IRC §72(t)) for every gated account type but HSA, whose
+ *  non-medical penalty is `HSA_NON_MEDICAL_PENALTY_RATE`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 
-/** 20% early-withdrawal penalty rate for HSA non-medical distributions
- *  before `HSA_NON_MEDICAL_PENALTY_AGE` (IRC §223(f)(4)) — double the
- *  retirement-account rate above. Real, not a placeholder: this codebase's
- *  own `computeHsaAccess` docblock already names the 20% figure. */
+/** 20% penalty on HSA non-medical distributions before `HSA_NON_MEDICAL_PENALTY_AGE`
+ *  (IRC §223(f)(4)). */
 export const HSA_NON_MEDICAL_PENALTY_RATE = 0.2;
 
 // ---------------------------------------------------------------------------
@@ -187,12 +173,9 @@ export const SIMULATION_RETURN_CLAMP_MAX = 1.0;
  *  decumulation year. */
 export const SIMULATION_SPENDING_STABILITY_THRESHOLD = 0.75;
 
-/** When Lifetime Income Stability's "vs strategy" rate trails Portfolio
- *  Survival by more than this many percentage points, something is
- *  forcing real deviations from the strategy's own plan (RMDs, routing/
- *  liquidity constraints, penalty-avoidance) even though the portfolio
- *  itself survives — a real, if narrow, signal worth flagging urgently
- *  rather than letting it sit as a quiet secondary ring. */
+/** Alert when Lifetime Income Stability's "vs strategy" rate trails Portfolio Survival by
+ *  more than this: something (RMDs, routing, liquidity, penalties) forces deviations from
+ *  the strategy even though the portfolio survives. */
 export const SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
 
 /** Default inflation risk for the Simulation when no preset-specific
@@ -219,11 +202,9 @@ export const SIMULATION_PRESET_KEYS = [
 ] as const;
 export type SimulationPresetKey = (typeof SIMULATION_PRESET_KEYS)[number];
 
-/** The default simulation — one definition for the router's input
- *  defaults, the Retirement page's form + prefetch, and the dashboard's
- *  peeks (which send none of these and so hit the page's run only when the
- *  defaults agree). Coast FIRE's probes run more trials (each probe is a
- *  yes/no at a 90% bar, so its noise matters more). */
+/** The default simulation for the router, the Retirement page and the dashboard's peeks (which
+ *  share the page's run only while these agree). Coast FIRE's probes run more trials: each is
+ *  a yes/no at a 90% bar. */
 export const DEFAULT_SIMULATION = {
   numTrials: SIMULATION_DEFAULT_TRIALS,
   coastFireTrials: 1000,
@@ -322,11 +303,9 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
 // RMD-aware Roth conversion smoothing
 // ---------------------------------------------------------------------------
 
-/** RMD smoothing's ceiling when `rmdSmoothingEnabled` is on and no
- *  `rmdSmoothingMaxBracketTarget` is set: a backstop for input that skips
- *  the UI, which seeds from the household's `rothBracketTarget` so opting in
- *  never visibly changes a rate it already chose. 24% stays below the two
- *  highest ordinary brackets. */
+/** RMD smoothing's ceiling when enabled without `rmdSmoothingMaxBracketTarget`: a backstop
+ *  for input that skips the UI (which seeds from `rothBracketTarget`). 24% stays below the
+ *  two highest ordinary brackets. */
 export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
 
 // ---------------------------------------------------------------------------

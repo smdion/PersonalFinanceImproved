@@ -1,10 +1,5 @@
-// Central withdrawal-strategy configuration — the ONLY place strategy-specific
-// knowledge lives. Everything else imports from here.
-//
-// Philosophy: Config declares, code executes.
-// Nothing in the codebase knows what "Guyton-Klinger" is — it only knows how to
-// process a strategy with properties like `paramFields` and `incomeSource`.
-//
+// Withdrawal-strategy configuration: the ONLY place strategy-specific knowledge lives; the
+// engine only reads properties like `paramFields` and `incomeSource`.
 // References: Morningstar "State of Retirement Income: 2025"
 
 import { DEFAULT_ENDOWMENT_ROLLING_YEARS } from "../constants";
@@ -77,10 +72,9 @@ type WithdrawalStrategyConfig = {
   description: string;
   /** Morningstar paper citation. */
   morningstarRef: string | null;
-  /** How spending is determined:
-   *  - "budget": retirement budget is the primary input (rate is informational)
-   *  - "rate": withdrawal rate × portfolio drives spending (budget is starting point)
-   *  - "formula": spending computed from portfolio via IRS/endowment formula (budget and rate not used) */
+  /** How spending is set: "budget" (the retirement budget; rate informational), "rate"
+   *  (withdrawal rate × portfolio; budget is the start), or "formula" (IRS/endowment formula
+   *  on the portfolio; budget and rate unused). */
   incomeSource: IncomeSource;
   /** Params the engine reads that no field edits, keyed by param name. */
   fixedParams?: Readonly<Record<string, number>>;
@@ -90,17 +84,9 @@ type WithdrawalStrategyConfig = {
   usesWithdrawalRate: boolean;
   /** Whether the strategy uses the Post-Retirement Raise to grow expenses. */
   usesPostRetirementRaise: boolean;
-  /** Whether this strategy's own reactive mechanism (guardrail triggers,
-   *  loss-year detection) requires real year-to-year return VOLATILITY to
-   *  ever activate — as opposed to reacting to something that moves
-   *  smoothly on its own (current balance level, age-based IRS factor, a
-   *  fixed decline schedule). The deterministic single-path projection
-   *  uses one smooth average return with no volatility, so a strategy with
-   *  this true will show a flat, uneventful deterministic Yearly Income
-   *  Stability chart even though its Monte Carlo confidence band carries
-   *  real signal — a real household found this confusing. Used to
-   *  suppress the deterministic bars on that chart specifically for these
-   *  strategies (see spending-stability-chart.tsx). */
+  /** Whether the strategy reacts only to return VOLATILITY (guardrails, loss years), which the
+   *  smooth deterministic projection never has; hides the deterministic bars on the Yearly
+   *  Income Stability chart (spending-stability-chart.tsx). */
   reactsToVolatility: boolean;
   /** Which SpendingCrossYearState fields this strategy reads/writes. */
   crossYearStateKeys: readonly string[];

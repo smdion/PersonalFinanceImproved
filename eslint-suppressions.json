@@ -4165,62 +4165,22 @@
       "count": 1
     }
   },
-  "src/lib/config/tax-limit-keys.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/config/tax-params.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 4
     }
   },
-  "src/lib/config/withdrawal-routing.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/lib/config/withdrawal-strategies.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/constants.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
     }
   },
   "src/lib/constants/settings-keys.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    }
-  },
-  "src/lib/context/privacy-context.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/context/scenario-context.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/crypto.ts": {
