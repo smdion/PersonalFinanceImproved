@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * UnlinkedContributionsBanner — extracted from contribution-accounts.tsx.
- *
- * Renders the amber warning box listing active contribution accounts that are
- * not yet linked to a portfolio performance account, with inline owner +
- * link-to dropdowns.
+ * Amber warning listing active contribution accounts not yet linked to a performance account,
+ * with inline owner and link-to dropdowns.
  */
 
 import React from "react";

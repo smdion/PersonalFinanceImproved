@@ -88,12 +88,9 @@ function groupFormRows(
     const pa = group.rows[0]?.performanceAccountId
       ? perfMap.get(group.rows[0].performanceAccountId)
       : null;
-    // DESIGN.md's owner-prefix rule is a two-part test: the performance
-    // account must be joint (ownerPersonId null) AND sub-rows must carry
-    // different ownerPersonId values. An unlinked group (pa === null) has
-    // no performance account to check jointness against — falls back to
-    // the owner-id-diff check alone, matching groupByPerformanceAccount's
-    // unlinked-group behavior in portfolio-content.tsx.
+    // DESIGN.md's owner-prefix rule: the performance account is joint AND sub-rows have
+    // different ownerPersonIds. An unlinked group (pa === null) has no account to check,
+    // so only the owner-id test applies (as in groupByPerformanceAccount).
     const isJointPerfAccount = pa ? pa.ownerPersonId == null : true;
     const ownerIds = new Set(
       group.rows.map((r: AccountRow & { subLabel: string }) => r.ownerPersonId),
@@ -273,7 +270,7 @@ export function NewSnapshotForm({
     (key: string, field: keyof AccountRow, value: string | number) => {
       setRows((prev) =>
         (prev ?? []).map((r) =>
-          // A typed amount is no longer SimpleFIN's.
+          // A typed amount clears the SimpleFIN `filled` mark.
           r.key === key ? { ...r, [field]: value, filled: undefined } : r,
         ),
       );

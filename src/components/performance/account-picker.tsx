@@ -8,11 +8,8 @@ import type { MasterAccount } from "./types";
 import { Popover } from "@/components/ui/popover";
 
 /**
- * Multi-select account picker for the Performance page's custom filtering
- * feature. Portal + search pattern borrowed from
- * src/components/budget/api-category-picker.tsx, but multi-select and
- * fully controlled — no internal mutations, unlike its single-select
- * ancestor (this component owns no server calls at all).
+ * Multi-select account picker for the Performance page's custom filter. Fully
+ * controlled: it owns no server calls.
  */
 export function AccountPicker({
   masterAccounts,
@@ -31,11 +28,8 @@ export function AccountPicker({
   const visibleAccounts = masterAccounts.filter(
     (m) => showInactive || m.isActive,
   );
-  // Compare against the TRUE total (all master accounts), not just the
-  // currently-visible list — the default selection includes inactive
-  // accounts (see page.tsx), so comparing against a showInactive-filtered
-  // count here would produce a nonsensical "21 of 8" when inactive
-  // accounts are hidden but still selected.
+  // Compare against all master accounts, not the visible list: the default
+  // selection includes inactive accounts, so a filtered count could read "21 of 8".
   const allIds = new Set(masterAccounts.map((m) => m.id));
 
   const groups = new Map<string, MasterAccount[]>();

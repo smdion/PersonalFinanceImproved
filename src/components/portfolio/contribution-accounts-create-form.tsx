@@ -51,11 +51,9 @@ export function CreateAccountForm({
   const [ownershipType, setOwnershipType] = useState<"individual" | "joint">(
     "individual",
   );
-  // Category defaults from the account type (e.g. Brokerage -> Portfolio) and
-  // re-derives whenever the type changes, until the user manually overrides
-  // it — otherwise accounts silently get mistagged (e.g. a taxable brokerage
-  // account left under "Retirement"), which corrupts the savings-rate
-  // breakdown downstream in computeContributionSummary.
+  // Category follows the account type (e.g. Brokerage -> Portfolio) until the
+  // user sets it, so accounts aren't mistagged, which would skew the
+  // savings-rate breakdown in computeContributionSummary.
   const [parentCategory, setParentCategory] = useState<
     "Retirement" | "Portfolio"
   >(getParentCategory(accountType));

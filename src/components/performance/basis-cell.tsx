@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * A Roth basis cell on the Performance table. Basis is per person, and one
- * row can cover an account two people hold, so each person gets their own
- * line (named when there's more than one), editable on its own. The edit
- * field is "<field>:<ownerPersonId>".
+ * A Roth basis cell: basis is per person, so each holder gets their own editable line (named
+ * when there's more than one). The edit field is "<field>:<ownerPersonId>".
  */
 import { useEffect, useRef } from "react";
 import { formatCurrency } from "@/lib/utils/format";

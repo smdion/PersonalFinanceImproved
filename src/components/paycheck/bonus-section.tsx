@@ -67,10 +67,8 @@ function bonusDateValue(month: number, day: number): string {
 }
 
 /**
- * The bonus terms a Salary Profile entry holds — percent, multiplier, this
- * year's actual, the pay date and where it goes. Shared by the Paycheck
- * page's Bonus section and Profiles → Salary, so both edit them the same
- * way (each sends edits through salaryEntryEdit → patchEntry).
+ * A Salary Profile entry's bonus terms (percent, multiplier, this year's actual, pay date,
+ * destination), shared by the Paycheck page and Profiles → Salary; edits go to patchEntry.
  */
 export function BonusTerms({
   terms,
@@ -230,10 +228,9 @@ export function BonusSection({
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
-    /** This year's actual paid-out bonus, pinned on the same Salary Profile
-     *  entry — orthogonal to the formula fields above, which future-year
-     *  retirement projections always use untouched. Null means unpinned:
-     *  the live estimate below uses the formula. */
+    /** This year's actual bonus on the same Salary Profile entry; future-year
+     *  projections always use the formula. Null = the live estimate uses the
+     *  formula too. */
     bonusOverride: number | null;
   };
   /** The contributions the bonus check takes — each account's own

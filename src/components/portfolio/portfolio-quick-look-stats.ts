@@ -1,9 +1,6 @@
 /**
- * derivePortfolioQuickLookStats — pure stats derivation for the Portfolio
- * Quick Look panel. Split out so
- * the component body shrinks and the stats logic is independently testable.
- *
- * Returns null when there are fewer than 2 snapshots (no change to derive).
+ * Pure stats derivation for the Portfolio Quick Look panel. Returns null when there are
+ * fewer than 2 snapshots (no change to derive).
  */
 
 import { MS_PER_DAY } from "@/lib/constants";

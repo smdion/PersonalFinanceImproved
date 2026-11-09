@@ -7,17 +7,13 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE, DEFAULT_RETURN_RATE } from "@/lib/constants";
 import type { ChainedReturn } from "@/lib/pure/investments/returns";
 
-/** Long-run nominal S&P 500 average (~10%, per Ibbotson/SBBI data since
- *  1926) — the "beating the market" reference point. Not a codebase
- *  constant like DEFAULT_RETURN_RATE/DEFAULT_INFLATION_RATE since it's
- *  purely informational here, not used in any calculation. */
+/** Long-run nominal S&P 500 average (~10%, Ibbotson/SBBI since 1926), the
+ *  "beating the market" reference. Informational only, not used in any calculation. */
 const MARKET_AVERAGE_NOMINAL_RETURN = 0.1;
 
 /**
- * CAGR/cumulative headline for a multi-year filtered account view. Only
- * rendered by the caller when the selected range spans >1 year — a
- * single-year/YTD selection uses the existing per-row return display
- * instead (see performance-table.tsx), no chaining involved.
+ * CAGR/cumulative headline for a multi-year filtered view; the caller renders it only when
+ * the range spans more than one year.
  */
 export function FilteredSummary({
   chained,

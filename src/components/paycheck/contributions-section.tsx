@@ -51,17 +51,8 @@ export function ContributionsSection({
 }: {
   rawContribs: RawContrib[];
   /**
-   * Per-contribution annual/limit figures, already resolved by the caller's
-   * shared paycheck hook with the SAME Contribution/Salary Profile ids the
-   * rest of the page uses.
-   *
-   * This section used to run its own `contribution.computeSummary` query
-   * keyed on the raw globally-active contribution setting while using the
-   * Plan-pin-aware hook for the salary axis. That made the cards ignore an
-   * active Plan's Contribution Profile pin, and made the page's own
-   * Contribution Profile dropdown move the pay stub without moving these
-   * cards — two different profiles rendered in one view. Never reintroduce a
-   * query here: this data arrives as a prop.
+   * Per-contribution annual/limit figures from the caller's shared paycheck hook, on the
+   * same profile ids as the rest of the page. Never query here: it must stay a prop.
    */
   perContribData: PerContribView[];
   onUpdateContrib: (id: number, field: string, value: string) => void;
@@ -89,10 +80,9 @@ export function ContributionsSection({
   /** Sandbox/preview mode — cards are read-only and the "add account"
    *  action is omitted entirely. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — contributionValue/Method
-   *  write into the viewed Contribution Profile's active fields when
-   *  unlocked, so only that field gates on it; delete/toggle/institution
-   *  edits are unrelated and keep gating on `readOnly` alone. */
+  /** Mirrors PersonPaycheck's salary padlock for contributionValue/Method only
+   *  (they write the viewed Contribution Profile's active fields); other edits
+   *  gate on `readOnly` alone. */
   contribValueReadOnly?: boolean;
 }) {
   const [addingAccount, setAddingAccount] = useState(false);

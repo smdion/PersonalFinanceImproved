@@ -6,10 +6,8 @@ import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import type { PerfField } from "@/lib/pure/investments/performance-annotations";
 
 /**
- * A Performance account row's reconciliation checks, note and estimated
- * figures at a glance: amber with the count while any check is open, a
- * quiet mark when there's only a note, estimates or accepted gaps. Hover for
- * the details; click (editors) to open the row's notes and checks.
+ * A Performance row's checks, note and estimates at a glance: amber with the count while any
+ * check is open, else a quiet mark. Hover for details; editors click to open notes and checks.
  */
 export function CheckBadge({
   checks,

@@ -21,10 +21,9 @@ type BasisFormRow = {
   original: { contributionBasis: string; conversionBasis: string };
 };
 
-/** Bulk Roth basis entry — mirrors UpdatePerformanceForm's batch-save shape,
- *  but for the 3 basis fields only. Reuses taxBuckets.batchUpdateRothBasis
- *  (the same mutation Tax Buckets' own bulk save uses) rather than a second
- *  write path for account_basis rows. */
+/** Bulk Roth basis entry: UpdatePerformanceForm's batch-save shape for the 3
+ *  basis fields, writing through taxBuckets.batchUpdateRothBasis (the one
+ *  write path for account_basis rows). */
 export function UpdateBasisForm({
   currentYear,
   accountRows,

@@ -15,10 +15,8 @@ export const deductionDisplayName = (name: string) =>
   ACRONYMS[name.toLowerCase()] ?? name;
 
 /**
- * A line name used both before and after tax (a 401(k) split between
- * traditional and Roth) is ambiguous — this says which one a line is.
- * Undefined when the name is used once. The pay stub and the Bonus
- * section's account list both name lines with it.
+ * Says which side a line is when its name is used both before and after tax (a 401(k) split
+ * traditional/Roth). Undefined when the name is used once.
  */
 export function splitLineLabel(
   name: string,

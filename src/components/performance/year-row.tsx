@@ -49,12 +49,9 @@ export function YearRow({
   onOpenNotes,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
-  // Per-account, data-driven gate — never assume a whole category is pure
-  // ESPP discount (Brokerage can mix in cash-type sub-types like
-  // mega-backdoor/after-tax). Rollup categories (Retirement/Portfolio) are
-  // explicitly excluded: they blend discount-type and match-type employer
-  // money, and showing this annotation there would need a visibly-labeled
-  // basis toggle (deferred), not a silent always-on figure.
+  // Per-account gate, never by category (Brokerage can mix in after-tax sub-types).
+  // Rollup categories are excluded: they blend discount- and match-type employer
+  // money, which would need a labeled basis toggle rather than a silent figure.
   const discountAccountsForYear = accounts.filter((a) =>
     isDiscountBasisEmployerContribution(a.accountType ?? "", a.subType),
   );
@@ -75,12 +72,9 @@ export function YearRow({
         )} ${CASH_BASIS_HELP}`}
       />
     ) : undefined;
-  // Year-level basis rollups — sums over this year's real accounts, not a
-  // proxy off AnnualRow's lifetime fields (those blend account types that
-  // don't track basis the same way). Shown regardless of which category tab
-  // is active — the tabs are filters over the same account data, not a
-  // reason to hide these columns; only account type gates whether a given
-  // row/account actually carries a basis figure.
+  // Year-level basis rollups over this year's real accounts, not AnnualRow's
+  // lifetime fields (which blend account types). Shown on every category tab;
+  // only account type decides whether an account carries a basis figure.
   const costBasisAccountsForYear = accounts.filter((a) =>
     tracksCostBasis(a.accountType ?? ""),
   );

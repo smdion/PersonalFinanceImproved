@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * What SimpleFIN knows about one tracked account, inside its card in
- * Account & Contribution Settings: link status and live balance, the funds
- * it holds (with the household's fund-fact controls), its asset mix and
- * yearly fee, and whether deposits match the paycheck setup.
+ * What SimpleFIN knows about one tracked account, in its settings card: link status, live
+ * balance, funds held (with fund-fact controls), asset mix, fee and whether deposits match.
  */
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { trpc, type RouterOutputs } from "@/lib/trpc";

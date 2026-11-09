@@ -10,13 +10,8 @@ import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
 import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 
 /**
- * W-4 tax-input controls. Deliberately a separate section from
- * BonusSection, so they're always reachable.
- *
- * These fields live on the Salary Profile entry (see SalaryEntry in
- * lib/db/salary-entry-defaults.ts), the same axis salary and bonus terms are on —
- * so, like BonusSection, they gate on `salaryReadOnly` as well as
- * `readOnly`.
+ * W-4 tax-input controls, separate from BonusSection so they're always reachable. They live on
+ * the Salary Profile entry, so they gate on `salaryReadOnly` as well as `readOnly`.
  */
 export function TaxWithholdingSection({
   job,

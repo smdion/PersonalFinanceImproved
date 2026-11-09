@@ -49,18 +49,16 @@ export function ContributionRow({
   people: { id: number; name: string }[];
   jobs: { id: number; employerName: string }[];
   accountTypeOptions: { value: string; label: string }[];
-  /** Name of the globally-active Contribution Profile, or null if none is
-   *  resolvable — this account carries no value of its own; whatever this
-   *  profile has (or doesn't have) for it is the only real answer to
-   *  "why does this row look the way it does." */
+  /** Name of the globally-active Contribution Profile, or null if none
+   *  resolves; the account has no value of its own, so this profile's entry
+   *  explains the row. */
   activeProfileName: string | null;
   /** That profile's raw active-fields entry for this specific account, or
    *  null if it has none. */
   activeProfileFields: Record<string, unknown> | null;
-  /** Set when this row has no match config of its own but a sibling split
-   *  of the same account does — that sibling's match is combined across
-   *  both splits before capping, so this row still earns a real,
-   *  proportional share (see computeGroupedEmployerMatch). */
+  /** Set when a sibling split of the same account holds the match config: its
+   *  match covers both splits combined, so this row still earns a proportional
+   *  share (see computeGroupedEmployerMatch). */
   sharedMatchFrom?: ContribRow;
   onUpdate?: (updates: Record<string, unknown>) => void;
 }) {

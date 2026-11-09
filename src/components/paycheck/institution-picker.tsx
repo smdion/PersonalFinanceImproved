@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Self-contained institution select-or-create picker for contribution
- * accounts. Filters compatible performance accounts the same way
- * UnlinkedContribsBanner does (owner match or joint/null), and offers an
- * inline "+ New institution" flow via the existing CreateAccountForm so
- * users never have to leave the contribution-account form to link one.
+ * Institution select-or-create picker for contribution accounts: filters compatible
+ * performance accounts and offers inline "+ New institution" via CreateAccountForm.
  */
 
 import { useState } from "react";
@@ -41,12 +38,9 @@ export function InstitutionPicker({
     },
   });
 
-  // Same owner AND same account type — an institution row is a specific
-  // (owner, type, institution) account, not a bank/broker in the abstract,
-  // so a 401k contribution can only ever link to one of that owner's 401k
-  // rows. Dormant institutions (e.g. a former employer's 401k, no longer
-  // contributed to) are excluded too, but never hide the currently-selected
-  // value, so re-opening an existing link doesn't silently blank the select.
+  // Same owner AND account type: an institution row is one (owner, type, institution)
+  // account. Dormant ones (not contributed to) are excluded, except the selected value,
+  // so re-opening an existing link doesn't blank the select.
   const compatible = (accounts ?? []).filter(
     (pa) =>
       (pa.ownerPersonId === personId || pa.ownerPersonId === null) &&

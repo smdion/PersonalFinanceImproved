@@ -95,11 +95,9 @@ export type ContributionCardProps = {
   /** Sandbox/preview mode — in-place editing is disabled and the delete
    *  action is omitted entirely rather than rendered inert. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — contributionValue writes into
-   *  the viewed Contribution Profile's active fields when unlocked (see
-   *  writeOverride in paycheck/paycheck-content.tsx), so only that one field gates on
-   *  it. Delete/toggle/institution edits are unrelated to the profile and
-   *  keep gating on `readOnly` alone. */
+  /** Mirrors PersonPaycheck's salary padlock for contributionValue only (it
+   *  writes the viewed Contribution Profile's active fields); other edits gate
+   *  on `readOnly` alone. */
   contributionValueReadOnly?: boolean;
 };
 

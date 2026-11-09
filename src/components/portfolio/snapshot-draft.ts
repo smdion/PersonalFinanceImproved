@@ -12,20 +12,17 @@ export type AccountRow = {
   amount: string; // editable string
   previousAmount: number; // from latest snapshot, 0 for new rows
   performanceAccountId: number | null; // FK to performance_accounts master
-  /** True when the linked master account is closed — the server always
-   *  records this row's balance as $0 regardless of what's submitted (see
-   *  resolveSnapshotAccountAmounts), so the row is shown/held at $0 here
-   *  too rather than displaying a stale total the save won't match. */
+  /** True when the linked master account is closed: the server records $0
+   *  whatever is submitted (resolveSnapshotAccountAmounts), so the row is
+   *  held at $0 here too. */
   isClosedAccount: boolean;
   /** Set when the amount came from a SimpleFIN fill. */
   filled?: true;
 };
 
 // ── Local draft (browser only) ──────────────────────────────────────────
-// The new-snapshot form has ~30 balance fields; a draft lets you stop
-// partway and resume. Keyed by snapshot date so starting a snapshot for a
-// new date never inherits a stale draft. One draft per date, per browser,
-// not shared across devices/users (accepted limitation, shipped v0.8.2).
+// Lets the ~30-field snapshot form be resumed. Keyed by snapshot date, so a new date
+// never inherits a stale draft; one per date per browser, not shared across devices.
 
 const DRAFT_PREFIX = "pf-snapshot-draft:";
 /** The draft shape's stamp; a draft without it is dropped, not read. */
@@ -126,10 +123,9 @@ function draftRowKey(r: DraftRowIdentity): string {
   ]);
 }
 
-/** Overlay a draft's typed amounts onto a freshly-built row set — keeps
- *  the CURRENT account set (added masters appear, removed ones are gone)
- *  and only carries the draft's amounts + notes forward. Rows that share
- *  an identity are matched in order. */
+/** Overlay a draft's typed amounts and notes onto a fresh row set, keeping
+ *  the current accounts (added appear, removed are gone). Rows sharing an
+ *  identity match in order. */
 export function reconcileDraft(
   base: AccountRow[],
   draft: SnapshotDraft,

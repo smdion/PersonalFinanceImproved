@@ -385,9 +385,8 @@ export function ContributionSnapshot() {
                               </span>
                             )}
                           </div>
-                          {/* What to fix — the configured contribution is
-                              over the limit (figures show the capped
-                              amount), or the account needs an owner or an
+                          {/* What to fix: contribution over the limit (figures
+                              show the capped amount), or a missing owner or
                               HSA coverage type. */}
                           {at.capMessages.map((m) => (
                             <p

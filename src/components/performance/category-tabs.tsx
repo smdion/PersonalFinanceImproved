@@ -65,15 +65,9 @@ type BasisToggleGroupProps = {
   onToggleOnlyBasis: () => void;
 };
 
-/** Independent show/hide toggles for the basis columns (Cost Basis/
- *  Contribution Basis and Unrealized/Conversion Basis) — not a category
- *  filter like TabGroup (those change which accounts show; these change
- *  which columns show for the same accounts), so both can be on/off at
- *  once rather than exclusive. Hidden by default: most views don't need
- *  basis detail, and the columns add width to every row. "Only" is a third,
- *  independent toggle — it hides every OTHER column (Beginning through
- *  Return) so just Year + whichever of Basis/Unrealized are on show,
- *  without changing what Basis/Unrealized themselves are set to. */
+/** Independent toggles for the basis columns (columns, not accounts, so both can be on; off by
+ *  default). "Only" hides every other column (Beginning through Return) without changing the
+ *  Basis/Unrealized toggles. */
 function BasisToggleGroup({
   showBasis,
   onToggleBasis,

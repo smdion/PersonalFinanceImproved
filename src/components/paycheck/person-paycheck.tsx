@@ -43,12 +43,8 @@ import type {
 } from "@/lib/pure/paycheck/paycheck.types";
 
 /**
- * Everything in this card that writes. Expressed as ONE discriminated prop
- * rather than a dozen individually-optional callbacks, so a read-only caller
- * says so once and can't forget one of them.
- *
- * `kind: "readonly"` disables in-place editing throughout the tree and omits
- * the add/delete affordances entirely.
+ * Everything in this card that writes, as one discriminated prop so a read-only caller says so
+ * once. `kind: "readonly"` disables in-place editing and omits add/delete affordances.
  */
 type PersonPaycheckInteraction =
   | {
@@ -132,14 +128,9 @@ export function PersonPaycheck({
     id: number;
     employerName: string;
     title: string | null;
-    /** These 7 fields no longer live on the raw job row — they resolve
-     *  through the active Salary Profile's entry for this job (see
-     *  SalaryEntry in lib/db/salary-entry-defaults.ts). computePaycheckSummary
-     *  still merges them flat onto `job` for the client
-     *  (the same pattern use-paycheck-person-views.ts's `job: any` and
-     *  household-income-card.tsx already rely on), so they're read the
-     *  same way here as before the migration — only their write path
-     *  changed (paycheck/paycheck-content.tsx saves them with salaryProfile.patchEntry). */
+    /** These fields resolve through the active Salary Profile's entry for this
+     *  job (SalaryEntry); computePaycheckSummary merges them flat onto `job`.
+     *  Writes go through salaryProfile.patchEntry. */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     personId: number;
@@ -204,10 +195,9 @@ export function PersonPaycheck({
   scrollToContribs?: boolean;
   sharedGroupOrder?: string[];
   interaction: PersonPaycheckInteraction;
-  /** Contribution accounts belonging to this person/job with no active
-   *  value under the current Contribution Profile — see
-   *  getIncompleteContribAccountIds. Surfaced as a badge, never silently
-   *  dropped from the total. */
+  /** This person/job's contribution accounts with no active value under the
+   *  current Contribution Profile (getIncompleteContribAccountIds); shown as a
+   *  badge, never silently dropped from the total. */
   incompleteAccountIds?: number[];
   /** This job's other-pay lines with their per-check amounts. */
   earningRows?: EarningRow[];
@@ -300,10 +290,8 @@ export function PersonPaycheck({
         </div>
       </div>
 
-      {/* Body — two balanced columns so neither leaves a gap beside the
-          other: the tall pay stub with the W-4 and extra-paycheck settings
-          under it; the year's totals with the bonus and other pay. Same
-          order for every person. */}
+      {/* Body: two balanced columns, the pay stub with W-4 and extra-paycheck
+          settings, then the year's totals with bonus and other pay. */}
       <div className="grid grid-cols-1 content-start gap-4 p-5 md:grid-cols-2">
         <div className="space-y-4">
           <PayStub

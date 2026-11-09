@@ -1237,9 +1237,6 @@
   "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/onboarding/admin-step.tsx": {
@@ -1326,19 +1323,11 @@
       "count": 2
     }
   },
-  "src/components/paycheck/bonus-section.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/components/paycheck/contrib-account-form.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 15
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-abbreviation": {
@@ -1379,9 +1368,6 @@
     },
     "max-lines-per-function": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/paycheck/contributions-section.tsx": {
@@ -1389,9 +1375,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
       "count": 2
     },
     "ratchet/no-abbreviation": {
@@ -1402,17 +1385,11 @@
     }
   },
   "src/components/paycheck/deduction-form.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
   "src/components/paycheck/deduction-row.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -1434,21 +1411,12 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
   "src/components/paycheck/other-pay-section.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -1470,9 +1438,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -1487,33 +1452,16 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 15
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/components/paycheck/roth-route-select.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/paycheck/tax-withholding-section.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/paycheck/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 3
     },
@@ -1536,9 +1484,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 5
     },
@@ -1547,9 +1492,6 @@
     }
   },
   "src/components/performance/basis-cell.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -1558,17 +1500,11 @@
     }
   },
   "src/components/performance/category-tabs.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     }
   },
   "src/components/performance/check-badge.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -1579,15 +1515,7 @@
     }
   },
   "src/components/performance/filtered-account-table.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 2
-    }
-  },
-  "src/components/performance/filtered-summary.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
@@ -1603,9 +1531,6 @@
     }
   },
   "src/components/performance/past-year-edit-dialog.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -1631,9 +1556,6 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-lint-violation-ok": {
@@ -1678,9 +1600,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-jsx-iife": {
       "count": 1
     }
@@ -1688,9 +1607,6 @@
   "src/components/plans/compare-plans.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-raw-button": {
       "count": 1
@@ -1706,9 +1622,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -1717,9 +1630,6 @@
     }
   },
   "src/components/portfolio/account-live-data.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -1729,9 +1639,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-lint-violation-ok": {
@@ -1754,9 +1661,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -1775,9 +1679,6 @@
       "count": 3
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-config-reach-through": {
@@ -1827,9 +1728,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-abbreviation": {
       "count": 2
     },
@@ -1847,13 +1745,7 @@
     "max-lines-per-function": {
       "count": 3
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-jsx-iife": {
@@ -1890,9 +1782,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
@@ -1912,12 +1801,6 @@
     }
   },
   "src/components/portfolio/snapshot-draft.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -1931,9 +1814,6 @@
     }
   },
   "src/components/portfolio/unlinked-contribs-banner.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 3
     }

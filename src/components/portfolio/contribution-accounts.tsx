@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Top-level account and contribution settings panel.
- *
- * Fetches all portfolio data via tRPC and orchestrates CRUD mutations via
- * useContributionAccountsMutations. Renders the collapsible panel with
- * UnlinkedContributionsBanner + AccountCard list.
+ * Account and contribution settings panel: fetches portfolio data and runs CRUD via
+ * useContributionAccountsMutations; renders the unlinked-contributions banner and account cards.
  */
 
 import React, { useRef, useState, useMemo } from "react";
@@ -65,12 +62,9 @@ export function ContributionAccountsSettings() {
     return m;
   }, [holdingsOverview]);
 
-  // Employer-match/auto-maximize fields on a contribution account are
-  // profile-ownable (see contribAccountActiveFieldsSchema) — when a
-  // Contribution Profile is active, editing them here must write into that
-  // same profile entry the Paycheck/Budget pages write into, not the raw
-  // account row, or an edit made here would be silently shadowed by the
-  // active profile everywhere else in the app.
+  // Match/auto-maximize fields are profile-ownable: with a Contribution Profile
+  // active, edits here write into its entry (as Paycheck/Budget do), not the
+  // account row, which the active profile would shadow.
   const [storedActiveContributionProfileId] = useActiveContributionProfile();
   const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
@@ -82,11 +76,8 @@ export function ContributionAccountsSettings() {
       activeProfileId: storedActiveContributionProfileId,
     },
   );
-  // Powers each contribution row's "$X in <profile name>" status line —
-  // the account itself carries no value, only the active Contribution
-  // Profile's own entry does (see applyContribActiveFields), and that fact
-  // otherwise lives entirely on the Budget page, two navigations away from
-  // where a user would actually notice a row behaving unexpectedly.
+  // Powers each row's "$X in <profile name>" status line: the account carries
+  // no value, only the active Contribution Profile's entry does.
   const { data: contributionCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const activeProfileName =

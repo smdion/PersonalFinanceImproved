@@ -80,9 +80,7 @@ export function AccountBalanceOverview() {
       .map(([inst, amount]) => ({ label: inst, amount: amount }));
 
     // --- Per Person (detail: person + taxType) ---
-    // Keyed by raw ownerPersonId (not the rendered display name) — person
-    // names have no DB uniqueness constraint, so two different people could
-    // collide onto the same string key.
+    // Keyed by ownerPersonId, not display name: names aren't unique in the DB.
     const byPersonTaxType = new Map<string, { name: string; amount: number }>();
     for (const a of accounts) {
       const name = personDisplayName(a.ownerPersonId, peopleMap);

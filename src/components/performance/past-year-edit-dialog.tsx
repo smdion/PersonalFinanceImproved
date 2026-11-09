@@ -38,10 +38,8 @@ function ChangeList({ changes }: { changes: Change[] }) {
 }
 
 /**
- * Saving a figure in a past year: shows everything it moves before writing
- * — the row (its gain follows when it balanced), next year's beginning (if
- * it started at this ending), the year's and later years' totals — and any
- * check the edit leaves.
+ * Saving a past-year figure: before writing, shows everything it moves (the row, next year's
+ * beginning, this and later years' totals) and any check the edit leaves.
  */
 export function PastYearEditDialog({
   account,

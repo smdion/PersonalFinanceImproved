@@ -1,22 +1,9 @@
 "use client";
 
 /**
- * Full-field contribution-account create form — the one complete surface
- * for `settings.contributionAccounts.create`'s entire field set. Mirrors
- * the field set and conditional-visibility logic already proven in
- * ContributionRow's edit panel (contribution-accounts-contrib-row.tsx),
- * plus the three fields that panel doesn't need because it edits an
- * account already scoped inside one institution's card: institution
- * (performanceAccountId), label, and subType.
- *
- * No Value/Method fields here — an account is purely structural.
- * contributionValue/contributionMethod are ALWAYS a Contribution Profile's
- * active-field entry, set afterward in the Contribution Profile editor, not
- * at creation time (see applyContribActiveFields — accounts carry no value
- * of their own, no fallback).
- *
- * Used by What-If's "Make real", the Contribution Profiles tab's
- * "+ Add Account", and the Paycheck page's create flow.
+ * Create form for a contribution account's structural fields: ContributionRow's edit fields
+ * plus institution, label and subType. No Value/Method: those are always a Contribution
+ * Profile's active fields, set afterward (see applyContribActiveFields).
  */
 
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";

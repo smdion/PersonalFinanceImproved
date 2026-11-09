@@ -17,10 +17,8 @@ type FilteredYearRow = {
 };
 
 /**
- * Read-only per-year table for an ad hoc account selection — the custom
- * filter isn't a stored category, so there's no lifetime/edit machinery to
- * hook up here (unlike performance-table.tsx, which renders real stored
- * annual rows and supports inline editing).
+ * Read-only per-year table for an ad hoc account selection: the custom filter isn't a stored
+ * category, so there's no lifetime or edit machinery.
  */
 export function FilteredAccountTable({ rows }: { rows: FilteredYearRow[] }) {
   if (rows.length === 0) {
