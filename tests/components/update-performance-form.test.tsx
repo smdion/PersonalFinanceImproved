@@ -96,7 +96,7 @@ describe("UpdatePerformanceForm", () => {
   });
 
   it("fills from SimpleFIN and saves what the fill counted", () => {
-    setQuery("investments.listPerformanceFills", {
+    setQuery("investments.listPerformanceSuggestions", {
       year: 2026,
       accounts: [
         {
@@ -192,7 +192,7 @@ describe("UpdatePerformanceForm", () => {
   });
 
   it("keeps a figure already edited in the form when filling", () => {
-    setQuery("investments.listPerformanceFills", {
+    setQuery("investments.listPerformanceSuggestions", {
       year: 2026,
       accounts: [
         {

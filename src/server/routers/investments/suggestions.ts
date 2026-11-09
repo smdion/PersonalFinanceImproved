@@ -136,7 +136,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * The year's Performance rows with what SimpleFIN has seen that no saved
    * fill has counted yet, added onto the stored figures.
    */
-  listPerformanceFills: portfolioProcedure
+  listPerformanceSuggestions: portfolioProcedure
     .input(z.object({ year: z.number().int() }))
     .query(async ({ ctx, input }) => ({
       year: input.year,
@@ -163,7 +163,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * stored figures; money out of a Roth account reduces them (contributions
    * first, then conversions).
    */
-  listBasisFills: portfolioProcedure
+  listBasisSuggestions: portfolioProcedure
     .input(z.object({ year: z.number().int() }))
     .query(async ({ ctx, input }) => {
       const [basisRows, coverage, context, mix, ledger, flows, priorRows] =

@@ -298,11 +298,11 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "investments.getHoldingsOverview" },
   { path: "investments.suggestSnapshot" },
   {
-    path: "investments.listPerformanceFills",
+    path: "investments.listPerformanceSuggestions",
     input: () => ({ year: 2026 }),
   },
   { path: "investments.computeSavingsThisYear" },
-  { path: "investments.listBasisFills", input: () => ({ year: 2026 }) },
+  { path: "investments.listBasisSuggestions", input: () => ({ year: 2026 }) },
   { path: "investments.computeAccountInsights" },
   { path: "investments.getLiveSinceSnapshot" },
   {

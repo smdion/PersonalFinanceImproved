@@ -40,7 +40,7 @@ export function UpdateBasisForm({
     onSuccess: onSaved,
   });
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.listBasisFills.useQuery(
+  const { data: suggestions } = trpc.investments.listBasisSuggestions.useQuery(
     { year: currentYear },
     { retry: false },
   );

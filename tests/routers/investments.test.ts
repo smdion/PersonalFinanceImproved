@@ -420,7 +420,9 @@ describe("investments router", () => {
       /Example Old Plan/,
     );
     // A Performance fill leaves it out instead of counting new money.
-    const fill = await ctx.caller.investments.listPerformanceFills({ year });
+    const fill = await ctx.caller.investments.listPerformanceSuggestions({
+      year,
+    });
     const receiving = fill.accounts.find((x) =>
       x.leftOut?.from.includes("Example Old Plan"),
     );
@@ -452,7 +454,7 @@ describe("investments router", () => {
           other.caller.investments.getHoldingsOverview(),
         ).rejects.toThrow();
         await expect(
-          other.caller.investments.listPerformanceFills({ year: 2026 }),
+          other.caller.investments.listPerformanceSuggestions({ year: 2026 }),
         ).rejects.toThrow();
       } finally {
         other.cleanup();

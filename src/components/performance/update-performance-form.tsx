@@ -40,7 +40,7 @@ export function UpdatePerformanceForm({
   });
 
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.listPerformanceFills.useQuery(
+  const { data: found } = trpc.investments.listPerformanceSuggestions.useQuery(
     { year: currentYear },
     { retry: false },
   );
@@ -188,13 +188,13 @@ export function UpdatePerformanceForm({
    * counted yet. Fields already edited in this form keep the edit.
    */
   const fillFromSimplefin = () => {
-    if (!rows || !suggestions) return;
+    if (!rows || !found) return;
     const byId = new Map(
-      suggestions.accounts.map((a) => [a.accountPerformanceId, a]),
+      found.accounts.map((a) => [a.accountPerformanceId, a]),
     );
     const notes = new Map<number, string>();
     const record = {
-      year: suggestions.year,
+      year: found.year,
       baselines: {} as Record<string, string>,
       counted: {} as Record<string, string>,
       estimatedThrough: {} as Record<string, string>,
@@ -363,7 +363,7 @@ export function UpdatePerformanceForm({
 
   return (
     <div className="space-y-4">
-      {suggestions && suggestions.accounts.length > 0 && (
+      {found && found.accounts.length > 0 && (
         <div className="rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
           <div className="flex flex-wrap items-center gap-2">
             <span>
