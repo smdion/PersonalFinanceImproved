@@ -94,6 +94,21 @@ describe("resolveAccumulationConfig", () => {
     expect(config2029.routingMode).toBe(defaults.routingMode);
   });
 
+  it("a reset year resolves exactly as a year with no overrides", () => {
+    const overrides: AccumulationOverride[] = [
+      {
+        year: 2025,
+        contributionRate: 0.5,
+        accountCaps: { "401k": 15000 },
+        taxTypeCaps: { roth: 7000 },
+      },
+      { year: 2028, reset: true },
+    ];
+    expect(resolveAccumulationConfig(2029, defaults, overrides)).toEqual(
+      resolveAccumulationConfig(2029, defaults, []),
+    );
+  });
+
   it("ignores overrides for future years", () => {
     const overrides: AccumulationOverride[] = [
       { year: 2030, contributionRate: 0.9 },
@@ -201,6 +216,24 @@ describe("resolveDecumulationConfig", () => {
     const config2056 = resolveDecumulationConfig(2056, defaults, overrides);
     expect(config2056.withdrawalRoutingMode).toBe(
       defaults.withdrawalRoutingMode,
+    );
+  });
+
+  it("a reset year resolves exactly as a year with no overrides", () => {
+    const overrides: DecumulationOverride[] = [
+      {
+        year: 2050,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalSplits: { "401k": 0.9 },
+        withdrawalAccountCaps: { ira: 20000 },
+        rothConversionTarget: 0.22,
+        rmdSmoothingMaxBracketTarget: 0.32,
+        avoidPenalizedWithdrawals: false,
+      },
+      { year: 2055, reset: true },
+    ];
+    expect(resolveDecumulationConfig(2056, defaults, overrides)).toEqual(
+      resolveDecumulationConfig(2056, defaults, []),
     );
   });
 

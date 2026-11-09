@@ -221,7 +221,7 @@
   },
   "src/lib/pure/engine/override-resolution.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": {
