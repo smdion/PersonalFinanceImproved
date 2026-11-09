@@ -40,6 +40,7 @@ function makeSettings(overrides: Record<string, unknown> = {}) {
     ...NULL_STRATEGY_PARAMS,
     withdrawalRate: "0.04",
     withdrawalStrategy: "fixed",
+    withdrawalRoutingMode: "bracket_filling",
     ...overrides,
   } as Parameters<typeof buildDecumulationDefaults>[0];
 }

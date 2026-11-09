@@ -12,7 +12,6 @@ import { eq } from "drizzle-orm";
 import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
 import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
-import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { DecumulationDefaults } from "@/lib/pure/engine/types";
 import {
@@ -167,7 +166,7 @@ export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
     withdrawalStrategy: string;
-    withdrawalRoutingMode?: string | null;
+    withdrawalRoutingMode: string;
     withdrawalOrder?: string[] | null;
     withdrawalSplits?: Record<string, number> | null;
     rmdExcessHandling?: string | null;
@@ -188,16 +187,14 @@ export function buildDecumulationDefaults(
     withdrawalRate: toNumber(settings.withdrawalRate),
     // Client override wins when the caller sent one (the Retirement page's
     // per-session Configure toggle, once the user touches it); otherwise the
-    // persisted `retirement_settings.withdrawal_routing_mode`;
-    // "bracket_filling" only if that's missing (pre-migration row). The ONE
-    // place that resolves the mode — every caller (computeProjection,
-    // Monte Carlo, Tax Optimization) goes through this function, so all
-    // read the same value.
+    // persisted `retirement_settings.withdrawal_routing_mode` (NOT NULL,
+    // default "bracket_filling"). The ONE place that resolves the mode —
+    // every caller (computeProjection, Monte Carlo, Tax Optimization) goes
+    // through this function, so all read the same value.
     withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
-      settings.withdrawalRoutingMode ??
-      DEFAULT_WITHDRAWAL_ROUTING_MODE) as DecumulationDefaults["withdrawalRoutingMode"],
-    // Same three-tier resolution as `withdrawalRoutingMode` above: a
-    // touched-session client override wins, else the household's persisted
+      settings.withdrawalRoutingMode) as DecumulationDefaults["withdrawalRoutingMode"],
+    // Like `withdrawalRoutingMode` above, a touched-session client
+    // override wins, else the household's persisted
     // `retirement_settings.withdrawal_order` / `.withdrawal_splits`, else
     // the config default. A NULL DB column means "never customized" and
     // falls through to the config default.
