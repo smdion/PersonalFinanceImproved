@@ -148,6 +148,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">From Year</label>
             <select
+              aria-label="From Year"
               value={yoyFrom}
               onChange={(e) => setYoyFrom(Number(e.target.value))}
               className="border-strong rounded border px-2 py-1 text-sm"
@@ -163,6 +164,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">To Year</label>
             <select
+              aria-label="To Year"
               value={yoyTo}
               onChange={(e) => setYoyTo(Number(e.target.value))}
               className="border-strong rounded border px-2 py-1 text-sm"
@@ -183,6 +185,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">From</label>
             <input
+              aria-label="From"
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
@@ -192,6 +195,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">To</label>
             <input
+              aria-label="To"
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}

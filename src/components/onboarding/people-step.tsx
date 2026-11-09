@@ -106,6 +106,7 @@ export function PeopleStep({
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
           <input
+            aria-label="Name"
             type="text"
             placeholder="Name"
             value={name}
@@ -120,6 +121,7 @@ export function PeopleStep({
         </div>
         <div>
           <input
+            aria-label="Birth year"
             type="number"
             placeholder="Birth year"
             value={birthYear}

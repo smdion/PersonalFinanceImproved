@@ -170,6 +170,7 @@ export function renderUnmappedTracking(
             {availableLocal.length > 0 && (
               <div className="flex items-center gap-1 pl-14">
                 <select
+                  aria-label="Link to existing account"
                   defaultValue=""
                   onChange={(e) => {
                     if (!e.target.value) return;

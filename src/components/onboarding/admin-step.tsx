@@ -51,6 +51,7 @@ export function AdminStep({
             Display Name
           </label>
           <input
+            aria-label="Display Name"
             type="text"
             value={admin.name}
             onChange={(e) => update("name", e.target.value)}
@@ -65,6 +66,7 @@ export function AdminStep({
             Email
           </label>
           <input
+            aria-label="Email"
             type="email"
             value={admin.email}
             onChange={(e) => update("email", e.target.value)}
@@ -79,6 +81,7 @@ export function AdminStep({
             Password
           </label>
           <input
+            aria-label="Password"
             type="password"
             value={admin.password}
             onChange={(e) => update("password", e.target.value)}
@@ -93,6 +96,7 @@ export function AdminStep({
             Confirm Password
           </label>
           <input
+            aria-label="Confirm Password"
             type="password"
             value={admin.confirmPassword}
             onChange={(e) => update("confirmPassword", e.target.value)}

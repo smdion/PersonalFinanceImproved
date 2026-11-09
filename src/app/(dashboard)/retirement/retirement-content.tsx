@@ -219,6 +219,7 @@ export function RetirementContent() {
         <div className="mb-3 flex items-center gap-2 print:hidden">
           <label className="text-muted text-xs">Portfolio Snapshot:</label>
           <select
+            aria-label="Portfolio Snapshot"
             className="bg-surface-elevated text-primary rounded border px-2 py-1 text-xs"
             value={snapshotId ?? ""}
             onChange={(e) =>

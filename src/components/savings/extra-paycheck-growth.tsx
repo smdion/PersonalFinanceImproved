@@ -190,6 +190,7 @@ export function SimpleGrowthEditor({
         ) : (
           <div className="flex items-center gap-1">
             <input
+              aria-label="Annual raise"
               type="number"
               min={0}
               step={0.5}

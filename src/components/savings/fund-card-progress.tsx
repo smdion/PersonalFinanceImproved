@@ -187,6 +187,7 @@ export function FundProgressAndTargetDate({
           <span className="text-muted text-xs">Target date</span>
           {canEdit !== false ? (
             <input
+              aria-label="Target date"
               type="date"
               value={rawGoal.targetDate ?? ""}
               onChange={(e) =>

@@ -45,9 +45,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-sections.tsx": {
@@ -272,7 +269,7 @@
       "count": 12
     },
     "ratchet/no-unlabeled-control": {
-      "count": 12
+      "count": 2
     }
   },
   "src/app/(dashboard)/liabilities/liabilities-content.tsx": {
@@ -364,9 +361,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/app/(dashboard)/portfolio/snapshot-pagination.tsx": {
@@ -403,9 +397,6 @@
     },
     "ratchet/no-raw-button": {
       "count": 4
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/savings/pool-growth-line.tsx": {
@@ -482,9 +473,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": {
@@ -498,7 +486,7 @@
       "count": 7
     },
     "ratchet/no-unlabeled-control": {
-      "count": 8
+      "count": 1
     }
   },
   "src/app/(dashboard)/versions/versions-content.tsx": {
@@ -521,7 +509,7 @@
       "count": 4
     },
     "ratchet/no-unlabeled-control": {
-      "count": 6
+      "count": 3
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -616,9 +604,6 @@
       "count": 7
     },
     "ratchet/no-raw-input": {
-      "count": 10
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 10
     }
   },
@@ -1216,9 +1201,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 4
     }
   },
   "src/components/networth/spreadsheet/spreadsheet-controls.tsx": {
@@ -1241,9 +1223,6 @@
   },
   "src/components/onboarding/admin-step.tsx": {
     "ratchet/no-raw-input": {
-      "count": 4
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 4
     }
   },
@@ -1289,9 +1268,6 @@
       "count": 2
     },
     "ratchet/no-raw-input": {
-      "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -1903,9 +1879,6 @@
   "src/components/retirement-projection/mc-asset-classes.tsx": {
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/mc-assumptions-toggle.tsx": {
@@ -1918,9 +1891,6 @@
       "count": 3
     },
     "ratchet/no-raw-input": {
-      "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 2
     }
   },
@@ -2334,7 +2304,7 @@
       "count": 1
     },
     "ratchet/no-unlabeled-control": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/retirement/sections/rmd-handling.tsx": {
@@ -2444,7 +2414,7 @@
       "count": 2
     },
     "ratchet/no-unlabeled-control": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/savings/extra-paycheck-month-overrides.tsx": {
@@ -2491,9 +2461,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/savings/fund-card-sub-goals.tsx": {
@@ -2502,9 +2469,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 3
     }
   },
   "src/components/savings/fund-card.tsx": {
@@ -2617,7 +2581,7 @@
       "count": 10
     },
     "ratchet/no-unlabeled-control": {
-      "count": 11
+      "count": 2
     }
   },
   "src/components/savings/transactions/filters.tsx": {
@@ -2634,9 +2598,6 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 4
     }
   },
   "src/components/savings/transactions/tab.tsx": {
@@ -2794,9 +2755,6 @@
   "src/components/settings/integrations/portfolio-mapping-lists.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
-    },
-    "ratchet/no-unlabeled-control": {
-      "count": 1
     }
   },
   "src/components/settings/integrations/portfolio-section.tsx": {
@@ -2807,9 +2765,6 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 3
-    },
-    "ratchet/no-unlabeled-control": {
       "count": 3
     }
   },

@@ -220,6 +220,7 @@ export function SnapshotFilters({
             From
           </label>
           <input
+            aria-label="From"
             type="date"
             value={snapshotDateFrom}
             onChange={(e) => {
@@ -234,6 +235,7 @@ export function SnapshotFilters({
             To
           </label>
           <input
+            aria-label="To"
             type="date"
             value={snapshotDateTo}
             onChange={(e) => {

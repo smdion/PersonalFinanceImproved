@@ -53,6 +53,7 @@ export function CostBasisEditor({
           {canEdit ? (
             <div className="flex items-center gap-2">
               <input
+                aria-label={`${accountDisplayName(a)} cost basis`}
                 type="number"
                 className="border-subtle bg-surface w-32 rounded border px-2 py-1 text-right text-sm"
                 value={values[a.id] ?? ""}
@@ -133,6 +134,7 @@ export function FundingSources({
           <span className="flex items-center gap-1">
             <span className="text-faint">$</span>
             <input
+              aria-label="Annual increase"
               type="number"
               min={0}
               step={10}

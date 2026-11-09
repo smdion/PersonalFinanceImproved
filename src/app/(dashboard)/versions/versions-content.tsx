@@ -285,6 +285,7 @@ export function VersionsContent() {
         <Card title="Auto Schedule">
           <div className="flex items-center gap-2">
             <select
+              aria-label="Auto Schedule"
               value={scheduleData?.schedule ?? "daily"}
               onChange={(e) => {
                 const val = e.target.value as
@@ -353,6 +354,7 @@ export function VersionsContent() {
           {editingRetention ? (
             <div className="flex items-center gap-2">
               <input
+                aria-label="Retention"
                 type="number"
                 min={1}
                 max={365}
@@ -607,6 +609,7 @@ export function VersionsContent() {
             <div className="flex items-center gap-3">
               <label className="text-muted text-xs font-medium">Table:</label>
               <select
+                aria-label="Table"
                 value={previewTable}
                 onChange={(e) => setPreviewTable(e.target.value)}
                 className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"

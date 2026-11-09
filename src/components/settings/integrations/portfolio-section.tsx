@@ -228,6 +228,7 @@ export function PortfolioSection({ service, portfolio }: Props) {
               Ledgr Account
             </label>
             <select
+              aria-label="Ledgr Account"
               value={newPortfolioLocal}
               onChange={(e) => setNewPortfolioLocal(e.target.value)}
               className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
@@ -241,6 +242,9 @@ export function PortfolioSection({ service, portfolio }: Props) {
               {newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"}
             </label>
             <select
+              aria-label={
+                newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"
+              }
               value={newPortfolioRemote}
               onChange={(e) => setNewPortfolioRemote(e.target.value)}
               className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
@@ -265,6 +269,7 @@ export function PortfolioSection({ service, portfolio }: Props) {
               </div>
             ) : (
               <select
+                aria-label="Dir"
                 value={newPortfolioDirection}
                 onChange={(e) =>
                   setNewPortfolioDirection(

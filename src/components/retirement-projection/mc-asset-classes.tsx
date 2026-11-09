@@ -105,6 +105,7 @@ export function AssetClassTable({
             >
               <span className="text-muted truncate text-xs">{ac.name}</span>
               <input
+                aria-label={`${ac.name} Return %`}
                 type="number"
                 step="0.1"
                 value={draftReturns[ac.id] ?? ""}
@@ -117,6 +118,7 @@ export function AssetClassTable({
                 className="w-full rounded border px-1 py-0.5 text-center text-xs focus:border-blue-400 focus:outline-none"
               />
               <input
+                aria-label={`${ac.name} Vol %`}
                 type="number"
                 step="0.1"
                 value={draftVols[ac.id] ?? ""}

@@ -463,6 +463,7 @@ export function ToolsContent() {
                 Planned Move Year
               </label>
               <input
+                aria-label="Planned Move Year"
                 type="number"
                 className="w-24 rounded border px-2 py-1 text-sm"
                 placeholder={

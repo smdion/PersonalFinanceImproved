@@ -167,6 +167,7 @@ export function UpcomingAmountCells({
       >
         {isCellActive(tx.id, "amount") && editForm ? (
           <input
+            aria-label="Amount"
             autoFocus
             type="number"
             min="0"
@@ -236,6 +237,7 @@ export function UpcomingDateAndDescriptionCells({
       >
         {isCellActive(tx.id, "transactionDate") && editForm ? (
           <input
+            aria-label="Date"
             autoFocus
             type="date"
             value={editForm.transactionDate}
@@ -263,6 +265,7 @@ export function UpcomingDateAndDescriptionCells({
       >
         {isCellActive(tx.id, "description") && editForm ? (
           <input
+            aria-label="Description"
             autoFocus
             type="text"
             value={editForm.description}
@@ -345,6 +348,7 @@ export function UpcomingFundCell({
               }}
             />
             <select
+              aria-label="Fund"
               autoFocus
               value={editForm.goalId}
               onChange={(e) =>

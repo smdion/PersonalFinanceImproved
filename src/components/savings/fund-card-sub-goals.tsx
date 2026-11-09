@@ -25,6 +25,7 @@ export function AddSubGoal({
       {addingSubGoalForFund === rawGoal.id ? (
         <div className="mt-1 flex items-center gap-2">
           <input
+            aria-label="Goal name"
             type="text"
             value={newFund.name}
             onChange={(e) =>
@@ -43,6 +44,7 @@ export function AddSubGoal({
             }}
           />
           <input
+            aria-label="Target $"
             type="number"
             value={newFund.targetAmount}
             onChange={(e) =>
@@ -132,6 +134,7 @@ export function SubGoalProgressAndMove({
         availableParents && (
           <div className="mt-1 flex items-center gap-1">
             <select
+              aria-label="Move to"
               className="border-default bg-surface-primary text-primary flex-1 rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
               defaultValue=""
               onChange={(e) => {

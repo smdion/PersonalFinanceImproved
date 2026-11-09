@@ -155,6 +155,7 @@ export function BrokerageGoalsSection() {
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <input
+                    aria-label="Name"
                     className="rounded border px-2 py-1 text-sm"
                     placeholder="Name"
                     value={editForm.name}
@@ -163,6 +164,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
+                    aria-label="Amount"
                     className="rounded border px-2 py-1 text-sm"
                     placeholder="Amount"
                     value={editForm.targetAmount}
@@ -171,6 +173,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
+                    aria-label="Target Year"
                     className="rounded border px-2 py-1 text-sm"
                     placeholder="Target Year"
                     type="number"
@@ -180,6 +183,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
+                    aria-label="Priority"
                     className="rounded border px-2 py-1 text-sm"
                     placeholder="Priority"
                     type="number"
@@ -190,6 +194,7 @@ export function BrokerageGoalsSection() {
                   />
                 </div>
                 <input
+                  aria-label="Notes"
                   className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="Notes"
                   value={editForm.notes}
@@ -262,12 +267,14 @@ export function BrokerageGoalsSection() {
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <input
+                aria-label="Goal name (e.g., New Car)"
                 className="rounded border px-2 py-1 text-sm"
                 placeholder="Goal name (e.g., New Car)"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
               <input
+                aria-label="Target amount"
                 className="rounded border px-2 py-1 text-sm"
                 placeholder="Target amount"
                 value={form.targetAmount}
@@ -276,6 +283,7 @@ export function BrokerageGoalsSection() {
                 }
               />
               <input
+                aria-label="Target year"
                 className="rounded border px-2 py-1 text-sm"
                 placeholder="Target year"
                 type="number"
@@ -285,6 +293,7 @@ export function BrokerageGoalsSection() {
                 }
               />
               <input
+                aria-label="Priority (0 = highest)"
                 className="rounded border px-2 py-1 text-sm"
                 placeholder="Priority (0 = highest)"
                 type="number"
@@ -293,6 +302,7 @@ export function BrokerageGoalsSection() {
               />
             </div>
             <input
+              aria-label="Notes (optional)"
               className="w-full rounded border px-2 py-1 text-sm"
               placeholder="Notes (optional)"
               value={form.notes}

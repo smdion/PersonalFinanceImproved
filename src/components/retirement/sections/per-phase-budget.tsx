@@ -90,6 +90,7 @@ export function PerPhaseBudgetSection({
             ) : (
               <>
                 <select
+                  aria-label="Budget Source"
                   className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   value={decumulationBudgetProfileId ?? ""}
                   disabled={!isEditable || budgetNotUsed}
