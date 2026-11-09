@@ -25,7 +25,7 @@ describe("FundingBar", () => {
   });
 
   it("always draws it when the match is drawn beyond the limit", () => {
-    const { container } = render(<FundingBar pct={0.5} matchPct={0.2} />);
+    const { container } = render(<FundingBar pct={0.5} matchPercent={0.2} />);
     expect(markers(container)).toBe(1);
   });
 });
