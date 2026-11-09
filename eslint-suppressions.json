@@ -2799,7 +2799,7 @@
       "count": 3
     }
   },
-  "src/components/savings/transactions/tab.tsx": {
+  "src/components/savings/transactions/all-transactions-tab.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
