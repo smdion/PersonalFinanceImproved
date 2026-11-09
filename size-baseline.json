@@ -354,7 +354,7 @@
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 38,
     "src/server/data/snapshots.ts": 105,
-    "src/server/routers/assets.ts": 438,
+    "src/server/routers/assets.ts": 260,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 562,
     "src/server/routers/demo.ts": 79,
@@ -382,7 +382,7 @@
     "src/server/routers/settings/admin.ts": 404,
     "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 779,
-    "src/server/routers/simplefin/accounts.ts": 233,
+    "src/server/routers/simplefin/accounts.ts": 79,
     "src/server/routers/simplefin/index.ts": 16,
     "src/server/routers/sync/core.ts": 12,
     "src/server/routers/sync/preview.ts": 14,
@@ -403,6 +403,7 @@
     "src/server/services/investments/sec-facts.ts": 576,
     "src/server/services/net-worth/other-assets.ts": 85,
     "src/server/services/net-worth/snapshot-write.ts": 291,
+    "src/server/services/net-worth/year-assets.ts": 229,
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 120,
     "src/server/services/paycheck/job-net-pay.ts": 259,
@@ -426,9 +427,11 @@
     "src/server/services/sync/budget-api-push.ts": 409,
     "src/server/services/sync/preview.ts": 434,
     "src/server/services/sync/savings-goal-push.ts": 221,
+    "src/server/services/sync/simplefin.ts": 296,
     "src/server/services/sync/simplefin/ingest.ts": 522,
     "src/server/services/sync/simplefin/sync.ts": 553,
     "src/server/services/sync/sync-all.ts": 253,
+    "src/server/services/sync/sync-names.ts": 176,
     "src/server/trpc.ts": 548
   },
   "functions": {
@@ -1010,9 +1013,6 @@
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
-    "src/server/routers/assets.ts": {
-      "assetsRouter.computeSummary.query()": 171
-    },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
     },
@@ -1021,9 +1021,6 @@
     },
     "src/server/routers/networth/summary.ts": {
       "summaryProcedures.computeSummary.query()": 243
-    },
-    "src/server/routers/sync/names.ts": {
-      "syncNamesRouter.syncAllNames.mutation()": 159
     },
     "src/server/services/budget/active-summary.ts": {
       "computeBudgetActiveSummary": 217
@@ -1052,6 +1049,9 @@
     },
     "src/server/services/net-worth/snapshot-write.ts": {
       "createPortfolioSnapshot": 270
+    },
+    "src/server/services/net-worth/year-assets.ts": {
+      "computeAssetSummary": 168
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 492
@@ -1109,6 +1109,9 @@
     },
     "src/server/services/sync/sync-all.ts": {
       "syncAll": 228
+    },
+    "src/server/services/sync/sync-names.ts": {
+      "syncAllNames": 163
     }
   }
 }

@@ -4972,11 +4972,8 @@
     }
   },
   "src/server/routers/assets.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/routers/brokerage.ts": {
@@ -5231,14 +5228,6 @@
       "count": 1
     }
   },
-  "src/server/routers/simplefin/accounts.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 8
-    }
-  },
   "src/server/routers/simplefin/connections.ts": {
     "ratchet/no-clock-read": {
       "count": 2
@@ -5262,17 +5251,6 @@
   },
   "src/server/routers/sync/expense-comparison.ts": {
     "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
-  "src/server/routers/sync/names.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
-    },
-    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -5506,6 +5484,14 @@
       "count": 3
     },
     "ratchet/no-clock-read": {
+      "count": 1
+    }
+  },
+  "src/server/services/net-worth/year-assets.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
@@ -5856,10 +5842,10 @@
   },
   "src/server/services/sync/simplefin.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 10
     }
   },
   "src/server/services/sync/simplefin/ingest.ts": {
@@ -5897,6 +5883,17 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/sync-names.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
