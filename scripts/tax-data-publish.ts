@@ -34,7 +34,7 @@ import {
   sameReferenceValue,
   type TaxDataFile,
 } from "../src/lib/db/migrate/reference-reconcile-core";
-import { validateTaxDataFile } from "../src/lib/tax-data/validate";
+import { checkTaxDataFile } from "../src/lib/tax-data/checked-file";
 import {
   packSignedTaxData,
   signTaxData,
@@ -86,10 +86,11 @@ if (test) {
   sha = run("git", "rev-parse", "origin/main");
 }
 
-// 2. Valid.
-const file = JSON.parse(bytes.toString("utf8")) as TaxDataFile;
-const problems = validateTaxDataFile(file);
-if (problems.length) fail(`The file has problems:\n  ${problems.join("\n  ")}`);
+// 2. Valid: every check an install runs on it, the file's structure too.
+const checked = checkTaxDataFile(JSON.parse(bytes.toString("utf8")), {});
+const file =
+  checked.file ??
+  fail(`The file has problems:\n  ${checked.problems.join("\n  ")}`);
 
 // 3. Newer than what the release holds now.
 let releaseExists = true;
