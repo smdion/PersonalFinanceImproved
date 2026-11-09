@@ -107,7 +107,7 @@ export function formatDiscretionaryTierBreakdown(
  * `rmdByPerson`'s docblock (engine-projection.ts).
  */
 export function formatRmdDivisorDetail(
-  yr: {
+  yearRow: {
     rmdByPerson?: {
       personName: string;
       divisor?: number;
@@ -119,7 +119,7 @@ export function formatRmdDivisorDetail(
   deflate: (v: number, year: number) => number,
   year: number,
 ): string | undefined {
-  const perPerson = yr.rmdByPerson?.filter(
+  const perPerson = yearRow.rmdByPerson?.filter(
     (p) => p.divisor != null && p.priorYearEndTradBalance != null,
   );
   if (perPerson && perPerson.length > 0) {
@@ -130,8 +130,8 @@ export function formatRmdDivisorDetail(
       )
       .join(" · ");
   }
-  if (yr.rmdDivisor != null && yr.priorYearEndTradBalance != null) {
-    return `Balance ${formatCurrency(deflate(yr.priorYearEndTradBalance, year))} ÷ ${yr.rmdDivisor.toFixed(1)} (IRS Uniform Lifetime Table)`;
+  if (yearRow.rmdDivisor != null && yearRow.priorYearEndTradBalance != null) {
+    return `Balance ${formatCurrency(deflate(yearRow.priorYearEndTradBalance, year))} ÷ ${yearRow.rmdDivisor.toFixed(1)} (IRS Uniform Lifetime Table)`;
   }
   return undefined;
 }

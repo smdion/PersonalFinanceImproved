@@ -179,9 +179,9 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               }
               className="ml-2 rounded border px-2 py-1 text-sm"
             >
-              {years.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
+              {years.map((yearRow) => (
+                <option key={yearRow} value={yearRow}>
+                  {yearRow}
                 </option>
               ))}
             </select>

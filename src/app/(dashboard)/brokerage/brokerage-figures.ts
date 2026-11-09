@@ -54,7 +54,7 @@ export function brokerageFigures(
   const firstYear = brokerageResult.projectionByYear[0];
   const totalOverflow = firstYear?.overflow ?? 0;
   const accYears = data.result.projectionByYear.filter(
-    (yr) => yr.phase === "accumulation",
+    (yearRow) => yearRow.phase === "accumulation",
   );
   const firstAccYear = accYears[0] as
     import("@/lib/pure/engine/types").EngineAccumulationYear | undefined;

@@ -253,9 +253,9 @@ export function RetirementProfileManager({
                     className="text-caption hover:border-border focus:border-accent cursor-pointer rounded border border-transparent bg-transparent px-0.5 focus:outline-none"
                   >
                     <option value="">Latest (auto)</option>
-                    {availableTaxYears.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
+                    {availableTaxYears.map((yearRow) => (
+                      <option key={yearRow} value={yearRow}>
+                        {yearRow}
                       </option>
                     ))}
                   </select>

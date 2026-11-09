@@ -41,7 +41,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-funding.tsx": {
@@ -75,9 +75,6 @@
   "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
     }
   },
   "src/app/(dashboard)/brokerage/page.tsx": {
@@ -3277,9 +3274,6 @@
     "ratchet/max-comment-lines": {
       "count": 3
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -3701,7 +3695,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-jsx-iife": {
       "count": 1
@@ -3814,7 +3808,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 4
@@ -5516,7 +5510,7 @@
       "count": 13
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -5715,7 +5709,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -5740,9 +5734,6 @@
   "src/lib/pure/advice/report/withdrawal-strategy-narrative.ts": {
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
@@ -7320,9 +7311,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     },
@@ -7467,7 +7455,7 @@
       "count": 6
     },
     "ratchet/no-abbreviation": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3

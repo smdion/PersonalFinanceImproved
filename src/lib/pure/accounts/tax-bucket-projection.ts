@@ -293,8 +293,8 @@ export function computeTaxBucketProjection(input: {
   // transition — taxFree rows feed Roth basis projection, afterTax rows
   // feed Brokerage cost-basis projection; nothing else uses this map.
   const contributionsByKey = new Map<string, Map<number, number>>();
-  for (const yr of accumulationYears) {
-    for (const bal of yr.individualAccountBalances) {
+  for (const yearRow of accumulationYears) {
+    for (const bal of yearRow.individualAccountBalances) {
       if (!isTaxFreeBucket(bal.taxType) && !isAfterTaxType(bal.taxType))
         continue;
       const key = matchKey(
@@ -308,7 +308,7 @@ export function computeTaxBucketProjection(input: {
         yearMap = new Map();
         contributionsByKey.set(key, yearMap);
       }
-      yearMap.set(yr.year, bal.contribution);
+      yearMap.set(yearRow.year, bal.contribution);
     }
   }
 

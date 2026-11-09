@@ -250,8 +250,12 @@ export function SavingsTrajectoryTable({
             {/* ── Historical rows ── */}
             {historicalRows.map(({ key, balMap }) => {
               // Parse key back to a display label
-              const [yr, month] = key.split("-");
-              const displayDate = new Date(Number(yr), Number(month) - 1, 1);
+              const [yearRow, month] = key.split("-");
+              const displayDate = new Date(
+                Number(yearRow),
+                Number(month) - 1,
+                1,
+              );
               return (
                 <tr
                   key={`hist-${key}`}

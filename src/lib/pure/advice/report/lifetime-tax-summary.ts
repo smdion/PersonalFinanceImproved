@@ -41,13 +41,13 @@ export function computeLifetimeTaxSummary(
   let totalWithdrawalToday = 0;
   const buckets = new Map<number, LifetimeTaxDecade>();
 
-  for (const yr of decumulationYears) {
-    const taxToday = deflate(yr.taxCost, yr.year);
-    const wdToday = deflate(yr.totalWithdrawal, yr.year);
+  for (const yearRow of decumulationYears) {
+    const taxToday = deflate(yearRow.taxCost, yearRow.year);
+    const wdToday = deflate(yearRow.totalWithdrawal, yearRow.year);
     totalTaxToday += taxToday;
     totalWithdrawalToday += wdToday;
 
-    const decadeStart = Math.floor(yr.age / 10) * 10;
+    const decadeStart = Math.floor(yearRow.age / 10) * 10;
     const existing = buckets.get(decadeStart);
     if (existing) {
       existing.taxToday += taxToday;

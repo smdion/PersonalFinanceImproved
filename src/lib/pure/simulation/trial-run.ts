@@ -287,15 +287,15 @@ export function runTrials(
       if (isBudgetStable) budgetStableCount++;
       // Per-year spending ratios for stability chart bands.
       for (let di = 0; di < decYears.length && di < numDecYears; di++) {
-        const yr = decYears[di]!;
+        const yearRow = decYears[di]!;
         const stratBase = strategyUsesRaise
-          ? yr.targetWithdrawal
+          ? yearRow.targetWithdrawal
           : inflatedYear1(di);
         stratRatiosByDecYear[di]!.push(
-          safeDivide(yr.totalWithdrawal, stratBase, 0),
+          safeDivide(yearRow.totalWithdrawal, stratBase, 0),
         );
         budgetRatiosByDecYear[di]!.push(
-          safeDivide(strategySpending(yr), yr.budgetOnlyExpenses, 0),
+          safeDivide(strategySpending(yearRow), yearRow.budgetOnlyExpenses, 0),
         );
       }
     } else {

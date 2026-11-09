@@ -7,7 +7,7 @@
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
     "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 291,
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
-    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 278,
+    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 142,
     "src/app/(dashboard)/budget/budget-content.tsx": 657,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
@@ -206,7 +206,7 @@
     "src/components/savings/fund-card.tsx": 549,
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 440,
-    "src/components/savings/savings-trajectory-table.tsx": 551,
+    "src/components/savings/savings-trajectory-table.tsx": 555,
     "src/components/savings/transactions/editor.tsx": 366,
     "src/components/savings/transactions/filters.tsx": 207,
     "src/components/savings/transactions/row.tsx": 594,
@@ -833,7 +833,7 @@
       "SavingsTrajectoryChart": 213
     },
     "src/components/savings/savings-trajectory-table.tsx": {
-      "SavingsTrajectoryTable": 519,
+      "SavingsTrajectoryTable": 523,
       "SavingsTrajectoryTable.map()": 242
     },
     "src/components/savings/transactions/tab.tsx": {
@@ -1004,7 +1004,7 @@
       "calculateRelocation": 321
     },
     "src/lib/pure/savings/brokerage-goals.ts": {
-      "calculateBrokerageGoals": 206
+      "calculateBrokerageGoals": 212
     },
     "src/lib/pure/simulation/trial-run.ts": {
       "runTrials": 322

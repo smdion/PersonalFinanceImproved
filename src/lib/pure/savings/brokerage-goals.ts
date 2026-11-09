@@ -133,14 +133,14 @@ export function calculateBrokerageGoals(
   let prevBalance = 0;
 
   for (let i = 0; i < engineYears.length; i++) {
-    const yr = engineYears[i]!;
+    const yearRow = engineYears[i]!;
     // Derive afterTax from Portfolio-category individual accounts so the
     // brokerage page only reflects portfolio accounts, not all parentCategories.
     // Falls back to the aggregate bucket when no individual balances are present.
     let afterTax: number;
     let afterTaxBasis: number;
-    if (yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter(
+    if (yearRow.individualAccountBalances.length > 0) {
+      const filtered = yearRow.individualAccountBalances.filter(
         (ia) => !isRetirementMoney(ia.parentCategory),
       );
       if (filtered.length === 0 && i === 0) {
@@ -154,12 +154,18 @@ export function calculateBrokerageGoals(
       if (filtered.every((ia) => ia.costBasis != null)) {
         afterTaxBasis = roundToCents(sumBy(filtered, (ia) => ia.costBasis!));
       } else {
-        const ratio = safeDivide(afterTax, yr.balanceByTaxType.afterTax, 0);
-        afterTaxBasis = roundToCents(yr.balanceByTaxType.afterTaxBasis * ratio);
+        const ratio = safeDivide(
+          afterTax,
+          yearRow.balanceByTaxType.afterTax,
+          0,
+        );
+        afterTaxBasis = roundToCents(
+          yearRow.balanceByTaxType.afterTaxBasis * ratio,
+        );
       }
     } else {
-      afterTax = yr.balanceByTaxType.afterTax;
-      afterTaxBasis = yr.balanceByTaxType.afterTaxBasis;
+      afterTax = yearRow.balanceByTaxType.afterTax;
+      afterTaxBasis = yearRow.balanceByTaxType.afterTaxBasis;
     }
 
     let contribution = 0;
@@ -170,13 +176,13 @@ export function calculateBrokerageGoals(
     let totalTaxCost = 0;
     let proRateFraction: number | null = null;
 
-    if (yr.phase === "accumulation") {
-      const accumulationYear = yr as EngineAccumulationYear;
+    if (yearRow.phase === "accumulation") {
+      const accumulationYear = yearRow as EngineAccumulationYear;
       proRateFraction = accumulationYear.proRateFraction;
 
-      if (yr.individualAccountBalances.length > 0) {
+      if (yearRow.individualAccountBalances.length > 0) {
         // Derive contribution/overflow from Portfolio-category individual accounts.
-        const filtered = yr.individualAccountBalances.filter(
+        const filtered = yearRow.individualAccountBalances.filter(
           (ia) => !isRetirementMoney(ia.parentCategory),
         );
         contribution = roundToCents(
@@ -233,10 +239,10 @@ export function calculateBrokerageGoals(
       }
     } else {
       // Brokerage contributions continue post-retirement (fixed-dollar only)
-      const decumulationYear = yr as EngineDecumulationYear;
+      const decumulationYear = yearRow as EngineDecumulationYear;
       contribution = roundToCents(decumulationYear.brokerageContribution);
-      if (yr.individualAccountBalances.length > 0) {
-        const filtered = yr.individualAccountBalances.filter(
+      if (yearRow.individualAccountBalances.length > 0) {
+        const filtered = yearRow.individualAccountBalances.filter(
           (ia) => !isRetirementMoney(ia.parentCategory),
         );
         employerMatch = roundToCents(sumBy(filtered, (ia) => ia.employerMatch));
@@ -246,8 +252,8 @@ export function calculateBrokerageGoals(
     // Growth: use Portfolio-category individual accounts' growth field directly
     // when available; otherwise derive from net inflow.
     let growth: number;
-    if (yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter(
+    if (yearRow.individualAccountBalances.length > 0) {
+      const filtered = yearRow.individualAccountBalances.filter(
         (ia) => !isRetirementMoney(ia.parentCategory),
       );
       growth = roundToCents(sumBy(filtered, (ia) => ia.growth));
@@ -258,14 +264,14 @@ export function calculateBrokerageGoals(
 
     // Build per-account breakdown for tooltips — Portfolio accounts only
     const filteredAccounts =
-      yr.individualAccountBalances.length > 0
-        ? yr.individualAccountBalances.filter(
+      yearRow.individualAccountBalances.length > 0
+        ? yearRow.individualAccountBalances.filter(
             (ia) => !isRetirementMoney(ia.parentCategory),
           )
-        : yr.individualAccountBalances;
+        : yearRow.individualAccountBalances;
 
     projectionByYear.push({
-      year: yr.year,
+      year: yearRow.year,
       contribution,
       employerMatch,
       overflow,
@@ -277,7 +283,7 @@ export function calculateBrokerageGoals(
       endBasis: roundToCents(afterTaxBasis),
       unrealizedGain: roundToCents(afterTax - afterTaxBasis),
       proRateFraction,
-      returnRate: yr.returnRate,
+      returnRate: yearRow.returnRate,
       individualAccounts: filteredAccounts.map((ia) => ({
         name: ia.name,
         category: ia.category,
