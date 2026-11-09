@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
-import { queryRaw } from "../compat";
+import { countRows, queryRaw } from "../compat";
 import { VERSION_TABLE_NAMES, tablesFromBackup } from "./version-tables";
 import { REBUILT_ON_RESTORE } from "./backup-transforms";
 
@@ -22,11 +22,11 @@ export async function tablesLostOnRestore(
     if (source && present.has(source)) continue;
     let currentRows = 0;
     try {
-      const rows = await queryRaw<{ n: number | string }>(
+      const rows = await queryRaw<{ count: number | string }>(
         database,
-        sql.raw(`SELECT COUNT(*) AS n FROM "${tableName}"`),
+        sql.raw(`SELECT COUNT(*) AS count FROM "${tableName}"`),
       );
-      currentRows = Number(rows[0]?.n ?? 0);
+      currentRows = countRows(rows);
     } catch {
       continue; // table doesn't exist yet (migration pending)
     }

@@ -5098,11 +5098,6 @@
       "count": 11
     }
   },
-  "src/server/routers/data-browser.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
-    }
-  },
   "src/server/routers/investments/account-insights.ts": {
     "ratchet/no-abbreviation": {
       "count": 4
@@ -5189,9 +5184,6 @@
   },
   "src/server/routers/performance/accounts.ts": {
     "ratchet/no-abbreviation": {
-      "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
       "count": 2
     }
   },
@@ -5390,7 +5382,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/sync/config.ts": {
@@ -5561,9 +5553,6 @@
   "src/server/services/demo/demo-schema.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/server/services/demo/demo-seed.ts": {
@@ -5815,7 +5804,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/projection/projection-metadata.ts": {

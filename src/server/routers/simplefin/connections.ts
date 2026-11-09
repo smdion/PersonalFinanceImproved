@@ -9,6 +9,7 @@ import {
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import { staleFeeds } from "@/lib/pure/sync/stale-feeds";
 import * as schema from "@/lib/db/schema";
+import { countRows } from "@/lib/db/compat";
 import {
   getSimplefinConnection,
   saveSimplefinConnection,
@@ -243,7 +244,7 @@ export const connectionsProcedures = {
         (max, v) => (max === null || v.asOf > max ? v.asOf : max),
         null,
       ),
-      transactions: Number(txStats[0]?.count ?? 0),
+      transactions: countRows(txStats),
       transactionAccounts: Number(txStats[0]?.accounts ?? 0),
       oldestTransaction: txStats[0]?.oldest ?? null,
       requestsLastDay,

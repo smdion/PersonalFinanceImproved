@@ -10,6 +10,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { openTestSqlite } from "../helpers/db-harness";
 import { isPostgres } from "@/lib/db/dialect";
 import {
+  countRows,
   tableExistsSQL,
   listTablesSQL,
   validateColumns,
@@ -82,5 +83,16 @@ describe("tablesWithIdColumn", () => {
     expect(tablesWithIdColumn(["people", "asset_class_buckets"])).toEqual([
       "people",
     ]);
+  });
+});
+
+describe("countRows", () => {
+  it("reads PostgreSQL's bigint text and SQLite's number alike", () => {
+    expect(countRows([{ count: "12" }])).toBe(12);
+    expect(countRows([{ count: 0 }])).toBe(0);
+  });
+
+  it("throws when a count(*) query returns no row", () => {
+    expect(() => countRows([])).toThrow(/no row/);
   });
 });
