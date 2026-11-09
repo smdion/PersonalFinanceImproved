@@ -57,7 +57,8 @@ export function AssetClassTable({
               const dbAc = inputs.dbAssetClasses.find((d) => d.id === ac.id);
               const dbDiff =
                 dbAc && Math.abs(dbAc.meanReturn - ac.meanReturn) > 0.001;
-              const allocPct = (inputs.currentAllocation[ac.id] ?? 0) * 100;
+              const allocationPercent =
+                (inputs.currentAllocation[ac.id] ?? 0) * 100;
               return (
                 <tr key={ac.id} className="border-subtle border-b">
                   <td
@@ -81,7 +82,9 @@ export function AssetClassTable({
                     {dbAc ? formatPercent(dbAc.meanReturn, 1) : "—"}
                   </td>
                   <td className="text-muted px-1.5 py-0.5 text-right tabular-nums">
-                    {allocPct > 0 ? formatPercent(allocPct / 100) : "—"}
+                    {allocationPercent > 0
+                      ? formatPercent(allocationPercent / 100)
+                      : "—"}
                   </td>
                 </tr>
               );

@@ -182,7 +182,7 @@ export const _singleBucketCategories = new Set<string>(
 /** What a projection-card row shows as its balance: the row's tax buckets,
  *  which a parent-filtered row (filterYearByParentCategory) scopes to that
  *  view. Not a retirement answer — those read `retirementBalance`. */
-export function rowTotal(yr: {
+export function rowTotal(yearRow: {
   balanceByTaxType: {
     preTax: number;
     taxFree: number;
@@ -190,7 +190,7 @@ export function rowTotal(yr: {
     afterTax: number;
   };
 }): number {
-  const b = yr.balanceByTaxType;
+  const b = yearRow.balanceByTaxType;
   return roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
 }
 
@@ -199,7 +199,7 @@ export function rowTotal(yr: {
  *  retirementBalance / allAccountsBalance are left as the engine reported
  *  them (they describe the plan, not the view). */
 export function filterYearByParentCategory(
-  yr: EngineYearProjection,
+  yearRow: EngineYearProjection,
   parentCategory: string,
 ): EngineYearProjection {
   // No individual-account data to filter by at all (MC "Simple" tax mode —
@@ -210,8 +210,8 @@ export function filterYearByParentCategory(
   // withdrawal field below to match an empty account list (Rate-Seeded
   // showed $0 balances everywhere because this function was doing exactly
   // that).
-  if (yr.individualAccountBalances.length === 0) return yr;
-  const filtered = yr.individualAccountBalances.filter(
+  if (yearRow.individualAccountBalances.length === 0) return yearRow;
+  const filtered = yearRow.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
   );
   const byTax = { ...emptyTaxBucketMap(), afterTaxBasis: 0 };
@@ -233,14 +233,14 @@ export function filterYearByParentCategory(
   }
   // The engine tracks brokerage basis per account; an older result without
   // it falls back to a proportional estimate.
-  const basisAccts = filtered.filter((ia) => tracksCostBasis(ia.category));
-  byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
-    ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
+  const basisAccounts = filtered.filter((ia) => tracksCostBasis(ia.category));
+  byTax.afterTaxBasis = basisAccounts.every((ia) => ia.costBasis != null)
+    ? roundToCents(sumBy(basisAccounts, (ia) => ia.costBasis!))
     : roundToCents(
-        yr.balanceByTaxType.afterTaxBasis *
-          safeDivide(byTax.afterTax, yr.balanceByTaxType.afterTax),
+        yearRow.balanceByTaxType.afterTaxBasis *
+          safeDivide(byTax.afterTax, yearRow.balanceByTaxType.afterTax),
       );
-  const byAcct = { ...yr.balanceByAccount };
+  const byAccount = { ...yearRow.balanceByAccount };
   for (const cat of getAllCategories()) {
     const catIabs = filtered.filter((ia) => ia.category === cat);
     const cfg = getAccountTypeConfig(cat);
@@ -251,32 +251,32 @@ export function filterYearByParentCategory(
       const roth = catIabs
         .filter((ia) => isTaxFreeBucket(ia.taxType))
         .reduce((s, ia) => s + ia.balance, 0);
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "roth_traditional" as const,
         traditional: trad,
         roth,
       };
     } else if (cfg.balanceStructure === "basis_tracking") {
       const bal = catIabs.reduce((s, ia) => s + ia.balance, 0);
-      const origCatBal = getTotalBalance(yr.balanceByAccount[cat]);
+      const origCatBal = getTotalBalance(yearRow.balanceByAccount[cat]);
       const ratio = safeDivide(bal, origCatBal);
       const origCatBasis =
-        yr.balanceByAccount[cat].structure === "basis_tracking"
-          ? yr.balanceByAccount[cat].basis
+        yearRow.balanceByAccount[cat].structure === "basis_tracking"
+          ? yearRow.balanceByAccount[cat].basis
           : 0;
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "basis_tracking" as const,
         balance: bal,
         basis: roundToCents(origCatBasis * ratio),
       };
     } else {
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "single_bucket" as const,
         balance: catIabs.reduce((s, ia) => s + ia.balance, 0),
       };
     }
   }
-  if (yr.phase !== "decumulation") {
+  if (yearRow.phase !== "decumulation") {
     // Contributions rescoped to the same accounts as the balances: the
     // engine routes per category (a household-wide brokerage slot holds a
     // Portfolio account's money too), so each slot and total is rebuilt from
@@ -288,8 +288,8 @@ export function filterYearByParentCategory(
       pick: (ia: (typeof filtered)[number]) => number,
     ) => roundToCents(rows.reduce((t, ia) => t + pick(ia), 0));
     const accumSlots =
-      "slots" in yr
-        ? yr.slots.map((slot) => {
+      "slots" in yearRow
+        ? yearRow.slots.map((slot) => {
             const catIabs = filtered.filter(
               (ia) => ia.category === slot.category,
             );
@@ -309,10 +309,10 @@ export function filterYearByParentCategory(
           })
         : undefined;
     return {
-      ...yr,
+      ...yearRow,
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
-      balanceByAccount: byAcct,
+      balanceByAccount: byAccount,
       ...(accumSlots
         ? {
             slots: accumSlots,
@@ -343,7 +343,7 @@ export function filterYearByParentCategory(
   // remainingNeed) are left as the true household-wide values since they
   // reflect a real global constraint (bracket-filling, account limits) that
   // doesn't change based on this page's display-only account grouping.
-  const filteredSlots = yr.slots.map((slot) => {
+  const filteredSlots = yearRow.slots.map((slot) => {
     const catIabs = filtered.filter((ia) => ia.category === slot.category);
     const cfg = getAccountTypeConfig(slot.category);
     let withdrawal: number;
@@ -416,21 +416,21 @@ export function filterYearByParentCategory(
   // this display-only filter happens to be scoped to.
   const targetRatio = canonicalSafeDivide(
     totalWithdrawal,
-    yr.totalWithdrawal,
+    yearRow.totalWithdrawal,
     1,
   );
-  const targetWithdrawal = roundToCents(yr.targetWithdrawal * targetRatio);
+  const targetWithdrawal = roundToCents(yearRow.targetWithdrawal * targetRatio);
   // Only the withdrawal's tax scales; tax on Social Security is the
   // household's, whichever accounts this view shows.
   const taxCost = roundToCents(
-    (yr.taxCost - yr.ssTaxCost) * targetRatio + yr.ssTaxCost,
+    (yearRow.taxCost - yearRow.ssTaxCost) * targetRatio + yearRow.ssTaxCost,
   );
 
   return {
-    ...yr,
+    ...yearRow,
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
-    balanceByAccount: byAcct,
+    balanceByAccount: byAccount,
     slots: filteredSlots,
     totalWithdrawal,
     totalTraditionalWithdrawal,
@@ -445,9 +445,9 @@ export function filterYearByParentCategory(
 // ---------------------------------------------------------------------------
 
 export function isAccumYear(
-  yr: EngineYearProjection,
-): yr is EngineAccumulationYear {
-  return yr.phase === "accumulation";
+  yearRow: EngineYearProjection,
+): yearRow is EngineAccumulationYear {
+  return yearRow.phase === "accumulation";
 }
 
 export function itemTaxType(
@@ -813,10 +813,10 @@ export function buildStrategyEventStyle(
   const pct = (v: unknown) => (v != null ? formatPercent(Number(v), 0) : null);
   const gkIncreasePct = pct(engineSettings?.gkIncreasePct);
   const gkDecreasePct = pct(engineSettings?.gkDecreasePct);
-  const vdCeilingPct = pct(engineSettings?.vdCeilingPercent);
-  const vdFloorPct = pct(engineSettings?.vdFloorPercent);
-  const cpFloorPct = pct(engineSettings?.cpFloorPercent);
-  const enFloorPct = pct(engineSettings?.enFloorPercent);
+  const vdCeilingPercent = pct(engineSettings?.vdCeilingPercent);
+  const vdFloorPercent = pct(engineSettings?.vdFloorPercent);
+  const cpFloorPercent = pct(engineSettings?.cpFloorPercent);
+  const enFloorPercent = pct(engineSettings?.enFloorPercent);
   const activeStrategy = engineSettings?.withdrawalStrategy;
 
   return {
@@ -838,8 +838,8 @@ export function buildStrategyEventStyle(
     },
     ceiling_applied: {
       color: CHART_COLORS.guardrailIncreaseMarker,
-      label: vdCeilingPct ? `▲ capped @${vdCeilingPct}` : "▲ capped",
-      tooltipText: `Year-over-year ceiling reached${vdCeilingPct ? ` (max +${vdCeilingPct}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
+      label: vdCeilingPercent ? `▲ capped @${vdCeilingPercent}` : "▲ capped",
+      tooltipText: `Year-over-year ceiling reached${vdCeilingPercent ? ` (max +${vdCeilingPercent}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
     },
     vpw_cap: {
       color: CHART_COLORS.guardrailIncreaseMarker,
@@ -850,19 +850,19 @@ export function buildStrategyEventStyle(
     floor_applied: {
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label:
-        activeStrategy === "vanguard_dynamic" && vdFloorPct
-          ? `▼ floor @${vdFloorPct}`
+        activeStrategy === "vanguard_dynamic" && vdFloorPercent
+          ? `▼ floor @${vdFloorPercent}`
           : "▼ floor",
       tooltipText:
         activeStrategy === "vanguard_dynamic"
-          ? `Year-over-year floor reached${vdFloorPct ? ` (max -${vdFloorPct}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
+          ? `Year-over-year floor reached${vdFloorPercent ? ` (max -${vdFloorPercent}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
           : `Nominal floor reached${
               activeStrategy === "endowment"
-                ? enFloorPct
-                  ? ` (${enFloorPct} of your initial withdrawal)`
+                ? enFloorPercent
+                  ? ` (${enFloorPercent} of your initial withdrawal)`
                   : ""
-                : cpFloorPct
-                  ? ` (${cpFloorPct} of your initial withdrawal)`
+                : cpFloorPercent
+                  ? ` (${cpFloorPercent} of your initial withdrawal)`
                   : ""
             } — spending held at the floor instead of following your balance down further`,
     },

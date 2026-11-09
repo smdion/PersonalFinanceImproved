@@ -2677,9 +2677,6 @@
   "src/components/retirement-projection/account-notes.ts": {
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
     }
   },
   "src/components/retirement-projection/balance-cell.tsx": {
@@ -2730,9 +2727,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -2749,9 +2743,6 @@
     }
   },
   "src/components/retirement-projection/mc-asset-classes.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 2
     },
@@ -2781,9 +2772,6 @@
     }
   },
   "src/components/retirement-projection/mc-glide-path.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 1
     },
@@ -2856,18 +2844,13 @@
       "count": 3
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 2
     },
     "ratchet/no-raw-button": {
       "count": 4
     },
     "ratchet/no-raw-input": {
       "count": 7
-    }
-  },
-  "src/components/retirement-projection/override-items.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/override-wizard-steps.tsx": {
@@ -2999,7 +2982,7 @@
       "count": 20
     },
     "ratchet/no-abbreviation": {
-      "count": 13
+      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 5
@@ -3019,7 +3002,7 @@
       "count": 3
     },
     "ratchet/no-abbreviation": {
-      "count": 9
+      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -3052,12 +3035,7 @@
   },
   "src/components/retirement-projection/projection-table-accum-balances.model.ts": {
     "ratchet/no-abbreviation": {
-      "count": 10
-    }
-  },
-  "src/components/retirement-projection/projection-table-accum-contributions.model.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 6
     }
   },
   "src/components/retirement-projection/projection-table-accum-row.model.ts": {
@@ -3065,7 +3043,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 10
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-accum-row.tsx": {
@@ -3073,7 +3051,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 33
+      "count": 26
     }
   },
   "src/components/retirement-projection/projection-table-contrib-methodology.tsx": {
@@ -3095,7 +3073,7 @@
       "count": 3
     },
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 4
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3106,7 +3084,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 16
+      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3123,7 +3101,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 38
+      "count": 28
     }
   },
   "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
@@ -3134,7 +3112,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3145,7 +3123,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 12
+      "count": 8
     }
   },
   "src/components/retirement-projection/projection-table-skeleton.tsx": {
@@ -3161,7 +3139,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 6
     }
   },
   "src/components/retirement-projection/report/report-action-items.tsx": {
@@ -3205,11 +3183,6 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/retirement-year-line.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/spending-stability-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
@@ -3221,7 +3194,7 @@
       "count": 7
     },
     "ratchet/no-abbreviation": {
-      "count": 7
+      "count": 5
     }
   },
   "src/components/retirement-projection/tax-summary-card.tsx": {
@@ -3240,9 +3213,6 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
       "count": 1
     },
     "ratchet/no-jsx-iife": {
@@ -3282,7 +3252,7 @@
       "count": 6
     },
     "ratchet/no-abbreviation": {
-      "count": 22
+      "count": 10
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
@@ -3316,7 +3286,7 @@
       "count": 26
     },
     "ratchet/no-abbreviation": {
-      "count": 50
+      "count": 49
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3352,7 +3322,7 @@
       "count": 9
     },
     "ratchet/no-abbreviation": {
-      "count": 24
+      "count": 15
     },
     "ratchet/no-guarded-division": {
       "count": 1

@@ -106,7 +106,7 @@ export function buildEligibilityNote(
  */
 function buildRoutingReasonClause(
   ia: Pick<IndividualAccountYearBalance, "category" | "taxType">,
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
@@ -123,10 +123,10 @@ function buildRoutingReasonClause(
   if (
     catCfg?.supportsRothSplit &&
     !isTaxFreeBucket(ia.taxType) &&
-    yr.config.withdrawalRoutingMode === "bracket_filling" &&
-    yr.bracketTraditionalCap != null
+    yearRow.config.withdrawalRoutingMode === "bracket_filling" &&
+    yearRow.bracketTraditionalCap != null
   ) {
-    const targetPct = yr.config.rothBracketTarget;
+    const targetPercent = yearRow.config.rothBracketTarget;
     // "Why THIS bracket" — shares
     // describeBracketTargetChoice with the advisor report
     // (lib/pure/advice/report/bracket-target-narrative.ts) so the two can never
@@ -134,54 +134,57 @@ function buildRoutingReasonClause(
     // optimizer when available, falls back to the qualitative-only
     // version otherwise.
     const targetClause =
-      targetPct != null
-        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
+      targetPercent != null
+        ? `Filled up to ${formatCurrency(deflate(yearRow.bracketTraditionalCap, yearRow.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
             bracketOptimizerResult,
-            targetPct,
+            targetPercent,
             {
-              bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
-              taxableSS: deflate(yr.taxableSS, yr.year),
+              bracketTraditionalCap: deflate(
+                yearRow.bracketTraditionalCap,
+                yearRow.year,
+              ),
+              taxableSS: deflate(yearRow.taxableSS, yearRow.year),
               // The GROWN per-year deduction (bracket-growth.ts), not the
               // plan-level engineSettings echo — pairing a
               // grown bracketTraditionalCap with an ungrown deduction in the
               // same sentence was internally inconsistent for any year
               // beyond the tax data's vintage.
               standardDeduction:
-                yr.standardDeduction != null
-                  ? deflate(yr.standardDeduction, yr.year)
-                  : yr.standardDeduction,
+                yearRow.standardDeduction != null
+                  ? deflate(yearRow.standardDeduction, yearRow.year)
+                  : yearRow.standardDeduction,
             },
           )}`
-        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
+        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yearRow.bracketTraditionalCap, yearRow.year))} of ordinary income`;
     // "Why this account over another" (cross-category order, e.g. 401k
     // before IRA) — your configured Traditional Account Order, restricted
     // to the Traditional-preference categories Phase 1 actually consults
     // (same restriction the order editor itself uses).
-    const tradOrder = yr.config.withdrawalOrder.filter((c) =>
+    const tradOrder = yearRow.config.withdrawalOrder.filter((c) =>
       tradPreferenceEngineCategories().includes(c),
     );
-    const orderIdx = tradOrder.indexOf(ia.category);
+    const orderIndex = tradOrder.indexOf(ia.category);
     const orderClause =
-      tradOrder.length > 1 && orderIdx >= 0
-        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIdx + 1})`
+      tradOrder.length > 1 && orderIndex >= 0
+        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIndex + 1})`
         : "";
     return `${targetClause}${orderClause}`;
   }
   const hsaDraw = nonMedicalPenaltyRate(ia.category) !== null;
   const hsaNote = hsaDraw ? HSA_DRAW_TREATMENT : undefined; // ranked or not
-  if (!yr.discretionaryTierBreakdown?.length) return hsaNote;
+  if (!yearRow.discretionaryTierBreakdown?.length) return hsaNote;
   let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
   if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
   else if (hsaDraw) sourceKind = "hsa";
   else if (catCfg?.supportsRothSplit && isTaxFreeBucket(ia.taxType))
     sourceKind = "roth";
   if (!sourceKind) return undefined;
-  const relevant = yr.discretionaryTierBreakdown.filter(
+  const relevant = yearRow.discretionaryTierBreakdown.filter(
     (t) => t.source === sourceKind,
   );
   if (relevant.length === 0) return hsaNote;
   const breakdownClause = formatDiscretionaryTierBreakdown(
-    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
+    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yearRow.year) })),
   );
   // "Why isn't brokerage draining before Roth" —
   // shares describeDiscretionaryCapacityMath with the advisor report so
@@ -197,21 +200,25 @@ function buildRoutingReasonClause(
   const capacityClause =
     includeCapacityNote && (sourceKind === "roth" || sourceKind === "brokerage")
       ? describeDiscretionaryCapacityMath(
-          yr.rothBasisCapacity != null && yr.brokerageZeroLtcgCapacity != null
+          yearRow.rothBasisCapacity != null &&
+            yearRow.brokerageZeroLtcgCapacity != null
             ? {
-                rothBasisCapacity: deflate(yr.rothBasisCapacity, yr.year),
+                rothBasisCapacity: deflate(
+                  yearRow.rothBasisCapacity,
+                  yearRow.year,
+                ),
                 brokerageZeroLtcgCapacity: deflate(
-                  yr.brokerageZeroLtcgCapacity,
-                  yr.year,
+                  yearRow.brokerageZeroLtcgCapacity,
+                  yearRow.year,
                 ),
               }
             : undefined,
-          yr.discretionaryTierBreakdown.map((t) => ({
+          yearRow.discretionaryTierBreakdown.map((t) => ({
             ...t,
-            amount: deflate(t.amount, yr.year),
+            amount: deflate(t.amount, yearRow.year),
           })),
-          yr.config.discretionaryWithdrawalOrder,
-          yr.rmdOverrodeRouting,
+          yearRow.config.discretionaryWithdrawalOrder,
+          yearRow.rmdOverrodeRouting,
         )
       : undefined;
   if (capacityClause) onCapacityNoteUsed?.();
@@ -224,16 +231,16 @@ function buildRoutingReasonClause(
  *  questions (can this money be touched vs. why did routing pick it). */
 export function buildFullAccountNote(
   ia: IndividualAccountYearBalance,
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
 ): { note?: string; noteLocked?: boolean } {
-  const eligibility = buildEligibilityNote(ia, yr, deflate);
+  const eligibility = buildEligibilityNote(ia, yearRow, deflate);
   const reason = buildRoutingReasonClause(
     ia,
-    yr,
+    yearRow,
     deflate,
     bracketOptimizerResult,
     includeCapacityNote,

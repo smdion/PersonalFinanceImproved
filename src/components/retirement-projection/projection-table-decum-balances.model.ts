@@ -25,7 +25,7 @@ import { totalWithdrawalItems } from "./projection-table-decum-row.model";
 
 /** The withdrawal total's tooltip: draws, Social Security, RMD, budget. */
 export function totalWithdrawalTooltip(
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   dpt: ReturnType<ProjectionState["getPersonYearTotals"]>,
   personFilter: ProjectionState["personFilter"],
   dyr: EngineDecumulationYear,
@@ -47,13 +47,13 @@ export function totalWithdrawalTooltip(
   engineSettings: ProjectionState["engineSettings"],
   decumOverrideNotes: string | undefined,
 ) {
-  const iabs = yr.individualAccountBalances ?? [];
+  const iabs = yearRow.individualAccountBalances ?? [];
   const filteredIabs = dpt
     ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
     : iabs;
   const items = totalWithdrawalItems(
     dyr,
-    yr,
+    yearRow,
     filteredIabs,
     dSlotMap,
     yearLumpSums,
@@ -82,14 +82,14 @@ export function totalWithdrawalTooltip(
       ? ssBreakdown
           .map(
             (e) =>
-              `${e.personName}: ${formatCurrency(deflate(e.amount, yr.year))}`,
+              `${e.personName}: ${formatCurrency(deflate(e.amount, yearRow.year))}`,
           )
           .join(", ")
       : null;
   const ssMeta = isSsStartRow
-    ? `Social Security begins — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
+    ? `Social Security begins — ${formatCurrency(deflate(dyr.ssIncome, yearRow.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
     : hasSs
-      ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
+      ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yearRow.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
       : undefined;
   // Full satisfaction status (checkmark/shortfall/
   // excess wording), not just the bare amount — parity with the
@@ -106,33 +106,33 @@ export function totalWithdrawalTooltip(
     meta: ssMeta,
     shortfall: dyr.unmetNeedMaterial
       ? {
-          amount: deflate(dyr.unmetNeed ?? 0, yr.year),
+          amount: deflate(dyr.unmetNeed ?? 0, yearRow.year),
           nonRetirementAmount:
             (dyr.nonRetirementShortfall ?? 0) > 0
-              ? deflate(dyr.nonRetirementShortfall!, yr.year)
+              ? deflate(dyr.nonRetirementShortfall!, yearRow.year)
               : undefined,
           penaltyAvoidedAmount:
             (dyr.penaltyAvoidedShortfall ?? 0) > 0
-              ? deflate(dyr.penaltyAvoidedShortfall!, yr.year)
+              ? deflate(dyr.penaltyAvoidedShortfall!, yearRow.year)
               : undefined,
         }
       : undefined,
     rmd: hasRmd
       ? {
-          amount: deflate(dyr.rmdAmount, yr.year),
+          amount: deflate(dyr.rmdAmount, yearRow.year),
           isStartYear: isRmdStartRow,
           satisfiedNotably: rmdSatisfied,
-          shortfallAmount: deflate(rmdShortfallAmount, yr.year),
-          excessAmount: deflate(rmdExcessAmount, yr.year),
+          shortfallAmount: deflate(rmdShortfallAmount, yearRow.year),
+          excessAmount: deflate(rmdExcessAmount, yearRow.year),
           excessMode:
             engineSettings?.rmdExcessHandling === "spend"
               ? "spend"
               : "reinvest",
           qcdAmount:
             (dyr.qcdAmount ?? 0) > 0
-              ? deflate(dyr.qcdAmount!, yr.year)
+              ? deflate(dyr.qcdAmount!, yearRow.year)
               : undefined,
-          divisorDetail: formatRmdDivisorDetail(dyr, deflate, yr.year),
+          divisorDetail: formatRmdDivisorDetail(dyr, deflate, yearRow.year),
         }
       : undefined,
     strategyEvent: (() => {
@@ -146,14 +146,14 @@ export function totalWithdrawalTooltip(
     growth:
       Math.abs(totalGrowth) > 1
         ? {
-            amount: deflate(totalGrowth, yr.year),
+            amount: deflate(totalGrowth, yearRow.year),
           }
         : undefined,
     withdrawals:
       dyr.taxCost > 0
         ? {
-            amount: deflate(dyr.totalWithdrawal, yr.year),
-            taxCost: deflate(dyr.taxCost, yr.year),
+            amount: deflate(dyr.totalWithdrawal, yearRow.year),
+            taxCost: deflate(dyr.taxCost, yearRow.year),
           }
         : undefined,
     // A withdrawal-sized year isn't driven by the budget.
@@ -161,7 +161,7 @@ export function totalWithdrawalTooltip(
       budgetProfileName && !dyr.withdrawalSized
         ? {
             profile: budgetProfileName,
-            amount: deflate(dyr.projectedExpenses, yr.year),
+            amount: deflate(dyr.projectedExpenses, yearRow.year),
           }
         : undefined,
     overrideNote: decumOverrideNotes
@@ -172,10 +172,12 @@ export function totalWithdrawalTooltip(
 
 /** One tax type's balance tooltip: draws, lump sums, RMD excess, QCD. */
 export function taxTypeBalanceTooltip(
-  bucketAccts: NonNullable<EngineDecumulationYear["individualAccountBalances"]>,
+  bucketAccounts: NonNullable<
+    EngineDecumulationYear["individualAccountBalances"]
+  >,
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
   deflate: ProjectionState["deflate"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   dpt: ReturnType<ProjectionState["getPersonYearTotals"]>,
   dyr: EngineDecumulationYear,
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
@@ -190,17 +192,17 @@ export function taxTypeBalanceTooltip(
   // per-CATEGORY slot aggregate here, collapsing e.g. two
   // people's separate 401ks into one line, while the
   // Balance-by-Account view always broke it out per account.
-  const multiAcctBucket = bucketAccts.length > 1;
-  if (bucketAccts.length > 0) {
+  const multiAccountBucket = bucketAccounts.length > 1;
+  if (bucketAccounts.length > 0) {
     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
-    for (const ia of bucketAccts) {
+    for (const ia of bucketAccounts) {
       const wd = ia.draw?.withdrawal ?? 0;
       if (wd > 0) {
         wdLineItems.push({
-          label: multiAcctBucket
+          label: multiAccountBucket
             ? ownerAccountLabel(ia)
             : (catDisplayLabel[ia.category] ?? ia.category),
-          amount: deflate(wd, yr.year),
+          amount: deflate(wd, yearRow.year),
           prefix: "-",
           taxType: bucketTaxField
             ? itemTaxType(ia.category, bucketTaxField)
@@ -217,7 +219,7 @@ export function taxTypeBalanceTooltip(
       if (wd > 0) {
         wdLineItems.push({
           label: catDisplayLabel[slot.category] ?? slot.category,
-          amount: deflate(wd, yr.year),
+          amount: deflate(wd, yearRow.year),
           prefix: "-",
           taxType: bucketTaxField
             ? itemTaxType(slot.category, bucketTaxField)
@@ -232,7 +234,7 @@ export function taxTypeBalanceTooltip(
   for (const ls of bucketLumps) {
     wdLineItems.push({
       label: ls.label ?? "Lump sum",
-      amount: deflate(ls.amount, yr.year),
+      amount: deflate(ls.amount, yearRow.year),
       prefix: "+",
       color: "emerald",
     });
@@ -244,29 +246,29 @@ export function taxTypeBalanceTooltip(
   // is where reinvested excess actually lands (or would
   // have, under "spend"); preTax is where QCD money left
   // from.
-  const bucketRmdExcess = yr.rmdExcessAmount ?? 0;
+  const bucketRmdExcess = yearRow.rmdExcessAmount ?? 0;
   const bucketRmdMode = engineSettings?.rmdExcessHandling;
   if (isAfterTaxType(bucket) && bucketRmdExcess > 0.01) {
     if (bucketRmdMode === "spend") {
       wdLineItems.push({
         label: "RMD excess spent (not reinvested)",
-        amount: deflate(bucketRmdExcess, yr.year),
+        amount: deflate(bucketRmdExcess, yearRow.year),
         color: "gray",
       });
     } else {
       wdLineItems.push({
         label: "RMD excess reinvested",
-        amount: deflate(bucketRmdExcess, yr.year),
+        amount: deflate(bucketRmdExcess, yearRow.year),
         prefix: "+",
         color: "amber",
       });
     }
   }
-  const bucketQcd = yr.qcdAmount ?? 0;
+  const bucketQcd = yearRow.qcdAmount ?? 0;
   if (isPreTaxType(bucket) && bucketQcd > 0.01) {
     wdLineItems.push({
       label: "QCD to charity (excluded from taxable income)",
-      amount: deflate(bucketQcd, yr.year),
+      amount: deflate(bucketQcd, yearRow.year),
       prefix: "-",
       color: "violet",
     });
@@ -274,12 +276,12 @@ export function taxTypeBalanceTooltip(
   return renderTooltip({
     kind: "money",
     header: `${taxTypeLabel(bucket)}: ${pct}% of portfolio`,
-    meta: `${yr.year} · ${formatPercent(yr.returnRate, 1)} return`,
+    meta: `${yearRow.year} · ${formatPercent(yearRow.returnRate, 1)} return`,
     items: wdLineItems.length > 0 ? wdLineItems : undefined,
     growth:
       Math.abs(bucketGrowth) > 1
         ? {
-            amount: deflate(bucketGrowth, yr.year),
+            amount: deflate(bucketGrowth, yearRow.year),
           }
         : undefined,
   });

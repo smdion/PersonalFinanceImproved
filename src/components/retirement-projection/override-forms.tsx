@@ -254,14 +254,14 @@ export function BudgetOverrideForm({
   const [profileId, setProfileId] = useState(
     budgetProfiles.find((p) => p.isActive)?.id ?? budgetProfiles[0]?.id ?? 0,
   );
-  const [columnIdx, setColumnIdx] = useState(0);
+  const [columnIndex, setColumnIndex] = useState(0);
   const [customValue, setCustomValue] = useState(initialValue ?? "");
   const [notes, setNotes] = useState("");
 
   const selectedProfile = budgetProfiles.find((p) => p.id === profileId);
   const monthlyBudget =
     source === "profile" && selectedProfile
-      ? (selectedProfile.columnTotals[columnIdx] ?? 0)
+      ? (selectedProfile.columnTotals[columnIndex] ?? 0)
       : (parseFloat(customValue) || 0) / 12;
   const annualBudget = monthlyBudget * 12;
 
@@ -291,7 +291,7 @@ export function BudgetOverrideForm({
                 value={String(profileId)}
                 onChange={(e) => {
                   setProfileId(Number(e.target.value));
-                  setColumnIdx(0);
+                  setColumnIndex(0);
                 }}
                 className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
               >
@@ -307,8 +307,8 @@ export function BudgetOverrideForm({
               <label className="block">
                 <span className="text-muted text-xs">Column</span>
                 <select
-                  value={String(columnIdx)}
-                  onChange={(e) => setColumnIdx(Number(e.target.value))}
+                  value={String(columnIndex)}
+                  onChange={(e) => setColumnIndex(Number(e.target.value))}
                   className="border-strong mt-0.5 block w-32 rounded border px-2 py-1.5 text-sm"
                 >
                   {selectedProfile.columnLabels.map((label, colIndex) => (
@@ -354,7 +354,7 @@ export function BudgetOverrideForm({
             if (annualBudget <= 0) return;
             const profileNote =
               source === "profile" && selectedProfile
-                ? `Budget: ${selectedProfile.name} (${selectedProfile.columnLabels[columnIdx] ?? "Standard"}) — ${formatCurrency(monthlyBudget)}/mo${notes ? ` — ${notes}` : ""}`
+                ? `Budget: ${selectedProfile.name} (${selectedProfile.columnLabels[columnIndex] ?? "Standard"}) — ${formatCurrency(monthlyBudget)}/mo${notes ? ` — ${notes}` : ""}`
                 : notes;
             onSubmit(annualBudget, profileNote);
           }}
@@ -366,7 +366,7 @@ export function BudgetOverrideForm({
       {source === "profile" && selectedProfile && (
         <p className="text-caption text-faint">
           {selectedProfile.name} (
-          {selectedProfile.columnLabels[columnIdx] ?? "Standard"}):{" "}
+          {selectedProfile.columnLabels[columnIndex] ?? "Standard"}):{" "}
           {formatCurrency(monthlyBudget)}/mo · {formatCurrency(annualBudget)}/yr
         </p>
       )}

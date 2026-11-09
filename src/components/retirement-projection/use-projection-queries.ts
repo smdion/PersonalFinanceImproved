@@ -895,10 +895,10 @@ export function useProjectionQueries(
     if (!det) return null;
     return new Map(
       det.projectionByYear.map((y) => {
-        const yr = parentCategoryFilter
+        const yearRow = parentCategoryFilter
           ? filterYearByParentCategory(y, parentCategoryFilter)
           : y;
-        return [y.year, yr] as const;
+        return [y.year, yearRow] as const;
       }),
     );
   }, [

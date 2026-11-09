@@ -26,7 +26,7 @@ export type RenderMcCellOptions = {
 };
 
 export function renderMcCell(
-  yr: EngineYearProjection,
+  yearRow: EngineYearProjection,
   detBal: number,
   opts: RenderMcCellOptions,
 ) {
@@ -40,43 +40,49 @@ export function renderMcCell(
     renderTooltip,
   } = opts;
   if (!mcBandsByYear) return null;
-  const band = mcBandsByYear.get(yr.year);
+  const band = mcBandsByYear.get(yearRow.year);
   if (!band) return <td className="text-faint px-2 py-1.5 text-right">---</td>;
-  const mcP50 = deflate(band.p50, yr.year);
+  const mcP50 = deflate(band.p50, yearRow.year);
   const showDelta = !isPersonFiltered && !parentCategoryFilter;
   const delta = mcP50 - detBal;
   const deltaColor = delta >= 0 ? "text-green-600" : "text-red-500";
   // Proof: show MC's own deterministic year data to verify overrides are applied (diag mode only)
-  const mcDetYr = diagMode ? mcDetByYear?.get(yr.year) : undefined;
+  const simulationDeterministicYear = diagMode
+    ? mcDetByYear?.get(yearRow.year)
+    : undefined;
   let proofNote: string | undefined;
-  if (mcDetYr) {
+  if (simulationDeterministicYear) {
     const parts: string[] = [];
     parts.push(
-      `Simulation det. bal: ${formatCurrency(deflate(rowTotal(mcDetYr), yr.year))}`,
+      `Simulation det. bal: ${formatCurrency(deflate(rowTotal(simulationDeterministicYear), yearRow.year))}`,
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(
-      mcDetYr.phase === "decumulation"
-        ? `Spending: ${formatCurrency(deflate(mcDetYr.spending, yr.year))}/yr`
-        : `Expenses: ${formatCurrency(deflate(mcDetYr.projectedExpenses, yr.year))}/yr`,
+      simulationDeterministicYear.phase === "decumulation"
+        ? `Spending: ${formatCurrency(deflate(simulationDeterministicYear.spending, yearRow.year))}/yr`
+        : `Expenses: ${formatCurrency(deflate(simulationDeterministicYear.projectedExpenses, yearRow.year))}/yr`,
     );
-    if (mcDetYr.phase === "accumulation") {
-      const accYr = mcDetYr as EngineAccumulationYear;
+    if (simulationDeterministicYear.phase === "accumulation") {
+      const accumulationYear =
+        simulationDeterministicYear as EngineAccumulationYear;
       parts.push(
-        `Salary: ${formatCurrency(deflate(accYr.projectedSalary, yr.year))}`,
+        `Salary: ${formatCurrency(deflate(accumulationYear.projectedSalary, yearRow.year))}`,
       );
       parts.push(
-        `Contribs: ${formatCurrency(deflate(accYr.totalEmployee + accYr.totalEmployer, yr.year))}`,
+        `Contribs: ${formatCurrency(deflate(accumulationYear.totalEmployee + accumulationYear.totalEmployer, yearRow.year))}`,
       );
     } else {
-      const decYr = mcDetYr as EngineDecumulationYear;
+      const decumulationYear =
+        simulationDeterministicYear as EngineDecumulationYear;
       parts.push(
-        `Withdrawals: ${formatCurrency(deflate(decYr.totalWithdrawal, yr.year))}`,
+        `Withdrawals: ${formatCurrency(deflate(decumulationYear.totalWithdrawal, yearRow.year))}`,
       );
-      parts.push(`Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`);
-      if (decYr.ssTaxCost > 0)
+      parts.push(
+        `Tax rate: ${formatPercent(decumulationYear.effectiveTaxRate, 1)}`,
+      );
+      if (decumulationYear.ssTaxCost > 0)
         parts.push(
-          `Tax on Social Security: ${formatCurrency(deflate(decYr.ssTaxCost, yr.year))}`,
+          `Tax on Social Security: ${formatCurrency(deflate(decumulationYear.ssTaxCost, yearRow.year))}`,
         );
     }
     proofNote = `Simulation engine: ${parts.join(" ·")}`;
@@ -89,20 +95,20 @@ export function renderMcCell(
         items: [
           {
             label: "95th",
-            amount: deflate(band.p95, yr.year),
+            amount: deflate(band.p95, yearRow.year),
           },
           {
             label: "75th",
-            amount: deflate(band.p75, yr.year),
+            amount: deflate(band.p75, yearRow.year),
           },
           { label: "Median", amount: mcP50 },
           {
             label: "25th",
-            amount: deflate(band.p25, yr.year),
+            amount: deflate(band.p25, yearRow.year),
           },
           {
             label: "5th",
-            amount: deflate(band.p5, yr.year),
+            amount: deflate(band.p5, yearRow.year),
           },
         ],
         ...(isPersonFiltered || proofNote

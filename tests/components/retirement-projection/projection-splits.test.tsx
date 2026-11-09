@@ -173,7 +173,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     personDepletionInfo: null,
     visibleColumns: {
       balanceTaxTypes: new Set(["preTax", "taxFree", "hsa", "afterTax"]),
-      balanceAccts: new Set(["401k_trad"]),
+      balanceAccounts: new Set(["401k_trad"]),
     },
     columnLabel: { "401k_trad": "401k Trad" },
     baseYear: 2026,

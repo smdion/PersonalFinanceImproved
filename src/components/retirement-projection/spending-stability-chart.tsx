@@ -137,15 +137,15 @@ export function SpendingStabilityChart({
 
   const chartData = decYears
     .filter((_, i) => i % 2 === 0 || i === decYears.length - 1)
-    .map((yr) => {
-      const decIdx = yr.age - decYears[0]!.age;
-      const inflationFactor = Math.pow(1 + inflationRate, decIdx);
+    .map((yearRow) => {
+      const decumulationIndex = yearRow.age - decYears[0]!.age;
+      const inflationFactor = Math.pow(1 + inflationRate, decumulationIndex);
 
       const baseline = isStrategy
         ? usesPostRetirementRaise
-          ? yr.targetWithdrawal
+          ? yearRow.targetWithdrawal
           : year1Withdrawal * inflationFactor
-        : yr.budgetOnlyExpenses;
+        : yearRow.budgetOnlyExpenses;
       // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
       // Social Security fully covers year-1 spending): 0%, not a misleading
       // 100% that would hide real spending variability in later years.
@@ -159,19 +159,21 @@ export function SpendingStabilityChart({
       // Budget view: what the strategy has the household spend against the
       // budget (the Simulation's budget band measures the same); strategy
       // view: the withdrawal against the strategy's own baseline.
-      const measured = isStrategy ? yr.totalWithdrawal : strategySpending(yr);
+      const measured = isStrategy
+        ? yearRow.totalWithdrawal
+        : strategySpending(yearRow);
       const ratio = safeDivide(measured, baseline, 0);
 
-      const band = mcBandMap?.get(yr.age);
+      const band = mcBandMap?.get(yearRow.age);
 
       // MC band data — match Balance chart's stacked area pattern
       const pct = (v: number) => Math.round(v * 1000) / 10;
       const datum: Record<string, number | undefined> = {
-        age: yr.age,
-        year: yr.year,
+        age: yearRow.age,
+        year: yearRow.year,
         ratio: pct(ratio),
-        withdrawal: Math.round(deflate(measured, yr.year)),
-        baseline: Math.round(deflate(baseline, yr.year)),
+        withdrawal: Math.round(deflate(measured, yearRow.year)),
+        baseline: Math.round(deflate(baseline, yearRow.year)),
       };
 
       if (band) {

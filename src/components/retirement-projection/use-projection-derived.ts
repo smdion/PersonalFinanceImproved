@@ -107,8 +107,8 @@ export function useProjectionDerived(
     if (!rawResult || !parentCategoryFilter) return rawResult;
     return {
       ...rawResult,
-      projectionByYear: rawResult.projectionByYear.map((yr) =>
-        filterYearByParentCategory(yr, parentCategoryFilter),
+      projectionByYear: rawResult.projectionByYear.map((yearRow) =>
+        filterYearByParentCategory(yearRow, parentCategoryFilter),
       ),
     };
   }, [rawResult, parentCategoryFilter]);
@@ -223,9 +223,9 @@ export function useProjectionDerived(
 
   // --- Per-person helpers ---
   const getPersonYearTotals = useCallback(
-    (yr: EngineYearProjection) => {
+    (yearRow: EngineYearProjection) => {
       if (!isPersonFiltered) return null;
-      const iabs = yr.individualAccountBalances ?? [];
+      const iabs = yearRow.individualAccountBalances ?? [];
       const mine = iabs.filter((ia) => ia.ownerPersonId === personFilter);
       const balance = mine.reduce((s, ia) => s + ia.balance, 0);
       const contribution = mine.reduce(
@@ -290,12 +290,12 @@ export function useProjectionDerived(
 
   const personDepletionInfo = (() => {
     if (!isPersonFiltered || !result) return null;
-    for (const yr of result.projectionByYear) {
-      if (yr.phase !== "decumulation") continue;
-      const iabs = yr.individualAccountBalances ?? [];
+    for (const yearRow of result.projectionByYear) {
+      if (yearRow.phase !== "decumulation") continue;
+      const iabs = yearRow.individualAccountBalances ?? [];
       const mine = iabs.filter((ia) => ia.ownerPersonId === personFilter);
       const balance = mine.reduce((s, ia) => s + ia.balance, 0);
-      if (balance <= 0) return { year: yr.year, age: yr.age };
+      if (balance <= 0) return { year: yearRow.year, age: yearRow.age };
     }
     return null;
   })();
@@ -318,8 +318,8 @@ export function useProjectionDerived(
     let base = accountBreakdown;
     if (parentCategoryFilter) {
       const out: Record<string, AccountBreakdown[]> = {};
-      for (const [cat, accts] of Object.entries(base)) {
-        const f = accts.filter(
+      for (const [cat, accounts] of Object.entries(base)) {
+        const f = accounts.filter(
           (a) => a.parentCategory === parentCategoryFilter,
         );
         if (f.length > 0) out[cat] = f;
@@ -328,8 +328,8 @@ export function useProjectionDerived(
     }
     if (!isPersonFiltered) return base;
     const out: Record<string, AccountBreakdown[]> = {};
-    for (const [cat, accts] of Object.entries(base)) {
-      const filtered = accts.filter((a) => a.ownerPersonId === personFilter);
+    for (const [cat, accounts] of Object.entries(base)) {
+      const filtered = accounts.filter((a) => a.ownerPersonId === personFilter);
       if (filtered.length > 0) out[cat] = filtered;
     }
     return out;
@@ -339,16 +339,16 @@ export function useProjectionDerived(
   const visibleColumns = useMemo(() => {
     const contribCats = new Set<string>();
     const contribTaxTypes = new Set<string>();
-    const balanceAccts = new Set<string>();
+    const balanceAccounts = new Set<string>();
     const balanceTaxTypes = new Set<string>();
     if (result) {
-      for (const yr of result.projectionByYear) {
+      for (const yearRow of result.projectionByYear) {
         /* eslint-disable no-restricted-syntax -- type narrowing for dynamic engine output */
         if (
-          "slots" in yr &&
-          Array.isArray((yr as unknown as Record<string, unknown>).slots)
+          "slots" in yearRow &&
+          Array.isArray((yearRow as unknown as Record<string, unknown>).slots)
         ) {
-          for (const slot of (yr as unknown as Record<string, unknown>)
+          for (const slot of (yearRow as unknown as Record<string, unknown>)
             .slots as Record<string, unknown>[]) {
             /* eslint-enable no-restricted-syntax */
             const hasContrib =
@@ -363,7 +363,7 @@ export function useProjectionDerived(
                 isOverflowTarget(slotCat as AccountCategory)
               ) {
                 const iabs = (
-                  yr as {
+                  yearRow as {
                     individualAccountBalances?: {
                       category: string;
                       parentCategory?: string;
@@ -410,14 +410,14 @@ export function useProjectionDerived(
         // per-account and per-tax-type figures are one collapsed bucket, so
         // only the Balance total shows (hasIndividualAccountData above).
         if (hasIndividualAccountData) {
-          if (yr.balanceByAccount) {
+          if (yearRow.balanceByAccount) {
             for (const seg of getAccountSegments()) {
-              if (getSegmentBalance(yr.balanceByAccount, seg) !== 0)
-                balanceAccts.add(seg.key);
+              if (getSegmentBalance(yearRow.balanceByAccount, seg) !== 0)
+                balanceAccounts.add(seg.key);
             }
           }
-          if (yr.balanceByTaxType) {
-            const bt = yr.balanceByTaxType;
+          if (yearRow.balanceByTaxType) {
+            const bt = yearRow.balanceByTaxType;
             if (bt.preTax !== 0) balanceTaxTypes.add("preTax");
             if (bt.taxFree !== 0) balanceTaxTypes.add("taxFree");
             if (bt.hsa !== 0) balanceTaxTypes.add("hsa");
@@ -426,7 +426,7 @@ export function useProjectionDerived(
         }
       }
     }
-    return { contribCats, contribTaxTypes, balanceAccts, balanceTaxTypes };
+    return { contribCats, contribTaxTypes, balanceAccounts, balanceTaxTypes };
   }, [result, parentCategoryFilter, hasIndividualAccountData]);
 
   // --- Column labels and tooltips ---
@@ -437,9 +437,9 @@ export function useProjectionDerived(
   const contribHeaderTooltip = useMemo(() => {
     const tips: Record<string, string> = {};
     for (const cat of getAllCategories()) {
-      const accts = filteredBreakdown[cat];
-      if (accts && accts.length > 0) {
-        const names = accts.map((a) => a.name).join(",");
+      const accounts = filteredBreakdown[cat];
+      if (accounts && accounts.length > 0) {
+        const names = accounts.map((a) => a.name).join(",");
         tips[cat] = `${names}. Hover values for breakdown.`;
       } else {
         const cfg = getAccountTypeConfig(cat);
@@ -458,12 +458,12 @@ export function useProjectionDerived(
       hsa: [],
       afterTax: [],
     };
-    for (const [cat, accts] of Object.entries(filteredBreakdown)) {
+    for (const [cat, accounts] of Object.entries(filteredBreakdown)) {
       const cfg =
         cat in ACCOUNT_TYPE_CONFIG
           ? ACCOUNT_TYPE_CONFIG[cat as AccountCategory]
           : null;
-      for (const a of accts) {
+      for (const a of accounts) {
         let colKey: string;
         if (cfg && cfg.supportsRothSplit) {
           colKey = `${cat}_${taxTypeToSubKey(a.taxType)}`;
@@ -513,11 +513,11 @@ export function useProjectionDerived(
     }
     const rates: EngineContribRate[] = [];
     let prevRate: number | null = null;
-    for (const yr of result.projectionByYear) {
-      if (yr.phase !== "accumulation") break;
-      const r = (yr as EngineAccumulationYear).config.contributionRate;
+    for (const yearRow of result.projectionByYear) {
+      if (yearRow.phase !== "accumulation") break;
+      const r = (yearRow as EngineAccumulationYear).config.contributionRate;
       if (r !== prevRate) {
-        rates.push({ year: yr.year, rate: r });
+        rates.push({ year: yearRow.year, rate: r });
         prevRate = r;
       }
     }
@@ -553,8 +553,8 @@ export function useProjectionDerived(
       const milestones = new Set<number>();
       milestones.add(years[0]!.year);
       milestones.add(years[years.length - 1]!.year);
-      for (const yr of years) {
-        if (yr.year % 5 === 0) milestones.add(yr.year);
+      for (const yearRow of years) {
+        if (yearRow.year % 5 === 0) milestones.add(yearRow.year);
       }
       for (let i = 1; i < years.length; i++) {
         if (years[i]!.phase !== years[i - 1]!.phase)
@@ -567,7 +567,7 @@ export function useProjectionDerived(
       if (failureYear) milestones.add(failureYear);
       // A link to one year shows that year too.
       if (focusedYear !== null) milestones.add(focusedYear);
-      return years.filter((yr) => milestones.has(yr.year));
+      return years.filter((yearRow) => milestones.has(yearRow.year));
     },
     [showAllYears, accumOverrides, decumOverrides, result, focusedYear],
   );

@@ -119,7 +119,7 @@ function renderDecum(year: number) {
       <table>
         <tbody>
           <DecumulationRow
-            yr={yr}
+            yearRow={yr}
             state={state}
             isPhaseTransition={false}
             hasOverride={false}

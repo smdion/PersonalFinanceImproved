@@ -11,7 +11,7 @@ import { tipColorClass } from "./utils";
  */
 function renderLineItem(
   item: TooltipLineItem,
-  idx: number,
+  index: number,
   nested = false,
 ): React.ReactNode {
   const colorCls = item.color ? tipColorClass[item.color] : "";
@@ -40,7 +40,7 @@ function renderLineItem(
     });
   if (item.sub) allSub.push(...item.sub);
   return (
-    <div key={idx} className={nested ? "pl-2" : ""}>
+    <div key={index} className={nested ? "pl-2" : ""}>
       <div className="flex items-baseline justify-between gap-3">
         <span className={`font-medium ${colorCls}`}>
           {item.label}

@@ -97,24 +97,24 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     engineSettings.withdrawalStrategy === "guyton_klinger"
       ? gkAnchorRate(years)
       : null;
-  const retIdx = years.findIndex((y) => y.phase === "decumulation");
-  const retYear = years[retIdx]?.year ?? null;
+  const retirementIndex = years.findIndex((y) => y.phase === "decumulation");
+  const retYear = years[retirementIndex]?.year ?? null;
   // Also pin the SS and RMD start years so milestone reference lines always
   // appear, even when those years fall on an odd-indexed (normally skipped) one.
-  const ssIdx = years.findIndex(
+  const socialSecurityIndex = years.findIndex(
     (y) => y.phase === "decumulation" && y.ssIncome > 0,
   );
-  const ssStartYear = years[ssIdx]?.year ?? null;
-  const rmdIdx = years.findIndex(
+  const ssStartYear = years[socialSecurityIndex]?.year ?? null;
+  const rmdIndex = years.findIndex(
     (y) => y.phase === "decumulation" && y.rmdAmount > 0,
   );
-  const rmdStartYear = years[rmdIdx]?.year ?? null;
+  const rmdStartYear = years[rmdIndex]?.year ?? null;
   // Guyton-Klinger guardrail events (data already computed and
   // shown in the table-row tooltip — see projection-table-decum-row.tsx —
   // just not previously marked on the chart). Pin every triggering year the
   // same way SS/RMD start ages are pinned, or a guardrail event on an
   // odd-indexed year would silently vanish from the downsampled chart data.
-  const guardrailIdxs = new Set(
+  const guardrailIndices = new Set(
     years
       .map((y, i) => ({ y, i }))
       .filter(
@@ -128,10 +128,10 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const filtered = years.filter(
     (_, i) =>
       i % 2 === 0 ||
-      i === retIdx ||
-      i === ssIdx ||
-      (rmdIdx !== -1 && i === rmdIdx) ||
-      guardrailIdxs.has(i),
+      i === retirementIndex ||
+      i === socialSecurityIndex ||
+      (rmdIndex !== -1 && i === rmdIndex) ||
+      guardrailIndices.has(i),
   );
 
   const TAX_KEYS = (["preTax", "taxFree", "hsa", "afterTax"] as const).filter(
@@ -139,43 +139,45 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   );
 
   // Account-level chart segments
-  const ACCT_SEGMENTS = getAccountSegments()
+  const ACCOUNT_SEGMENTS = getAccountSegments()
     .map((seg) => ({
       key: seg.key,
       hex: categoryChartHex(seg.category, seg.subKey === "roth"),
       label: columnLabel[seg.key] ?? seg.label,
-      get: (yr: EngineYearProjection) =>
-        getSegmentBalance(yr.balanceByAccount, seg),
+      get: (yearRow: EngineYearProjection) =>
+        getSegmentBalance(yearRow.balanceByAccount, seg),
     }))
-    .filter((seg) => visibleColumns.balanceAccts.has(seg.key));
+    .filter((seg) => visibleColumns.balanceAccounts.has(seg.key));
 
   // Build chart data
-  const chartData = filtered.map((yr) => {
-    const pt = getPersonYearTotals(yr);
+  const chartData = filtered.map((yearRow) => {
+    const pt = getPersonYearTotals(yearRow);
     const datum: Record<string, number | string> = {
-      year: yr.year,
+      year: yearRow.year,
     };
 
     if (balanceView === "taxType") {
       for (const key of TAX_KEYS) {
-        const val = pt ? pt.byTaxType[key] : yr.balanceByTaxType[key];
-        datum[key] = Math.max(0, deflate(val, yr.year));
+        const val = pt ? pt.byTaxType[key] : yearRow.balanceByTaxType[key];
+        datum[key] = Math.max(0, deflate(val, yearRow.year));
       }
     } else {
-      for (const seg of ACCT_SEGMENTS) {
-        const val = pt ? (pt.byAccount[seg.key] ?? 0) : seg.get(yr);
-        datum[seg.key] = Math.max(0, deflate(val, yr.year));
+      for (const seg of ACCOUNT_SEGMENTS) {
+        const val = pt ? (pt.byAccount[seg.key] ?? 0) : seg.get(yearRow);
+        datum[seg.key] = Math.max(0, deflate(val, yearRow.year));
       }
     }
 
     // MC percentile band areas — already in the shown dollars
     // (simulationDollars: today's are deflated per trial), never deflated
     // here.
-    const band = mcBandsByYear?.get(yr.year);
+    const band = mcBandsByYear?.get(yearRow.year);
     // This year's assumptions, for the tooltip.
-    datum._planReturn = yr.annualizedReturnRate;
+    datum._planReturn = yearRow.annualizedReturnRate;
     datum._inflation =
-      yr.phase === "decumulation" ? postRetirementInflation : generalInflation;
+      yearRow.phase === "decumulation"
+        ? postRetirementInflation
+        : generalInflation;
     if (band?.assumptions) {
       datum._simReturn = band.assumptions.expectedReturn;
       datum._simVolatility = band.assumptions.volatility;
@@ -187,7 +189,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         datum._pricesP75 = priceLevel.p75;
       }
     }
-    if (yr.phase === "decumulation" && gkAnchor !== null) {
+    if (yearRow.phase === "decumulation" && gkAnchor !== null) {
       datum._gkAnchor = gkAnchor;
       const range = band?.assumptions?.gkAnchorRange;
       if (range) {
@@ -225,17 +227,26 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     }
 
     // A year a paycheck is gone: what came out while still saving.
-    if (yr.phase === "accumulation" && yr.gapDraw) {
-      datum._gapWithdrawal = deflate(yr.gapDraw.withdrawal, yr.year);
-      datum._gapSaved = deflate(yr.totalEmployee + yr.totalEmployer, yr.year);
-      datum._gapPayIn = deflate(yr.gapDraw.pay + yr.gapDraw.ssIncome, yr.year);
-      datum._gapSpendingCut = deflate(yr.gapDraw.spendingCut, yr.year);
+    if (yearRow.phase === "accumulation" && yearRow.gapDraw) {
+      datum._gapWithdrawal = deflate(yearRow.gapDraw.withdrawal, yearRow.year);
+      datum._gapSaved = deflate(
+        yearRow.totalEmployee + yearRow.totalEmployer,
+        yearRow.year,
+      );
+      datum._gapPayIn = deflate(
+        yearRow.gapDraw.pay + yearRow.gapDraw.ssIncome,
+        yearRow.year,
+      );
+      datum._gapSpendingCut = deflate(
+        yearRow.gapDraw.spendingCut,
+        yearRow.year,
+      );
     }
 
     // Milestone event annotations (decumulation only)
-    if (yr.phase === "decumulation") {
-      datum._ssStart = yr.year === ssStartYear ? 1 : 0;
-      datum._rmdStart = yr.year === rmdStartYear ? 1 : 0;
+    if (yearRow.phase === "decumulation") {
+      datum._ssStart = yearRow.year === ssStartYear ? 1 : 0;
+      datum._rmdStart = yearRow.year === rmdStartYear ? 1 : 0;
       // All dollar figures below go through deflate() like every other
       // dollar value this chart renders (balances, MC bands) — previously
       // raw nominal dollars regardless of the Today's $/Future $ toggle
@@ -243,49 +254,52 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // deflates the same underlying fields via `dyr.rmdAmount` etc.,
       // so the chart and table disagreed on every one of these numbers
       // in "Today's $" mode).
-      datum._ssIncome = deflate(yr.ssIncome, yr.year);
+      datum._ssIncome = deflate(yearRow.ssIncome, yearRow.year);
       // Total portfolio withdrawal (all accounts/tax types combined,
       // already tax-grossed-up per grossUpForTaxes) — the "Income" overlay
       // series below, alongside SS. Real strategy-computed spending, not a
       // derived/estimated figure.
-      datum._totalWithdrawal = deflate(yr.totalWithdrawal, yr.year);
-      datum._rmdAmount = deflate(yr.rmdAmount, yr.year);
+      datum._totalWithdrawal = deflate(yearRow.totalWithdrawal, yearRow.year);
+      datum._rmdAmount = deflate(yearRow.rmdAmount, yearRow.year);
       // RMD-forced excess reinvested into brokerage — unlike
       // `_rmdStart` (which only flags the single year RMDs begin), this can
       // be nonzero in ANY decumulation year, so it's shown on hover
       // whenever it happens, not just at the milestone.
-      datum._rmdExcessAmount = deflate(yr.rmdExcessAmount, yr.year);
+      datum._rmdExcessAmount = deflate(yearRow.rmdExcessAmount, yearRow.year);
       // QCD amount — money sent directly to charity, satisfying part
       // of the RMD without counting as taxable income. Same "invisible
       // unless surfaced explicitly" issue as the excess line above; QCD
       // bypasses withdrawal routing entirely, so there's no slot/
       // withdrawal line item that would show it otherwise.
-      datum._qcdAmount = deflate(yr.qcdAmount, yr.year);
+      datum._qcdAmount = deflate(yearRow.qcdAmount, yearRow.year);
       // Dollars of this year's RMD that could NOT be forced through as
       // a real taxable distribution — 0 in the overwhelmingly common case.
       // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
       // is now possible (Retirement-only capacity can be genuinely
       // insufficient once Portfolio-parented balances no longer count).
-      datum._rmdShortfallAmount = deflate(yr.rmdShortfallAmount, yr.year);
+      datum._rmdShortfallAmount = deflate(
+        yearRow.rmdShortfallAmount,
+        yearRow.year,
+      );
       // Real, material unmet-need shortfall —
       // threaded through the same way SS/RMD milestones are so hovering
       // this exact year shows WHY it's marked, not just that it is.
-      datum._unmetNeedMaterial = yr.unmetNeedMaterial ? 1 : 0;
-      datum._unmetNeed = deflate(yr.unmetNeed ?? 0, yr.year);
+      datum._unmetNeedMaterial = yearRow.unmetNeedMaterial ? 1 : 0;
+      datum._unmetNeed = deflate(yearRow.unmetNeed ?? 0, yearRow.year);
       datum._unmetNeedNonRetirement = deflate(
-        yr.nonRetirementShortfall ?? 0,
-        yr.year,
+        yearRow.nonRetirementShortfall ?? 0,
+        yearRow.year,
       );
       datum._unmetNeedPenaltyAvoided = deflate(
-        yr.penaltyAvoidedShortfall ?? 0,
-        yr.year,
+        yearRow.penaltyAvoidedShortfall ?? 0,
+        yearRow.year,
       );
       // Guardrail event — the ReferenceLine markers
       // added a visual "▲ raise" flag on the chart but the hover tooltip
       // never carried the underlying detail, so hovering that exact year
       // showed nothing about why it was marked. Threaded through the same
       // way SS/RMD milestones are.
-      datum._strategyAction = yr.strategyAction ?? "";
+      datum._strategyAction = yearRow.strategyAction ?? "";
       // "Why was this account used" hover explanation — see
       // formatDiscretionaryTierBreakdown's docblock (utils.ts). Stored as
       // the pre-formatted string (not the raw array) since this datum
@@ -293,9 +307,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // dataKey lookups.
       datum._discretionaryRoutingNote =
         formatDiscretionaryTierBreakdown(
-          yr.discretionaryTierBreakdown?.map((t) => ({
+          yearRow.discretionaryTierBreakdown?.map((t) => ({
             ...t,
-            amount: deflate(t.amount, yr.year),
+            amount: deflate(t.amount, yearRow.year),
           })),
         ) ?? "";
     }
@@ -310,7 +324,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           hex: TAX_PIE_COLORS[k],
           label: taxTypeLabel(k),
         }))
-      : ACCT_SEGMENTS.map((s) => ({
+      : ACCOUNT_SEGMENTS.map((s) => ({
           key: s.key,
           hex: s.hex,
           label: s.label,

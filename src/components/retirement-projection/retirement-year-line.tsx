@@ -6,8 +6,10 @@ export function renderRetirementLine(
   chartData: Record<string, string | number>[],
   retYear: number | null,
 ) {
-  const retDataIdx = chartData.findIndex((d) => Number(d.year) === retYear);
-  if (retDataIdx < 0) return null;
+  const retirementDataIndex = chartData.findIndex(
+    (d) => Number(d.year) === retYear,
+  );
+  if (retirementDataIndex < 0) return null;
   return (
     <Line
       type="monotone"

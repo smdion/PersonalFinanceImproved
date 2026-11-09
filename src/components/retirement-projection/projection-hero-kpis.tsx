@@ -148,7 +148,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   const retYear = alreadyRetired
     ? result.projectionByYear[0]
     : result.projectionByYear.find(
-        (yr) => yr.age === engineSettings.retirementAge,
+        (yearRow) => yearRow.age === engineSettings.retirementAge,
       );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
   // The household's figure is the engine's retirement money — the same one
@@ -163,10 +163,12 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       : household
         ? deflate(household.nominal, household.year)
         : 0;
-  const peakYear = result.projectionByYear.reduce((best, yr) => {
-    const yrB = getPersonYearTotals(yr)?.balance ?? rowTotal(yr);
+  const peakYear = result.projectionByYear.reduce((best, yearRow) => {
+    const yearB = getPersonYearTotals(yearRow)?.balance ?? rowTotal(yearRow);
     const bestB = getPersonYearTotals(best)?.balance ?? rowTotal(best);
-    return deflate(yrB, yr.year) > deflate(bestB, best.year) ? yr : best;
+    return deflate(yearB, yearRow.year) > deflate(bestB, best.year)
+      ? yearRow
+      : best;
   });
   const peakPt = getPersonYearTotals(peakYear);
   const peakBalance = deflate(

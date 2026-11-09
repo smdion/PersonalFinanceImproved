@@ -91,15 +91,15 @@ type AccumulationRowProps = {
 };
 
 /** SAVE, HOLD when nobody saves, and + DRAW when accounts pay in too. */
-function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
+function GapYearPhase({ yearRow }: { yearRow: EngineAccumulationYear }) {
   return (
     <span>
-      {yr.savingStopped ? (
+      {yearRow.savingStopped ? (
         <span className="text-caption font-medium text-sky-600">HOLD</span>
       ) : (
         <span className="text-caption font-medium text-green-600">SAVE</span>
       )}
-      {(yr.gapDraw?.withdrawal ?? 0) > 0 && (
+      {(yearRow.gapDraw?.withdrawal ?? 0) > 0 && (
         <span className="text-caption ml-1 font-medium text-amber-600">
           + DRAW
         </span>
@@ -111,19 +111,19 @@ function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
 /** The portfolio total's tooltip, by tax type. */
 function portfolioBalanceTooltip(
   pt: ReturnType<ProjectionState["getPersonYearTotals"]>,
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   deflate: ProjectionState["deflate"],
   renderTooltip: ProjectionState["renderTooltip"],
   contribSpecs: ProjectionState["contribSpecs"],
 ) {
-  const ptBal = pt ? pt.balance : rowTotal(yr);
+  const ptBal = pt ? pt.balance : rowTotal(yearRow);
   const items: TooltipLineItem[] = (
     ["preTax", "taxFree", "hsa", "afterTax"] as const
   ).map((b) => {
-    const bVal = pt ? pt.byTaxType[b] : yr.balanceByTaxType[b];
+    const bVal = pt ? pt.byTaxType[b] : yearRow.balanceByTaxType[b];
     return {
       label: taxTypeLabel(b),
-      amount: deflate(bVal, yr.year),
+      amount: deflate(bVal, yearRow.year),
       percent: percentOf(bVal, ptBal),
     };
   });
@@ -132,15 +132,15 @@ function portfolioBalanceTooltip(
     header: "Portfolio Balance",
     items,
     proRate:
-      yr.proRateFraction != null
+      yearRow.proRateFraction != null
         ? (() => {
             const totalAnnual =
               contribSpecs?.reduce((s, sp) => s + (sp.baseAnnual || 0), 0) ?? 0;
             return totalAnnual > 0
               ? {
-                  months: proRateMonths(yr.proRateFraction),
-                  annualAmount: deflate(totalAnnual, yr.year),
-                  proRatedAmount: deflate(yr.totalEmployee, yr.year),
+                  months: proRateMonths(yearRow.proRateFraction),
+                  annualAmount: deflate(totalAnnual, yearRow.year),
+                  proRatedAmount: deflate(yearRow.totalEmployee, yearRow.year),
                 }
               : undefined;
           })()
@@ -240,7 +240,7 @@ export function AccumulationRow({
         </td>
       </Tooltip>
       <td className="px-2 py-1.5">
-        <GapYearPhase yr={yr} />
+        <GapYearPhase yearRow={yr} />
       </td>
       <Tooltip
         content={salaryTooltip(
@@ -584,26 +584,28 @@ export function AccumulationRow({
             const totalBal = pt ? pt.balance : rowTotal(yr);
             const pct = percentOf(bal, totalBal);
             // Compute authoritative total change from engine's year-over-year balance
-            const prevYr = result.projectionByYear.find(
+            const previousYear = result.projectionByYear.find(
               (y) => y.year === yr.year - 1,
             );
-            const prevPt = prevYr ? getPersonYearTotals(prevYr) : null;
-            const prevBucketBal = prevYr
+            const prevPt = previousYear
+              ? getPersonYearTotals(previousYear)
+              : null;
+            const prevBucketBal = previousYear
               ? prevPt
                 ? prevPt.byTaxType[bucket]
-                : prevYr.balanceByTaxType[bucket]
+                : previousYear.balanceByTaxType[bucket]
               : 0;
             // Compute splitContrib from authoritative slot data (mirrors engine balance routing)
             const splitContrib = slotsBucketBalanceInflow(yr.slots, bucket);
             // Build per-account items from individual account balances (for balance/growth detail)
-            const bucketAccts = (yr.individualAccountBalances ?? []).filter(
+            const bucketAccounts = (yr.individualAccountBalances ?? []).filter(
               (ia) =>
                 iaBelongsToBucket(ia, bucket) &&
                 (!isPersonFiltered || ia.ownerPersonId === personFilter),
             );
             const { splits: bucketSplits, splitGrowth } =
-              computeAccountSplits(bucketAccts);
-            const acctItems: TooltipLineItem[] = bucketSplits.map((sp) => {
+              computeAccountSplits(bucketAccounts);
+            const accountItems: TooltipLineItem[] = bucketSplits.map((sp) => {
               const subItems: TooltipLineItem[] = [];
               if (sp.contribution > 1)
                 subItems.push({
@@ -632,10 +634,10 @@ export function AccumulationRow({
                 deflate,
                 bal,
                 year: yr.year,
-                prev: prevYr
+                prev: previousYear
                   ? {
                       bal: prevBucketBal,
-                      year: prevYr.year,
+                      year: previousYear.year,
                     }
                   : null,
                 splitContrib,
@@ -659,13 +661,13 @@ export function AccumulationRow({
                 color: displayGrowth >= 0 ? "blue" : "red",
               });
             const tooltipContent =
-              acctItems.length > 0
+              accountItems.length > 0
                 ? renderTooltip({
                     kind: "money",
                     header: `${taxTypeLabel(bucket)}: ${pct}% of portfolio`,
                     meta: `${yr.year} · ${formatPercent(yr.returnRate, 1)} return${yr.proRateFraction != null && yr.proRateFraction > 0 ? ` (${formatPercent(yr.annualizedReturnRate, 1)} annual)` : ""}`,
                     meta2: `BoY: ${formatCurrency(boyBal)} → EoY: ${formatCurrency(deflatedBal)}`,
-                    items: acctItems,
+                    items: accountItems,
                     yearChange: {
                       total: deflatedBal,
                       change: displayChange,
@@ -712,7 +714,7 @@ export function AccumulationRow({
               color: accountTextColor(seg.category),
               label: seg.label,
             }))
-            .filter((col) => visibleColumns.balanceAccts.has(col.key))
+            .filter((col) => visibleColumns.balanceAccounts.has(col.key))
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = pt ? (pt.byAccount[col.key] ?? 0) : col.val;
@@ -729,16 +731,16 @@ export function AccumulationRow({
                   (!isPersonFiltered || ia.ownerPersonId === personFilter),
               );
               // Get previous year's value for this column from the engine
-              const colPrevYr = result.projectionByYear.find(
+              const columnPreviousYear = result.projectionByYear.find(
                 (y) => y.year === yr.year - 1,
               );
-              const colPrevPt = colPrevYr
-                ? getPersonYearTotals(colPrevYr)
+              const colPrevPt = columnPreviousYear
+                ? getPersonYearTotals(columnPreviousYear)
                 : null;
-              const colPrevVal = colPrevYr
+              const colPrevVal = columnPreviousYear
                 ? colPrevPt
                   ? (colPrevPt.byAccount[col.key] ?? 0)
-                  : colBalance(colPrevYr.balanceByAccount, col.key)
+                  : colBalance(columnPreviousYear.balanceByAccount, col.key)
                 : 0;
               // splitContrib from authoritative slot data (mirrors engine balance routing)
               const colSplitContrib = slotsColumnBalanceInflow(
@@ -762,10 +764,10 @@ export function AccumulationRow({
                 deflate,
                 bal,
                 year: yr.year,
-                prev: colPrevYr
+                prev: columnPreviousYear
                   ? {
                       bal: colPrevVal,
-                      year: colPrevYr.year,
+                      year: columnPreviousYear.year,
                     }
                   : null,
                 splitContrib: colSplitContrib,

@@ -47,10 +47,10 @@ export const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
  *  category's Traditional and Roth totals when no account data exists. */
 export function categoryWithdrawalItems(
   wd: number,
-  catAccts: AccountBalances,
+  categoryAccounts: AccountBalances,
   catCfg: ReturnType<typeof getAccountTypeConfig>,
   dSlot: DecumulationSlot | undefined,
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   deflate: ProjectionState["deflate"],
   noteFor: AccountNote,
 ): TooltipLineItem[] {
@@ -71,7 +71,7 @@ export function categoryWithdrawalItems(
     // rather than one aggregated Trad/Roth line per
     // category. Falls back to the old aggregate when no
     // individual-account data exists for this category.
-    const withdrawingAccts = catAccts
+    const withdrawingAccounts = categoryAccounts
       .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
       .sort((a, b) => {
         const taxDiff =
@@ -80,12 +80,12 @@ export function categoryWithdrawalItems(
         if (taxDiff !== 0) return taxDiff;
         return (a.ownerName ?? a.name).localeCompare(b.ownerName ?? b.name);
       });
-    if (withdrawingAccts.length > 0) {
-      const multiAcct = withdrawingAccts.length > 1;
-      for (const ia of withdrawingAccts) {
+    if (withdrawingAccounts.length > 0) {
+      const multiAccount = withdrawingAccounts.length > 1;
+      for (const ia of withdrawingAccounts) {
         items.push({
-          label: multiAcct ? ownerAccountLabel(ia) : catCfg.displayLabel,
-          amount: deflate(ia.draw!.withdrawal, yr.year),
+          label: multiAccount ? ownerAccountLabel(ia) : catCfg.displayLabel,
+          amount: deflate(ia.draw!.withdrawal, yearRow.year),
           prefix: "-",
           taxType: itemTaxType(ia.category, ia.taxType),
           color: "red",
@@ -100,7 +100,7 @@ export function categoryWithdrawalItems(
       if (dSlot.traditionalWithdrawal > 0)
         items.push({
           label: catCfg.displayLabel,
-          amount: deflate(dSlot.traditionalWithdrawal, yr.year),
+          amount: deflate(dSlot.traditionalWithdrawal, yearRow.year),
           prefix: "-",
           taxType: "traditional",
           color: "red",
@@ -108,7 +108,7 @@ export function categoryWithdrawalItems(
       if (dSlot.rothWithdrawal > 0)
         items.push({
           label: catCfg.displayLabel,
-          amount: deflate(dSlot.rothWithdrawal, yr.year),
+          amount: deflate(dSlot.rothWithdrawal, yearRow.year),
           prefix: "-",
           taxType: "roth",
           color: "red",
@@ -122,7 +122,7 @@ export function categoryWithdrawalItems(
  *  aggregate without account data), then the year's lump sums. */
 export function totalWithdrawalItems(
   dyr: EngineDecumulationYear,
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   filteredIabs: AccountBalances,
   dSlotMap: Map<AccountCategory, DecumulationSlot>,
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
@@ -136,7 +136,7 @@ export function totalWithdrawalItems(
     // aggregate Trad/Roth split — the user can see exactly which
     // account(s), whose, funded it. Ordered by category (accum
     // order), then traditional before roth, then owner name.
-    const withdrawingAccts = filteredIabs
+    const withdrawingAccounts = filteredIabs
       .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
       .sort((a, b) => {
         const catDiff =
@@ -149,8 +149,8 @@ export function totalWithdrawalItems(
         if (taxDiff !== 0) return taxDiff;
         return (a.ownerName ?? a.name).localeCompare(b.ownerName ?? b.name);
       });
-    if (withdrawingAccts.length > 0) {
-      for (const ia of withdrawingAccts) {
+    if (withdrawingAccounts.length > 0) {
+      for (const ia of withdrawingAccounts) {
         // Merge this account's eligibility verdict + tracked Roth
         // basis draw-down onto its own line instead of a separate
         // household-wide text block — see `buildEligibilityNote`'s
@@ -162,7 +162,7 @@ export function totalWithdrawalItems(
         // household" wall of text.
         items.push({
           label: ownerAccountLabel(ia),
-          amount: deflate(ia.draw!.withdrawal, yr.year),
+          amount: deflate(ia.draw!.withdrawal, yearRow.year),
           prefix: "-",
           taxType: itemTaxType(ia.category, ia.taxType),
           color: "red",
@@ -177,14 +177,14 @@ export function totalWithdrawalItems(
       if (dyr.totalTraditionalWithdrawal > 0)
         items.push({
           label: taxTypeLabel("preTax"),
-          amount: deflate(dyr.totalTraditionalWithdrawal, yr.year),
+          amount: deflate(dyr.totalTraditionalWithdrawal, yearRow.year),
           prefix: "-",
           color: "blue",
         });
       if (dyr.totalRothWithdrawal > 0)
         items.push({
           label: taxTypeLabel("taxFree"),
-          amount: deflate(dyr.totalRothWithdrawal, yr.year),
+          amount: deflate(dyr.totalRothWithdrawal, yearRow.year),
           prefix: "-",
           color: "violet",
         });
@@ -195,7 +195,7 @@ export function totalWithdrawalItems(
         if (sbWd > 0)
           items.push({
             label: getAccountTypeConfig(sbCat).displayLabel,
-            amount: deflate(sbWd, yr.year),
+            amount: deflate(sbWd, yearRow.year),
             prefix: "-",
             color:
               sbCat === getAllCategories().find(isOverflowTarget)
@@ -211,7 +211,7 @@ export function totalWithdrawalItems(
       label: ls.label
         ? `${ls.label} → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`
         : `Lump sum → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`,
-      amount: deflate(ls.amount, yr.year),
+      amount: deflate(ls.amount, yearRow.year),
       prefix: "+",
       color: "emerald",
     });
@@ -224,14 +224,14 @@ export function decumYearAgesTooltip(
   people: { id: number; name: string; birthYear: number }[] | undefined,
   enginePeople: ProjectionState["enginePeople"],
   renderTooltip: ProjectionState["renderTooltip"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
 ) {
   const pp = people ?? enginePeople;
   if (!pp || pp.length === 0) return undefined;
   return renderTooltip({
     kind: "info",
     lines: pp.map((p) => ({
-      text: `${p.name}: ${yr.year - p.birthYear}`,
+      text: `${p.name}: ${yearRow.year - p.birthYear}`,
       style: "header" as const,
     })),
   });
@@ -255,19 +255,19 @@ export function categoryCellText(
   cat: AccountCategory,
   wd: number,
   deflate: ProjectionState["deflate"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
 ) {
   const catLumps = lumpSumsForCategory(yearLumpSums, cat);
   const catLumpTotal = lumpSumTotal(catLumps);
   if (catLumpTotal > 0 && wd > 0) {
     const net = catLumpTotal - wd;
     return net >= 0
-      ? `+${formatCurrency(deflate(net, yr.year))}`
-      : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+      ? `+${formatCurrency(deflate(net, yearRow.year))}`
+      : `-${formatCurrency(deflate(Math.abs(net), yearRow.year))}`;
   }
   if (catLumpTotal > 0)
-    return `+${formatCurrency(deflate(catLumpTotal, yr.year))}`;
-  if (wd > 0) return `-${formatCurrency(deflate(wd, yr.year))}`;
+    return `+${formatCurrency(deflate(catLumpTotal, yearRow.year))}`;
+  if (wd > 0) return `-${formatCurrency(deflate(wd, yearRow.year))}`;
   return "---";
 }
 
@@ -290,19 +290,20 @@ export function taxTypeCellText(
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
   bucketWd: number,
   deflate: ProjectionState["deflate"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
 ) {
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
   const bucketLumpTotal = lumpSumTotal(bucketLumps);
   if (bucketLumpTotal > 0 && bucketWd > 0) {
     const net = bucketLumpTotal - bucketWd;
     return net >= 0
-      ? `+${formatCurrency(deflate(net, yr.year))}`
-      : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+      ? `+${formatCurrency(deflate(net, yearRow.year))}`
+      : `-${formatCurrency(deflate(Math.abs(net), yearRow.year))}`;
   }
   if (bucketLumpTotal > 0)
-    return `+${formatCurrency(deflate(bucketLumpTotal, yr.year))}`;
-  if (bucketWd > 0) return `-${formatCurrency(deflate(bucketWd, yr.year))}`;
+    return `+${formatCurrency(deflate(bucketLumpTotal, yearRow.year))}`;
+  if (bucketWd > 0)
+    return `-${formatCurrency(deflate(bucketWd, yearRow.year))}`;
   return "---";
 }
 
@@ -311,19 +312,19 @@ export function totalWithdrawalText(
   deflate: ProjectionState["deflate"],
   totalLumpSum: number,
   dyr: EngineDecumulationYear,
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
 ) {
-  const net = deflate(totalLumpSum - dyr.totalWithdrawal, yr.year);
+  const net = deflate(totalLumpSum - dyr.totalWithdrawal, yearRow.year);
   if (totalLumpSum > 0 && dyr.totalWithdrawal > 0) {
     return net >= 0
       ? `+${formatCurrency(net)}`
       : `-${formatCurrency(Math.abs(net))}`;
   }
   if (totalLumpSum > 0) {
-    return `+${formatCurrency(deflate(totalLumpSum, yr.year))}`;
+    return `+${formatCurrency(deflate(totalLumpSum, yearRow.year))}`;
   }
   if (dyr.totalWithdrawal > 0) {
-    return `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`;
+    return `-${formatCurrency(deflate(dyr.totalWithdrawal, yearRow.year))}`;
   }
   return dyr.retirementBalance < 1 && dyr.projectedExpenses > 0
     ? "depleted"

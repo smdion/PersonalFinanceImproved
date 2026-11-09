@@ -31,7 +31,7 @@ type AccountBalances = NonNullable<
 /** The contribution total's tax-type lines: the household's buckets, or
  *  the filtered person's own accounts by tax type. */
 export function contributionTaxTypeTotals(
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   pt: ReturnType<ProjectionState["getPersonYearTotals"]>,
   mine: AccountBalances,
   deflate: ProjectionState["deflate"],
@@ -42,16 +42,16 @@ export function contributionTaxTypeTotals(
       amount: number;
       color: TipColor;
     }[] = [];
-    if (yr.totalTraditional > 0)
+    if (yearRow.totalTraditional > 0)
       bucketTotals.push({
         label: taxTypeLabel("preTax"),
-        amount: deflate(yr.totalTraditional, yr.year),
+        amount: deflate(yearRow.totalTraditional, yearRow.year),
         color: "blue",
       });
-    if (yr.totalRoth > 0)
+    if (yearRow.totalRoth > 0)
       bucketTotals.push({
         label: taxTypeLabel("taxFree"),
-        amount: deflate(yr.totalRoth, yr.year),
+        amount: deflate(yearRow.totalRoth, yearRow.year),
         color: "violet",
       });
     // Single-bucket categories (HSA, brokerage, etc.)
@@ -59,11 +59,11 @@ export function contributionTaxTypeTotals(
       (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
     )) {
       const isOF = isOverflowTarget(sbCat);
-      const sbSlot = yr.slots.find((s) => s.category === sbCat);
+      const sbSlot = yearRow.slots.find((s) => s.category === sbCat);
       if (sbSlot && sbSlot.employeeContrib > 0) {
         bucketTotals.push({
           label: getAccountTypeConfig(sbCat).displayLabel,
-          amount: deflate(sbSlot.employeeContrib, yr.year),
+          amount: deflate(sbSlot.employeeContrib, yearRow.year),
           color: isOF ? "amber" : "emerald",
         });
       }
@@ -94,25 +94,27 @@ export function contributionTaxTypeTotals(
     if (ptTrad > 0)
       bucketTotals.push({
         label: taxTypeLabel("preTax"),
-        amount: deflate(ptTrad, yr.year),
+        amount: deflate(ptTrad, yearRow.year),
         color: "blue",
       });
     if (ptRoth > 0)
       bucketTotals.push({
         label: taxTypeLabel("taxFree"),
-        amount: deflate(ptRoth, yr.year),
+        amount: deflate(ptRoth, yearRow.year),
         color: "violet",
       });
-    Array.from(ptSingleBucket.entries()).forEach(([sbCat, sbAmt]) => {
-      if (sbAmt > 0) {
-        const cfg = getAccountTypeConfig(sbCat as AccountCategory);
-        bucketTotals.push({
-          label: cfg.displayLabel,
-          amount: deflate(sbAmt, yr.year),
-          color: cfg.isOverflowTarget ? "amber" : "emerald",
-        });
-      }
-    });
+    Array.from(ptSingleBucket.entries()).forEach(
+      ([sbCat, singleBucketAmount]) => {
+        if (singleBucketAmount > 0) {
+          const cfg = getAccountTypeConfig(sbCat as AccountCategory);
+          bucketTotals.push({
+            label: cfg.displayLabel,
+            amount: deflate(singleBucketAmount, yearRow.year),
+            color: cfg.isOverflowTarget ? "amber" : "emerald",
+          });
+        }
+      },
+    );
     return bucketTotals;
   }
 }
@@ -120,7 +122,7 @@ export function contributionTaxTypeTotals(
 /** Each account drawn from in a gap year, as a retirement year lists them:
  *  owner, tax type, and whether the money is penalty-free. */
 export function gapDrawnItems(
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   shown: AccountBalances,
   deflate: ProjectionState["deflate"],
 ): TooltipLineItem[] {
@@ -138,12 +140,12 @@ export function gapDrawnItems(
   for (const ia of drawn)
     items.push({
       label: ownerAccountLabel(ia),
-      amount: deflate(ia.draw!.withdrawal, yr.year),
+      amount: deflate(ia.draw!.withdrawal, yearRow.year),
       prefix: "-",
       taxType: itemTaxType(ia.category, ia.taxType),
       color: "red",
       group: `Withdrawn · ${catDisplayLabel[ia.category] ?? ia.category}`,
-      ...buildEligibilityNote(ia, yr, deflate),
+      ...buildEligibilityNote(ia, yearRow, deflate),
     });
   return items;
 }
@@ -153,14 +155,14 @@ export function yearAgesTooltip(
   people: { id: number; name: string; birthYear: number }[] | undefined,
   enginePeople: ProjectionState["enginePeople"],
   renderTooltip: ProjectionState["renderTooltip"],
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
 ) {
   const pp = people ?? enginePeople;
   if (!pp || pp.length === 0) return undefined;
   return renderTooltip({
     kind: "info",
     lines: pp.map((p) => ({
-      text: `${p.name}: ${yr.year - p.birthYear}`,
+      text: `${p.name}: ${yearRow.year - p.birthYear}`,
       style: "header" as const,
     })),
   });
@@ -169,7 +171,7 @@ export function yearAgesTooltip(
 /** The salary cell's tooltip: the change from last year, the raise and each person's salary. */
 export function salaryTooltip(
   result: NonNullable<ProjectionState["result"]>,
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   isPersonFiltered: ProjectionState["isPersonFiltered"],
   enginePeople: ProjectionState["enginePeople"],
   personFilter: ProjectionState["personFilter"],
@@ -180,22 +182,24 @@ export function salaryTooltip(
   deflate: ProjectionState["deflate"],
   renderTooltip: ProjectionState["renderTooltip"],
 ) {
-  const prevYr = result.projectionByYear.find((y) => y.year === yr.year - 1);
+  const previousYear = result.projectionByYear.find(
+    (y) => y.year === yearRow.year - 1,
+  );
   // Use person-filtered salary if applicable
   const personId =
     isPersonFiltered && enginePeople?.find((p) => p.id === personFilter)?.id;
   const currentSal = personId
-    ? (yr.projectedSalaryByPerson?.[personId] ?? yr.projectedSalary)
-    : yr.projectedSalary;
+    ? (yearRow.projectedSalaryByPerson?.[personId] ?? yearRow.projectedSalary)
+    : yearRow.projectedSalary;
   const prevSalary =
-    prevYr && prevYr.phase === "accumulation"
+    previousYear && previousYear.phase === "accumulation"
       ? personId
-        ? ((prevYr as EngineAccumulationYear).projectedSalaryByPerson?.[
+        ? ((previousYear as EngineAccumulationYear).projectedSalaryByPerson?.[
             personId
-          ] ?? (prevYr as EngineAccumulationYear).projectedSalary)
-        : (prevYr as EngineAccumulationYear).projectedSalary
+          ] ?? (previousYear as EngineAccumulationYear).projectedSalary)
+        : (previousYear as EngineAccumulationYear).projectedSalary
       : null;
-  const pctChange =
+  const percentChange =
     prevSalary && prevSalary > 0
       ? (currentSal - prevSalary) / prevSalary
       : null;
@@ -204,15 +208,15 @@ export function salaryTooltip(
     style: "header" | "meta" | "note";
     color?: TipColor;
   }[] = [];
-  if (yr.hasSalaryOverride) {
+  if (yearRow.hasSalaryOverride) {
     lines.push({
       text: `Salary changed for this year${salaryOverrideNotes ? ` — ${salaryOverrideNotes}` : ""}`,
       style: "note",
       color: "emerald",
     });
-  } else if (pctChange !== null) {
+  } else if (percentChange !== null) {
     lines.push({
-      text: `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)} from prior year`,
+      text: `${percentChange >= 0 ? "+" : ""}${formatPercent(percentChange, 1)} from prior year`,
       style: "header",
     });
   } else {
@@ -221,24 +225,24 @@ export function salaryTooltip(
       style: "header",
     });
   }
-  if (!yr.hasSalaryOverride && engineSettings) {
+  if (!yearRow.hasSalaryOverride && engineSettings) {
     lines.push({
       text: `Annual raise: ${annualRaiseLabel(Number(engineSettings.salaryAnnualIncrease), enginePerPersonSettings)}/yr`,
       style: "meta",
     });
   }
-  if (!personId && yr.projectedSalaryByPerson) {
+  if (!personId && yearRow.projectedSalaryByPerson) {
     const pp = people ?? enginePeople;
     const breakdown = (pp ?? [])
-      .filter((p) => yr.projectedSalaryByPerson?.[p.id])
+      .filter((p) => yearRow.projectedSalaryByPerson?.[p.id])
       .map((p) => ({
         name: p.name,
-        salary: yr.projectedSalaryByPerson![p.id]!,
+        salary: yearRow.projectedSalaryByPerson![p.id]!,
       }));
     if (breakdown.length >= 2) {
       lines.push(
         ...breakdown.map((b) => ({
-          text: `${b.name}: ${formatCurrency(deflate(b.salary, yr.year))}`,
+          text: `${b.name}: ${formatCurrency(deflate(b.salary, yearRow.year))}`,
           style: "meta" as const,
         })),
       );
@@ -252,25 +256,25 @@ export function salaryTooltip(
 
 /** The salary cell: the filtered person's salary when one is shown. */
 export function displaySalary(
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   isPersonFiltered: ProjectionState["isPersonFiltered"],
   enginePeople: ProjectionState["enginePeople"],
   personFilter: ProjectionState["personFilter"],
   deflate: ProjectionState["deflate"],
 ) {
-  let displaySalary = yr.projectedSalary;
-  if (isPersonFiltered && yr.projectedSalaryByPerson && enginePeople) {
+  let displaySalary = yearRow.projectedSalary;
+  if (isPersonFiltered && yearRow.projectedSalaryByPerson && enginePeople) {
     const person = enginePeople.find((p) => p.id === personFilter);
-    if (person && yr.projectedSalaryByPerson[person.id] != null) {
-      displaySalary = yr.projectedSalaryByPerson[person.id]!;
+    if (person && yearRow.projectedSalaryByPerson[person.id] != null) {
+      displaySalary = yearRow.projectedSalaryByPerson[person.id]!;
     }
   }
-  return formatCurrency(deflate(displaySalary, yr.year));
+  return formatCurrency(deflate(displaySalary, yearRow.year));
 }
 
 /** The savings-rate cell's tooltip: the rate's math, the target and the ceiling. */
 export function savingsRateTooltip(
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   rateIncludesMatch: boolean,
   deflate: ProjectionState["deflate"],
   parentCategoryFilter: string | undefined,
@@ -279,45 +283,45 @@ export function savingsRateTooltip(
   renderTooltip: ProjectionState["renderTooltip"],
 ) {
   const effectiveSalary =
-    yr.proRateFraction != null && yr.proRateFraction > 0
-      ? yr.projectedSalary * yr.proRateFraction
-      : yr.projectedSalary;
+    yearRow.proRateFraction != null && yearRow.proRateFraction > 0
+      ? yearRow.projectedSalary * yearRow.proRateFraction
+      : yearRow.projectedSalary;
   // The accounts this page shows (the year is already scoped),
   // with the match when the shared switch counts it.
   const rateAmount =
-    yr.totalEmployee + (rateIncludesMatch ? yr.totalEmployer : 0);
+    yearRow.totalEmployee + (rateIncludesMatch ? yearRow.totalEmployer : 0);
   const effectiveRate = safeDivide(rateAmount, effectiveSalary);
-  const employeeRate = safeDivide(yr.totalEmployee, effectiveSalary);
+  const employeeRate = safeDivide(yearRow.totalEmployee, effectiveSalary);
   const lines: {
     text: string;
     style: "header" | "meta" | "note";
     color?: TipColor;
   }[] = [
     {
-      text: `${formatCurrency(deflate(rateAmount, yr.year))} / ${formatCurrency(deflate(effectiveSalary, yr.year))} = ${formatPercent(effectiveRate, 1)}${rateIncludesMatch ? " (incl. match)" : ""}${parentCategoryFilter ? ` — ${parentCategoryFilter} accounts` : ""}`,
+      text: `${formatCurrency(deflate(rateAmount, yearRow.year))} / ${formatCurrency(deflate(effectiveSalary, yearRow.year))} = ${formatPercent(effectiveRate, 1)}${rateIncludesMatch ? " (incl. match)" : ""}${parentCategoryFilter ? ` — ${parentCategoryFilter} accounts` : ""}`,
       style: "header",
     },
     {
-      text: `Retirement target (retirement accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
+      text: `Retirement target (retirement accounts, your money): ${formatPercent(yearRow.config.contributionRate, 1)}`,
       style: "meta",
     },
   ];
-  if (yr.proRateFraction != null) {
+  if (yearRow.proRateFraction != null) {
     lines.push({
-      text: `${proRateMonths(yr.proRateFraction)}/12 mo — salary pro-rated from ${formatCurrency(deflate(yr.projectedSalary, yr.year))}/yr`,
+      text: `${proRateMonths(yearRow.proRateFraction)}/12 mo — salary pro-rated from ${formatCurrency(deflate(yearRow.projectedSalary, yearRow.year))}/yr`,
       style: "meta",
     });
   }
   // The ceiling scales retirement contributions only, so the
   // uncapped figure is meaningful on the Retirement view.
   if (
-    yr.rateCeilingScale != null &&
-    yr.rateCeilingScale < 1 &&
-    yr.rateCeilingScale > 0 &&
+    yearRow.rateCeilingScale != null &&
+    yearRow.rateCeilingScale < 1 &&
+    yearRow.rateCeilingScale > 0 &&
     parentCategoryFilter === PERF_CATEGORY_RETIREMENT
   ) {
     lines.push({
-      text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
+      text: `Uncapped rate: ${formatPercent(safeDivide(yearRow.totalEmployee, effectiveSalary * yearRow.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
       style: "note",
       color: "amber",
     });
@@ -325,10 +329,10 @@ export function savingsRateTooltip(
   // Comparable with the retirement target only when it's the
   // same measure: retirement accounts, your money only.
   if (
-    yr.rateCeilingScale == null &&
+    yearRow.rateCeilingScale == null &&
     parentCategoryFilter === PERF_CATEGORY_RETIREMENT
   ) {
-    const diff = employeeRate - yr.config.contributionRate;
+    const diff = employeeRate - yearRow.config.contributionRate;
     if (Math.abs(diff) > 0.001) {
       lines.push({
         text: `Actual ${diff > 0 ? "higher" : "lower"} — per-account specs${diff < 0 ? " / IRS limits" : ""}`,
@@ -339,7 +343,7 @@ export function savingsRateTooltip(
   }
   if (
     accumOverrides.some(
-      (o) => o.year === yr.year && o.contributionRate !== undefined,
+      (o) => o.year === yearRow.year && o.contributionRate !== undefined,
     )
   ) {
     lines.push({

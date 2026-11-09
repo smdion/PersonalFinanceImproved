@@ -46,7 +46,7 @@ export function pushAccumOverrideItems(
       );
     if (o.reset) parts.push("Reset to defaults");
     if (o.notes) parts.push(`(${o.notes})`);
-    const idx = i;
+    const index = i;
     items.push({
       id: `accum-${o.year}-${i}`,
       year: o.year,
@@ -61,7 +61,7 @@ export function pushAccumOverrideItems(
       summary: parts.join(" · ") || "Change",
       color: "emerald",
       onDelete: () =>
-        state.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+        state.setAccumOverrides((prev) => prev.filter((_, j) => j !== index)),
       onEdit: () => {
         setSelectedYear(String(o.year));
         setSelectedType(
@@ -77,9 +77,11 @@ export function pushAccumOverrideItems(
         );
         setEditingOverride({
           phase: "pre",
-          index: idx,
+          index: index,
           deleteFirst: () =>
-            state.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+            state.setAccumOverrides((prev) =>
+              prev.filter((_, j) => j !== index),
+            ),
           initialValue:
             o.contributionRate != null
               ? String(o.contributionRate * 100)
@@ -135,7 +137,7 @@ export function pushDecumOverrideItems(
       );
     if (o.reset) parts.push("Reset to defaults");
     if (o.notes) parts.push(`(${o.notes})`);
-    const idx = i;
+    const index = i;
     items.push({
       id: `decum-${o.year}-${i}`,
       year: o.year,
@@ -144,7 +146,7 @@ export function pushDecumOverrideItems(
       summary: parts.join(" · ") || "Change",
       color: "amber",
       onDelete: () =>
-        state.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+        state.setDecumOverrides((prev) => prev.filter((_, j) => j !== index)),
       onEdit: () => {
         setSelectedYear(String(o.year));
         setSelectedType(
@@ -158,9 +160,11 @@ export function pushDecumOverrideItems(
         );
         setEditingOverride({
           phase: "post",
-          index: idx,
+          index: index,
           deleteFirst: () =>
-            state.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+            state.setDecumOverrides((prev) =>
+              prev.filter((_, j) => j !== index),
+            ),
           initialValue:
             o.rothConversionTarget != null
               ? String(o.rothConversionTarget * 100)

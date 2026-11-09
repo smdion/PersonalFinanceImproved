@@ -33,8 +33,10 @@ export function categoryWithdrawalTooltip(
   dSlotMap: Map<AccountCategory, DecumulationSlot>,
   cat: AccountCategory,
   wd: number,
-  catAccts: NonNullable<EngineDecumulationYear["individualAccountBalances"]>,
-  yr: EngineDecumulationYear,
+  categoryAccounts: NonNullable<
+    EngineDecumulationYear["individualAccountBalances"]
+  >,
+  yearRow: EngineDecumulationYear,
   deflate: ProjectionState["deflate"],
   noteFor: (ia: IndividualAccountYearBalance) => {
     note?: string;
@@ -50,10 +52,10 @@ export function categoryWithdrawalTooltip(
   const catCfg = getAccountTypeConfig(cat);
   const items = categoryWithdrawalItems(
     wd,
-    catAccts,
+    categoryAccounts,
     catCfg,
     dSlot,
-    yr,
+    yearRow,
     deflate,
     noteFor,
   );
@@ -62,7 +64,7 @@ export function categoryWithdrawalTooltip(
   for (const ls of catLumps) {
     items.push({
       label: ls.label ?? "Lump sum",
-      amount: deflate(ls.amount, yr.year),
+      amount: deflate(ls.amount, yearRow.year),
       prefix: "+",
       color: "emerald",
     });
@@ -78,19 +80,19 @@ export function categoryWithdrawalTooltip(
   // "spend" never credits any account (the household
   // consumed it), so shown as an informational note
   // instead, not implied to have landed in this balance.
-  const rmdExcess = yr.rmdExcessAmount ?? 0;
+  const rmdExcess = yearRow.rmdExcessAmount ?? 0;
   const rmdMode = engineSettings?.rmdExcessHandling;
   if (rmdExcess > 0.01 && isOverflowTarget(cat)) {
     if (rmdMode === "spend") {
       items.push({
         label: "RMD excess spent (not reinvested)",
-        amount: deflate(rmdExcess, yr.year),
+        amount: deflate(rmdExcess, yearRow.year),
         color: "gray",
       });
     } else {
       items.push({
         label: "RMD excess reinvested",
-        amount: deflate(rmdExcess, yr.year),
+        amount: deflate(rmdExcess, yearRow.year),
         prefix: "+",
         color: "amber",
       });
@@ -99,11 +101,11 @@ export function categoryWithdrawalTooltip(
   // QCD: money sent from this account to charity, part of
   // the RMD but not taxable income. Deducted before routing
   // runs, so no slot line shows it; `qcdEligible` types only (by law).
-  const qcdAmount = yr.qcdAmount ?? 0;
+  const qcdAmount = yearRow.qcdAmount ?? 0;
   if (qcdAmount > 0.01 && isQcdEligible(cat)) {
     items.push({
       label: "QCD to charity (excluded from taxable income)",
-      amount: deflate(qcdAmount, yr.year),
+      amount: deflate(qcdAmount, yearRow.year),
       prefix: "-",
       color: "violet",
     });
@@ -124,7 +126,7 @@ export function categoryWithdrawalTooltip(
   if (nonMedicalPenaltyRate(cat) !== null) catSourceKinds.add("hsa");
   if (catCfg.supportsRothSplit && (dSlot?.rothWithdrawal ?? 0) > 0.01)
     catSourceKinds.add("roth");
-  const catTierBreakdown = yr.discretionaryTierBreakdown?.filter((t) =>
+  const catTierBreakdown = yearRow.discretionaryTierBreakdown?.filter((t) =>
     catSourceKinds.has(t.source),
   );
   return renderTooltip({
@@ -134,22 +136,22 @@ export function categoryWithdrawalTooltip(
     withdrawals:
       wd > 0 && items.length === 0
         ? {
-            amount: deflate(wd, yr.year),
+            amount: deflate(wd, yearRow.year),
           }
         : undefined,
     growth:
       Math.abs(catGrowth) > 1
         ? {
-            amount: deflate(catGrowth, yr.year),
+            amount: deflate(catGrowth, yearRow.year),
           }
         : undefined,
     routingNote: formatDiscretionaryTierBreakdown(
       catTierBreakdown?.map((t) => ({
         ...t,
-        amount: deflate(t.amount, yr.year),
+        amount: deflate(t.amount, yearRow.year),
       })),
     ),
-    balance: deflate(catBal, yr.year),
+    balance: deflate(catBal, yearRow.year),
   });
 }
 
@@ -157,11 +159,11 @@ export function categoryWithdrawalTooltip(
 export function taxTypeWithdrawalTooltip(
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
-  withdrawingAccts: NonNullable<
+  withdrawingAccounts: NonNullable<
     EngineDecumulationYear["individualAccountBalances"]
   >,
   deflate: ProjectionState["deflate"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
   noteFor: (ia: IndividualAccountYearBalance) => {
     note?: string;
     noteLocked?: boolean;
@@ -175,14 +177,14 @@ export function taxTypeWithdrawalTooltip(
     ? itemTaxType(taxPrefCat, bucketSlotMap[bucket]!.taxField)
     : undefined;
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
-  const multiAcct = withdrawingAccts.length > 1;
+  const multiAccount = withdrawingAccounts.length > 1;
   const allItems = [
-    ...(withdrawingAccts.length > 0
-      ? withdrawingAccts.map((ia) => ({
-          label: multiAcct
+    ...(withdrawingAccounts.length > 0
+      ? withdrawingAccounts.map((ia) => ({
+          label: multiAccount
             ? ownerAccountLabel(ia)
             : (catDisplayLabel[ia.category] ?? ia.category),
-          amount: deflate(ia.draw!.withdrawal, yr.year),
+          amount: deflate(ia.draw!.withdrawal, yearRow.year),
           prefix: "-" as const,
           taxType: itemTaxType(ia.category, wdTaxType),
           color: "red" as TipColor,
@@ -190,14 +192,14 @@ export function taxTypeWithdrawalTooltip(
         }))
       : parts.map((p) => ({
           label: catDisplayLabel[p.cat] ?? p.cat,
-          amount: deflate(p.wd, yr.year),
+          amount: deflate(p.wd, yearRow.year),
           prefix: "-" as const,
           taxType: itemTaxType(p.cat, wdTaxType),
           color: "red" as TipColor,
         }))),
     ...bucketLumps.map((ls) => ({
       label: ls.label ?? "Lump sum",
-      amount: deflate(ls.amount, yr.year),
+      amount: deflate(ls.amount, yearRow.year),
       prefix: "+" as const,
       color: "emerald" as TipColor,
     })),
@@ -211,7 +213,7 @@ export function taxTypeWithdrawalTooltip(
       allItems.length > 1
         ? {
             label: "Net",
-            amount: deflate(bucketLumpTotal - bucketWd, yr.year),
+            amount: deflate(bucketLumpTotal - bucketWd, yearRow.year),
             prefix: bucketLumpTotal >= bucketWd ? "+" : "-",
           }
         : undefined,
@@ -224,7 +226,7 @@ export function taxTypeLumpSumTooltip(
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
   renderTooltip: ProjectionState["renderTooltip"],
   deflate: ProjectionState["deflate"],
-  yr: EngineDecumulationYear,
+  yearRow: EngineDecumulationYear,
 ) {
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
   if (bucketLumps.length === 0) return undefined;
@@ -233,7 +235,7 @@ export function taxTypeLumpSumTooltip(
     header: `${taxTypeLabel(bucket)} Lump Sum`,
     items: bucketLumps.map((ls) => ({
       label: ls.label ?? "Lump sum",
-      amount: deflate(ls.amount, yr.year),
+      amount: deflate(ls.amount, yearRow.year),
       prefix: "+" as const,
       color: "emerald" as TipColor,
     })),

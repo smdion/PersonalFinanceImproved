@@ -197,8 +197,9 @@ export function ProjectionTable({
                             .length
                         : getAccountSegments()
                             .map((s) => s.key)
-                            .filter((a) => visibleColumns.balanceAccts.has(a))
-                            .length)
+                            .filter((a) =>
+                              visibleColumns.balanceAccounts.has(a),
+                            ).length)
                     }
                     className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
@@ -292,21 +293,22 @@ export function ProjectionTable({
                     <>
                       {getAccountSegments()
                         .map((s) => s.key)
-                        .filter((a) => visibleColumns.balanceAccts.has(a))
-                        .map((acctKey, i) => {
-                          const parsed = parseColumnKey(acctKey);
-                          const catKey = parsed?.category ?? acctKey;
+                        .filter((a) => visibleColumns.balanceAccounts.has(a))
+                        .map((accountKey, i) => {
+                          const parsed = parseColumnKey(accountKey);
+                          const catKey = parsed?.category ?? accountKey;
                           return (
                             <th
-                              key={acctKey}
+                              key={accountKey}
                               className={`px-2 py-1.5 text-right ${accountTextColor(catKey)} font-medium whitespace-nowrap${i === 0 ? "border-subtle border-l" : ""}`}
                             >
-                              {columnLabel[acctKey] ?? getColumnLabel(acctKey)}
+                              {columnLabel[accountKey] ??
+                                getColumnLabel(accountKey)}
                               <HelpTip
                                 text={
-                                  balanceHeaderTooltip.account[acctKey] ??
-                                  columnLabel[acctKey] ??
-                                  getColumnLabel(acctKey)
+                                  balanceHeaderTooltip.account[accountKey] ??
+                                  columnLabel[accountKey] ??
+                                  getColumnLabel(accountKey)
                                 }
                               />
                             </th>
@@ -331,35 +333,35 @@ export function ProjectionTable({
                 </tr>
               </thead>
               <tbody>
-                {getFilteredYears(result.projectionByYear).map((yr) => {
-                  const focused = yr.year === focusedYear;
+                {getFilteredYears(result.projectionByYear).map((yearRow) => {
+                  const focused = yearRow.year === focusedYear;
                   const isPhaseTransition =
-                    yr.phase === "decumulation" &&
+                    yearRow.phase === "decumulation" &&
                     result.projectionByYear.findIndex(
                       (y) => y.phase === "decumulation",
-                    ) === result.projectionByYear.indexOf(yr);
+                    ) === result.projectionByYear.indexOf(yearRow);
                   const hasOverride =
-                    accumOverrides.some((o) => o.year === yr.year) ||
-                    decumOverrides.some((o) => o.year === yr.year);
+                    accumOverrides.some((o) => o.year === yearRow.year) ||
+                    decumOverrides.some((o) => o.year === yearRow.year);
 
                   const accumOverrideNotes = accumOverrides.find(
-                    (o) => o.year === yr.year,
+                    (o) => o.year === yearRow.year,
                   )?.notes;
                   const decumOverrideNotes = decumOverrides.find(
-                    (o) => o.year === yr.year,
+                    (o) => o.year === yearRow.year,
                   )?.notes;
                   const salaryOverrideNotes = dbSalaryOverrides?.find(
-                    (o) => o.projectionYear === yr.year,
+                    (o) => o.projectionYear === yearRow.year,
                   )?.notes;
                   const budgetOverrideNotes = dbBudgetOverrides?.find(
-                    (o) => o.projectionYear === yr.year,
+                    (o) => o.projectionYear === yearRow.year,
                   )?.notes;
 
-                  if (isAccumYear(yr)) {
+                  if (isAccumYear(yearRow)) {
                     return (
                       <AccumulationRow
-                        key={yr.year}
-                        yr={yr}
+                        key={yearRow.year}
+                        yr={yearRow}
                         focused={focused}
                         state={state}
                         parentCategoryFilter={parentCategoryFilter}
@@ -384,8 +386,8 @@ export function ProjectionTable({
 
                   return (
                     <DecumulationRow
-                      key={yr.year}
-                      yr={yr as EngineDecumulationYear}
+                      key={yearRow.year}
+                      yearRow={yearRow as EngineDecumulationYear}
                       focused={focused}
                       state={state}
                       parentCategoryFilter={parentCategoryFilter}
