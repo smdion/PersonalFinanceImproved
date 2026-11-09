@@ -188,6 +188,52 @@ export function ContributionsContent() {
 
   const pl = getPeriodSuffix(period);
 
+  // Total counts Portfolio money only while the portfolio switch is on.
+  const counted = (sv: HouseholdSavings) =>
+    includePortfolio ? sv.total : group(sv, "retirement").total;
+  const share = (n: number) => safeDivide(n, savingsWith.compensation, 0);
+  const hhRateWith = share(counted(savingsWith));
+  const hhRateWithout = share(counted(savingsWithout));
+  const retRateWith = group(savingsWith, "retirement").share;
+  const retRateWithout = group(savingsWithout, "retirement").share;
+  const portRateWith = group(savingsWith, "portfolio").share;
+  const portRateWithout = group(savingsWithout, "portfolio").share;
+  const isBlended = viewMode === "blended";
+  const primary = excludeMatch ? "without" : "with";
+
+  // Profile Comparison's rows, once the compared profile has loaded.
+  const profile = profileData
+    ? savingsOf(
+        {
+          people: profileData.people.filter((p) => p.salary > 0),
+          joint: profileData.jointAccountTypes,
+        },
+        excludeMatch,
+      )
+    : null;
+  const profileRows =
+    profile === null
+      ? []
+      : [
+          {
+            label: excludeMatch ? "Total (w/o match)" : "Total (w/ match)",
+            current: excludeMatch ? totalWithout : totalWith,
+            profile: profile.total,
+          },
+          {
+            label: "Retirement",
+            current: excludeMatch
+              ? totalRetirementWithout
+              : totalRetirementWith,
+            profile: group(profile, "retirement").total,
+          },
+          {
+            label: "Portfolio",
+            current: excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
+            profile: group(profile, "portfolio").total,
+          },
+        ];
+
   return (
     <div>
       <PageHeader
@@ -247,105 +293,87 @@ export function ContributionsContent() {
 
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {(() => {
-          // Total counts Portfolio money only while the portfolio switch is on.
-          const counted = (sv: HouseholdSavings) =>
-            includePortfolio ? sv.total : group(sv, "retirement").total;
-          const share = (n: number) =>
-            safeDivide(n, savingsWith.compensation, 0);
-          const hhRateWith = share(counted(savingsWith));
-          const hhRateWithout = share(counted(savingsWithout));
-          const retRateWith = group(savingsWith, "retirement").share;
-          const retRateWithout = group(savingsWithout, "retirement").share;
-          const portRateWith = group(savingsWith, "portfolio").share;
-          const portRateWithout = group(savingsWithout, "portfolio").share;
-          const isBlended = viewMode === "blended";
-          const primary = excludeMatch ? "without" : "with";
-          return (
-            <>
-              {/* The sentence, with what the savings rate counts at its
+        <>
+          {/* The sentence, with what the savings rate counts at its
                   right — a household setting (the Dashboard's too), so it
                   sits with the rates it changes. The account tables below
                   always show every account. */}
-              <div className="md:col-span-3">
-                <PlainSummary
-                  aside={
-                    <>
-                      <span className="text-caption text-faint">Counts</span>
-                      <ChipToggle
-                        isChecked={!excludeMatch}
-                        onChange={toggleMatch}
-                        label="Employer match"
-                        title="Count the employer match in the savings rate (also on the Dashboard)"
-                      />
-                      <ChipToggle
-                        isChecked={includePortfolio}
-                        onChange={togglePortfolio}
-                        label="Portfolio"
-                        title="Count brokerage and other non-retirement savings (also on the Dashboard)"
-                      />
-                      <HighIncomeLineEdit />
-                    </>
-                  }
-                  text={
-                    viewMode !== "projected"
-                      ? undefined
-                      : contributionsSummaryLine({
-                          rate:
-                            primary === "without" ? hhRateWithout : hhRateWith,
-                          annualAmount: counted(
-                            excludeMatch ? savingsWithout : savingsWith,
-                          ),
-                          matchIncluded: !excludeMatch,
-                          includePortfolio,
-                          nextAction: nextPaycheckAction,
-                        })
-                  }
-                />
-              </div>
-              <SummaryCard
-                label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
-                rate={primary === "without" ? hhRateWithout : hhRateWith}
-                rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toContributionPeriod(
-                  counted(excludeMatch ? savingsWithout : savingsWith),
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-blue-500"
-              />
-              <SummaryCard
-                label={isBlended ? "Retirement (Est.)" : "Retirement"}
-                rate={primary === "without" ? retRateWithout : retRateWith}
-                rateAlt={primary === "without" ? retRateWith : retRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toContributionPeriod(
-                  excludeMatch ? totalRetirementWithout : totalRetirementWith,
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-emerald-500"
-              />
-              <SummaryCard
-                label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
-                rate={primary === "without" ? portRateWithout : portRateWith}
-                rateAlt={primary === "without" ? portRateWith : portRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toContributionPeriod(
-                  excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-purple-500"
-                note={includePortfolio ? undefined : "Not counted in the total"}
-              />
-            </>
-          );
-        })()}
+          <div className="md:col-span-3">
+            <PlainSummary
+              aside={
+                <>
+                  <span className="text-caption text-faint">Counts</span>
+                  <ChipToggle
+                    isChecked={!excludeMatch}
+                    onChange={toggleMatch}
+                    label="Employer match"
+                    title="Count the employer match in the savings rate (also on the Dashboard)"
+                  />
+                  <ChipToggle
+                    isChecked={includePortfolio}
+                    onChange={togglePortfolio}
+                    label="Portfolio"
+                    title="Count brokerage and other non-retirement savings (also on the Dashboard)"
+                  />
+                  <HighIncomeLineEdit />
+                </>
+              }
+              text={
+                viewMode !== "projected"
+                  ? undefined
+                  : contributionsSummaryLine({
+                      rate: primary === "without" ? hhRateWithout : hhRateWith,
+                      annualAmount: counted(
+                        excludeMatch ? savingsWithout : savingsWith,
+                      ),
+                      matchIncluded: !excludeMatch,
+                      includePortfolio,
+                      nextAction: nextPaycheckAction,
+                    })
+              }
+            />
+          </div>
+          <SummaryCard
+            label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
+            rate={primary === "without" ? hhRateWithout : hhRateWith}
+            rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              counted(excludeMatch ? savingsWithout : savingsWith),
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-blue-500"
+          />
+          <SummaryCard
+            label={isBlended ? "Retirement (Est.)" : "Retirement"}
+            rate={primary === "without" ? retRateWithout : retRateWith}
+            rateAlt={primary === "without" ? retRateWith : retRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              excludeMatch ? totalRetirementWithout : totalRetirementWith,
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-emerald-500"
+          />
+          <SummaryCard
+            label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
+            rate={primary === "without" ? portRateWithout : portRateWith}
+            rateAlt={primary === "without" ? portRateWith : portRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-purple-500"
+            note={includePortfolio ? undefined : "Not counted in the total"}
+          />
+        </>
       </div>
 
       {/* Employer match summary */}
@@ -665,16 +693,7 @@ export function ContributionsContent() {
                               />
                             </div>
                             <span className="text-caption text-muted w-10 text-right">
-                              {(() => {
-                                const priorYearRatio = safeDivide(
-                                  a.priorYear.amount,
-                                  a.priorYear.limit,
-                                  null,
-                                );
-                                return priorYearRatio === null
-                                  ? "—"
-                                  : formatPercent(priorYearRatio, 0);
-                              })()}
+                              {renderPriorYearShare(a.priorYear)}
                             </span>
                           </div>
                         </td>
@@ -834,38 +853,7 @@ export function ContributionsContent() {
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const profile = savingsOf(
-                  {
-                    people: profileData.people.filter((p) => p.salary > 0),
-                    joint: profileData.jointAccountTypes,
-                  },
-                  excludeMatch,
-                );
-                return [
-                  {
-                    label: excludeMatch
-                      ? "Total (w/o match)"
-                      : "Total (w/ match)",
-                    current: excludeMatch ? totalWithout : totalWith,
-                    profile: profile.total,
-                  },
-                  {
-                    label: "Retirement",
-                    current: excludeMatch
-                      ? totalRetirementWithout
-                      : totalRetirementWith,
-                    profile: group(profile, "retirement").total,
-                  },
-                  {
-                    label: "Portfolio",
-                    current: excludeMatch
-                      ? totalPortfolioWithout
-                      : totalPortfolioWith,
-                    profile: group(profile, "portfolio").total,
-                  },
-                ];
-              })().map((row) => {
+              {profileRows.map((row) => {
                 const delta = row.profile - row.current;
                 return (
                   <tr key={row.label} className="border-subtle border-b">
@@ -905,6 +893,12 @@ export function ContributionsContent() {
       )}
     </div>
   );
+}
+
+/** A prior-year row's share of its limit, or a dash when it has none. */
+function renderPriorYearShare(priorYear: { amount: number; limit: number }) {
+  const priorYearRatio = safeDivide(priorYear.amount, priorYear.limit, null);
+  return priorYearRatio === null ? "—" : formatPercent(priorYearRatio, 0);
 }
 
 function SummaryCard({

@@ -251,9 +251,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-jsx-iife": {
-      "count": 3
-    },
     "ratchet/no-raw-input": {
       "count": 1
     },
