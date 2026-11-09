@@ -2241,14 +2241,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 26
-    },
     "ratchet/no-abbreviation": {
       "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/use-projection-state.ts": {

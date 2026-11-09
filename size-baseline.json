@@ -186,7 +186,7 @@
     "src/components/retirement-projection/spending-stability-chart.tsx": 526,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 620,
-    "src/components/retirement-projection/use-projection-queries.ts": 989,
+    "src/components/retirement-projection/use-projection-queries.ts": 815,
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/utils.ts": 868,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
@@ -741,7 +741,7 @@
       "useProjectionFormState": 297
     },
     "src/components/retirement-projection/use-projection-queries.ts": {
-      "useProjectionQueries": 951
+      "useProjectionQueries": 777
     },
     "src/components/retirement-projection/use-projection-state.ts": {
       "useProjectionState": 284
