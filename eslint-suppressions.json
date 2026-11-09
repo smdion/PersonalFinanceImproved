@@ -4816,14 +4816,6 @@
       "count": 1
     }
   },
-  "src/lib/sec/facts-sync.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
   "src/lib/sec/parsers.ts": {
     "ratchet/no-abbreviation": {
       "count": 2
@@ -5560,6 +5552,14 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
+    }
+  },
+  "src/server/services/investments/sec-facts.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/server/services/net-worth/snapshot-derivatives.ts": {

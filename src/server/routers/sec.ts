@@ -26,7 +26,10 @@ import {
   nothingChanged,
   userMessageFor,
 } from "@/lib/budget-api/errors";
-import { getSecFactsStatus, syncSecurityFacts } from "@/lib/sec/facts-sync";
+import {
+  getSecFactsStatus,
+  syncSecurityFacts,
+} from "@/server/services/investments/sec-facts";
 
 const MANUAL_REFRESH_GAP_MS = 10 * 60 * 1000;
 let lastManualRefresh = 0;

@@ -21,7 +21,7 @@ import {
   suggestStandIn,
   type RegistryIndex,
 } from "@/lib/pure/investments/sec-identity";
-import { getSecContact } from "./connection";
+import { getSecContact } from "@/lib/sec/connection";
 import {
   SecRateLimitError,
   fetchExpenseRatios,
@@ -29,8 +29,8 @@ import {
   fetchNport,
   fetchRegistry,
   listFilings,
-} from "./client";
-import type { EdgarFiling } from "./schemas";
+} from "@/lib/sec/client";
+import type { EdgarFiling } from "@/lib/sec/schemas";
 import { userMessageFor } from "@/lib/budget-api/errors";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";

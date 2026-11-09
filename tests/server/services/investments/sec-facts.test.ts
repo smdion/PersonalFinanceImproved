@@ -1,7 +1,7 @@
 /**
  * SEC fund-facts sync with SEC mocked. Invented funds, series and filings.
  */
-import "../helpers/setup-mocks";
+import "../../../helpers/setup-mocks";
 import {
   describe,
   it,
@@ -13,7 +13,7 @@ import {
 } from "vitest";
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { createTestDb, type TestDbContext } from "../helpers/db-harness";
+import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 
 const sec = vi.hoisted(() => ({
   rateLimited: false,
@@ -162,7 +162,10 @@ afterAll(() => {
 });
 
 import { saveSecConnection } from "@/lib/sec/connection";
-import { getSecFactsStatus, syncSecurityFacts } from "@/lib/sec/facts-sync";
+import {
+  getSecFactsStatus,
+  syncSecurityFacts,
+} from "@/server/services/investments/sec-facts";
 
 describe("syncSecurityFacts", () => {
   let ctx: TestDbContext;

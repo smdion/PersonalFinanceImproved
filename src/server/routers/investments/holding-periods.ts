@@ -17,7 +17,7 @@ import {
 import { fetchFundTickers } from "@/lib/sec/client";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { getSecContact } from "@/lib/sec/connection";
-import { syncSecurityFacts } from "@/lib/sec/facts-sync";
+import { syncSecurityFacts } from "@/server/services/investments/sec-facts";
 import { inferSecurityKind } from "@/lib/pure/sync/simplefin-holdings";
 import { loadTrackedAccountNames } from "@/server/data/account-names";
 import { toFactRows } from "@/server/data/fund-facts";

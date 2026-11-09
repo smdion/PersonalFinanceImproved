@@ -345,7 +345,6 @@
     "src/lib/pure/simulation/trial-run.ts": 317,
     "src/lib/pure/simulation/trial-summary.ts": 299,
     "src/lib/pure/sync/budget-preview.ts": 358,
-    "src/lib/sec/facts-sync.ts": 576,
     "src/lib/simplefin/client.ts": 458,
     "src/lib/tax-data/validate.ts": 395,
     "src/lib/utils/colors.ts": 381,
@@ -400,6 +399,7 @@
     "src/server/services/debts/other-liabilities.ts": 54,
     "src/server/services/demo/demo-seed.ts": 462,
     "src/server/services/investments/current-balances.ts": 465,
+    "src/server/services/investments/sec-facts.ts": 576,
     "src/server/services/net-worth/other-assets.ts": 85,
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 120,
@@ -1000,9 +1000,6 @@
     "src/lib/pure/simulation/trial-run.ts": {
       "runTrials": 301
     },
-    "src/lib/sec/facts-sync.ts": {
-      "refreshOne": 203
-    },
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
@@ -1061,6 +1058,9 @@
     },
     "src/server/services/investments/holdings-overview.ts": {
       "loadHoldingsOverview": 157
+    },
+    "src/server/services/investments/sec-facts.ts": {
+      "refreshOne": 203
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 492

@@ -50,7 +50,7 @@ vi.mock("@/lib/db/backup/version-logic", () => ({
 vi.mock("@/lib/sec/connection", () => ({
   getSecConnection: vi.fn().mockResolvedValue({ id: 1 }),
 }));
-vi.mock("@/lib/sec/facts-sync", () => ({
+vi.mock("@/server/services/investments/sec-facts", () => ({
   secFactsRefreshDue: vi.fn().mockResolvedValue(true),
   syncSecurityFacts: m.syncSecurityFacts,
 }));

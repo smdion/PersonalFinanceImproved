@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSecConnection } from "@/lib/sec/connection";
-import { secFactsRefreshDue, syncSecurityFacts } from "@/lib/sec/facts-sync";
+import {
+  secFactsRefreshDue,
+  syncSecurityFacts,
+} from "@/server/services/investments/sec-facts";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
 
