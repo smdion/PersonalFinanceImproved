@@ -22,7 +22,7 @@ import {
   lumpSumsForBucket,
   lumpSumsForCategory,
   lumpSumTotal,
-} from "@/components/retirement-projection/lump-sums";
+} from "@/components/retirement-projection/table/lump-sums";
 import {
   itemTaxType,
   colKeyParts,
@@ -36,7 +36,7 @@ import {
   matchFracOf,
   computeColumnChange,
   computeAccountSplits,
-} from "@/components/retirement-projection/projection-columns";
+} from "@/components/retirement-projection/table/projection-columns";
 import {
   slotBucketWithdrawal,
   slotBucketContribution,
@@ -44,7 +44,7 @@ import {
   filterSpecsForBucket,
   iaBelongsToBucket,
   bucketSlotMap,
-} from "@/components/retirement-projection/bucket-slots";
+} from "@/components/retirement-projection/table/bucket-slots";
 import { safeDivide } from "@/lib/utils/math";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";

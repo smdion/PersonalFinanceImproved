@@ -5,8 +5,8 @@ import type {
   AccumulationSlot,
   EngineAccumulationYear,
 } from "@/lib/pure/engine/types";
-import type { ProjectionState } from "./projection-table-types";
-import type { TooltipLineItem } from "./types";
+import type { ProjectionState } from "../projection-table-types";
+import type { TooltipLineItem } from "../types";
 import {
   getAccountTypeConfig,
   getDisplayConfig,

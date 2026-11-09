@@ -35,7 +35,7 @@ import type {
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
 import { ROTH_CONVERSION_BRACKET_PRESETS } from "./projection-display";
 import { filterYearByParentCategory } from "./parent-category-filter";
-import { _singleBucketCategories } from "./bucket-slots";
+import { _singleBucketCategories } from "./table/bucket-slots";
 
 export function useProjectionDerived(
   form: ProjectionFormState,

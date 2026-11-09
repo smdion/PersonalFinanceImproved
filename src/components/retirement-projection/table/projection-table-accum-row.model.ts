@@ -1,8 +1,8 @@
 /** The accumulation row's view model: what its cells and tooltips show,
  *  computed from the engine's year with the page's formatters. */
 import type { EngineAccumulationYear } from "@/lib/pure/engine/types";
-import type { TipColor, TooltipLineItem } from "./types";
-import type { ProjectionState } from "./projection-table-types";
+import type { TipColor, TooltipLineItem } from "../types";
+import type { ProjectionState } from "../projection-table-types";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -12,7 +12,7 @@ import {
   isOverflowTarget,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { catDisplayLabel } from "./projection-display";
+import { catDisplayLabel } from "../projection-display";
 import { itemTaxType, proRateMonths } from "./projection-columns";
 import { safeDivide } from "@/lib/utils/math";
 import {

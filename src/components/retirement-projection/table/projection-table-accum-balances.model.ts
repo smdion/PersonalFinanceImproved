@@ -1,8 +1,8 @@
 /** The accumulation row's contribution total and balance columns: their
  *  tooltips, from the engine's year with the page's formatters. */
 import type { EngineAccumulationYear } from "@/lib/pure/engine/types";
-import type { ProjectionState } from "./projection-table-types";
-import type { TipColor, TooltipLineItem } from "./types";
+import type { ProjectionState } from "../projection-table-types";
+import type { TipColor, TooltipLineItem } from "../types";
 import type { computeAccountSplits } from "./projection-columns";
 import {
   contributionTaxTypeTotals,

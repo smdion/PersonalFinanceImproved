@@ -15,9 +15,9 @@ import type {
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
 import { taxTypeLabel } from "@/lib/config/display-labels";
-import type { ProjectionState } from "./projection-table-types";
-import type { TooltipLineItem } from "./types";
-import { catDisplayLabel } from "./projection-display";
+import type { ProjectionState } from "../projection-table-types";
+import type { TooltipLineItem } from "../types";
+import { catDisplayLabel } from "../projection-display";
 import {
   lumpSumTotal,
   lumpSumsForBucket,

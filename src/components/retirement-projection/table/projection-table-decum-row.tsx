@@ -25,8 +25,8 @@ import {
   isQcdEligible,
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/pure/accounts/account-balance";
-import type { TipColor, TooltipLineItem } from "./types";
-import { rowTotal } from "./parent-category-filter";
+import type { TipColor, TooltipLineItem } from "../types";
+import { rowTotal } from "../parent-category-filter";
 import { lumpSumTotal } from "./lump-sums";
 import {
   itemTaxType,
@@ -37,7 +37,7 @@ import {
   percentOf,
 } from "./projection-columns";
 import { slotBucketWithdrawal, iaBelongsToBucket } from "./bucket-slots";
-import type { ProjectionState } from "./projection-table-types";
+import type { ProjectionState } from "../projection-table-types";
 import {
   renderSimulationCell,
   type RenderSimulationCellOptions,

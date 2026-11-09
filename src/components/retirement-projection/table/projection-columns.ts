@@ -20,7 +20,7 @@ import type {
   SpecFracInput,
   MatchFracInput,
   ColumnChangeInput,
-} from "./types";
+} from "../types";
 
 export function itemTaxType(
   category: string,

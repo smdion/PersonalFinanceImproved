@@ -7,7 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 import { Toggle } from "@/components/ui/toggle";
-import { PillBtn, LabeledPillGroup } from "./pill-btn";
+import { PillBtn, LabeledPillGroup } from "../pill-btn";
 import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import {
@@ -20,10 +20,10 @@ import {
   TAX_BUCKET_DESCRIPTIONS,
   taxTypeLabel,
 } from "@/lib/config/display-labels";
-import { catDisplayLabel } from "./projection-display";
-import { isAccumYear } from "./parent-category-filter";
+import { catDisplayLabel } from "../projection-display";
+import { isAccumYear } from "../parent-category-filter";
 import { _singleBucketCategories } from "./bucket-slots";
-import type { ProjectionTableProps } from "./projection-table-types";
+import type { ProjectionTableProps } from "../projection-table-types";
 import { type RenderSimulationCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";
 import { DecumulationRow } from "./projection-table-decum-row";

@@ -1923,7 +1923,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/account-notes.ts": {
+  "src/components/retirement-projection/table/account-notes.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -1934,7 +1934,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/bucket-slots.ts": {
+  "src/components/retirement-projection/table/bucket-slots.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -2200,7 +2200,7 @@
       "count": 2
     }
   },
-  "src/components/retirement-projection/projection-columns.ts": {
+  "src/components/retirement-projection/table/projection-columns.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -2237,17 +2237,17 @@
       "count": 3
     }
   },
-  "src/components/retirement-projection/projection-table-accum-balances.model.ts": {
+  "src/components/retirement-projection/table/projection-table-accum-balances.model.ts": {
     "ratchet/no-abbreviation": {
       "count": 3
     }
   },
-  "src/components/retirement-projection/projection-table-accum-contributions.model.ts": {
+  "src/components/retirement-projection/table/projection-table-accum-contributions.model.ts": {
     "ratchet/no-abbreviation": {
       "count": 4
     }
   },
-  "src/components/retirement-projection/projection-table-accum-row.model.ts": {
+  "src/components/retirement-projection/table/projection-table-accum-row.model.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -2258,7 +2258,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-accum-row.tsx": {
+  "src/components/retirement-projection/table/projection-table-accum-row.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -2269,7 +2269,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-contrib-methodology.tsx": {
+  "src/components/retirement-projection/table/projection-table-contrib-methodology.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -2286,12 +2286,12 @@
       "count": 4
     }
   },
-  "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
+  "src/components/retirement-projection/table/projection-table-decum-balances.model.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-decum-row.model.ts": {
+  "src/components/retirement-projection/table/projection-table-decum-row.model.ts": {
     "ratchet/no-abbreviation": {
       "count": 10
     },
@@ -2299,7 +2299,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-decum-row.tsx": {
+  "src/components/retirement-projection/table/projection-table-decum-row.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 9
     },
@@ -2310,7 +2310,7 @@
       "count": 12
     }
   },
-  "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
+  "src/components/retirement-projection/table/projection-table-decum-withdrawals.model.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
@@ -2318,12 +2318,12 @@
       "count": 10
     }
   },
-  "src/components/retirement-projection/projection-table-mc-cell.tsx": {
+  "src/components/retirement-projection/table/projection-table-mc-cell.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     }
   },
-  "src/components/retirement-projection/projection-table.tsx": {
+  "src/components/retirement-projection/table/projection-table.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -2360,7 +2360,7 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/tax-summary-card.tsx": {
+  "src/components/retirement-projection/table/tax-summary-card.tsx": {
     "ratchet/no-abbreviation": {
       "count": 1
     },

@@ -7,8 +7,8 @@
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { KpiCard } from "./kpi-card";
-import type { ProjectionState } from "./projection-table-types";
+import { KpiCard } from "../kpi-card";
+import type { ProjectionState } from "../projection-table-types";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import {
   computeLifetimeTaxSummary,

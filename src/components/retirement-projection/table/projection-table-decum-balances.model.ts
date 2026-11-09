@@ -6,13 +6,13 @@ import type {
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
-import type { ProjectionState } from "./projection-table-types";
-import type { TooltipLineItem } from "./types";
+import type { ProjectionState } from "../projection-table-types";
+import type { TooltipLineItem } from "../types";
 import {
   buildStrategyEventStyle,
   catDisplayLabel,
   formatRmdDivisorDetail,
-} from "./projection-display";
+} from "../projection-display";
 import { lumpSumsForBucket } from "./lump-sums";
 import { itemTaxType } from "./projection-columns";
 import { bucketSlotMap, slotBucketWithdrawal } from "./bucket-slots";

@@ -18,7 +18,7 @@ import {
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
-import type { ProjectionState } from "./projection-table-types";
+import type { ProjectionState } from "../projection-table-types";
 
 type ContributionMethodologyProps = {
   state: ProjectionState;

@@ -39,7 +39,7 @@
       "count": 2
     }
   },
-  "src/components/retirement-projection/account-notes.ts": {
+  "src/components/retirement-projection/table/account-notes.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
     }
@@ -54,32 +54,32 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-accum-balances.model.ts": {
+  "src/components/retirement-projection/table/projection-table-accum-balances.model.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-accum-row.model.ts": {
+  "src/components/retirement-projection/table/projection-table-accum-row.model.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-accum-row.tsx": {
+  "src/components/retirement-projection/table/projection-table-accum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 4
     }
   },
-  "src/components/retirement-projection/projection-table-decum-balances.model.ts": {
+  "src/components/retirement-projection/table/projection-table-decum-balances.model.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 6
     }
   },
-  "src/components/retirement-projection/projection-table-decum-row.tsx": {
+  "src/components/retirement-projection/table/projection-table-decum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 16
     }
   },
-  "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
+  "src/components/retirement-projection/table/projection-table-decum-withdrawals.model.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }
@@ -94,7 +94,7 @@
       "count": 8
     }
   },
-  "src/components/retirement-projection/projection-columns.ts": {
+  "src/components/retirement-projection/table/projection-columns.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
