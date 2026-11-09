@@ -1788,9 +1788,6 @@
     "ratchet/no-config-reach-through": {
       "count": 1
     },
-    "ratchet/no-jsx-iife": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 4
     },
@@ -1821,9 +1818,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 2
     }
   },
   "src/components/paycheck/contributions-section.tsx": {

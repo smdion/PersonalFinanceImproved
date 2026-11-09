@@ -114,9 +114,9 @@
     "src/components/onboarding/wizard-navigation.ts": 120,
     "src/components/onboarding/wizard-saves.ts": 153,
     "src/components/onboarding/wizard-state.ts": 32,
-    "src/components/paycheck/contrib-account-form.tsx": 613,
+    "src/components/paycheck/contrib-account-form.tsx": 609,
     "src/components/paycheck/contrib-card.tsx": 539,
-    "src/components/paycheck/contribution-snapshot.tsx": 718,
+    "src/components/paycheck/contribution-snapshot.tsx": 615,
     "src/components/paycheck/contributions-section.tsx": 431,
     "src/components/paycheck/person-paycheck.tsx": 453,
     "src/components/performance/update-performance-form.tsx": 852,
@@ -621,8 +621,8 @@
       "SpreadsheetYearOverYearTable.map()": 188
     },
     "src/components/paycheck/contribution-snapshot.tsx": {
-      "ContributionSnapshot": 675,
-      "ContributionSnapshot.map()": 490,
+      "ContributionSnapshot": 571,
+      "ContributionSnapshot.map()": 386,
       "ContributionSnapshot.map().map()": 315
     },
     "src/components/paycheck/contributions-section.tsx": {

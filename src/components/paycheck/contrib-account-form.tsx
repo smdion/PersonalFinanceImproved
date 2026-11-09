@@ -46,6 +46,7 @@ import {
   withMatchClear,
 } from "@/lib/pure/contributions/match-display";
 import { LabelOptions } from "@/components/ui/label-options";
+import { renderProfilesNote } from "./contrib-account-profiles-note";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -258,12 +259,7 @@ export function ContributionAccountForm({
           {linkedExistingId != null ? (
             <>
               {`Reusing your existing ${TAX_LABELS[v.taxTreatment] ?? v.taxTreatment} ${cfg.displayLabel} account — saving will update it, not create a new one.`}
-              {(() => {
-                const names = profileNamesFor(linkedExistingId);
-                return names.length > 0
-                  ? ` Note: ${names.join(", ")} ${names.length > 1 ? "have" : "has"} a value set for this account.`
-                  : "";
-              })()}
+              {renderProfilesNote(linkedExistingId, profileNamesFor)}
             </>
           ) : (
             "Creating a new contribution account. Set its contribution amount afterward in the Contribution Profile editor — accounts don't carry a value of their own."
