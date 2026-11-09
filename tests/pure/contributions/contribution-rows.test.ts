@@ -1,7 +1,7 @@
 /**
  * A payroll fixed_monthly / fixed_annual account taken from the bonus check
  * needs the job's real pay-period count to know its per-paycheck amount.
- * resolveContribPeriods used to hand back 0 for those methods, so the
+ * resolveContributionPeriods used to hand back 0 for those methods, so the
  * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
  */
 import { describe, it, expect } from "vitest";

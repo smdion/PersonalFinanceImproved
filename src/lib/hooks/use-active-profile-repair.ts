@@ -17,7 +17,7 @@ export function resetActiveProfileRepairsForTests(): void {
 /**
  * Re-points an "active profile" id at a real row whenever the stored id
  * names one that's gone (or is absent entirely — e.g. a pre-migration
- * snapshot restore). Shared by useActiveContribProfile/
+ * snapshot restore). Shared by useActiveContributionProfile/
  * useActiveSalaryProfile/useActiveRetirementProfile — identical repair
  * logic, previously copy-pasted three times. A future tweak to the repair
  * rule, e.g. a different tie-break than "first by id," would have needed

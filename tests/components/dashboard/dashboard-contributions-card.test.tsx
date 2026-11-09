@@ -178,7 +178,7 @@ const mockData = {
 beforeEach(() => {
   resetTrpcMock();
   // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
-  // useEffectiveContributionProfileId → useActiveContribProfile. An empty list
+  // useEffectiveContributionProfileId → useActiveContributionProfile. An empty list
   // is the "nothing to resolve" case: the hook leaves the active id alone
   // rather than re-pointing it.
   setQuery("salaryProfile.list", []);

@@ -60,7 +60,7 @@ export function useProfileManagerState() {
   });
   const { clone: cloneProfile } = useCloneProfile(duplicateMutation);
 
-  // Local selection, else the active profile (a real row: useActiveContribProfile
+  // Local selection, else the active profile (a real row: useActiveContributionProfile
   // repairs the setting if that row ever goes missing).
   const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
     useEffectiveProfileId("contribution", {

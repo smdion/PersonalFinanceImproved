@@ -53,7 +53,7 @@ export function aggregateContributionsByCategory(
   };
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
    *  excluded from the totals above (annual treated as 0) rather than
-   *  defaulted to a guessed pay period. See resolveContribPeriods. */
+   *  defaulted to a guessed pay period. See resolveContributionPeriods. */
   incompleteAccountIds: number[];
 } {
   const emptySummaries = () =>

@@ -597,7 +597,7 @@ per-column profile back — a different set of profiles is a different Plan.
   fall through". Never rewrite these to a concrete id.
 - On the **active setting**, `null` means nothing at all. Since
   `0008_kill_live_sentinel` these always name a real row:
-  `useActiveContribProfile` / `useActiveSalaryProfile` re-point the setting if
+  `useActiveContributionProfile` / `useActiveSalaryProfile` re-point the setting if
   the row it names goes missing, and the delete guards refuse to remove the
   active or last remaining profile of either kind.
 
@@ -778,7 +778,7 @@ live from the job record" fallback — a job has nothing left on `jobs` to
 fall back to. A profile that doesn't mention a job says **nothing** about
 it: salary/bonus resolve to $0/no bonus, and every other field resolves to
 `undefined`, which every consumer must treat as a real "incomplete" signal
-(see `mergeSalaryProfileJobFields`/`resolveContribPeriods`'s pattern of
+(see `mergeSalaryProfileJobFields`/`resolveContributionPeriods`'s pattern of
 excluding rather than guessing) — never a substitute for a live column,
 because none exists. `salaryEntrySchema` (`json-schemas.ts`) is `.strict()`
 so a partial or stale-shaped entry is rejected at write time, not silently
@@ -865,7 +865,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 - **Returns.** An asset class's stored mean and deviation are the arithmetic mean and standard deviation of its simple yearly return; draws are log-normal with those moments (`logNormalParams`, `random.ts`). Correlations apply to the underlying normal draws, through one Cholesky factor per run. The year's mix is the glide path at the primary person's age that year, interpolated between waypoints, and the blended return is clamped to the preset's limits.
 - **Inflation.** With inflation risk on, each year draws one shock around the household's own inflation rates, and the shock moves both rates (`inflation-path.ts`).
 - **Success** is the share of trials the plan judge passes (`assessPlan`, DESIGN § Retirement scope and the plan judge). Unmet spending below the materiality floor, $50 or 1% of the year's need, whichever is larger, counts as met, so a trial a few dollars short still succeeds. A failed trial is `depleted`, `penaltyGap` or `shortfall`.
-- **Success bars.** 90% (`MC_CONFIDENCE_THRESHOLD`) for Coast FIRE and the strategy comparison's diagnosis; the screens rate 90% and up best and 75% and up next. The report's on-track verdict and action items use 85% (`lib/pure/advice/report/`).
+- **Success bars.** 90% (`SIMULATION_CONFIDENCE_THRESHOLD`) for Coast FIRE and the strategy comparison's diagnosis; the screens rate 90% and up best and 75% and up next. The report's on-track verdict and action items use 85% (`lib/pure/advice/report/`).
 - **Bands** are the 5th to 95th percentiles of each year's retirement balance across all trials (linear between order statistics, R's type 7). Failed trials stay in, at $0 once their money is gone.
 - **Today's dollars.** Each trial's figures are divided by that trial's own price index before the percentiles are taken. A row uses the index at its start (`growth(t)`, 1 for the first row): right for the year's withdrawal, but a year-end balance reads high: by a year's inflation for a retired household, and by the part of the first year left at the as-of date for a working one.
 - **Fixed-return line.** The Simulation's own fixed-return line compounds, each year, the weighted sum of each class's geometric mean (`routers/projection/monte-carlo.ts`).

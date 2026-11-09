@@ -23,7 +23,7 @@ describe("ageInYear", () => {
   });
 });
 
-describe("isPriorYearContribWindow", () => {
+describe("isPriorYearContributionWindow", () => {
   it("returns true for January 1", () => {
     expect(isPriorYearContribWindow(new Date(2026, 0, 1))).toBe(true);
   });

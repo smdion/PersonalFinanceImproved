@@ -16,7 +16,7 @@ import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
  * it re-points at the oldest surviving profile rather than leaving null,
  * which no longer means anything.
  *
- * Twin of useActiveContribProfile — the two axes are independent, so a page
+ * Twin of useActiveContributionProfile — the two axes are independent, so a page
  * that previews under a different salary AND a different contribution setup
  * calls both.
  */
@@ -26,10 +26,10 @@ export function useActiveSalaryProfile(): [
 ] {
   const utils = trpc.useUtils();
   const setActive = trpc.salaryProfile.setActive.useMutation({
-    // See useActiveContribProfile's matching docblock — switching the
+    // See useActiveContributionProfile's matching docblock — switching the
     // active Salary Profile changes real input data for all of these, not
     // just the "which profile is active" pointer.
-    // See useActiveContribProfile's matching comment — batched instead of
+    // See useActiveContributionProfile's matching comment — batched instead of
     // 10 uncoordinated calls.
     onSuccess: () =>
       Promise.all([
@@ -49,7 +49,7 @@ export function useActiveSalaryProfile(): [
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
     {
-      // See useActiveContribProfile's matching comment — null used to
+      // See useActiveContributionProfile's matching comment — null used to
       // silently no-op instead of persisting the cleared selection.
       writeVia: (id) => setActive.mutateAsync({ id }),
     },

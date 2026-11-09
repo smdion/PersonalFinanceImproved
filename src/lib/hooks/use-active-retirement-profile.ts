@@ -8,7 +8,7 @@ import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 /**
  * Hook that reads the active Retirement Profile ID from app_settings and
  * keeps it pointing at a real row. Same contract as
- * useActiveContribProfile/useActiveSalaryProfile on the other two axes: the
+ * useActiveContributionProfile/useActiveSalaryProfile on the other two axes: the
  * setting is never a sentinel, and this is the repair path for an id that
  * names a row which is gone (or absent entirely — e.g. a pre-migration
  * snapshot restore, or the very first load before any profile exists).
@@ -35,7 +35,7 @@ export function useActiveRetirementProfile(): [
   // writeVia (same admin-gated upsert mutation, broader invalidation)
   // closes that without needing a new endpoint.
   const upsertWithInvalidation = trpc.settings.appSettings.upsert.useMutation({
-    // See useActiveContribProfile's matching comment — batched instead of
+    // See useActiveContributionProfile's matching comment — batched instead of
     // uncoordinated calls.
     onSuccess: () =>
       Promise.all([
