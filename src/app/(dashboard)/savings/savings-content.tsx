@@ -28,7 +28,8 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
-import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import { maskAmountsInText } from "@/lib/utils/format";
+import { renderPoolGrowthLine } from "./pool-growth-line";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
@@ -466,24 +467,22 @@ export function SavingsContent() {
     fundCallbacksRef.current?.onGoalUpdateMulti(goalId, fields);
   };
 
+  const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
+  const profileName =
+    activeContributionProfileId != null
+      ? (contributionProfilesList?.find(
+          (p) => p.id === activeContributionProfileId,
+        )?.name ?? null)
+      : null;
+  const pageSubtitle = !budgetLabel
+    ? undefined
+    : profileName
+      ? `Budget: ${budgetLabel} | Profile: ${profileName}`
+      : `Budget: ${budgetLabel} | Profile: Live`;
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Savings"
-        subtitle={(() => {
-          const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
-          if (!budgetLabel) return undefined;
-          const profileName =
-            activeContributionProfileId != null
-              ? (contributionProfilesList?.find(
-                  (p) => p.id === activeContributionProfileId,
-                )?.name ?? null)
-              : null;
-          return profileName
-            ? `Budget: ${budgetLabel} | Profile: ${profileName}`
-            : `Budget: ${budgetLabel} | Profile: Live`;
-        })()}
-      ></PageHeader>
+      <PageHeader title="Savings" subtitle={pageSubtitle}></PageHeader>
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
@@ -744,53 +743,12 @@ export function SavingsContent() {
                           Derived from raise rates &middot; flat budget assumed
                         </p>
                       </div>
-                      {(() => {
-                        if (maxMonthlyFunding === null)
-                          return (
-                            <p className="text-faint text-xs">
-                              Requires paycheck and budget data.
-                            </p>
-                          );
-                        const endYear = startYear + projectionYears;
-                        const endPool =
-                          derivedPoolByYear.get(endYear) ?? maxMonthlyFunding;
-                        const totalGrowthPercent =
-                          maxMonthlyFunding > 0
-                            ? ((endPool - maxMonthlyFunding) /
-                                maxMonthlyFunding) *
-                              100
-                            : 0;
-                        const hasGrowth = Math.abs(totalGrowthPercent) >= 0.01;
-                        return (
-                          <p className="text-faint text-xs tabular-nums">
-                            {hasGrowth ? (
-                              <>
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(maxMonthlyFunding)}/mo
-                                </span>
-                                {" → "}
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(endPool)}/mo
-                                </span>
-                                {" by "}
-                                {endYear}
-                                <span className="ml-1 text-green-600">
-                                  (+{totalGrowthPercent.toFixed(1)}%)
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(maxMonthlyFunding)}/mo
-                                </span>
-                                <span className="text-faint/60 ml-1">
-                                  · set raise rates to project growth
-                                </span>
-                              </>
-                            )}
-                          </p>
-                        );
-                      })()}
+                      {renderPoolGrowthLine(
+                        derivedPoolByYear,
+                        maxMonthlyFunding,
+                        projectionYears,
+                        startYear,
+                      )}
                     </div>
 
                     {/* Extra paycheck rules — one column per earner. The
