@@ -133,7 +133,7 @@ export function distributeYearDraws(
   year: number,
 ) {
   // Draws reach accounts before tax: the tax reads this year's Roth basis
-  // draws, and only indBal/indBasis change here. indBal is copied first for
+  // draws, and only indBalance/indBasis change here. indBalance is copied first for
   // the basis draw's pro-rata ratio.
   const preWithdrawalIndBal = new Map(indBal);
   const distributeResult = hasIndividualAccounts

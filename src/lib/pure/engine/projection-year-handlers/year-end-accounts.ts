@@ -60,7 +60,7 @@ export function closeYearAccounts(
       )
     : [];
 
-  // Reconcile indBal to acctBal once per year, as decumulation-year.ts does:
+  // Reconcile indBalance to accountBalance once per year, as decumulation-year.ts does:
   // after the output row is built (output shows pre-cleanup figures, the
   // carried state post-cleanup) and before the divergence check below.
   if (hasIndividualAccounts) {

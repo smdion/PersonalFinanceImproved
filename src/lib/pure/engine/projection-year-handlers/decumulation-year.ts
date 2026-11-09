@@ -100,7 +100,7 @@ export function runDecumulationYear(
   // a year, read by every step that decides what's available.
   const { nonRetirement } = setup;
 
-  // Reconciliation check: acctBal Roth total should match balances.taxFree
+  // Reconciliation check: accountBalance Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
     const b = acctBal[cat];
     return s + (b.structure === "roth_traditional" ? b.roth : 0);

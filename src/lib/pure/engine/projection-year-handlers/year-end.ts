@@ -99,7 +99,7 @@ export function closeDecumulationYear(
     cleanupDust(balances, acctBal, indAccts, indKey, indBal),
   );
 
-  // indBal reconciled to acctBal once a year (the tracks drift), after dust
+  // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
   // cleanup and before the basis re-clamp, so next year's eligibility can't
   // see an eligible balance in a locked category.
   if (hasIndividualAccounts) {

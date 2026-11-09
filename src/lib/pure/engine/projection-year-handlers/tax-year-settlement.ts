@@ -267,7 +267,7 @@ export function yearRothConversion(
   nonRetirement: PreYearSetup["nonRetirement"],
 ) {
   // RMD-aware conversion smoothing (rmd-smoothing.ts), sized each year from
-  // each owner's current Traditional balance (indBal, after this year's
+  // each owner's current Traditional balance (indBalance, after this year's
   // draws); per owner, so only with tracked accounts.
   let rmdSmoothingTarget: number | undefined;
   if (

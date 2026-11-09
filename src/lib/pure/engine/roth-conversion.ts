@@ -89,9 +89,9 @@ export interface RothConversionInput {
    *  when supplied, both the conversion SOURCE amount and the tax-payment
    *  capacity gate are capped to Retirement-only money (this half needs
    *  only the pre-aggregated exclusion record, not the raw account list).
-   *  When ALSO supplied alongside `indAccts`/`indBal`/`indKey`, the
+   *  When ALSO supplied alongside `indAccounts`/`indBalance`/`indKey`, the
    *  per-account debit is additionally applied directly to
-   *  Retirement-parented accounts' `indBal` instead of being left to
+   *  Retirement-parented accounts' `indBalance` instead of being left to
    *  `reconcileIndividualToAggregate`'s parentCategory-blind proportional
    *  redistribution. `decumulation-year.ts`'s real call site always
    *  computes and passes all four together (or none), gated on the same
@@ -149,7 +149,7 @@ interface RothConversionResult {
  * Perform Roth conversions: move Traditional → Roth to fill remaining
  * bracket room. Tax on conversion is paid from brokerage.
  *
- * Mutates `balances` and `acctBal` in place.
+ * Mutates `balances` and `accountBalance` in place.
  */
 export function performRothConversion(
   input: RothConversionInput,
@@ -374,7 +374,7 @@ export function performRothConversion(
 
   // Update per-account balances: distribute proportionally across Traditional
   // accounts, each category weighted by its Retirement-only balance
-  // (`bal.traditional - nonRetirement.trad[cat]`), not the blended one: a
+  // (`balance.traditional - nonRetirement.trad[cat]`), not the blended one: a
   // Portfolio-parented account would otherwise inflate a category's share
   // of the capped `conversion`, and the aggregate mutation below (full-
   // category-sized by design, both trackers move together) would disagree
@@ -427,7 +427,7 @@ export function performRothConversion(
   // Retirement-parented accounts in it actually hold — so debiting them
   // directly here, instead of leaving it to
   // reconcileIndividualToAggregate's parentCategory-blind proportional
-  // redistribution, keeps indBal and acctBal in agreement rather than
+  // redistribution, keeps indBalance and accountBalance in agreement rather than
   // letting the reconcile pass silently pull the difference from a
   // Portfolio-parented account.
   if (hasIndTracking) {

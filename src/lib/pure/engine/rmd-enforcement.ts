@@ -45,7 +45,7 @@ export interface RmdEnforcementInput {
    *  the full blended balance — RMDs are a real IRS obligation on real
    *  dollars regardless of this app's internal parentCategory tagging, and
    *  that must NOT change. Only the shortfall's per-category DISTRIBUTION
-   *  CAPACITY (`tradBalByCategory` below) is scoped: a Portfolio-parented
+   *  CAPACITY (`tradBalanceByCategory` below) is scoped: a Portfolio-parented
    *  account can't be forced to cover a Retirement-plan RMD shortfall. */
   nonRetirement?: NonRetirementExclusion;
 }

@@ -20,7 +20,7 @@ import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 
 /**
  * Apply one-time lump-sum injections for the current year.
- * Mutates `state.balances`, `state.acctBal`, and `state.indBal` in place.
+ * Mutates `state.balances`, `state.accountBalance`, and `state.indBalance` in place.
  */
 export function applyLumpSums(
   lumpSums: LumpSum[],
