@@ -1,5 +1,6 @@
 "use client";
 
+/** The All Transactions tab: every fund's planned transactions and transfers, edited in place. */
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -187,7 +188,6 @@ export function AllTransactionsTab({
 
   // "After" balance: use the pre-computed GoalProjection.balances[] which already
   // includes contributions, recurring expansion, and overrides — matching the Goals table.
-  // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
   // GoalProjection.balances[0] is the current calendar month, as built by
   // savings-content.tsx's monthDates; this index math must match it.

@@ -1,5 +1,6 @@
-// The filing-status schemas, apart from filing-status.ts: client
-// components read its values and labels, and Zod stays out of their bundle.
+// The filing-status schemas, apart from filing-status.ts (values and types) so Zod stays out of
+// client bundles. The chain: lib/pure/tax/filing-status.ts; this year's resolver:
+// server/services/tax/filing-status.ts.
 import { z } from "zod/v4";
 import {
   RETURN_FILING_STATUS_VALUES,

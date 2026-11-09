@@ -1,6 +1,6 @@
-// This year's filing status and where it came from (the whole chain is in
-// lib/pure/tax/filing-status.ts): one resolver for the paycheck, the caps and
-// the retirement engine.
+// This year's filing status and where it came from (the chain: lib/pure/tax/filing-status.ts;
+// values and Zod: lib/config/filing-status.ts, filing-status.schema.ts): one resolver for the
+// paycheck, the caps and the retirement engine.
 import type {
   FilingStatusKey,
   ReturnFilingStatus,

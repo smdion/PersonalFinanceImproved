@@ -1,6 +1,6 @@
-// Filing status: the status the tax return files as, and the box ticked on
-// a W-4 (Form W-4 Step 1(c), a withholding choice). Two concepts that
-// share their three spellings today, so each type carries a marker.
+// Filing status: the status the tax return files as, and the W-4 Step 1(c) box (a withholding
+// choice); they share three spellings, so each type carries a marker. Also: filing-status.schema.ts
+// (Zod), lib/pure/tax/filing-status.ts (the chain), server/services/tax/filing-status.ts (this year).
 
 export const RETURN_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
 /** The spelling both statuses share: per-status tables are keyed by it. */

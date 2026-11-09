@@ -26,7 +26,7 @@ function slotFor<T extends { category: string }>(slots: T[], cat: string) {
 // Waterfall
 // ---------------------------------------------------------------------------
 
-describe("routeWithdrawals (waterfall)", () => {
+describe("waterfall routing", () => {
   it("drains accounts in withdrawal order", () => {
     const config = makeDecumulationConfig({
       withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
@@ -1592,8 +1592,8 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
     const totalDrawn = twoPass.slots.reduce((s, sl) => s + sl.withdrawal, 0);
     expect(totalDrawn).toBeCloseTo(90000, 2);
 
-    // NOT the right invariant to test here: comparing against
-    // `routeWithdrawals(90000, config, balances)` (a single dispatch with
+    // NOT the right invariant to test here: comparing against one
+    // waterfall dispatch of 90000 over `balances` (a single dispatch with
     // the allowed money reachable from the start). That single dispatch
     // drains 401k FIRST (it's first in withdrawalOrder) before ever
     // touching brokerage — which is exactly the bug this function
