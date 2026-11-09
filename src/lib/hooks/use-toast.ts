@@ -63,14 +63,8 @@ function removeToast(id: string) {
   emit();
 }
 
-/**
- * Imperative toast API — call from anywhere (components, mutation callbacks, etc.).
- *
- * Usage:
- *   toast('Something happened');
- *   toast.success('Saved');
- *   toast.error('Failed to save');
- */
+/** Imperative toast API, callable from anywhere: `toast(msg)`, `toast.success`,
+ *  `toast.error`. */
 export function toast(
   message: string,
   variant: ToastVariant = "info",
@@ -86,12 +80,8 @@ toast.error = (message: string, duration?: number, action?: ToastAction) =>
   addToast(message, "error", duration ?? 6000, action);
 toast.info = (message: string, duration?: number, action?: ToastAction) =>
   addToast(message, "info", duration, action);
-/**
- * A persistent status toast (duration: 0 — the existing "don't
- * auto-dismiss" convention) for an in-progress operation. Caller is
- * responsible for dismissing it (via useToasts().dismiss(id)) once the
- * operation settles.
- */
+/** A status toast that never auto-dismisses (duration 0); the caller dismisses
+ *  it via useToasts().dismiss(id) once the operation settles. */
 toast.loading = (message: string) => addToast(message, "loading", 0);
 
 /**

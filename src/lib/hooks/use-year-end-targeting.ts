@@ -3,13 +3,8 @@ import { useEffectiveProfileId } from "./use-effective-profile-id";
 import { useBudgetProfilesList } from "./use-budget-profiles-list";
 
 /**
- * The shared input for every procedure that reads through
- * buildYearEndHistory (networth, historical, assets) — resolves the
- * Plan-pinned Budget Profile (falling through to the globally-active one)
- * plus any active salary overrides, so net worth / historical / assets pages
- * stay in sync with what Paycheck/Budget/Savings show under the same Plan
- * instead of always reading raw global state. Single computation path: call
- * this instead of re-deriving budgetProfileId per page.
+ * The shared input for every procedure that reads buildYearEndHistory: the
+ * effective Budget Profile. Call this instead of re-deriving it per page.
  */
 export function useYearEndTargetingInput(): {
   budgetProfileId?: number;

@@ -1,12 +1,7 @@
 /**
- * Weekly SEC fund-facts refresh: for every fund the household holds,
- * resolve its SEC identity, then store its latest expense ratio (shareholder
- * report) and composition (N-PORT, looking through funds it holds).
- * Generic over any registered fund — nothing here names a fund or ticker.
- *
- * Funds SEC doesn't list get a suggested stand-in (stored unconfirmed);
- * facts are fetched for a stand-in only once the household confirms it.
- * A 403/429 from SEC stops the run; the last stored facts stay.
+ * Weekly SEC fund-facts refresh: expense ratio and composition for every held
+ * fund. Unlisted funds get an unconfirmed stand-in, fetched only once confirmed.
+ * A 403/429 stops the run and the last stored facts stay.
  */
 import "server-only";
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
@@ -133,10 +128,8 @@ class Composer {
       if (underlying && underlying !== seriesId) {
         resolutions.push(await this.lookThrough(underlying, h.lei, depth + 1));
       } else if (isFundHolding(h)) {
-        // Itself a fund (SEC tags it so) that we can't look through — a
-        // private master portfolio, an unmatched name, or past the depth
-        // limit. Its own asset-category tags say only "equity, US", so
-        // leave it unknown rather than guess.
+        // A fund we can't look through (private master, unmatched, too deep);
+        // its own tags say only "equity, US", so leave it unknown.
         resolutions.push({ kind: "unresolved_fund" });
       } else {
         resolutions.push({ kind: "security" });
@@ -474,10 +467,8 @@ async function refreshOne(
         const ratios = await fetchExpenseRatios(contact, report);
         let classId: string | null = sec.factsClassId;
         if (sec.factsBasis === "standin") {
-          // A plan's own version of a strategy usually costs less than the
-          // retail fund standing in for it: use the stand-in's cheapest
-          // share class in the report (the household can still enter the
-          // real fee, which wins).
+          // A plan's version usually costs less than its retail stand-in: use the
+          // stand-in's cheapest share class (an entered real fee still wins).
           const classes = index.series.get(sec.factsSeriesId!)?.classIds ?? [];
           classId =
             classes

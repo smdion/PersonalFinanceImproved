@@ -1,8 +1,6 @@
-// SimpleFIN request ledger — every outbound call is recorded so Ledgr stays
-// under SimpleFIN Bridge's per-access-URL daily quota (~24 requests/day;
-// going over can disable the token). The cron, "Sync Now" and the
-// connection test all count. Replayed (development) reads are recorded but
-// don't count.
+// Records every outbound SimpleFIN call (cron, Sync Now, connection test) to stay
+// under the ~24/day per-access-URL quota, which can disable the token if exceeded.
+// Replayed (development) reads are recorded but don't count.
 import "server-only";
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

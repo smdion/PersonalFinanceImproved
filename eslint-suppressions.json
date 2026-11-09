@@ -4310,11 +4310,6 @@
       "count": 1
     }
   },
-  "src/lib/hooks/use-investing-findings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/hooks/use-local-storage.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -4326,9 +4321,6 @@
   "src/lib/hooks/use-milestones.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/hooks/use-paycheck-person-views.ts": {
@@ -4338,57 +4330,17 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-abbreviation": {
       "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/hooks/use-persisted-setting.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
-  "src/lib/hooks/use-plan-engine-input.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/hooks/use-plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/hooks/use-recommendations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/hooks/use-roth-ira.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/hooks/use-savings-rate-options.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/hooks/use-simulation-preset.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -4397,20 +4349,7 @@
       "count": 1
     }
   },
-  "src/lib/hooks/use-toast.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/hooks/use-year-end-targeting.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/http/external-request.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -4423,9 +4362,6 @@
   "src/lib/privacy-text-guard.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/accounts/account-balances.types.ts": {
@@ -5471,17 +5407,11 @@
     }
   },
   "src/lib/rate-limit.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-clock-read": {
       "count": 3
     }
   },
   "src/lib/sec/client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-clock-read": {
       "count": 2
     }
@@ -5498,24 +5428,13 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/sec/parsers.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/lib/simplefin/client.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -5524,19 +5443,11 @@
   "src/lib/simplefin/ingest.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/simplefin/reidentify.ts": {
     "ratchet/no-abbreviation": {
       "count": 8
-    }
-  },
-  "src/lib/simplefin/request-log.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/simplefin/schemas.ts": {

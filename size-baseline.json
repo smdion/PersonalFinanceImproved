@@ -341,9 +341,9 @@
     "src/lib/pure/simulation/trial-run.ts": 320,
     "src/lib/pure/simulation/trial-summary.ts": 299,
     "src/lib/pure/sync/budget-preview.ts": 358,
-    "src/lib/sec/facts-sync.ts": 585,
-    "src/lib/simplefin/client.ts": 472,
-    "src/lib/simplefin/ingest.ts": 530,
+    "src/lib/sec/facts-sync.ts": 576,
+    "src/lib/simplefin/client.ts": 458,
+    "src/lib/simplefin/ingest.ts": 522,
     "src/lib/simplefin/sync.ts": 596,
     "src/lib/tax-data/validate.ts": 411,
     "src/lib/utils/colors.ts": 425,
@@ -917,7 +917,7 @@
       "convertV0810ProfileSets": 260
     },
     "src/lib/hooks/use-paycheck-person-views.ts": {
-      "usePaycheckPersonViews": 243
+      "usePaycheckPersonViews": 235
     },
     "src/lib/pure/accounts/eligibility.ts": {
       "computeWithdrawalEligibility": 180
@@ -999,7 +999,7 @@
       "runTrials": 304
     },
     "src/lib/sec/facts-sync.ts": {
-      "refreshOne": 205
+      "refreshOne": 203
     },
     "src/lib/simplefin/sync.ts": {
       "runSimplefinSync": 192

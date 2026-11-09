@@ -1,11 +1,7 @@
 /**
- * SEC EDGAR client. Every request carries the household's contact in the
- * User-Agent (SEC's fair-access policy), is paced well under SEC's 10
- * requests/second, has a size cap and a timeout, and is streamed into a
- * parser. A 403/429 stops the whole run — no retries against SEC.
- * Every response is checked (schemas.ts) before use.
- *
- * The contact is never logged or included in errors.
+ * SEC EDGAR client: paced, size-capped, timed-out, streamed, schema-checked
+ * requests with the household's contact in the User-Agent (never logged).
+ * A 403/429 stops the whole run; no retries against SEC.
  */
 import "server-only";
 import type { z } from "zod/v4";

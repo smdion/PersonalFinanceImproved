@@ -1,13 +1,6 @@
 /**
- * Simple in-memory FIXED-window rate limiter.
- * Suitable for a single-process deployment — no Redis needed.
- *
- * Fixed-window, not sliding: a key's `resetTime` is set once (on its first
- * hit) and `count` accumulates until that instant passes, then resets to 1.
- * The true worst case for a client that straddles a window boundary is up
- * to 2x the configured limit in a rolling 60s (e.g. maxing out the tail of
- * one window, then immediately maxing out the head of the next) — more
- * permissive than the configured number suggests, never less.
+ * In-memory fixed-window rate limiter for a single process. A client straddling
+ * a window boundary can get up to 2x the limit in a rolling window.
  */
 
 const store = new Map<
@@ -24,15 +17,8 @@ setInterval(() => {
 }, 60_000).unref();
 
 /**
- * Check whether a request identified by `key` is within the rate limit.
- *
- * @param key       Unique identifier (e.g. IP address or session ID)
- * @param limit     Max requests allowed in the window
- * @param windowMs  Window duration in milliseconds
- * @returns         `success` false when the limit is exceeded. `firstExceedance`
- *                  is true only on the FIRST request that crosses the limit
- *                  within the current window — callers can use this to log
- *                  once per key per window instead of once per rejected call.
+ * Whether `key` is within `limit` requests per `windowMs`. `firstExceedance` is
+ * true only on the first rejected request in a window, to log once per window.
  */
 export function rateLimit(
   key: string,

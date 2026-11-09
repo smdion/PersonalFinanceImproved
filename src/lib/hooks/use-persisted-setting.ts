@@ -5,25 +5,9 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 
 /**
- * Hook that persists a setting value to app_settings via tRPC.
- * DB query result is the source of truth once loaded — returned in the
- * same render it arrives (no extra render on the seed value: queries built
- * from settings would otherwise fire once with the default first).
- * localStorage provides an instant initial value before the query resolves.
- * The third element, `loaded`, is true once the DB settings have loaded —
- * callers that build query inputs from settings wait for it.
- *
- * @param key - Unique setting key (e.g., 'retirement_show_todays_dollars')
- * @param defaultValue - Default value when no setting exists
- * @param options.writeVia - Use a different, more narrowly-permissioned
- *   mutation to perform the actual write instead of the generic
- *   settings.appSettings.upsert (which is admin-only because app_settings
- *   also holds RBAC config). Read-path (app_settings.list) and the
- *   optimistic/localStorage/pendingWrite bookkeeping are unchanged — this
- *   only swaps which request carries the write, for keys whose real
- *   permission requirement is narrower than "full admin" (e.g. an
- *   "active profile" pointer gated by that profile type's own permission).
- *   See contributionProfile.setActive / salaryProfile.setActive.
+ * A setting persisted to app_settings. The DB value wins once loaded (`loaded`);
+ * localStorage seeds it before. `writeVia` swaps the admin-only upsert for a
+ * narrower-permission mutation (e.g. contributionProfile.setActive).
  */
 export function usePersistedSetting<T extends string | number | boolean | null>(
   key: string,
@@ -42,15 +26,8 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   });
   const writeVia = options?.writeVia;
 
-  // Optimistic local value. Always starts at defaultValue — SSR has no
-  // window, so a lazy initializer that read localStorage here returned
-  // defaultValue server-side but the STORED value on the client's very
-  // first render (before hydration reconciles), a same-render server/client
-  // branch on `typeof window`, which is a textbook hydration mismatch (React
-  // flags this exact pattern in its own hydration-error guidance). Read
-  // localStorage in the effect below instead — after mount, so it can only
-  // ever update state post-hydration, never change what the first render
-  // produces.
+  // Optimistic local value. Starts at defaultValue on both server and client to
+  // avoid a hydration mismatch; the effect below reads localStorage after mount.
   const [localValue, setLocalValue] = useState<T>(defaultValue);
   // Mirrors localValue without pulling it into setValue's deps, so setValue
   // keeps a stable identity across renders instead of changing on every
@@ -72,11 +49,8 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
     }
   }, [key]);
 
-  // Track whether the user has made a local change that hasn't been
-  // confirmed by the query yet. Per-write generation counter (not a single
-  // shared boolean) — if write A settles after write B has already started,
-  // A's onSettled must NOT clear the guard while B is still pending, or a
-  // stale DB-echoed value can briefly clobber the user's latest input.
+  // A local change not yet confirmed by the query. A per-write generation lets
+  // only the latest write clear the guard, so a stale echo can't clobber input.
   const pendingWrite = useRef(false);
   const writeGeneration = useRef(0);
   // Render-visible twin of pendingWrite: while a write is in flight the
@@ -123,10 +97,8 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
       };
 
       if (writeVia) {
-        // Refresh the settings list before the guard clears (the default
-        // path's onSuccess does the same): the hook reads the DB value as
-        // soon as no write is pending, so a stale list would show the old
-        // value right after a successful write.
+        // Refresh the settings list before the guard clears, or the hook would
+        // read the stale DB value right after a successful write.
         writeVia(newValue)
           .then(() => utils.settings.appSettings.list.invalidate())
           .then(settle, (err) => {
@@ -155,10 +127,8 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
     [key, upsert, writeVia, utils],
   );
 
-  // The DB value as soon as it's loaded (unless a write is in flight) —
-  // the effect above only keeps localValue/localStorage in step with it.
-  // A key the DB doesn't have is its default — never a stale localStorage
-  // value from an older session (the DB is the source of truth).
+  // The DB value once loaded (unless a write is in flight); a key the DB lacks
+  // is its default, never a stale localStorage value.
   const dbEntry = settings?.find((s) => s.key === key);
   const value =
     writing || settings === undefined

@@ -1,15 +1,8 @@
 "use client";
 
 /**
- * What the household savings rate counts — employer match and Portfolio
- * money — shared by every surface that shows a rate or a contribution total
- * (Financial Checkup, Contributions page and card, Paycheck snapshot,
- * Retirement card), so flipping either switch anywhere changes them all.
- *
- * Admins save the choice to the household's settings; anyone else keeps it
- * in this browser (a viewer can't write settings, and a view switch must
- * still work for them). Either way every component on the page updates at
- * once through the small store below.
+ * What every savings rate counts (employer match, Portfolio money). Admins save
+ * it to settings, others keep it in this browser; the store below updates all.
  */
 import { useCallback, useSyncExternalStore } from "react";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";

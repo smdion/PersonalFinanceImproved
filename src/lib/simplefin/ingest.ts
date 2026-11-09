@@ -1,14 +1,6 @@
-// Store what SimpleFIN only keeps for ~90 days: per-account balances,
-// holdings and transactions. Called from runSimplefinSync (the one sync path
-// shared by the daily cron and "Sync Now") after the balance snapshot.
-//
-// Only investment accounts are stored — accounts linked to a tracked
-// (performance) account, or reporting invested holdings. Checking and
-// credit-card data in the same response is never written.
-//
-// Transactions are stored as sent; their kind is computed on read. HSA card
-// spending is the one exception: the merchant name is health data, so it is
-// replaced by "Medical withdrawal" here and the kind is locked.
+// Stores the investment-account balances, holdings and transactions SimpleFIN only
+// keeps ~90 days; other accounts are never written. HSA card spending is stored
+// as "Medical withdrawal" with its kind locked (merchant names are health data).
 import "server-only";
 import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

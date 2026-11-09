@@ -1,21 +1,9 @@
 "use client";
 
 /**
- * The household's plan as a projection input — the one builder every
- * surface uses (dashboard cards, Milestones, Compare Plans, the Retirement
- * page). The projection caches hash the full built input, so two
- * hand-maintained copies always missed each other's runs; one builder
- * means the dashboard reads exactly what the Retirement page computed.
- *
- * `ready` is false until every setting and profile list it reads has
- * loaded — queries built from it wait (`enabled: ready`) instead of
- * firing once with defaults ($0 contributions, the wrong profile).
- *
- * "Changes by year" are deliberately omitted: the server applies the
- * household's saved rows (resolveProjectionOverrides). Withdrawal routing,
- * order and splits are omitted too, so the household's saved settings
- * apply; only the tax-preference default the Retirement page's editor
- * starts from is sent, so its untouched query is byte-identical.
+ * The plan as a projection input; one builder so every surface hits the same
+ * cache entry. `ready` stays false until all inputs load. Year changes and
+ * withdrawal settings are left to the server's saved rows.
  */
 import { useMemo } from "react";
 import type { BoundaryQuery } from "@/components/ui/query-boundary";

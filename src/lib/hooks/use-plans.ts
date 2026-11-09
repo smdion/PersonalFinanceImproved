@@ -91,7 +91,7 @@ export function usePlans() {
     activeIds,
     /** The Plan whose profiles are the active ones, if any. */
     planInUse,
-    /** The Plan last applied — offered as "Update ‹Plan›" once it no longer matches. */
+    /** The Plan last applied — offered as "Update ‹Plan›" once the active ones differ. */
     lastAppliedPlan,
     /** Same as planInUse — offered as "same profiles as ‹Plan›" when saving. */
     sameAsActive,
@@ -100,10 +100,8 @@ export function usePlans() {
 }
 
 /**
- * Ask before applying a Plan — one confirm for the header and Compare
- * Plans. It lists the profiles that change and, like the Contributions
- * picker, the contribution amounts a Contribution Profile swap changes,
- * since applying is household-wide (and syncs to the budget app).
+ * Confirm before applying a Plan (header and Compare Plans): lists the profiles
+ * and contribution amounts that change, since applying is household-wide.
  */
 export function useConfirmApplyPlan() {
   const { activeIds } = usePlans();

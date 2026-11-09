@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The household's milestones, judged once by `evaluateMilestones()` from the
- * same queries the dashboard already runs (React Query shares them). Fetching
- * only — every figure is mapped by `buildMilestoneInput()` and judged by the
- * pure engine, so the Milestones page and the Financial Checkup agree.
+ * The household's milestones, judged by the pure engine from queries the
+ * dashboard already runs, so the Milestones page and the Checkup agree.
  */
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc, type RouterError } from "@/lib/trpc";
@@ -34,10 +32,8 @@ export function useContributionSummaryInput() {
 }
 
 /**
- * The household's milestones. Rows that need data a viewer may not see
- * (linked holdings: portfolio; brokerage goals: brokerage) are gated here,
- * once, so every caller — Milestones page, Checkup, Recommendations — judges
- * the same set.
+ * The household's milestones. Rows needing data a viewer may lack (portfolio,
+ * brokerage) are gated here once, so every caller judges the same set.
  */
 export function useMilestones(): {
   isLoading: boolean;

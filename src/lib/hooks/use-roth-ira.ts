@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * The household's Roth IRA view — judged once by buildRothIraView
- * (lib/pure/contributions/roth-ira.ts) from the Household Income summary and the
- * investment side (taxable investment income, pre-tax IRA balances). The
- * investment side needs the portfolio permission; without it there's no
- * view (the card shows the wage AGI instead).
+ * The household's Roth IRA view (buildRothIraView). The investment side needs the
+ * portfolio permission; without it the view is null.
  */
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";

@@ -1,9 +1,7 @@
 /**
- * Streaming parsers for SEC data: N-PORT holdings, shareholder-report
- * (N-CSR) expense ratios, EDGAR filing lists and the fund series/class
- * registry. Each takes text in chunks so large filings (a bond fund's
- * N-PORT can be ~20 MB) are never held as a document tree. Output is
- * unchecked: a field not found stays undefined for schemas.ts to refuse.
+ * Streaming SEC parsers (N-PORT, N-CSR expense ratios, filing lists, series
+ * registry) that take text in chunks. Output is unchecked: a missing field stays
+ * undefined for schemas.ts to refuse.
  */
 import { SaxesParser } from "saxes";
 import type { NportHolding } from "@/lib/pure/investments/sec-composition";
