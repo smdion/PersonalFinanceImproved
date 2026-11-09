@@ -15,9 +15,10 @@
  * called from where it was, router procedures moved whole into a new
  * part mounted where they were, or a UI cut: an IIFE's body into a named
  * function, a JSX run into a component; with `Rename: old → new, …`, every
- * changed code line is its old line with those names renamed, owner Q2:
- * notARename; a `Comments-only:` trailer exempts a commit whose `src/`
- * code tokens are all unchanged, owner V6: notCommentsOnly), and the
+ * changed code line is its old line with those names renamed, a comment
+ * by those names only, owner Q2 and W6: notARename; a `Comments-only:`
+ * trailer exempts a commit whose `src/` code tokens are all unchanged, owner
+ * V6: notCommentsOnly), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
@@ -3634,17 +3635,39 @@ function codeRenameProblem(
     used.add(x.text);
   }
   const [c, d] = [commentTexts(was), commentTexts(now)];
-  const differs = c.findIndex((t, i) => t !== d[i]);
+  const differs = c.findIndex((t, i) => !renamedComment(t, d[i], map));
   if (differs >= 0 || c.length !== d.length)
-    return `${file}: a comment changed (a rename changes code only; reword comments in their own commit)`;
+    return `${file}: a comment changed by more than the ${RENAME}: names (reword comments in their own commit)`;
   return undefined;
+}
+
+const NAME_TOKEN = /([A-Za-z_$][\w$]*)/;
+
+/** Whether `now` is the comment `was` with some of its names renamed by `map`
+ *  (W6 a): each name kept or renamed, everything else the same. */
+function renamedComment(
+  was: string,
+  now: string | undefined,
+  map: Map<string, string>,
+): boolean {
+  if (now === undefined) return false;
+  if (was === now) return true;
+  const [a, b] = [was.split(NAME_TOKEN), now.split(NAME_TOKEN)];
+  // split with a capture group puts the names at the odd indexes.
+  return (
+    a.length === b.length &&
+    a.every(
+      (piece, i) => piece === b[i] || (i % 2 === 1 && map.get(piece) === b[i]),
+    )
+  );
 }
 
 /**
  * Why a `Mechanical:` commit with `Rename:` is more than those renames: every
  * changed code line equals its old line once the map is applied to its name
- * tokens (prettier's re-wrap allowed); strings, comments, stored, external
- * and response keys, a router's object keys and z.object keys stay. The
+ * tokens (prettier's re-wrap allowed), and a comment may rename the same
+ * names and change nothing else; strings, stored, external and response
+ * keys, a router's object keys and z.object keys stay. The
  * register's code references follow the names; the ratchet files keep their
  * own checks. Undefined: proven.
  */

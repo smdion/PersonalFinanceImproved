@@ -135,7 +135,7 @@ describe("notARename", () => {
     ).toBe("src/a/card.ts:4: years → yearsLeft is not in the Rename: list");
   });
 
-  it("fails a renamed comment", () => {
+  it("fails a comment changed by more than the listed names", () => {
     expect(
       prove([
         {
@@ -145,8 +145,71 @@ describe("notARename", () => {
         },
       ]),
     ).toBe(
-      "src/a/card.ts: a comment changed (a rename changes code only; reword comments in their own commit)",
+      "src/a/card.ts: a comment changed by more than the Rename: names (reword comments in their own commit)",
     );
+  });
+
+  describe("a comment that names a renamed name (W6 a)", () => {
+    const named = (
+      name: string,
+      note = `// ${name} is the plan's last working year.`,
+    ) => card(name).replace("// The plan's last working year.", note);
+
+    it("passes a comment renamed with the code, a JSDoc included, and one that keeps the old name", () => {
+      expect(
+        prove([
+          {
+            file: "src/a/card.ts",
+            old: named("retAge"),
+            new: named("retirementAge"),
+          },
+          {
+            file: "src/a/doc.ts",
+            old: "/** Reads retAge and retAge's year. */\nexport const retAge = 1;",
+            new: "/** Reads retirementAge and retirementAge's year. */\nexport const retirementAge = 1;",
+          },
+          {
+            file: "src/a/kept.ts",
+            old: "// retAge, as the form calls it.\nexport const retAge = 1;",
+            new: "// retAge, as the form calls it.\nexport const retirementAge = 1;",
+          },
+        ]),
+      ).toBeUndefined();
+    });
+
+    it("fails a name the list doesn't map, a reworded word, and a name renamed inside a longer word", () => {
+      const fails = (note: string) =>
+        prove([
+          {
+            file: "src/a/card.ts",
+            old: named("retAge"),
+            new: named("retirementAge", note),
+          },
+        ]);
+      const message =
+        "src/a/card.ts: a comment changed by more than the Rename: names (reword comments in their own commit)";
+      expect(fails("// retirementAge is the plan's final working year.")).toBe(
+        message,
+      );
+      expect(fails("// retirementAges is the plan's last working year.")).toBe(
+        message,
+      );
+      expect(fails("// years is the plan's last working year.")).toBe(message);
+    });
+
+    it("still fails a renamed string beside a renamed comment", () => {
+      expect(
+        prove([
+          {
+            file: "src/a.ts",
+            old: `// retAge\nconst retAge = 1;\nconst label = "retAge";`,
+            new: `// retirementAge\nconst retirementAge = 1;\nconst label = "retirementAge";`,
+          },
+        ]),
+      ).toBe(
+        `src/a.ts:3: ""retAge"" → ""retirementAge"" changes a string, not a name`,
+      );
+    });
   });
 
   it("fails a renamed z.object key", () => {
