@@ -22,7 +22,9 @@ const STOCK_BOND_CORRELATIONS = [
   { classAId: 1, classBId: 3, correlation: -0.1 },
 ];
 
-describe("Monte Carlo statistical properties", () => {
+// Thousands of trials a test: load-sensitive, so a timeout of its own
+// (a timeout is "unknown", never a pass; CI lists it apart).
+describe("Monte Carlo statistical properties", { timeout: 60_000 }, () => {
   describe("Log-normal right skew", () => {
     it("mean terminal balance > median terminal balance", () => {
       const engine = makeTrinityInput();

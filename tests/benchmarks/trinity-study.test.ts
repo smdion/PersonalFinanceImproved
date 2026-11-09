@@ -29,7 +29,9 @@ const STOCK_BOND_CORRELATIONS = [
   { classAId: 1, classBId: 3, correlation: -0.1 },
 ];
 
-describe("Trinity Study — 4% rule validation", () => {
+// Thousands of trials a test: load-sensitive, so a timeout of its own
+// (a timeout is "unknown", never a pass; CI lists it apart).
+describe("Trinity Study — 4% rule validation", { timeout: 60_000 }, () => {
   describe("Classic Trinity scenario (50/50 stock/bond, 30yr)", () => {
     it("4% SWR → 90-100% success (Trinity found ~95%)", () => {
       const engine = makeTrinityInput();

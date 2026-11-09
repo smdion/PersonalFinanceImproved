@@ -79,6 +79,14 @@ pnpm vitest run tests/pure/engine/engine-snapshot.test.ts -u
 
 The pinned `toBe` figures don't update with `-u` — change them from the failure messages. Review the snapshot diff and explain the change in the commit.
 
+When the behavior baseline is rewritten on purpose (`LEDGR_BASELINE_WRITE=1`, v0.11's figure fixes), `pnpm tsx scripts/baseline-diff.ts [<rev>]` prints what moved, one line per figure: `household H, procedure P, field F: $A → $B` (`--limit N`, default 200). Put its output, or its last line and the figures that matter, in the commit body. check-commit doesn't require it yet; wired, it would run on a commit whose staged files include `tests/baseline/__baseline__/` and require a `Baseline-rerecord:` trailer plus the summary's figure count in the body.
+
+## Time zone, sampled sweeps and benchmarks
+
+- The suite runs in UTC (`vitest.config.ts`). `pnpm test:tz` reruns the date-heavy files (dates, ages, pay periods, net-worth history) in America/Chicago (`LEDGR_TEST_TZ`); CI's `unit-tz` job and `pnpm check:release` run it.
+- The two migrator replay suites (`db/v090-squash-upgrade`, `db/sqlite-replay-recreate`) take the first and last journal points and four seeded others per run (`tests/helpers/journal-sample.ts`) and print the seed; `LEDGR_SWEEP_SEED=<seed>` reruns a failure, `LEDGR_FULL_MIGRATOR_SWEEP=1` runs every point, as the weekly `migrator-sweep` workflow does.
+- The load-sensitive benchmarks (`cfiresim-comparison`, `trinity-study`, `monte-carlo-properties`) carry their own timeouts. A timeout is "unknown", never a pass: CI's benchmark job lists timeouts apart from assertion failures in the job summary (`scripts/vitest-failures.ts`).
+
 ## Violations to Watch For
 
 - A router computing budget expenses with a different column index

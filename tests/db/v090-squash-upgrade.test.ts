@@ -6,6 +6,7 @@
  * before any backup or change.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { sampleJournalPoints } from "../helpers/journal-sample";
 import Database from "better-sqlite3";
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
@@ -174,7 +175,12 @@ const latestIdx = journal.entries.at(-1)!.idx;
 describe("a cleared or dropped migration table (SQLite, real migrator)", () => {
   // 0015 drops holding_observations.performance_account_id, a baseline
   // column: a database past it must not read as older than the baseline.
-  it.each(journal.entries.map((e) => [e.tag, e.idx] as const))(
+  it.each(
+    sampleJournalPoints(
+      journal.entries.map((e) => [e.tag, e.idx] as const),
+      "cleared-journal recovery",
+    ),
+  )(
     "a journal cleared at %s recovers through the replay, with a backup",
     (_tag, idx) => {
       atEntry(idx, "cleared");

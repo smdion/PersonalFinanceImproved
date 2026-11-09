@@ -70,7 +70,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "matches cFIREsim at 3.25% SWR, 75/25, 40yr horizon (your scenario)",
-    { timeout: 30_000 },
+    { timeout: 120_000 },
     () => {
       // Conservative retirement portfolio estimate (~cFIREsim 10th percentile)
       const startingBalance = 2_770_000;
