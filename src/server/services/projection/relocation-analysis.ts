@@ -37,10 +37,7 @@ import {
 import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
-import {
-  resolveRetirementProfileIdFrom,
-  pickProfileSettingsRow,
-} from "@/lib/pure/household/retirement-profile";
+import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import type { Db } from "@/lib/db";
 
 export const zRelocationAnalysisInput = z.object({
@@ -104,8 +101,6 @@ export async function computeRelocationAnalysis(
   const [
     people,
     allJobs,
-    retSettings,
-    retProfiles,
     retScenarios,
     returnRates,
     allContributionsRaw,
@@ -117,11 +112,6 @@ export async function computeRelocationAnalysis(
   ] = await Promise.all([
     getAllPeople(ctx.db),
     ctx.db.select().from(schema.jobs),
-    ctx.db.select().from(schema.retirementSettings),
-    ctx.db
-      .select()
-      .from(schema.retirementProfiles)
-      .orderBy(asc(schema.retirementProfiles.id)),
     ctx.db.select().from(schema.retirementScenarios),
     ctx.db
       .select()
@@ -153,13 +143,9 @@ export async function computeRelocationAnalysis(
 
   // Active profile's row, matching build-engine-payload — the readiness
   // analysis must read the same assumptions the projection does.
-  const activeRetProfileId = resolveRetirementProfileIdFrom(
+  const settings = await loadActiveRetirementSettings(
+    ctx.db,
     appSettingsRows,
-    retProfiles,
-  );
-  const settings = pickProfileSettingsRow(
-    retSettings,
-    activeRetProfileId,
     primaryPerson.id,
   );
   if (!settings) return { result: null, budgetInfo: null };

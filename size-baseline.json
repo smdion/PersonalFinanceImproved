@@ -391,7 +391,7 @@
     "src/server/services/budget/annual-expenses.ts": 58,
     "src/server/services/budget/linked-items.ts": 203,
     "src/server/services/contributions/account-edits.ts": 255,
-    "src/server/services/contributions/caps.ts": 346,
+    "src/server/services/contributions/caps.ts": 338,
     "src/server/services/contributions/live-data.ts": 99,
     "src/server/services/contributions/profile.ts": 367,
     "src/server/services/contributions/summary.ts": 738,
@@ -412,7 +412,7 @@
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 506,
     "src/server/services/projection/projection-cache.ts": 221,
-    "src/server/services/projection/relocation-analysis.ts": 484,
+    "src/server/services/projection/relocation-analysis.ts": 470,
     "src/server/services/savings/summary.ts": 371,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
@@ -1093,7 +1093,7 @@
       "buildProfileSwitches": 326
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 385
+      "computeRelocationAnalysis": 374
     },
     "src/server/services/savings/summary.ts": {
       "computeSavingsSummary": 350

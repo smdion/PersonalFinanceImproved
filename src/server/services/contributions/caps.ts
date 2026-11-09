@@ -12,13 +12,10 @@ import type {
   JobSalaryRef,
 } from "@/lib/pure/contributions/contribution-rows";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
-import {
-  pickProfileSettingsRow,
-  resolveRetirementProfileIdFrom,
-} from "@/lib/pure/household/retirement-profile";
+import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   type SalaryProfileActiveMap,
@@ -57,13 +54,8 @@ export async function loadCapHousehold(
 ): Promise<
   CapRequestHousehold & { filingStatusSource: FilingStatusSource | null }
 > {
-  const [appSettings, retSettings, retProfiles, limitRows] = await Promise.all([
+  const [appSettings, limitRows] = await Promise.all([
     db.select().from(schema.appSettings),
-    db.select().from(schema.retirementSettings),
-    db
-      .select()
-      .from(schema.retirementProfiles)
-      .orderBy(asc(schema.retirementProfiles.id)),
     limits
       ? Promise.resolve([])
       : db
@@ -71,9 +63,9 @@ export async function loadCapHousehold(
           .from(schema.contributionLimits)
           .where(eq(schema.contributionLimits.taxYear, taxYear)),
   ]);
-  const settings = pickProfileSettingsRow(
-    retSettings,
-    resolveRetirementProfileIdFrom(appSettings, retProfiles),
+  const settings = await loadActiveRetirementSettings(
+    db,
+    appSettings,
     getPrimaryPerson([...people])?.id ?? null,
   );
   // This year's return; unknown: married rules off, never assumed.
