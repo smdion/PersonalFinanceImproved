@@ -1,16 +1,7 @@
 /**
- * Yearly-resolution comparison: your yearly results next to the same money
- * put into an index on the same schedule. Pure.
- *
- * Same money, same schedule: the index starts from your opening balance,
- * receives each year's net deposits spread evenly across its months, and
- * any jump between one year's ending and the next year's opening balance
- * (rollovers, transfers recorded outside the yearly totals) at the start of
- * that year. What remains different is only what the money was invested in.
- *
- * Returns are money-weighted (Simple Dietz per year — the same
- * `computeReturn` the Performance page uses; IRR over a window). A window
- * shorter than a year is never annualized.
+ * Yearly results next to the same money in an index: same opening balance, net
+ * deposits spread across months, year-boundary jumps at year start. Money-weighted
+ * (Simple Dietz per year, IRR over a window); under a year is never annualized.
  */
 import { computeReturn } from "./returns";
 import { roundToCents, sumBy } from "@/lib/utils/math";

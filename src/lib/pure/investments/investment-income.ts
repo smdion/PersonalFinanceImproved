@@ -1,20 +1,7 @@
 /**
- * Taxable investment income for the year (dividends, interest, capital-gain
- * distributions) from classified SimpleFIN transactions — part of the AGI /
- * Roth IRA MAGI estimate.
- *
- * Only accounts whose type is taxable count — from the account-type config
- * (`taxBucketKey === "afterTax"`, i.e. brokerage), never the account's
- * Retirement/Portfolio tag: IRA/401k/HSA income isn't taxed in the year.
- *
- * Dividends are lumpy and capital-gain distributions land in December, so
- * plain annualizing is unsound. Each feed's estimate is this year's income
- * so far plus last year's income for the rest of the year (same calendar
- * window); only when that feed's stored history doesn't reach last year's
- * same date is its covered stretch of this year annualized instead (which
- * misses a December distribution — the basis says so). Coverage is per
- * feed: a feed added later has no history before it was first synced.
- * Pure — no DB.
+ * The year's taxable investment income (AGI / Roth MAGI estimate) from taxable-type
+ * accounts only. Per feed: income so far plus last year's for the rest of the
+ * year; annualized only when the feed's history doesn't reach last year's date.
  */
 import { isTaxableCategory } from "@/lib/config/account-types";
 import {

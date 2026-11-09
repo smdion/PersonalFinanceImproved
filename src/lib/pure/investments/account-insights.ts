@@ -1,9 +1,7 @@
 /**
- * What SimpleFIN says about one tracked account, for its Portfolio card:
- * link status, live balance, the change since the latest snapshot split
- * added / moved / markets, its funds' mix and cost, a cost-basis
- * suggestion, and whether deposits match the paycheck setup. Pure — the
- * router loads the data and calls this per account.
+ * What SimpleFIN says about one tracked account for its Portfolio card: link
+ * status, balance, change since the snapshot (added / moved / markets), fund mix
+ * and cost, a cost-basis suggestion, and whether deposits match the paycheck setup.
  */
 import { roundToCents } from "@/lib/utils/math";
 import {

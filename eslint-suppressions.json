@@ -5748,23 +5748,12 @@
     }
   },
   "src/lib/pure/household/what-if.schema.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-abbreviation": {
       "count": 2
     }
   },
-  "src/lib/pure/investments/account-insights.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/investments/always-buying.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5777,25 +5766,16 @@
     }
   },
   "src/lib/pure/investments/benchmark-yearly.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/investments/deposit-check.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
   },
   "src/lib/pure/investments/fill-suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5803,9 +5783,6 @@
   "src/lib/pure/investments/flow-suggestions.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -5818,9 +5795,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-guarded-division": {
       "count": 6
     },
@@ -5828,25 +5802,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/investments/fund-findings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/investments/fund-prices.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/investments/holding-periods.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    }
-  },
   "src/lib/pure/investments/investment-income.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -5856,14 +5812,6 @@
   },
   "src/lib/pure/investments/market-calendar.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/investments/performance-account-rows.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

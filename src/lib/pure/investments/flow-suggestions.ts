@@ -1,19 +1,7 @@
 /**
- * Turn classified investment transactions into suggested Performance and
- * Roth-basis entries. Pure; suggestions only — the household reviews every
- * figure before it's saved.
- *
- * Money flows map onto the Performance fields the way computeGainLoss reads
- * them: deposits are contributions, money out is distributions, fees are
- * fees, and moves between the household's own accounts are rollovers
- * (signed: in +, out −), never contributions. Feeds report a deposit as one
- * amount, so its employee/employer and Roth/pre-tax split is estimated from
- * the paycheck setup and labelled as such.
- *
- * What a saved fill already counted is kept as a ledger of transaction ids
- * (not a date), so rows that arrive late, settle later or get their kind
- * later are still offered, and a counted row whose kind changes is
- * corrected rather than counted twice.
+ * Classified investment transactions → suggested Performance and Roth-basis
+ * entries (own-account moves are signed rollovers; deposit splits estimated from
+ * the paycheck setup). A ledger of counted transaction ids keeps late rows offered.
  */
 import type { InvestmentTransactionKind } from "@/lib/config/enum-values";
 import { roundToCents } from "@/lib/utils/math";
@@ -130,11 +118,9 @@ function rounded(t: FlowTotals): FlowTotals {
 const fresh = (): FlowTotals => ({ ...ZERO });
 
 /**
- * What changed since the last saved fill, for one row's feeds: rows after
- * the row's baseline not yet counted, plus counted rows whose kind changed
- * or that were voided since (taken back out as they were counted).
- * `rows` should include voided rows; pending ones wait until they settle.
- * Returns the net totals and the ledger entries to save with them.
+ * Net change since the last saved fill for one row's feeds (uncounted rows past
+ * the baseline; counted rows re-kinded or voided are taken back out), plus ledger
+ * entries to save. Pass voided rows too; pending ones wait until they settle.
  */
 export function flowsSinceFill(
   rows: readonly (FlowRow & { pending: boolean; voided: boolean })[],
@@ -181,11 +167,9 @@ type ContributionSplit = {
 };
 
 /**
- * Split deposits by the paycheck setup's proportions. With no setup (an IRA
- * or brokerage the household funds directly) everything is the employee's,
- * and Roth when the account itself is Roth. Deposits into a Roth account
- * with a setup are the employee's Roth money plus any employer Roth match —
- * only the employee's part is contribution basis.
+ * Splits deposits by the paycheck setup's proportions; with no setup it's all the
+ * employee's (Roth if the account is). Only the employee's Roth part is
+ * contribution basis, not an employer Roth match.
  */
 export function splitContributions(
   total: number,
@@ -228,10 +212,9 @@ export function splitContributions(
 }
 
 /**
- * Roth basis after money leaves the account. Under the IRS ordering rules
- * withdrawals come out of contributions first, then conversions — so both
- * are reduced in that order (never below zero). Conservative: earnings are
- * assumed untouched, so basis is never overstated.
+ * Roth basis after an outflow: contributions first, then conversions (IRS
+ * ordering), never below zero. Earnings are assumed untouched, so basis is never
+ * overstated.
  */
 export function reduceBasis(
   basis: { contributionBasis: number; conversionBasis: number },
@@ -277,11 +260,9 @@ type FeedAttribution = {
 };
 
 /**
- * Which feeds belong to one tracked row — a Performance or basis row for
- * (tracked account, owner). An account tracked as a single row takes every
- * feed linked to it; one tracked per person takes the feeds linked to that
- * person's sub-accounts, and can't use a whole-account link (it can't tell
- * whose money a deposit was).
+ * Feeds for one tracked (account, owner) row: a single-row account takes every
+ * linked feed; a per-person row takes its sub-accounts' feeds, never a
+ * whole-account link (it can't tell whose money a deposit was).
  */
 export function attributeFeeds(
   row: { performanceAccountId: number; ownerPersonId: number | null },
@@ -373,11 +354,9 @@ export type AccountContributionMix = ContributionMix & {
 };
 
 /**
- * The mix to split one person's deposits by. An account several people's
- * paychecks feed uses that person's own setup; a person with no paycheck
- * into it (e.g. the other spouse's half of a joint IRA) gets none — their
- * deposits aren't paycheck money. A row for the whole account (no owner)
- * uses the account's total.
+ * The mix for one person's deposits: their own setup; none if no paycheck of
+ * theirs feeds the account (their deposits aren't paycheck money); the account's
+ * total for a whole-account row.
  */
 export function mixFor(
   mix: ReadonlyMap<number, AccountContributionMix>,

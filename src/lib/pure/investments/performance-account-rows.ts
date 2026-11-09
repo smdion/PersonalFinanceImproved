@@ -76,11 +76,9 @@ export function performanceAccountRows(
     const distributions = toNumber(r.distributions);
     const fees = toNumber(r.fees);
     const rollovers = toNumber(r.rollovers);
-    // Roth basis is per person, but one Performance row can cover an account
-    // two people hold (a joint-labeled IRA with each spouse's Roth). Every
-    // person's basis for this account and year rides along; the row's own
-    // figures are their total. (An account tracked with a row per person keeps
-    // each row to its own person, so nothing is counted twice.)
+    // One row can cover an account two people hold, so every person's Roth basis
+    // rides along and the row's figures are their total. With a row per person,
+    // each row keeps its own person, so nothing counts twice.
     const perPerson =
       (rowsPerAccountYear.get(`${r.performanceAccountId}|${r.year}`) ?? 0) > 1;
     const owners = basisRows.filter(

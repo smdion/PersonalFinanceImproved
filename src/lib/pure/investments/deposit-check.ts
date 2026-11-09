@@ -1,9 +1,7 @@
 /**
- * Does money arriving in an account match what the paycheck setup says?
- * Pure. Feeds often report one row per fund per payday, so deposits are
- * summed by day first; the typical payday amount and spacing then give a
- * yearly pace to compare with the setup's yearly total (employee +
- * employer). Medians, so one bonus or missed payday doesn't skew it.
+ * Whether deposits match the paycheck setup: summed by day, the median payday
+ * amount and spacing give a yearly pace compared with the setup's yearly total
+ * (employee + employer). Medians, so one bonus or missed payday doesn't skew it.
  */
 import { roundToCents } from "@/lib/utils/math";
 
@@ -122,11 +120,9 @@ export type LatestContribution = {
 };
 
 /**
- * Whether the latest contribution (one paycheck or month — the feed's rows
- * for that day summed) matches what today's setup puts in per
- * contribution. Unlike checkDeposits' pace it answers "is the setup being
- * followed now?" — right even when the setup changed recently (the year's
- * earlier contributions followed an old setup Ledgr has no record of).
+ * Whether the latest contribution (that day's rows summed) matches the current
+ * setup's per-contribution amount: "is the setup followed now?", which holds even
+ * when the year's earlier contributions followed a setup Ledgr has no record of.
  */
 export function checkLatestContribution(
   deposits: readonly { posted: string; amount: number }[],

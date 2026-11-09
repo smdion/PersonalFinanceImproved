@@ -1,13 +1,7 @@
 /**
- * US market (NYSE) trading days, for pinning a reported balance or holding
- * to the closing prices it reflects. Pure — no DB or network.
- *
- * Holiday rules follow the NYSE schedule: New Year's Day, Martin Luther King
- * Jr. Day, Washington's Birthday, Good Friday, Memorial Day, Juneteenth (from
- * 2022), Independence Day, Labor Day, Thanksgiving and Christmas. A holiday
- * on Sunday is observed Monday; on Saturday it is observed Friday — except
- * New Year's Day, which NYSE does not observe on the prior Friday. One-off
- * closures (national days of mourning, weather) are not modelled.
+ * NYSE trading days, to match a reported balance to the close it reflects. NYSE
+ * holidays (Juneteenth from 2022); weekend holidays move to the nearest weekday,
+ * except New Year's on a Saturday. One-off closures are not modelled.
  */
 
 import { addDays } from "@/lib/utils/date";
@@ -108,10 +102,9 @@ export function previousTradingDay(date: string): string {
 }
 
 /**
- * The trading day whose close a reported balance reflects: the Eastern-time
- * calendar day of the report, minus one day when reported before the 4 pm
- * close, then rolled back to a trading day. SimpleFIN balance dates usually
- * arrive overnight, so they map to the previous session's close.
+ * The trading day whose close a reported balance reflects: the report's Eastern
+ * day, minus one before the 4 pm close, rolled back to a trading day (overnight
+ * SimpleFIN reports map to the previous close).
  */
 export function valuationDateFor(reportedAt: Date): string {
   return tradingDayOnOrBefore(reportCalendarDay(reportedAt));
