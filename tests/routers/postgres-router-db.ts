@@ -34,7 +34,12 @@ export const ROUTERS_ON_POSTGRES =
 // ── The synchronous bridge ──
 
 type Reply = {
-  result?: { rows: unknown[]; rowCount: number; fields: string[] };
+  result?: {
+    rows: unknown[];
+    rowCount: number;
+    fields: string[];
+    json: boolean[];
+  };
   error?: { message: string; code: string | null };
 };
 
@@ -97,6 +102,27 @@ function columnsOf(table: string): TableColumns {
       }),
   );
   return tableColumns.get(table) ?? { timestamps: new Set(), unique: [] };
+}
+
+// ── JSON read through the bridge ──
+// The bridge hands JSON over as its text, as better-sqlite3 does, so the
+// SQLite schema's JSON columns parse it once. The app's jsonb columns keep
+// what node-postgres parsed, so for a cell the bridge read they parse its
+// text here, once, as node-postgres would have.
+
+/** A JSON cell's text, marked as read through the bridge (JSON.parse reads
+ *  a String object as its text; only the bridge makes one). */
+const bridged = (text: string) => new String(text);
+
+if (ROUTERS_ON_POSTGRES) {
+  const exported: unknown[] = Object.values(pgSchema);
+  for (const table of exported.filter((t): t is PgTable => is(t, PgTable)))
+    for (const column of getTableConfig(table).columns)
+      if (column.getSQLType() === "jsonb") {
+        const read = column.mapFromDriverValue.bind(column);
+        column.mapFromDriverValue = (value: unknown) =>
+          value instanceof String ? JSON.parse(value.valueOf()) : read(value);
+      }
 }
 
 const unquote = (id: string) => id.trim().replace(/^"|"$/g, "");
@@ -258,11 +284,20 @@ class Statement {
       raw: this.rawMode,
     });
   }
+  /** The rows; in raw mode (drizzle mapping its columns) a JSON cell is
+   *  marked as text read from PostgreSQL (see jsonFromBridge). */
+  private rows(params: unknown[]): unknown[] {
+    const r = this.query(params);
+    if (!this.rawMode || !r.json.includes(true)) return r.rows;
+    return (r.rows as unknown[][]).map((row) =>
+      row.map((v, i) => (r.json[i] && typeof v === "string" ? bridged(v) : v)),
+    );
+  }
   all(...params: unknown[]): unknown[] {
-    return this.query(params).rows;
+    return this.rows(params);
   }
   get(...params: unknown[]): unknown {
-    return this.query(params).rows[0];
+    return this.rows(params)[0];
   }
   run(...params: unknown[]): { changes: number; lastInsertRowid: number } {
     // better-sqlite3 reports the inserted row's id.
