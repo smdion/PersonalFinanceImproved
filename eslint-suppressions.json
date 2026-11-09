@@ -5145,64 +5145,14 @@
       "count": 1
     }
   },
-  "src/server/routers/projection/coast-fire-probe.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 4
-    }
-  },
   "src/server/routers/projection/coast-fire.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 5
-    }
-  },
-  "src/server/routers/projection/monte-carlo.ts": {
-    "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/routers/projection/relocation.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 3
     }
   },
   "src/server/routers/projection/scenarios.ts": {
     "ratchet/no-abbreviation": {
       "count": 2
-    }
-  },
-  "src/server/routers/projection/strategy.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 8
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 3
     }
   },
   "src/server/routers/projection/stress-test.ts": {
@@ -5650,6 +5600,19 @@
       "count": 1
     }
   },
+  "src/server/services/projection/coast-fire-probe.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 4
+    }
+  },
+  "src/server/services/projection/coast-fire.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 4
+    }
+  },
   "src/server/services/projection/engine-payload/accounts.ts": {
     "ratchet/no-abbreviation": {
       "count": 2
@@ -5785,6 +5748,37 @@
       "count": 4
     }
   },
+  "src/server/services/projection/relocation-projection.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 4
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
+    }
+  },
+  "src/server/services/projection/strategy-analysis.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "ratchet/no-abbreviation": {
+      "count": 8
+    },
+    "ratchet/no-history-comment": {
+      "count": 2
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
+    }
+  },
   "src/server/services/savings/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5805,6 +5799,17 @@
     },
     "ratchet/no-abbreviation": {
       "count": 6
+    }
+  },
+  "src/server/services/simulation/monte-carlo-projection.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 4
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
     }
   },
   "src/server/services/simulation/monte-carlo-worker-client.ts": {
