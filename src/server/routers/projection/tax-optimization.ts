@@ -342,8 +342,8 @@ export const taxOptimizationRouter = createTRPCRouter({
       }
 
       // "Your current settings" — the household's real resolved defaults
-      // (buildDecumulationDefaults: session override, else
-      // retirement_settings.withdrawal_routing_mode, else
+      // (buildDecumulationDefaults: session override, else the NOT NULL
+      // retirement_settings.withdrawal_routing_mode, whose DB default is
       // "bracket_filling"), scored the identical way as the named
       // candidates below. `baseline` already computed this projection to
       // learn `firstDecumYear`; previously its score was thrown away and

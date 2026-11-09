@@ -23,8 +23,8 @@ export const WITHDRAWAL_ROUTING_MODES = [
 ] as const satisfies readonly RoutingMode[];
 
 /** The household-wide default when nothing else specifies one: the DB
- *  default of `retirement_settings.withdrawal_routing_mode`, and the last
- *  fallback in `buildDecumulationDefaults`. */
+ *  default of `retirement_settings.withdrawal_routing_mode`, and the
+ *  projection form's starting value. */
 export const DEFAULT_WITHDRAWAL_ROUTING_MODE: RoutingMode = "bracket_filling";
 
 export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<RoutingMode, string> = {
