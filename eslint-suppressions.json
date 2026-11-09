@@ -4464,62 +4464,8 @@
     }
   },
   "src/lib/db/json-schemas.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/jsonb-import.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/api-sync.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/contribution-profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/pg/contributions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/db/pg/monte-carlo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/mortgages.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/pg/net-worth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/pg/people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/db/pg/performance.ts": {
@@ -4630,49 +4576,6 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/api-sync.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/contribution-profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/sqlite/contributions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/db/sqlite/monte-carlo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/mortgages.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/sqlite/net-worth.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/db/sqlite/people.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

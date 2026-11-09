@@ -30,10 +30,8 @@ export const assetClassParams = sqliteTable(
 );
 
 /**
- * Which asset class each composition bucket of a fund's holdings counts
- * toward (a bucket feeds at most one class; a class can take several — e.g.
- * US and international bonds into one bonds class). No row = left out of
- * the mix-vs-target comparison.
+ * The asset class each holdings-composition bucket counts toward (one per bucket; a class may
+ * take several). No row = left out of the mix-vs-target comparison.
  */
 export const assetClassBuckets = sqliteTable(
   "asset_class_buckets",

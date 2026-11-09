@@ -84,12 +84,9 @@ export const homeImprovementItems = pgTable("home_improvement_items", {
   note: text("note"),
 });
 
-// A person's recorded salary + paid bonus for one year — a direct fact,
-// the same as every other Historical year-end field (grossIncome,
-// combinedAgi, etc). Not derived from a job or any ledger — a job carries
-// no salary/bonus of its own (see jobs above), and there is no dated
-// raise/bonus history to walk. The current (in-progress) year has no row
-// here yet; it auto-fills from the active Salary Profile until recorded.
+// A person's recorded salary + paid bonus for one year: a direct fact like other Historical
+// fields, not derived from a job (jobs carry no pay). The in-progress year has no row; it
+// auto-fills from the active Salary Profile until recorded.
 export const historicalSalaries = pgTable(
   "historical_salaries",
   {

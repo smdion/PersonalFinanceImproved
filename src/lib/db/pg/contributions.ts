@@ -41,12 +41,8 @@ export const contributionAccounts = pgTable(
     label: text("label"),
     parentCategory: text("parent_category").notNull().default("Retirement"),
     taxTreatment: text("tax_treatment").$type<TaxTreatment>().notNull(),
-    // contributionMethod/contributionValue deliberately do NOT live here —
-    // an account is purely structural (what it IS); the actual contribution
-    // amount/method is ALWAYS a Contribution Profile's active-field entry
-    // (contribution_profiles.contribution_active_fields), never a fallback
-    // column on the account row. See applyContribActiveFields — there is no
-    // base-value fallback, an account with no active entry has no value.
+    // No contributionMethod/contributionValue here: the amount is always a Contribution
+    // Profile's active-field entry (applyContribActiveFields), never an account-row fallback.
     employerMatchType: text("employer_match_type")
       .$type<EmployerMatchType>()
       .notNull(),
@@ -102,15 +98,9 @@ export const contributionAccounts = pgTable(
       "contribution_accounts_parent_cat_check",
       sql`parent_category IN ('Retirement', 'Portfolio')`,
     ),
-    // At most one active row per (job, accountType, parentCategory) may
-    // carry real employer match config. computeGroupedEmployerMatch
-    // (lib/pure/contributions/employer-match.ts) combines a physical account's
-    // Roth/Traditional splits before applying the match cap once, and
-    // requires exactly one "winning" row's config for that group — two
-    // independently-configured siblings is an ambiguous state the app
-    // throws on rather than silently guessing at. These two indexes (job-
-    // linked and jobless-fallback-to-person, matching every caller's own
-    // resolution convention) stop that state from being written at all.
+    // At most one active row per (job, accountType, parentCategory), or per person when jobless,
+    // may carry employer match config: computeGroupedEmployerMatch throws on two configured
+    // siblings, so these indexes stop that state being written.
     uniqueIndex("contribution_accounts_job_match_unq")
       .on(table.jobId, table.accountType, table.parentCategory)
       .where(
@@ -170,12 +160,9 @@ export const paycheckDeductions = pgTable(
 );
 
 /**
- * Pay on a job's checks besides salary and bonus — structural only, like
- * paycheck_deductions: what the line is and which taxes apply. The amount
- * per check lives in the Salary Profile entry (`otherEarnings`, keyed by
- * this id), the same axis as salary and bonus. `isCash` false = a taxable
- * benefit that's never paid (imputed income, e.g. group-term life over
- * $50k — IRC 79): taxed, but not take-home.
+ * Pay on a job's checks besides salary and bonus, structural only (what it is, which taxes
+ * apply); the per-check amount is the Salary Profile entry's `otherEarnings[id]`. `isCash`
+ * false = imputed income (e.g. group-term life over $50k, IRC 79): taxed, not take-home.
  */
 export const paycheckEarnings = pgTable(
   "paycheck_earnings",

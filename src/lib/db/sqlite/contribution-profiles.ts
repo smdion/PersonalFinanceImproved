@@ -25,29 +25,16 @@ export const contributionProfiles = sqliteTable("contribution_profiles", {
 });
 
 // --- Salary profiles (per-job salary entries) ---
-//
-// A first-class sibling of Budget Profile / Contribution Profile: a named set
-// of per-job salary ENTRIES that any page can preview under. Deliberately
-// separate from contribution_profiles so "what if I earned X" and "what if I
-// contributed Y" are two independent axes rather than one coupled entity.
-//
-// Every profile is an ordinary row — there is no `isDefault` column and no
-// synthetic id-0 "Live" row. An id either resolves to a real row or is an
-// error; it is never a sentinel.
-//
-// A job carries no salary or bonus terms of its own. `salaries` is a jobId →
-// COMPLETE entry map — see the docblock on the column below.
+// A named set of per-job salary entries, independent of contribution_profiles. Every profile is
+// an ordinary row (no isDefault, no id-0 "Live" sentinel); a job has no salary terms of its own.
 
 export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has every required field
-   *  (plus the optional `bonusDestination`/`otherEarnings`, absent = budget /
-   *  none) — a real, complete number/election for this profile — or no key at all
-   *  (this profile says nothing about that job — contributes $0, not a
-   *  fallback to some other value). No partial entries — see
-   *  salaryEntriesSchema in json-schemas.ts. */
+  /** jobId → a complete salary entry (every required field; optional `bonusDestination` /
+   *  `otherEarnings` absent = budget / none), or no key: the job contributes $0 here. No
+   *  partial entries (salaryEntriesSchema). */
   salaries: text("salaries", { mode: "json" })
     .$type<Record<string, SalaryEntry>>()
     .notNull()

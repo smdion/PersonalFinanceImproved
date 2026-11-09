@@ -42,10 +42,8 @@ export const apiConnections = pgTable(
     config: jsonb("config").$type<ApiConfig>().notNull(),
     accountMappings: jsonb("account_mappings").$type<AccountMapping[]>(),
     skippedCategoryIds: jsonb("skipped_category_ids").$type<string[]>(),
-    // References budgetProfiles.id — no DB-level FK constraint. Always
-    // resolved via allProfiles.find(p => p.id === conn.linkedProfileId) in
-    // server code (budget.ts, sync/preview.ts); despite the generic name it
-    // is never polymorphic across other tables.
+    // A budgetProfiles.id (no DB-level FK), looked up in server code; never an id
+    // from another table despite the generic name.
     linkedProfileId: integer("linked_profile_id"),
     linkedColumnIndex: integer("linked_column_index"),
     serverKnowledge: integer("server_knowledge"),
@@ -77,35 +75,16 @@ export const budgetApiCache = pgTable(
 );
 
 /**
- * Server-side cache for retirement projection results (deterministic
- * engine + Monte Carlo + Coast FIRE MC) — a new table rather than reusing
- * budgetApiCache. That table's `service` column is the argument to a
- * DESTRUCTIVE operation (cacheClear drops-and-repulls a remote budget-API
- * mirror); a projection cache has no upstream to re-pull from, and
- * `serverKnowledge` (a YNAB delta-sync cursor) has no equivalent here. Its
- * keyspace is also small and bounded ("categories", "months/YYYY-MM-01");
- * this one is a hash per distinct input combination, unbounded, so it
- * needs its own eviction (expiresAt + lastReadAt), which budgetApiCache's
- * helpers don't provide.
- *
- * `seed` is stored WITH the cached result, not as a separate persisted
- * setting: on a cache miss a fresh random seed is generated and stored
- * alongside the result; on a hit, the ALREADY-STORED seed is what
- * determined that stored result, so returning it is honestly
- * reproducible — "this exact run really would produce this answer" —
- * rather than silently freezing a stochastic simulation's randomness
- * under a key that implies full determinism. A cache MISS (new inputs)
- * always gets a new seed; "Re-run simulation" forces a miss.
+ * Server-side cache of projection results (deterministic, Monte Carlo, Coast FIRE MC), apart
+ * from budgetApiCache (whose clear re-pulls a remote mirror) with its own eviction. `seed` is
+ * stored with the result it produced; a miss (new inputs, or "Re-run") gets a fresh seed.
  */
 export const projectionCache = pgTable(
   "projection_cache",
   {
     id: serial("id").primaryKey(),
-    /** sha256 of the canonicalized engine input this row was computed
-     *  from — see hashEngineInput in server/services/projection/projection-cache.ts.
-     *  Different per procedure (deterministic vs MC vs Coast-FIRE MC
-     *  inputs differ), so the kind is folded into the hash input itself
-     *  rather than a separate column. */
+    /** sha256 of the canonical engine input (hashEngineInput in projection-cache.ts); the
+     *  procedure kind is folded into the hashed input, not a separate column. */
     inputHash: text("input_hash").notNull(),
     /** Random seed used for this computation — null for the deterministic
      *  engine result, which has no randomness to seed. */
@@ -150,19 +129,13 @@ export const simplefinBalanceSnapshots = pgTable(
   ],
 );
 
-// ── Investments data foundation (v0.8.5) ─────────────────────────────────
-// What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
-// here as sent. Transaction classification is NOT stored — it is computed on
-// read by lib/pure/sync/simplefin-transactions.ts from these inputs plus the
-// built-in and user rules, so a rule change re-classifies history (RULES:
-// computed values are not stored). Only explicit overrides are stored.
+// ── Investments data foundation ───────────────────────────────────────────
+// What SimpleFIN keeps only 90 days (holdings, transactions) is stored as sent. Transaction
+// kinds are computed on read (simplefin-transactions.ts); only explicit overrides are stored.
 
 /**
- * Daily closes from Tiingo, kept so a restart or a rate limit doesn't lose
- * them and each close is fetched once. Raw close plus that day's
- * distribution and split — total return is built from these
- * (lib/pure/investments/total-return.ts), never from Tiingo's adjusted close, which is
- * re-based on each new distribution. Re-fetchable; not household data.
+ * Daily Tiingo closes (raw close plus that day's distribution and split), each fetched once;
+ * total return is built from these, never Tiingo's re-based adjusted close. Not household data.
  */
 export const marketCloses = pgTable(
   "market_closes",
@@ -212,10 +185,8 @@ export const securities = pgTable(
     standinConfirmedAt: timestamp("standin_confirmed_at", {
       withTimezone: true,
     }),
-    /** What a suggested (not yet confirmed) stand-in's SEC filings say,
-     *  so the household can judge it before using it: how much of the fund
-     *  they explain, its mix, and its cheapest share class's fee. Never
-     *  counted as this fund's facts. */
+    /** What a suggested (unconfirmed) stand-in's SEC filings say (coverage, mix, cheapest share
+     *  class's fee) for the household to judge; never counted as this fund's facts. */
     standinPreview: jsonb("standin_preview").$type<StandInPreview>(),
     /** Last time SEC was checked for new filings (whether or not anything changed). */
     factsCheckedAt: timestamp("facts_checked_at", { withTimezone: true }),
@@ -247,10 +218,8 @@ const compositionColumns = {
 };
 
 /**
- * Dated facts about a fund: its expense ratio and what it holds. From SEC
- * filings (its own, or a confirmed stand-in's) or entered by the
- * household. Read as groups — expense ratio and composition each come
- * whole from one row, never mixed across filings.
+ * Dated fund facts (expense ratio, holdings) from SEC filings (its own or a confirmed
+ * stand-in's) or the household. Expense ratio and composition each come whole from one row.
  */
 export const securityFacts = pgTable(
   "security_facts",
@@ -307,14 +276,9 @@ export const secFilingCache = pgTable(
 );
 
 /**
- * Community tax-data updates this install has fetched (signed releases of
- * the tax-data file between Ledgr versions) and what an admin decided.
- * The file is kept as fetched, with its signature, so it can be verified
- * again before applying; the figures it would change are worked out on
- * demand against the current rows, never stored. An approved file newer
- * than the shipped one is applied after it on every start and restore
- * (reference-data.ts `approvedCommunityFile`). Not household data: not
- * versioned, backed up or reset.
+ * Fetched community tax-data updates (signed, kept as fetched to re-verify) and the admin's
+ * decision; an approved file newer than the shipped one is applied after it on every start and
+ * restore (`approvedCommunityFile`). Not household data: not versioned, backed up or reset.
  */
 export const taxDataUpdates = pgTable("tax_data_updates", {
   dataVersion: integer("data_version").primaryKey(),
@@ -352,11 +316,9 @@ export const simplefinAccountBalances = pgTable(
 );
 
 /**
- * Shares held per SimpleFIN account and security, one row per report (per
- * `balanceDate`; per day for a feed that sends no report time). Every report
- * is kept: a feed a market day behind sends two reports a day apart that
- * `asOf` would put on the same day. For funds with no public ticker, the
- * reported value ÷ shares is the only price history there is.
+ * Shares held per SimpleFIN account and security, one row per report (`balanceDate`, or per
+ * day with no report time); every report is kept. For funds with no public ticker, reported
+ * value ÷ shares is the only price history.
  */
 export const holdingObservations = pgTable(
   "holding_observations",
@@ -402,13 +364,9 @@ export const holdingObservations = pgTable(
 );
 
 /**
- * What a tracked account held over a span of dates, before daily SimpleFIN
- * holdings existed (or for an account with no feed): entered by the
- * household or inferred (a proposal to confirm). Observed periods are NOT
- * stored here — they're derived from holding_observations on read (one
- * source of truth). endDate null = still held. Weights live in
- * holding_period_weights. CHECKs are enforced in the app layer too —
- * SQLite drops CHECK constraints.
+ * Holdings of a tracked account over a date span with no SimpleFIN holdings, entered or inferred
+ * (to confirm); observed periods derive from holding_observations. endDate null = still held.
+ * Weights: holding_period_weights. The app also enforces the CHECKs (SQLite drops them).
  */
 export const holdingPeriods = pgTable(
   "holding_periods",
@@ -480,10 +438,8 @@ export const holdingPeriodWeights = pgTable(
 );
 
 /**
- * Investment-account transactions exactly as SimpleFIN sent them. The kind
- * (contribution, fee, …) is computed on read; only an explicit override is
- * stored. HSA medical-spending descriptions are redacted at ingest, which
- * locks the kind (kindOverrideSource = ingest_redacted).
+ * Investment-account transactions as SimpleFIN sent them; the kind is computed on read, only an
+ * override is stored. HSA medical descriptions are redacted at ingest, locking the kind.
  */
 export const investmentTransactions = pgTable(
   "investment_transactions",
@@ -568,20 +524,14 @@ export const simplefinAccounts = pgTable(
       "linked_performance_account_id",
     ).references(() => performanceAccounts.id, { onDelete: "set null" }),
     /**
-     * The sub-account this SimpleFIN account is (snapshotAccountKey: tracked
-     * account + tax type + kind + owner), or null for the whole tracked
-     * account. Institutions report sub-accounts separately — e.g. each
-     * spouse's Roth IRA inside one joint "IRA" tracked account.
-     * Only meaningful with linkedPerformanceAccountId (enforced by the
-     * router, not a CHECK: deleting a tracked account nulls the link and
-     * must not be blocked by a leftover key, which readers ignore).
+     * The sub-account (snapshotAccountKey) this feed is, or null for the whole tracked account.
+     * Needs linkedPerformanceAccountId (router-enforced, not a CHECK, so deleting the tracked
+     * account isn't blocked by a leftover key; readers ignore one).
      */
     linkedSubKey: text("linked_sub_key"),
     /**
-     * The mortgage loan this feed reports (a loan servicer's account). The
-     * feed's balance becomes that loan's balance while it's included.
-     * Never with linkedPerformanceAccountId (enforced by the router): a
-     * feed is an account or a loan. One feed per loan.
+     * The mortgage loan this feed reports; its balance becomes the loan's while included. One
+     * feed per loan, never also linkedPerformanceAccountId (router-enforced).
      */
     linkedLoanId: integer("linked_loan_id").references(() => mortgageLoans.id, {
       onDelete: "set null",
