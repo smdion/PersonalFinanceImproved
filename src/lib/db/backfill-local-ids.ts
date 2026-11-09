@@ -52,24 +52,24 @@ export async function backfillMappingLocalIds(db: Db) {
 
     // Also build labels from latest snapshot
     if (latestSnapshot[0]) {
-      const snapAccts = await db
+      const snapAccounts = await db
         .select()
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, latestSnapshot[0].id));
       const peopleMap = new Map(allPeople.map((p) => [p.id, p.name]));
       const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-      for (const acct of snapAccts) {
-        if (!acct.performanceAccountId) continue;
-        const perf = perfMap.get(acct.performanceAccountId);
+      for (const account of snapAccounts) {
+        if (!account.performanceAccountId) continue;
+        const perf = perfMap.get(account.performanceAccountId);
         const label = portfolioAccountLabel(
-          acct,
+          account,
           perf,
-          acct.ownerPersonId,
+          account.ownerPersonId,
           peopleMap,
         );
         if (!labelToPerfId.has(label)) {
-          labelToPerfId.set(label, acct.performanceAccountId);
+          labelToPerfId.set(label, account.performanceAccountId);
         }
       }
     }

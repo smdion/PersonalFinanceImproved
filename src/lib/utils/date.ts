@@ -98,10 +98,10 @@ export function addDays(day: string, n: number): string {
 export function isCalendarDate(value: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const [y, month, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (y < 1900 || y > 2100) return false;
-  const date = new Date(Date.UTC(y, mo - 1, d));
-  return date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const date = new Date(Date.UTC(y, month - 1, d));
+  return date.getUTCMonth() === month - 1 && date.getUTCDate() === d;
 }
 
 /** A day that some year has in that month (Feb 29 counts). */

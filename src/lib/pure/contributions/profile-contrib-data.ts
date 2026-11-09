@@ -237,13 +237,13 @@ export function buildProfileContribData(
         c.personId != null ? ctx.personNameById.get(c.personId) : undefined;
       const matchTaxType =
         portfolioTaxTypeOf(c.taxTreatment ?? "pre_tax") ?? c.taxTreatment;
-      const catAccts = ctx.accountBreakdownByCategory[cat] ?? [];
+      const catAccounts = ctx.accountBreakdownByCategory[cat] ?? [];
       const contribParentCat =
         c.parentCategory ??
         (c.performanceAccountId
           ? ctx.perfCategoryMap.get(c.performanceAccountId)
           : undefined);
-      const matchedAcct = matchAccountForContribution(catAccts, {
+      const matchedAccount = matchAccountForContribution(catAccounts, {
         contribOwner,
         matchTaxType,
         accountType: c.accountType,
@@ -263,7 +263,7 @@ export function buildProfileContribData(
           "pre_tax") as ContributionSpec["taxTreatment"],
         personId: c.personId,
         ownerName: contribOwner,
-        accountName: matchedAcct?.name,
+        accountName: matchedAccount?.name,
         targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
         allocationPriority: c.allocationPriority ?? 0,
         parentCategory:

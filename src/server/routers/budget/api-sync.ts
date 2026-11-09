@@ -72,7 +72,7 @@ export const apiSyncProcedures = {
       // Same connection-configured column the preview (sync/preview.ts) and
       // syncBudgetToApi use — a client-sent column would write a number into
       // a column the user never saw in the preview.
-      const colIdx = conn?.linkedColumnIndex ?? 0;
+      const colIndex = conn?.linkedColumnIndex ?? 0;
 
       const itemRows = await ctx.db
         .select()
@@ -112,7 +112,7 @@ export const apiSyncProcedures = {
         const amounts = budgetAmountsSchema.parse(item.amounts);
         // An item with no amount columns has nowhere to write (index -1).
         if (amounts.length === 0) continue;
-        amounts[Math.min(colIdx, amounts.length - 1)] = apiCat.goalTarget;
+        amounts[Math.min(colIndex, amounts.length - 1)] = apiCat.goalTarget;
 
         await ctx.db
           .update(schema.budgetItems)
@@ -159,7 +159,7 @@ export const apiSyncProcedures = {
       // `ledgrAmount` from (src/server/routers/sync/preview.ts) — pushing a
       // different, client-supplied column would push a number the preview
       // never showed the user.
-      const colIdx = conn?.linkedColumnIndex ?? 0;
+      const colIndex = conn?.linkedColumnIndex ?? 0;
 
       const pushItemRows = await ctx.db
         .select()
@@ -210,7 +210,7 @@ export const apiSyncProcedures = {
         )
           continue;
 
-        const amount = item.amounts[Math.min(colIdx, numColumns - 1)] ?? 0;
+        const amount = item.amounts[Math.min(colIndex, numColumns - 1)] ?? 0;
 
         // Push as a goal target (plan-level, not month-specific)
         try {

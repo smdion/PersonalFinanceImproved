@@ -284,7 +284,7 @@ export const CHANGE_DETECTION_THRESHOLD = 0.01;
 export const PERF_BALANCE_MISMATCH_ABS = 5;
 
 /** Ending balance mismatch warning: relative threshold (0.01% of portfolio total). */
-export const PERF_BALANCE_MISMATCH_PCT = 0.0001;
+export const PERF_BALANCE_MISMATCH_PERCENT = 0.0001;
 
 /** Performance checks: figures each stored to the cent can disagree by a
  *  cent through rounding alone — a gap must be larger to be flagged. */

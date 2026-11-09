@@ -556,12 +556,12 @@ function transformV01xToV020(
   tables: TableData,
   sourceVersion: string,
 ): TableData {
-  const idx = versionIndex(sourceVersion);
+  const index = versionIndex(sourceVersion);
 
   // --- Cumulative transforms (only apply if backup is older than the change) ---
 
   // 0002: Rename "Retirement" → "401k/IRA" in annual_performance
-  if (idx < versionIndex("0002_rename_retirement_category")) {
+  if (index < versionIndex("0002_rename_retirement_category")) {
     renameValue(
       tables,
       "annual_performance",
@@ -572,13 +572,13 @@ function transformV01xToV020(
   }
 
   // 0003: Add rollovers column
-  if (idx < versionIndex("0003_add_rollovers_column")) {
+  if (index < versionIndex("0003_add_rollovers_column")) {
     addColumnDefault(tables, "account_performance", "rollovers", "0");
     addColumnDefault(tables, "annual_performance", "rollovers", "0");
   }
 
   // 0005: Add contribution_profile_id FK
-  if (idx < versionIndex("0005_cold_random")) {
+  if (index < versionIndex("0005_cold_random")) {
     addColumnDefault(
       tables,
       "retirement_salary_overrides",
@@ -588,7 +588,7 @@ function transformV01xToV020(
   }
 
   // 0006: Add audit columns to override tables
-  if (idx < versionIndex("0006_goofy_rawhide_kid")) {
+  if (index < versionIndex("0006_goofy_rawhide_kid")) {
     addColumnDefault(tables, "retirement_budget_overrides", "created_by", null);
     addColumnDefault(tables, "retirement_budget_overrides", "updated_by", null);
     addColumnDefault(tables, "retirement_salary_overrides", "created_by", null);
@@ -596,12 +596,12 @@ function transformV01xToV020(
   }
 
   // 0007: Add filing_status to retirement_settings
-  if (idx < versionIndex("0007_melted_swordsman")) {
+  if (index < versionIndex("0007_melted_swordsman")) {
     addColumnDefault(tables, "retirement_settings", "filing_status", null);
   }
 
   // 0008: Add prior-year contribution columns
-  if (idx < versionIndex("0008_prior_year_contrib")) {
+  if (index < versionIndex("0008_prior_year_contrib")) {
     addColumnDefault(
       tables,
       "contribution_accounts",

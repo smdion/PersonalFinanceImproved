@@ -487,8 +487,8 @@ export const relocationProjectionRouter = createTRPCRouter({
         .filter((r): r is NonNullable<typeof r> => r !== null);
 
       // --- Binary search for earliest safe relocation year ---
-      const probeViable = (rowIdx: number): boolean => {
-        const probeResult = runMovingIn(currentAccRows[rowIdx]!.year);
+      const probeViable = (rowIndex: number): boolean => {
+        const probeResult = runMovingIn(currentAccRows[rowIndex]!.year);
         return assessPlan(probeResult).succeeded;
       };
 

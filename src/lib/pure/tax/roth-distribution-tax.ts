@@ -67,18 +67,21 @@ export function splitRothWithdrawalForTax(input: {
   let taxableGrowth = 0;
   let taxFreeAmount = 0;
 
-  for (const acct of accounts) {
-    const draw = draws.get(acct.indKey);
+  for (const account of accounts) {
+    const draw = draws.get(account.indKey);
     if (!draw) continue;
-    const qualified = isQualifiedRothOwner(acct.ownerBirthYear, year);
-    const acctTaxableGrowth = qualified ? 0 : draw.growthDrawn;
-    const acctTaxFree =
+    const qualified = isQualifiedRothOwner(account.ownerBirthYear, year);
+    const accountTaxableGrowth = qualified ? 0 : draw.growthDrawn;
+    const accountTaxFree =
       draw.contributionDrawn +
       draw.conversionDrawn +
-      (draw.growthDrawn - acctTaxableGrowth);
-    byKey.set(acct.indKey, { taxableGrowth: acctTaxableGrowth, qualified });
-    taxableGrowth += acctTaxableGrowth;
-    taxFreeAmount += acctTaxFree;
+      (draw.growthDrawn - accountTaxableGrowth);
+    byKey.set(account.indKey, {
+      taxableGrowth: accountTaxableGrowth,
+      qualified,
+    });
+    taxableGrowth += accountTaxableGrowth;
+    taxFreeAmount += accountTaxFree;
   }
 
   return {

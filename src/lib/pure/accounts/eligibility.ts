@@ -420,7 +420,7 @@ export type NonRetirementExclusion = {
 };
 
 export function computeNonRetirementExclusion(
-  indAccts: {
+  indAccounts: {
     name: string;
     category: AccountCategory;
     taxType: string;
@@ -435,7 +435,7 @@ export function computeNonRetirementExclusion(
   const roth = zeroByCategory();
   let grandTotal = 0;
 
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     if (isRetirementMoney(ia.parentCategory)) continue;
     const balance = Math.max(0, indBal.get(indKey(ia)) ?? 0);
     if (balance <= 0) continue;

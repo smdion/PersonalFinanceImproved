@@ -54,7 +54,7 @@ type BracketCeilingMathInput = {
  * unexplained number.
  */
 export function describeBracketCeilingMath(
-  currentTargetPct: number,
+  currentTargetPercent: number,
   input?: BracketCeilingMathInput | null,
 ): string | undefined {
   if (!input || input.standardDeduction == null) return undefined;
@@ -68,14 +68,14 @@ export function describeBracketCeilingMath(
   // figure can be recovered from the clamped value alone, so state the real
   // fact instead of a fabricated number.
   if (input.bracketTraditionalCap <= 0 && input.taxableSS > 0) {
-    return `Your taxable Social Security income alone (${formatCurrency(input.taxableSS)}) already fills the ${formatPercent(currentTargetPct, 0)} bracket's room once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in, leaving no room for Traditional withdrawals at this target.`;
+    return `Your taxable Social Security income alone (${formatCurrency(input.taxableSS)}) already fills the ${formatPercent(currentTargetPercent, 0)} bracket's room once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in, leaving no room for Traditional withdrawals at this target.`;
   }
   const incomeCap = input.bracketTraditionalCap + input.taxableSS;
   const ssClause =
     input.taxableSS > 0
       ? ` ${formatCurrency(input.taxableSS)} of that room is already used by taxable Social Security this year, leaving ${formatCurrency(input.bracketTraditionalCap)} available for Traditional withdrawals.`
       : ` With no taxable Social Security this year, the full ${formatCurrency(input.bracketTraditionalCap)} is available for Traditional withdrawals.`;
-  return `The ${formatPercent(currentTargetPct, 0)} bracket's ceiling sits at about ${formatCurrency(incomeCap)} in gross income once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in.${ssClause}`;
+  return `The ${formatPercent(currentTargetPercent, 0)} bracket's ceiling sits at about ${formatCurrency(incomeCap)} in gross income once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in.${ssClause}`;
 }
 
 /** Qualitative-only fallback — the strategy's general rationale, no
@@ -99,14 +99,14 @@ export function describeBracketTargetQualitative(targetPct: number): string {
  */
 export function describeBracketTargetChoice(
   optimizer: BracketOptimizerResult | null | undefined,
-  currentTargetPct: number,
+  currentTargetPercent: number,
   ceilingMath?: BracketCeilingMathInput | null,
 ): string {
   const mathSentence = describeBracketCeilingMath(
-    currentTargetPct,
+    currentTargetPercent,
     ceilingMath,
   );
-  const fallback = describeBracketTargetQualitative(currentTargetPct);
+  const fallback = describeBracketTargetQualitative(currentTargetPercent);
   const fallbackWithMath = mathSentence
     ? `${fallback} ${mathSentence}`
     : fallback;
@@ -117,7 +117,7 @@ export function describeBracketTargetChoice(
     .sort((a, b) => a.target - b.target);
   if (sorted.length < 2) return fallbackWithMath;
 
-  const current = findCandidate(sorted, currentTargetPct);
+  const current = findCandidate(sorted, currentTargetPercent);
   if (!current) return fallbackWithMath;
 
   const cheapest = sorted.reduce((best, c) =>
@@ -125,22 +125,22 @@ export function describeBracketTargetChoice(
   );
   const isCheapest = Math.abs(cheapest.target - current.target) < RATE_EPSILON;
 
-  const idx = sorted.indexOf(current);
-  const lower = idx > 0 ? sorted[idx - 1] : undefined;
-  const higher = idx < sorted.length - 1 ? sorted[idx + 1] : undefined;
+  const index = sorted.indexOf(current);
+  const lower = index > 0 ? sorted[index - 1] : undefined;
+  const higher = index < sorted.length - 1 ? sorted[index + 1] : undefined;
 
   const parts: string[] = [
-    `This projection fills your Traditional withdrawals up to the ${formatPercent(currentTargetPct, 0)} tax bracket before drawing from any other account — your Traditional balance is taxed either at a rate you choose now, or later as a Required Minimum Distribution taxed at whatever bracket you're in then.`,
+    `This projection fills your Traditional withdrawals up to the ${formatPercent(currentTargetPercent, 0)} tax bracket before drawing from any other account — your Traditional balance is taxed either at a rate you choose now, or later as a Required Minimum Distribution taxed at whatever bracket you're in then.`,
   ];
   if (mathSentence) parts.push(mathSentence);
 
   if (isCheapest) {
     parts.push(
-      `Among the bracket targets this projection tested (your own real marginal rates), ${formatPercent(currentTargetPct, 0)} is the lowest lifetime-cost choice.`,
+      `Among the bracket targets this projection tested (your own real marginal rates), ${formatPercent(currentTargetPercent, 0)} is the lowest lifetime-cost choice.`,
     );
   } else {
     parts.push(
-      `Among the bracket targets this projection tested, ${formatPercent(cheapest.target, 0)} scores as the lower-cost choice — about ${formatCurrency(current.netCost - cheapest.netCost)} less over your retirement than your current ${formatPercent(currentTargetPct, 0)} target. Worth reviewing on the Taxes settings page.`,
+      `Among the bracket targets this projection tested, ${formatPercent(cheapest.target, 0)} scores as the lower-cost choice — about ${formatCurrency(current.netCost - cheapest.netCost)} less over your retirement than your current ${formatPercent(currentTargetPercent, 0)} target. Worth reviewing on the Taxes settings page.`,
     );
   }
 

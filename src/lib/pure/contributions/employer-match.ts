@@ -23,7 +23,7 @@ import {
 export function computeEmployerMatch(
   matchType: string | null,
   matchValue: number,
-  maxMatchPct: number,
+  maxMatchPercent: number,
   empContribAnnual: number,
   /** "combined": a group's total, read as a share of pay. */
   empContribMethod: ContributionMethod | "combined",
@@ -35,17 +35,17 @@ export function computeEmployerMatch(
   const match = parseEmployerMatch(
     matchType,
     matchValue,
-    maxMatchPct,
+    maxMatchPercent,
     matchRate,
   );
   if (match.kind === "none") return 0;
   if (match.kind === "flat") return match.perYear;
   if (salary <= 0) return 0;
-  const empPct =
+  const employeePercent =
     empContribMethod === "percent_of_salary"
       ? fractionFromPercent(empContribValue)
       : empContribAnnual / salary;
-  return salary * applyCeiling(empPct, match.capOfPay) * match.rate;
+  return salary * applyCeiling(employeePercent, match.capOfPay) * match.rate;
 }
 
 /** A stored rate as a Fraction; null where none is stored. Read as its

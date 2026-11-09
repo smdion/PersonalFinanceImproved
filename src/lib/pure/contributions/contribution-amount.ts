@@ -57,7 +57,7 @@ export type EmployerMatch =
 export function parseEmployerMatch(
   storedType: string | null,
   value: number,
-  maxMatchPct: number,
+  maxMatchPercent: number,
   rate: Fraction | null = null,
 ): EmployerMatch {
   const type: EmployerMatchType =
@@ -69,7 +69,7 @@ export function parseEmployerMatch(
       return {
         kind: "percent_of_contribution",
         rate: rate ?? fractionFromPercent(value),
-        capOfPay: storedCeiling(maxMatchPct),
+        capOfPay: storedCeiling(maxMatchPercent),
       };
     case "dollar_match":
     case "fixed_annual":

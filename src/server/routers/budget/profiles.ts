@@ -144,7 +144,8 @@ export const profileProcedures = {
                 itemActiveMap.size === 0
                   ? rawAmounts
                   : rawAmounts.map(
-                      (amt, col) => itemActiveMap.get(`${i.id}:${col}`) ?? amt,
+                      (amount, col) =>
+                        itemActiveMap.get(`${i.id}:${col}`) ?? amount,
                     );
               return {
                 profileId: created.id,

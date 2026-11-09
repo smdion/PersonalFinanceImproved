@@ -378,7 +378,7 @@ export async function computeContributionSummary(
         monthsElapsed: monthsElapsedYtd(asOfDate),
       };
       for (let i = 0; i < accounts.length; i++) {
-        const acct = accounts[i]!;
+        const account = accounts[i]!;
         const rawContrib = rawContribs[i]!;
         const linkedPerfLabel = rawContrib.performanceAccountId
           ? perfLabelMap.get(rawContrib.performanceAccountId)
@@ -450,22 +450,23 @@ export async function computeContributionSummary(
           blendedMatch: 0,
           ytdDataStale: false,
           performanceAccountIds: new Set<number>(),
-          electedPct: 0,
+          electedPercent: 0,
           bonus: 0,
           fullMatchShareOfPay: null,
         };
         // What the bonus check takes, and the match on it. The Year-End
         // estimate adds them only when the year's actuals don't already
         // hold that check (paid after the date they run through).
-        const bonusEmp = bonusCheckContribution(acct, pay.bonusGross);
-        const bonusMatch = acct.employerMatchOnBonus ?? 0;
+        const bonusEmp = bonusCheckContribution(account, pay.bonusGross);
+        const bonusMatch = account.employerMatchOnBonus ?? 0;
         entry.bonus += bonusEmp;
         entry.fullMatchShareOfPay =
-          acct.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;
-        entry.electedPct =
-          entry.electedPct !== null &&
+          account.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;
+        entry.electedPercent =
+          entry.electedPercent !== null &&
           rawContrib.contributionMethod === "percent_of_salary"
-            ? entry.electedPct + toNumber(String(rawContrib.contributionValue))
+            ? entry.electedPercent +
+              toNumber(String(rawContrib.contributionValue))
             : null;
         if (rawContrib.performanceAccountId != null)
           entry.performanceAccountIds.add(rawContrib.performanceAccountId);
@@ -525,8 +526,8 @@ export async function computeContributionSummary(
             stalePeriods = Math.max(0, paid(asOfDate) - paid(perfLastUpdated));
           }
           if (stalePeriods > 0) entry.ytdDataStale = true;
-          const regularMatch = acct.employerMatch - bonusMatch;
-          const perPeriodEmp = acct.annualContribution / periodsPerYear;
+          const regularMatch = account.employerMatch - bonusMatch;
+          const perPeriodEmp = account.annualContribution / periodsPerYear;
           const perPeriodMatch = regularMatch / periodsPerYear;
           const actualsThrough =
             rawContrib.performanceAccountId != null &&
@@ -540,7 +541,7 @@ export async function computeContributionSummary(
           entry.blendedEmployee +=
             ytdEmp +
             perPeriodEmp * stalePeriods +
-            acct.annualContribution * remaining +
+            account.annualContribution * remaining +
             (bonusInActuals ? 0 : bonusEmp);
           entry.blendedMatch +=
             ytdMatch +
@@ -548,28 +549,28 @@ export async function computeContributionSummary(
             regularMatch * remaining +
             (bonusInActuals ? 0 : bonusMatch);
         } else {
-          entry.blendedEmployee += acct.annualContribution + bonusEmp;
-          entry.blendedMatch += acct.employerMatch;
+          entry.blendedEmployee += account.annualContribution + bonusEmp;
+          entry.blendedMatch += account.employerMatch;
         }
-        const pyAmt =
+        const pyAmount =
           rawContrib.priorYearContribYear === priorYear
             ? toNumber(rawContrib.priorYearContribAmount)
             : 0;
-        entry.priorYearAmount += pyAmt;
-        entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmt });
-        entry.employee += acct.annualContribution;
-        entry.match += acct.employerMatch;
+        entry.priorYearAmount += pyAmount;
+        entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmount });
+        entry.employee += account.annualContribution;
+        entry.match += account.employerMatch;
         entry.matchAvailable +=
-          acct.employerMatchAvailable ?? acct.employerMatch;
+          account.employerMatchAvailable ?? account.employerMatch;
         // Four-way tax-treatment split — after_tax and hsa must NOT be
         // folded into "trad" (that used to silently mislabel taxable
         // brokerage and HSA dollars as Traditional/pre-tax).
         // Bonus-check money lands in the same bucket as the account's.
-        const withBonus = acct.annualContribution + bonusEmp;
-        if (isTaxFree(acct.taxTreatment)) entry.taxFree += withBonus;
-        else if (isAfterTaxTreatment(acct.taxTreatment))
+        const withBonus = account.annualContribution + bonusEmp;
+        if (isTaxFree(account.taxTreatment)) entry.taxFree += withBonus;
+        else if (isAfterTaxTreatment(account.taxTreatment))
           entry.afterTax += withBonus;
-        else if (isHsaTreatment(acct.taxTreatment)) entry.hsa += withBonus;
+        else if (isHsaTreatment(account.taxTreatment)) entry.hsa += withBonus;
         else entry.trad += withBonus;
         // Same isPayrollDeducted resolution the paycheck summary's
         // calculator input uses (buildContribAccounts) — independent of the
@@ -577,7 +578,7 @@ export async function computeContributionSummary(
         if (isPaidThroughPayroll(rawContrib)) {
           entry.payrollDeducted += withBonus;
         } else {
-          entry.nonPayroll += acct.annualContribution;
+          entry.nonPayroll += account.annualContribution;
         }
         if (rawContrib.ownership === "joint") entry.isJoint = true;
         categoryMap.set(cat, entry);

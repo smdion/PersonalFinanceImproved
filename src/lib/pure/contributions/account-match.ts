@@ -32,7 +32,7 @@ export type BreakdownAccount = {
  * match-account-for-contribution.test.ts` pins each tier.
  */
 export function matchAccountForContribution(
-  catAccts: BreakdownAccount[],
+  catAccounts: BreakdownAccount[],
   criteria: {
     // null and undefined behave identically here — both mean "no such
     // constraint" for parentCat, and neither will `===` a real taxType /
@@ -55,30 +55,30 @@ export function matchAccountForContribution(
   };
 
   return (
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         exactOwner(a) &&
         a.taxType === matchTaxType &&
         a.accountType === accountType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         a.ownerName === undefined &&
         a.taxType === matchTaxType &&
         a.accountType === accountType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) => exactOwner(a) && a.taxType === matchTaxType && parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         a.ownerName === undefined &&
         a.taxType === matchTaxType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find((a) => exactOwner(a) && parentCatMatches(a)) ??
-    catAccts.find((a) => ownerMatch(a))
+    catAccounts.find((a) => exactOwner(a) && parentCatMatches(a)) ??
+    catAccounts.find((a) => ownerMatch(a))
   );
 }

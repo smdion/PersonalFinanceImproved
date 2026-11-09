@@ -55,7 +55,7 @@ export function nextYearAccountRow(
   allPerfAccounts: { id: number; parentCategory: StoredParentCategory }[],
   nextYear: number,
 ) {
-  const masterAcct = a.performanceAccountId
+  const masterAccount = a.performanceAccountId
     ? allPerfAccounts.find((m) => m.id === a.performanceAccountId)
     : null;
   return {
@@ -63,7 +63,7 @@ export function nextYearAccountRow(
     institution: a.institution,
     accountLabel: a.accountLabel,
     ownerPersonId: a.ownerPersonId,
-    parentCategory: masterAcct?.parentCategory ?? a.parentCategory,
+    parentCategory: masterAccount?.parentCategory ?? a.parentCategory,
     isActive: true,
     performanceAccountId: a.performanceAccountId,
     beginningBalance: a.endingBalance, // prev year ending = next year beginning

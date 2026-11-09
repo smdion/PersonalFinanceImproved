@@ -153,12 +153,12 @@ export const brokerageRouter = createTRPCRouter({
 
             // Aggregate snapshot balances by performanceAccountId
             const balanceByPerfId = new Map<number, number>();
-            for (const acct of snapshotAccounts) {
-              if (!acct.performanceAccountId) continue;
+            for (const account of snapshotAccounts) {
+              if (!account.performanceAccountId) continue;
               balanceByPerfId.set(
-                acct.performanceAccountId,
-                (balanceByPerfId.get(acct.performanceAccountId) ?? 0) +
-                  Number(acct.amount),
+                account.performanceAccountId,
+                (balanceByPerfId.get(account.performanceAccountId) ?? 0) +
+                  Number(account.amount),
               );
             }
 

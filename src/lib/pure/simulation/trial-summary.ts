@@ -14,11 +14,11 @@ import { MC_SPENDING_STABILITY_THRESHOLD } from "../../constants";
 /** Extract the percentile value from a sorted array. */
 export function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
-  const idx = (p / 100) * (sorted.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
+  const index = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(index);
+  const hi = Math.ceil(index);
   if (lo === hi) return sorted[lo]!;
-  return sorted[lo]! + (idx - lo) * (sorted[hi]! - sorted[lo]!);
+  return sorted[lo]! + (index - lo) * (sorted[hi]! - sorted[lo]!);
 }
 
 /** Compute summary statistics for a distribution. */
@@ -80,15 +80,15 @@ export function balanceBands(
         }
       : null;
 
-  const assumptionsFor = (yearIdx: number) => {
+  const assumptionsFor = (yearIndex: number) => {
     const stats = blendedReturnStats(
       assetClasses,
       correlationMatrix,
       glidePath,
-      startAge + yearIdx,
+      startAge + yearIndex,
     );
     if (!stats) return {};
-    const levels = [...(priceLevelsByYear[yearIdx] ?? [])].sort(
+    const levels = [...(priceLevelsByYear[yearIndex] ?? [])].sort(
       (a, b) => a - b,
     );
     const inflation =
@@ -102,7 +102,7 @@ export function balanceBands(
             },
           }
         : undefined;
-    const retired = yearIdx >= yearsToRetirement;
+    const retired = yearIndex >= yearsToRetirement;
     return {
       assumptions: {
         ...stats,
@@ -114,15 +114,15 @@ export function balanceBands(
 
   // Aggregate into percentile bands
   const percentileBands: MonteCarloPercentileBand[] = [];
-  for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
-    const balances = balancesByYear[yearIdx]!;
+  for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
+    const balances = balancesByYear[yearIndex]!;
     if (balances.length === 0) continue;
     const sorted = [...balances].sort((a, b) => a - b);
     const mean = sumBy(balances, (v) => v) / balances.length;
 
     percentileBands.push({
-      year: engineInput.asOfDate.getFullYear() + yearIdx,
-      age: startAge + yearIdx,
+      year: engineInput.asOfDate.getFullYear() + yearIndex,
+      age: startAge + yearIndex,
       p5: percentile(sorted, 5),
       p10: percentile(sorted, 10),
       p25: percentile(sorted, 25),
@@ -131,19 +131,19 @@ export function balanceBands(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean,
-      ...assumptionsFor(yearIdx),
+      ...assumptionsFor(yearIndex),
     });
   }
 
   // The same bands in today's dollars — each trial deflated before sorting.
   const percentileBandsToday: MonteCarloPercentileBand[] = [];
-  for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
-    const balances = balancesTodayByYear[yearIdx]!;
+  for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
+    const balances = balancesTodayByYear[yearIndex]!;
     if (balances.length === 0) continue;
     const sorted = [...balances].sort((a, b) => a - b);
     percentileBandsToday.push({
-      year: engineInput.asOfDate.getFullYear() + yearIdx,
-      age: startAge + yearIdx,
+      year: engineInput.asOfDate.getFullYear() + yearIndex,
+      age: startAge + yearIndex,
       p5: percentile(sorted, 5),
       p10: percentile(sorted, 10),
       p25: percentile(sorted, 25),
@@ -152,7 +152,7 @@ export function balanceBands(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean: sumBy(balances, (v) => v) / balances.length,
-      ...assumptionsFor(yearIdx),
+      ...assumptionsFor(yearIndex),
     });
   }
 

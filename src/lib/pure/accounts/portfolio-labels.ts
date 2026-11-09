@@ -35,7 +35,7 @@ type PortfolioLabelPerf =
  * definitional fact the way per-person contribution limits are there.
  */
 export function portfolioAccountLabel(
-  acct: PortfolioLabelAccount,
+  account: PortfolioLabelAccount,
   perf: PortfolioLabelPerf,
   ownerPersonId: number | null,
   peopleMap: Map<number, string>,
@@ -46,10 +46,10 @@ export function portfolioAccountLabel(
     ownerPersonId != null ? "individual" : (perf?.ownershipType ?? null);
   return accountDisplayName(
     {
-      accountType: acct.accountType,
-      subType: acct.subType,
-      label: acct.label,
-      institution: acct.institution,
+      accountType: account.accountType,
+      subType: account.subType,
+      label: account.label,
+      institution: account.institution,
       displayName: perf?.displayName ?? null,
       accountLabel: perf?.accountLabel ?? null,
       ownershipType,

@@ -43,21 +43,21 @@ export function computeEarlyWithdrawalPenalty(input: {
   let penaltyCost = 0;
   let penalizedAmount = 0;
 
-  for (const [key, acctExposure] of exposure.byKey) {
+  for (const [key, accountExposure] of exposure.byKey) {
     const withdrawn = withdrawnByKey.get(key) ?? 0;
     if (withdrawn <= 0) continue;
     const penalized = roundToCents(
-      Math.max(0, withdrawn - acctExposure.penaltyFreeAmount),
+      Math.max(0, withdrawn - accountExposure.penaltyFreeAmount),
     );
     if (penalized <= 0) continue;
     const rate =
-      nonMedicalPenaltyRate(acctExposure.category) ??
+      nonMedicalPenaltyRate(accountExposure.category) ??
       EARLY_WITHDRAWAL_PENALTY_RATE;
     const cost = roundToCents(penalized * rate);
     byKey.set(key, {
       penalizedAmount: penalized,
       penaltyCost: cost,
-      reason: acctExposure.reason,
+      reason: accountExposure.reason,
     });
     penalizedAmount += penalized;
     penaltyCost += cost;

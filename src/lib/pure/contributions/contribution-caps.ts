@@ -138,7 +138,7 @@ export type CappedContribution = {
  *  money is `employee × f`. */
 type Participant = {
   personId: number;
-  rowIdx: number[];
+  rowIndex: number[];
   employee: number;
   employerAt: (factor: number) => number;
   ownRoom: number;
@@ -308,8 +308,8 @@ export function capContributionsByLimitGroup(
   const reasonOf: (CapReason | null)[] = rows.map(() => null);
   const ageOf = ageMap(ctx);
   const groupLimits = new Map<string, number>();
-  const flag = (idx: readonly number[], reason: CapReason) =>
-    idx.forEach((i) => (reasonOf[i] ??= reason));
+  const flag = (index: readonly number[], reason: CapReason) =>
+    index.forEach((i) => (reasonOf[i] ??= reason));
 
   // Rows by limit group: owned rows by person, joint rows apart.
   const groups = new Map<
@@ -338,9 +338,9 @@ export function capContributionsByLimitGroup(
     const cfg = getAccountTypeConfig(type as AccountCategory);
     const coverageMatters = !!cfg.irsLimitKeys!.coverageVariant;
     const coverage = new Map(
-      [...byPerson].map(([pid, idx]) => [
+      [...byPerson].map(([pid, index]) => [
         pid,
-        coverageMatters ? personCoverage(idx.map((i) => rows[i]!)) : null,
+        coverageMatters ? personCoverage(index.map((i) => rows[i]!)) : null,
       ]),
     );
     const jointCoverage = coverageMatters
@@ -354,27 +354,27 @@ export function capContributionsByLimitGroup(
     const sizeFor = (pid: number, cov: string | null) =>
       sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits);
     /** Employer money that counts for these rows at `factor`. */
-    const employerOf = (idx: readonly number[], factor = 1) =>
+    const employerOf = (index: readonly number[], factor = 1) =>
       !cfg.matchCountsTowardLimit
         ? 0
         : ctx.employerAt
           ? Math.max(
               0,
               ctx.employerAt(
-                idx.map((i) => rows[i]!.id),
+                index.map((i) => rows[i]!.id),
                 factor,
               ),
             )
-          : sumBy(idx, (i) => Math.max(0, rows[i]!.employerAnnual));
+          : sumBy(index, (i) => Math.max(0, rows[i]!.employerAnnual));
     const participant = (
       pid: number,
-      idx: number[],
+      index: number[],
       ownRoom: number,
     ): Participant => ({
       personId: pid,
-      rowIdx: idx,
-      employee: sumBy(idx, (i) => kept[i]!),
-      employerAt: (f) => employerOf(idx, f),
+      rowIndex: index,
+      employee: sumBy(index, (i) => kept[i]!),
+      employerAt: (f) => employerOf(index, f),
       ownRoom,
     });
     const apply = (parts: readonly Participant[], sharedLimit: number) => {
@@ -388,13 +388,13 @@ export function capContributionsByLimitGroup(
         );
         const max = maxEmployeeFor(p, sharedLimit - othersNeed);
         const factor = factors.get(p.personId)!;
-        for (const i of p.rowIdx) {
+        for (const i of p.rowIndex) {
           kept[i] = kept[i]! * factor;
           factorOf[i] = factor;
           limitOf[i] = sharedLimit + p.ownRoom;
           maxOf[i] = max;
         }
-        if (employerOver) flag(p.rowIdx, "employer-over-limit");
+        if (employerOver) flag(p.rowIndex, "employer-over-limit");
       }
     };
 
@@ -421,16 +421,16 @@ export function capContributionsByLimitGroup(
         );
       }
     } else {
-      for (const [pid, idx] of byPerson) {
+      for (const [pid, index] of byPerson) {
         const size = sizeFor(pid, coverage.get(pid) ?? null);
         if (typeof size === "string") {
-          flag(idx, size);
+          flag(index, size);
           continue;
         }
-        if (ageOf.get(pid) == null) flag(idx, "no-birth-date");
+        if (ageOf.get(pid) == null) flag(index, "no-birth-date");
         if (coverageMatters && coverage.get(pid) == null)
-          flag(idx, "no-coverage");
-        apply([participant(pid, idx, 0)], size.base + size.catchup);
+          flag(index, "no-coverage");
+        apply([participant(pid, index, 0)], size.base + size.catchup);
         groupLimits.set(
           group,
           (groupLimits.get(group) ?? 0) + size.base + size.catchup,
@@ -461,8 +461,9 @@ export function capContributionsByLimitGroup(
       household -
       sumBy(
         [...byPerson.values()],
-        (idx) =>
-          sumBy(idx, (i) => kept[i]!) + employerOf(idx, factorOf[idx[0]!]!),
+        (index) =>
+          sumBy(index, (i) => kept[i]!) +
+          employerOf(index, factorOf[index[0]!]!),
       );
     const jointPart = participant(-1, joint, 0);
     const room = maxEmployeeFor(jointPart, Math.max(0, ownedRoom));
@@ -506,38 +507,38 @@ export function capContributionsByLimitGroup(
     bounded.set(group, [...(bounded.get(group) ?? []), i]);
   });
   /** Hold the rows within `room`; each person's max is room less the others. */
-  const holdTo = (idx: readonly number[], room: number) => {
-    const total = sumBy(idx, (i) => kept[i]!);
+  const holdTo = (index: readonly number[], room: number) => {
+    const total = sumBy(index, (i) => kept[i]!);
     const factor = total > room ? room / total : 1;
-    for (const i of idx) {
+    for (const i of index) {
       kept[i] = kept[i]! * factor;
       if (factor < 1) reasonOf[i] = "over-compensation";
     }
-    for (const i of idx) {
-      const others = sumBy(idx, (j) =>
+    for (const i of index) {
+      const others = sumBy(index, (j) =>
         rows[j]!.personId === rows[i]!.personId ? 0 : kept[j]!,
       );
       maxOf[i] = Math.min(maxOf[i] ?? Infinity, Math.max(0, room - others));
     }
   };
   const spousal = includes(SPOUSAL_IRA_FILING_STATUSES, ctx.filingStatus);
-  for (const idx of bounded.values()) {
+  for (const index of bounded.values()) {
     if (spousal) {
       // Everyone's compensation counts, IRA or not — usually only the
       // spouse without pay contributes. Unknown for anyone = no bound.
       const comps = [...compensation.values()];
       if (comps.every((c) => c !== null))
         holdTo(
-          idx,
+          index,
           sumBy(comps, (c) => c!),
         );
       continue;
     }
-    for (const pid of new Set(idx.map((i) => rows[i]!.personId!))) {
+    for (const pid of new Set(index.map((i) => rows[i]!.personId!))) {
       const comp = compensation.get(pid) ?? null;
       if (comp !== null)
         holdTo(
-          idx.filter((i) => rows[i]!.personId === pid),
+          index.filter((i) => rows[i]!.personId === pid),
           comp,
         );
     }

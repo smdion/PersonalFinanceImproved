@@ -144,13 +144,13 @@ export const itemProcedures = {
         .orderBy(asc(schema.budgetItems.sortOrder));
 
       const blocks = groupItemsByCategory(items);
-      const idx = blocks.findIndex((b) => b.category === input.category);
-      if (idx === -1) return { ok: true };
+      const index = blocks.findIndex((b) => b.category === input.category);
+      if (index === -1) return { ok: true };
 
-      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      const swapWith = input.direction === "up" ? index - 1 : index + 1;
       if (swapWith < 0 || swapWith >= blocks.length) return { ok: true };
 
-      [blocks[idx], blocks[swapWith]] = [blocks[swapWith]!, blocks[idx]!];
+      [blocks[index], blocks[swapWith]] = [blocks[swapWith]!, blocks[index]!];
       await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };
     }),
@@ -184,15 +184,15 @@ export const itemProcedures = {
       const block = blocks.find((b) => b.category === target.category);
       if (!block) return { ok: true };
 
-      const idx = block.items.findIndex((i) => i.id === target.id);
-      if (idx === -1) return { ok: true };
+      const index = block.items.findIndex((i) => i.id === target.id);
+      if (index === -1) return { ok: true };
 
-      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      const swapWith = input.direction === "up" ? index - 1 : index + 1;
       if (swapWith < 0 || swapWith >= block.items.length) return { ok: true };
 
-      [block.items[idx], block.items[swapWith]] = [
+      [block.items[index], block.items[swapWith]] = [
         block.items[swapWith]!,
-        block.items[idx]!,
+        block.items[index]!,
       ];
       await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };

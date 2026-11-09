@@ -185,9 +185,9 @@ export async function computeRelocationAnalysis(
         numColumns,
         activeProfiles,
       );
-      const totals = labels.map((_: string, colIdx: number) =>
+      const totals = labels.map((_: string, colIndex: number) =>
         resolvedItems.reduce(
-          (sum: number, item) => sum + (item.amounts[colIdx] ?? 0),
+          (sum: number, item) => sum + (item.amounts[colIndex] ?? 0),
           0,
         ),
       );

@@ -108,9 +108,9 @@ export function performanceChecks(
   const byPart = new Map<string, CheckRow>();
   for (const r of rows) {
     if (r.performanceAccountId == null) continue;
-    const acct = `${r.performanceAccountId}|${r.year}`;
+    const account = `${r.performanceAccountId}|${r.year}`;
     const part = `${ownerKey(r.performanceAccountId, r.ownerPersonId)}|${r.year}`;
-    count.set(acct, (count.get(acct) ?? 0) + 1);
+    count.set(account, (count.get(account) ?? 0) + 1);
     count.set(part, (count.get(part) ?? 0) + 1);
     byPart.set(part, r);
   }

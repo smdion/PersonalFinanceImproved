@@ -171,10 +171,10 @@ export function perContribRows(
       : null;
     const siblingAnnualTotal = group
       ? computeSiblingTotal(
-          rawContribs.map((rc, idx) => ({
+          rawContribs.map((rc, index) => ({
             accountType: rc.accountType,
-            annualContribution: accounts[idx]!.annualContribution,
-            employerMatch: accounts[idx]!.employerMatch,
+            annualContribution: accounts[index]!.annualContribution,
+            employerMatch: accounts[index]!.employerMatch,
           })),
           i,
           cfg?.matchCountsTowardLimit ?? false,

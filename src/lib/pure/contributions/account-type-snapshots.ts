@@ -47,7 +47,7 @@ export function newCategoryMap() {
       ytdDataStale: boolean;
       performanceAccountIds: Set<number>;
       /** Sum of this account's percent-of-pay elections; null once any of its contributions is a fixed amount. */
-      electedPct: number | null;
+      electedPercent: number | null;
       /** What the bonus check takes for it (bonusCheckContribution). */
       bonus: number;
       fullMatchShareOfPay: number | null;
@@ -95,7 +95,7 @@ export function accountTypeSnapshots(
     // The payroll election as set up ("15% of pay"), not dollars ÷
     // salary — that ratio mixed in bonus-check money and differed
     // from what the household actually elects.
-    const currentPctOfSalary = data.electedPct;
+    const currentPctOfSalary = data.electedPercent;
 
     const ytdActualForCategory =
       data.ytdContributions > 0 || data.ytdEmployerMatch > 0
@@ -224,29 +224,29 @@ export function contributionTotals(
   // YTD actuals from performance data — sum by parent category
   const ytdActualRetirement = roundToCents(
     perContribData
-      .filter((_pcd, idx) =>
-        isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+      .filter((_pcd, index) =>
+        isRetirementParent(rawContribs[index]?.parentCategory ?? ""),
       )
       .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
   );
   const ytdActualPortfolio = roundToCents(
     perContribData
-      .filter((_pcd, idx) =>
-        isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+      .filter((_pcd, index) =>
+        isPortfolioParent(rawContribs[index]?.parentCategory ?? ""),
       )
       .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
   );
   const ytdActualRetirementMatch = roundToCents(
     perContribData
-      .filter((_pcd, idx) =>
-        isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+      .filter((_pcd, index) =>
+        isRetirementParent(rawContribs[index]?.parentCategory ?? ""),
       )
       .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
   );
   const ytdActualPortfolioMatch = roundToCents(
     perContribData
-      .filter((_pcd, idx) =>
-        isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+      .filter((_pcd, index) =>
+        isPortfolioParent(rawContribs[index]?.parentCategory ?? ""),
       )
       .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
   );

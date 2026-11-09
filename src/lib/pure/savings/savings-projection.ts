@@ -238,8 +238,8 @@ export function projectGoalBalances(
     const mk = monthKey(monthDates[i]!);
     const events = txByMonth?.get(mk) ?? null;
     const overrideAmount = overrideMap.get(mk);
-    const yr = monthDates[i]!.getFullYear();
-    const defaultAllocation = allocationForYear(goal.monthlyAllocation, yr);
+    const year = monthDates[i]!.getFullYear();
+    const defaultAllocation = allocationForYear(goal.monthlyAllocation, year);
     const allocation =
       overrideAmount !== undefined ? overrideAmount : defaultAllocation;
     if (i === 0 && goal.currentMonthBudgeted != null) {
@@ -336,13 +336,13 @@ export function computeDerivedPoolByYear(
   const derivedPoolByYear = new Map<number, number>();
   derivedPoolByYear.set(startYear, maxMonthlyFunding);
 
-  for (let yr = startYear + 1; yr <= startYear + projectionYears; yr++) {
+  for (let year = startYear + 1; year <= startYear + projectionYears; year++) {
     let projectedMonthlyNet = 0;
     for (const earner of earners) {
       const perMonth = earner.budgetPerMonth ?? earner.periodsPerYear / 12;
       const raises = earner.yearlyGrowth ?? {};
       let netPerCheck = earner.netPay;
-      for (let y = startYear + 1; y <= yr; y++) {
+      for (let y = startYear + 1; y <= year; y++) {
         const e = raises[String(y)];
         if (!e || e.value === 0) continue;
         netPerCheck =
@@ -353,7 +353,7 @@ export function computeDerivedPoolByYear(
       projectedMonthlyNet += netPerCheck * perMonth;
     }
     derivedPoolByYear.set(
-      yr,
+      year,
       Math.max(0, projectedMonthlyNet - budgetMonthlyTotal),
     );
   }

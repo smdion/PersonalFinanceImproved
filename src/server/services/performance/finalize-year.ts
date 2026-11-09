@@ -80,13 +80,13 @@ export async function finalizePerformanceYear(
     }
 
     // 1. Get all account_performance rows for this year
-    const finalizedAccts = await tx
+    const finalizedAccounts = await tx
       .select()
       .from(schema.accountPerformance)
       .where(eq(schema.accountPerformance.year, year));
 
     // Guard: reject if no account data exists for this year
-    if (finalizedAccts.length === 0) {
+    if (finalizedAccounts.length === 0) {
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: `No account performance data exists for year ${year}. Add account data before finalizing.`,
@@ -110,7 +110,7 @@ export async function finalizePerformanceYear(
     // Categories derived from accountType (Brokerage, HSA, 401k/IRA), not parentCategory
     const accountCategories = Array.from(
       new Set(
-        finalizedAccts.map((a) => getEffectiveCategory(a, finalizeLookups)),
+        finalizedAccounts.map((a) => getEffectiveCategory(a, finalizeLookups)),
       ),
     );
 
@@ -119,7 +119,7 @@ export async function finalizePerformanceYear(
 
     // First pass: finalize per-category rows
     for (const category of accountCategories) {
-      const catAccounts = finalizedAccts.filter(
+      const catAccounts = finalizedAccounts.filter(
         (a) => getEffectiveCategory(a, finalizeLookups) === category,
       );
       if (catAccounts.length === 0) continue;
@@ -201,7 +201,7 @@ export async function finalizePerformanceYear(
         allPerfAccounts.filter((m) => m.isActive).map((m) => m.id),
       );
       const activeAccounts = filterAccountsForNextYear(
-        finalizedAccts,
+        finalizedAccounts,
         activeMasterIds,
       );
 
@@ -268,7 +268,7 @@ export async function finalizePerformanceYear(
     // Portfolio data comes from finalized account_performance; non-portfolio from app state
     // (allPerfAccounts already loaded above)
 
-    const portfolioTotal = computePortfolioTotal(finalizedAccts);
+    const portfolioTotal = computePortfolioTotal(finalizedAccounts);
 
     // Non-portfolio data from app state + item tables
     const [

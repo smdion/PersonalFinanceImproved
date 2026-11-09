@@ -46,13 +46,13 @@ export type SimpleTaxModeParts = {
  *  are marked as Portfolio savings. */
 function withRetirementLumpSums<T extends { lumpSums?: LumpSum[] }>(
   override: T,
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
 ): T {
   if (!override.lumpSums) return override;
   return {
     ...override,
     lumpSums: override.lumpSums.filter((ls) => {
-      const target = resolveLumpSumTarget(ls, indAccts);
+      const target = resolveLumpSumTarget(ls, indAccounts);
       return target
         ? isRetirementMoney(target.parentCategory)
         : isRetirementMoney(ls.targetParentCategory);
@@ -64,14 +64,14 @@ export function toSimpleTaxMode(
   input: ProjectionInput,
   parts: SimpleTaxModeParts,
 ): ProjectionInput {
-  const indAccts = input.individualAccounts ?? [];
+  const indAccounts = input.individualAccounts ?? [];
   const b = parts.retirementBuckets;
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
     isRetirementMoney(s.parentCategory);
   // The ramp is Portfolio savings whenever there's a real Portfolio
   // brokerage to hold it (the engine's rule); otherwise retirement money.
-  const hasPortfolioBrokerage = indAccts.some(
+  const hasPortfolioBrokerage = indAccounts.some(
     (ia) =>
       isOverflowTarget(ia.category) &&
       !ia.projectedOnly &&
@@ -146,10 +146,10 @@ export function toSimpleTaxMode(
       ? 0
       : input.brokerageContributionRamp,
     accumulationOverrides: input.accumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccts),
+      withRetirementLumpSums(o, indAccounts),
     ),
     decumulationOverrides: input.decumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccts),
+      withRetirementLumpSums(o, indAccounts),
     ),
     // Simple discards account identity: the one pot is the only
     // representation (per-account tracking would route withdrawals against

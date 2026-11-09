@@ -362,11 +362,11 @@ export function buildCorrelationMatrix(
     Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
   );
 
-  const idToIdx = new Map(assetClasses.map((ac, i) => [ac.id, i]));
+  const idToIndex = new Map(assetClasses.map((ac, i) => [ac.id, i]));
 
   for (const c of correlations) {
-    const i = idToIdx.get(c.classAId);
-    const j = idToIdx.get(c.classBId);
+    const i = idToIndex.get(c.classAId);
+    const j = idToIndex.get(c.classBId);
     if (i !== undefined && j !== undefined) {
       matrix[i]![j] = c.correlation;
       matrix[j]![i] = c.correlation; // symmetric

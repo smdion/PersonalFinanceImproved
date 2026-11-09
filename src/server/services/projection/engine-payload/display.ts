@@ -38,8 +38,8 @@ export async function budgetSummaries(
           salaryProfileId: opts.salaryProfileId ?? null,
         },
       );
-      const totals = labels.map((_: string, colIdx: number) =>
-        sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
+      const totals = labels.map((_: string, colIndex: number) =>
+        sumBy(resolvedItems, (item) => item.amounts[colIndex] ?? 0),
       );
       const weightedAnnualTotal = months
         ? roundToCents(

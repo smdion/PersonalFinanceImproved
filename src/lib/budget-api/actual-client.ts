@@ -422,32 +422,32 @@ export class ActualClient implements BudgetAPIClient {
     // wrapper struggles under concurrency). Still failing, the sync stops: a
     // missing balance would be written as $0 over the good cache.
     const failed: BudgetAccount[] = [];
-    await inBatches(accounts, WRAPPER_BATCH_SIZE, async (acct) => {
+    await inBatches(accounts, WRAPPER_BATCH_SIZE, async (account) => {
       try {
         // Same endpoint/shape as getAccountBalance below.
-        const balance = await this.getAccountBalance(acct.id);
-        acct.balance = balance;
-        acct.clearedBalance = balance;
+        const balance = await this.getAccountBalance(account.id);
+        account.balance = balance;
+        account.clearedBalance = balance;
       } catch (err) {
         if (!isTransientError(err)) throw err;
-        failed.push(acct);
+        failed.push(account);
       }
     });
     const unavailable: string[] = [];
     let lastError: BudgetApiError | undefined;
-    for (const acct of failed) {
+    for (const account of failed) {
       try {
-        const balance = await this.getAccountBalance(acct.id);
-        acct.balance = balance;
-        acct.clearedBalance = balance;
+        const balance = await this.getAccountBalance(account.id);
+        account.balance = balance;
+        account.clearedBalance = balance;
       } catch (err) {
         if (!isTransientError(err)) throw err;
         lastError = err as BudgetApiError;
         log("warn", "actual_client.balance_fetch_failed", {
-          accountId: acct.id,
+          accountId: account.id,
           error: lastError.message,
         });
-        unavailable.push(acct.name);
+        unavailable.push(account.name);
       }
     }
     // Keeps the failure's code, so a caller can tell a timeout from a 5xx.
@@ -651,17 +651,17 @@ export class ActualClient implements BudgetAPIClient {
     const payeeNameById = payeeNames(payees.data, accounts.data);
     const allTx: BudgetTransaction[] = [];
 
-    for (const acct of accounts.data) {
-      if (acct.closed) continue;
+    for (const account of accounts.data) {
+      if (account.closed) continue;
       try {
         const res = await this.request(
-          `/accounts/${acct.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+          `/accounts/${account.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
           actualSchemas.transactions,
         );
         allTx.push(
           ...res.data.map((t) =>
             mapTransaction(t, {
-              accountName: acct.name,
+              accountName: account.name,
               categories: categoryNames,
               payees: payeeNameById,
             }),
@@ -673,18 +673,18 @@ export class ActualClient implements BudgetAPIClient {
         // would be cached as a complete transaction list.
         if (err instanceof BudgetApiError && err.status === 404) continue;
         log("warn", "actual_client.transactions_fetch_failed", {
-          accountId: acct.id,
+          accountId: account.id,
           error: err instanceof Error ? err.message : String(err),
         });
         const reason = err instanceof Error ? err.message : String(err);
         if (err instanceof BudgetApiError) {
           throw retold(
             err,
-            `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+            `Actual didn't return transactions for ${account.name} — nothing was synced: ${reason}`,
           );
         }
         throw new Error(
-          `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+          `Actual didn't return transactions for ${account.name} — nothing was synced: ${reason}`,
         );
       }
     }

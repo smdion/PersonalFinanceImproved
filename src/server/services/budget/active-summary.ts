@@ -195,7 +195,9 @@ export async function computeBudgetActiveSummary(
   const applyItemActiveFields = (itemId: number, amounts: number[]) =>
     itemActiveMap.size === 0
       ? amounts
-      : amounts.map((amt, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amt);
+      : amounts.map(
+          (amount, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amount,
+        );
   const budgetItems = items.map((i) => {
     const resolved = resolvedItemsById.get(i.id)!;
     if (!i.contributionAccountId)
@@ -231,8 +233,8 @@ export async function computeBudgetActiveSummary(
   const result = calculateBudget(budgetInput);
 
   // Also compute all columns for side-by-side comparison
-  const allColumnResults = columnLabels.map((_: string, colIdx: number) =>
-    calculateBudget({ ...budgetInput, selectedColumn: colIdx }),
+  const allColumnResults = columnLabels.map((_: string, colIndex: number) =>
+    calculateBudget({ ...budgetInput, selectedColumn: colIndex }),
   );
 
   // Raw items: DB amounts for editing, contribution amounts for display on linked items.

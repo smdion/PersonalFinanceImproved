@@ -72,7 +72,7 @@ export type AccountLike = {
 };
 
 /** Sum a set of account rows into a rollup. */
-export function sumAccounts(accts: AccountLike[]) {
+export function sumAccounts(accounts: AccountLike[]) {
   let beginBal = 0,
     contribs = 0,
     gainLoss = 0,
@@ -81,7 +81,7 @@ export function sumAccounts(accts: AccountLike[]) {
     distributions = 0,
     fees = 0,
     rollovers = 0;
-  for (const a of accts) {
+  for (const a of accounts) {
     beginBal += toNumber(a.beginningBalance);
     contribs += toNumber(a.totalContributions);
     gainLoss += toNumber(a.yearlyGainLoss);
@@ -489,10 +489,10 @@ type SeedableAccount = {
  * Only active accounts whose master record is also active qualify.
  */
 export function filterAccountsForNextYear<T extends SeedableAccount>(
-  finalizedAccts: T[],
+  finalizedAccounts: T[],
   activeMasterIds: Set<number>,
 ): T[] {
-  return finalizedAccts.filter((a) => {
+  return finalizedAccounts.filter((a) => {
     if (!a.isActive) return false;
     if (a.performanceAccountId && !activeMasterIds.has(a.performanceAccountId))
       return false;

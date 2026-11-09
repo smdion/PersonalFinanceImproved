@@ -328,26 +328,26 @@ export const yearRecordProcedures = {
         // One query at a time on the transaction's connection.
         for (const { year } of years)
           before.push(await captureYearRollups(tx, year));
-        for (const acct of input.accounts) {
+        for (const account of input.accounts) {
           await tx
             .update(schema.accountPerformance)
             .set({
-              ...(acct.beginningBalance !== undefined && {
-                beginningBalance: acct.beginningBalance,
+              ...(account.beginningBalance !== undefined && {
+                beginningBalance: account.beginningBalance,
               }),
-              ...(acct.estimatedFields && {
-                estimatedFields: parseEstimatedFields(acct.estimatedFields),
+              ...(account.estimatedFields && {
+                estimatedFields: parseEstimatedFields(account.estimatedFields),
               }),
-              ...(acct.note !== undefined && { note: acct.note || null }),
-              totalContributions: acct.totalContributions,
-              employerContributions: acct.employerContributions,
-              distributions: acct.distributions,
-              rollovers: acct.rollovers,
-              fees: acct.fees,
-              endingBalance: acct.endingBalance,
-              yearlyGainLoss: acct.yearlyGainLoss,
+              ...(account.note !== undefined && { note: account.note || null }),
+              totalContributions: account.totalContributions,
+              employerContributions: account.employerContributions,
+              distributions: account.distributions,
+              rollovers: account.rollovers,
+              fees: account.fees,
+              endingBalance: account.endingBalance,
+              yearlyGainLoss: account.yearlyGainLoss,
             })
-            .where(eq(schema.accountPerformance.id, acct.id));
+            .where(eq(schema.accountPerformance.id, account.id));
         }
         for (const b of before) await syncYearRollups(tx, b);
         await stampPerformanceUpdated(tx);

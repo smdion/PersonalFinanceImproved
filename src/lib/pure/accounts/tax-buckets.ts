@@ -317,8 +317,8 @@ export function computeTaxBucketBreakdown(
   }
   const totalByCategory: Record<string, number> = {};
   for (const personBals of Object.values(balanceByPersonByCategory)) {
-    for (const [cat, amt] of Object.entries(personBals)) {
-      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amt;
+    for (const [cat, amount] of Object.entries(personBals)) {
+      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amount;
     }
   }
   const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
@@ -326,10 +326,10 @@ export function computeTaxBucketBreakdown(
   for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
     ownershipByPerson[name] = {};
     let personTotal = 0;
-    for (const [cat, amt] of Object.entries(personBals)) {
+    for (const [cat, amount] of Object.entries(personBals)) {
       const catTotal = totalByCategory[cat] ?? 1;
-      ownershipByPerson[name][cat] = safeDivide(amt, catTotal, 0);
-      personTotal += amt;
+      ownershipByPerson[name][cat] = safeDivide(amount, catTotal, 0);
+      personTotal += amount;
     }
     ownershipByPerson[name]._overall = safeDivide(
       personTotal,

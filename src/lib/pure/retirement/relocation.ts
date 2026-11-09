@@ -73,9 +73,9 @@ export function precomputePurchases(
   purchases: RelocationPurchaseInput[],
 ): PurchasePrecomputed[] {
   return purchases.map((p) => {
-    const downPct = p.downPaymentPercent ?? 1; // default = all-cash
-    const cashOutlay = roundToCents(p.purchasePrice * downPct);
-    const financedPrincipal = roundToCents(p.purchasePrice * (1 - downPct));
+    const downPercent = p.downPaymentPercent ?? 1; // default = all-cash
+    const cashOutlay = roundToCents(p.purchasePrice * downPercent);
+    const financedPrincipal = roundToCents(p.purchasePrice * (1 - downPercent));
     const termYears = p.loanTermYears ?? 0;
     const monthlyPayment = roundToCents(
       calculateLoanMonthlyPayment(
@@ -201,7 +201,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   );
   // Decimal fraction (0.40 = 40%), consistent with every other *Percent/*Rate
   // field in the engine — the display site uses formatPercent().
-  const pctIncrease = safeDivide(annualDelta, currentAnnual, 0);
+  const percentIncrease = safeDivide(annualDelta, currentAnnual, 0);
 
   // Pre-compute large purchase data
   const purchaseData = precomputePurchases(largePurchases);
@@ -466,7 +466,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
     relocationAnnualExpenses: relocationAnnual,
     annualExpenseDelta: annualDelta,
     monthlyExpenseDelta: monthlyDelta,
-    percentExpenseIncrease: pctIncrease,
+    percentExpenseIncrease: percentIncrease,
     currentSavingsRate,
     relocationSavingsRate,
     savingsRateDrop,

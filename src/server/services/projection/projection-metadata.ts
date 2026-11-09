@@ -68,7 +68,7 @@ export function projectionContributionSpecs(
     // Match to portfolio account display name using same cascade as engine
     const matchTaxType =
       portfolioTaxTypeOf(rest.taxTreatment) ?? rest.taxTreatment;
-    const catAccts = accountBreakdownByCategory[rest.category] ?? [];
+    const catAccounts = accountBreakdownByCategory[rest.category] ?? [];
     const exactOwner = (a: { ownerPersonId?: number; ownerName?: string }) =>
       a.ownerPersonId != null && personId != null
         ? a.ownerPersonId === personId
@@ -80,15 +80,17 @@ export function projectionContributionSpecs(
         return a.parentCategory === parentCategory;
       return true;
     };
-    const matchedAcct =
-      catAccts.find(
+    const matchedAccount =
+      catAccounts.find(
         (a) => exactOwner(a) && a.taxType === matchTaxType && parentCatMatch(a),
       ) ??
-      catAccts.find(
+      catAccounts.find(
         (a) => noOwner(a) && a.taxType === matchTaxType && parentCatMatch(a),
       ) ??
-      catAccts.find((a) => exactOwner(a) && parentCatMatch(a)) ??
-      catAccts.find((a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a));
+      catAccounts.find((a) => exactOwner(a) && parentCatMatch(a)) ??
+      catAccounts.find(
+        (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
+      );
     // Fallback: use linked performance account's display name,
     // routed through the shared precedence rule (portfolio-labels.ts)
     // so THIS contribution row's own real owner (personId) wins over
@@ -96,18 +98,18 @@ export function projectionContributionSpecs(
     // (e.g. one Vanguard IRA both spouses contribute to separately)
     // has ownershipType "joint", which would otherwise render "Joint
     // ..." for every such row instead of each person's own name.
-    const perfAcct = contrib?.performanceAccountId
+    const perfAccount = contrib?.performanceAccountId
       ? perfAccountMap.get(contrib.performanceAccountId)
       : undefined;
-    const perfFallback = perfAcct
-      ? portfolioAccountLabel(perfAcct, perfAcct, personId, nameMap)
+    const perfFallback = perfAccount
+      ? portfolioAccountLabel(perfAccount, perfAccount, personId, nameMap)
       : undefined;
     return {
       ...rest,
       personId,
       parentCategory,
       // Prefer perf account name, fall back to portfolio match name
-      accountDisplayName: perfFallback ?? matchedAcct?.name,
+      accountDisplayName: perfFallback ?? matchedAccount?.name,
     };
   });
 }

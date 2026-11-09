@@ -116,8 +116,8 @@ export function runTrials(
 
     // Generate randomized return rates for this trial
     const trialReturnRates: { label: string; rate: number }[] = [];
-    for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
-      const age = startAge + yearIdx;
+    for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
+      const age = startAge + yearIndex;
       // Correlated log-normal draws, centered on the asset class means and
       // blended by this age's glide path.
       let annualReturn = sampleBlendedReturn(
@@ -155,10 +155,11 @@ export function runTrials(
     // Today's dollars for this trial: deflated by the inflation it ran with
     // (the app's convention — the general rate, every year), so a hot trial
     // reads poorer in today's dollars than a cool one with the same balance.
-    const todayDeflator = (yearIdx: number) => trialInflation.growth(yearIdx);
+    const todayDeflator = (yearIndex: number) =>
+      trialInflation.growth(yearIndex);
     if (inflationShocks)
-      for (let yearIdx = 0; yearIdx < numYears; yearIdx++)
-        priceLevelsByYear[yearIdx]!.push(todayDeflator(yearIdx));
+      for (let yearIndex = 0; yearIndex < numYears; yearIndex++)
+        priceLevelsByYear[yearIndex]!.push(todayDeflator(yearIndex));
     const pvDeflator = todayDeflator(yearsToRetirement);
 
     // Build modified engine input for this trial.
@@ -175,23 +176,25 @@ export function runTrials(
     // Retirement money (A6): Portfolio balances never fund retirement, so
     // the bands, median and terminal balances leave them out.
     for (
-      let yearIdx = 0;
-      yearIdx < numYears && yearIdx < result.projectionByYear.length;
-      yearIdx++
+      let yearIndex = 0;
+      yearIndex < numYears && yearIndex < result.projectionByYear.length;
+      yearIndex++
     ) {
-      const balance = result.projectionByYear[yearIdx]!.retirementBalance;
-      balancesByYear[yearIdx]!.push(roundToCents(balance));
-      balancesTodayByYear[yearIdx]!.push(
-        roundToCents(balance / todayDeflator(yearIdx)),
+      const balance = result.projectionByYear[yearIndex]!.retirementBalance;
+      balancesByYear[yearIndex]!.push(roundToCents(balance));
+      balancesTodayByYear[yearIndex]!.push(
+        roundToCents(balance / todayDeflator(yearIndex)),
       );
     }
 
     // Terminal balance
-    const lastIdx = result.projectionByYear.length - 1;
-    const lastYear = result.projectionByYear[lastIdx];
+    const lastIndex = result.projectionByYear.length - 1;
+    const lastYear = result.projectionByYear[lastIndex];
     terminalBalances.push(roundToCents(lastYear?.retirementBalance ?? 0));
     terminalBalancesToday.push(
-      roundToCents((lastYear?.retirementBalance ?? 0) / todayDeflator(lastIdx)),
+      roundToCents(
+        (lastYear?.retirementBalance ?? 0) / todayDeflator(lastIndex),
+      ),
     );
 
     // One judge (plan-outcome.ts): the trial fails when retirement money
@@ -238,11 +241,14 @@ export function runTrials(
     if (decYears.length > 0) {
       const year1Withdrawal = decYears[0]!.totalWithdrawal;
       // Year 1's withdrawal, kept up with the inflation this trial saw.
-      const firstDecIdx =
+      const firstDecumulationIndex =
         decYears[0]!.year - engineInput.asOfDate.getFullYear();
       const inflatedYear1 = (i: number) =>
         year1Withdrawal *
-        trialInflation.growthBetween(firstDecIdx, firstDecIdx + i);
+        trialInflation.growthBetween(
+          firstDecumulationIndex,
+          firstDecumulationIndex + i,
+        );
       const isStable =
         year1Withdrawal === 0 ||
         decYears.every((y, i) => {

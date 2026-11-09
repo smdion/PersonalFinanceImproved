@@ -250,7 +250,7 @@ export async function computeSyncPreview(
     ownerPersonId: number | null;
   }> = [];
   if (latestSnapshot) {
-    const [snapAccts, allPeople, perfAccounts] = await Promise.all([
+    const [snapAccounts, allPeople, perfAccounts] = await Promise.all([
       ctx.db
         .select()
         .from(schema.portfolioAccounts)
@@ -280,7 +280,7 @@ export async function computeSyncPreview(
         balance: number;
       }
     >();
-    for (const a of snapAccts) {
+    for (const a of snapAccounts) {
       if (!a.performanceAccountId) continue;
       const perf = perfMap.get(a.performanceAccountId);
       const label = portfolioAccountLabel(a, perf, a.ownerPersonId, peopleMap);

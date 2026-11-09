@@ -142,7 +142,7 @@ export async function refreshSnapshotYearDerivatives(
     .limit(1);
   if (finalized) return "year-finalized";
 
-  const currentYearAcctPerf = await tx
+  const currentYearAccountPerf = await tx
     .select()
     .from(schema.accountPerformance)
     .where(eq(schema.accountPerformance.year, snapshotYear));
@@ -152,31 +152,31 @@ export async function refreshSnapshotYearDerivatives(
   const before = await captureYearRollups(tx, snapshotYear);
 
   const updatedPerfIds = new Set<number>();
-  for (const acctPerf of currentYearAcctPerf) {
+  for (const accountPerf of currentYearAccountPerf) {
     if (
-      acctPerf.performanceAccountId &&
-      perfTotals.has(acctPerf.performanceAccountId)
+      accountPerf.performanceAccountId &&
+      perfTotals.has(accountPerf.performanceAccountId)
     ) {
-      if (updatedPerfIds.has(acctPerf.performanceAccountId)) {
+      if (updatedPerfIds.has(accountPerf.performanceAccountId)) {
         log("warn", "snapshot_sync_duplicate_perf_row", {
-          acctPerfId: acctPerf.id,
-          performanceAccountId: acctPerf.performanceAccountId,
+          accountPerfId: accountPerf.id,
+          performanceAccountId: accountPerf.performanceAccountId,
           year: snapshotYear,
         });
         continue;
       }
-      updatedPerfIds.add(acctPerf.performanceAccountId);
-      const newBalance = perfTotals.get(acctPerf.performanceAccountId)!;
+      updatedPerfIds.add(accountPerf.performanceAccountId);
+      const newBalance = perfTotals.get(accountPerf.performanceAccountId)!;
       // A snapshot is a real balance: the ending is no longer an estimate.
       await tx
         .update(schema.accountPerformance)
         .set({
           endingBalance: newBalance.toFixed(2),
           estimatedFields: parseEstimatedFields(
-            acctPerf.estimatedFields,
+            accountPerf.estimatedFields,
           ).filter((f) => f !== "endingBalance"),
         })
-        .where(eq(schema.accountPerformance.id, acctPerf.id));
+        .where(eq(schema.accountPerformance.id, accountPerf.id));
     }
   }
 

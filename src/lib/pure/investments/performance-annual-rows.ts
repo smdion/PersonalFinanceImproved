@@ -122,7 +122,7 @@ export function performanceAnnualRows(
   // For each year with account data, synthesize missing annual rows and recompute current-year rows
   for (const year of Array.from(allAccountYears)) {
     const yearAccounts = accounts.filter((a) => a.year === year);
-    const isCurrentYr = year === currentYear;
+    const isCurrentYear = year === currentYear;
 
     // Check if an annual row for this year exists at all (for isFinalized/isCurrentYear flags)
     const existingRow = annualRows.find((r) => r.year === year);
@@ -163,7 +163,7 @@ export function performanceAnnualRows(
           lifetimeGains: 0,
           lifetimeContributions: 0,
           lifetimeMatch: 0,
-          isCurrentYear: isCurrentYr,
+          isCurrentYear: isCurrentYear,
           isFinalized: existingRow?.isFinalized ?? false,
         });
         existingAnnual.add(key);
@@ -255,7 +255,7 @@ export function performanceAnnualRows(
           lifetimeGains: ps.lifetimeGains,
           lifetimeContributions: ps.lifetimeContribs,
           lifetimeMatch: ps.lifetimeMatch,
-          isCurrentYear: isCurrentYr,
+          isCurrentYear: isCurrentYear,
           isFinalized: existingRow?.isFinalized ?? false,
         });
       }
@@ -397,7 +397,7 @@ export function addRetirementRollup(
     brokLtContribs = 0,
     brokLtMatch = 0;
   for (const year of retYears) {
-    const isCurrentYr = year === currentYear;
+    const isCurrentYear = year === currentYear;
     const existingRow = annualRows.find((r) => r.year === year);
 
     // Sum from annual rows for fully-Retirement categories
@@ -407,8 +407,8 @@ export function addRetirementRollup(
     const annualSums = sumAnnualRows(catAnnualRows);
 
     // Add Retirement-parentCategory brokerage accounts
-    const retBrokAccts = retBrokerageByYear.get(String(year)) ?? [];
-    const brokSums = sumAccounts(retBrokAccts);
+    const retBrokAccounts = retBrokerageByYear.get(String(year)) ?? [];
+    const brokSums = sumAccounts(retBrokAccounts);
 
     const beginBal = annualSums.beginBal + brokSums.beginBal;
     const contribs = annualSums.contribs + brokSums.contribs;
@@ -456,7 +456,7 @@ export function addRetirementRollup(
       lifetimeGains: retLtGains,
       lifetimeContributions: retLtContribs,
       lifetimeMatch: retLtMatch,
-      isCurrentYear: isCurrentYr,
+      isCurrentYear: isCurrentYear,
       isFinalized: existingRow?.isFinalized ?? false,
     });
   }

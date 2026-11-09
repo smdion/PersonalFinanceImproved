@@ -42,13 +42,13 @@ export function buildExecutiveSummary(
   const verdict = buildVerdict(projectionResult, mcResult);
   const outcome = assessPlan(projectionResult);
 
-  const successPct = formatPercent(mcResult.successRate, 0);
+  const successPercent = formatPercent(mcResult.successRate, 0);
   const sustainablePV = formatCurrency(
     mcResult.distributions.sustainableWithdrawalPV.median,
   );
 
   const keyNumbers: { label: string; value: string }[] = [
-    { label: "Simulation success rate", value: successPct },
+    { label: "Simulation success rate", value: successPercent },
     {
       label: "Sustainable annual spending (today's dollars)",
       value: sustainablePV,
@@ -68,19 +68,19 @@ export function buildExecutiveSummary(
   let narrative: string;
   if (verdict.onTrack) {
     narrative =
-      `Based on your current savings and Retirement budget, your simulation succeeds ${successPct} of the time — ` +
+      `Based on your current savings and Retirement budget, your simulation succeeds ${successPercent} of the time — ` +
       `your retirement money is not projected to run out in the deterministic projection, and a sustainable annual ` +
       `spending level of about ${sustainablePV} (in today's dollars) holds up across most of the market ` +
       `conditions this report tested.`;
   } else if (!outcome.succeeded) {
     narrative =
-      `Your simulation succeeds ${successPct} of the time. In the deterministic projection — a single, ` +
+      `Your simulation succeeds ${successPercent} of the time. In the deterministic projection — a single, ` +
       `middle-of-the-road path — your projection ${describePlanFailure(outcome)}. ` +
       `This is worth addressing before you rely on this projection.`;
   } else {
     narrative =
       `Your deterministic projection funds every retirement year, but your simulation only succeeds ` +
-      `${successPct} of the time — meaning a meaningful share of the market conditions this report tested ` +
+      `${successPercent} of the time — meaning a meaningful share of the market conditions this report tested ` +
       `end less favorably than the single deterministic path shown elsewhere in this report. Worth a closer look.`;
   }
 

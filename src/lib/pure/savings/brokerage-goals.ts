@@ -171,8 +171,8 @@ export function calculateBrokerageGoals(
     let proRateFraction: number | null = null;
 
     if (yr.phase === "accumulation") {
-      const accYr = yr as EngineAccumulationYear;
-      proRateFraction = accYr.proRateFraction;
+      const accumulationYear = yr as EngineAccumulationYear;
+      proRateFraction = accumulationYear.proRateFraction;
 
       if (yr.individualAccountBalances.length > 0) {
         // Derive contribution/overflow from Portfolio-category individual accounts.
@@ -191,24 +191,24 @@ export function calculateBrokerageGoals(
         );
       } else {
         // Brokerage contribution = brokerage slot's employee + employer + ramp
-        const brokerageSlot = accYr.slots.find((s) =>
+        const brokerageSlot = accumulationYear.slots.find((s) =>
           isOverflowTarget(s.category as AccountCategory),
         );
         contribution = brokerageSlot
           ? roundToCents(
               brokerageSlot.employeeContrib +
                 brokerageSlot.employerMatch +
-                accYr.brokerageRampContribution,
+                accumulationYear.brokerageRampContribution,
             )
-          : roundToCents(accYr.brokerageRampContribution);
+          : roundToCents(accumulationYear.brokerageRampContribution);
         employerMatch = brokerageSlot
           ? roundToCents(brokerageSlot.employerMatch)
           : 0;
-        overflow = accYr.overflowToBrokerage;
+        overflow = accumulationYear.overflowToBrokerage;
       }
 
       // Goal withdrawals from engine
-      goalWithdrawals = accYr.brokerageGoalWithdrawals.map((gw) => ({
+      goalWithdrawals = accumulationYear.brokerageGoalWithdrawals.map((gw) => ({
         goalId: gw.goalId,
         name: gw.name,
         amount: gw.amount,
@@ -220,7 +220,7 @@ export function calculateBrokerageGoals(
       totalTaxCost = roundToCents(sumBy(goalWithdrawals, (gw) => gw.taxCost));
 
       // Update goal statuses
-      for (const gw of accYr.brokerageGoalWithdrawals) {
+      for (const gw of accumulationYear.brokerageGoalWithdrawals) {
         const status = goalStatusMap.get(gw.goalId);
         if (!status) continue;
         status.projectedBalance = roundToCents(afterTax + gw.amount);
@@ -233,8 +233,8 @@ export function calculateBrokerageGoals(
       }
     } else {
       // Brokerage contributions continue post-retirement (fixed-dollar only)
-      const decYr = yr as EngineDecumulationYear;
-      contribution = roundToCents(decYr.brokerageContribution);
+      const decumulationYear = yr as EngineDecumulationYear;
+      contribution = roundToCents(decumulationYear.brokerageContribution);
       if (yr.individualAccountBalances.length > 0) {
         const filtered = yr.individualAccountBalances.filter(
           (ia) => !isRetirementMoney(ia.parentCategory),

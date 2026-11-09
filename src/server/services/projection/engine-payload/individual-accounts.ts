@@ -209,8 +209,8 @@ export function buildIndividualAccounts({
     allowPenalizedByJoinKey.set(key, true);
   }
   return [
-    ...Object.entries(accountBreakdownByCategory).flatMap(([cat, accts]) =>
-      accts.map((a) => {
+    ...Object.entries(accountBreakdownByCategory).flatMap(([cat, accounts]) =>
+      accounts.map((a) => {
         const eligibility = a.ownerPersonId
           ? eligibilityByJoinKey.get(
               eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),

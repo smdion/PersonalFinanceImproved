@@ -255,7 +255,7 @@
     "src/lib/pure/contributions/cap-pass.ts": 225,
     "src/lib/pure/contributions/category-totals.ts": 154,
     "src/lib/pure/contributions/contribution-amount.ts": 80,
-    "src/lib/pure/contributions/contribution-caps.ts": 674,
+    "src/lib/pure/contributions/contribution-caps.ts": 675,
     "src/lib/pure/contributions/contribution-order.ts": 93,
     "src/lib/pure/contributions/contribution-rows.ts": 216,
     "src/lib/pure/contributions/display-specs.ts": 147,
@@ -325,7 +325,7 @@
     "src/lib/pure/investments/returns.ts": 596,
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 135,
-    "src/lib/pure/net-worth/year-end-rows.ts": 522,
+    "src/lib/pure/net-worth/year-end-rows.ts": 524,
     "src/lib/pure/paycheck/bonus.ts": 255,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 133,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 273,
@@ -338,7 +338,7 @@
     "src/lib/pure/simulation/inflation-risk.ts": 26,
     "src/lib/pure/simulation/monte-carlo.ts": 325,
     "src/lib/pure/simulation/stress-test-run.ts": 121,
-    "src/lib/pure/simulation/trial-run.ts": 332,
+    "src/lib/pure/simulation/trial-run.ts": 338,
     "src/lib/pure/simulation/trial-summary.ts": 299,
     "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 585,
@@ -387,14 +387,14 @@
     "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utilities.ts": 581,
     "src/server/services/budget/account-balances.ts": 185,
-    "src/server/services/budget/active-summary.ts": 324,
+    "src/server/services/budget/active-summary.ts": 326,
     "src/server/services/budget/annual-expenses.ts": 58,
     "src/server/services/budget/linked-items.ts": 203,
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
     "src/server/services/contributions/live-data.ts": 98,
     "src/server/services/contributions/profile.ts": 367,
-    "src/server/services/contributions/summary.ts": 732,
+    "src/server/services/contributions/summary.ts": 733,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,
     "src/server/services/investments/current-balances.ts": 467,
@@ -947,7 +947,7 @@
       "buildMilestoneInput": 218
     },
     "src/lib/pure/contributions/contribution-caps.ts": {
-      "capContributionsByLimitGroup": 271
+      "capContributionsByLimitGroup": 272
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
       "buildProfileContribData": 235
@@ -1007,7 +1007,7 @@
       "calculateBrokerageGoals": 206
     },
     "src/lib/pure/simulation/trial-run.ts": {
-      "runTrials": 316
+      "runTrials": 322
     },
     "src/lib/pure/tax/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199
@@ -1062,14 +1062,14 @@
       "syncNamesRouter.syncAllNames.mutation()": 159
     },
     "src/server/services/budget/active-summary.ts": {
-      "computeBudgetActiveSummary": 241
+      "computeBudgetActiveSummary": 243
     },
     "src/server/services/contributions/contribution-mix.ts": {
       "loadContributionMix": 182
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 647,
-      "computeContributionSummary.results.map()": 417
+      "computeContributionSummary": 648,
+      "computeContributionSummary.results.map()": 418
     },
     "src/server/services/demo/demo-seed.ts": {
       "seedProfile": 451

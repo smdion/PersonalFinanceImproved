@@ -175,7 +175,7 @@ export function yearEndPerformance(
     distributions: string;
     annualReturnPct: string | null;
   }[],
-  resolveHistoryMaster: (acct: {
+  resolveHistoryMaster: (account: {
     id: number;
     performanceAccountId: number | null;
     institution: string;
@@ -196,9 +196,9 @@ export function yearEndPerformance(
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     let portfolioTotal = 0;
     const byType: Record<string, number> = {};
-    for (const acct of yearAccounts) {
-      const endBal = toNumber(acct.endingBalance);
-      const master = resolveHistoryMaster(acct);
+    for (const account of yearAccounts) {
+      const endBal = toNumber(account.endingBalance);
+      const master = resolveHistoryMaster(account);
       portfolioTotal += endBal;
       byType[master.accountType] = (byType[master.accountType] ?? 0) + endBal;
     }
@@ -209,15 +209,17 @@ export function yearEndPerformance(
   const perfByAccountByYear = new Map<number, YearEndRow["perfByAccount"]>();
   for (const year of Array.from(allPerfAccountYears)) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
-    const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
-      label: `${acct.institution} — ${acct.accountLabel.replace(` (${acct.institution})`, "")}`,
-      accountType: resolveHistoryMaster(acct).accountType,
-      beginningBalance: toNumber(acct.beginningBalance),
-      contributions: toNumber(acct.totalContributions),
-      employerMatch: toNumber(acct.employerContributions),
-      gainLoss: toNumber(acct.yearlyGainLoss),
-      endingBalance: toNumber(acct.endingBalance),
-    }));
+    const accounts: YearEndRow["perfByAccount"] = yearAccounts.map(
+      (account) => ({
+        label: `${account.institution} — ${account.accountLabel.replace(` (${account.institution})`, "")}`,
+        accountType: resolveHistoryMaster(account).accountType,
+        beginningBalance: toNumber(account.beginningBalance),
+        contributions: toNumber(account.totalContributions),
+        employerMatch: toNumber(account.employerContributions),
+        gainLoss: toNumber(account.yearlyGainLoss),
+        endingBalance: toNumber(account.endingBalance),
+      }),
+    );
     perfByAccountByYear.set(year, accounts);
   }
 
@@ -248,8 +250,8 @@ export function yearEndPerformance(
     if (perfByCategoryByYear.has(year)) continue;
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const yearMap: Record<string, CategoryPerformance> = {};
-    for (const acct of yearAccounts) {
-      const master = resolveHistoryMaster(acct);
+    for (const account of yearAccounts) {
+      const master = resolveHistoryMaster(account);
       const category = accountTypeToPerformanceCategory(master.accountType);
       const existing = yearMap[category] ?? {
         endingBalance: 0,
@@ -259,11 +261,11 @@ export function yearEndPerformance(
         distributions: 0,
         employerMatchDiscount: 0, // backfilled by buildYearEndHistory's step 3
       };
-      existing.endingBalance += toNumber(acct.endingBalance);
-      existing.contributions += toNumber(acct.totalContributions);
-      existing.employerMatch += toNumber(acct.employerContributions);
-      existing.gainLoss += toNumber(acct.yearlyGainLoss);
-      existing.distributions += toNumber(acct.distributions);
+      existing.endingBalance += toNumber(account.endingBalance);
+      existing.contributions += toNumber(account.totalContributions);
+      existing.employerMatch += toNumber(account.employerContributions);
+      existing.gainLoss += toNumber(account.yearlyGainLoss);
+      existing.distributions += toNumber(account.distributions);
       yearMap[category] = existing;
     }
     perfByCategoryByYear.set(year, yearMap);
@@ -289,8 +291,8 @@ export function yearEndPerformanceSummary(
   for (const year of Array.from(allPerfAccountYears)) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const yearMap: Record<string, CategoryPerformance> = {};
-    for (const acct of yearAccounts) {
-      const master = resolveHistoryMaster(acct);
+    for (const account of yearAccounts) {
+      const master = resolveHistoryMaster(account);
       const parentCategory = master.parentCategory;
       const existing = yearMap[parentCategory] ?? {
         endingBalance: 0,
@@ -303,11 +305,11 @@ export function yearEndPerformanceSummary(
         // sits on per-category rows), so this isn't backfilled.
         employerMatchDiscount: 0,
       };
-      existing.endingBalance += toNumber(acct.endingBalance);
-      existing.contributions += toNumber(acct.totalContributions);
-      existing.employerMatch += toNumber(acct.employerContributions);
-      existing.gainLoss += toNumber(acct.yearlyGainLoss);
-      existing.distributions += toNumber(acct.distributions);
+      existing.endingBalance += toNumber(account.endingBalance);
+      existing.contributions += toNumber(account.totalContributions);
+      existing.employerMatch += toNumber(account.employerContributions);
+      existing.gainLoss += toNumber(account.yearlyGainLoss);
+      existing.distributions += toNumber(account.distributions);
       yearMap[parentCategory] = existing;
     }
     perfByParentCategoryByYear.set(year, yearMap);

@@ -23,12 +23,12 @@ const SUCCESS_RATE_ON_TRACK_THRESHOLD = 0.85;
 const SPENDING_STABILITY_NOTE_BELOW = 0.85;
 
 export function buildRiskNarrative(mcResult: MonteCarloResult): RiskNarrative {
-  const successPct = formatPercent(mcResult.successRate, 0);
+  const successPercent = formatPercent(mcResult.successRate, 0);
   const onTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
 
   const successRateNarrative = onTrack
-    ? `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in ${successPct} of those trials. This is a strong result: most plans that succeed less than 85% of the time have a real, addressable weak point.`
-    : `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in only ${successPct} of those trials. This is below the 85% threshold this report treats as "on track," and is worth addressing rather than relying on the single middle-of-the-road projection shown elsewhere in this report.`;
+    ? `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in ${successPercent} of those trials. This is a strong result: most plans that succeed less than 85% of the time have a real, addressable weak point.`
+    : `This report tested your projection against many different sequences of market returns. Your projection succeeded — meaning every retirement year was funded — in only ${successPercent} of those trials. This is below the 85% threshold this report treats as "on track," and is worth addressing rather than relying on the single middle-of-the-road projection shown elsewhere in this report.`;
 
   const worstCase = mcResult.worstCase;
   let worstCaseNarrative: string;

@@ -1,6 +1,6 @@
 import {
   PERF_BALANCE_MISMATCH_ABS,
-  PERF_BALANCE_MISMATCH_PCT,
+  PERF_BALANCE_MISMATCH_PERCENT,
 } from "@/lib/constants";
 import type { AccountOwnership } from "@/lib/config/enum-values";
 import type { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
@@ -200,7 +200,7 @@ export function performanceBalanceMismatch(
     const delta = perfTotal - snapTotal;
     const threshold = Math.max(
       PERF_BALANCE_MISMATCH_ABS,
-      snapTotal * PERF_BALANCE_MISMATCH_PCT,
+      snapTotal * PERF_BALANCE_MISMATCH_PERCENT,
     );
     if (Math.abs(delta) <= threshold) return null;
     return { perfTotal, snapTotal, delta };

@@ -174,23 +174,23 @@ export async function buildYearEndHistory(
     propTaxRows,
   );
 
-  const perfAcctMap = new Map(perfAccounts.map((pa) => [pa.id, pa]));
+  const perfAccountMap = new Map(perfAccounts.map((pa) => [pa.id, pa]));
 
-  function resolveHistoryMaster(acct: {
+  function resolveHistoryMaster(account: {
     id: number;
     performanceAccountId: number | null;
     institution: string;
     accountLabel: string;
   }): (typeof perfAccounts)[number] {
-    if (acct.performanceAccountId == null) {
+    if (account.performanceAccountId == null) {
       throw new Error(
-        `account_performance.id=${acct.id} (${acct.institution}:${acct.accountLabel}) has null performanceAccountId`,
+        `account_performance.id=${account.id} (${account.institution}:${account.accountLabel}) has null performanceAccountId`,
       );
     }
-    const master = perfAcctMap.get(acct.performanceAccountId);
+    const master = perfAccountMap.get(account.performanceAccountId);
     if (!master) {
       throw new Error(
-        `account_performance.id=${acct.id} references missing performance_account.id=${acct.performanceAccountId}`,
+        `account_performance.id=${account.id} references missing performance_account.id=${account.performanceAccountId}`,
       );
     }
     return master;
@@ -204,14 +204,14 @@ export async function buildYearEndHistory(
     rows: typeof accountPerfRows,
   ): Map<string, number> {
     const sums = new Map<string, number>();
-    for (const acct of rows) {
-      const master = resolveHistoryMaster(acct);
+    for (const account of rows) {
+      const master = resolveHistoryMaster(account);
       if (!isDiscountBasisEmployerContrib(master.accountType, master.subType))
         continue;
       const category = accountTypeToPerformanceCategory(master.accountType);
       sums.set(
         category,
-        (sums.get(category) ?? 0) + toNumber(acct.employerContributions),
+        (sums.get(category) ?? 0) + toNumber(account.employerContributions),
       );
     }
     return sums;
@@ -345,7 +345,7 @@ export async function buildYearEndHistory(
     // Current year performance — recompute from account_performance data
     // (annual_performance rows for non-finalized years have stale zeros;
     // the performance page recomputes from account data, so we must do the same)
-    const currentYearAcctPerf = accountPerfRows.filter(
+    const currentYearAccountPerf = accountPerfRows.filter(
       (a) => a.year === currentYear,
     );
     const currentPortfolioRow = annualPerfRows.find(
@@ -360,9 +360,9 @@ export async function buildYearEndHistory(
       returnPct: number | null;
     } | null = null;
 
-    if (currentYearAcctPerf.length > 0) {
+    if (currentYearAccountPerf.length > 0) {
       // Sum from account_performance (same logic as performance page getSummary)
-      const sums = sumAccounts(currentYearAcctPerf);
+      const sums = sumAccounts(currentYearAccountPerf);
       perfSummary = {
         beginningBalance: sums.beginBal,
         contributions: sums.contribs,
@@ -449,10 +449,10 @@ export async function buildYearEndHistory(
         if (preComputed && Object.keys(preComputed).length > 0)
           return preComputed;
         // Build from current year account_performance rows if available
-        if (currentYearAcctPerf.length > 0) {
+        if (currentYearAccountPerf.length > 0) {
           const catMap: Record<string, CategoryPerformance> = {};
-          for (const acct of currentYearAcctPerf) {
-            const master = resolveHistoryMaster(acct);
+          for (const account of currentYearAccountPerf) {
+            const master = resolveHistoryMaster(account);
             const category = accountTypeToPerformanceCategory(
               master?.accountType ?? null,
             );
@@ -464,18 +464,18 @@ export async function buildYearEndHistory(
               distributions: 0,
               employerMatchDiscount: 0,
             };
-            existing.endingBalance += toNumber(acct.endingBalance);
-            existing.contributions += toNumber(acct.totalContributions);
-            existing.employerMatch += toNumber(acct.employerContributions);
-            existing.gainLoss += toNumber(acct.yearlyGainLoss);
-            existing.distributions += toNumber(acct.distributions);
+            existing.endingBalance += toNumber(account.endingBalance);
+            existing.contributions += toNumber(account.totalContributions);
+            existing.employerMatch += toNumber(account.employerContributions);
+            existing.gainLoss += toNumber(account.yearlyGainLoss);
+            existing.distributions += toNumber(account.distributions);
             // This catMap is a separate, throwaway object that never merges
             // into perfByCategoryByYear — safe to compute inline here too.
             if (
               isDiscountBasisEmployerContrib(master.accountType, master.subType)
             ) {
               existing.employerMatchDiscount += toNumber(
-                acct.employerContributions,
+                account.employerContributions,
               );
             }
             catMap[category] = existing;

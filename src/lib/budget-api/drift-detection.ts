@@ -51,8 +51,8 @@ export function detectDrift(
 
   const brokenMappings: BrokenMapping[] = [];
   for (const mapping of mappings) {
-    const newAcct = newById.get(mapping.remoteAccountId);
-    if (!newAcct) {
+    const newAccount = newById.get(mapping.remoteAccountId);
+    if (!newAccount) {
       const cached = cachedById.get(mapping.remoteAccountId);
       brokenMappings.push({
         remoteAccountId: mapping.remoteAccountId,
@@ -64,13 +64,13 @@ export function detectDrift(
   }
 
   const renamedAccounts: RenamedAccount[] = [];
-  for (const newAcct of newAccounts) {
-    const cached = cachedById.get(newAcct.id);
-    if (cached && cached.name !== newAcct.name) {
+  for (const newAccount of newAccounts) {
+    const cached = cachedById.get(newAccount.id);
+    if (cached && cached.name !== newAccount.name) {
       renamedAccounts.push({
-        remoteAccountId: newAcct.id,
+        remoteAccountId: newAccount.id,
         oldName: cached.name,
-        newName: newAcct.name,
+        newName: newAccount.name,
       });
     }
   }
