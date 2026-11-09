@@ -1,24 +1,7 @@
 /**
- * Savings Tracker Calculator
- *
- * Tracks progress toward any number of savings goals with percentage-based allocation from a
- * shared monthly savings pool.
- *
- * Key concepts:
- *   - **Monthly savings pool**: comes from the budget calculator (total income minus expenses).
- *     This is NOT hardcoded — it's whatever the budget says is available for savings.
- *   - **Allocation percentages**: each goal gets a share of the pool (e.g. e-fund 50%, vacation 30%,
- *     car 20%). Users can change these at any time. The calculator warns if they don't sum to 100%.
- *   - **Emergency fund**: one goal can be flagged as `isEmergencyFund`. For this goal, the
- *     calculator also reports how many months of essential expenses it covers (e.g. 3.2 months).
- *     Essential expenses come from the budget calculator's essentialTotal.
- *   - **Months to target**: for each goal, estimates how many months until the target is reached
- *     at the current monthly allocation rate. Returns null if allocation is $0 (can't compute).
- *   - **Active/inactive goals**: only active goals are included in calculations. Users can pause
- *     goals without deleting them.
- *
- * All values are user-editable at any time — goals, targets, allocations, and the savings pool
- * can all be changed and the calculator re-runs with the new values.
+ * Savings tracker: active goals' shares of the monthly savings pool (budget income minus
+ * expenses), warning when allocations don't sum to 100%; months to each target (null at $0), and
+ * months of essential expenses covered for the `isEmergencyFund` goal.
  */
 import type { SavingsInput, SavingsResult } from "./savings.types";
 import { formatPercent } from "../../utils/format";

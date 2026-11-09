@@ -1,9 +1,7 @@
 /**
- * The Simulation's dollar outcomes in the dollars a view shows. Today's
- * dollars come from the Simulation itself — each trial deflated by the
- * inflation it ran with, before the percentiles — so a view never deflates
- * a simulated figure at the plan's fixed rate (that would erase the
- * inflation each trial drew). Nominal is the engine's own output.
+ * The Simulation's dollar outcomes in the dollars a view shows. Today's dollars come from the
+ * Simulation itself (each trial deflated by its own inflation before the percentiles), never a
+ * simulated figure deflated at the plan's fixed rate. Nominal is the engine's own output.
  */
 import type {
   DistributionSummary,

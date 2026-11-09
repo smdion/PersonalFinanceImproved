@@ -4,12 +4,9 @@ import { DEFAULT_SIMULATION_INFLATION_RISK } from "@/lib/constants";
 export type SavedInflationOverrides = { stdDev?: number } | null;
 
 /**
- * The Simulation's inflation risk — the spread of each year's inflation
- * around the plan's own rates — for every route that runs trials (the
- * Simulation, strategy comparison, Coast FIRE and its probe): this run's
- * UI override, else the saved override, else the preset's, else the
- * default. One resolver, so no route quietly ignores the household's
- * setting.
+ * The Simulation's inflation risk (spread of each year's inflation around the plan's rates) for
+ * every route that runs trials: this run's UI override, else the saved override, else the
+ * preset's, else the default.
  */
 export function resolveInflationRisk(opts: {
   ui?: { stdDev: number } | null;

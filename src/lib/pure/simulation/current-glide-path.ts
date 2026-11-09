@@ -1,9 +1,7 @@
 /**
- * The household's "current" glide path — the target mix for the money it
- * holds today, by age, kept apart from the glide path the retirement
- * simulation assumes (a household may hold a deliberately more
- * conservative mix than it projects with). Stored in app_settings
- * `current_glide_path`, validated on write with `currentGlidePathSchema`.
+ * The household's "current" glide path: the target mix by age for the money it holds today, apart
+ * from the one the simulation assumes. Stored in app_settings `current_glide_path`, validated on
+ * write with `currentGlidePathSchema`.
  */
 import { z } from "zod/v4";
 

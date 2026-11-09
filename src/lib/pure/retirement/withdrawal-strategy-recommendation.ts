@@ -1,26 +1,6 @@
 /**
- * Withdrawal strategy recommendation.
- *
- * Ledgr offers 6+ withdrawal strategies side-by-side without flagging
- * which one fits the user's plan. This is "analysis paralysis"
- * — without guidance, users either stick with a default (status quo bias)
- * or pick randomly. This module returns a single recommendation with a
- * rationale string the UI can render as a "Recommended for your plan"
- * highlight.
- *
- * The recommendation is heuristic, not prescriptive. Users override
- * freely. The goal is to give first-time users a defensible starting
- * point, not to lock anyone in.
- *
- * This previously declared its own hyphenated `WithdrawalStrategy`
- * union, parallel to (and misspelled relative to) the canonical
- * underscored `WithdrawalStrategyType` in `withdrawal-strategies.ts` — a
- * "looks like one canonical value, isn't" gap. The one call site that read
- * `.strategy` bridged the two spellings with a manual translation map
- * (`RECOMMENDED_KEY_MAP` in
- * `retirement-profile-tab.tsx`); not a live bug (the map was complete and
- * correct), but a maintainability trap the next new strategy could fall
- * into. Now imports and reuses the canonical type directly.
+ * Recommends one withdrawal strategy with a rationale the UI shows as "Recommended for your plan":
+ * a heuristic starting point for first-time users, freely overridden.
  */
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -44,21 +24,8 @@ export interface PlanCharacteristics {
 }
 
 /**
- * Recommend a withdrawal strategy based on plan characteristics.
- *
- * Decision tree (simple, defensible):
- *   - Horizon ≥ 30 years → Guyton-Klinger (dynamic guardrails handle
- *     sequence-of-returns risk over long horizons better than Fixed)
- *   - Horizon 20–29 years + budget linked → Vanguard Dynamic (spending
- *     held within a ceiling and floor of last year's)
- *   - Horizon 20–29 years, no budget link → Guyton-Klinger
- *   - Horizon < 20 years → Fixed (4% rule is fine for short horizons,
- *     simpler is better)
- *
- * The default-good strategy for first-time users is always Guyton-Klinger
- * if no plan characteristics are available — it adapts to market conditions
- * better than Fixed and is well-studied (Trinity Study + cFIREsim both
- * validate it).
+ * Recommend a withdrawal strategy by horizon: ≥ 30 years Guyton-Klinger; 20–29 Vanguard Dynamic
+ * with a linked budget, else Guyton-Klinger; < 20 Fixed.
  */
 export function recommendWithdrawalStrategy(
   plan: PlanCharacteristics,

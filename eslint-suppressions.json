@@ -5971,22 +5971,11 @@
       "count": 3
     }
   },
-  "src/lib/pure/retirement/withdrawal-strategy-recommendation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/lib/pure/savings/brokerage-goals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
@@ -5999,82 +5988,26 @@
   "src/lib/pure/savings/efund-expenses.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/savings/efund.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/savings/internal-transfers.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/savings/savings-capacity.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/savings/savings-pace.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
   },
-  "src/lib/pure/savings/savings-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    }
-  },
   "src/lib/pure/savings/savings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simulation/current-glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simulation/dollars.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simulation/glide-path.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/simulation/inflation-risk.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/pure/simulation/monte-carlo.types.ts": {

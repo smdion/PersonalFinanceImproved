@@ -1,20 +1,7 @@
 /**
- * Saved so far this year and where the year is heading, per tracked account
- * and for the household. Pure.
- *
- * Saved = contributions recorded in Performance for the year plus those
- * SimpleFIN has seen since the last fill (or, for an account with no feed,
- * the paycheck estimate the fill would add).
- *
- * Ledgr keeps only today's paycheck setup — not when it changed — so a
- * "plan to date" can't be known (an election raised in July, a goal added
- * in October). The card therefore follows the Contributions page:
- *   full year at today's setup (Current Salary view),
- *   year-end estimate = saved + unposted + what's still to come at today's
- *     setup (Year-End Estimate view: actual so far, the gap since the latest
- *     posted data, the rest of the year — the same formula),
- *   saved (Actual YTD view),
- * and judges only whether the latest contribution matches today's setup.
+ * Saved so far this year and the year-end heading, per tracked account and household: Performance
+ * contributions plus SimpleFIN's since the last fill (or the paycheck estimate without a feed).
+ * Only today's paycheck setup is known, so only the latest contribution is judged against it.
  */
 import { roundToCents } from "@/lib/utils/math";
 import type {

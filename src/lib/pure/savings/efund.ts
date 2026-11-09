@@ -1,19 +1,7 @@
 /**
- * Emergency Fund Calculator (Migration Plan 12.35)
- *
- * Calculates how many months of essential expenses the emergency fund covers.
- * Matches the spreadsheet's "Income Replacement Snapshot" layout:
- *   - Current balance (raw YNAB balance)
- *   - Self-loan amount (money owed back to the fund)
- *   - True balance (raw minus self-loans — what's actually available)
- *   - Balance "with repay" (raw + self-loans — what you'd have once loans are repaid)
- *   - Current months covered (raw balance / essential expenses)
- *   - Repaid months (with-repay balance / essential expenses)
- *   - Target amount (targetMonths × essential expenses)
- *   - Needed after repay (target - with-repay balance, negative = ahead)
- *
- * Essential expenses come from the budget calculator (items with isEssential = true).
- * The target months is user-configurable (default 4, matching the spreadsheet).
+ * Emergency fund: months of essential expenses (budget items with isEssential) covered by the raw,
+ * true (less self-loans) and with-repay balances, and the target (targetMonths, default 4) and
+ * what's needed after repay (negative = ahead).
  */
 import type { EFundInput, EFundResult } from "./efund.types";
 import { safeDivide } from "../../utils/math";

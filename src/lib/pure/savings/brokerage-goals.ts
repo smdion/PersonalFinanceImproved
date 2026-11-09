@@ -1,9 +1,6 @@
-// Brokerage Goals Calculator — pure function, no DB, no side effects.
-//
-// Enriches contribution engine output with a brokerage-focused view:
-// goal funding status, year-by-year brokerage projection, and tax breakdowns.
-// The engine handles the actual balance tracking and goal withdrawals;
-// this calculator provides the goal-oriented analysis layer.
+// Brokerage Goals Calculator: enriches contribution engine output with goal funding status, a
+// year-by-year brokerage projection and tax breakdowns. The engine tracks balances and goal
+// withdrawals; this adds the goal-oriented view.
 
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
