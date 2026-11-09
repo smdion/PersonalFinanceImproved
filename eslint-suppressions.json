@@ -448,9 +448,6 @@
     "ratchet/no-history-comment": {
       "count": 1
     },
-    "ratchet/no-jsx-iife": {
-      "count": 1
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 1
     },
@@ -657,9 +654,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 1

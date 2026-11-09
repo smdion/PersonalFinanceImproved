@@ -51,7 +51,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": 113,
     "src/app/(dashboard)/tax-buckets/tax-buckets-sections.tsx": 333,
     "src/app/(dashboard)/tax-buckets/use-tax-buckets-projection.ts": 88,
-    "src/app/(dashboard)/tools/tools-content.tsx": 584,
+    "src/app/(dashboard)/tools/tools-content.tsx": 577,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
@@ -491,7 +491,7 @@
       "SavingsContent": 834
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
-      "ToolsContent": 541
+      "ToolsContent": 534
     },
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": {
       "UtilityCard": 337,

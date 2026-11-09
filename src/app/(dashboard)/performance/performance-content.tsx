@@ -506,6 +506,12 @@ export function PerformanceContent() {
       : "An account";
   };
 
+  // The account whose notes dialog is open.
+  const notesAccount =
+    notesAccountId !== null
+      ? (accountRows as AccountRow[]).find((a) => a.id === notesAccountId)
+      : undefined;
+
   return (
     <div>
       <PageHeader
@@ -795,19 +801,13 @@ export function PerformanceContent() {
           }}
         />
       )}
-      {notesAccountId !== null &&
-        (() => {
-          const account = (accountRows as AccountRow[]).find(
-            (a) => a.id === notesAccountId,
-          );
-          return account ? (
-            <AccountNotesDialog
-              account={account}
-              onClose={() => setNotesAccountId(null)}
-              onChanged={() => utils.performance.computeSummary.invalidate()}
-            />
-          ) : null;
-        })()}
+      {notesAccount ? (
+        <AccountNotesDialog
+          account={notesAccount}
+          onClose={() => setNotesAccountId(null)}
+          onChanged={() => utils.performance.computeSummary.invalidate()}
+        />
+      ) : null}
       {showFinalizeModal && currentYear && (
         <FinalizeYearModal
           year={currentYear}
