@@ -29,7 +29,7 @@ import {
 } from "@/lib/config/enum-values";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   dailyWeightsByAccount,
@@ -149,26 +149,26 @@ export const investmentComparisonRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const [mc, [person]] = await Promise.all([
-        buildMcInputs(ctx.db, input.preset),
+      const [simulation, [person]] = await Promise.all([
+        buildSimulationInputs(ctx.db, input.preset),
         ctx.db
           .select({ dob: schema.people.dateOfBirth })
           .from(schema.people)
           .where(eq(schema.people.isPrimaryUser, true))
           .limit(1),
       ]);
-      if (!mc.preset?.found || !person) return null;
+      if (!simulation.preset?.found || !person) return null;
       const birthYear = Number(person.dob.slice(0, 4));
       const ranges = yearReturnRanges({
         ages: input.years.map((y) => y - birthYear),
-        assetClasses: mc.mcAssetClasses,
-        correlations: mc.mcCorrelations,
-        glidePath: mc.mcGlidePath,
-        clampMin: mc.preset.returnClampMin,
-        clampMax: mc.preset.returnClampMax,
+        assetClasses: simulation.mcAssetClasses,
+        correlations: simulation.mcCorrelations,
+        glidePath: simulation.mcGlidePath,
+        clampMin: simulation.preset.returnClampMin,
+        clampMax: simulation.preset.returnClampMax,
       });
       return {
-        presetLabel: mc.preset.label,
+        presetLabel: simulation.preset.label,
         ranges: ranges.map((r) => ({
           year: r.age + birthYear,
           low: r.low,

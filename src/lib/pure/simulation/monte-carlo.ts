@@ -25,7 +25,10 @@ import {
 } from "./trial-summary";
 import { runTrials } from "./trial-run";
 import { sumBy, safeDivide } from "../../utils/math";
-import { MC_RETURN_CLAMP_MIN, MC_RETURN_CLAMP_MAX } from "../../constants";
+import {
+  SIMULATION_RETURN_CLAMP_MIN,
+  SIMULATION_RETURN_CLAMP_MAX,
+} from "../../constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../../config/withdrawal-strategies";
 
@@ -143,9 +146,9 @@ export function calculateMonteCarlo(
     numYears,
     balancesByYear,
     balancesTodayByYear,
-    numDecYears,
-    stratRatiosByDecYear,
-    budgetRatiosByDecYear,
+    numDecumulationYears,
+    stratRatiosByDecumulationYear,
+    budgetRatiosByDecumulationYear,
     terminalBalances,
     terminalBalancesToday,
     hadPenaltyAvoidedShortfall,
@@ -189,9 +192,9 @@ export function calculateMonteCarlo(
   );
   const { spendingStabilityBands } = stabilityBands(
     engineInput,
-    numDecYears,
-    stratRatiosByDecYear,
-    budgetRatiosByDecYear,
+    numDecumulationYears,
+    stratRatiosByDecumulationYear,
+    budgetRatiosByDecumulationYear,
   );
   // Success rate: % of trials the plan judge passes (assessPlan).
   const successCount = trialSucceeded.filter(Boolean).length;
@@ -277,8 +280,8 @@ function trialSetup(input: MonteCarloInput, warnings: string[]) {
     inflationRisk,
   } = input;
   const seed = input.seed;
-  const clampMin = input.returnClampMin ?? MC_RETURN_CLAMP_MIN;
-  const clampMax = input.returnClampMax ?? MC_RETURN_CLAMP_MAX;
+  const clampMin = input.returnClampMin ?? SIMULATION_RETURN_CLAMP_MIN;
+  const clampMax = input.returnClampMax ?? SIMULATION_RETURN_CLAMP_MAX;
 
   // Strategy config — determines whether stability baseline uses post-retirement
   // raise (from engine's projectedExpenses) or MC inflation (computed baseline).

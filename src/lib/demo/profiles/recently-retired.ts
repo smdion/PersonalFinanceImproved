@@ -132,7 +132,7 @@ const PERF_HISTORY: PerfRow[] = [
 /** The history rows as the profile stores them (amounts as strings). */
 function accountPerformanceRows(): DemoProfile["accountPerformance"] {
   return PERF_HISTORY.map(
-    ([account, year, begin, contrib, gain, end, ret, employer, fees]) => {
+    ([account, year, begin, contribution, gain, end, ret, employer, fees]) => {
       const { institution, label, owner } = PERF_ACCOUNTS[account];
       return {
         year,
@@ -140,7 +140,7 @@ function accountPerformanceRows(): DemoProfile["accountPerformance"] {
         accountLabel: label,
         ownerPersonName: owner,
         beginningBalance: String(begin),
-        totalContributions: String(contrib),
+        totalContributions: String(contribution),
         yearlyGainLoss: String(gain),
         endingBalance: String(end),
         annualReturnPct: String(ret),

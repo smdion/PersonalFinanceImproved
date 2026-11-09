@@ -24,7 +24,7 @@ import {
 } from "@/lib/pure/investments/returns";
 import type { PerfCategory } from "@/lib/config/display-labels";
 import {
-  buildPerfAcctLookups,
+  buildPerfAccountLookups,
   getEffectiveCategory,
 } from "@/lib/pure/investments/annual-rollups";
 import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis";
@@ -104,7 +104,7 @@ export async function finalizePerformanceYear(
 
     // Load performance_accounts for accountType-based grouping
     const allPerfAccounts = await tx.select().from(schema.performanceAccounts);
-    const finalizeLookups = buildPerfAcctLookups(allPerfAccounts);
+    const finalizeLookups = buildPerfAccountLookups(allPerfAccounts);
 
     // 3. Compute rollups and persist finalized values for each category, then Portfolio
     // Categories derived from accountType (Brokerage, HSA, 401k/IRA), not parentCategory

@@ -61,10 +61,10 @@ export function stockShareByAge(
   let any = false;
   if (glidePath.length === 0) return null;
   for (let age = Math.floor(fromAge); age <= Math.ceil(toAge); age++) {
-    const alloc = interpolateAllocations(glidePath, age);
+    const allocation = interpolateAllocations(glidePath, age);
     let mapped = 0;
     let stocks = 0;
-    for (const [id, weight] of Object.entries(alloc)) {
+    for (const [id, weight] of Object.entries(allocation)) {
       if (!classes.mapped.has(Number(id))) continue;
       mapped += weight;
       if (classes.stocks.has(Number(id))) stocks += weight;

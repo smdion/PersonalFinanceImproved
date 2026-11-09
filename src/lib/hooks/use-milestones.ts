@@ -10,7 +10,7 @@ import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -25,9 +25,10 @@ import {
 /** The contribution-summary input every dashboard card sends. */
 export function useContributionSummaryInput() {
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
+  const { queryInput: contributionProfileInput } =
+    useEffectiveContributionProfileId();
   return {
-    ...contribProfileInput,
+    ...contributionProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 }
@@ -52,7 +53,7 @@ export function useMilestones(): {
   const user = useUser();
   const withHoldings = hasPermission(user, "portfolio");
   const withBrokerageGoals = hasPermission(user, "brokerage");
-  const contribInput = useContributionSummaryInput();
+  const contributionInput = useContributionSummaryInput();
   const [efundBudgetColumn] = usePersistedSetting<number>(
     SK_EFUND_BUDGET_COLUMN,
     -1,
@@ -62,7 +63,7 @@ export function useMilestones(): {
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
-  const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
+  const contribs = trpc.contribution.computeSummary.useQuery(contributionInput);
   const savings = trpc.savings.computeSummary.useQuery(
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }

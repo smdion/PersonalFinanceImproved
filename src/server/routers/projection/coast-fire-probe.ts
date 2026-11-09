@@ -43,7 +43,7 @@ import {
   buildCoastFireProfileSwitches,
   resolveProjectionOverrides,
 } from "./_shared";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
@@ -105,12 +105,12 @@ export const coastFireProbeRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Coast FIRE's Simulation runs on the default preset.
-      const [{ payload }, mc] = await Promise.all([
+      const [{ payload }, simulation] = await Promise.all([
         prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),
-        buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };
@@ -144,15 +144,15 @@ export const coastFireProbeRouter = createTRPCRouter({
         });
       }
 
-      if (mc.notConfigured || !mc.preset)
+      if (simulation.notConfigured || !simulation.preset)
         return {
           result: null,
           computedAt: null,
-          notConfigured: mc.notConfigured ?? ("no_presets" as const),
+          notConfigured: simulation.notConfigured ?? ("no_presets" as const),
         };
 
-      const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
-      const { returnClampMin, returnClampMax } = mc.preset;
+      const { mcAssetClasses, mcCorrelations, mcGlidePath } = simulation;
+      const { returnClampMin, returnClampMax } = simulation.preset;
       // VPW sizes by the stock share of the glide path the trials use.
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcStockShareByAge =
@@ -162,7 +162,7 @@ export const coastFireProbeRouter = createTRPCRouter({
           engineInput.currentAge,
           planEndAgeOf(engineInput),
         ) ?? undefined;
-      const inflationRisk = mc.effectiveInflationRisk;
+      const inflationRisk = simulation.effectiveInflationRisk;
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
 

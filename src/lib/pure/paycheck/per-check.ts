@@ -188,13 +188,13 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     input.deductions.filter((d) => d.ficaExempt && isPreTax(d.taxTreatment)),
     (d) => d.amount,
   );
-  const ficaExemptFromContribs = sumBy(input.contributionAccounts, (ca) =>
+  const ficaExemptFromContributions = sumBy(input.contributionAccounts, (ca) =>
     regularFicaExemptPerPeriod(ca, periodsPerYear),
   );
   const ficaBase =
     gross -
     ficaExemptFromDeductions -
-    ficaExemptFromContribs +
+    ficaExemptFromContributions +
     ficaEarningsAdjustment;
 
   // ── Step 3: Federal withholding (IRS annualized method) ──

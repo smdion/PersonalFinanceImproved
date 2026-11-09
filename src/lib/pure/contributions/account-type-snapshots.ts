@@ -15,7 +15,7 @@ import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type {
   AccountTypeSnapshot,
-  PerContribData,
+  PerContributionData,
 } from "@/lib/pure/contributions/summary.types";
 
 export function newCategoryMap() {
@@ -39,7 +39,7 @@ export function newCategoryMap() {
       targetAnnual: number | null;
       allocationPriority: number;
       priorYearAmount: number;
-      priorYearContribs: { id: number; amount: number }[];
+      priorYearContributions: { id: number; amount: number }[];
       ytdContributions: number;
       ytdEmployerMatch: number;
       blendedEmployee: number;
@@ -59,14 +59,14 @@ export function newCategoryMap() {
 
 export function accountTypeSnapshots(
   rawContribs: ContributionAccountRow[],
-  resolveContribLimit: (
+  resolveContributionLimit: (
     accountType: string,
     hsaCoverageType: string | null,
   ) => number,
   categoryMap: ReturnType<typeof newCategoryMap>["categoryMap"],
   salary: number,
   inPriorYearWindow: boolean,
-  resolveContribPriorYearLimit: (
+  resolveContributionPriorYearLimit: (
     accountType: string,
     hsaCoverageType: string | null,
   ) => number,
@@ -78,7 +78,7 @@ export function accountTypeSnapshots(
         .map((c) => c.hsaCoverageType ?? null),
     );
   const getLimitForCategory = (rawCat: string): number =>
-    resolveContribLimit(rawCat, coverageFor(rawCat));
+    resolveContributionLimit(rawCat, coverageFor(rawCat));
 
   const accountTypes: AccountTypeSnapshot[] = [];
   for (const [cat, data] of Array.from(categoryMap)) {
@@ -124,7 +124,7 @@ export function accountTypeSnapshots(
     // Prior-year contribution data (only during IRS window for eligible types)
     let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
     if (inPriorYearWindow && cfg?.supportsPriorYearContrib) {
-      const pyLimit = resolveContribPriorYearLimit(
+      const pyLimit = resolveContributionPriorYearLimit(
         data.categoryKey,
         coverageFor(data.categoryKey),
       );
@@ -133,7 +133,7 @@ export function accountTypeSnapshots(
           amount: roundToCents(data.priorYearAmount),
           limit: pyLimit,
           remaining: Math.max(0, pyLimit - roundToCents(data.priorYearAmount)),
-          contribs: data.priorYearContribs,
+          contribs: data.priorYearContributions,
         };
       }
     }
@@ -198,7 +198,7 @@ export function accountTypeSnapshots(
 
 export function contributionTotals(
   accountTypes: AccountTypeSnapshot[],
-  perContribData: PerContribData[],
+  perContribData: PerContributionData[],
   rawContribs: ContributionAccountRow[],
   categoryMap: ReturnType<typeof newCategoryMap>["categoryMap"],
 ) {

@@ -121,7 +121,7 @@ export const zSandboxDeductionAdditions = z
   .optional();
 
 /** Guardrail on the sandbox contribution active fields below. */
-const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
+const MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS = 30;
 
 /**
  * The What-If tab's hand-edited amount for an EXISTING contribution
@@ -137,9 +137,12 @@ const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
  */
 export const zSandboxContribActiveFields = z
   .record(z.string(), z.object({ contributionValue: z.string() }))
-  .refine((v) => Object.keys(v).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS, {
-    message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
-  })
+  .refine(
+    (v) => Object.keys(v).length <= MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS,
+    {
+      message: `At most ${MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS} accounts may be edited at once`,
+    },
+  )
   .optional();
 
 /**
@@ -164,5 +167,5 @@ export const zSandboxContribAdditions = z
       contributionValue: z.string(),
     }),
   )
-  .max(MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS)
+  .max(MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS)
   .optional();

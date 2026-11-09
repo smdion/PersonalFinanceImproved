@@ -15,7 +15,7 @@ import {
   combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
 import {
-  isDiscountBasisEmployerContrib,
+  isDiscountBasisEmployerContribution,
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
@@ -56,7 +56,7 @@ export function YearRow({
   // money, and showing this annotation there would need a visibly-labeled
   // basis toggle (deferred), not a silent always-on figure.
   const discountAccountsForYear = accounts.filter((a) =>
-    isDiscountBasisEmployerContrib(a.accountType ?? "", a.subType),
+    isDiscountBasisEmployerContribution(a.accountType ?? "", a.subType),
   );
   const isRollupCategory = (
     PARENT_CATEGORY_ROLLUPS as readonly string[]
@@ -382,7 +382,7 @@ export function YearRow({
             activeAccountCount !== undefined &&
             index === activeAccountCount &&
             index > 0;
-          const isDiscountBasis = isDiscountBasisEmployerContrib(
+          const isDiscountBasis = isDiscountBasisEmployerContribution(
             a.accountType ?? "",
             a.subType,
           );

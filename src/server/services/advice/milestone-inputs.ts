@@ -71,7 +71,7 @@ function finalizedYears(
       estimated: false,
       finalized: true,
     };
-    const est = parseEstimatedFields(r.estimatedFields);
+    const estimate = parseEstimatedFields(r.estimatedFields);
     years.set(r.year, {
       employee:
         y.employee +
@@ -80,8 +80,8 @@ function finalizedYears(
       gain: y.gain + toNumber(r.yearlyGainLoss),
       estimated:
         y.estimated ||
-        est.includes("employeeContrib") ||
-        est.includes("employerContributions"),
+        estimate.includes("employeeContrib") ||
+        estimate.includes("employerContributions"),
       finalized: y.finalized && r.isFinalized,
     });
   }
@@ -237,7 +237,7 @@ export async function loadMilestoneInputs(
     const balance = now.balance;
     const rate = toNumberOrNull(d.interestRate);
     const open = isOpenDebt(d, today);
-    const est = debtPayoffEstimate(
+    const estimate = debtPayoffEstimate(
       {
         balance,
         interestRate: rate,
@@ -253,9 +253,11 @@ export async function loadMilestoneInputs(
       rate,
       ownerAge: ageOf(d.ownerPersonId),
       open,
-      payoffYear: est.payoffMonth ? Number(est.payoffMonth.slice(0, 4)) : null,
-      never: est.never,
-      stale: open && est.stale,
+      payoffYear: estimate.payoffMonth
+        ? Number(estimate.payoffMonth.slice(0, 4))
+        : null,
+      never: estimate.never,
+      stale: open && estimate.stale,
       paidOffYear: d.paidOffDate ? Number(d.paidOffDate.slice(0, 4)) : null,
     };
   });

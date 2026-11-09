@@ -90,13 +90,13 @@ export const scenariosRouter = createTRPCRouter({
 
       // Router-level warnings for silent fallbacks
       const routerWarnings: string[] = [];
-      const nullContribAccounts = activeContribs.filter(
+      const nullContributionAccounts = activeContribs.filter(
         (c) =>
           c.contributionValue === null || c.contributionValue === undefined, // from a cast stored entry: null is reachable
       );
-      if (nullContribAccounts.length > 0) {
+      if (nullContributionAccounts.length > 0) {
         routerWarnings.push(
-          `${nullContribAccounts.length} contribution account(s) have no contribution value set — defaulting to $0`,
+          `${nullContributionAccounts.length} contribution account(s) have no contribution value set — defaulting to $0`,
         );
       }
       if (portfolioTotal === 0) {

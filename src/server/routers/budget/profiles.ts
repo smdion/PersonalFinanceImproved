@@ -1,5 +1,5 @@
 import { assertNoPlanUses } from "@/server/services/profiles/plans";
-import { SK_RETIREMENT_DEC_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -233,15 +233,26 @@ export const profileProcedures = {
       // Nothing may keep pointing at the deleted profile: the retirement
       // page's retirement-spending pick (app_settings holds the id as a
       // number or numeric string) and a budget-API link.
-      const [decSetting] = await ctx.db
+      const [decumulationSetting] = await ctx.db
         .select()
         .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_RETIREMENT_DEC_BUDGET_PROFILE_ID));
-      if (decSetting && Number(decSetting.value) === input.id) {
+        .where(
+          eq(
+            schema.appSettings.key,
+            SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
+          ),
+        );
+      if (
+        decumulationSetting &&
+        Number(decumulationSetting.value) === input.id
+      ) {
         await ctx.db
           .delete(schema.appSettings)
           .where(
-            eq(schema.appSettings.key, SK_RETIREMENT_DEC_BUDGET_PROFILE_ID),
+            eq(
+              schema.appSettings.key,
+              SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
+            ),
           );
       }
       await ctx.db

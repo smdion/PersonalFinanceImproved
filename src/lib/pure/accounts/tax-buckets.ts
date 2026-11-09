@@ -199,14 +199,14 @@ export function computeTaxBucketBreakdown(
       portfolioByTaxType.afterTaxBasis += basis;
       portfolioByTaxTypeByParentCat[pCat].afterTaxBasis += basis;
 
-      const catAsBal = cat as AccountCategory;
-      const bal = portfolioByAccount[catAsBal];
-      if (bal.structure === "roth_traditional") {
-        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
-        else addTraditional(bal, a.amount);
+      const catAsBalance = cat as AccountCategory;
+      const balance = portfolioByAccount[catAsBalance];
+      if (balance.structure === "roth_traditional") {
+        if (isTaxFreeBucket(a.taxType)) addRoth(balance, a.amount);
+        else addTraditional(balance, a.amount);
       } else {
-        addBalance(bal, a.amount);
-        if (basis > 0) addBasis(bal, basis);
+        addBalance(balance, a.amount);
+        if (basis > 0) addBasis(balance, basis);
       }
 
       if (ownerName) {
@@ -316,17 +316,19 @@ export function computeTaxBucketBreakdown(
     accountOwnersByCategory[cat] = Array.from(names).join(" + ");
   }
   const totalByCategory: Record<string, number> = {};
-  for (const personBals of Object.values(balanceByPersonByCategory)) {
-    for (const [cat, amount] of Object.entries(personBals)) {
+  for (const personBalances of Object.values(balanceByPersonByCategory)) {
+    for (const [cat, amount] of Object.entries(personBalances)) {
       totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amount;
     }
   }
   const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
   const ownershipByPerson: Record<string, Record<string, number>> = {};
-  for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
+  for (const [name, personBalances] of Object.entries(
+    balanceByPersonByCategory,
+  )) {
     ownershipByPerson[name] = {};
     let personTotal = 0;
-    for (const [cat, amount] of Object.entries(personBals)) {
+    for (const [cat, amount] of Object.entries(personBalances)) {
       const catTotal = totalByCategory[cat] ?? 1;
       ownershipByPerson[name][cat] = safeDivide(amount, catTotal, 0);
       personTotal += amount;

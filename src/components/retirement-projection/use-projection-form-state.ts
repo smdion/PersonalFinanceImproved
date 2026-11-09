@@ -26,7 +26,7 @@ import type {
 } from "./types";
 import { emptyAccumForm, emptyDecumForm } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
-import { MC_DEFAULT_TRIALS } from "@/lib/constants";
+import { SIMULATION_DEFAULT_TRIALS } from "@/lib/constants";
 import { SK_DIAG_MODE } from "@/lib/constants/settings-keys";
 
 export function useProjectionFormState() {
@@ -164,7 +164,9 @@ export function useProjectionFormState() {
   const [projectionMode, setProjectionMode] = useState<
     "deterministic" | "monteCarlo"
   >("monteCarlo");
-  const [simulationTrials, setSimulationTrials] = useState(MC_DEFAULT_TRIALS);
+  const [simulationTrials, setSimulationTrials] = useState(
+    SIMULATION_DEFAULT_TRIALS,
+  );
   // Shared with the strategy comparison.
   const [simulationPreset, setSimulationPreset] = useSimulationPreset();
   // Default to Advanced (real per-account tax tracking) rather than

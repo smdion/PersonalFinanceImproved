@@ -56,7 +56,7 @@ export function profileSelectionFrom(picks: ProfilePicks): ProfileSelection {
 /** The engine payload's options for a selection; absent stays absent. */
 export function engineProfileOptions(selection: ProfileSelection = {}) {
   const acc = selection.accumulationBudget;
-  const dec = selection.decumulationBudget;
+  const decumulation = selection.decumulationBudget;
   return {
     contributionProfileId: selection.contribution,
     salaryProfileId: selection.salary,
@@ -64,8 +64,8 @@ export function engineProfileOptions(selection: ProfileSelection = {}) {
     accumulationBudgetProfileId: acc?.profileId,
     accumulationBudgetColumn: acc?.column,
     accumulationExpenseOverride: acc?.annualExpenses,
-    decumulationBudgetProfileId: dec?.profileId,
-    decumulationBudgetColumn: dec?.column,
-    decumulationExpenseOverride: dec?.annualExpenses,
+    decumulationBudgetProfileId: decumulation?.profileId,
+    decumulationBudgetColumn: decumulation?.column,
+    decumulationExpenseOverride: decumulation?.annualExpenses,
   };
 }

@@ -44,14 +44,14 @@ import { FundingBar } from "@/components/paycheck/funding-bar";
 import { PaceStatusText } from "./pace-status";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { queryInput: contributionProfileInput } =
-    useEffectiveContribProfileId();
+    useEffectiveContributionProfileId();
   const contributionInput = {
     ...contributionProfileInput,
     ...salaryProfileInput,

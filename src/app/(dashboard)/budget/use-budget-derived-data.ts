@@ -19,7 +19,7 @@ import {
   buildNonPayrollContributions,
   fixedContributionMonthly,
 } from "@/components/budget/helpers";
-import { normalizeContribKey } from "@/lib/config/account-types";
+import { normalizeContributionKey } from "@/lib/config/account-types";
 import type {
   RawItem,
   PayrollBreakdown,
@@ -162,7 +162,7 @@ export function useBudgetDerivedData({
         linkedContributionAccountIds,
       );
       for (const [accountType, monthly] of Array.from(nonPayroll.entries())) {
-        const key = normalizeContribKey(accountType);
+        const key = normalizeContributionKey(accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
@@ -185,7 +185,7 @@ export function useBudgetDerivedData({
             : c.contributionMethod === "fixed_monthly"
               ? val
               : val / 12;
-        const key = normalizeContribKey(c.accountType);
+        const key = normalizeContributionKey(c.accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
@@ -203,7 +203,7 @@ export function useBudgetDerivedData({
   ): number | null => {
     const map = contributionByCanonicalPerCol[colIndex ?? 0];
     if (!map || map.size === 0) return null;
-    const key = normalizeContribKey(subcategory);
+    const key = normalizeContributionKey(subcategory);
     return key ? (map.get(key) ?? null) : null;
   };
 

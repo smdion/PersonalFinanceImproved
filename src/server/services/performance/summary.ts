@@ -5,7 +5,7 @@ import { getLatestSnapshot } from "@/server/data/snapshots";
 import { getAllPeople } from "@/server/data/people";
 import { accountDisplayName } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
-import { buildPerfAcctLookups } from "@/lib/pure/investments/annual-rollups";
+import { buildPerfAccountLookups } from "@/lib/pure/investments/annual-rollups";
 import { loadPerformanceChecks } from "@/server/services/performance/performance-checks";
 import {
   addRetirementRollup,
@@ -43,7 +43,7 @@ export async function computePerformanceSummary(ctx: { db: Db }) {
   );
 
   const peopleMap = new Map(people.map((p) => [p.id, p.name]));
-  const perfLookups = buildPerfAcctLookups(perfAccounts);
+  const perfLookups = buildPerfAccountLookups(perfAccounts);
   // Exact (account, owner, year) match — deliberately not the "current
   // row per pair" fallback selectCurrentRothBasisRow()/buildCurrentRothBasisMap()
   // use elsewhere: this table shows one column per historical year, so

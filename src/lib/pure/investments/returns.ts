@@ -9,7 +9,7 @@ import { HALF_CENT } from "@/lib/constants";
  * Returns null when denominator is zero (no capital at risk).
  */
 export function computeReturn(
-  beginBal: number,
+  beginBalance: number,
   contribs: number,
   gainLoss: number,
   distributions: number,
@@ -17,7 +17,7 @@ export function computeReturn(
   rollovers: number = 0,
 ): number | null {
   const denominator =
-    beginBal + (contribs + rollovers - distributions - fees) / 2;
+    beginBalance + (contribs + rollovers - distributions - fees) / 2;
   return safeDivide(gainLoss, denominator, null);
 }
 
@@ -174,7 +174,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees = 0,
     rollovers = 0,
     lifetimeGains = 0,
-    lifetimeContribs = 0,
+    lifetimeContributions = 0,
     lifetimeMatch = 0;
   for (const r of rows) {
     beginBal += r.beginningBalance;
@@ -186,7 +186,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees += r.fees;
     rollovers += r.rollovers;
     lifetimeGains += r.lifetimeGains;
-    lifetimeContribs += r.lifetimeContributions;
+    lifetimeContributions += r.lifetimeContributions;
     lifetimeMatch += r.lifetimeMatch;
   }
   return {
@@ -199,7 +199,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees,
     rollovers,
     lifetimeGains,
-    lifetimeContribs,
+    lifetimeContributions,
     lifetimeMatch,
   };
 }
@@ -263,7 +263,7 @@ export function resolveCategoryValues(
 
   const sums = sumAccounts(catAccounts);
   const ltGains = prevLifetime.lifetimeGains + sums.gainLoss;
-  const ltContribs = prevLifetime.lifetimeContributions + sums.contribs;
+  const ltContributions = prevLifetime.lifetimeContributions + sums.contribs;
   const ltMatch = prevLifetime.lifetimeMatch + sums.employer;
   const returnPct = computeReturn(
     sums.beginBal,
@@ -285,7 +285,7 @@ export function resolveCategoryValues(
       fees: sums.fees,
       rollovers: sums.rollovers,
       lifetimeGains: ltGains,
-      lifetimeContributions: ltContribs,
+      lifetimeContributions: ltContributions,
       lifetimeMatch: ltMatch,
     },
     returnPct,
@@ -325,7 +325,7 @@ export function resolvePortfolioValues(
       fees: ps.fees,
       rollovers: ps.rollovers,
       lifetimeGains: ps.lifetimeGains,
-      lifetimeContributions: ps.lifetimeContribs,
+      lifetimeContributions: ps.lifetimeContributions,
       lifetimeMatch: ps.lifetimeMatch,
     },
     returnPct,

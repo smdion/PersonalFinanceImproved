@@ -105,7 +105,7 @@ export type PaycheckPersonView = {
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;
   coverageNoteGroup?: string;
-  otherJointContribs: JointContrib[];
+  otherJointContributions: JointContrib[];
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
   /** Contribution account ids owned by this person/job with no active
@@ -201,7 +201,7 @@ export function usePaycheckPersonViews({
 
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
-  const { data: contribData } = trpc.contribution.computeSummary.useQuery({
+  const { data: contributionData } = trpc.contribution.computeSummary.useQuery({
     ...(contributionProfileId != null ? { contributionProfileId } : {}),
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
@@ -340,7 +340,7 @@ export function usePaycheckPersonViews({
   const views: PaycheckPersonView[] = useMemo(
     () =>
       people.map((d, index) => {
-        const personContrib = contribData?.people.find(
+        const personContribution = contributionData?.people.find(
           (p) => p.person.id === d.person.id,
         );
         return {
@@ -373,14 +373,14 @@ export function usePaycheckPersonViews({
           alignedPostTax: alignedData?.postTax[index as 0 | 1],
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
-          otherJointContribs: jointContribs,
-          perContribData: (personContrib?.perContribData ??
+          otherJointContributions: jointContribs,
+          perContribData: (personContribution?.perContribData ??
             []) as PerContribView[],
           incompleteAccountIds: ((d as Record<string, unknown>)
             .incompleteAccountIds ?? []) as number[],
         };
       }),
-    [people, contribData, alignedData, jointContribs],
+    [people, contributionData, alignedData, jointContribs],
   );
 
   return {

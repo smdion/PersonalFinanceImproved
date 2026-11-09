@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
-import { contribAccountsFor } from "@/lib/pure/contributions/person-snapshot";
+import { contributionAccountsFor } from "@/lib/pure/contributions/person-snapshot";
 
 const base: ContributionAccountRow = {
   capPassed: true,
@@ -60,7 +60,7 @@ const lastYear = {
 };
 
 const snapshot = () =>
-  contribAccountsFor({
+  contributionAccountsFor({
     effectiveContributions: [base, ira],
     activeJob: { id: 10, bonusMonth: null, bonusDayOfMonth: null },
     person: { id: 1, dateOfBirth: "1974-06-01" },
@@ -91,10 +91,11 @@ describe("contributionAccountsFor reads each figure from its own field", () => {
   });
 
   it("this year's limits (with the age's catch-up) and last year's stay apart", () => {
-    const { resolveContribLimit, resolveContribPriorYearLimit } = snapshot();
-    expect(resolveContribLimit("401k", null)).toBe(23500 + 7500);
-    expect(resolveContribLimit("ira", null)).toBe(7000 + 1000);
-    expect(resolveContribPriorYearLimit("ira", null)).toBe(6500 + 900);
+    const { resolveContributionLimit, resolveContributionPriorYearLimit } =
+      snapshot();
+    expect(resolveContributionLimit("401k", null)).toBe(23500 + 7500);
+    expect(resolveContributionLimit("ira", null)).toBe(7000 + 1000);
+    expect(resolveContributionPriorYearLimit("ira", null)).toBe(6500 + 900);
   });
 
   it("splits the job's rows from the person's own", () => {

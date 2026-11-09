@@ -174,7 +174,7 @@ export async function seedProfile(
   // entry or it would render as $0/incomplete. Insert the accounts first
   // (capturing their real ids), then seed one demo Contribution Profile
   // whose active fields cover all of them, and make it the active profile.
-  const contribActiveFieldsByAccountId: Record<
+  const contributionActiveFieldsByAccountId: Record<
     string,
     { contributionValue: string; contributionMethod: string }
   > = {};
@@ -204,26 +204,26 @@ export async function seedProfile(
       })
       .returning({ id: schema.contributionAccounts.id });
     if (created) {
-      contribActiveFieldsByAccountId[String(created.id)] = {
+      contributionActiveFieldsByAccountId[String(created.id)] = {
         contributionValue: ca.contributionValue,
         contributionMethod: ca.contributionMethod,
       };
     }
   }
-  if (Object.keys(contribActiveFieldsByAccountId).length > 0) {
-    const [demoContribProfile] = await db
+  if (Object.keys(contributionActiveFieldsByAccountId).length > 0) {
+    const [demoContributionProfile] = await db
       .insert(schema.contributionProfiles)
       .values({
         name: "Demo Contribution",
         contributionActiveFields: {
-          contributionAccounts: contribActiveFieldsByAccountId,
+          contributionAccounts: contributionActiveFieldsByAccountId,
         },
       })
       .returning({ id: schema.contributionProfiles.id });
-    if (demoContribProfile) {
+    if (demoContributionProfile) {
       await db.insert(schema.appSettings).values({
         key: SK_ACTIVE_CONTRIB_PROFILE_ID,
-        value: demoContribProfile.id,
+        value: demoContributionProfile.id,
       });
     }
   }

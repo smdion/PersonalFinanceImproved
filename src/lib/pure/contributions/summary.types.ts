@@ -70,7 +70,7 @@ export type AccountTypeSnapshot = {
 
 /** Per-raw-contrib computed data — lets consumers (e.g. Paycheck page) use
  *  pre-computed values instead of re-deriving annual amounts, limits, and siblings. */
-export type PerContribData = {
+export type PerContributionData = {
   contribId: number;
   annualAmount: number;
   employerMatchAnnual: number;
@@ -95,7 +95,7 @@ export type PersonSnapshot = {
   periodsPerYear: number;
   periodsElapsedYtd: number;
   accountTypes: AccountTypeSnapshot[];
-  perContribData: PerContribData[];
+  perContribData: PerContributionData[];
   totals: {
     views: Record<ViewMode, ViewAwareTotals>;
     /** Actual YTD retirement contributions from performance data. */

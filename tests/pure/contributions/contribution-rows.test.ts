@@ -7,12 +7,12 @@
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
-  contribRowAmounts,
+  contributionRowAmounts,
   resolveContribPeriods,
-  type ContribRow,
+  type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 
-const hsa = (method: string, value: number): ContribRow => ({
+const hsa = (method: string, value: number): ContributionRow => ({
   id: 1,
   personId: 1,
   jobId: 1,
@@ -52,7 +52,7 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
   });
 
   it("a $100/month HSA gives a finite annual: 12 months plus one paycheck's share", () => {
-    const { annualById } = contribRowAmounts(
+    const { annualById } = contributionRowAmounts(
       [hsa("fixed_monthly", 100)],
       jobs,
       pay,
@@ -63,7 +63,7 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
   });
 
   it("a fixed-annual account likewise takes one paycheck's share from the bonus", () => {
-    const { annualById } = contribRowAmounts(
+    const { annualById } = contributionRowAmounts(
       [hsa("fixed_annual", 1200)],
       jobs,
       pay,

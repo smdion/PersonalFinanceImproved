@@ -31,7 +31,7 @@ export function canDeleteBudgetProfile(profile: {
  * The "used by a Plan" guard lives in the router (assertNoPlanUses), which has to name the
  * offending Plans in its message.
  */
-export function canDeleteContribProfile(
+export function canDeleteContributionProfile(
   activeProfileId: number | null,
   profileId: number,
   profileCount: number,
@@ -234,7 +234,7 @@ export function jobYearsNote(
  *  profile at all (excluded, see applyContribActiveFields); `isActive:
  *  false` means it has a value but is switched off within this profile
  *  (a distinct state from having no value). */
-export type ContribAccountActiveFields = {
+export type ContributionAccountActiveFields = {
   contributionValue?: string | number;
   contributionMethod?: string;
   /** Also taken from bonus checks. */
@@ -242,7 +242,7 @@ export type ContribAccountActiveFields = {
   isActive?: boolean;
 } | null;
 
-type ContribFieldDisplayState = {
+type ContributionFieldDisplayState = {
   /** True when this profile has a resolvable `contributionValue` for the
    *  account, including an explicit value of "0" — absence, not zero, is
    *  what excludes a row (matches getIncompleteContribAccountIds's own
@@ -270,9 +270,9 @@ type ContribFieldDisplayState = {
  * `contributionValue`/`isActive` fields directly since they bind to form
  * state rather than rendering a label.
  */
-export function resolveContribFieldDisplayState(
-  activeFields: ContribAccountActiveFields,
-): ContribFieldDisplayState {
+export function resolveContributionFieldDisplayState(
+  activeFields: ContributionAccountActiveFields,
+): ContributionFieldDisplayState {
   const hasValue = activeFields?.contributionValue !== undefined;
   const isDisabled = activeFields?.isActive === false;
   const methodSuffix =

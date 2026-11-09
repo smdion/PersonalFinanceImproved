@@ -224,8 +224,8 @@ export function findBonusPeriod(
     let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, interval);
 
     let periodNum = 0;
-    const dec31 = new Date(Date.UTC(year, 11, 31));
-    while (payday <= dec31) {
+    const december31 = new Date(Date.UTC(year, 11, 31));
+    while (payday <= december31) {
       periodNum++;
       if (bonusDate) {
         // Find the period whose window contains the bonus date

@@ -197,10 +197,11 @@ export function yearEndPerformance(
     let portfolioTotal = 0;
     const byType: Record<string, number> = {};
     for (const account of yearAccounts) {
-      const endBal = toNumber(account.endingBalance);
+      const endBalance = toNumber(account.endingBalance);
       const master = resolveHistoryMaster(account);
-      portfolioTotal += endBal;
-      byType[master.accountType] = (byType[master.accountType] ?? 0) + endBal;
+      portfolioTotal += endBalance;
+      byType[master.accountType] =
+        (byType[master.accountType] ?? 0) + endBalance;
     }
     perfPortfolioByYear.set(year, { portfolioTotal, byType });
   }

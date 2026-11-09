@@ -16,8 +16,8 @@
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 
 export function ContributionProfileCompare() {
@@ -100,9 +100,9 @@ export function ContributionProfileCompare() {
               {data.profiles.map((p) => {
                 const activeFields = (p.accountActiveFields[
                   String(account.id)
-                ] ?? null) as ContribAccountActiveFields;
+                ] ?? null) as ContributionAccountActiveFields;
                 const { hasValue, isDisabled, value, methodSuffix } =
-                  resolveContribFieldDisplayState(activeFields);
+                  resolveContributionFieldDisplayState(activeFields);
                 return (
                   <td
                     key={p.id}

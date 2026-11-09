@@ -38,7 +38,7 @@ import {
   HSA_COVERAGE_LABELS,
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
-import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import { resolveContributionFieldDisplayState } from "@/lib/pure/household/profiles";
 import {
   matchFigureForForm,
   matchValueToStore,
@@ -166,7 +166,7 @@ export function ContributionAccountForm({
     (compareData?.profiles ?? [])
       .filter(
         (p) =>
-          resolveContribFieldDisplayState(
+          resolveContributionFieldDisplayState(
             p.accountActiveFields[String(accountId)] ?? null,
           ).hasValue,
       )

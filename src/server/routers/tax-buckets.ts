@@ -45,25 +45,30 @@ export const taxBucketsRouter = createTRPCRouter({
   /** Real current-state tax-bucket breakdown from the latest snapshot, with
    *  Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account. */
   computeBreakdown: protectedProcedure.query(async ({ ctx }) => {
-    const [people, perfAccounts, snapshotData, rothBasisRows, contribLinks] =
-      await Promise.all([
-        ctx.db.select().from(schema.people),
-        ctx.db.select().from(schema.performanceAccounts),
-        getLatestSnapshot(ctx.db),
-        ctx.db.select().from(schema.accountBasis),
-        ctx.db
-          .select({
-            performanceAccountId:
-              schema.contributionAccounts.performanceAccountId,
-            jobId: schema.contributionAccounts.jobId,
-          })
-          .from(schema.contributionAccounts),
-      ]);
+    const [
+      people,
+      perfAccounts,
+      snapshotData,
+      rothBasisRows,
+      contributionLinks,
+    ] = await Promise.all([
+      ctx.db.select().from(schema.people),
+      ctx.db.select().from(schema.performanceAccounts),
+      getLatestSnapshot(ctx.db),
+      ctx.db.select().from(schema.accountBasis),
+      ctx.db
+        .select({
+          performanceAccountId:
+            schema.contributionAccounts.performanceAccountId,
+          jobId: schema.contributionAccounts.jobId,
+        })
+        .from(schema.contributionAccounts),
+    ]);
 
     const jobs = await ctx.db.select().from(schema.jobs);
     const jobsById = new Map(jobs.map((j) => [j.id, j]));
 
-    const jobLinks = contribLinks
+    const jobLinks = contributionLinks
       .filter(
         (c): c is { performanceAccountId: number; jobId: number } =>
           c.performanceAccountId != null && c.jobId != null,

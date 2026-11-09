@@ -22,8 +22,9 @@ export function buildVerdict(
   mcResult: MonteCarloResult,
 ): ReportVerdict {
   const deterministicOnTrack = assessPlan(projectionResult).succeeded;
-  const mcOnTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
-  const onTrack = deterministicOnTrack && mcOnTrack;
+  const simulationOnTrack =
+    mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
+  const onTrack = deterministicOnTrack && simulationOnTrack;
   return {
     onTrack,
     headline: onTrack

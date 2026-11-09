@@ -345,33 +345,33 @@ export function WithdrawalComparisonCard({
             <LineChart data={chartData}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={CHART_COLORS.wdComparisonGrid}
+                stroke={CHART_COLORS.withdrawalComparisonGrid}
               />
               <XAxis
                 dataKey="year"
-                stroke={CHART_COLORS.wdComparisonAxis}
+                stroke={CHART_COLORS.withdrawalComparisonAxis}
                 tick={{ fontSize: CHART_FONT.tick }}
                 label={{
                   value: "Year",
                   position: "insideBottom",
                   offset: -5,
                   fontSize: CHART_FONT.tick,
-                  fill: CHART_COLORS.wdComparisonAxis,
+                  fill: CHART_COLORS.withdrawalComparisonAxis,
                 }}
               />
               <YAxis
-                stroke={CHART_COLORS.wdComparisonAxis}
+                stroke={CHART_COLORS.withdrawalComparisonAxis}
                 tick={{ fontSize: CHART_FONT.tick }}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: CHART_COLORS.wdComparisonTooltipBg,
-                  border: `1px solid ${CHART_COLORS.wdComparisonGrid}`,
+                  backgroundColor: CHART_COLORS.withdrawalComparisonTooltipBg,
+                  border: `1px solid ${CHART_COLORS.withdrawalComparisonGrid}`,
                   borderRadius: "6px",
                   fontSize: CHART_FONT.tooltip,
                 }}
-                labelStyle={{ color: CHART_COLORS.wdComparisonAxis }}
+                labelStyle={{ color: CHART_COLORS.withdrawalComparisonAxis }}
                 formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(year) => String(year)}
               />

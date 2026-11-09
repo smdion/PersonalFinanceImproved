@@ -1,7 +1,7 @@
 /** The order the household's contributions fill in, by category, for the
  *  PlanHealthCard's contribution-order check. */
 
-interface ActiveContribLite {
+interface ActiveContributionLite {
   accountType: string;
   allocationPriority?: number | null;
 }
@@ -13,9 +13,9 @@ interface ActiveContribLite {
  * heuristic.
  */
 export function buildAccumulationOrder(
-  activeContribs: readonly ActiveContribLite[],
+  activeContributions: readonly ActiveContributionLite[],
 ): string[] {
-  const sorted = [...activeContribs].sort(
+  const sorted = [...activeContributions].sort(
     (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
   );
   const seen = new Set<string>();

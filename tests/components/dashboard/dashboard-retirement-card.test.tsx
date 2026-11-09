@@ -18,7 +18,7 @@ vi.mock("@/lib/hooks/use-effective-salary-profile-id", () => ({
   useEffectiveSalaryProfileId: () => ({ queryInput: {} }),
 }));
 vi.mock("@/lib/hooks/use-effective-contrib-profile-id", () => ({
-  useEffectiveContribProfileId: () => ({ queryInput: {} }),
+  useEffectiveContributionProfileId: () => ({ queryInput: {} }),
 }));
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),

@@ -13,7 +13,7 @@ import {
   planMatchesActive,
   planProfileIds,
 } from "@/lib/pure/household/plans";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
 import { useActiveContribProfile } from "./use-active-contrib-profile";
@@ -108,7 +108,8 @@ export function usePlans() {
 export function useConfirmApplyPlan() {
   const { activeIds } = usePlans();
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
@@ -118,11 +119,11 @@ export function useConfirmApplyPlan() {
   >(
     () => ({
       salary: salaryProfiles,
-      contribution: contribProfiles,
+      contribution: contributionProfiles,
       budget: budgetProfiles,
       retirement: retirementProfiles,
     }),
-    [salaryProfiles, contribProfiles, budgetProfiles, retirementProfiles],
+    [salaryProfiles, contributionProfiles, budgetProfiles, retirementProfiles],
   );
 
   return useCallback(
@@ -133,17 +134,17 @@ export function useConfirmApplyPlan() {
         ({ kind, id }) =>
           `${PLAN_PROFILE_KIND_TITLES[kind]}: ${lists[kind]?.find((p) => p.id === id)?.name ?? "—"}`,
       );
-      const contribChange = changes.find((c) => c.kind === "contribution");
-      if (contribChange && compare) {
+      const contributionChange = changes.find((c) => c.kind === "contribution");
+      if (contributionChange && compare) {
         const outgoing = compare.profiles.find(
           (p) => p.id === activeIds.contribution,
         );
         const incoming = compare.profiles.find(
-          (p) => p.id === contribChange.id,
+          (p) => p.id === contributionChange.id,
         );
         if (outgoing)
           lines.push(
-            ...diffContribProfileSwap(
+            ...diffContributionProfileSwap(
               outgoing.accountActiveFields,
               incoming?.accountActiveFields ?? {},
               compare.accounts,

@@ -28,7 +28,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type { PersonContributionAccountsInput } from "@/lib/pure/contributions/person-snapshot.types";
-import type { PerContribData } from "@/lib/pure/contributions/summary.types";
+import type { PerContributionData } from "@/lib/pure/contributions/summary.types";
 
 export function personPay(
   salaryProfileActiveMap: SalaryProfileActiveMap,
@@ -63,7 +63,7 @@ export function personPay(
   return { dbSalary, pay, salary, totalCompensation };
 }
 
-export function contribAccountsFor<R extends ContributionAccountRow>({
+export function contributionAccountsFor<R extends ContributionAccountRow>({
   effectiveContributions: effectiveContribs,
   activeJob,
   person,
@@ -76,8 +76,10 @@ export function contribAccountsFor<R extends ContributionAccountRow>({
   age,
   priorYearLimitsRecord,
 }: PersonContributionAccountsInput<R>) {
-  const jobContribs = effectiveContribs.filter((c) => c.jobId === activeJob.id);
-  const personalContribs = effectiveContribs.filter(
+  const jobContributions = effectiveContribs.filter(
+    (c) => c.jobId === activeJob.id,
+  );
+  const personalContributions = effectiveContribs.filter(
     (c) =>
       c.jobId === null && c.personId === person.id && c.ownership !== "joint",
   );
@@ -92,14 +94,14 @@ export function contribAccountsFor<R extends ContributionAccountRow>({
         )
       : null;
   const accounts = buildContribAccounts(
-    jobContribs,
-    personalContribs,
+    jobContributions,
+    personalContributions,
     salary,
     periodsPerYear,
     ficaCapContext(limitsRecord, person.dateOfBirth, asOfDate.getFullYear()),
     pay.bonusGross,
   );
-  const rawContribs = [...jobContribs, ...personalContribs];
+  const rawContribs = [...jobContributions, ...personalContributions];
 
   const input: ContributionInput = {
     annualSalary: salary,
@@ -112,13 +114,13 @@ export function contribAccountsFor<R extends ContributionAccountRow>({
   const result = calculateContributions(input);
 
   // Resolve IRS limit for an account type (with coverage variant + catchup)
-  const resolveContribLimit = (
+  const resolveContributionLimit = (
     accountType: string,
     hsaCoverageType: string | null,
   ): number => resolveIrsLimit(accountType, age, hsaCoverageType, limitsRecord);
 
   // Resolve prior-year IRS limit for an account type
-  const resolveContribPriorYearLimit = (
+  const resolveContributionPriorYearLimit = (
     accountType: string,
     hsaCoverageType: string | null,
   ): number =>
@@ -134,34 +136,34 @@ export function contribAccountsFor<R extends ContributionAccountRow>({
     accounts,
     rawContribs,
     result,
-    resolveContribLimit,
-    resolveContribPriorYearLimit,
+    resolveContributionLimit,
+    resolveContributionPriorYearLimit,
   };
 }
 
-export function perContribRows(
+export function perContributionRows(
   rawContribs: ContributionAccountRow[],
   accounts: ContributionAccountInput[],
-  resolveContribLimit: (
+  resolveContributionLimit: (
     accountType: string,
     hsaCoverageType: string | null,
   ) => number,
   inPriorYearWindow: boolean,
   priorYear: number,
-  resolveContribPriorYearLimit: (
+  resolveContributionPriorYearLimit: (
     accountType: string,
     hsaCoverageType: string | null,
   ) => number,
-  contribActualMap: Map<
+  contributionActualMap: Map<
     number,
     { contributions: number; employerMatch: number }
   >,
 ) {
-  const perContribData: PerContribData[] = rawContribs.map((rc, i) => {
+  const perContribData: PerContributionData[] = rawContribs.map((rc, i) => {
     const annual = accounts[i]!.annualContribution;
     const matchAnnual = accounts[i]!.employerMatch;
     const group = getLimitGroup(rc.accountType as AccountCategory);
-    const limit = resolveContribLimit(rc.accountType, rc.hsaCoverageType);
+    const limit = resolveContributionLimit(rc.accountType, rc.hsaCoverageType);
     // Sibling total: other contribs in same limit group for this person
     // When matchCountsTowardLimit, include sibling employer matches too (e.g. HSA)
     const cfg = categoriesWithIrsLimit().includes(
@@ -185,11 +187,11 @@ export function perContribRows(
     const rawPyAmount = toNumber(rc.priorYearContribAmount);
     const priorYearAmount =
       rc.priorYearContribYear === priorYear ? rawPyAmount : 0;
-    let priorYearData: PerContribData["priorYear"];
+    let priorYearData: PerContributionData["priorYear"];
     if (
       isEligibleForPriorYear(inPriorYearWindow, rc.accountType, priorYearAmount)
     ) {
-      const pyLimit = resolveContribPriorYearLimit(
+      const pyLimit = resolveContributionPriorYearLimit(
         rc.accountType,
         rc.hsaCoverageType,
       );
@@ -207,7 +209,7 @@ export function perContribRows(
       limit,
       siblingAnnualTotal: roundToCents(siblingAnnualTotal),
       limitGroup: group,
-      ytdActual: contribActualMap.get(rc.id) ?? null,
+      ytdActual: contributionActualMap.get(rc.id) ?? null,
       priorYear: priorYearData,
     };
   });

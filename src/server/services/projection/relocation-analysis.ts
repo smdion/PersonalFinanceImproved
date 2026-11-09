@@ -108,7 +108,7 @@ export async function computeRelocationAnalysis(
     retProfiles,
     retScenarios,
     returnRates,
-    allContribsRaw,
+    allContributionsRaw,
     snapshotData,
     allBudgetProfiles,
     allBudgetItems,
@@ -142,7 +142,7 @@ export async function computeRelocationAnalysis(
   ]);
   // Filter to Retirement-only contributions for the relocation tool.
   const perfCatMap = new Map(perfAccounts.map((p) => [p.id, p.parentCategory]));
-  const allContribs = allContribsRaw.filter(
+  const allContributions = allContributionsRaw.filter(
     (c) =>
       c.performanceAccountId != null &&
       isRetirementParent(perfCatMap.get(c.performanceAccountId)),
@@ -297,7 +297,7 @@ export async function computeRelocationAnalysis(
     };
   });
   // Contributions (live data)
-  const activeContribs = allContribs.filter(
+  const activeContributions = allContributions.filter(
     (c) =>
       activeJobs.some((j) => j.id === c.jobId) ||
       (c.jobId === null && people.some((p) => p.id === c.personId)),
@@ -309,7 +309,7 @@ export async function computeRelocationAnalysis(
   // accounts). `contribs` is always resolveProfile's output, never the
   // raw activeContributions rows, which carry no value of their own. Jobs are
   // the arm's profile-patched ones, so a profile's pay schedule counts.
-  const computeContribTotals = (
+  const computeContributionTotals = (
     contribs: (ContribRowWithActiveFields & CapPassed)[],
     salaries: typeof jobSalaries,
     jobsForPeriods: {
@@ -332,7 +332,10 @@ export async function computeRelocationAnalysis(
       })),
     );
     return {
-      totalContribs: sumBy(Object.values(r.contribByCategory), (c) => c.annual),
+      totalContributions: sumBy(
+        Object.values(r.contribByCategory),
+        (c) => c.annual,
+      ),
       totalEmployerMatch: sumBy(
         Object.values(r.employerMatchByCategory),
         (m) => m,
@@ -352,7 +355,7 @@ export async function computeRelocationAnalysis(
     ctx.scope.asOf,
     referenceDate.getFullYear(),
   );
-  const resolveContribProfile = async (profileId: number | null) => {
+  const resolveContributionProfile = async (profileId: number | null) => {
     const profile = profileId
       ? await fetchContributionProfile(ctx.db, profileId)
       : null;
@@ -361,7 +364,7 @@ export async function computeRelocationAnalysis(
     // relocation analysis's comparison arm, so no Plan-specific salary applies.
     const resolved = resolveProfile(
       profile ?? { contributionActiveFields: {} },
-      activeContribs,
+      activeContributions,
       activeJobs,
       jobSalaries,
       salaryProfileActiveMap,
@@ -371,23 +374,23 @@ export async function computeRelocationAnalysis(
       0,
     );
 
-    const totals = computeContribTotals(
+    const totals = computeContributionTotals(
       capResolvedProfile(resolved, capHousehold),
       resolved.jobSalaries,
       resolved.activeJobs,
     );
     return {
       combinedSalary: resolvedCombinedSalary,
-      annualContributions: totals.totalContribs,
+      annualContributions: totals.totalContributions,
       employerMatch: totals.totalEmployerMatch,
       incompleteAccountIds: totals.incompleteIds,
     };
   };
 
-  const currentContribData = await resolveContribProfile(
+  const currentContributionData = await resolveContributionProfile(
     input.currentContributionProfileId,
   );
-  const relocContribData = await resolveContribProfile(
+  const relocContributionData = await resolveContributionProfile(
     input.relocationContributionProfileId,
   );
 
@@ -425,12 +428,12 @@ export async function computeRelocationAnalysis(
     currentAge: age,
     retirementAge,
     currentPortfolio: portfolioTotal,
-    currentAnnualContributions: currentContribData.annualContributions,
-    currentEmployerContributions: currentContribData.employerMatch,
-    currentCombinedSalary: currentContribData.combinedSalary,
-    relocationAnnualContributions: relocContribData.annualContributions,
-    relocationEmployerContributions: relocContribData.employerMatch,
-    relocationCombinedSalary: relocContribData.combinedSalary,
+    currentAnnualContributions: currentContributionData.annualContributions,
+    currentEmployerContributions: currentContributionData.employerMatch,
+    currentCombinedSalary: currentContributionData.combinedSalary,
+    relocationAnnualContributions: relocContributionData.annualContributions,
+    relocationEmployerContributions: relocContributionData.employerMatch,
+    relocationCombinedSalary: relocContributionData.combinedSalary,
     currentSalaryGrowthRate: salaryGrowthRate,
     relocationSalaryGrowthRate: salaryGrowthRate,
     withdrawalRate: selectedScenario
@@ -462,16 +465,20 @@ export async function computeRelocationAnalysis(
       relocationColumnIndex: input.relocationBudgetColumn,
     },
     currentContribProfile: {
-      annualContributions: roundToCents(currentContribData.annualContributions),
-      employerMatch: roundToCents(currentContribData.employerMatch),
-      combinedSalary: roundToCents(currentContribData.combinedSalary),
-      incompleteAccountIds: currentContribData.incompleteAccountIds,
+      annualContributions: roundToCents(
+        currentContributionData.annualContributions,
+      ),
+      employerMatch: roundToCents(currentContributionData.employerMatch),
+      combinedSalary: roundToCents(currentContributionData.combinedSalary),
+      incompleteAccountIds: currentContributionData.incompleteAccountIds,
     },
     relocationContribProfile: {
-      annualContributions: roundToCents(relocContribData.annualContributions),
-      employerMatch: roundToCents(relocContribData.employerMatch),
-      combinedSalary: roundToCents(relocContribData.combinedSalary),
-      incompleteAccountIds: relocContribData.incompleteAccountIds,
+      annualContributions: roundToCents(
+        relocContributionData.annualContributions,
+      ),
+      employerMatch: roundToCents(relocContributionData.employerMatch),
+      combinedSalary: roundToCents(relocContributionData.combinedSalary),
+      incompleteAccountIds: relocContributionData.incompleteAccountIds,
     },
   };
 }

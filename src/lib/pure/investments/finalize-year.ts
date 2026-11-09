@@ -99,7 +99,7 @@ export function nextYearAnnualRow(
           (a) => getEffectiveCategory(a, finalizeLookups) === category,
         );
 
-  const beginBal = catAccounts.reduce(
+  const beginBalance = catAccounts.reduce(
     (sum, a) => sum + toNumber(a.endingBalance),
     0,
   );
@@ -108,10 +108,10 @@ export function nextYearAnnualRow(
   return {
     year: nextYear,
     category,
-    beginningBalance: beginBal.toFixed(2),
+    beginningBalance: beginBalance.toFixed(2),
     totalContributions: "0",
     yearlyGainLoss: "0",
-    endingBalance: beginBal.toFixed(2),
+    endingBalance: beginBalance.toFixed(2),
     employerContributions: "0",
     fees: "0",
     distributions: "0",

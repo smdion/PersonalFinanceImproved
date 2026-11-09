@@ -35,7 +35,7 @@ type AnnualRollupColumns = {
   rollovers: string;
 };
 
-export function buildPerfAcctLookups<P extends PerfAccountRef>(
+export function buildPerfAccountLookups<P extends PerfAccountRef>(
   perfAccounts: P[],
 ) {
   return new Map(perfAccounts.map((pa) => [pa.id, pa]));

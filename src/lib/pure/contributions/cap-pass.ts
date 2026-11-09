@@ -15,8 +15,8 @@ import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
   type JobRef,
   type JobSalaryRef,
-  type ContribRow,
-  contribRowAmounts,
+  type ContributionRow,
+  contributionRowAmounts,
 } from "./contribution-rows";
 import { type JobLike, findActiveJob } from "@/lib/pure/household/profiles";
 import {
@@ -69,11 +69,11 @@ export type CapPassRow = {
 };
 
 /** The aggregate's row shape, from a pass row. */
-const asContribRow = (c: CapPassRow): ContribRow => ({
+const asContributionRow = (c: CapPassRow): ContributionRow => ({
   id: c.id,
   personId: c.personId,
   jobId: c.jobId,
-  accountType: c.accountType as ContribRow["accountType"],
+  accountType: c.accountType as ContributionRow["accountType"],
   subType: c.subType ?? null,
   label: c.label ?? null,
   parentCategory: c.parentCategory ?? "",
@@ -103,8 +103,8 @@ export function capEffectiveContribs<R extends CapPassRow>(
     delete (fields as { capPassed?: true }).capPassed;
     return r as R;
   });
-  const { annualById, salaryById } = contribRowAmounts(
-    configured.map(asContribRow),
+  const { annualById, salaryById } = contributionRowAmounts(
+    configured.map(asContributionRow),
     ctx.activeJobs,
     ctx.jobSalaries,
   );

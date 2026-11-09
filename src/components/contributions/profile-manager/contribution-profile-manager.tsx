@@ -2,7 +2,7 @@
 
 import React from "react";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { ContributionProfileCompare } from "@/components/budget/contribution-profile-compare";
 import {
   AddContributionAccountPanel,
@@ -69,7 +69,7 @@ export function ContributionProfileManager({
     );
     const incoming = compareData?.profiles.find((p) => p.id === id);
     if (compareData && outgoing) {
-      const lines = diffContribProfileSwap(
+      const lines = diffContributionProfileSwap(
         outgoing.accountActiveFields,
         incoming?.accountActiveFields ?? {},
         compareData.accounts,

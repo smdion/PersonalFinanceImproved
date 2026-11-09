@@ -41,9 +41,9 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
 import {
   SK_IRS_LIMIT_GROWTH_RATE,
-  SK_RETIREMENT_DEC_BUDGET_COL,
-  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
-  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+  SK_RETIREMENT_DECUMULATION_BUDGET_COL,
+  SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
 } from "@/lib/constants/settings-keys";
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
@@ -96,14 +96,17 @@ export function RetirementProfileTab({
   const utils = trpc.useUtils();
   const [decumulationBudgetProfileId, setDecumulationBudgetProfileId] =
     usePersistedSetting<number | null>(
-      SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+      SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
       null,
     );
   const [decumulationBudgetColumn, setDecumulationBudgetColumn] =
-    usePersistedSetting<number | null>(SK_RETIREMENT_DEC_BUDGET_COL, null);
+    usePersistedSetting<number | null>(
+      SK_RETIREMENT_DECUMULATION_BUDGET_COL,
+      null,
+    );
   const [decumulationExpenseOverride, setDecumulationExpenseOverride] =
     usePersistedSetting<string | null>(
-      SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+      SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
       null,
     );
   const [contributionProfileId, setContributionProfileId] =

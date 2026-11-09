@@ -38,7 +38,7 @@ import {
 } from "@/lib/config/display-labels";
 import { sumAccounts, computeReturn } from "@/lib/pure/investments/returns";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
-import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
+import { isDiscountBasisEmployerContribution } from "@/lib/config/account-types";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import type { Db } from "@/lib/db";
 import { getLatestSnapshot } from "@/server/data/snapshots";
@@ -206,7 +206,9 @@ export async function buildYearEndHistory(
     const sums = new Map<string, number>();
     for (const account of rows) {
       const master = resolveHistoryMaster(account);
-      if (!isDiscountBasisEmployerContrib(master.accountType, master.subType))
+      if (
+        !isDiscountBasisEmployerContribution(master.accountType, master.subType)
+      )
         continue;
       const category = accountTypeToPerformanceCategory(master.accountType);
       sums.set(
@@ -472,7 +474,10 @@ export async function buildYearEndHistory(
             // This catMap is a separate, throwaway object that never merges
             // into perfByCategoryByYear — safe to compute inline here too.
             if (
-              isDiscountBasisEmployerContrib(master.accountType, master.subType)
+              isDiscountBasisEmployerContribution(
+                master.accountType,
+                master.subType,
+              )
             ) {
               existing.employerMatchDiscount += toNumber(
                 account.employerContributions,

@@ -41,7 +41,7 @@ import {
   buildCoastFireProfileSwitches,
   resolveProjectionOverrides,
 } from "./_shared";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
@@ -54,7 +54,7 @@ import { writeStamp } from "@/lib/utils/clock";
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
  *  search. A not-configured state (no preset, classes or glide path)
  *  returns no result and is never cached. */
-type CoastFireMcResult = {
+type CoastFireSimulationResult = {
   coastFireAge: number | null;
   status: "already_coast" | "unreachable" | "found";
   successRate: number;
@@ -213,12 +213,12 @@ export const coastFireRouter = createTRPCRouter({
       // user-adjustable preset, no asset class overrides, no inflation
       // overrides. Coast FIRE MC uses defaults for reproducibility.
       // Coast FIRE's Simulation runs on the default preset.
-      const [{ payload }, mc] = await Promise.all([
+      const [{ payload }, simulation] = await Promise.all([
         prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),
-        buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
       // No return rate: the projection card says so; nothing to search.
       if (!payload || payload.notConfigured)
@@ -241,15 +241,15 @@ export const coastFireRouter = createTRPCRouter({
       };
 
       // No preset or nothing to draw returns from: a state, not a verdict.
-      if (mc.notConfigured || !mc.preset)
+      if (simulation.notConfigured || !simulation.preset)
         return {
           result: null,
           computedAt: null,
-          notConfigured: mc.notConfigured ?? ("no_presets" as const),
+          notConfigured: simulation.notConfigured ?? ("no_presets" as const),
         };
 
-      const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
-      const { returnClampMin, returnClampMax } = mc.preset;
+      const { mcAssetClasses, mcCorrelations, mcGlidePath } = simulation;
+      const { returnClampMin, returnClampMax } = simulation.preset;
       // VPW sizes by the stock share of the glide path the trials use.
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcStockShareByAge =
@@ -259,7 +259,7 @@ export const coastFireRouter = createTRPCRouter({
           engineInput.currentAge,
           planEndAgeOf(engineInput),
         ) ?? undefined;
-      const inflationRisk = mc.effectiveInflationRisk;
+      const inflationRisk = simulation.effectiveInflationRisk;
 
       // The probe seed is a fixed constant (common random numbers across
       // probes, for variance reduction within one search), not a per-run
@@ -281,7 +281,10 @@ export const coastFireRouter = createTRPCRouter({
       const cached =
         input.forceRefresh && !input.peekOnly
           ? null
-          : await readProjectionCache<CoastFireMcResult>(ctx.db, inputHash);
+          : await readProjectionCache<CoastFireSimulationResult>(
+              ctx.db,
+              inputHash,
+            );
       if (cached) {
         return {
           result: cached.result,
@@ -304,7 +307,7 @@ export const coastFireRouter = createTRPCRouter({
       // across probes = common random numbers = consistent variance across
       // candidate ages.
       let probesRun = 0;
-      const probeMC = (coastAge: number) => {
+      const probeSimulation = (coastAge: number) => {
         probesRun += 1;
         return runMonteCarloOffThread(
           {
@@ -329,14 +332,14 @@ export const coastFireRouter = createTRPCRouter({
         );
       };
       const probeAt = async (coastAge: number): Promise<number> =>
-        (await probeMC(coastAge)).successRate;
+        (await probeSimulation(coastAge)).successRate;
 
       const passes = (rate: number): boolean => rate >= CONFIDENCE;
 
       // Edge case: already past retirement.
       if (engineInput.currentAge >= planRetirementAgeOf(engineInput)) {
-        const fullResult = await probeMC(engineInput.currentAge);
-        const result: CoastFireMcResult = {
+        const fullResult = await probeSimulation(engineInput.currentAge);
+        const result: CoastFireSimulationResult = {
           coastFireAge: engineInput.currentAge,
           status: "already_coast" as const,
           successRate: fullResult.successRate,
@@ -360,10 +363,10 @@ export const coastFireRouter = createTRPCRouter({
       // show "Stopping today: X% MC" alongside the found age. This is the
       // key signal: when deterministic says "already coast" but MC says
       // "need age N," the gap is quantified by stopNowResult.successRate.
-      const stopNowResult = await probeMC(engineInput.currentAge);
+      const stopNowResult = await probeSimulation(engineInput.currentAge);
       const stopNowSuccessRate = stopNowResult.successRate;
       if (passes(stopNowSuccessRate)) {
-        const result: CoastFireMcResult = {
+        const result: CoastFireSimulationResult = {
           coastFireAge: engineInput.currentAge,
           status: "already_coast" as const,
           successRate: stopNowSuccessRate,
@@ -385,9 +388,9 @@ export const coastFireRouter = createTRPCRouter({
 
       // Probe stopping the year before retirement — is the plan reachable at all?
       const maxCoastAge = planRetirementAgeOf(engineInput) - 1;
-      const stopLateResult = await probeMC(maxCoastAge);
+      const stopLateResult = await probeSimulation(maxCoastAge);
       if (!passes(stopLateResult.successRate)) {
-        const result: CoastFireMcResult = {
+        const result: CoastFireSimulationResult = {
           coastFireAge: null,
           status: "unreachable" as const,
           successRate: stopLateResult.successRate,
@@ -433,9 +436,9 @@ export const coastFireRouter = createTRPCRouter({
 
       // One more probe at lo for the spending stability rate + full MC data
       // (chart and hero card consume the mcResult from this query).
-      const finalResult = await probeMC(lo);
+      const finalResult = await probeSimulation(lo);
 
-      const result: CoastFireMcResult = {
+      const result: CoastFireSimulationResult = {
         coastFireAge: lo,
         status: "found" as const,
         successRate: finalResult.successRate,

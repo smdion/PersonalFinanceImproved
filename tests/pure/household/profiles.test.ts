@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import {
   canDeleteBudgetProfile,
-  canDeleteContribProfile,
+  canDeleteContributionProfile,
   canDeleteSalaryProfile,
   canDeleteRetirementProfile,
   canRemoveColumn,
@@ -16,8 +16,8 @@ import {
   workingYears,
   jobYearsNote,
   canDeletePerformanceAccount,
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 
 describe("canDeleteBudgetProfile", () => {
@@ -36,25 +36,25 @@ describe("canDeleteBudgetProfile", () => {
 
 describe("canDeleteContribProfile", () => {
   it("allows deleting a non-active profile when others remain", () => {
-    expect(canDeleteContribProfile(null, 5, 3)).toEqual({ allowed: true });
+    expect(canDeleteContributionProfile(null, 5, 3)).toEqual({ allowed: true });
   });
 
   it("prevents deleting the only remaining profile", () => {
     // The active-profile setting must always name a real row, so the last
     // profile of a kind is undeletable — this replaced the old isDefault flag.
-    const result = canDeleteContribProfile(null, 1, 1);
+    const result = canDeleteContributionProfile(null, 1, 1);
     expect(result.allowed).toBe(false);
     expect(result.reason).toContain("only remaining");
   });
 
   it("prevents deleting currently active profile", () => {
-    const result = canDeleteContribProfile(5, 5, 3);
+    const result = canDeleteContributionProfile(5, 5, 3);
     expect(result.allowed).toBe(false);
     expect(result.reason).toContain("active");
   });
 
   it("allows when activeProfileId is different", () => {
-    expect(canDeleteContribProfile(3, 5, 2)).toEqual({ allowed: true });
+    expect(canDeleteContributionProfile(3, 5, 2)).toEqual({ allowed: true });
   });
 });
 
@@ -345,7 +345,7 @@ describe("canDeletePerformanceAccount", () => {
 
 describe("resolveContribFieldDisplayState", () => {
   it("has no value when the profile carries no entry at all", () => {
-    expect(resolveContribFieldDisplayState(null)).toEqual({
+    expect(resolveContributionFieldDisplayState(null)).toEqual({
       hasValue: false,
       isDisabled: false,
       value: undefined,
@@ -354,7 +354,7 @@ describe("resolveContribFieldDisplayState", () => {
   });
 
   it("treats an explicit zero value as a real, configured entry", () => {
-    const state = resolveContribFieldDisplayState({
+    const state = resolveContributionFieldDisplayState({
       contributionValue: "0",
       contributionMethod: "percent_of_salary",
     });
@@ -365,7 +365,7 @@ describe("resolveContribFieldDisplayState", () => {
   });
 
   it("flags isDisabled only when isActive is explicitly false", () => {
-    const state = resolveContribFieldDisplayState({
+    const state = resolveContributionFieldDisplayState({
       contributionValue: "500",
       contributionMethod: "fixed_monthly",
       isActive: false,
@@ -376,7 +376,7 @@ describe("resolveContribFieldDisplayState", () => {
   });
 
   it("leaves methodSuffix empty for non-percent methods", () => {
-    const state = resolveContribFieldDisplayState({
+    const state = resolveContributionFieldDisplayState({
       contributionValue: "100",
       contributionMethod: "fixed_per_period",
     });
@@ -394,8 +394,8 @@ describe("resolveContribFieldDisplayState", () => {
     // type this function reads, but real stored entries carry it alongside
     // these fields — build it as a loosely-typed record to simulate that.
     const entry: Record<string, unknown> = { displayNameCustom: "Custom name" };
-    const state = resolveContribFieldDisplayState(
-      entry as ContribAccountActiveFields,
+    const state = resolveContributionFieldDisplayState(
+      entry as ContributionAccountActiveFields,
     );
     expect(state.hasValue).toBe(false);
     expect(state.isDisabled).toBe(false);

@@ -72,7 +72,7 @@ import {
   resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -128,7 +128,10 @@ export const strategyRouter = createTRPCRouter({
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
-        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(
+          ctx.db,
+          input?.preset ?? DEFAULT_SIMULATION.preset,
+        ),
       ]);
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
@@ -146,7 +149,7 @@ export const strategyRouter = createTRPCRouter({
       } = payload;
 
       // Build MC-aligned deterministic return rates using geometric means
-      const mcReturnRates: { label: string; rate: number }[] = [];
+      const simulationReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
         a <= planEndAgeOf(baseEngineInput);
@@ -154,12 +157,12 @@ export const strategyRouter = createTRPCRouter({
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = weightedGeometricRate(mcAssetClasses, allocations);
-        mcReturnRates.push({ label: `Age ${a}`, rate: blended });
+        simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcBaseEngineInput = {
         ...baseEngineInput,
-        returnRates: mcReturnRates,
+        returnRates: simulationReturnRates,
         // VPW sizes by the stock share of the glide path this run uses.
         stockShareByAge:
           stockShareByAge(
@@ -263,16 +266,16 @@ export const strategyRouter = createTRPCRouter({
             });
 
             // Extract decumulation years for year-by-year data
-            const decYears = result.projectionByYear.filter(
+            const decumulationYears = result.projectionByYear.filter(
               (y): y is Extract<typeof y, { phase: "decumulation" }> =>
                 y.phase === "decumulation",
             );
 
-            const withdrawals = decYears.map((y) => y.totalWithdrawal);
+            const withdrawals = decumulationYears.map((y) => y.totalWithdrawal);
             // What each strategy has the household spend — comparable across
             // strategies whether Social Security comes out of a strategy's
             // amount or on top of it (withdrawals alone aren't).
-            const spendings = decYears.map(strategySpending);
+            const spendings = decumulationYears.map(strategySpending);
             const avgWithdrawal =
               withdrawals.length > 0
                 ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
@@ -330,7 +333,7 @@ export const strategyRouter = createTRPCRouter({
                   ? spendings.reduce((s, v) => s + v, 0) / spendings.length
                   : 0,
               ),
-              year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
+              year1Withdrawal: decumulationYears[0]?.totalWithdrawal ?? 0,
               avgAnnualWithdrawal: roundToCents(avgWithdrawal),
               minAnnualWithdrawal:
                 withdrawals.length > 0
@@ -341,17 +344,19 @@ export const strategyRouter = createTRPCRouter({
                   ? roundToCents(Math.max(...withdrawals))
                   : 0,
               endRetirementBalance:
-                decYears.length > 0
-                  ? decYears[decYears.length - 1]!.retirementBalance
+                decumulationYears.length > 0
+                  ? decumulationYears[decumulationYears.length - 1]!
+                      .retirementBalance
                   : 0,
               legacyAmount:
-                decYears.length > 0
-                  ? decYears[decYears.length - 1]!.retirementBalance
+                decumulationYears.length > 0
+                  ? decumulationYears[decumulationYears.length - 1]!
+                      .retirementBalance
                   : 0,
               successRate,
               spendingStabilityRate,
               budgetStabilityRate,
-              yearByYear: decYears.map((y, i) => ({
+              yearByYear: decumulationYears.map((y, i) => ({
                 age: y.age,
                 year: y.year,
                 withdrawal: roundToCents(y.totalWithdrawal),
@@ -410,7 +415,10 @@ export const strategyRouter = createTRPCRouter({
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
-        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(
+          ctx.db,
+          input?.preset ?? DEFAULT_SIMULATION.preset,
+        ),
       ]);
 
       if (!payload)
@@ -438,7 +446,7 @@ export const strategyRouter = createTRPCRouter({
         };
 
       // Build MC return rates
-      const mcReturnRates: { label: string; rate: number }[] = [];
+      const simulationReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
         a <= planEndAgeOf(baseEngineInput);
@@ -446,7 +454,7 @@ export const strategyRouter = createTRPCRouter({
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = weightedGeometricRate(mcAssetClasses, allocations);
-        mcReturnRates.push({ label: `Age ${a}`, rate: blended });
+        simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
 
       const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
@@ -455,9 +463,9 @@ export const strategyRouter = createTRPCRouter({
       const activeParams = userStrategyParams[activeStrategy] ?? {};
 
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
-      const mcBaseEngineInput = {
+      const simulationBaseEngineInput = {
         ...baseEngineInput,
-        returnRates: mcReturnRates,
+        returnRates: simulationReturnRates,
         // VPW sizes by the stock share of the glide path this run uses.
         stockShareByAge:
           stockShareByAge(
@@ -480,8 +488,8 @@ export const strategyRouter = createTRPCRouter({
       };
 
       // --- Run baseline MC ---
-      const baselineMc = await runMonteCarloOffThread({
-        engineInput: mcBaseEngineInput,
+      const baselineSimulation = await runMonteCarloOffThread({
+        engineInput: simulationBaseEngineInput,
         numTrials: 200,
         seed: COMPARISON_SEED,
         assetClasses: mcAssetClasses,
@@ -492,10 +500,11 @@ export const strategyRouter = createTRPCRouter({
         returnClampMax: preset!.returnClampMax,
       });
       const baseline = {
-        successRate: baselineMc.successRate,
+        successRate: baselineSimulation.successRate,
         // The budget rate when computable, else the spending rate.
         stabilityRate:
-          baselineMc.budgetStabilityRate ?? baselineMc.spendingStabilityRate,
+          baselineSimulation.budgetStabilityRate ??
+          baselineSimulation.spendingStabilityRate,
       };
 
       // --- Diagnose ---
@@ -635,7 +644,7 @@ export const strategyRouter = createTRPCRouter({
           if (field?.max != null) rounded = Math.min(field.max, rounded);
         }
 
-        let variantInput = { ...mcBaseEngineInput };
+        let variantInput = { ...simulationBaseEngineInput };
         if (lever.kind === "strategyParam") {
           const tweakedParams = {
             ...userStrategyParams,
@@ -721,7 +730,7 @@ export const strategyRouter = createTRPCRouter({
           }
         }
 
-        const variantMc = await runMonteCarloOffThread({
+        const variantSimulation = await runMonteCarloOffThread({
           engineInput: variantInput,
           numTrials: 200,
           seed: COMPARISON_SEED,
@@ -734,7 +743,8 @@ export const strategyRouter = createTRPCRouter({
         });
 
         const variantStability =
-          variantMc.budgetStabilityRate ?? variantMc.spendingStabilityRate;
+          variantSimulation.budgetStabilityRate ??
+          variantSimulation.spendingStabilityRate;
 
         // Format display values
         const formatVal = (v: number, l: Lever) => {
@@ -756,9 +766,9 @@ export const strategyRouter = createTRPCRouter({
           label: lever.label,
           currentValue: formatVal(lever.currentValue, lever),
           adjustedValue: formatVal(rounded, lever),
-          successRate: variantMc.successRate,
+          successRate: variantSimulation.successRate,
           stabilityRate: variantStability,
-          successDelta: variantMc.successRate - baseline.successRate,
+          successDelta: variantSimulation.successRate - baseline.successRate,
           stabilityDelta: variantStability - baseline.stabilityRate,
         });
       }

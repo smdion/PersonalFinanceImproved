@@ -2,7 +2,7 @@
 
 import {
   type ContribResolutionStatus,
-  resolveContribFieldDisplayState,
+  resolveContributionFieldDisplayState,
 } from "@/lib/pure/household/profiles";
 
 /**
@@ -34,20 +34,20 @@ export function getIncompleteContribAccountIds(
  * active fetch has no per-profile active fields to look at; a profile with
  * no value for it was never a candidate for the sandbox layer to disable.
  */
-export function classifyContribResolution(
+export function classifyContributionResolution(
   accountId: number,
-  rawContribIds: Set<number>,
+  rawContributionIds: Set<number>,
   profileActiveFields: Record<string, Record<string, unknown>>,
-  activeContribIds: Set<number>,
+  activeContributionIds: Set<number>,
   incompleteIds: Set<number>,
 ): ContribResolutionStatus {
-  if (!rawContribIds.has(accountId)) return "account_unavailable";
-  const { hasValue, isDisabled } = resolveContribFieldDisplayState(
+  if (!rawContributionIds.has(accountId)) return "account_unavailable";
+  const { hasValue, isDisabled } = resolveContributionFieldDisplayState(
     profileActiveFields[String(accountId)] ?? null,
   );
   if (!hasValue) return "not_in_profile";
   if (isDisabled) return "inactive_in_profile";
-  if (!activeContribIds.has(accountId)) return "inactive_in_sandbox";
+  if (!activeContributionIds.has(accountId)) return "inactive_in_sandbox";
   if (incompleteIds.has(accountId)) return "no_pay_period";
   return "ok";
 }

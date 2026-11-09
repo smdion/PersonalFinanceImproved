@@ -21,8 +21,8 @@ import type { ContribRow } from "./contribution-accounts-types";
 import { formatCurrency } from "@/lib/utils/format";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 import {
   formatEmployerMatch,
@@ -109,8 +109,8 @@ export function ContributionRow({
     : "";
 
   // The account's value in the active profile (accounts carry none).
-  const profileStatus = resolveContribFieldDisplayState(
-    activeProfileFields as ContribAccountActiveFields,
+  const profileStatus = resolveContributionFieldDisplayState(
+    activeProfileFields as ContributionAccountActiveFields,
   );
   const profileStatusValueText =
     profileStatus.methodSuffix === "%"

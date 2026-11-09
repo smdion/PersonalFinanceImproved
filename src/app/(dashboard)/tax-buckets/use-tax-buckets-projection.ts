@@ -1,7 +1,7 @@
 import { useMemo, type SetStateAction, type Dispatch } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import type { FocusStateValue } from "@/lib/config/focus-topics";
@@ -13,7 +13,7 @@ export function useTaxBucketsProjection(
   setShowBulkBasis: Dispatch<SetStateAction<boolean>>,
   data: RouterOutputs["taxBuckets"]["computeBreakdown"] | undefined,
 ) {
-  const { queryInput: contributionPick } = useEffectiveContribProfileId();
+  const { queryInput: contributionPick } = useEffectiveContributionProfileId();
   const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
   // Only fetched when the user actually switches to "At Retirement" — the
   // "now" view stays free of any projected bleed-through, and the page

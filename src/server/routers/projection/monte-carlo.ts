@@ -5,7 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
-import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
+import { SK_SIMULATION_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timeline";
 import {
   loadSimulationPreset,
@@ -56,7 +56,7 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
@@ -150,7 +150,7 @@ export const monteCarloRouter = createTRPCRouter({
       const [
         { profiles, payload },
         {
-          mcAssetClasses: baseMcAssetClasses,
+          mcAssetClasses: baseSimulationAssetClasses,
           mcCorrelations,
           savedInflationOverrides,
         },
@@ -160,7 +160,7 @@ export const monteCarloRouter = createTRPCRouter({
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),
-        buildMcInputs(ctx.db),
+        buildSimulationInputs(ctx.db),
         ctx.db
           .select({ value: schema.appSettings.value })
           .from(schema.appSettings)
@@ -230,7 +230,9 @@ export const monteCarloRouter = createTRPCRouter({
 
       // Validate asset class override IDs match DB
       if (input.assetClassOverrides) {
-        const activeIds = new Set(baseMcAssetClasses.map((ac) => ac.id));
+        const activeIds = new Set(
+          baseSimulationAssetClasses.map((ac) => ac.id),
+        );
         for (const override of input.assetClassOverrides) {
           if (!activeIds.has(override.id)) {
             throw new TRPCError({
@@ -243,7 +245,7 @@ export const monteCarloRouter = createTRPCRouter({
       }
 
       const mcAssetClasses = presetAssetClasses(
-        baseMcAssetClasses,
+        baseSimulationAssetClasses,
         preset,
         input.assetClassOverrides,
       );
@@ -276,7 +278,8 @@ export const monteCarloRouter = createTRPCRouter({
       // The arithmetic mean is the expected single-year return, but deterministic compounding
       // should use the geometric mean (median compounding rate) to avoid overstating growth.
       // The MC stochastic trials naturally produce geometric compounding through randomization.
-      const mcDeterministicRates: { label: string; rate: number }[] = [];
+      const simulationDeterministicRates: { label: string; rate: number }[] =
+        [];
       for (
         let a = engineInput.currentAge;
         a <= planEndAgeOf(engineInput);
@@ -284,13 +287,13 @@ export const monteCarloRouter = createTRPCRouter({
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = weightedGeometricRate(mcAssetClasses, allocations);
-        mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
+        simulationDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
       // VPW sizes by the stock share of the glide path this run simulates.
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcEngineInput = {
         ...simInput,
-        returnRates: mcDeterministicRates,
+        returnRates: simulationDeterministicRates,
         stockShareByAge:
           stockShareByAge(
             mcGlidePath,
@@ -306,7 +309,7 @@ export const monteCarloRouter = createTRPCRouter({
       // whatever's cached or fresh"), so identical explicit-seed requests
       // still hit cache while an unseeded request reuses whatever seed the
       // cache already minted.
-      const mcInputHash = hashEngineInput("monteCarlo", {
+      const simulationInputHash = hashEngineInput("monteCarlo", {
         mcEngineInput,
         numTrials: input.numTrials,
         mcAssetClasses,
@@ -324,21 +327,21 @@ export const monteCarloRouter = createTRPCRouter({
       // honoring the peek. The two flags are semantically contradictory
       // together (peek = don't compute, force = compute fresh); peekOnly
       // wins since it's the one that promises never to run trials.
-      const mcCached =
+      const simulationCached =
         input.forceRefresh && !input.peekOnly
           ? null
           : await readProjectionCache<ReturnType<typeof calculateMonteCarlo>>(
               ctx.db,
-              mcInputHash,
+              simulationInputHash,
             );
 
       let result: ReturnType<typeof calculateMonteCarlo> | null;
       let usedSeed: number | null;
       let computedAt: Date | null;
-      if (mcCached) {
-        result = mcCached.result;
-        usedSeed = mcCached.seed ?? input.seed ?? generateSeed();
-        computedAt = mcCached.computedAt;
+      if (simulationCached) {
+        result = simulationCached.result;
+        usedSeed = simulationCached.seed ?? input.seed ?? generateSeed();
+        computedAt = simulationCached.computedAt;
       } else if (input.peekOnly) {
         // Cache-read-only path for dashboard tiles: never runs the expensive
         // trials, just reports whether a recent run already exists.
@@ -362,7 +365,12 @@ export const monteCarloRouter = createTRPCRouter({
           input.runId,
         );
         computedAt = writeStamp();
-        await writeProjectionCache(ctx.db, mcInputHash, result, usedSeed);
+        await writeProjectionCache(
+          ctx.db,
+          simulationInputHash,
+          result,
+          usedSeed,
+        );
       }
 
       // Build current glide path allocation for display (interpolate at current age)
@@ -370,12 +378,18 @@ export const monteCarloRouter = createTRPCRouter({
         mcGlidePath.find((gp) => gp.age >= age) ?? mcGlidePath[0];
 
       // Compute blended portfolio return/vol for display (geometric mean = realistic compounding rate)
-      const currentAlloc = currentGpEntry?.allocations ?? {};
-      const blendedReturn = weightedGeometricRate(mcAssetClasses, currentAlloc);
-      const blendedVol = classWeightedVolatility(mcAssetClasses, currentAlloc);
+      const currentAllocation = currentGpEntry?.allocations ?? {};
+      const blendedReturn = weightedGeometricRate(
+        mcAssetClasses,
+        currentAllocation,
+      );
+      const blendedVol = classWeightedVolatility(
+        mcAssetClasses,
+        currentAllocation,
+      );
 
       // Build DB (raw) asset class values for comparison
-      const dbAssetClasses = baseMcAssetClasses.map((ac) => ({
+      const dbAssetClasses = baseSimulationAssetClasses.map((ac) => ({
         id: ac.id,
         name: ac.name,
         meanReturn: ac.meanReturn,
@@ -418,7 +432,7 @@ export const monteCarloRouter = createTRPCRouter({
           salary: totalCompensation,
           assetClasses: mcAssetClasses,
           dbAssetClasses,
-          currentAllocation: currentAlloc,
+          currentAllocation: currentAllocation,
           glidePathAges: mcGlidePath.map((gp) => gp.age),
           glidePath: mcGlidePath,
           preset: input.preset,
@@ -485,13 +499,13 @@ export const monteCarloRouter = createTRPCRouter({
       const rows: { age: number; assetClassId: number; allocation: string }[] =
         [];
       for (const entry of input.entries) {
-        for (const [idStr, alloc] of Object.entries(entry.allocations)) {
+        for (const [idStr, allocation] of Object.entries(entry.allocations)) {
           const assetClassId = parseInt(idStr, 10);
           if (!isNaN(assetClassId)) {
             rows.push({
               age: entry.age,
               assetClassId,
-              allocation: String(alloc),
+              allocation: String(allocation),
             });
           }
         }
@@ -517,7 +531,7 @@ export const monteCarloRouter = createTRPCRouter({
         returnClampMin: input.returnClampMin,
         returnClampMax: input.returnClampMax,
       };
-      await upsertSetting(db, SK_MC_CUSTOM_CLAMP_BOUNDS, value);
+      await upsertSetting(db, SK_SIMULATION_CUSTOM_CLAMP_BOUNDS, value);
       return { updated: true };
     }),
 

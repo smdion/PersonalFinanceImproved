@@ -691,7 +691,7 @@ describe("resetAllData", () => {
         { id: cls!.id, meanReturn: 0.2 },
       ]);
       ctx.db
-        .update(sqliteSchema.mcPresets)
+        .update(sqliteSchema.simulationPresets)
         .set({ label: "Changed by the household" })
         .run();
       await ctx.caller.version.resetAllData({ confirmation: "delete" });
@@ -703,7 +703,7 @@ describe("resetAllData", () => {
       expect(keys).not.toContain("mc_asset_class_overrides");
       const labels = ctx.db
         .select()
-        .from(sqliteSchema.mcPresets)
+        .from(sqliteSchema.simulationPresets)
         .all()
         .map((p) => p.label);
       expect(labels.sort()).toEqual(["Aggressive", "Conservative", "Default"]);

@@ -4,7 +4,7 @@ import {
   entryMatchFigure,
   matchFigureForForm,
 } from "@/lib/pure/contributions/match-display";
-import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import { resolveContributionFieldDisplayState } from "@/lib/pure/household/profiles";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
   DeductionForm,
@@ -93,7 +93,7 @@ export function renderInlineAccountRows({
       af.displayNameCustom !== undefined ? String(af.displayNameCustom) : "";
     // No resolved value: the live match isn't in effect, so isn't shown.
     const { hasValue: contributionHasValue } =
-      resolveContribFieldDisplayState(af);
+      resolveContributionFieldDisplayState(af);
     const ownMatch = entryMatchFigure(effectiveMatchType, af);
     const storedMatch =
       ownMatch ??

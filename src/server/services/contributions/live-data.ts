@@ -20,7 +20,7 @@ import type { Db } from "@/lib/db";
  *  narrowed and its parent category resolved. It carries no
  *  contributionMethod/contributionValue (see applyContribActiveFields):
  *  resolveProfile adds them from a profile's active fields. */
-type LiveContribRow = Omit<
+type LiveContributionRow = Omit<
   typeof schema.contributionAccounts.$inferSelect,
   "accountType" | "parentCategory"
 > & {
@@ -45,14 +45,15 @@ type LiveContribRow = Omit<
  * specific one a caller picked.
  */
 export async function loadLiveContribData(db: Db, asOf: Date) {
-  const [allJobs, allContribs, allPeople, allPerfAccounts] = await Promise.all([
-    db.select().from(schema.jobs),
-    db.select().from(schema.contributionAccounts),
-    db.select().from(schema.people),
-    db.select().from(schema.performanceAccounts),
-  ]);
+  const [allJobs, allContributions, allPeople, allPerfAccounts] =
+    await Promise.all([
+      db.select().from(schema.jobs),
+      db.select().from(schema.contributionAccounts),
+      db.select().from(schema.people),
+      db.select().from(schema.performanceAccounts),
+    ]);
   const activeJobsRaw = filterActiveJobs(allJobs, asOf);
-  const activeContribs = allContribs.filter((c) => c.isActive);
+  const activeContributions = allContributions.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
@@ -75,7 +76,7 @@ export async function loadLiveContribData(db: Db, asOf: Date) {
   const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
 
   // Build ContribRow-compatible rows for aggregation (active only for live resolution)
-  const contribs: LiveContribRow[] = activeContribs.map((c) => ({
+  const contribs: LiveContributionRow[] = activeContributions.map((c) => ({
     ...c,
     accountType: c.accountType as AccountCategory,
   }));
@@ -90,7 +91,7 @@ export async function loadLiveContribData(db: Db, asOf: Date) {
       baseSalary: js.baseSalary,
       totalComp: js.totalComp,
     })),
-    rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
+    rawContribRows: allContributions, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
     perfAccountMap,
     salaryProfileActiveMap,

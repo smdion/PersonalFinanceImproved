@@ -1,7 +1,7 @@
 /** The read-only panel's account rows. */
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 import { groupSharedMatchAccounts } from "./match-groups";
 import type { ProfileDetail } from "./account-row-types";
@@ -18,13 +18,13 @@ export function renderDetailAccountRows(profile: ProfileDetail) {
   );
 
   return profile.accountDetails.map((ad, rowIndex) => {
-    const af = ad.activeFields as ContribAccountActiveFields;
+    const af = ad.activeFields as ContributionAccountActiveFields;
     const {
       hasValue,
       isDisabled: isProfileDisabled,
       value: activeValue,
       methodSuffix,
-    } = resolveContribFieldDisplayState(af);
+    } = resolveContributionFieldDisplayState(af);
     const activeMethod = af?.contributionMethod;
     const hasActiveName =
       ad.liveAccountName && ad.accountName !== ad.liveAccountName;

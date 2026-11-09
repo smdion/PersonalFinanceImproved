@@ -106,10 +106,11 @@ export const assetClassParams = active.assetClassParams;
 export const assetClassCorrelations = active.assetClassCorrelations;
 export const assetClassBuckets = active.assetClassBuckets;
 export const glidePathAllocations = active.glidePathAllocations;
-export const mcPresets = active.mcPresets;
-export const mcPresetGlidePaths = active.mcPresetGlidePaths;
-export const mcPresetReturnOverrides = active.mcPresetReturnOverrides;
-export const mcUserPresets = active.mcUserPresets;
+export const simulationPresets = active.simulationPresets;
+export const simulationPresetGlidePaths = active.simulationPresetGlidePaths;
+export const simulationPresetReturnOverrides =
+  active.simulationPresetReturnOverrides;
+export const simulationUserPresets = active.simulationUserPresets;
 export const contributionProfiles = active.contributionProfiles;
 export const salaryProfiles = active.salaryProfiles;
 export const stateVersions = active.stateVersions;

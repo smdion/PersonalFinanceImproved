@@ -264,7 +264,8 @@ export async function computeSavingsSummary(
 
   const savingsInput: SavingsInput = {
     goals: activeGoals.map((g) => {
-      const monthlyContrib = resolvedByGoal.get(g.id)?.monthlyContribution ?? 0;
+      const monthlyContribution =
+        resolvedByGoal.get(g.id)?.monthlyContribution ?? 0;
       // E-fund target is derived from calculator (targetMonths × essential expenses)
       const targetBalance =
         g.isEmergencyFund && efundResult
@@ -281,7 +282,7 @@ export async function computeSavingsSummary(
         name: g.name,
         currentBalance,
         targetBalance,
-        allocationPercent: safeDivide(monthlyContrib, totalMonthlyPool, 0),
+        allocationPercent: safeDivide(monthlyContribution, totalMonthlyPool, 0),
         isEmergencyFund: g.isEmergencyFund,
         isActive: g.isActive,
       };

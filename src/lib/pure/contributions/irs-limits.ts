@@ -170,7 +170,7 @@ export function resolvePriorYearLimit(
 }
 
 /** Minimal shape for a contribution account used in sibling total computation. */
-type SiblingContrib = {
+type SiblingContribution = {
   accountType: string;
   annualContribution: number;
   employerMatch: number;
@@ -181,7 +181,7 @@ type SiblingContrib = {
  * optionally including employer match when the account type counts it toward the limit.
  */
 export function computeSiblingTotal(
-  contribs: SiblingContrib[],
+  contribs: SiblingContribution[],
   currentIndex: number,
   matchCountsTowardLimit: boolean,
 ): number {

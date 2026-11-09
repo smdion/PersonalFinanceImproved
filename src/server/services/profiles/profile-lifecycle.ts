@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 import {
-  canDeleteContribProfile,
+  canDeleteContributionProfile,
   canDeleteRetirementProfile,
   canDeleteSalaryProfile,
 } from "@/lib/pure/household/profiles";
@@ -30,7 +30,7 @@ type RetirementProfile = typeof schema.retirementProfiles.$inferSelect;
 type ContributionActiveFields = ContributionProfile["contributionActiveFields"];
 
 const CAN_DELETE = {
-  contribution: canDeleteContribProfile,
+  contribution: canDeleteContributionProfile,
   salary: canDeleteSalaryProfile,
   retirement: canDeleteRetirementProfile,
 } as const;

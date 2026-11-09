@@ -191,7 +191,7 @@
     "src/components/retirement-projection/utils.ts": 870,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 430,
-    "src/components/retirement/retirement-profile-tab.tsx": 554,
+    "src/components/retirement/retirement-profile-tab.tsx": 557,
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
@@ -237,7 +237,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 465,
-    "src/lib/pure/accounts/tax-bucket-projection.ts": 518,
+    "src/lib/pure/accounts/tax-bucket-projection.ts": 523,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/foo.ts": 387,
     "src/lib/pure/advice/milestones/habits.ts": 391,
@@ -253,7 +253,7 @@
     "src/lib/pure/contributions/account-type-snapshots.ts": 289,
     "src/lib/pure/contributions/accumulation-order.ts": 30,
     "src/lib/pure/contributions/cap-pass.ts": 225,
-    "src/lib/pure/contributions/category-totals.ts": 154,
+    "src/lib/pure/contributions/category-totals.ts": 151,
     "src/lib/pure/contributions/contribution-amount.ts": 80,
     "src/lib/pure/contributions/contribution-caps.ts": 675,
     "src/lib/pure/contributions/contribution-order.ts": 93,
@@ -262,13 +262,13 @@
     "src/lib/pure/contributions/irs-limits.ts": 219,
     "src/lib/pure/contributions/joint-accounts.ts": 176,
     "src/lib/pure/contributions/paycheck-accounts.ts": 157,
-    "src/lib/pure/contributions/person-snapshot.ts": 216,
-    "src/lib/pure/contributions/profile-contrib-data.ts": 329,
+    "src/lib/pure/contributions/person-snapshot.ts": 218,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 330,
     "src/lib/pure/contributions/profile-fields.ts": 53,
     "src/lib/pure/contributions/roth-ira.ts": 541,
     "src/lib/pure/contributions/savings-rate.ts": 145,
     "src/lib/pure/contributions/summary.types.ts": 111,
-    "src/lib/pure/contributions/view-metrics.ts": 182,
+    "src/lib/pure/contributions/view-metrics.ts": 190,
     "src/lib/pure/contributions/ytd-actuals.ts": 146,
     "src/lib/pure/debts/debt-balance.ts": 28,
     "src/lib/pure/debts/mortgage.ts": 422,
@@ -321,11 +321,11 @@
     "src/lib/pure/investments/finalize-year.ts": 194,
     "src/lib/pure/investments/holding-periods.ts": 433,
     "src/lib/pure/investments/performance-account-rows.ts": 209,
-    "src/lib/pure/investments/performance-annual-rows.ts": 496,
+    "src/lib/pure/investments/performance-annual-rows.ts": 497,
     "src/lib/pure/investments/returns.ts": 596,
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 135,
-    "src/lib/pure/net-worth/year-end-rows.ts": 524,
+    "src/lib/pure/net-worth/year-end-rows.ts": 525,
     "src/lib/pure/paycheck/bonus.ts": 255,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 133,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 273,
@@ -334,12 +334,12 @@
     "src/lib/pure/paycheck/person-paycheck.ts": 197,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
     "src/lib/pure/paycheck/year-schedule.ts": 344,
-    "src/lib/pure/retirement/relocation.ts": 490,
+    "src/lib/pure/retirement/relocation.ts": 491,
     "src/lib/pure/simulation/inflation-risk.ts": 26,
-    "src/lib/pure/simulation/monte-carlo.ts": 325,
+    "src/lib/pure/simulation/monte-carlo.ts": 328,
     "src/lib/pure/simulation/stress-test-run.ts": 121,
-    "src/lib/pure/simulation/trial-run.ts": 338,
-    "src/lib/pure/simulation/trial-summary.ts": 299,
+    "src/lib/pure/simulation/trial-run.ts": 347,
+    "src/lib/pure/simulation/trial-summary.ts": 301,
     "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 585,
     "src/lib/simplefin/client.ts": 472,
@@ -367,11 +367,11 @@
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
     "src/server/routers/projection/_shared.ts": 234,
-    "src/server/routers/projection/coast-fire.ts": 457,
-    "src/server/routers/projection/monte-carlo.ts": 531,
+    "src/server/routers/projection/coast-fire.ts": 460,
+    "src/server/routers/projection/monte-carlo.ts": 545,
     "src/server/routers/projection/relocation.ts": 650,
     "src/server/routers/projection/scenarios.ts": 161,
-    "src/server/routers/projection/strategy.ts": 814,
+    "src/server/routers/projection/strategy.ts": 824,
     "src/server/routers/projection/tax-optimization.ts": 526,
     "src/server/routers/retirement/index.ts": 17,
     "src/server/routers/salary-profiles.ts": 599,
@@ -392,14 +392,14 @@
     "src/server/services/budget/linked-items.ts": 203,
     "src/server/services/contributions/account-edits.ts": 255,
     "src/server/services/contributions/caps.ts": 346,
-    "src/server/services/contributions/live-data.ts": 98,
+    "src/server/services/contributions/live-data.ts": 99,
     "src/server/services/contributions/profile.ts": 367,
-    "src/server/services/contributions/summary.ts": 733,
+    "src/server/services/contributions/summary.ts": 738,
     "src/server/services/debts/other-liabilities.ts": 64,
     "src/server/services/demo/demo-seed.ts": 467,
     "src/server/services/investments/current-balances.ts": 467,
     "src/server/services/net-worth/other-assets.ts": 91,
-    "src/server/services/net-worth/year-end-history.ts": 620,
+    "src/server/services/net-worth/year-end-history.ts": 625,
     "src/server/services/paycheck/household-totals.ts": 122,
     "src/server/services/paycheck/job-net-pay.ts": 285,
     "src/server/services/paycheck/summary.ts": 685,
@@ -412,8 +412,8 @@
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 506,
     "src/server/services/projection/projection-cache.ts": 221,
-    "src/server/services/projection/relocation-analysis.ts": 477,
-    "src/server/services/savings/summary.ts": 370,
+    "src/server/services/projection/relocation-analysis.ts": 484,
+    "src/server/services/savings/summary.ts": 371,
     "src/server/services/simulation/mc-inputs.ts": 114,
     "src/server/services/sync/budget-api-push.ts": 434,
     "src/server/services/sync/preview.ts": 455,
@@ -740,7 +740,7 @@
       "useProjectionDerived": 604
     },
     "src/components/retirement-projection/use-projection-form-state.ts": {
-      "useProjectionFormState": 342
+      "useProjectionFormState": 344
     },
     "src/components/retirement-projection/use-projection-queries.ts": {
       "useProjectionQueries": 951
@@ -761,7 +761,7 @@
       "RetirementProfileManager": 270
     },
     "src/components/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 482
+      "RetirementProfileTab": 485
     },
     "src/components/retirement/sections/income.tsx": {
       "IncomeSection": 182
@@ -926,11 +926,11 @@
       "computeTaxBucketAnalysis": 244
     },
     "src/lib/pure/accounts/tax-bucket-projection.ts": {
-      "computeTaxBucketProjection": 275,
+      "computeTaxBucketProjection": 280,
       "computeTaxBucketProjection.entries.map()": 186
     },
     "src/lib/pure/accounts/tax-buckets.ts": {
-      "computeTaxBucketBreakdown": 243
+      "computeTaxBucketBreakdown": 245
     },
     "src/lib/pure/advice/milestones/input.ts": {
       "buildMilestoneInput": 218
@@ -939,7 +939,7 @@
       "capContributionsByLimitGroup": 272
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 235
+      "buildProfileContribData": 236
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189
@@ -990,13 +990,13 @@
       "calculatePaycheck": 295
     },
     "src/lib/pure/retirement/relocation.ts": {
-      "calculateRelocation": 321
+      "calculateRelocation": 322
     },
     "src/lib/pure/savings/brokerage-goals.ts": {
       "calculateBrokerageGoals": 212
     },
     "src/lib/pure/simulation/trial-run.ts": {
-      "runTrials": 322
+      "runTrials": 331
     },
     "src/lib/pure/tax/distribution-tax-rates.ts": {
       "buildDistributionTaxRates": 199
@@ -1029,17 +1029,17 @@
       "summaryProcedures.computeSummary.query()": 245
     },
     "src/server/routers/projection/coast-fire.ts": {
-      "coastFireRouter.computeCoastFireMC.query()": 247
+      "coastFireRouter.computeCoastFireMC.query()": 250
     },
     "src/server/routers/projection/monte-carlo.ts": {
-      "monteCarloRouter.computeMonteCarloProjection.query()": 304
+      "monteCarloRouter.computeMonteCarloProjection.query()": 318
     },
     "src/server/routers/projection/relocation.ts": {
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 475
     },
     "src/server/routers/projection/strategy.ts": {
-      "strategyRouter.analyzeStrategy.query()": 399,
-      "strategyRouter.computeStrategyComparison.query()": 267
+      "strategyRouter.analyzeStrategy.query()": 404,
+      "strategyRouter.computeStrategyComparison.query()": 272
     },
     "src/server/routers/savings/api-sync.ts": {
       "apiSyncProcedures.pushContributionsToApi.mutation()": 201
@@ -1057,8 +1057,8 @@
       "loadContributionMix": 182
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 648,
-      "computeContributionSummary.results.map()": 418
+      "computeContributionSummary": 653,
+      "computeContributionSummary.results.map()": 423
     },
     "src/server/services/demo/demo-seed.ts": {
       "seedProfile": 451
@@ -1070,7 +1070,7 @@
       "loadHoldingsOverview": 158
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 514
+      "buildYearEndHistory": 519
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 223
@@ -1093,10 +1093,10 @@
       "buildProfileSwitches": 326
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 378
+      "computeRelocationAnalysis": 385
     },
     "src/server/services/savings/summary.ts": {
-      "computeSavingsSummary": 349
+      "computeSavingsSummary": 350
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 237

@@ -9,7 +9,7 @@ import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import {
   annualContributionWithBonus,
-  type ContribRow,
+  type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 
@@ -40,8 +40,8 @@ const jobSalaries = [
 
 let nextId = 1;
 function row(
-  over: Partial<ContribRow> & { hsaCoverageType?: string | null },
-): ContribRow & { hsaCoverageType?: string | null } {
+  over: Partial<ContributionRow> & { hsaCoverageType?: string | null },
+): ContributionRow & { hsaCoverageType?: string | null } {
   return {
     id: nextId++,
     personId: 1,
@@ -72,7 +72,7 @@ const ctx = {
   filingStatus: "MFJ",
   taxYear: TAX_YEAR,
 };
-const yearly = (c: ContribRow) => {
+const yearly = (c: ContributionRow) => {
   const js = jobSalaries.find((j) => j.job.id === c.jobId)!;
   const periods = c.jobId === 10 ? 26 : 12;
   return annualContributionWithBonus(c, js, periods);

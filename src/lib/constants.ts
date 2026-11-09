@@ -179,13 +179,13 @@ export const MC_CONFIDENCE_THRESHOLD = 0.9;
 /** Default per-year return clamps for Monte Carlo trials (max 50% loss,
  *  max 100% gain), shared by the calculator's own default and the server
  *  fallback used when no preset is selected. */
-export const MC_RETURN_CLAMP_MIN = -0.5;
-export const MC_RETURN_CLAMP_MAX = 1.0;
+export const SIMULATION_RETURN_CLAMP_MIN = -0.5;
+export const SIMULATION_RETURN_CLAMP_MAX = 1.0;
 
 /** A trial is "spending stable" if withdrawals stay at or above this
  *  fraction of the initial inflation-adjusted withdrawal in every
  *  decumulation year. */
-export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
+export const SIMULATION_SPENDING_STABILITY_THRESHOLD = 0.75;
 
 /** When Lifetime Income Stability's "vs strategy" rate trails Portfolio
  *  Survival by more than this many percentage points, something is
@@ -193,22 +193,22 @@ export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
  *  liquidity constraints, penalty-avoidance) even though the portfolio
  *  itself survives — a real, if narrow, signal worth flagging urgently
  *  rather than letting it sit as a quiet secondary ring. */
-export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
+export const SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
 
 /** Default inflation risk for the Simulation when no preset-specific
  *  value is configured: the spread of each year's inflation around the
  *  household's own rates (the rates themselves are the plan's). */
-export const DEFAULT_MC_INFLATION_RISK = { stdDev: 0.012 };
+export const DEFAULT_SIMULATION_INFLATION_RISK = { stdDev: 0.012 };
 
 /** The least a year's price level can grow in a Simulation trial (1 + its
  *  inflation): only keeps a wild draw from reaching zero or below — not a
  *  floor on inflation, which would bias it up. */
-export const MC_INFLATION_GROWTH_FLOOR = 0.5;
+export const SIMULATION_INFLATION_GROWTH_FLOOR = 0.5;
 
 /** Default number of trials for a Monte Carlo simulation run. A true 90%
  *  success rate carries about ±1.3 points of noise at 500 trials, fine for
  *  a figure shown to whole points. */
-export const MC_DEFAULT_TRIALS = 500;
+export const SIMULATION_DEFAULT_TRIALS = 500;
 
 /** The Simulation presets; Custom is the household's own values. */
 export const SIMULATION_PRESET_KEYS = [
@@ -225,7 +225,7 @@ export type SimulationPresetKey = (typeof SIMULATION_PRESET_KEYS)[number];
  *  defaults agree). Coast FIRE's probes run more trials (each probe is a
  *  yes/no at a 90% bar, so its noise matters more). */
 export const DEFAULT_SIMULATION = {
-  numTrials: MC_DEFAULT_TRIALS,
+  numTrials: SIMULATION_DEFAULT_TRIALS,
   coastFireTrials: 1000,
   preset: "default",
   taxMode: "advanced",

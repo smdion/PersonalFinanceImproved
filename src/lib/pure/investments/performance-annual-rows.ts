@@ -253,7 +253,7 @@ export function performanceAnnualRows(
           fees: ps.fees,
           rollovers: ps.rollovers,
           lifetimeGains: ps.lifetimeGains,
-          lifetimeContributions: ps.lifetimeContribs,
+          lifetimeContributions: ps.lifetimeContributions,
           lifetimeMatch: ps.lifetimeMatch,
           isCurrentYear: isCurrentYear,
           isFinalized: existingRow?.isFinalized ?? false,
@@ -288,7 +288,7 @@ export function performanceAnnualRows(
           ps.rollovers,
         );
         row.lifetimeGains = ps.lifetimeGains;
-        row.lifetimeContributions = ps.lifetimeContribs;
+        row.lifetimeContributions = ps.lifetimeContributions;
         row.lifetimeMatch = ps.lifetimeMatch;
       }
     }
@@ -320,22 +320,22 @@ export function performanceAnnualRows(
       .sort((a, b) => a.year - b.year);
 
     let runningGains = 0,
-      runningContribs = 0,
+      runningContributions = 0,
       runningMatch = 0;
 
     for (const row of catRows) {
       if (row.isFinalized && !noStoredLifetime.has(row)) {
         // Trust stored lifetime values, use as new running baseline
         runningGains = row.lifetimeGains;
-        runningContribs = row.lifetimeContributions;
+        runningContributions = row.lifetimeContributions;
         runningMatch = row.lifetimeMatch;
       } else {
         // Accumulate from previous baseline
         runningGains += row.yearlyGainLoss;
-        runningContribs += row.totalContributions;
+        runningContributions += row.totalContributions;
         runningMatch += row.employerContributions;
         row.lifetimeGains = runningGains;
-        row.lifetimeContributions = runningContribs;
+        row.lifetimeContributions = runningContributions;
         row.lifetimeMatch = runningMatch;
       }
     }
@@ -394,7 +394,7 @@ export function addRetirementRollup(
     { gains: number; contribs: number; match: number }
   >();
   let brokLtGains = 0,
-    brokLtContribs = 0,
+    brokLtContributions = 0,
     brokLtMatch = 0;
   for (const year of retYears) {
     const isCurrentYear = year === currentYear;
@@ -410,10 +410,10 @@ export function addRetirementRollup(
     const retBrokAccounts = retBrokerageByYear.get(String(year)) ?? [];
     const brokSums = sumAccounts(retBrokAccounts);
 
-    const beginBal = annualSums.beginBal + brokSums.beginBal;
+    const beginBalance = annualSums.beginBal + brokSums.beginBal;
     const contribs = annualSums.contribs + brokSums.contribs;
     const gainLoss = annualSums.gainLoss + brokSums.gainLoss;
-    const endBal = annualSums.endBal + brokSums.endBal;
+    const endBalance = annualSums.endBal + brokSums.endBal;
     const employer = annualSums.employer + brokSums.employer;
     const distributions = annualSums.distributions + brokSums.distributions;
     const fees = annualSums.fees + brokSums.fees;
@@ -426,23 +426,24 @@ export function addRetirementRollup(
         match: r.lifetimeMatch,
       });
     brokLtGains += brokSums.gainLoss;
-    brokLtContribs += brokSums.contribs;
+    brokLtContributions += brokSums.contribs;
     brokLtMatch += brokSums.employer;
     const carried = [...catLifetime.values()];
     const retLtGains = brokLtGains + sumBy(carried, (c) => c.gains);
-    const retLtContribs = brokLtContribs + sumBy(carried, (c) => c.contribs);
+    const retLtContributions =
+      brokLtContributions + sumBy(carried, (c) => c.contribs);
     const retLtMatch = brokLtMatch + sumBy(carried, (c) => c.match);
 
     annualRows.push({
       id: -1,
       year,
       category: "Retirement",
-      beginningBalance: beginBal,
+      beginningBalance: beginBalance,
       totalContributions: contribs,
       yearlyGainLoss: gainLoss,
-      endingBalance: endBal,
+      endingBalance: endBalance,
       annualReturnPct: computeReturn(
-        beginBal,
+        beginBalance,
         contribs,
         gainLoss,
         distributions,
@@ -454,7 +455,7 @@ export function addRetirementRollup(
       fees,
       rollovers: rolloverSum,
       lifetimeGains: retLtGains,
-      lifetimeContributions: retLtContribs,
+      lifetimeContributions: retLtContributions,
       lifetimeMatch: retLtMatch,
       isCurrentYear: isCurrentYear,
       isFinalized: existingRow?.isFinalized ?? false,

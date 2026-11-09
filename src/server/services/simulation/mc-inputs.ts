@@ -39,7 +39,7 @@ export async function loadSavedInflationOverrides(
  * one, the raw table values — computeMonteCarloProjection applies the
  * run's preset itself, with the run's own asset-class changes on top.
  */
-export async function buildMcInputs(
+export async function buildSimulationInputs(
   db: Db,
   presetKey?: SimulationPresetKey,
 ): Promise<{

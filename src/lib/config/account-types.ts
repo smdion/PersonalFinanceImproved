@@ -344,7 +344,7 @@ const KEYWORD_ALIASES: Record<string, string> = {
 
 /** An account type or budget subcategory's canonical contribution category
  *  key, or null if it matches none. */
-export function normalizeContribKey(name: string): string | null {
+export function normalizeContributionKey(name: string): string | null {
   const lower = name.toLowerCase();
   // Check extra aliases first (these don't have full config entries)
   for (const [kw, cat] of Object.entries(KEYWORD_ALIASES)) {
@@ -400,7 +400,7 @@ export function getDisplayConfig(
 /** True if this account's (type + subtype) employer_contributions are an ESPP
  *  purchase-price discount, not cash, so its cash-basis figure means something.
  *  Per account, never by category: Brokerage also has cash sub-types. */
-export function isDiscountBasisEmployerContrib(
+export function isDiscountBasisEmployerContribution(
   accountType: string,
   subType?: string | null,
 ): boolean {

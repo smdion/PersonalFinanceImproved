@@ -15,7 +15,7 @@ import {
   jobPayFor,
   resolveContribPeriods,
   annualContributionWithBonus,
-  type ContribRow,
+  type ContributionRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
@@ -23,7 +23,7 @@ import {
 type PersonRef = { id: number; name: string };
 
 /** Output of buildContributionDisplaySpecs — per-record spec with match. */
-type ContribDisplaySpec = {
+type ContributionDisplaySpec = {
   /** Source contribution_accounts.id — the only reliable way to look this
    *  spec's row back up when personId/ownerName can't disambiguate (e.g.
    *  multiple joint contributions in the same category, where both are
@@ -54,12 +54,12 @@ type ContribDisplaySpec = {
  * Used by the retirement engine card and available to any other consumer.
  */
 export function buildContributionDisplaySpecs(
-  activeContribs: (ContribRow & CapPassed)[],
+  activeContributions: (ContributionRow & CapPassed)[],
   people: PersonRef[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
-): ContribDisplaySpec[] {
-  const filtered = activeContribs.filter(
+): ContributionDisplaySpec[] {
+  const filtered = activeContributions.filter(
     (c) => Number(c.contributionValue) > 0,
   );
 

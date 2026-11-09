@@ -35,7 +35,7 @@ import { buildEnginePayload } from "@/server/services/projection/engine-payload/
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { SK_RETIREMENT_DEC_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
+import { SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
 import { xfail } from "../../../../fixtures/answer-key";
 import {
   createTestCaller,
@@ -245,11 +245,15 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
           .where(
             eq(
               sqliteSchema.appSettings.key,
-              SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+              SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
             ),
           )
           .run();
-        seedAppSetting(db, SK_RETIREMENT_DEC_EXPENSE_OVERRIDE, "90000");
+        seedAppSetting(
+          db,
+          SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
+          "90000",
+        );
         const data = await fetchRetirementData(appDb, {});
         const payload = await buildEnginePayload(appDb, data, {
           asOf: new Date(),

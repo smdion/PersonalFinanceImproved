@@ -1,4 +1,4 @@
-import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
+import { DEFAULT_SIMULATION_INFLATION_RISK } from "@/lib/constants";
 
 /** The saved Simulation inflation override (Simulation assumptions). */
 export type SavedInflationOverrides = { stdDev?: number } | null;
@@ -21,6 +21,6 @@ export function resolveInflationRisk(opts: {
       opts.ui?.stdDev ??
       opts.saved?.stdDev ??
       opts.presetStdDev ??
-      DEFAULT_MC_INFLATION_RISK.stdDev,
+      DEFAULT_SIMULATION_INFLATION_RISK.stdDev,
   };
 }

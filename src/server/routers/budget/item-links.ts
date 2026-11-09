@@ -1,7 +1,7 @@
 import { currentLoan } from "@/server/services/projection/engine-payload/expense-endings";
 import {
-  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
-  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+  SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
 } from "@/lib/constants/settings-keys";
 import { eq, asc, inArray, and } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -33,12 +33,14 @@ export const itemLinkProcedures = {
         settings.find((s) => s.key === key)?.value ?? null;
       // The working budget and the retirement budget can be different
       // profiles; a line is linked per profile.
-      const retirementId = Number(setting(SK_RETIREMENT_DEC_BUDGET_PROFILE_ID));
+      const retirementId = Number(
+        setting(SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID),
+      );
       const shown = profiles.filter(
         (p) => p.id === active?.id || p.id === retirementId,
       );
       return {
-        retirementTyped: !!setting(SK_RETIREMENT_DEC_EXPENSE_OVERRIDE),
+        retirementTyped: !!setting(SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE),
         budgets: shown.map((p) => {
           const own = items.filter((i) => i.profileId === p.id);
           return {

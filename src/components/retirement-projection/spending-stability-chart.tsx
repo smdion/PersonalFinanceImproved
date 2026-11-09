@@ -448,7 +448,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_5_10"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandOuter}
+                fill={CHART_COLORS.simulationBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -459,7 +459,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_10_25"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandInner}
+                fill={CHART_COLORS.simulationBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -471,7 +471,7 @@ export function SpendingStabilityChart({
                 dataKey="mc_25_75"
                 stackId="mc"
                 name="Confidence band"
-                fill={CHART_COLORS.mcBandMiddle}
+                fill={CHART_COLORS.simulationBandMiddle}
                 fillOpacity={0.2}
                 stroke="none"
                 isAnimationActive={false}
@@ -481,7 +481,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_75_90"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandInner}
+                fill={CHART_COLORS.simulationBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -492,7 +492,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_90_95"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandOuter}
+                fill={CHART_COLORS.simulationBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -522,7 +522,7 @@ export function SpendingStabilityChart({
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"
-              stroke={c.mcMedian}
+              stroke={c.simulationMedian}
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}

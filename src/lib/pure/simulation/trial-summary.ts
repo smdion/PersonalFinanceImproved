@@ -9,7 +9,7 @@ import type {
 } from "./monte-carlo.types";
 import type { ProjectionInput } from "../engine/types";
 import { sumBy, safeDivide } from "../../utils/math";
-import { MC_SPENDING_STABILITY_THRESHOLD } from "../../constants";
+import { SIMULATION_SPENDING_STABILITY_THRESHOLD } from "../../constants";
 
 /** Extract the percentile value from a sorted array. */
 export function percentile(sorted: number[], p: number): number {
@@ -161,9 +161,9 @@ export function balanceBands(
 
 export function stabilityBands(
   engineInput: ProjectionInput,
-  numDecYears: number,
-  stratRatiosByDecYear: number[][],
-  budgetRatiosByDecYear: number[][],
+  numDecumulationYears: number,
+  stratRatiosByDecumulationYear: number[][],
+  budgetRatiosByDecumulationYear: number[][],
 ) {
   // Spending stability ratio bands (per decumulation year)
   const retirementStartAge = planRetirementAge(engineInput);
@@ -171,13 +171,14 @@ export function stabilityBands(
 
   const stratRatioBands: MonteCarloPercentileBand[] = [];
   const budgetRatioBands: MonteCarloPercentileBand[] = [];
-  for (let di = 0; di < numDecYears; di++) {
-    const stratRatios = stratRatiosByDecYear[di]!;
+  for (let di = 0; di < numDecumulationYears; di++) {
+    const stratRatios = stratRatiosByDecumulationYear[di]!;
     if (stratRatios.length === 0) continue;
     const sortedStrat = [...stratRatios].sort((a, b) => a - b);
     const stratMean = sumBy(stratRatios, (v) => v) / stratRatios.length;
     const stratBreachRate = safeDivide(
-      stratRatios.filter((r) => r < MC_SPENDING_STABILITY_THRESHOLD).length,
+      stratRatios.filter((r) => r < SIMULATION_SPENDING_STABILITY_THRESHOLD)
+        .length,
       stratRatios.length,
       0,
     );
@@ -195,12 +196,13 @@ export function stabilityBands(
       breachRate: stratBreachRate,
     });
 
-    const budgetRatios = budgetRatiosByDecYear[di]!;
+    const budgetRatios = budgetRatiosByDecumulationYear[di]!;
     if (budgetRatios.length > 0) {
       const sortedBudget = [...budgetRatios].sort((a, b) => a - b);
       const budgetMean = sumBy(budgetRatios, (v) => v) / budgetRatios.length;
       const budgetBreachRate = safeDivide(
-        budgetRatios.filter((r) => r < MC_SPENDING_STABILITY_THRESHOLD).length,
+        budgetRatios.filter((r) => r < SIMULATION_SPENDING_STABILITY_THRESHOLD)
+          .length,
         budgetRatios.length,
         0,
       );

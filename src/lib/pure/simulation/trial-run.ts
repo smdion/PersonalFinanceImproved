@@ -12,7 +12,7 @@ import { createPRNG, sampleBlendedReturn, sampleNormalMeanStd } from "./random";
 import type { MonteCarloInput } from "./monte-carlo.types";
 import type { ProjectionInput, EngineDecumulationYear } from "../engine/types";
 import { roundToCents, safeDivide } from "../../utils/math";
-import { MC_SPENDING_STABILITY_THRESHOLD } from "../../constants";
+import { SIMULATION_SPENDING_STABILITY_THRESHOLD } from "../../constants";
 
 export function runTrials(
   engineInput: ProjectionInput,
@@ -46,13 +46,16 @@ export function runTrials(
 
   // Storage for per-decumulation-year spending ratios across trials
   // Index 0 = first decumulation year, not first projection year
-  const numDecYears = Math.max(0, endAge - planRetirementAge(engineInput) + 1);
-  const stratRatiosByDecYear: number[][] = Array.from(
-    { length: numDecYears },
+  const numDecumulationYears = Math.max(
+    0,
+    endAge - planRetirementAge(engineInput) + 1,
+  );
+  const stratRatiosByDecumulationYear: number[][] = Array.from(
+    { length: numDecumulationYears },
     () => [],
   );
-  const budgetRatiosByDecYear: number[][] = Array.from(
-    { length: numDecYears },
+  const budgetRatiosByDecumulationYear: number[][] = Array.from(
+    { length: numDecumulationYears },
     () => [],
   );
 
@@ -235,14 +238,14 @@ export function runTrials(
       const anchor = gkAnchorRate(result.projectionByYear);
       if (anchor !== null) gkAnchorRates.push(anchor);
     }
-    const decYears = result.projectionByYear.filter(
+    const decumulationYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );
-    if (decYears.length > 0) {
-      const year1Withdrawal = decYears[0]!.totalWithdrawal;
+    if (decumulationYears.length > 0) {
+      const year1Withdrawal = decumulationYears[0]!.totalWithdrawal;
       // Year 1's withdrawal, kept up with the inflation this trial saw.
       const firstDecumulationIndex =
-        decYears[0]!.year - engineInput.asOfDate.getFullYear();
+        decumulationYears[0]!.year - engineInput.asOfDate.getFullYear();
       const inflatedYear1 = (i: number) =>
         year1Withdrawal *
         trialInflation.growthBetween(
@@ -251,7 +254,7 @@ export function runTrials(
         );
       const isStable =
         year1Withdrawal === 0 ||
-        decYears.every((y, i) => {
+        decumulationYears.every((y, i) => {
           const baseline = strategyUsesRaise
             ? y.targetWithdrawal
             : inflatedYear1(i);
@@ -259,7 +262,8 @@ export function runTrials(
           if (baseline === 0 && y.totalWithdrawal === 0 && i > 0) return false;
           return (
             baseline === 0 ||
-            y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+            y.totalWithdrawal >=
+              SIMULATION_SPENDING_STABILITY_THRESHOLD * baseline
           );
         });
       if (isStable) spendingStableCount++;
@@ -277,24 +281,29 @@ export function runTrials(
       // Compared with what the strategy has the household spend
       // (strategySpending) — the budget is spending, while the gross
       // withdrawal is net of Social Security and gross of tax.
-      const isBudgetStable = decYears.every((y) => {
+      const isBudgetStable = decumulationYears.every((y) => {
         const baseline = y.budgetOnlyExpenses;
         return (
           baseline === 0 ||
-          strategySpending(y) >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+          strategySpending(y) >=
+            SIMULATION_SPENDING_STABILITY_THRESHOLD * baseline
         );
       });
       if (isBudgetStable) budgetStableCount++;
       // Per-year spending ratios for stability chart bands.
-      for (let di = 0; di < decYears.length && di < numDecYears; di++) {
-        const yearRow = decYears[di]!;
+      for (
+        let di = 0;
+        di < decumulationYears.length && di < numDecumulationYears;
+        di++
+      ) {
+        const yearRow = decumulationYears[di]!;
         const stratBase = strategyUsesRaise
           ? yearRow.targetWithdrawal
           : inflatedYear1(di);
-        stratRatiosByDecYear[di]!.push(
+        stratRatiosByDecumulationYear[di]!.push(
           safeDivide(yearRow.totalWithdrawal, stratBase, 0),
         );
-        budgetRatiosByDecYear[di]!.push(
+        budgetRatiosByDecumulationYear[di]!.push(
           safeDivide(strategySpending(yearRow), yearRow.budgetOnlyExpenses, 0),
         );
       }
@@ -317,9 +326,9 @@ export function runTrials(
     numYears,
     balancesByYear,
     balancesTodayByYear,
-    numDecYears,
-    stratRatiosByDecYear,
-    budgetRatiosByDecYear,
+    numDecumulationYears,
+    stratRatiosByDecumulationYear,
+    budgetRatiosByDecumulationYear,
     terminalBalances,
     terminalBalancesToday,
     hadPenaltyAvoidedShortfall,

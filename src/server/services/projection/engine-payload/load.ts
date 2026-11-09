@@ -75,7 +75,7 @@ export async function fetchRetirementData(
     allAppSettings: db.select().from(schema.appSettings),
     // The contribution profile's row (null = not found) when its id is known
     // here; undefined when absent, and buildEnginePayload loads it itself.
-    contribProfileRow: opts?.contributionProfileId
+    contributionProfileRow: opts?.contributionProfileId
       ? db
           .select()
           .from(schema.contributionProfiles)
@@ -124,7 +124,7 @@ export async function applyProfiles(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
   opts: { contributionProfileId?: number; salaryProfileId?: number },
-  allContribsRaw: Awaited<
+  allContributionsRaw: Awaited<
     ReturnType<typeof fetchRetirementData>
   >["allContribsRaw"],
   allJobs: Awaited<ReturnType<typeof fetchRetirementData>>["allJobs"],
@@ -134,23 +134,23 @@ export async function applyProfiles(
       ? applySalaryProfileRow(data.salaryProfileRow)
       : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
 
-  const contribProfileResult =
-    data.contribProfileRow !== undefined
+  const contributionProfileResult =
+    data.contributionProfileRow !== undefined
       ? applyContribProfileRow(
-          data.contribProfileRow,
-          allContribsRaw,
+          data.contributionProfileRow,
+          allContributionsRaw,
           allJobs,
           salaryProfileActiveMap,
         )
       : await loadAndApplyContribProfile(
           db,
           opts.contributionProfileId,
-          allContribsRaw,
+          allContributionsRaw,
           allJobs,
           salaryProfileActiveMap,
         );
-  const allContribs = contribProfileResult.contribs;
-  const patchedJobs = contribProfileResult.jobs;
+  const allContribs = contributionProfileResult.contribs;
+  const patchedJobs = contributionProfileResult.jobs;
 
   return { salaryProfileActiveMap, allContribs, patchedJobs };
 }

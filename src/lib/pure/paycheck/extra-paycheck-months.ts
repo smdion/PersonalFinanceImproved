@@ -44,8 +44,8 @@ export function findExtraPaycheckMonths(
 
   // Count paydays per month for the year (using UTC month)
   const paydayCounts = new Array(12).fill(0) as number[];
-  const dec31 = new Date(Date.UTC(year, 11, 31));
-  while (payday <= dec31) {
+  const december31 = new Date(Date.UTC(year, 11, 31));
+  while (payday <= december31) {
     paydayCounts[payday.getUTCMonth()]!++;
     payday = new Date(payday.getTime() + 14 * msPerDay);
   }
@@ -89,12 +89,12 @@ export function getExtraPaycheckMonthKeys(
 
   for (let year = startYear; year <= endYear; year++) {
     const jan1 = new Date(Date.UTC(year, 0, 1));
-    const dec31 = new Date(Date.UTC(year, 11, 31));
+    const december31 = new Date(Date.UTC(year, 11, 31));
 
     let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, 14);
 
     const counts = new Array(12).fill(0) as number[];
-    while (payday <= dec31) {
+    while (payday <= december31) {
       counts[payday.getUTCMonth()]!++;
       payday = new Date(payday.getTime() + 14 * msPerDay);
     }

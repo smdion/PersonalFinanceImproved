@@ -11,7 +11,7 @@
 
 import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 
-type ContribFieldSet = {
+type ContributionFieldSet = {
   contributionValue?: string | number | null;
   contributionMethod?: string | null;
   employerMatchType?: string | null;
@@ -34,7 +34,7 @@ export type DiffAccount = {
   /** Paid through payroll — only then does `fromBonus` mean anything
    *  (takesFromBonusCheck). Absent = yes. */
   isPayroll?: boolean;
-  live: ContribFieldSet;
+  live: ContributionFieldSet;
 };
 
 /** Fields that carry financial meaning. displayNameCustom is intentionally
@@ -52,8 +52,8 @@ const COMPARED_FIELDS = [
 ] as const;
 
 function fieldsDiffer(
-  a: ContribFieldSet,
-  b: ContribFieldSet,
+  a: ContributionFieldSet,
+  b: ContributionFieldSet,
   isPayroll: boolean,
 ): boolean {
   return (
@@ -72,7 +72,7 @@ function fieldsDiffer(
   );
 }
 
-function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
+function formatValue(fields: ContributionFieldSet, isPayroll: boolean): string {
   if (fields.isActive === false) return "excluded";
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
@@ -94,9 +94,9 @@ function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
  * actually touches (a non-empty entry in `outgoing`) can produce a line —
  * an account neither profile touches never changes.
  */
-export function diffContribProfileSwap(
-  outgoing: Record<string, ContribFieldSet>,
-  incoming: Record<string, ContribFieldSet>,
+export function diffContributionProfileSwap(
+  outgoing: Record<string, ContributionFieldSet>,
+  incoming: Record<string, ContributionFieldSet>,
   accounts: DiffAccount[],
 ): string[] {
   const lines: string[] = [];

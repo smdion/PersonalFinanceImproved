@@ -730,7 +730,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedGlidePath(db);
 
       // Seed a named preset in mc_presets table
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "default",
           label: "Default",
@@ -1743,11 +1743,11 @@ describe("projection router — MC edge cases", () => {
   it("every shipped preset can run", async () => {
     const { db, cleanup } = await createTestCaller(adminSession);
     try {
-      const { buildMcInputs } =
+      const { buildSimulationInputs } =
         await import("@/server/services/simulation/mc-inputs");
       for (const key of ["aggressive", "default", "conservative"] as const)
         expect(
-          (await buildMcInputs(db as never, key)).notConfigured,
+          (await buildSimulationInputs(db as never, key)).notConfigured,
           key,
         ).toBeNull();
     } finally {
@@ -2232,7 +2232,7 @@ describe("projection router — computeCoastFireMC", () => {
       // A named preset with no glide path of its own uses the household's.
       seedGlidePath(db);
 
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "default",
           label: "Default",
@@ -2265,7 +2265,7 @@ describe("projection router — computeCoastFireMC", () => {
       seedCorrelations(db);
       // A named preset with no glide path of its own uses the household's.
       seedGlidePath(db);
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "default",
           label: "Default",
@@ -2318,7 +2318,7 @@ describe("projection router — computeCoastFireProbe", () => {
       seedCorrelations(db);
       // A named preset with no glide path of its own uses the household's.
       seedGlidePath(db);
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "default",
           label: "Default",
@@ -2359,7 +2359,7 @@ describe("projection router — computeCoastFireProbe", () => {
       seedFullProjectionData(db); // retirementAge: 65
       seedAssetClasses(db);
       seedCorrelations(db);
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "default",
           label: "Default",
@@ -2407,7 +2407,7 @@ describe("projection router — computeCoastFireProbe", () => {
 // ---------------------------------------------------------------------------
 
 function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
-  db.insert(schema.mcPresets)
+  db.insert(schema.simulationPresets)
     .values({
       key: "default",
       label: "Default",

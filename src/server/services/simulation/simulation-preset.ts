@@ -14,12 +14,12 @@
  * apply on top of any preset.
  */
 import { eq } from "drizzle-orm";
-import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
+import { SK_SIMULATION_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
 import type { GlidePathEntry } from "@/lib/pure/simulation/random";
 import {
-  MC_RETURN_CLAMP_MAX,
-  MC_RETURN_CLAMP_MIN,
+  SIMULATION_RETURN_CLAMP_MAX,
+  SIMULATION_RETURN_CLAMP_MIN,
   type SimulationPresetKey,
 } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
@@ -52,7 +52,7 @@ export async function loadSimulationPreset(
   key: SimulationPresetKey,
 ): Promise<SimulationPreset> {
   const isCustom = key === "custom";
-  const p = schema.mcPresets;
+  const p = schema.simulationPresets;
   const [presetRow, customRows, savedRow, customClamps] = await Promise.all([
     isCustom
       ? Promise.resolve(undefined)
@@ -68,7 +68,7 @@ export async function loadSimulationPreset(
       ? db
           .select({ value: schema.appSettings.value })
           .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_MC_CUSTOM_CLAMP_BOUNDS))
+          .where(eq(schema.appSettings.key, SK_SIMULATION_CUSTOM_CLAMP_BOUNDS))
           .then((r) => r[0]?.value as CustomClampBounds | undefined)
       : Promise.resolve(undefined),
   ]);
@@ -76,12 +76,14 @@ export async function loadSimulationPreset(
     ? await Promise.all([
         db
           .select()
-          .from(schema.mcPresetGlidePaths)
-          .where(eq(schema.mcPresetGlidePaths.presetId, presetRow.id)),
+          .from(schema.simulationPresetGlidePaths)
+          .where(eq(schema.simulationPresetGlidePaths.presetId, presetRow.id)),
         db
           .select()
-          .from(schema.mcPresetReturnOverrides)
-          .where(eq(schema.mcPresetReturnOverrides.presetId, presetRow.id)),
+          .from(schema.simulationPresetReturnOverrides)
+          .where(
+            eq(schema.simulationPresetReturnOverrides.presetId, presetRow.id),
+          ),
       ])
     : [[], []];
   return {
@@ -95,10 +97,10 @@ export async function loadSimulationPreset(
     inflationStdDev: presetRow ? toNumber(presetRow.inflationStdDev) : null,
     returnClampMin: presetRow
       ? toNumber(presetRow.returnClampMin)
-      : (customClamps?.returnClampMin ?? MC_RETURN_CLAMP_MIN),
+      : (customClamps?.returnClampMin ?? SIMULATION_RETURN_CLAMP_MIN),
     returnClampMax: presetRow
       ? toNumber(presetRow.returnClampMax)
-      : (customClamps?.returnClampMax ?? MC_RETURN_CLAMP_MAX),
+      : (customClamps?.returnClampMax ?? SIMULATION_RETURN_CLAMP_MAX),
     glidePath: glidePathFromRows(
       presetGlide.length > 0 ? presetGlide : customRows,
     ),

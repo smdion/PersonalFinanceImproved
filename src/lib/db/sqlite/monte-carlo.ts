@@ -86,7 +86,7 @@ export const glidePathAllocations = sqliteTable(
 
 // --- Monte Carlo: Presets (DB-driven, replaces hardcoded MC_PRESETS) ---
 
-export const mcPresets = sqliteTable(
+export const simulationPresets = sqliteTable(
   "mc_presets",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
@@ -106,13 +106,13 @@ export const mcPresets = sqliteTable(
   (table) => [index("mc_presets_is_active_idx").on(table.isActive)],
 );
 
-export const mcPresetGlidePaths = sqliteTable(
+export const simulationPresetGlidePaths = sqliteTable(
   "mc_preset_glide_paths",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     presetId: integer("preset_id")
       .notNull()
-      .references(() => mcPresets.id, { onDelete: "cascade" }),
+      .references(() => simulationPresets.id, { onDelete: "cascade" }),
     age: integer("age").notNull(),
     assetClassId: integer("asset_class_id")
       .notNull()
@@ -130,13 +130,13 @@ export const mcPresetGlidePaths = sqliteTable(
   ],
 );
 
-export const mcPresetReturnOverrides = sqliteTable(
+export const simulationPresetReturnOverrides = sqliteTable(
   "mc_preset_return_overrides",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     presetId: integer("preset_id")
       .notNull()
-      .references(() => mcPresets.id, { onDelete: "cascade" }),
+      .references(() => simulationPresets.id, { onDelete: "cascade" }),
     assetClassId: integer("asset_class_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
@@ -150,7 +150,7 @@ export const mcPresetReturnOverrides = sqliteTable(
 
 // --- Monte Carlo: User-created simulation presets ---
 
-export const mcUserPresets = sqliteTable("mc_user_presets", {
+export const simulationUserPresets = sqliteTable("mc_user_presets", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   simulations: integer("simulations").notNull().default(1000),

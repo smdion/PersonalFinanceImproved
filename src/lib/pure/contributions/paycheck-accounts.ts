@@ -29,8 +29,8 @@ import type { PaycheckContributionRow } from "@/lib/pure/contributions/paycheck-
  *  is grouped (computeGroupedEmployerMatch): a Roth + Traditional split of
  *  one account is capped on their combined contribution. */
 export function buildContribAccounts(
-  jobContribs: (PaycheckContributionRow & CapPassed)[],
-  personalContribs: (PaycheckContributionRow & CapPassed)[],
+  jobContributions: (PaycheckContributionRow & CapPassed)[],
+  personalContributions: (PaycheckContributionRow & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   /** The year's limits and the person's age at Dec 31 — sizes each
@@ -42,19 +42,19 @@ export function buildContribAccounts(
    *  (matchPayGroupsWithBonus). */
   bonusGross = 0,
 ): ContributionAccountInput[] {
-  const allContribs = [...jobContribs, ...personalContribs];
-  const bonusGroups = matchPayGroupsWithBonus(allContribs);
-  const matchPay = (c: (typeof allContribs)[number]) =>
+  const allContributions = [...jobContributions, ...personalContributions];
+  const bonusGroups = matchPayGroupsWithBonus(allContributions);
+  const matchPay = (c: (typeof allContributions)[number]) =>
     salary + (bonusGroups.has(matchGroupKey(c)) ? bonusGross : 0);
 
   const annualById = new Map<number, number>();
-  for (const c of allContribs) {
-    const contribValue = computeValue(c);
+  for (const c of allContributions) {
+    const contributionValue = computeValue(c);
     annualById.set(
       c.id,
       computeAnnualContribution(
         c.contributionMethod,
-        contribValue,
+        contributionValue,
         salary,
         periodsPerYear,
       ),
@@ -62,7 +62,7 @@ export function buildContribAccounts(
   }
 
   const matchByRow = computeGroupedEmployerMatch(
-    allContribs.map((c) => ({
+    allContributions.map((c) => ({
       id: c.id,
       jobId: c.jobId,
       personId: c.personId,
@@ -87,7 +87,7 @@ export function buildContribAccounts(
   const baseMatchByRow =
     bonusGroups.size > 0 && bonusGross > 0
       ? computeGroupedEmployerMatch(
-          allContribs.map((c) => ({
+          allContributions.map((c) => ({
             id: c.id,
             jobId: c.jobId,
             personId: c.personId,
@@ -104,12 +104,12 @@ export function buildContribAccounts(
         )
       : matchByRow;
 
-  const accounts = allContribs.map((c) => {
-    const contribValue = computeValue(c);
+  const accounts = allContributions.map((c) => {
+    const contributionValue = computeValue(c);
     const annual = annualById.get(c.id)!;
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
-        ? contribValue
+        ? contributionValue
         : safeDivide(annual, periodsPerYear, 0);
 
     const match = matchByRow.get(c.id)!;
@@ -125,7 +125,7 @@ export function buildContribAccounts(
       perPeriodContribution: roundToCents(perPeriod),
       rateOfGross:
         c.contributionMethod === "percent_of_salary"
-          ? fractionFromPercent(contribValue)
+          ? fractionFromPercent(contributionValue)
           : null,
       taxTreatment: c.taxTreatment,
       isPayrollDeducted,

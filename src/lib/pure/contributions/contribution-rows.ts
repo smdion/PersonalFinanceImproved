@@ -65,7 +65,7 @@ export function resolveContribPeriods(
 }
 
 /** Minimal fields needed from the DB contribution_accounts row. */
-export type ContribRow = {
+export type ContributionRow = {
   id: number;
   personId: number | null;
   jobId: number | null;
@@ -173,8 +173,8 @@ export function annualContributionWithBonus(
  * whose pay period can't be resolved (yearly money 0). One computation for
  * the category aggregate and the cap pass.
  */
-export function contribRowAmounts(
-  activeContribs: readonly ContribRow[],
+export function contributionRowAmounts(
+  activeContributions: readonly ContributionRow[],
   activeJobs: readonly JobRef[],
   jobSalaries: readonly JobSalaryRef[],
 ): {
@@ -185,8 +185,8 @@ export function contribRowAmounts(
   const incompleteAccountIds: number[] = [];
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
-  const bonusGroups = matchPayGroupsWithBonus([...activeContribs]);
-  for (const c of activeContribs) {
+  const bonusGroups = matchPayGroupsWithBonus([...activeContributions]);
+  for (const c of activeContributions) {
     // Direct job link, or fall back to person's first active job when jobId is null
     const js = jobPayFor(c, jobSalaries);
     const job = c.jobId

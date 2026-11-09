@@ -35,13 +35,13 @@ export const SK_LAST_APPLIED_PLAN_ID = "last_applied_plan_id";
 export const SK_RETIREMENT_SIMULATION_AUTOLOAD =
   "retirement_simulation_autoload";
 export const SK_RETIREMENT_MC_AUTOLOAD = "retirement_mc_autoload";
-export const SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD =
+export const SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD =
   "retirement_coastfire_mc_autoload";
-export const SK_RETIREMENT_DEC_BUDGET_PROFILE_ID =
+export const SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID =
   "retirement_dec_budget_profile_id";
-export const SK_RETIREMENT_DEC_BUDGET_COL =
+export const SK_RETIREMENT_DECUMULATION_BUDGET_COL =
   "retirement_decumulation_budget_column";
-export const SK_RETIREMENT_DEC_EXPENSE_OVERRIDE =
+export const SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE =
   "retirement_dec_expense_override";
 export const SK_RETIREMENT_COMPARISON_EXPANDED =
   "retirement_comparison_expanded";
@@ -119,7 +119,7 @@ export const SK_TAX_DATA_SYNC_ENABLED = "tax_data_sync_enabled";
 export const SK_TAX_DATA_LAST_CHECK = "tax_data_last_check";
 
 /** Custom Simulation return clamps: { returnClampMin, returnClampMax }. */
-export const SK_MC_CUSTOM_CLAMP_BOUNDS = "mc_custom_clamp_bounds";
+export const SK_SIMULATION_CUSTOM_CLAMP_BOUNDS = "mc_custom_clamp_bounds";
 
 // ── Reset ───────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ export const DATA_SETTING_KEYS: readonly string[] = [
   SK_ACTIVE_SALARY_PROFILE_ID,
   SK_ACTIVE_RETIREMENT_PROFILE_ID,
   SK_LAST_APPLIED_PLAN_ID,
-  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
   SK_MILESTONE_FIRST_REACHED,
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CUSTOM_GOALS,

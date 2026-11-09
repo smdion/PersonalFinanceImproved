@@ -41,8 +41,8 @@ import type {
 } from "@/lib/pure/contributions/summary.types";
 import { jointAccountRows } from "@/lib/pure/contributions/joint-accounts";
 import {
-  contribAccountsFor,
-  perContribRows,
+  contributionAccountsFor,
+  perContributionRows,
   personPay,
 } from "@/lib/pure/contributions/person-snapshot";
 import {
@@ -94,7 +94,7 @@ export async function computeContributionSummary(
   const [
     people,
     allJobs,
-    allContribs,
+    allContributions,
     allLimits,
     priorYearLimitsRaw,
     perfAccounts,
@@ -222,7 +222,7 @@ export async function computeContributionSummary(
   const profileResult = await loadAndApplyContribProfile(
     ctx.db,
     input?.contributionProfileId,
-    allContribs,
+    allContributions,
     allJobs,
     salaryProfileActiveMap,
   );
@@ -248,7 +248,7 @@ export async function computeContributionSummary(
     limitsRecord,
     asOfDate,
   );
-  const effectiveContribs = capForRequest(
+  const effectiveContributions = capForRequest(
     sandboxed,
     capHousehold,
     effectiveJobs,
@@ -256,8 +256,8 @@ export async function computeContributionSummary(
     effectiveSalaryMap,
   );
 
-  const { contribActualMap } = splitYtdActuals(
-    effectiveContribs,
+  const { contributionActualMap } = splitYtdActuals(
+    effectiveContributions,
     effectiveJobs,
     salaryProfileActiveMap,
     effectiveSalaryMap,
@@ -339,10 +339,10 @@ export async function computeContributionSummary(
         accounts,
         rawContribs,
         result,
-        resolveContribLimit,
-        resolveContribPriorYearLimit,
-      } = contribAccountsFor({
-        effectiveContributions: effectiveContribs,
+        resolveContributionLimit,
+        resolveContributionPriorYearLimit,
+      } = contributionAccountsFor({
+        effectiveContributions: effectiveContributions,
         activeJob,
         person,
         pay,
@@ -356,14 +356,14 @@ export async function computeContributionSummary(
       });
 
       // Build per-raw-contrib computed data for consumers (Paycheck page)
-      const { perContribData } = perContribRows(
+      const { perContribData } = perContributionRows(
         rawContribs,
         accounts,
-        resolveContribLimit,
+        resolveContributionLimit,
         inPriorYearWindow,
         priorYear,
-        resolveContribPriorYearLimit,
-        contribActualMap,
+        resolveContributionPriorYearLimit,
+        contributionActualMap,
       );
 
       // Build per-account-type snapshots
@@ -379,36 +379,36 @@ export async function computeContributionSummary(
       };
       for (let i = 0; i < accounts.length; i++) {
         const account = accounts[i]!;
-        const rawContrib = rawContribs[i]!;
-        const linkedPerfLabel = rawContrib.performanceAccountId
-          ? perfLabelMap.get(rawContrib.performanceAccountId)
+        const rawContribution = rawContribs[i]!;
+        const linkedPerfLabel = rawContribution.performanceAccountId
+          ? perfLabelMap.get(rawContribution.performanceAccountId)
           : null;
 
         // Resolve display config — checks subTypeDisplay overrides (e.g. ESPP),
         // then falls back to the base accountType config
         const display = getDisplayConfig(
-          rawContrib.accountType,
-          rawContrib.subType,
+          rawContribution.accountType,
+          rawContribution.subType,
         );
 
         // Display category: use config displayLabel for proper casing (e.g. 'IRA' not 'ira'),
         // then resolve brokerage/overflow to a specific display name
         let cat: string = display.displayLabel;
-        if (isOverflowTarget(rawContrib.accountType as AccountCategory)) {
+        if (isOverflowTarget(rawContribution.accountType as AccountCategory)) {
           if (
             display.hasDiscountBar ||
             display.displayLabel.toLowerCase() !==
-              rawContrib.accountType.toLowerCase()
+              rawContribution.accountType.toLowerCase()
           ) {
             // Sub-type with distinct display (e.g. ESPP) — use config label (not perf account name which includes person)
             cat = display.displayLabel;
           } else if (linkedPerfLabel) {
             cat = linkedPerfLabel;
-          } else if (rawContrib.label) {
-            cat = `${rawContrib.label} Brokerage`;
+          } else if (rawContribution.label) {
+            cat = `${rawContribution.label} Brokerage`;
           } else {
             cat = isRetirementCategory(
-              rawContrib.accountType as AccountCategory,
+              rawContribution.accountType as AccountCategory,
             )
               ? "Retirement Brokerage"
               : "Long Term Brokerage";
@@ -417,11 +417,11 @@ export async function computeContributionSummary(
 
         // Color key: sub-type key (e.g. 'espp') if sub-type display matched, otherwise base accountType
         const categoryKey =
-          rawContrib.subType &&
+          rawContribution.subType &&
           display.displayLabel.toLowerCase() !==
-            rawContrib.accountType.toLowerCase()
-            ? rawContrib.subType.toLowerCase()
-            : rawContrib.accountType;
+            rawContribution.accountType.toLowerCase()
+            ? rawContribution.subType.toLowerCase()
+            : rawContribution.accountType;
 
         const entry = categoryMap.get(cat) ?? {
           employee: 0,
@@ -434,16 +434,16 @@ export async function computeContributionSummary(
           nonPayroll: 0,
           payrollDeducted: 0,
           isJoint: false,
-          parentCategory: rawContrib.parentCategory,
+          parentCategory: rawContribution.parentCategory,
           hasDiscountBar: display.hasDiscountBar,
           employerMatchLabel: display.employerMatchLabel,
           categoryKey,
-          targetAnnual: rawContrib.targetAnnual
-            ? Number(rawContrib.targetAnnual)
+          targetAnnual: rawContribution.targetAnnual
+            ? Number(rawContribution.targetAnnual)
             : null,
-          allocationPriority: rawContrib.allocationPriority,
+          allocationPriority: rawContribution.allocationPriority,
           priorYearAmount: 0,
-          priorYearContribs: [],
+          priorYearContributions: [],
           ytdContributions: 0,
           ytdEmployerMatch: 0,
           blendedEmployee: 0,
@@ -464,36 +464,38 @@ export async function computeContributionSummary(
           account.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;
         entry.electedPercent =
           entry.electedPercent !== null &&
-          rawContrib.contributionMethod === "percent_of_salary"
+          rawContribution.contributionMethod === "percent_of_salary"
             ? entry.electedPercent +
-              toNumber(String(rawContrib.contributionValue))
+              toNumber(String(rawContribution.contributionValue))
             : null;
-        if (rawContrib.performanceAccountId != null)
-          entry.performanceAccountIds.add(rawContrib.performanceAccountId);
+        if (rawContribution.performanceAccountId != null)
+          entry.performanceAccountIds.add(rawContribution.performanceAccountId);
         // Accumulate YTD actuals from proportionally-split performance data
-        const contribActual = contribActualMap.get(rawContrib.id);
-        if (contribActual) {
-          entry.ytdContributions += contribActual.contributions;
-          entry.ytdEmployerMatch += contribActual.employerMatch;
+        const contributionActual = contributionActualMap.get(
+          rawContribution.id,
+        );
+        if (contributionActual) {
+          entry.ytdContributions += contributionActual.contributions;
+          entry.ytdEmployerMatch += contributionActual.employerMatch;
         }
         // Blended = actual YTD + stale-gap fill + projected remaining.
         // Stale gap: periods between last performance update and today,
         // filled at current projected rate. Actuals are trusted (may
         // reflect old contribution rates or salary changes).
         const remaining = contribRemainingFraction(
-          rawContrib.contributionMethod,
+          rawContribution.contributionMethod,
           {
             ...elapsed,
             monthsElapsed: monthsDoneYtd(
               asOfDate,
-              rawContrib.performanceAccountId != null
-                ? contributedThrough.get(rawContrib.performanceAccountId)
+              rawContribution.performanceAccountId != null
+                ? contributedThrough.get(rawContribution.performanceAccountId)
                 : null,
             ),
           },
         );
-        const ytdEmp = contribActual?.contributions ?? 0;
-        const ytdMatch = contribActual?.employerMatch ?? 0;
+        const ytdEmp = contributionActual?.contributions ?? 0;
+        const ytdMatch = contributionActual?.employerMatch ?? 0;
         if (ytdEmp > 0 || ytdMatch > 0) {
           // Compute stale gap from performance freshness date.
           // Only applies to payroll-cadence contributions (percent_of_salary,
@@ -501,15 +503,15 @@ export async function computeContributionSummary(
           // schedule — a biweekly payday gap doesn't mean they're stale.
           let stalePeriods = 0;
           const isPayrollCadence =
-            rawContrib.contributionMethod === "percent_of_salary" ||
-            rawContrib.contributionMethod === "fixed_per_period";
+            rawContribution.contributionMethod === "percent_of_salary" ||
+            rawContribution.contributionMethod === "fixed_per_period";
           if (
             isPayrollCadence &&
             perfLastUpdated &&
             activeJob.anchorPayDate &&
             !(
-              rawContrib.performanceAccountId != null &&
-              liveThroughToday.has(rawContrib.performanceAccountId)
+              rawContribution.performanceAccountId != null &&
+              liveThroughToday.has(rawContribution.performanceAccountId)
             )
           ) {
             // Checks this job paid since the data's date — a payday
@@ -530,8 +532,8 @@ export async function computeContributionSummary(
           const perPeriodEmp = account.annualContribution / periodsPerYear;
           const perPeriodMatch = regularMatch / periodsPerYear;
           const actualsThrough =
-            rawContrib.performanceAccountId != null &&
-            liveThroughToday.has(rawContrib.performanceAccountId)
+            rawContribution.performanceAccountId != null &&
+            liveThroughToday.has(rawContribution.performanceAccountId)
               ? asOfDate
               : perfLastUpdated;
           const bonusInActuals =
@@ -553,11 +555,14 @@ export async function computeContributionSummary(
           entry.blendedMatch += account.employerMatch;
         }
         const pyAmount =
-          rawContrib.priorYearContribYear === priorYear
-            ? toNumber(rawContrib.priorYearContribAmount)
+          rawContribution.priorYearContribYear === priorYear
+            ? toNumber(rawContribution.priorYearContribAmount)
             : 0;
         entry.priorYearAmount += pyAmount;
-        entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmount });
+        entry.priorYearContributions.push({
+          id: rawContribution.id,
+          amount: pyAmount,
+        });
         entry.employee += account.annualContribution;
         entry.match += account.employerMatch;
         entry.matchAvailable +=
@@ -575,12 +580,12 @@ export async function computeContributionSummary(
         // Same isPayrollDeducted resolution the paycheck summary's
         // calculator input uses (buildContribAccounts) — independent of the
         // tax treatment split above.
-        if (isPaidThroughPayroll(rawContrib)) {
+        if (isPaidThroughPayroll(rawContribution)) {
           entry.payrollDeducted += withBonus;
         } else {
           entry.nonPayroll += account.annualContribution;
         }
-        if (rawContrib.ownership === "joint") entry.isJoint = true;
+        if (rawContribution.ownership === "joint") entry.isJoint = true;
         categoryMap.set(cat, entry);
       }
 
@@ -590,11 +595,11 @@ export async function computeContributionSummary(
       // family — the same rule the label and the cap use.
       const { accountTypes } = accountTypeSnapshots(
         rawContribs,
-        resolveContribLimit,
+        resolveContributionLimit,
         categoryMap,
         salary,
         inPriorYearWindow,
-        resolveContribPriorYearLimit,
+        resolveContributionPriorYearLimit,
       );
 
       // Compute totals — use DB parentCategory (not config lookup) so sub-types
@@ -687,7 +692,7 @@ export async function computeContributionSummary(
   );
 
   // Joint accounts — computed at household level, not attributed to any person
-  const jointContribs = effectiveContribs.filter(
+  const jointContribs = effectiveContributions.filter(
     (c) => c.ownership === "joint",
   );
   const jointAccountTypes: AccountTypeSnapshot[] = [];

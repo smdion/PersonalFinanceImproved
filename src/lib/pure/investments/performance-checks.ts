@@ -158,7 +158,7 @@ export function performanceChecks(
 
       const snap = snapshotFor.get(r.year);
       const own = `${ownerKey(r.performanceAccountId, r.ownerPersonId)}|${r.year}`;
-      const snapBal =
+      const snapBalance =
         !snap || count.get(own) !== 1
           ? undefined
           : inParts(r.performanceAccountId, r.year)
@@ -166,12 +166,16 @@ export function performanceChecks(
                 ownerKey(r.performanceAccountId, r.ownerPersonId),
               )
             : snap.byAccount.get(r.performanceAccountId);
-      if (snap && snapBal !== undefined && isGap(r.endingBalance - snapBal))
+      if (
+        snap &&
+        snapBalance !== undefined &&
+        isGap(r.endingBalance - snapBalance)
+      )
         add(r, {
           kind: "snapshot",
-          amount: cents(r.endingBalance - snapBal),
+          amount: cents(r.endingBalance - snapBalance),
           snapshotDate: snap.date,
-          snapshotBalance: cents(snapBal),
+          snapshotBalance: cents(snapBalance),
         });
     }
 

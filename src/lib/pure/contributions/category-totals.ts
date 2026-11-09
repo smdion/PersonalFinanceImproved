@@ -12,14 +12,14 @@ import type { CapPassed } from "./contribution-caps";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
-  contribRowAmounts,
-  type ContribRow,
+  contributionRowAmounts,
+  type ContributionRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
 
 /** Per-category contribution totals with tax breakdown. */
-type ContribCategorySummary = {
+type ContributionCategorySummary = {
   annual: number;
   rothFraction: number;
   rothAnnual: number;
@@ -35,11 +35,11 @@ type ContribCategorySummary = {
  * employer match totals. Used by the retirement engine and available to any consumer.
  */
 export function aggregateContributionsByCategory(
-  activeContribs: (ContribRow & CapPassed)[],
+  activeContributions: (ContributionRow & CapPassed)[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
 ): {
-  contribByCategory: Record<AccountCategory, ContribCategorySummary>;
+  contribByCategory: Record<AccountCategory, ContributionCategorySummary>;
   employerMatchByCategory: Record<AccountCategory, number>;
   /** Employer money per contribution row id. */
   employerMatchById: Map<number, number>;
@@ -48,7 +48,7 @@ export function aggregateContributionsByCategory(
   /** The same totals over retirement money only (`isRetirementMoney`):
    *  what Simple tax mode simulates. */
   retirementOnly: {
-    contribByCategory: Record<AccountCategory, ContribCategorySummary>;
+    contribByCategory: Record<AccountCategory, ContributionCategorySummary>;
     employerMatchByCategory: Record<AccountCategory, number>;
   };
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
@@ -57,14 +57,14 @@ export function aggregateContributionsByCategory(
   incompleteAccountIds: number[];
 } {
   const emptySummaries = () =>
-    buildCategoryRecord((): ContribCategorySummary => ({
+    buildCategoryRecord((): ContributionCategorySummary => ({
       annual: 0,
       rothFraction: 0,
       rothAnnual: 0,
       tradAnnual: 0,
     }));
   const contribByCategory = emptySummaries();
-  const retirementContribByCategory = emptySummaries();
+  const retirementContributionByCategory = emptySummaries();
   const employerMatchByCategory = buildCategoryRecord(() => 0);
   const retirementMatchByCategory = buildCategoryRecord(() => 0);
   const employerMatchByParentCat = new Map<
@@ -72,15 +72,12 @@ export function aggregateContributionsByCategory(
     Map<string, number>
   >();
 
-  const { annualById, salaryById, incompleteAccountIds } = contribRowAmounts(
-    activeContribs,
-    activeJobs,
-    jobSalaries,
-  );
-  for (const c of activeContribs) {
+  const { annualById, salaryById, incompleteAccountIds } =
+    contributionRowAmounts(activeContributions, activeJobs, jobSalaries);
+  for (const c of activeContributions) {
     const annual = annualById.get(c.id)!;
     for (const summaries of isRetirementMoney(c.parentCategory)
-      ? [contribByCategory, retirementContribByCategory]
+      ? [contribByCategory, retirementContributionByCategory]
       : [contribByCategory]) {
       summaries[c.accountType].annual += annual;
       if (isTaxFree(c.taxTreatment)) {
@@ -92,7 +89,7 @@ export function aggregateContributionsByCategory(
   }
 
   const matchByRow = computeGroupedEmployerMatch(
-    activeContribs.map((c) => ({
+    activeContributions.map((c) => ({
       id: c.id,
       jobId: c.jobId,
       personId: c.personId,
@@ -108,7 +105,7 @@ export function aggregateContributionsByCategory(
     })),
   );
 
-  for (const c of activeContribs) {
+  for (const c of activeContributions) {
     const cat = c.accountType;
     const matchAmount = matchByRow.get(c.id)!.matchAnnual;
     employerMatchByCategory[cat] += matchAmount;
@@ -128,7 +125,7 @@ export function aggregateContributionsByCategory(
   }
 
   // Compute Roth fractions from actual account data
-  for (const summaries of [contribByCategory, retirementContribByCategory])
+  for (const summaries of [contribByCategory, retirementContributionByCategory])
     for (const cat of categoriesWithTaxPreference()) {
       const total = summaries[cat].rothAnnual + summaries[cat].tradAnnual;
       summaries[cat].rothFraction = safeDivide(
@@ -146,7 +143,7 @@ export function aggregateContributionsByCategory(
     ),
     employerMatchByParentCat,
     retirementOnly: {
-      contribByCategory: retirementContribByCategory,
+      contribByCategory: retirementContributionByCategory,
       employerMatchByCategory: retirementMatchByCategory,
     },
     incompleteAccountIds,

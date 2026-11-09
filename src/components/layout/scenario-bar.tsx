@@ -5,7 +5,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -141,7 +141,7 @@ export function ScenarioBar() {
     );
     const incoming = contributionCompareData?.profiles.find((p) => p.id === id);
     if (contributionCompareData && outgoing) {
-      const lines = diffContribProfileSwap(
+      const lines = diffContributionProfileSwap(
         outgoing.accountActiveFields,
         incoming?.accountActiveFields ?? {},
         contributionCompareData.accounts,

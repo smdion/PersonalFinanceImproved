@@ -59,11 +59,11 @@ export function projectionContributionSpecs(
     // Looked up by the source row's stable id — personId/ownerName
     // can't disambiguate between multiple joint contributions in the
     // same category, since both are null for every joint row.
-    const contrib = activeContribs.find((c) => c.id === id);
+    const contribution = activeContribs.find((c) => c.id === id);
     const parentCategory =
-      contrib?.parentCategory ??
-      (contrib?.performanceAccountId
-        ? perfCategoryMap.get(contrib.performanceAccountId)
+      contribution?.parentCategory ??
+      (contribution?.performanceAccountId
+        ? perfCategoryMap.get(contribution.performanceAccountId)
         : undefined);
     // Match to portfolio account display name using same cascade as engine
     const matchTaxType =
@@ -98,8 +98,8 @@ export function projectionContributionSpecs(
     // (e.g. one Vanguard IRA both spouses contribute to separately)
     // has ownershipType "joint", which would otherwise render "Joint
     // ..." for every such row instead of each person's own name.
-    const perfAccount = contrib?.performanceAccountId
-      ? perfAccountMap.get(contrib.performanceAccountId)
+    const perfAccount = contribution?.performanceAccountId
+      ? perfAccountMap.get(contribution.performanceAccountId)
       : undefined;
     const perfFallback = perfAccount
       ? portfolioAccountLabel(perfAccount, perfAccount, personId, nameMap)

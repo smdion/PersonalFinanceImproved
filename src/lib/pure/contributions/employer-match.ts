@@ -24,10 +24,10 @@ export function computeEmployerMatch(
   matchType: string | null,
   matchValue: number,
   maxMatchPercent: number,
-  empContribAnnual: number,
+  empContributionAnnual: number,
   /** "combined": a group's total, read as a share of pay. */
-  empContribMethod: ContributionMethod | "combined",
-  empContribValue: number,
+  empContributionMethod: ContributionMethod | "combined",
+  empContributionValue: number,
   salary: number,
   /** The stored rate of a percent match; null: none stored. */
   matchRate: Fraction | null = null,
@@ -42,9 +42,9 @@ export function computeEmployerMatch(
   if (match.kind === "flat") return match.perYear;
   if (salary <= 0) return 0;
   const employeePercent =
-    empContribMethod === "percent_of_salary"
-      ? fractionFromPercent(empContribValue)
-      : empContribAnnual / salary;
+    empContributionMethod === "percent_of_salary"
+      ? fractionFromPercent(empContributionValue)
+      : empContributionAnnual / salary;
   return salary * applyCeiling(employeePercent, match.capOfPay) * match.rate;
 }
 

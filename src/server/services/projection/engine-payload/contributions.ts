@@ -24,7 +24,7 @@ export function capContributions(
   birthYearByPersonId: Map<number, number>,
   thisYearFiling: Awaited<ReturnType<typeof thisYearFilingStatus>>,
   currentYear: number,
-  allContribs: Awaited<ReturnType<typeof applyProfiles>>["allContribs"],
+  allContributions: Awaited<ReturnType<typeof applyProfiles>>["allContribs"],
   activeJobs: Awaited<ReturnType<typeof applyProfiles>>["patchedJobs"],
   jobSalaries: (JobSalaryRef & { totalComp: number })[],
 ) {
@@ -51,7 +51,7 @@ export function capContributions(
   // person: a joint account (settings/contribution-accounts.ts), which
   // would otherwise drop out of every total.
   const activeContribs = capEffectiveContribs(
-    allContribs
+    allContributions
       .filter(
         (c) =>
           activeJobs.some((j) => j.id === c.jobId) ||

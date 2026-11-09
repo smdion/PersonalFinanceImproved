@@ -2339,7 +2339,7 @@ describe("finalizeYear — pure computation logic", () => {
       expect(sums.fees).toBe(250);
       // Lifetime fields summed across categories
       expect(sums.lifetimeGains).toBe(53000);
-      expect(sums.lifetimeContribs).toBe(95000);
+      expect(sums.lifetimeContributions).toBe(95000);
       expect(sums.lifetimeMatch).toBe(20000);
     });
 

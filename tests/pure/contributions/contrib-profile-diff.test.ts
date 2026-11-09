@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  diffContribProfileSwap,
+  diffContributionProfileSwap,
   type DiffAccount,
 } from "@/lib/pure/contributions/contrib-profile-diff";
 
@@ -13,14 +13,16 @@ const account = (overrides: Partial<DiffAccount> = {}): DiffAccount => ({
 
 describe("diffContributionProfileSwap", () => {
   it("produces no lines when neither profile touches the account", () => {
-    const lines = diffContribProfileSwap({}, {}, [account()]);
+    const lines = diffContributionProfileSwap({}, {}, [account()]);
     expect(lines).toEqual([]);
   });
 
   it("produces no lines when both profiles set the same value", () => {
     const outgoing = { "1": { contributionValue: "14" } };
     const incoming = { "1": { contributionValue: "14" } };
-    expect(diffContribProfileSwap(outgoing, incoming, [account()])).toEqual([]);
+    expect(
+      diffContributionProfileSwap(outgoing, incoming, [account()]),
+    ).toEqual([]);
   });
 
   it("a displayNameCustom-only difference produces no line (cosmetic)", () => {
@@ -28,14 +30,16 @@ describe("diffContributionProfileSwap", () => {
       "1": { contributionValue: "14", displayNameCustom: "My 401k" },
     };
     const incoming = { "1": { contributionValue: "14" } };
-    expect(diffContribProfileSwap(outgoing, incoming, [account()])).toEqual([]);
+    expect(
+      diffContributionProfileSwap(outgoing, incoming, [account()]),
+    ).toEqual([]);
   });
 
   it("falls back to the live value when incoming doesn't touch the account", () => {
     const outgoing = {
       "1": { contributionValue: "14", contributionMethod: "percent_of_salary" },
     };
-    const lines = diffContribProfileSwap(outgoing, {}, [
+    const lines = diffContributionProfileSwap(outgoing, {}, [
       account({
         live: {
           contributionValue: "0",
@@ -55,13 +59,13 @@ describe("diffContributionProfileSwap", () => {
     const incoming = {
       "1": { contributionValue: "20", contributionMethod: "percent_of_salary" },
     };
-    const lines = diffContribProfileSwap(outgoing, incoming, [account()]);
+    const lines = diffContributionProfileSwap(outgoing, incoming, [account()]);
     expect(lines).toEqual(["Alex 401k: 14% → 20%"]);
   });
 
   it("isActive: false gets the 'excluded' phrasing, distinct from a rate change", () => {
     const outgoing = { "1": { isActive: false } };
-    const lines = diffContribProfileSwap(outgoing, {}, [
+    const lines = diffContributionProfileSwap(outgoing, {}, [
       account({ live: { contributionValue: "10", isActive: true } }),
     ]);
     expect(lines).toEqual([
@@ -74,7 +78,7 @@ describe("diffContributionProfileSwap", () => {
       "1": { contributionValue: "14", contributionMethod: "percent_of_salary" },
       "2": { contributionValue: "500" },
     };
-    const lines = diffContribProfileSwap(outgoing, {}, [
+    const lines = diffContributionProfileSwap(outgoing, {}, [
       account({
         id: 1,
         accountName: "Alex 401k",
@@ -96,7 +100,7 @@ describe("diffContributionProfileSwap", () => {
   });
 
   it("does not fire for an account neither profile's map even mentions", () => {
-    const lines = diffContribProfileSwap(
+    const lines = diffContributionProfileSwap(
       { "2": { contributionValue: "500" } },
       {},
       [account({ id: 1 })],
@@ -112,14 +116,14 @@ describe("diffContributionProfileSwap — taken from bonus checks", () => {
       contributionMethod: "percent_of_salary",
     };
     expect(
-      diffContribProfileSwap(
+      diffContributionProfileSwap(
         { "1": { ...value, fromBonus: true } },
         { "1": value },
         [account()],
       ),
     ).toEqual(["Alex 401k: 8% + bonus checks → 8%"]);
     expect(
-      diffContribProfileSwap(
+      diffContributionProfileSwap(
         { "1": { ...value, fromBonus: false } },
         { "1": value },
         [account()],
@@ -135,14 +139,14 @@ describe("diffContributionProfileSwap — Roth IRA route", () => {
       contributionMethod: "fixed_monthly",
     };
     expect(
-      diffContribProfileSwap(
+      diffContributionProfileSwap(
         { "1": { ...value, rothRoute: "backdoor" } },
         { "1": value },
         [account({ accountName: "Alex Roth IRA" })],
       ),
     ).toEqual(["Alex Roth IRA: 625 via backdoor → 625"]);
     expect(
-      diffContribProfileSwap(
+      diffContributionProfileSwap(
         { "1": { ...value, rothRoute: "direct" } },
         { "1": value },
         [account()],

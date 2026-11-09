@@ -56,18 +56,19 @@ export async function resolvePhaseExpenses(
     (opts.decumulationBudgetProfileId
       ? allBudgetProfiles.find((p) => p.id === opts.decumulationBudgetProfileId)
       : undefined) ?? defaultProfile;
-  const decMaxCol =
+  const decumulationMaxCol =
     Math.max(0, (decProfile?.columnLabels as string[] | null)?.length ?? 1) - 1;
   const decCol = Math.min(
     Math.max(0, opts.decumulationBudgetColumn ?? globalActiveCol),
-    decMaxCol,
+    decumulationMaxCol,
   );
-  const decItems = decProfile
+  const decumulationItems = decProfile
     ? allBudgetItems.filter((i) => i.profileId === decProfile.id)
     : [];
 
   const accMonths = (accProfile?.columnMonths as number[] | null) ?? null;
-  const decMonths = (decProfile?.columnMonths as number[] | null) ?? null;
+  const decumulationMonths =
+    (decProfile?.columnMonths as number[] | null) ?? null;
   // Resolved through the same contribution-account chain
   // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts) rather
   // than raw `amounts`, which is intentionally stale for contribution-linked
@@ -75,7 +76,7 @@ export async function resolvePhaseExpenses(
   // dollar amount from accumulation/decumulation expenses.
   const accNumColumns =
     (accProfile?.columnLabels as string[] | null)?.length ?? 1;
-  const decNumColumns =
+  const decumulationNumColumns =
     (decProfile?.columnLabels as string[] | null)?.length ?? 1;
   const dated = { db, scope: { asOf: opts.asOf } };
   const resolvedAccItems = opts.accumulationExpenseOverride
@@ -84,18 +85,27 @@ export async function resolvePhaseExpenses(
         contribProfileId: opts.contributionProfileId ?? null,
         salaryProfileId: opts.salaryProfileId ?? null,
       });
-  const resolvedDecItems = opts.decumulationExpenseOverride
-    ? decItems
-    : await resolveLinkedBudgetItemAmounts(dated, decItems, decNumColumns, {
-        contribProfileId: opts.contributionProfileId ?? null,
-        salaryProfileId: opts.salaryProfileId ?? null,
-      });
+  const resolvedDecumulationItems = opts.decumulationExpenseOverride
+    ? decumulationItems
+    : await resolveLinkedBudgetItemAmounts(
+        dated,
+        decumulationItems,
+        decumulationNumColumns,
+        {
+          contribProfileId: opts.contributionProfileId ?? null,
+          salaryProfileId: opts.salaryProfileId ?? null,
+        },
+      );
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
     computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);
   const decumulationExpenses =
     opts.decumulationExpenseOverride ??
-    computeBudgetAnnualTotal(resolvedDecItems, decCol, decMonths);
+    computeBudgetAnnualTotal(
+      resolvedDecumulationItems,
+      decCol,
+      decumulationMonths,
+    );
   return {
     accProfile,
     accCol,

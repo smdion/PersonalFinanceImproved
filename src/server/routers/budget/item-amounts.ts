@@ -22,7 +22,7 @@ import { firstRow } from "@/lib/utils/first-row";
  * applyContribActiveFields), so an edit with no profile has nowhere
  * correct to go.
  */
-async function resolveEffectiveContribProfileIdForItem(
+async function resolveEffectiveContributionProfileIdForItem(
   db: DbOrTx,
   selection: PayProfileSelection | undefined,
 ): Promise<number> {
@@ -74,13 +74,16 @@ export const itemAmountProcedures = {
         // UPDATE with no transaction boundary at all, which this was
         // before, is strictly worse than that convention for no reason.
         await ctx.db.transaction(async (tx) => {
-          const contribProfileId =
-            await resolveEffectiveContribProfileIdForItem(tx, input.selection);
+          const contributionProfileId =
+            await resolveEffectiveContributionProfileIdForItem(
+              tx,
+              input.selection,
+            );
           await applyContributionAccountEdit(
             tx,
             accountId,
             input.amount,
-            contribProfileId,
+            contributionProfileId,
             (db, check) => assertWithinIrsLimits(db, check, ctx.scope.asOf),
           );
         });
@@ -211,15 +214,15 @@ export const itemAmountProcedures = {
           // one distinct amount for the same linked item, last one wins.
           if (item.contributionAccountId) {
             const lastChange = changes[changes.length - 1]!;
-            const contribProfileId =
-              await resolveEffectiveContribProfileIdForItem(
+            const contributionProfileId =
+              await resolveEffectiveContributionProfileIdForItem(
                 tx,
                 input.selection,
               );
             contributionEdits.push({
               contributionAccountId: item.contributionAccountId,
               monthlyAmount: lastChange.amount,
-              contributionProfileId: contribProfileId,
+              contributionProfileId: contributionProfileId,
             });
             continue;
           }

@@ -197,10 +197,10 @@ export const CHART_COLORS = {
   // being consolidated here.
   mcGrid: "#e5e7eb", // gray-200
   mcAxis: "#6b7280", // gray-500
-  mcBandOuter: "#ede9fe", // violet-100 — 5-10 / 90-95 percentile fan
-  mcBandInner: "#c4b5fd", // violet-300 — 10-25 / 75-90 percentile fan
-  mcBandMiddle: "#8b5cf6", // violet-500 — 25-75 percentile fan + 50%-band legend swatch
-  mcMedian: "#7c3aed", // violet-600 — simulation median line
+  simulationBandOuter: "#ede9fe", // violet-100 — 5-10 / 90-95 percentile fan
+  simulationBandInner: "#c4b5fd", // violet-300 — 10-25 / 75-90 percentile fan
+  simulationBandMiddle: "#8b5cf6", // violet-500 — 25-75 percentile fan + 50%-band legend swatch
+  simulationMedian: "#7c3aed", // violet-600 — simulation median line
   // Performance chart
   perfBalance: "#4f46e5", // indigo-600
   perfReturn: "#10b981", // emerald-500
@@ -239,9 +239,9 @@ export const CHART_COLORS = {
   // hex fallback so it tracks the palette in both themes.
   stabilityFloorLine: "var(--text-red-500, #ef4444)",
   // Withdrawal strategy comparison chart (fixed dark-styled tooltip/axes)
-  wdComparisonGrid: "#374151", // gray-700
-  wdComparisonAxis: "#9ca3af", // gray-400
-  wdComparisonTooltipBg: "#1f2937", // gray-800
+  withdrawalComparisonGrid: "#374151", // gray-700
+  withdrawalComparisonAxis: "#9ca3af", // gray-400
+  withdrawalComparisonTooltipBg: "#1f2937", // gray-800
   // Projection chart axis line (distinct from tick/grid — see simulationGrid/simulationAxis)
   axisLine: "#d1d5db", // gray-300
   // Projection chart reference-line markers (age axis + legend swatch)
@@ -295,7 +295,7 @@ export function chartLinePalette(dark: boolean) {
     netWorth: dark ? "#818cf8" : "#4f46e5", // indigo-400 / indigo-600
     perfBalance: dark ? "#818cf8" : "#4f46e5",
     withdrawalFlow: dark ? "#94a3b8" : "#475569", // slate-400 / slate-600
-    mcMedian: dark ? "#a78bfa" : "#7c3aed", // violet-400 / violet-600
+    simulationMedian: dark ? "#a78bfa" : "#7c3aed", // violet-400 / violet-600
   };
 }
 

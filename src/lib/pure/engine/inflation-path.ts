@@ -13,7 +13,7 @@
  * No clamp beyond SIMULATION_INFLATION_GROWTH_FLOOR: truncating draws would bias
  * inflation up.
  */
-import { MC_INFLATION_GROWTH_FLOOR } from "../../constants";
+import { SIMULATION_INFLATION_GROWTH_FLOOR } from "../../constants";
 import { taxGrowthFactor } from "./bracket-growth";
 
 export type InflationPath = {
@@ -60,7 +60,7 @@ export function buildInflationPath(args: {
   }
 
   const shocked = (plan: number, shock: number) =>
-    Math.max(MC_INFLATION_GROWTH_FLOOR, 1 + plan + shock) - 1;
+    Math.max(SIMULATION_INFLATION_GROWTH_FLOOR, 1 + plan + shock) - 1;
   const rate = (i: number) =>
     i < shocks.length ? shocked(inflationRate, shocks[i]!) : inflationRate;
   // One array per trial, O(1) lookups.

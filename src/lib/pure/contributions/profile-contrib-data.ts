@@ -17,13 +17,13 @@ import {
   jobPayFor,
   annualContributionWithBonus,
   resolveContribPeriods,
-  type ContribRow,
+  type ContributionRow,
 } from "./contribution-rows";
 import { aggregateContributionsByCategory } from "./category-totals";
 import { matchAccountForContribution } from "./account-match";
 
 /** Context needed from the main buildEnginePayload for spec building. */
-type ProfileContribContext = {
+type ProfileContributionContext = {
   perfCategoryMap: Map<number, string>;
   perfRetirementBehaviorMap: Map<number, string>;
   perfContributionScalingMap: Map<number, string>;
@@ -41,7 +41,7 @@ type ProfileContribContext = {
 };
 
 /** Result of building engine contribution data from a resolved profile. */
-type ProfileContribData = {
+type ProfileContributionData = {
   contributionSpecs: ContributionSpec[];
   baseYearContributions: Record<AccountCategory, number>;
   baseYearEmployerMatch: Record<AccountCategory, number>;
@@ -57,7 +57,7 @@ type ProfileContribData = {
 };
 
 /** Minimal contribution row shape needed by buildProfileContribData. */
-type ContribInputRow = {
+type ContributionInputRow = {
   id: number;
   personId: number | null;
   jobId: number | null;
@@ -93,7 +93,7 @@ type ContribInputRow = {
  * profile, extracted so it can be called for each profile-switch year.
  */
 export function buildProfileContribData(
-  activeContribs: (ContribInputRow & CapPassed)[],
+  activeContributions: (ContributionInputRow & CapPassed)[],
   activeJobs: { id: number; personId: number; payPeriod: string | undefined }[],
   jobSalaries: {
     job: { id: number; personId: number };
@@ -101,8 +101,8 @@ export function buildProfileContribData(
     bonusGross?: number;
     totalComp: number;
   }[],
-  ctx: ProfileContribContext,
-): ProfileContribData {
+  ctx: ProfileContributionContext,
+): ProfileContributionData {
   // salary: base; bonusGross: the bonus (an account takes its share when
   // fromBonus); totalComp: always with the bonus, for the rates.
   const totalCompensation = jobSalaries.reduce(
@@ -111,30 +111,31 @@ export function buildProfileContribData(
   );
 
   // Aggregate contributions and employer match by category
-  const contribRows: (ContribRow & CapPassed)[] = activeContribs.map((c) => ({
-    id: c.id,
-    personId: c.personId,
-    jobId: c.jobId,
-    accountType: c.accountType,
-    subType: c.subType,
-    label: c.label ?? null,
-    parentCategory: c.parentCategory ?? "",
-    contributionMethod: c.contributionMethod ?? "percent_of_salary",
-    contributionValue: String(c.contributionValue ?? "0"),
-    cappedValue: c.cappedValue,
-    capPassed: c.capPassed,
-    taxTreatment: c.taxTreatment ?? "pre_tax",
-    employerMatchType: c.employerMatchType,
-    employerMatchValue: c.employerMatchValue
-      ? String(c.employerMatchValue)
-      : null,
-    employerMatchRate: c.employerMatchRate,
-    employerMaxMatchPct: c.employerMaxMatchPct
-      ? String(c.employerMaxMatchPct)
-      : null,
-    isPayrollDeducted: c.isPayrollDeducted,
-    fromBonus: c.fromBonus,
-  }));
+  const contributionRows: (ContributionRow & CapPassed)[] =
+    activeContributions.map((c) => ({
+      id: c.id,
+      personId: c.personId,
+      jobId: c.jobId,
+      accountType: c.accountType,
+      subType: c.subType,
+      label: c.label ?? null,
+      parentCategory: c.parentCategory ?? "",
+      contributionMethod: c.contributionMethod ?? "percent_of_salary",
+      contributionValue: String(c.contributionValue ?? "0"),
+      cappedValue: c.cappedValue,
+      capPassed: c.capPassed,
+      taxTreatment: c.taxTreatment ?? "pre_tax",
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: c.employerMatchValue
+        ? String(c.employerMatchValue)
+        : null,
+      employerMatchRate: c.employerMatchRate,
+      employerMaxMatchPct: c.employerMaxMatchPct
+        ? String(c.employerMaxMatchPct)
+        : null,
+      isPayrollDeducted: c.isPayrollDeducted,
+      fromBonus: c.fromBonus,
+    }));
 
   const {
     contribByCategory,
@@ -144,7 +145,7 @@ export function buildProfileContribData(
     retirementOnly,
     incompleteAccountIds: aggregationIncompleteIds,
   } = aggregateContributionsByCategory(
-    contribRows,
+    contributionRows,
     activeJobs,
     jobSalaries.map((js) => ({
       job: { id: js.job.id, personId: js.job.personId },
@@ -169,7 +170,7 @@ export function buildProfileContribData(
   // specBuilderIncompleteIds instead, per the method-gated incomplete
   // treatment (see resolveContribPeriods).
   const specBuilderIncompleteIds: number[] = [];
-  const contributionSpecs: ContributionSpec[] = activeContribs
+  const contributionSpecs: ContributionSpec[] = activeContributions
     .filter((c) => {
       const cv = toNumber(String(c.contributionValue ?? "0"));
       return cv > 0;

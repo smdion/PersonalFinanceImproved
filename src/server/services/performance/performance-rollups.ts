@@ -34,7 +34,7 @@ import {
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
 import {
-  buildPerfAcctLookups,
+  buildPerfAccountLookups,
   getEffectiveCategory,
   rollupColumns,
   money,
@@ -57,7 +57,7 @@ export async function captureYearRollups(
     .from(schema.accountPerformance)
     .where(eq(schema.accountPerformance.year, year));
   const perfAccounts = await tx.select().from(schema.performanceAccounts);
-  const byId = buildPerfAcctLookups(perfAccounts);
+  const byId = buildPerfAccountLookups(perfAccounts);
   return {
     year,
     byCategory: rollupByCategory(rows, (r) => getEffectiveCategory(r, byId)),

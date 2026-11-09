@@ -247,12 +247,12 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   const rateSchedule = buildRateSchedule(contributionOverrides);
 
   // Per-scenario base contribution rates (total contributions as % of salary)
-  const currentBaseContribRate =
+  const currentBaseContributionRate =
     currentCombinedSalary > 0
       ? (currentAnnualContributions + currentEmployerContributions) /
         currentCombinedSalary
       : 0;
-  const relocBaseContribRate =
+  const relocBaseContributionRate =
     relocationCombinedSalary > 0
       ? (relocationAnnualContributions + relocationEmployerContributions) /
         relocationCombinedSalary
@@ -264,16 +264,17 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   // the MOVE simulation before the main loop runs.
   const currentBalanceByYear: number[] = [];
   {
-    let bal = currentPortfolio;
-    let sal = currentCombinedSalary;
+    let balance = currentPortfolio;
+    let salary = currentCombinedSalary;
     for (let y = 0; y < yearsToProject; y++) {
       const year = asOfDate.getFullYear() + y;
-      if (y > 0) sal = roundToCents(sal * (1 + currentSalaryGrowthRate));
-      const rate = getActiveRate(year, rateSchedule) ?? currentBaseContribRate;
-      bal = roundToCents(
-        growOneYear(bal, roundToCents(sal * rate), nominalReturnRate),
+      if (y > 0) salary = roundToCents(salary * (1 + currentSalaryGrowthRate));
+      const rate =
+        getActiveRate(year, rateSchedule) ?? currentBaseContributionRate;
+      balance = roundToCents(
+        growOneYear(balance, roundToCents(salary * rate), nominalReturnRate),
       );
-      currentBalanceByYear.push(bal);
+      currentBalanceByYear.push(balance);
     }
   }
 
@@ -303,7 +304,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
             simRelocSalary * (1 + relocationSalaryGrowthRate),
           );
         const overrideRate2 = getActiveRate(year2, rateSchedule);
-        const rate2 = overrideRate2 ?? relocBaseContribRate;
+        const rate2 = overrideRate2 ?? relocBaseContributionRate;
         simBalance = roundToCents(
           growOneYear(
             simBalance,
@@ -376,17 +377,17 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
     }
 
     const overrideRate = getActiveRate(year, rateSchedule);
-    const hasContribOverride = overrideRate !== null;
+    const hasContributionOverride = overrideRate !== null;
 
     // Current scenario
-    const currentRate = overrideRate ?? currentBaseContribRate;
-    const currentContrib = roundToCents(curSalary * currentRate);
+    const currentRate = overrideRate ?? currentBaseContributionRate;
+    const currentContribution = roundToCents(curSalary * currentRate);
     currentBalance = roundToCents(
-      growOneYear(currentBalance, currentContrib, nominalReturnRate),
+      growOneYear(currentBalance, currentContribution, nominalReturnRate),
     );
 
     // Hybrid scenario
-    let relocationContrib: number;
+    let relocationContribution: number;
     let totalRelocExpenses: number;
     let hasAdjustment: boolean;
     let purchaseImpact: number;
@@ -395,7 +396,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
     if (age < moveAge) {
       // Pre-move: mirror current exactly
       hybridBalance = currentBalance;
-      relocationContrib = currentContrib;
+      relocationContribution = currentContribution;
       totalRelocExpenses = currentAnnual;
       hasAdjustment = false;
       purchaseImpact = 0;
@@ -410,10 +411,10 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
       const purchaseAnnualCost = roundToCents(purchaseMonthly * 12);
       purchaseImpact = purchasePortfolioImpactForYear(year, purchaseData);
 
-      const relocRate = overrideRate ?? relocBaseContribRate;
-      relocationContrib = roundToCents(relocSalary * relocRate);
+      const relocRate = overrideRate ?? relocBaseContributionRate;
+      relocationContribution = roundToCents(relocSalary * relocRate);
       hybridBalance = roundToCents(
-        growOneYear(hybridBalance, relocationContrib, nominalReturnRate),
+        growOneYear(hybridBalance, relocationContribution, nominalReturnRate),
       );
       if (purchaseImpact !== 0) {
         hybridBalance = roundToCents(hybridBalance + purchaseImpact);
@@ -447,10 +448,10 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
       relocationBalance: hybridBalance,
       delta: roundToCents(hybridBalance - currentBalance),
       relocationExpenses: totalRelocExpenses,
-      currentContribution: currentContrib,
-      relocationContribution: relocationContrib,
+      currentContribution: currentContribution,
+      relocationContribution: relocationContribution,
       hasAdjustment,
-      hasContributionOverride: hasContribOverride,
+      hasContributionOverride: hasContributionOverride,
       largePurchaseImpact: purchaseImpact,
       monthlyPaymentFromPurchases: purchaseMonthly,
     });

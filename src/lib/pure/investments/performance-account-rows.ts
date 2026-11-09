@@ -69,7 +69,7 @@ export function performanceAccountRows(
 ) {
   const accountRows = accounts.map((r) => {
     const master = resolveMaster(r, perfLookups);
-    const beginBal = toNumber(r.beginningBalance);
+    const beginBalance = toNumber(r.beginningBalance);
     const contribs = toNumber(r.totalContributions);
     const gainLoss = toNumber(r.yearlyGainLoss);
     const employer = toNumber(r.employerContributions);
@@ -130,12 +130,12 @@ export function performanceAccountRows(
       ownerName: resolveOwnerName(r.ownerPersonId, peopleMap),
       ownerPersonId: r.ownerPersonId,
       ownershipType: master.ownershipType,
-      beginningBalance: beginBal,
+      beginningBalance: beginBalance,
       totalContributions: contribs,
       yearlyGainLoss: gainLoss,
       endingBalance: toNumber(r.endingBalance),
       annualReturnPct: computeReturn(
-        beginBal,
+        beginBalance,
         contribs,
         gainLoss,
         distributions,

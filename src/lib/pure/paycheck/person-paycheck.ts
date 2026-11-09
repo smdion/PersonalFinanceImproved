@@ -30,8 +30,8 @@ import type { PaycheckYearJob } from "@/lib/pure/paycheck/person-paycheck.types"
 
 export function checkPaychecks(
   paycheckInput: ReturnType<typeof buildPaycheckInputForJob>,
-  jobContribs: (PaycheckContributionRow & CapPassed)[],
-  personalContribs: (PaycheckContributionRow & CapPassed)[],
+  jobContributions: (PaycheckContributionRow & CapPassed)[],
+  personalContributions: (PaycheckContributionRow & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   limitsRecord: Record<string, number>,
@@ -46,14 +46,14 @@ export function checkPaychecks(
   // IRS limit gets that check figured on the configured rows.
   const configured = <T extends { cappedValue?: number }>(rows: T[]) =>
     rows.map(({ cappedValue: _capped, ...r }) => r);
-  const paystubPaycheck = [...jobContribs, ...personalContribs].some(
+  const paystubPaycheck = [...jobContributions, ...personalContributions].some(
     (c) => (c.cap?.overBy ?? 0) > 0,
   )
     ? calculatePaycheck({
         ...paycheckInput,
         contributionAccounts: buildContribAccounts(
-          configured(jobContribs),
-          configured(personalContribs),
+          configured(jobContributions),
+          configured(personalContributions),
           salary,
           periodsPerYear,
           ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
@@ -80,7 +80,7 @@ export function yearEarnings<P>(
   periodsPerYear: number,
   salary: number,
   taxBracketInput: TaxBracketInput,
-  contribAccounts: ContributionAccountInput[],
+  contributionAccounts: ContributionAccountInput[],
   deductions: DeductionLine[],
   endedJobYears: (
     person: P,
@@ -142,7 +142,7 @@ export function yearEarnings<P>(
     salary,
     periodsPerYear,
     paycheck,
-    contributionAccounts: contribAccounts,
+    contributionAccounts: contributionAccounts,
     deductions,
     checks: lastDay
       ? checksPaidYtd(

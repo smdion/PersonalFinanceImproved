@@ -29,9 +29,9 @@ import { defaultDecumulationConfig } from "@/lib/config/account-types";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import type { ProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 import {
-  SK_RETIREMENT_DEC_BUDGET_COL,
-  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
-  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+  SK_RETIREMENT_DECUMULATION_BUDGET_COL,
+  SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
 } from "@/lib/constants/settings-keys";
 
 type PlanEngineInput = {
@@ -57,10 +57,10 @@ export function usePlanEngineInput(): {
     snapshotId: number | null;
   };
 } {
-  const [activeContribId] = useActiveContribProfile();
+  const [activeContributionId] = useActiveContribProfile();
   const [activeSalaryId] = useActiveSalaryProfile();
   const [activeRetirementId] = useActiveRetirementProfile();
-  const contribProfiles = trpc.contributionProfile.list.useQuery();
+  const contributionProfiles = trpc.contributionProfile.list.useQuery();
   const salaryProfiles = trpc.salaryProfile.list.useQuery();
   const retirementProfiles = trpc.retirement.retirementProfiles.list.useQuery();
   // The query usePersistedSetting reads, for its failure.
@@ -70,9 +70,9 @@ export function usePlanEngineInput(): {
   const { profileId: contributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfiles.data?.map((p) => p.id),
+      validIds: contributionProfiles.data?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: activeContribId,
+      activeProfileId: activeContributionId,
     },
   );
   const { profileId: salaryProfileId } = useEffectiveProfileId("salary", {
@@ -90,15 +90,15 @@ export function usePlanEngineInput(): {
   );
   const [decumulationBudgetProfileId, , budgetProfileLoaded] =
     usePersistedSetting<number | null>(
-      SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+      SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
       null,
     );
   const [decumulationBudgetColumn, , budgetColumnLoaded] = usePersistedSetting<
     number | null
-  >(SK_RETIREMENT_DEC_BUDGET_COL, null);
+  >(SK_RETIREMENT_DECUMULATION_BUDGET_COL, null);
   const [decumulationExpenseOverride, , expenseOverrideLoaded] =
     usePersistedSetting<string | null>(
-      SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+      SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
       null,
     );
   const [snapshotId, , snapshotLoaded] = usePersistedSetting<number | null>(
@@ -111,7 +111,7 @@ export function usePlanEngineInput(): {
     budgetColumnLoaded &&
     expenseOverrideLoaded &&
     snapshotLoaded &&
-    contribProfiles.data !== undefined &&
+    contributionProfiles.data !== undefined &&
     salaryProfiles.data !== undefined &&
     retirementProfiles.data !== undefined;
 
@@ -147,7 +147,7 @@ export function usePlanEngineInput(): {
   return {
     input,
     ready,
-    gate: [contribProfiles, salaryProfiles, retirementProfiles, settings],
+    gate: [contributionProfiles, salaryProfiles, retirementProfiles, settings],
     ids: {
       contributionProfileId,
       salaryProfileId,

@@ -294,28 +294,33 @@ export function computeTaxBucketProjection(input: {
   // feed Brokerage cost-basis projection; nothing else uses this map.
   const contributionsByKey = new Map<string, Map<number, number>>();
   for (const yearRow of accumulationYears) {
-    for (const bal of yearRow.individualAccountBalances) {
-      if (!isTaxFreeBucket(bal.taxType) && !isAfterTaxType(bal.taxType))
+    for (const balance of yearRow.individualAccountBalances) {
+      if (!isTaxFreeBucket(balance.taxType) && !isAfterTaxType(balance.taxType))
         continue;
       const key = matchKey(
-        bal.name,
-        bal.category,
-        bal.taxType,
-        bal.ownerPersonId ?? null,
+        balance.name,
+        balance.category,
+        balance.taxType,
+        balance.ownerPersonId ?? null,
       );
       let yearMap = contributionsByKey.get(key);
       if (!yearMap) {
         yearMap = new Map();
         contributionsByKey.set(key, yearMap);
       }
-      yearMap.set(yearRow.year, bal.contribution);
+      yearMap.set(yearRow.year, balance.contribution);
     }
   }
 
   const transitionBalanceByKey = new Map(
-    transitionYearRow.individualAccountBalances.map((bal) => [
-      matchKey(bal.name, bal.category, bal.taxType, bal.ownerPersonId ?? null),
-      bal,
+    transitionYearRow.individualAccountBalances.map((balance) => [
+      matchKey(
+        balance.name,
+        balance.category,
+        balance.taxType,
+        balance.ownerPersonId ?? null,
+      ),
+      balance,
     ]),
   );
 

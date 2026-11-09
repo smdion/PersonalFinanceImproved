@@ -156,7 +156,7 @@ export function estimateTaxableInvestmentIncome(args: {
   const taxable = args.feeds.filter((f) => isTaxableCategory(f.accountType));
   const perFeed = taxable.map((f) => ({
     feed: f,
-    est: estimateFeedIncome({
+    estimate: estimateFeedIncome({
       rows: args.rows.filter((r) => r.feedId === f.id),
       taxYear: args.taxYear,
       today: args.today,
@@ -165,26 +165,28 @@ export function estimateTaxableInvestmentIncome(args: {
   }));
   // Feeds with no history this year say nothing; a household with none at
   // all is "none".
-  const counted = perFeed.filter((p) => p.est.basis !== "none");
+  const counted = perFeed.filter((p) => p.estimate.basis !== "none");
   const basis = counted.length
     ? counted.reduce<InvestmentIncomeBasis>(
         (worst, p) =>
-          BASIS_RANK[p.est.basis] > BASIS_RANK[worst] ? p.est.basis : worst,
+          BASIS_RANK[p.estimate.basis] > BASIS_RANK[worst]
+            ? p.estimate.basis
+            : worst,
         "actual",
       )
     : "none";
   return {
-    estimate: roundToCents(sumBy(counted, (p) => p.est.estimate)),
-    ytd: roundToCents(sumBy(counted, (p) => p.est.ytd)),
+    estimate: roundToCents(sumBy(counted, (p) => p.estimate.estimate)),
+    ytd: roundToCents(sumBy(counted, (p) => p.estimate.ytd)),
     lastYearRemainder: roundToCents(
-      sumBy(counted, (p) => p.est.lastYearRemainder),
+      sumBy(counted, (p) => p.estimate.lastYearRemainder),
     ),
     basis,
     annualizedFeeds: counted
-      .filter((p) => p.est.basis === "annualized")
+      .filter((p) => p.estimate.basis === "annualized")
       .map((p) => p.feed.label),
     noHistoryFeeds: perFeed
-      .filter((p) => p.est.basis === "none")
+      .filter((p) => p.estimate.basis === "none")
       .map((p) => p.feed.label),
   };
 }

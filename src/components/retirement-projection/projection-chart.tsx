@@ -831,7 +831,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     yAxisId="balance"
                     dataKey="mc_5_10"
                     stackId="mc"
-                    fill={CHART_COLORS.mcBandOuter}
+                    fill={CHART_COLORS.simulationBandOuter}
                     fillOpacity={0.4}
                     stroke="none"
                     isAnimationActive={false}
@@ -843,7 +843,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     yAxisId="balance"
                     dataKey="mc_10_25"
                     stackId="mc"
-                    fill={CHART_COLORS.mcBandInner}
+                    fill={CHART_COLORS.simulationBandInner}
                     fillOpacity={0.35}
                     stroke="none"
                     isAnimationActive={false}
@@ -854,7 +854,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   yAxisId="balance"
                   dataKey="mc_25_75"
                   stackId="mc"
-                  fill={CHART_COLORS.mcBandMiddle}
+                  fill={CHART_COLORS.simulationBandMiddle}
                   fillOpacity={0.2}
                   stroke="none"
                   isAnimationActive={false}
@@ -865,7 +865,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     yAxisId="balance"
                     dataKey="mc_75_90"
                     stackId="mc"
-                    fill={CHART_COLORS.mcBandInner}
+                    fill={CHART_COLORS.simulationBandInner}
                     fillOpacity={0.35}
                     stroke="none"
                     isAnimationActive={false}
@@ -877,7 +877,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     yAxisId="balance"
                     dataKey="mc_90_95"
                     stackId="mc"
-                    fill={CHART_COLORS.mcBandOuter}
+                    fill={CHART_COLORS.simulationBandOuter}
                     fillOpacity={0.4}
                     stroke="none"
                     isAnimationActive={false}
@@ -945,7 +945,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 type="monotone"
                 yAxisId="balance"
                 dataKey="mc_p50"
-                stroke={c.mcMedian}
+                stroke={c.simulationMedian}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -1076,7 +1076,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             <span className="flex items-center gap-1">
               <span
                 className="h-0.5 w-3 rounded"
-                style={{ backgroundColor: c.mcMedian }}
+                style={{ backgroundColor: c.simulationMedian }}
               />{" "}
               Sim. median
               {simulationIsPrefetch && (
@@ -1087,7 +1087,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               <span
                 className="h-1.5 w-3 rounded"
                 style={{
-                  backgroundColor: CHART_COLORS.mcBandMiddle,
+                  backgroundColor: CHART_COLORS.simulationBandMiddle,
                   opacity: 0.3,
                 }}
               />{" "}
@@ -1100,8 +1100,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   style={{
                     backgroundColor:
                       fanBandRange === "p5-p95"
-                        ? CHART_COLORS.mcBandOuter
-                        : CHART_COLORS.mcBandInner,
+                        ? CHART_COLORS.simulationBandOuter
+                        : CHART_COLORS.simulationBandInner,
                     opacity: fanBandRange === "p5-p95" ? 0.6 : 0.5,
                   }}
                 />{" "}

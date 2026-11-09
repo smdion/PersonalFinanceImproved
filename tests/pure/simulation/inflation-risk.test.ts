@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
-import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
+import { DEFAULT_SIMULATION_INFLATION_RISK } from "@/lib/constants";
 
 describe("resolveInflationRisk", () => {
   it("this run's override comes first", () => {
@@ -33,7 +33,7 @@ describe("resolveInflationRisk", () => {
 
   it("with none of them, the default", () => {
     expect(resolveInflationRisk({ saved: null, presetStdDev: null })).toEqual({
-      stdDev: DEFAULT_MC_INFLATION_RISK.stdDev,
+      stdDev: DEFAULT_SIMULATION_INFLATION_RISK.stdDev,
     });
   });
 });

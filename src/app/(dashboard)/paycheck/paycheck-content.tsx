@@ -394,7 +394,7 @@ export function PaycheckContent() {
               alignedPostTax={d.alignedPostTax}
               coverageNote={d.coverageNote}
               coverageNoteGroup={d.coverageNoteGroup}
-              otherJointContribs={d.otherJointContribs}
+              otherJointContribs={d.otherJointContributions}
               contribExpanded={contributionExpanded}
               onToggleContrib={() =>
                 setContributionExpanded(!contributionExpanded)

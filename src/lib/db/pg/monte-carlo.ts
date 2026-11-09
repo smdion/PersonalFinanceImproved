@@ -87,7 +87,7 @@ export const glidePathAllocations = pgTable(
 
 // --- Monte Carlo: Presets (DB-driven, replaces hardcoded MC_PRESETS) ---
 
-export const mcPresets = pgTable(
+export const simulationPresets = pgTable(
   "mc_presets",
   {
     id: serial("id").primaryKey(),
@@ -119,13 +119,13 @@ export const mcPresets = pgTable(
   (table) => [index("mc_presets_is_active_idx").on(table.isActive)],
 );
 
-export const mcPresetGlidePaths = pgTable(
+export const simulationPresetGlidePaths = pgTable(
   "mc_preset_glide_paths",
   {
     id: serial("id").primaryKey(),
     presetId: integer("preset_id")
       .notNull()
-      .references(() => mcPresets.id, { onDelete: "cascade" }),
+      .references(() => simulationPresets.id, { onDelete: "cascade" }),
     age: integer("age").notNull(),
     assetClassId: integer("asset_class_id")
       .notNull()
@@ -143,13 +143,13 @@ export const mcPresetGlidePaths = pgTable(
   ],
 );
 
-export const mcPresetReturnOverrides = pgTable(
+export const simulationPresetReturnOverrides = pgTable(
   "mc_preset_return_overrides",
   {
     id: serial("id").primaryKey(),
     presetId: integer("preset_id")
       .notNull()
-      .references(() => mcPresets.id, { onDelete: "cascade" }),
+      .references(() => simulationPresets.id, { onDelete: "cascade" }),
     assetClassId: integer("asset_class_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
@@ -163,7 +163,7 @@ export const mcPresetReturnOverrides = pgTable(
 
 // --- Monte Carlo: User-created simulation presets ---
 
-export const mcUserPresets = pgTable("mc_user_presets", {
+export const simulationUserPresets = pgTable("mc_user_presets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   simulations: integer("simulations").notNull().default(1000),

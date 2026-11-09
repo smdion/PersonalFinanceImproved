@@ -7,7 +7,7 @@ import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import {
   SK_RETIREMENT_SIMULATION_AUTOLOAD,
   SK_RETIREMENT_MC_AUTOLOAD,
-  SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+  SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD,
 } from "@/lib/constants/settings-keys";
 import {
   PROJECTION_STALE_TIME_MS,
@@ -213,7 +213,7 @@ export function useProjectionQueries(
   // "always prefetched in the background" experience for anyone who
   // prefers instant scenario switching over a faster initial load.
   const [coastFireMcAutoloadEnabled] = usePersistedToggle(
-    SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+    SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD,
     false,
   );
 

@@ -26,11 +26,11 @@ import {
   resolvePriorYearLimit,
 } from "@/lib/pure/contributions/irs-limits";
 import {
-  contribAccountsFor,
-  perContribRows,
+  contributionAccountsFor,
+  perContributionRows,
   personPay,
 } from "@/lib/pure/contributions/person-snapshot";
-import type { ContribRow } from "@/lib/pure/contributions/contribution-rows";
+import type { ContributionRow } from "@/lib/pure/contributions/contribution-rows";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 
 const limitsOf = (year: number): Record<string, number> =>
@@ -45,8 +45,8 @@ const limits2025 = limitsOf(2025);
 
 let nextId = 1;
 function row(
-  over: Partial<ContribRow> & { hsaCoverageType?: string | null },
-): ContribRow & { hsaCoverageType?: string | null } {
+  over: Partial<ContributionRow> & { hsaCoverageType?: string | null },
+): ContributionRow & { hsaCoverageType?: string | null } {
   return {
     id: nextId++,
     personId: 1,
@@ -156,7 +156,7 @@ describe("answer key: prior-year amounts", () => {
       priorYearContribAmount: String(amount),
       priorYearContribYear: year,
     };
-    const { perContribData } = perContribRows(
+    const { perContribData } = perContributionRows(
       [raw] as never,
       [{ annualContribution: 0, employerMatch: 0 }] as never,
       () => 7_500,
@@ -214,7 +214,7 @@ describe("answer key: this year's pay on the contribution summary", () => {
     // Bonus month 3, day 15, figured on 2026-06-15: March 15, 2026. With
     // no day set: the 1st (March 1, 2026).
     const at = (day: number | null) =>
-      contribAccountsFor({
+      contributionAccountsFor({
         effectiveContributions: [],
         activeJob: { id: 10, bonusMonth: 3, bonusDayOfMonth: day },
         person: { id: 1, dateOfBirth: "1986-05-01" },

@@ -44,7 +44,7 @@ describe("simulation presets", () => {
       .run();
     const preset = (key: string, returnMultiplier: string) =>
       db
-        .insert(sqlite.mcPresets)
+        .insert(sqlite.simulationPresets)
         .values({
           key,
           label: key,
@@ -61,13 +61,13 @@ describe("simulation presets", () => {
         .get().id;
     const def = preset("default", "0.5");
     preset("conservative", "0.5");
-    db.insert(sqlite.mcPresetGlidePaths)
+    db.insert(sqlite.simulationPresetGlidePaths)
       .values([
         { presetId: def, age: 60, assetClassId: stocks, allocation: "0.6" },
         { presetId: def, age: 60, assetClassId: bonds, allocation: "0.4" },
       ])
       .run();
-    db.insert(sqlite.mcPresetReturnOverrides)
+    db.insert(sqlite.simulationPresetReturnOverrides)
       .values({ presetId: def, assetClassId: stocks, meanReturn: "0.06" })
       .run();
     db.insert(sqlite.glidePathAllocations)

@@ -52,8 +52,14 @@ describe("chartLinePalette — WCAG 1.4.11 (>=3:1 in dark mode)", () => {
   );
 
   it("mcMedian clears 3:1 vs the mcBandMiddle@0.2 fill it's drawn over", () => {
-    const bandBackdrop = over(CHART_COLORS.mcBandMiddle, 0.2, DARK_CARD);
-    expect(contrast(dark.mcMedian, bandBackdrop)).toBeGreaterThanOrEqual(3);
+    const bandBackdrop = over(
+      CHART_COLORS.simulationBandMiddle,
+      0.2,
+      DARK_CARD,
+    );
+    expect(
+      contrast(dark.simulationMedian, bandBackdrop),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it("light values are unchanged from the CHART_COLORS originals", () => {
@@ -61,6 +67,6 @@ describe("chartLinePalette — WCAG 1.4.11 (>=3:1 in dark mode)", () => {
     expect(light.netWorth).toBe(CHART_COLORS.netWorth);
     expect(light.perfBalance).toBe(CHART_COLORS.perfBalance);
     expect(light.withdrawalFlow).toBe(CHART_COLORS.withdrawalFlow);
-    expect(light.mcMedian).toBe(CHART_COLORS.mcMedian);
+    expect(light.simulationMedian).toBe(CHART_COLORS.simulationMedian);
   });
 });

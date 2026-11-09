@@ -18,7 +18,7 @@ import {
 import {
   SK_RETIREMENT_SIMULATION_AUTOLOAD,
   SK_RETIREMENT_MC_AUTOLOAD,
-  SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+  SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD,
   SK_SETTINGS_GENERAL_SECTION,
   SK_HOUSEHOLD_TIMEZONE,
 } from "@/lib/constants/settings-keys";
@@ -146,7 +146,7 @@ function RetirementSettings() {
   // call for this same key, or this page shows the toggle in a state that
   // disagrees with actual behavior until the user touches it.
   const [coastFireSimulationAutoload, setCoastFireSimulationAutoload] =
-    usePersistedToggle(SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD, false);
+    usePersistedToggle(SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD, false);
 
   return (
     <div>

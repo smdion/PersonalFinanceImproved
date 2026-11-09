@@ -19,7 +19,7 @@ import { roundToCents } from "@/lib/utils/math";
  *  account, by each one's expected YTD: salary × pct × the job's elapsed
  *  pay-period fraction (salary is flat under the active Salary Profile). */
 export function splitYtdActuals(
-  effectiveContribs: readonly {
+  effectiveContributions: readonly {
     id: number;
     isActive: boolean;
     jobId: number | null;
@@ -43,7 +43,7 @@ export function splitYtdActuals(
     { contributions: number; employerMatch: number }
   >,
 ) {
-  const activeContribs = effectiveContribs.filter((c) => c.isActive);
+  const activeContributions = effectiveContributions.filter((c) => c.isActive);
 
   // Cache resolved salary and period data per job — used for
   // proportional YTD split.
@@ -55,7 +55,7 @@ export function splitYtdActuals(
       periodsElapsed: number;
     }
   >();
-  for (const c of activeContribs) {
+  for (const c of activeContributions) {
     if (c.performanceAccountId == null || !c.jobId) continue;
     if (jobCache.has(c.jobId)) continue;
     const job = effectiveJobs.find((j) => j.id === c.jobId);
@@ -92,7 +92,7 @@ export function splitYtdActuals(
     number,
     { contribId: number; expectedYtd: number }[]
   >();
-  for (const c of activeContribs) {
+  for (const c of activeContributions) {
     const value = computeValue(c);
     let expectedYtd = 0;
     const jd = c.jobId ? jobCache.get(c.jobId) : null;
@@ -120,7 +120,7 @@ export function splitYtdActuals(
     }
   }
 
-  const contribActualMap = new Map<
+  const contributionActualMap = new Map<
     number,
     { contributions: number; employerMatch: number }
   >();
@@ -135,12 +135,12 @@ export function splitYtdActuals(
         totalExpected > 0
           ? entry.expectedYtd / totalExpected
           : 1 / entries.length;
-      contribActualMap.set(entry.contribId, {
+      contributionActualMap.set(entry.contribId, {
         contributions: roundToCents(actual.contributions * share),
         employerMatch: roundToCents(actual.employerMatch * share),
       });
     }
   }
 
-  return { contribActualMap };
+  return { contributionActualMap };
 }

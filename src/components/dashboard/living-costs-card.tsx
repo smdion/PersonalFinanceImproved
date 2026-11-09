@@ -29,7 +29,7 @@ import {
   isExtraPaycheckBudgetMode,
 } from "@/lib/pure/paycheck/extra-paycheck-months";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
@@ -104,7 +104,7 @@ function LivingCostsCardImpl() {
   const {
     contributionProfileId: effectiveContributionId,
     queryInput: contributionProfileInput,
-  } = useEffectiveContribProfileId();
+  } = useEffectiveContributionProfileId();
   // Budget Profile axis — the active row, through the shared resolver.
   const { data: budgetProfilesList } = useBudgetProfilesList();
   const globalActiveBudgetId =

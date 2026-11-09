@@ -427,7 +427,7 @@ export function computeNonRetirementExclusion(
     ownerPersonId?: number;
     parentCategory?: string;
   }[],
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   indKey: IndKeyFn,
 ): NonRetirementExclusion {
   const total = zeroByCategory();
@@ -437,7 +437,7 @@ export function computeNonRetirementExclusion(
 
   for (const ia of indAccounts) {
     if (isRetirementMoney(ia.parentCategory)) continue;
-    const balance = Math.max(0, indBal.get(indKey(ia)) ?? 0);
+    const balance = Math.max(0, indBalance.get(indKey(ia)) ?? 0);
     if (balance <= 0) continue;
     total[ia.category] += balance;
     grandTotal += balance;
