@@ -34,31 +34,9 @@ import {
 import type { DbOrTx } from "@/lib/db";
 
 /**
- * Compute the current net-pay-per-check for a job by running the paycheck
- * calculator against live DB data. Used to snapshot baseNetPayPerCheck when
- * routing rules or growth rates are saved, so the value always reflects the
- * actual paycheck calculation rather than a client-supplied number.
- *
- * Intentionally does not apply the What-If sandbox — this value gets
- * persisted as a recorded fact. Salary,
- * pay schedule, and W-4 elections (w4FilingStatus, w4Box2cChecked,
- * additionalFedWithholding, payPeriod, payWeek, anchorPayDate) all now come
- * from the job's entry in the globally-ACTIVE Salary Profile — not a
- * Contribution Profile job-fields bucket, which no longer exists. Deductions
- * still resolve against the globally-active Contribution Profile. No
- * field-level carve-out within each axis. payPeriod/payWeek/anchorPayDate
- * are the denominator for every per-period value this function computes —
- * the resolved payPeriod/anchorPayDate are returned alongside
- * netPayPerCheck so callers can snapshot them into ExtraPaycheckRoutingData
- * at the same moment, freezing the schedule the materializer uses against a
- * later job/profile change (see ExtraPaycheckRoutingData's docblock).
- *
- * Throws when the job has no entry in the active Salary Profile at all —
- * the one place in this system a missing-entry state throws rather than
- * degrading, per RULES.md: this is reached only from an explicit,
- * user-initiated save (extraPaycheckRouting.save/saveGrowth), where a clear
- * rejection is the right behavior rather than silently persisting a
- * fabricated schedule.
+ * Net pay per check for a job from live data, persisted as a recorded fact (no What-If sandbox):
+ * salary/schedule/W-4 from the active Salary Profile, deductions from the active Contribution
+ * Profile. Also returns the resolved payPeriod/anchorPayDate. Throws if the job has no salary entry.
  */
 export async function computeJobNetPayPerCheck(
   db: DbOrTx,
@@ -125,10 +103,8 @@ export async function computeJobNetPayPerCheck(
       .where(eq(schema.people.id, job.personId)),
   ]);
 
-  // One resolver, same as the retirement engine + paycheck. This path
-  // is always "current year" (no override), so requestedYear is undefined
-  // => newest enacted; `onMissing: "nearest"` is moot but keeps it robust
-  // if the current calendar year has no rows yet (Jan before the seed lands).
+  // Same resolver as the retirement engine and paycheck. Always the current
+  // year (newest enacted); `onMissing: "nearest"` covers a year with no rows yet.
   const resolvedTax = resolveTaxParams(
     {
       vintage: allTaxParams,
@@ -258,11 +234,9 @@ export async function computeJobNetPayPerCheck(
     contributionPay(currentSalary, bonusTerms).bonusGross,
   );
 
-  // Intentionally does not pass a bonusOverride — this value gets persisted
-  // as a recorded fact, not a live/pinned-actual view. See this function's
-  // own docblock. Uses resolvedJob (Salary-Profile-merged), not the raw
-  // job, so payPeriod/payWeek/anchorPayDate/w4* here match whatever this
-  // same function just resolved contributions/deductions against.
+  // No bonusOverride: this value is persisted as a recorded fact. resolvedJob
+  // (Salary-Profile-merged) keeps pay schedule and W-4 in step with what this
+  // function resolved contributions/deductions against.
   const paycheckInput = buildPaycheckInputForJob(resolvedJob, {
     salary: currentSalary,
     bonusTerms,

@@ -1,20 +1,7 @@
 /**
- * Keeps `annual_performance` in step with edits to a year's
- * `account_performance` rows — the one path every edit takes (Performance
- * edits, account changes, snapshot balances), so the rollups can't drift
- * between callers (RULES §Single Computation Path).
- *
- * Usage: `captureYearRollups` before the write, `syncYearRollups` after it,
- * in the same transaction.
- *
- * - **Open year:** each category row (grouped by account type, the way
- *   finalize groups them) and Portfolio are rebuilt from the account rows.
- * - **Finalized year:** its rows are authoritative and may hold figures the
- *   account rows can't reproduce (overrides entered at finalize, imported
- *   history, a lifetime baseline from before tracking began). So only what
- *   the edit moved is carried in: each category and Portfolio move by the
- *   edit's change, and lifetime totals move by it in that year and every
- *   later one. Nothing else is recomputed.
+ * Keeps `annual_performance` in step with `account_performance` edits: `captureYearRollups`
+ * before the write, `syncYearRollups` after, same transaction. An open year is rebuilt from the
+ * account rows; a finalized year (authoritative) moves only by the edit's change, lifetime onward.
  */
 import { and, eq, gt } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

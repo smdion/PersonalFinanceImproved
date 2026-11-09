@@ -1,8 +1,6 @@
 /**
- * The plan's yearly spending before and after retirement: each phase's
- * budget profile and column (the household's active ones unless the
- * caller picks others), with contribution-linked items resolved to real
- * dollars, or the caller's flat override.
+ * The plan's yearly spending before and after retirement: each phase's budget profile and column
+ * (active unless picked), contribution-linked items resolved to dollars, or a flat override.
  */
 import type * as schema from "@/lib/db/schema";
 import { pickActiveBudgetProfile } from "@/lib/pure/budget/active-profile";
@@ -36,8 +34,8 @@ export async function resolvePhaseExpenses(
 ) {
   const defaultProfile = pickActiveBudgetProfile(allBudgetProfiles);
   // Accumulation phase: profile + column
-  // A picked profile that no longer exists falls back to the active one
-  // rather than silently making the phase's spending $0.
+  // A picked profile that doesn't exist falls back to the active one
+  // rather than making the phase's spending $0.
   const accProfile =
     (opts.accumulationBudgetProfileId
       ? allBudgetProfiles.find((p) => p.id === opts.accumulationBudgetProfileId)
@@ -68,11 +66,8 @@ export async function resolvePhaseExpenses(
   const accMonths = (accProfile?.columnMonths as number[] | null) ?? null;
   const decumulationMonths =
     (decProfile?.columnMonths as number[] | null) ?? null;
-  // Resolved through the same contribution-account chain
-  // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts) rather
-  // than raw `amounts`, which is intentionally stale for contribution-linked
-  // items — reading it directly here silently dropped every linked item's
-  // dollar amount from accumulation/decumulation expenses.
+  // Resolved through the contribution-account chain computeActiveSummary uses:
+  // raw `amounts` is stale for contribution-linked items.
   const accNumColumns = accProfile?.columnLabels.length ?? 1;
   const decumulationNumColumns = decProfile?.columnLabels.length ?? 1;
   const dated = { db, scope: { asOf: opts.asOf } };

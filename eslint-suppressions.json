@@ -6878,22 +6878,13 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-abbreviation": {
       "count": 9
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/services/paycheck/summary.ts": {
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 10
     },
     "ratchet/no-abbreviation": {
       "count": 11
@@ -6905,36 +6896,19 @@
   "src/server/services/performance/finalize-year.ts": {
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     }
   },
   "src/server/services/performance/performance-edit.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
-      "count": 1
-    }
-  },
-  "src/server/services/performance/performance-rollups.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
   "src/server/services/performance/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/services/profile-selection.ts": {
@@ -6945,36 +6919,14 @@
   "src/server/services/profiles/first-retirement-profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/services/profiles/plans.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/services/profiles/salary-profile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/services/projection/engine-payload/budget-expenses.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
       "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/services/projection/engine-payload/build-engine-payload.ts": {

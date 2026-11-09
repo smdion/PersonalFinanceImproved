@@ -12,9 +12,8 @@ import {
 } from "@/server/data/salaries";
 
 /**
- * Load a Salary Profile and build its job-targeted active-value map — see
- * SalaryProfileActiveMap. Returns an empty map when the id is null/undefined
- * or the profile no longer exists.
+ * Load a Salary Profile's job-targeted active-value map (SalaryProfileActiveMap); empty when the
+ * id is null/undefined or the profile doesn't exist.
  */
 export async function loadAndApplySalaryProfile(
   db: Db,
@@ -40,11 +39,9 @@ export async function loadEffectiveSalaryProfile(
 }
 
 /**
- * The W-4 filing status of the first of `personIds` (in order) with a
- * non-speculative job held in `asOf`'s year (current first, then one that
- * ended that year), from the request's Salary Profile (What-If included)
- * when given, else the active one; null when none has one. Only a stand-in
- * for the household's filing status: a W-4 status is a withholding choice.
+ * W-4 filing status of the first of `personIds` with a non-speculative job in `asOf`'s year, from
+ * the request's Salary Profile (What-If included) or the active one; null if none. Only a
+ * stand-in for the household's filing status (a W-4 status is a withholding choice).
  */
 export async function w4FilingStatusOf(
   db: Db,

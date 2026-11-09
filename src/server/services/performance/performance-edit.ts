@@ -1,15 +1,7 @@
 /**
- * An edit to one Performance account row — the single write path for inline
- * edits, and for previewing one (run it, report what moved, roll back).
- *
- * - A row that balanced before stays balanced: when the edit doesn't set
- *   the gain itself, the gain follows the other figures. A row carrying a
- *   deliberate gap (a provider's gain) keeps its gain.
- * - `chainNextYear`: when the ending moves and next year's row (same account
- *   and person) began at the old ending, it begins at the new one. Its gain
- *   follows only if that row balanced before.
- * - Every affected year's rollups move through syncYearRollups, the edited
- *   year first (next year's rebuild reads its lifetime figures).
+ * One Performance account-row edit, inline or previewed (rolled back). A row that balanced stays
+ * balanced (its gain follows); `chainNextYear` moves next year's beginning off the old ending.
+ * Every affected year's rollups move through syncYearRollups, the edited year first.
  */
 import { and, eq, gte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
