@@ -3675,7 +3675,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 12
+      "count": 9
     }
   },
   "src/lib/pure/advice/milestones/investing.ts": {
@@ -4647,11 +4647,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/lib/pure/retirement/gk-anchor-rate.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
     }
   },
   "src/lib/pure/retirement/plan-outcome.ts": {
