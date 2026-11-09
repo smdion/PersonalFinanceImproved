@@ -46,17 +46,25 @@ function jobState(): JobState {
 
 let refusedUrlLogged = false;
 
-/** The webhook URL when it's set and http(s); operator-set, so not
+/** Why the webhook URL can't be used, or null when it can. The reason never
+ *  echoes the value: fetch refuses a URL with credentials, naming it. */
+function unusableReason(url: URL | null): string | null {
+  if (!url || (url.protocol !== "https:" && url.protocol !== "http:"))
+    return "LEDGR_ALERT_WEBHOOK_URL is not an http or https URL";
+  if (url.username || url.password)
+    return "LEDGR_ALERT_WEBHOOK_URL must not contain credentials";
+  return null;
+}
+
+/** The webhook URL when it's set and usable; operator-set, so not
  *  checkOutboundUrl's (url-safety.ts). An unusable one is logged once. */
 function alertWebhookUrl(): URL | null {
   const value = process.env.LEDGR_ALERT_WEBHOOK_URL;
   if (!value) return null;
   const url = URL.canParse(value) ? new URL(value) : null;
-  if (url?.protocol === "https:" || url?.protocol === "http:") return url;
-  if (!refusedUrlLogged)
-    log("warn", "job_alert_url_refused", {
-      reason: "LEDGR_ALERT_WEBHOOK_URL is not an http or https URL",
-    });
+  const reason = unusableReason(url);
+  if (!reason) return url;
+  if (!refusedUrlLogged) log("warn", "job_alert_url_refused", { reason });
   refusedUrlLogged = true;
   return null;
 }

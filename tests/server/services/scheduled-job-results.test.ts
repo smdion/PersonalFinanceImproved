@@ -205,4 +205,27 @@ describe("the alert webhook", () => {
       reason: "LEDGR_ALERT_WEBHOOK_URL is not an http or https URL",
     });
   });
+
+  it("sends nothing to a URL with credentials, and never logs them", async () => {
+    // A fresh module: the refusal is logged once per process.
+    vi.resetModules();
+    const fresh = await import("@/server/services/scheduled-job-results");
+    vi.stubEnv(
+      "LEDGR_ALERT_WEBHOOK_URL",
+      "https://alert-user:hunter2-secret@alerts.example.com/hook",
+    );
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    fresh.recordJobResult("sec_refresh", STARTED_AT, FAILED);
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith("warn", "job_alert_url_refused", {
+      reason: "LEDGR_ALERT_WEBHOOK_URL must not contain credentials",
+    });
+    const logged = JSON.stringify(log.mock.calls);
+    expect(logged).not.toContain("alert-user");
+    expect(logged).not.toContain("hunter2-secret");
+  });
 });
