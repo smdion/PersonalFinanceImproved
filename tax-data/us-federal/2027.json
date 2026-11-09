@@ -1,0 +1,600 @@
+{
+  "$schema": "../schema/year.schema.json",
+  "revision": 1,
+  "source": "IRS Rev. Proc. 2026-24; IRC 223(b)(3); IRC 3101(a); IRC 3101(b)(1); IRC 3101(b)(2); IRC 3102(f)(1); IRS Rev. Proc. 2026-35; OBBBA §70103; HHS 2026 Poverty Guidelines",
+  "sources": {
+    "IRS Rev. Proc. 2026-24": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf",
+    "IRC 223(b)(3)": "https://www.law.cornell.edu/uscode/text/26/223",
+    "IRC 3101(a)": "https://www.law.cornell.edu/uscode/text/26/3101",
+    "IRC 3101(b)(1)": "https://www.law.cornell.edu/uscode/text/26/3101",
+    "IRC 3101(b)(2)": "https://www.law.cornell.edu/uscode/text/26/3101",
+    "IRC 3102(f)(1)": "https://www.law.cornell.edu/uscode/text/26/3102",
+    "IRS Rev. Proc. 2026-35": "https://www.irs.gov/pub/irs-drop/rp-26-35.pdf",
+    "OBBBA §70103": "https://www.govinfo.gov/app/details/PLAW-119publ21",
+    "HHS 2026 Poverty Guidelines": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
+  },
+  "limits": {
+    "401k_employee_limit": {
+      "value": null,
+      "source": "",
+      "notes": "Elective deferrals (IRC 402(g))"
+    },
+    "401k_catchup_limit": {
+      "value": null,
+      "source": "",
+      "notes": "Additional if age 50+"
+    },
+    "401k_super_catchup_limit": {
+      "value": null,
+      "source": "",
+      "notes": "Ages 60–63 catch-up, in place of the age-50 one (SECURE 2.0)"
+    },
+    "401k_total_additions_limit": {
+      "value": null,
+      "source": "",
+      "notes": "IRC 415(c): employee + employer + after-tax, catch-up excluded"
+    },
+    "ira_limit": {
+      "value": null,
+      "source": "",
+      "notes": "IRA contribution limit (IRC 219(b)(5)(A)), traditional and Roth combined"
+    },
+    "ira_catchup_limit": {
+      "value": null,
+      "source": "",
+      "notes": "Additional if age 50+"
+    },
+    "hsa_family_limit": {
+      "value": 9000,
+      "source": "IRS Rev. Proc. 2026-24",
+      "notes": "Family HDHP coverage"
+    },
+    "hsa_individual_limit": {
+      "value": 4500,
+      "source": "IRS Rev. Proc. 2026-24",
+      "notes": "Self-only HDHP coverage"
+    },
+    "hsa_catchup_limit": {
+      "value": 1000,
+      "source": "IRC 223(b)(3)",
+      "notes": "Additional if age 55+; fixed by law, not indexed"
+    },
+    "ss_wage_base": {
+      "value": null,
+      "source": "",
+      "notes": "Social Security wage base"
+    },
+    "fica_ss_rate": {
+      "value": 0.062,
+      "source": "IRC 3101(a)",
+      "notes": "Social Security tax, employee share"
+    },
+    "fica_medicare_rate": {
+      "value": 0.0145,
+      "source": "IRC 3101(b)(1)",
+      "notes": "Medicare tax, employee share"
+    },
+    "fica_medicare_surtax_rate": {
+      "value": 0.009,
+      "source": "IRC 3101(b)(2)",
+      "notes": "Additional Medicare Tax"
+    },
+    "fica_medicare_surtax_threshold": {
+      "value": 200000,
+      "source": "IRC 3102(f)(1)",
+      "notes": "Employers withhold Additional Medicare Tax on an employee's wages above this (IRC 3102(f)); what's owed uses the liability thresholds"
+    },
+    "supplemental_tax_rate": {
+      "value": null,
+      "source": "",
+      "notes": "Optional flat withholding rate on supplemental wages (bonuses)"
+    },
+    "standard_deduction_mfj": {
+      "value": 33200,
+      "source": "IRS Rev. Proc. 2026-35",
+      "notes": "Standard deduction, married filing jointly"
+    },
+    "standard_deduction_single": {
+      "value": 16600,
+      "source": "IRS Rev. Proc. 2026-35",
+      "notes": "Standard deduction, single"
+    },
+    "standard_deduction_hoh": {
+      "value": 24925,
+      "source": "IRS Rev. Proc. 2026-35",
+      "notes": "Standard deduction, head of household"
+    },
+    "fica_medicare_surtax_liability_mfj": {
+      "value": 250000,
+      "source": "IRC 3101(b)(2)",
+      "notes": "Additional Medicare Tax owed above this, MFJ (combined Medicare wages); fixed by law"
+    },
+    "fica_medicare_surtax_liability_single": {
+      "value": 200000,
+      "source": "IRC 3101(b)(2)",
+      "notes": "Additional Medicare Tax owed above this, Single; fixed by law"
+    },
+    "fica_medicare_surtax_liability_hoh": {
+      "value": 200000,
+      "source": "IRC 3101(b)(2)",
+      "notes": "Additional Medicare Tax owed above this, HOH; fixed by law"
+    },
+    "roth_ira_phaseout_start_mfj": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out start, MFJ"
+    },
+    "roth_ira_phaseout_end_mfj": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out end, MFJ"
+    },
+    "roth_ira_phaseout_start_single": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out start, Single"
+    },
+    "roth_ira_phaseout_end_single": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out end, Single"
+    },
+    "roth_ira_phaseout_start_hoh": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out start, HOH"
+    },
+    "roth_ira_phaseout_end_hoh": {
+      "value": null,
+      "source": "",
+      "notes": "Roth IRA contribution MAGI phase-out end, HOH"
+    },
+    "hdhp_min_deductible_self": {
+      "value": 1750,
+      "source": "IRS Rev. Proc. 2026-24",
+      "notes": "HDHP minimum annual deductible, self-only"
+    },
+    "hdhp_min_deductible_family": {
+      "value": 3500,
+      "source": "IRS Rev. Proc. 2026-24",
+      "notes": "HDHP minimum annual deductible, family"
+    },
+    "additional_std_deduction_65_married": {
+      "value": 1700,
+      "source": "IRS Rev. Proc. 2026-35",
+      "notes": "IRC 63(f) age-65+ additional standard deduction, per spouse (MFJ / MFS / QSS)"
+    },
+    "additional_std_deduction_65_unmarried": {
+      "value": 2100,
+      "source": "IRS Rev. Proc. 2026-35",
+      "notes": "IRC 63(f) age-65+ additional standard deduction, Single / HOH"
+    },
+    "obbba_senior_deduction_per_person": {
+      "value": 6000,
+      "source": "OBBBA §70103",
+      "notes": "Temporary senior deduction, per qualifying person 65+; not indexed"
+    },
+    "obbba_senior_deduction_phaseout_start_mfj": {
+      "value": 150000,
+      "source": "OBBBA §70103",
+      "notes": "Senior deduction MAGI phase-out start, MFJ"
+    },
+    "obbba_senior_deduction_phaseout_start_unmarried": {
+      "value": 75000,
+      "source": "OBBBA §70103",
+      "notes": "Senior deduction MAGI phase-out start, Single / HOH / MFS"
+    },
+    "obbba_senior_deduction_phaseout_rate": {
+      "value": 0.06,
+      "source": "OBBBA §70103",
+      "notes": "Senior deduction falls by 6% of MAGI over the start"
+    },
+    "obbba_senior_deduction_sunset_year": {
+      "value": 2028,
+      "source": "OBBBA §70103",
+      "notes": "Last tax year the senior deduction applies (it covers years before 2029)"
+    },
+    "qcd_annual_limit": {
+      "value": null,
+      "source": "",
+      "notes": "Qualified charitable distributions from IRAs, per person (IRC 408(d)(8))"
+    }
+  },
+  "withholding": {
+    "source": "",
+    "notes": "Percentage Method Tables for Automated Payroll Systems (annual)",
+    "tables": {
+      "MFJ": {
+        "standard": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ],
+        "checkbox": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ]
+      },
+      "Single": {
+        "standard": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ],
+        "checkbox": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ]
+      },
+      "HOH": {
+        "standard": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ],
+        "checkbox": [
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          },
+          {
+            "rate": null,
+            "threshold": null,
+            "baseWithholding": null
+          }
+        ]
+      }
+    }
+  },
+  "ltcg": {
+    "source": "IRS Rev. Proc. 2026-35",
+    "brackets": {
+      "MFJ": [
+        {
+          "threshold": 102100,
+          "rate": 0
+        },
+        {
+          "threshold": 633600,
+          "rate": 0.15
+        },
+        {
+          "threshold": null,
+          "rate": 0.2
+        }
+      ],
+      "Single": [
+        {
+          "threshold": 51050,
+          "rate": 0
+        },
+        {
+          "threshold": 563200,
+          "rate": 0.15
+        },
+        {
+          "threshold": null,
+          "rate": 0.2
+        }
+      ],
+      "HOH": [
+        {
+          "threshold": 68350,
+          "rate": 0
+        },
+        {
+          "threshold": 598400,
+          "rate": 0.15
+        },
+        {
+          "threshold": null,
+          "rate": 0.2
+        }
+      ]
+    }
+  },
+  "irmaa": {
+    "source": "",
+    "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12). 2027 premiums use 2025 MAGI.",
+    "brackets": {
+      "MFJ": [
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        }
+      ],
+      "Single": [
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        }
+      ],
+      "HOH": [
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        },
+        {
+          "magiThreshold": null,
+          "annualSurcharge": null
+        }
+      ]
+    }
+  },
+  "fpl": {
+    "source": "HHS 2026 Poverty Guidelines",
+    "notes": "48 contiguous states and DC. The 2027 ACA coverage year uses the 2026 guidelines.",
+    "amounts": {
+      "1": 15960,
+      "2": 21640,
+      "3": 27320,
+      "4": 33000,
+      "5": 38680,
+      "6": 44360,
+      "7": 50040,
+      "8": 55720
+    }
+  }
+}
