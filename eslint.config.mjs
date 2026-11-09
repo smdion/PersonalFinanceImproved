@@ -272,6 +272,7 @@ const config = [
               // layer manifest's `shapes`, which pure code may read.
               group: [
                 "@/lib/db/*",
+                "!@/lib/db/shapes",
                 "!@/lib/db/json-schemas",
                 "!@/lib/db/salary-entry-defaults",
                 "!@/lib/db/salary-entry-edit",
