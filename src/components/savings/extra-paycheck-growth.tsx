@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 
 type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 export type YearlyGrowth = Record<number, YearlyGrowthEntry>;
@@ -8,21 +9,6 @@ const GROWTH_TYPES = [
   { value: "pct", label: "%" },
   { value: "dollar", label: "$" },
 ] as const;
-
-export function projectedNetPay(
-  baseNetPay: number,
-  year: number,
-  baseYear: number,
-  yearlyGrowth: YearlyGrowth,
-): number {
-  let pay = baseNetPay;
-  for (let y = baseYear + 1; y <= year; y++) {
-    const e = yearlyGrowth[y];
-    if (!e || e.value === 0) continue;
-    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
-  }
-  return pay;
-}
 
 function PaycheckGrowthEditor({
   projectionYears,

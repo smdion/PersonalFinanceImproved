@@ -195,7 +195,7 @@
     "src/components/retirement/sections/taxes.tsx": 557,
     "src/components/savings/api-sync-section.tsx": 603,
     "src/components/savings/contribution-grid.tsx": 473,
-    "src/components/savings/extra-paycheck-growth.tsx": 244,
+    "src/components/savings/extra-paycheck-growth.tsx": 230,
     "src/components/savings/extra-paycheck-month-overrides.tsx": 263,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 666,
     "src/components/savings/extra-paycheck-rules.tsx": 385,

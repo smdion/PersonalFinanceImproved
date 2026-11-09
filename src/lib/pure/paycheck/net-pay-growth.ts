@@ -8,11 +8,13 @@ export function projectedNetPay(
   base: number,
   targetYear: number,
   baseYear: number,
-  yearlyGrowth: Record<string, { type: "pct" | "dollar"; value: number }>,
+  yearlyGrowth: Readonly<
+    Record<number, { type: "pct" | "dollar"; value: number }>
+  >,
 ): number {
   let pay = base;
   for (let y = baseYear + 1; y <= targetYear; y++) {
-    const e = yearlyGrowth[String(y)];
+    const e = yearlyGrowth[y];
     if (!e || e.value === 0) continue;
     pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
   }

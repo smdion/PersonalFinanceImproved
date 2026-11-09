@@ -5,9 +5,9 @@ import type {
   ExtraPaycheckRoutingData,
   ExtraPaycheckRule,
 } from "@/lib/db/schema-pg";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import {
   fmt,
-  projectedNetPay,
   SimpleGrowthEditor,
   type YearlyGrowth,
 } from "./extra-paycheck-growth";
