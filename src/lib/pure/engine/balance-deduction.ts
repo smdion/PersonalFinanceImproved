@@ -1,10 +1,6 @@
 /**
- * Balance Deduction — withdrawal deduction, clamping, depletion, and dust cleanup.
- *
- * Handles the mechanical balance operations in the decumulation pipeline:
- * deducting withdrawals from tax buckets and per-account balances, ensuring
- * no negative balances, tracking per-account depletions, and zeroing out
- * rounding dust when the portfolio is effectively depleted.
+ * Balance deduction for decumulation: deducts withdrawals from tax buckets and accounts, clamps
+ * negatives, tracks depletions, and zeroes rounding dust once the portfolio is depleted.
  */
 import type { DecumulationSlot } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
@@ -143,36 +139,9 @@ export function clampBalances(
 // ---------------------------------------------------------------------------
 
 /**
- * Handle RMD-forced withdrawal beyond spending need (mode-aware).
- * When RMD forces withdrawal above spending need + tax cost, the excess is
- * real after-tax cash the household didn't ask for. What happens to it
- * depends on `mode`:
- * - "reinvest" (default): credited to brokerage as basis.
- * - "spend": NOT credited anywhere — the household is modeled as consuming
- *   it. Net worth ends up genuinely lower than "reinvest", by design.
- *
- * Either way, returns the excess amount for reporting — the UI is
- * responsible for wording it correctly per mode
- * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
- * an accurate description of what happened under "spend".
- *
- * Mutates `balances` and `accountBalance` in place only under "reinvest". When
- * `indAccounts`/`indBalance`/`indKey` are also supplied, the reinvestment
- * additionally credits Retirement-parented overflow-target accounts'
- * `indBalance` directly, proportional to their own balance — this money is
- * forced out of a Traditional account by the RMD floor (which only ever
- * forces Retirement-parented money), so it must land back in a
- * Retirement-parented account too. Without this, the credit only touches
- * the blended aggregate, and `reconcileIndividualToAggregate`'s
- * parentCategory-blind proportional redistribution can hand most of it to
- * a much-larger Portfolio-parented account instead — the same leak
- * already closed for Roth-conversion tax funding and QCD, surfaced here by
- * a `[DIAG] indBalance/accountBalance reconciliation` drift report on a real
- * household. Falls back to crediting proportionally across every
- * overflow-target account (the earlier behavior) only if the household has NO
- * Retirement-parented overflow-target account at all — an edge case, but
- * inventing a Retirement-parented destination that doesn't exist would be
- * a second allocation policy.
+ * Returns the RMD excess over spending need + tax. "reinvest" credits it to brokerage as basis
+ * (and to Retirement-parented overflow accounts in `indBalance`); "spend" credits nothing.
+ * Mutates `balances`/`accountBalance` only under "reinvest".
  */
 export function reinvestRmdExcess(
   mode: "reinvest" | "spend",
@@ -198,10 +167,8 @@ export function reinvestRmdExcess(
         addBalance(accountBalance[cat], excess);
         addBasis(accountBalance[cat], excess);
         if (indAccounts && indBalance && indKey) {
-          // Retirement money: the household's chosen account, else every
-          // Retirement brokerage by balance (the projection-only one when
-          // that's all there is). Never a Portfolio account — with no
-          // retirement brokerage it stays in the aggregate only.
+          // The chosen account, else every Retirement brokerage by balance.
+          // Never a Portfolio account: with none it stays in the aggregate.
           const retirementAccounts = indAccounts.filter(
             (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
           );

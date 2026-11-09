@@ -1,21 +1,7 @@
 /**
- * Brokerage cost basis per individual account.
- *
- * The aggregate `afterTaxBasis` can't tell a Retirement brokerage's basis
- * from a Portfolio one's, so a single ratio priced every brokerage
- * withdrawal's capital gains — wrong whenever the two differ (and they do:
- * a long-held Portfolio brokerage vs a newer Retirement one). Basis is kept
- * here per basis-tracking account, like the Roth basis in `indBasis`; the
- * ratio a withdrawal uses is the sum over the accounts it draws from
- * (`groupBasisRatio`), and the aggregate is the sum of the accounts
- * (`syncAggregateBasis`).
- *
- * Every per-account balance change follows one of two rules:
- * - money in (contributions, match, overflow, ramp, lump sums, reinvested
- *   RMD money): `followInflows` adds the increase as basis;
- * - money out (withdrawals, goal draws, reconciliation, clamps, dust):
- *   `followDraws` takes basis out at that account's own ratio.
- * Growth changes balances only, never basis.
+ * Brokerage cost basis per basis-tracking account; the aggregate is their sum. Money in adds
+ * basis (`followInflows`), money out removes it at the account's ratio (`followDraws`), and
+ * growth never changes basis.
  */
 import { roundToCents } from "../../utils/math";
 import {
@@ -43,10 +29,8 @@ function basisTrackedAccounts(
 }
 
 /**
- * Starting basis per account: each account's own `startingBasis` (capped at
- * its balance); accounts without one share what's left of the aggregate
- * basis (aggregate − the known ones) by starting balance — inputs that
- * predate per-account basis, or an account whose basis was never entered.
+ * Starting basis per account: its own `startingBasis` (capped at balance); accounts without one
+ * share the rest of the aggregate basis by starting balance.
  */
 export function seedBrokerageBasis(
   indAccounts: readonly IndividualAccountInput[],
@@ -151,12 +135,8 @@ export function followInflows<T>(
 }
 
 /**
- * Run the yearly reconciliation (`mutate`). Accounts it lowers give up basis
- * at their own ratio (`followDraws`). Accounts it raises are holding cash the
- * aggregate already tracked with its basis (contributions with no
- * per-account route, lump sums with no matching account, …): they receive
- * the aggregate's basis surplus over the accounts, by their increase and at
- * most the increase.
+ * Runs the yearly reconciliation (`mutate`). Lowered accounts give up basis at their ratio;
+ * raised ones receive the aggregate's basis surplus, by and at most their increase.
  */
 export function followReconciliation<T>(
   indAccounts: readonly IndividualAccountInput[],
@@ -188,11 +168,8 @@ export function followReconciliation<T>(
 }
 
 /**
- * Year end: basis never exceeds an account's balance, and the aggregate
- * basis (`balances.afterTaxBasis`, the brokerage `accountBalance`) is the sum of
- * the accounts' — when the accounts hold all the brokerage money. A drift
- * over $1 between the year's aggregate bookkeeping and the accounts is
- * surfaced as a diagnostic, like balance drift.
+ * Year end: basis is capped at balance, and when the accounts hold all brokerage money the
+ * aggregate basis is their sum. Drift over $1 is surfaced as a diagnostic.
  */
 export function syncAggregateBasis(
   indAccounts: readonly IndividualAccountInput[],
@@ -206,10 +183,8 @@ export function syncAggregateBasis(
   const accounts = basisTrackedAccounts(indAccounts);
   if (accounts.length === 0) return;
   // The accounts' sum is the truth only when they hold all the brokerage
-  // money. They normally do (overflow has a Retirement home — the
-  // projection-only brokerage when there's no real one); if some money
-  // still lives only in the aggregate, keep the aggregate's basis and say
-  // so rather than price it as all gain.
+  // money; otherwise keep the aggregate's basis and say so rather than
+  // price the rest as all gain.
   const held = accounts.reduce(
     (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
     0,
@@ -245,11 +220,8 @@ export function syncAggregateBasis(
   }
 }
 
-/** The ratio a retirement withdrawal from brokerage uses: the
- *  Retirement-parented brokerages' own basis ÷ balance (retirement never
- *  draws Portfolio ones). Undefined when there is no Retirement brokerage
- *  account (brokerage money then lives only in the aggregate, e.g. built
- *  from overflow) — callers fall back to the aggregate ratio. */
+/** Basis ratio for a retirement brokerage withdrawal: Retirement-parented brokerages' basis ÷
+ *  balance. Undefined with no Retirement brokerage; callers then use the aggregate ratio. */
 export function retirementBrokerageBasisRatio(
   indAccounts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,

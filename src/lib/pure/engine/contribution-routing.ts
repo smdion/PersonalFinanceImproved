@@ -1,12 +1,6 @@
 /**
- * Contribution Routing — accumulation-phase allocation.
- *
- * Three routing modes:
- * - routeWaterfall: fill accounts in priority order
- * - routePercentage: split by configured percentages
- * - routeFromSpecs: per-account specs from DB (dominant production path)
- *
- * All modes receive ResolvedAccumulationConfig — never raw overrides.
+ * Accumulation-phase routing: waterfall (priority order), percentage split, or per-account
+ * specs (`routeFromSpecs`). All take ResolvedAccumulationConfig, never raw overrides.
  */
 import type { ContributionSpec } from "./types/contribution-spec";
 import type { ResolvedAccumulationConfig } from "./types/accumulation";
@@ -483,10 +477,8 @@ export function capSpecs(
 }
 
 /**
- * Each category's slot limit from its group's household limit, every
- * shared limit counted once: split across the group's categories in
- * proportion to their employee money, room left over to the group's own
- * category (the leader).
+ * Each category's slot limit: its group's household limit (shared limits counted once) split by
+ * employee money, with leftover room going to the group's own category.
  */
 export function slotLimits(
   groupLimits: ReadonlyMap<string, number>,
@@ -517,11 +509,8 @@ export function slotLimits(
 }
 
 /**
- * Route one year's contributions from per-account specs already capped
- * per person at the IRS limits (capSpecs): over-limit money overflows to
- * brokerage, then the household's own account caps apply, also
- * overflowing to brokerage. A category's Roth share and Portfolio part
- * come from the capped amounts.
+ * Routes a year's contributions from per-person IRS-capped specs (capSpecs); over-limit money
+ * and money over the household's account caps overflow to brokerage. Splits use capped amounts.
  */
 export function routeFromSpecs(
   specs: readonly ContributionSpec[],

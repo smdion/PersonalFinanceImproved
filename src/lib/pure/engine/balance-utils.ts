@@ -28,11 +28,8 @@ import type {
 } from "@/lib/pure/accounts/eligibility";
 
 /**
- * A balance in its two scopes: every account (net-worth views), and
- * retirement money — the aggregate minus the Portfolio-parented accounts
- * (`computeNonRetirementExclusion`, the same exclusion spending and routing
- * use; clamped at 0). Without individual accounts every dollar is
- * retirement money.
+ * A balance in two scopes: every account (net worth), and retirement money (the aggregate minus
+ * Portfolio-parented accounts, clamped at 0). Without individual accounts all of it is retirement.
  */
 export function scopedBalances(
   balances: TaxBuckets,
@@ -100,17 +97,8 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 }
 
 /** @internal Only tests import it (knip --production).
- * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
- * balances, per category. Floors at 0 —
- * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
- * of individual-account penalty-exposed amounts, which can't exceed the
- * category total they're within, but flooring keeps this safe against any
- * future drift between `accountBalance` and the sum of individual accounts (the
- * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
- * already watches for). Locked design: the penalty-free balance is derived
- * by SUBTRACTION from the real `accountBalance`, never by summing `indBalance` (the
- * other direction breaks byte-identity).
- */
+ * Subtracts a record's penalty-exposed dollars per category, floored at 0. Derived by subtraction
+ * from `accountBalance`, never by summing `indBalance`. */
 export function subtractPenaltyExposed(
   balances: AccountBalances,
   record: EligibilityRecord,
@@ -145,21 +133,9 @@ export function subtractPenaltyExposed(
 }
 
 /**
- * Subtract BOTH still-excluded penalty exposure and Portfolio-parented
- * ("non-retirement") balances from `balances`, per category. Sums
- * the two sources before a single floor-at-0 per bucket — mathematically
- * equivalent to two sequential `subtractPenaltyExposed`-style clamps
- * (`max(0, max(0, x-a)-b) === max(0, x-a-b)` for non-negative `a`/`b`), so
- * this isn't about floor-order correctness; it's simply the natural shape
- * once there are two sources instead of one. The property that actually
- * matters — and the reason the two sources are safe to add together at
- * all — is that they're guaranteed not to double-count the same dollar:
- * `computeWithdrawalEligibility` never adds a Portfolio-parented account's
- * exposure to its `*StillExcluded` aggregates (see that function's
- * `isRetirementParent` gate), so `exposure`'s totals and `nonRetirement`'s
- * totals never overlap. Either argument may be omitted/all-zero; degrades
- * to `subtractPenaltyExposed`'s exact behavior, or a no-op clone,
- * accordingly.
+ * Subtracts still-excluded penalty exposure plus Portfolio-parented balances per category, one
+ * floor at 0 each. The two never overlap (`computeWithdrawalEligibility` skips Portfolio
+ * accounts' exposure). Either may be omitted.
  */
 export function subtractExcluded(
   balances: AccountBalances,
@@ -201,31 +177,9 @@ export function subtractExcluded(
 }
 
 /**
- * Replay a `RouteResult`'s drawn slots back onto an `AccountBalances`
- * clone — reduces each category by what was actually withdrawn, mirroring
- * `routeWithdrawals`'s own per-category branching (roth/traditional split
- * for `roth_traditional` categories, total withdrawal for everything else:
- * `single_bucket` HSA and `basis_tracking`/overflow brokerage both reduce
- * by total dollars the same way `subtractExcluded`'s own `else` branch
- * already does). Floors at 0 for the same drift-safety reason
- * `subtractPenaltyExposed` floors — a slot's withdrawal can't exceed the
- * balance it was drawn from BY CONSTRUCTION (`routeWithdrawals` clamps to
- * available balance), but flooring costs nothing and guards against any
- * future divergence.
- *
- * The one piece of new balance-mutation arithmetic
- * `routeWithLastResortAllowance`'s two-dispatch merge needs and that didn't
- * exist anywhere in the engine before — `dispatchOnce`/`routeWithdrawals`
- * never mutate the `AccountBalances` they're given, they only compute
- * slots; the real balance reduction has always happened elsewhere
- * (decumulation-year.ts's own post-routing bookkeeping), which is fine for
- * a single dispatch per year but not for chaining a second dispatch against
- * "what's left after the first one drew."
- *
- * Categories with no slot entry are left untouched (not zeroed) — a slot
- * array need not cover every category (e.g. a category the withdrawal
- * order skipped, or a partial/filtered slots array from a caller that only
- * cares about specific categories).
+ * Replays a RouteResult's slots onto an `AccountBalances` clone (roth/traditional split or total,
+ * as `routeWithdrawals` branches), floored at 0, so a second dispatch can chain off the first.
+ * Categories with no slot stay untouched.
  */
 export function applySlotsToBalances(
   balances: AccountBalances,

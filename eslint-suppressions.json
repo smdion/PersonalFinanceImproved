@@ -5710,38 +5710,17 @@
       "count": 3
     }
   },
-  "src/lib/pure/engine/aca-check.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/lib/pure/engine/balance-deduction.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/lib/pure/engine/balance-utils.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 8
-    }
-  },
-  "src/lib/pure/engine/bracket-growth.ts": {
-    "ratchet/max-comment-lines": {
       "count": 8
     }
   },
   "src/lib/pure/engine/brokerage-basis.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -5750,14 +5729,6 @@
   "src/lib/pure/engine/constant-percentage.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/contribution-projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/contribution-routing.ts": {
@@ -5766,9 +5737,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     },
     "ratchet/no-config-reach-through": {
       "count": 2
