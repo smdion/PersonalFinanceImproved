@@ -15,17 +15,12 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { projectionMetadata } from "@/server/services/projection/projection-metadata";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
@@ -79,14 +74,8 @@ export const scenariosRouter = createTRPCRouter({
       if (payload.notConfigured)
         return { result: null, notConfigured: payload.notConfigured };
 
-      const {
-        settings,
-        activeContribs,
-        noContribData,
-        distributionTaxRates,
-        portfolioTotal,
-        baseEngineInput,
-      } = payload;
+      const { activeContribs, noContribData, portfolioTotal, baseEngineInput } =
+        payload;
 
       // Router-level warnings for silent fallbacks
       const routerWarnings: string[] = [];
@@ -118,18 +107,8 @@ export const scenariosRouter = createTRPCRouter({
           : baseEngineInput.profileSwitches;
 
       const engineInput = {
-        ...baseEngineInput,
+        ...(await prepareEngineInput(ctx.db, payload, input)),
         profileSwitches: profileSwitchesForEngine,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
       };
       const inputHash = hashEngineInput("deterministic", engineInput);
 

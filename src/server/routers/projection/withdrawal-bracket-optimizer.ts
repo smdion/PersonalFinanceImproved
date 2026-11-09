@@ -18,17 +18,12 @@
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
@@ -68,21 +63,7 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
       if (payload.notConfigured)
         return { result: null, notConfigured: payload.notConfigured };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
-
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
       return { result: optimizeRothBracketTarget(engineInput) };
     }),

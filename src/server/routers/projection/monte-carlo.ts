@@ -43,18 +43,13 @@ import {
 } from "@/lib/pure/simulation/random";
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
@@ -193,26 +188,14 @@ export const monteCarloRouter = createTRPCRouter({
         planEndAge,
         totalCompensation,
         selectedScenario: _selectedScenario,
-        distributionTaxRates,
         annualExpensesVal,
-        baseEngineInput,
       } = payload;
 
       // Build the full engine input — mirrors getProjection so MC respects the same overrides.
       // Note: Coast FIRE scenario rendering goes through computeCoastFireMC (which returns
       // its final-probe mcResult for the chart), NOT this procedure with a coast flag.
       const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
+        ...(await prepareEngineInput(ctx.db, payload, input)),
         rateSeededDecumulationYear1: input.rateSeededDecumulationYear1,
       };
 

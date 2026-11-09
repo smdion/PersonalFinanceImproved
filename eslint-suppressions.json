@@ -7742,9 +7742,6 @@
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 5
     },
@@ -7753,9 +7750,6 @@
     }
   },
   "src/server/routers/projection/coast-fire.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -7769,6 +7763,11 @@
       "count": 1
     }
   },
+  "src/server/routers/projection/engine-input.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    }
+  },
   "src/server/routers/projection/index.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -7776,7 +7775,7 @@
   },
   "src/server/routers/projection/monte-carlo.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
@@ -7820,9 +7819,6 @@
     }
   },
   "src/server/routers/projection/scenarios.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 4
     },
@@ -7831,9 +7827,6 @@
     }
   },
   "src/server/routers/projection/social-security.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }
@@ -7887,9 +7880,6 @@
     }
   },
   "src/server/routers/projection/withdrawal-bracket-optimizer.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     },

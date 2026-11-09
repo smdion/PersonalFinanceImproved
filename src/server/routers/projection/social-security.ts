@@ -7,11 +7,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-  ProjectionInput,
-} from "@/lib/pure/engine/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   buildSocialSecurityEntries,
@@ -20,9 +16,8 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
@@ -83,25 +78,8 @@ export const socialSecurityRouter = createTRPCRouter({
         });
       }
 
-      const {
-        settings,
-        distributionTaxRates,
-        baseEngineInput,
-        perPersonSettings,
-      } = payload;
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const { perPersonSettings } = payload;
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
       // Multi-person households need every candidate's FULL entries array
       // rebuilt through the shared helper, not just this person's own

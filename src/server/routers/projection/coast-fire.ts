@@ -29,18 +29,13 @@ import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
@@ -116,21 +111,7 @@ export const coastFireRouter = createTRPCRouter({
       if (payload.notConfigured)
         return { result: null, notConfigured: payload.notConfigured };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
-
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
       const result = findCoastFireAge(engineInput);
 
@@ -224,21 +205,7 @@ export const coastFireRouter = createTRPCRouter({
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
-
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
       // No preset or nothing to draw returns from: a state, not a verdict.
       if (simulation.notConfigured || !simulation.preset)
