@@ -3,7 +3,7 @@
  * still reads as $0, and the projection says so.
  */
 import { describe, expect, it } from "vitest";
-import { missingLimitsWarning } from "@/server/services/projection/engine-payload/tax-year";
+import { missingLimitsWarning } from "@/lib/pure/tax/resolve-tax-year";
 
 const rows = (taxYear: number, keys: string[]) =>
   keys.map((limitType) => ({ taxYear, limitType }));

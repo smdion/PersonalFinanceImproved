@@ -60,9 +60,9 @@ import { retirementContributions } from "@/lib/pure/contributions/retirement-con
 import { applyProfiles, type fetchRetirementData } from "./load";
 import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { budgetSummaries } from "./display";
-import { resolveTaxYear } from "./tax-year";
+import { resolveTaxYear } from "@/lib/pure/tax/resolve-tax-year";
 import { startingAccounts } from "./accounts";
-import { capContributions } from "./contributions";
+import { capContributions } from "@/lib/pure/contributions/cap-contributions";
 import { projectionJobs, workingYears } from "@/lib/pure/household/profiles";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
