@@ -24,12 +24,12 @@
       "count": 2
     }
   },
-  "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
+  "src/components/profiles/contribution/profile-detail-panel.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/use-inline-editor.ts": {
+  "src/components/profiles/contribution/use-inline-editor.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }
@@ -129,7 +129,7 @@
       "count": 3
     }
   },
-  "src/components/retirement/retirement-profile-tab.tsx": {
+  "src/components/profiles/retirement/retirement-profile-tab.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

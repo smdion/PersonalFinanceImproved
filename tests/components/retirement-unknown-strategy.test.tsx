@@ -125,7 +125,7 @@ async function renderTab(withdrawalStrategy: string) {
     ) as MockOutput<"projection.getProjectionMetadata">,
   );
   const { RetirementProfileTab } =
-    await import("@/components/retirement/retirement-profile-tab");
+    await import("@/components/profiles/retirement/retirement-profile-tab");
   return render(<RetirementProfileTab />);
 }
 

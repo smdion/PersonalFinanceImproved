@@ -26,7 +26,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   promptText: vi.fn(async () => null),
 }));
 
-import { SalaryProfileManager } from "@/components/budget/salary-profile-manager";
+import { SalaryProfileManager } from "@/components/profiles/salary/salary-profile-manager";
 
 type ProfileList = RouterOutputs["salaryProfile"]["list"];
 type ProfileDetail = NonNullable<RouterOutputs["salaryProfile"]["getById"]>;

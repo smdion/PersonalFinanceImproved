@@ -3,7 +3,7 @@
 import React from "react";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
-import { ContributionProfileCompare } from "@/components/budget/contribution-profile-compare";
+import { ContributionProfileCompare } from "@/components/profiles/contribution/contribution-profile-compare";
 import {
   AddContributionAccountPanel,
   ProfileDetailSlot,

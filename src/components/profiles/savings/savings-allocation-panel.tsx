@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { FormError } from "@/components/ui/form-error";
-import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { ProfileViewingBadge } from "../../budget/profile-viewing-badge";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { renderStoredTotal } from "./savings-allocation-totals";

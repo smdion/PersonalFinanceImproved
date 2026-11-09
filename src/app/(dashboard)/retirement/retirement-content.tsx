@@ -335,7 +335,7 @@ export function RetirementContent() {
 
           {/* Projection Assumptions moved to Budget page's Retirement
               Profile tab — see
-              src/components/retirement/retirement-profile-tab.tsx. */}
+              src/components/profiles/retirement/retirement-profile-tab.tsx. */}
         </>
       )}
       {/* Projection Health's card carries its own. */}

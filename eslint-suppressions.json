@@ -129,7 +129,7 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
+  "src/components/profiles/what-if/use-what-if-sandbox.ts": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -137,7 +137,7 @@
       "count": 2
     }
   },
-  "src/app/(dashboard)/budget/what-if-budget-step.tsx": {
+  "src/components/profiles/what-if/what-if-budget-step.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
     },
@@ -145,12 +145,12 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/budget/what-if-contributions-step.tsx": {
+  "src/components/profiles/what-if/what-if-contributions-step.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
     }
   },
-  "src/app/(dashboard)/budget/what-if-editors.tsx": {
+  "src/components/profiles/what-if/what-if-editors.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -164,17 +164,17 @@
       "count": 4
     }
   },
-  "src/app/(dashboard)/budget/what-if-make-real-panel.tsx": {
+  "src/components/profiles/what-if/what-if-make-real-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },
-  "src/app/(dashboard)/budget/what-if-pickers.tsx": {
+  "src/components/profiles/what-if/what-if-pickers.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/app/(dashboard)/budget/what-if-save-actions.tsx": {
+  "src/components/profiles/what-if/what-if-save-actions.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -182,12 +182,12 @@
       "count": 2
     }
   },
-  "src/app/(dashboard)/budget/what-if-step.tsx": {
+  "src/components/profiles/what-if/what-if-step.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
-  "src/app/(dashboard)/budget/what-if-tab.tsx": {
+  "src/components/profiles/what-if/what-if-tab.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -751,7 +751,7 @@
       "count": 3
     }
   },
-  "src/components/budget/contribution-profile-compare.tsx": {
+  "src/components/profiles/contribution/contribution-profile-compare.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -772,22 +772,22 @@
       "count": 1
     }
   },
-  "src/components/budget/salary-profile-create-panel.tsx": {
+  "src/components/profiles/salary/salary-profile-create-panel.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/components/budget/salary-profile-edit-rows.tsx": {
+  "src/components/profiles/salary/salary-profile-edit-rows.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/components/budget/salary-profile-entry.tsx": {
+  "src/components/profiles/salary/salary-profile-entry.tsx": {
     "ratchet/no-raw-input": {
       "count": 1
     }
   },
-  "src/components/budget/savings-allocation-panel.tsx": {
+  "src/components/profiles/savings/savings-allocation-panel.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -808,7 +808,7 @@
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/inline-account-cells.tsx": {
+  "src/components/profiles/contribution/inline-account-cells.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -819,7 +819,7 @@
       "count": 3
     }
   },
-  "src/components/contributions/profile-manager/inline-deduction-cells.tsx": {
+  "src/components/profiles/contribution/inline-deduction-cells.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -827,27 +827,27 @@
       "count": 2
     }
   },
-  "src/components/contributions/profile-manager/inline-match-cells.tsx": {
+  "src/components/profiles/contribution/inline-match-cells.tsx": {
     "ratchet/no-raw-input": {
       "count": 2
     }
   },
-  "src/components/contributions/profile-manager/inline-sections.tsx": {
+  "src/components/profiles/contribution/inline-sections.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/match-groups.ts": {
+  "src/components/profiles/contribution/match-groups.ts": {
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/new-profile-cells.tsx": {
+  "src/components/profiles/contribution/new-profile-cells.tsx": {
     "ratchet/no-raw-input": {
       "count": 5
     }
   },
-  "src/components/contributions/profile-manager/new-profile-sections.tsx": {
+  "src/components/profiles/contribution/new-profile-sections.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -855,22 +855,22 @@
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
+  "src/components/profiles/contribution/profile-detail-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     }
   },
-  "src/components/contributions/profile-manager/profile-detail-rows.tsx": {
+  "src/components/profiles/contribution/profile-detail-rows.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/profile-manager-parts.tsx": {
+  "src/components/profiles/contribution/profile-manager-parts.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
-  "src/components/contributions/profile-manager/use-inline-editor.ts": {
+  "src/components/profiles/contribution/use-inline-editor.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
@@ -2458,7 +2458,7 @@
       "count": 1
     }
   },
-  "src/components/retirement/retirement-profile-manager.tsx": {
+  "src/components/profiles/retirement/retirement-profile-manager.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -2469,7 +2469,7 @@
       "count": 1
     }
   },
-  "src/components/retirement/retirement-profile-tab.tsx": {
+  "src/components/profiles/retirement/retirement-profile-tab.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },

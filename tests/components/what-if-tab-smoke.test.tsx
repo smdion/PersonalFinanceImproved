@@ -69,7 +69,7 @@ vi.mock("@/lib/hooks/use-paycheck-person-views", async () => {
     },
   };
 });
-vi.mock("@/app/(dashboard)/budget/what-if-paycheck-summary", () => ({
+vi.mock("@/components/profiles/what-if/what-if-paycheck-summary", () => ({
   WhatIfPaycheckSummary: () => <div data-testid="paycheck-summary" />,
 }));
 type StubRowHandlers = {
@@ -91,7 +91,7 @@ vi.mock("@/components/budget", async (importOriginal) => ({
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { WhatIfTab } from "@/app/(dashboard)/budget/what-if-tab";
+import { WhatIfTab } from "@/components/profiles/what-if/what-if-tab";
 
 beforeEach(() => {
   resetTrpcMock();

@@ -24,7 +24,7 @@ import { type ContribAccountFormValues } from "@/components/paycheck/contrib-acc
 import {
   useBudgetDerivedData,
   type SavingsGoalEntry,
-} from "./use-budget-derived-data";
+} from "../../../app/(dashboard)/budget/use-budget-derived-data";
 import {
   type ContributionAddition,
   type DeductionAddition,

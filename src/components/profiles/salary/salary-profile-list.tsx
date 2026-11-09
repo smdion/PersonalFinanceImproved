@@ -10,7 +10,7 @@ import {
 
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
-import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { ProfileViewingBadge } from "../../budget/profile-viewing-badge";
 
 export type SalaryProfilePaneProps = {
   canEdit: boolean;

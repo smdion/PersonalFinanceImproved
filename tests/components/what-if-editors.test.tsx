@@ -11,7 +11,7 @@ import {
   WhatIfDeductionsEditor,
   type ContributionAddition,
   type DeductionAddition,
-} from "@/app/(dashboard)/budget/what-if-editors";
+} from "@/components/profiles/what-if/what-if-editors";
 import type { PaycheckPersonView } from "@/lib/hooks/use-paycheck-person-views";
 
 function view(
