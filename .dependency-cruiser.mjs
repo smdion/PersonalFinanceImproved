@@ -25,16 +25,16 @@ function serverPageFiles(dir = "src/app") {
   });
 }
 
-const SHAPE_FILES =
-  "(shapes/|(json-schemas|salary-entry-defaults|salary-entry-edit|profile-fields)\\.ts$)";
+const SHAPE_FILES = "shapes/";
 
 const LAYERS = {
-  foundation: "^src/lib/(config/|constants(\\.ts$|/)|utils/)",
+  // demo/ is the demo households' data; generated/ holds build-made constants.
+  foundation: "^src/lib/(config/|constants(\\.ts$|/)|utils/|demo/|generated/)",
   shapes: `^src/lib/db/${SHAPE_FILES}`,
   pure: "^src/lib/pure/",
   // The engine's public API is its index.ts, and types/index.ts for types.
   engine: "^src/lib/pure/engine/",
-  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|crypto-envelope|logger|rate-limit|env|error-reporting)\\.ts$)`,
+  infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|crypto-envelope|logger|rate-limit|env|error-reporting|client-address)\\.ts$)`,
   data: "^src/server/data/",
   services: "^src/server/services/",
   routers: "^src/server/routers/",
@@ -46,7 +46,7 @@ const LAYERS = {
   serverPages: serverPageFiles().map((f) => `^${escape(f)}$`),
   // Client components under app/ (every app file that isn't a server page
   // or an API route), components/, hooks, context and the tRPC client.
-  ui: "^src/(components/|app/|lib/(hooks|context)/|lib/trpc\\.ts$)",
+  ui: "^src/(components/|app/|lib/(hooks|context)/|lib/(trpc|privacy-text-guard)\\.ts$)",
   worker: "^src/workers/",
   scripts: "^(scripts/|db-migrate\\.ts$)",
 };
@@ -54,7 +54,7 @@ const LAYERS = {
 /** The src/ modules db-migrate.ts imports: esbuild bundles them into the
  *  image's migrator, which runs with no src/, env or Next. */
 const MIGRATOR_SRC =
-  "^src/lib/(db/((migrate/|backup/)?(reference-reconcile-core|demo-schema-marker|version-tables|backup-file|migration-converters|converter-rows|v0102-match-rate|v0102-match-value)|env-file)|utils/match-rate)\\.ts$";
+  "^src/lib/(db/(migrate/(reference-reconcile-core|demo-schema-marker|migration-converters|converter-rows|v0102-match-rate|v0102-match-value)|backup/(version-tables|backup-file)|env-file)|utils/match-rate)\\.ts$";
 
 const L = LAYERS;
 const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/components/|^src/app/`;
@@ -184,6 +184,17 @@ const config = {
       from: {
         path: "^src/server/",
         pathNot: [L.data, L.services, L.routers, L.serverCore, L.serverAuth],
+      },
+      to: {},
+    },
+    {
+      name: "lib-files-in-a-layer",
+      severity: "error",
+      comment:
+        "A src/lib/ file outside every layer is checked by no direction rule: add its folder to LAYERS.",
+      from: {
+        path: "^src/lib/",
+        pathNot: [L.foundation, L.shapes, L.pure, L.infra, L.ui],
       },
       to: {},
     },

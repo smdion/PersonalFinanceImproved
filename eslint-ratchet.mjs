@@ -160,7 +160,7 @@ function ownerIdIn(text) {
 }
 // The backup ladder and the migration converters are keyed by release.
 const RELEASE_KEYED_FILE =
-  /src\/lib\/db\/(?:(?:backup|migrate)\/)?(?:backup-transforms|v0810-profile-sets|migration-converters)\.ts$/;
+  /src\/lib\/db\/(?:backup\/backup-transforms|migrate\/(?:v0810-profile-sets|migration-converters))\.ts$/;
 const MAX_COMMENT_LINES = 3;
 
 /** Text lines of a comment, without the delimiter-only lines of a block. */
