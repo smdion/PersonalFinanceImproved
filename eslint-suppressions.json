@@ -5921,11 +5921,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/types/decumulation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 20
-    }
-  },
   "src/lib/pure/engine/types/projection-result.ts": {
     "ratchet/max-comment-lines": {
       "count": 31

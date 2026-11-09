@@ -304,7 +304,7 @@
     "src/lib/pure/engine/tax-estimation.ts": 404,
     "src/lib/pure/engine/types/accumulation.ts": 121,
     "src/lib/pure/engine/types/contribution-spec.ts": 92,
-    "src/lib/pure/engine/types/decumulation.ts": 396,
+    "src/lib/pure/engine/types/decumulation.ts": 238,
     "src/lib/pure/engine/types/projection-result.ts": 718,
     "src/lib/pure/engine/types/routing.ts": 136,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 484,
