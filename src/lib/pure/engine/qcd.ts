@@ -42,7 +42,7 @@ interface QcdPersonInput {
    *  accounts — the only portion eligible for QCD.
    *
    *  Timing note: the caller reads this balance
-   *  live from `indBal` at QCD-computation time, before this year's
+   *  live from `indBalance` at QCD-computation time, before this year's
    *  growth runs (QCD runs first) — time-equivalent to the RMD
    *  snapshot's own timing for a fresh projection year. */
   iraTraditionalBalance: number;

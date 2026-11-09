@@ -71,7 +71,7 @@ export function runPreYearSetup(
   // Check for contribution profile switch at this year (sticky-forward).
   // If multiple switches share the same year, last one wins (sorted ascending).
   // Note: a switch at year 0 replaces baseYearContributions used by the
-  // useRealContribs path -- the year-0 pro-rated amounts will reflect the
+  // useRealContributions path -- the year-0 pro-rated amounts will reflect the
   // switched profile's base amounts, not actual paycheck data.
   for (const ps of sortedProfileSwitches) {
     if (ps.year > year) break;

@@ -83,7 +83,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // `targetWithdrawal` (advisor-corrected — NOT `totalWithdrawal`) is the
   // right field: it's the tax-grossed-up amount the strategy actually
   // determined it needs to withdraw to cover its spending need
-  // (`decumulation-year.ts`'s `taxEst.targetWithdrawal`, computed BEFORE
+  // (`decumulation-year.ts`'s `taxEstimate.targetWithdrawal`, computed BEFORE
   // statutory RMD enforcement can force `totalWithdrawal` above it).
   // `totalWithdrawal` can be materially larger than what the household is
   // actually spending in an RMD-active year — the excess over need gets

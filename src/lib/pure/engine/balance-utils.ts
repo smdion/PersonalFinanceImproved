@@ -105,10 +105,10 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
  * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
  * of individual-account penalty-exposed amounts, which can't exceed the
  * category total they're within, but flooring keeps this safe against any
- * future drift between `acctBal` and the sum of individual accounts (the
+ * future drift between `accountBalance` and the sum of individual accounts (the
  * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
  * already watches for). Locked design: the penalty-free balance is derived
- * by SUBTRACTION from the real `acctBal`, never by summing `indBal` (the
+ * by SUBTRACTION from the real `accountBalance`, never by summing `indBalance` (the
  * other direction breaks byte-identity).
  */
 export function subtractPenaltyExposed(
