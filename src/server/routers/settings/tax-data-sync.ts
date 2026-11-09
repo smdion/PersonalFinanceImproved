@@ -113,6 +113,10 @@ export const taxDataSyncProcedures = {
         await setTaxDataSyncEnabled(ctx.db, input.enabled);
       }),
 
+    /**
+     * Check for a community update now, even with the setting off (the operator and demo switches
+     * still hold); at most once a minute. Returns the check's result.
+     */
     checkNow: adminProcedure.mutation(async ({ ctx }) => {
       if (Date.now() - lastManualCheck < 60_000)
         throw new TRPCError({
@@ -158,6 +162,7 @@ export const taxDataSyncProcedures = {
         return { changed: changes.length };
       }),
 
+    /** Dismiss the waiting update of that version, recording who decided. */
     dismiss: adminProcedure
       .input(z.object({ dataVersion: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

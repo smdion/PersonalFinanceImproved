@@ -27,10 +27,17 @@ async function requireAdminNeeded(db: DbOrTx): Promise<void> {
 }
 
 export const onboardingProcedures = {
+  /**
+   * Whether onboarding is complete: the wizard finished, or a person exists.
+   */
   getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
     return { complete: await checkOnboardingComplete(ctx.db) };
   }),
 
+  /**
+   * Mark onboarding done; retirement settings saved during it become the first Retirement
+   * profile, "Current Retirement", made active.
+   */
   completeOnboarding: adminProcedure.mutation(async ({ ctx }) => {
     await upsertSetting(ctx.db, "onboarding_completed", true);
     // Settings saved before onboarding finished become the first profile.
