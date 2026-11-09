@@ -28,7 +28,7 @@ import {
 } from "@/lib/config/account-types";
 import { categoryWithdrawalItems } from "./projection-table-decum-row.model";
 import { ownerAccountLabel } from "./account-notes";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 
 /** One account category's withdrawal tooltip: draws, lump sums, RMD excess, QCD. */
 export function categoryWithdrawalTooltip(

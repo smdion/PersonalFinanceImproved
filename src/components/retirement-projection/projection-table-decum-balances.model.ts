@@ -19,7 +19,7 @@ import { bucketSlotMap, slotBucketWithdrawal } from "./bucket-slots";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { isAfterTaxType, isPreTaxType } from "@/lib/config/account-types";
 import { ownerAccountLabel } from "./account-notes";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import { totalWithdrawalItems } from "./projection-table-decum-row.model";
 
 /** The withdrawal total's tooltip: draws, Social Security, RMD, budget. */

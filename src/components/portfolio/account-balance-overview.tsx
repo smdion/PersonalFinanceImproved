@@ -13,8 +13,11 @@ import {
   personDisplayName,
 } from "@/lib/utils/format";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
-import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
-import { taxTypeLabel, accountColor } from "@/lib/utils/colors";
+import {
+  COMPOSITION_BUCKET_LABELS,
+  taxTypeLabel,
+} from "@/lib/config/display-labels";
+import { accountColor } from "@/lib/utils/colors";
 import {
   ACCOUNT_TYPE_CONFIG,
   type AccountCategory,

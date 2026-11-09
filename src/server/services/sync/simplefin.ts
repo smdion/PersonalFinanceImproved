@@ -4,7 +4,7 @@ import * as schema from "@/lib/db/schema";
 import { loadLatestSubAccounts } from "@/server/data/sub-accounts";
 import { suggestLinks } from "@/lib/pure/sync/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import { accountDisplayName } from "@/lib/utils/format";
 import type { Db } from "@/lib/db";
 import { asc } from "drizzle-orm";

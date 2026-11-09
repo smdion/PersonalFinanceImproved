@@ -3,7 +3,7 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { DeductionRowData, CreateDeductionData } from "./types";
 import {
   DEDUCTION_PRESETS,

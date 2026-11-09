@@ -5,11 +5,8 @@ import {
 } from "@/lib/pure/retirement/plan-outcome";
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import {
-  accountColor,
-  taxTypeTextColor,
-  taxTypeLabel,
-} from "@/lib/utils/colors";
+import { accountColor, taxTypeTextColor } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import {
   formatCurrency,
   formatPercent,

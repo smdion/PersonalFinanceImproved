@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { LocationPie } from "@/components/charts/location-pie";
-import { taxTypeLabel, TAX_PIE_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { TAX_PIE_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 
 export function TaxLocationPie({
   byTaxType,

@@ -3,12 +3,12 @@
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
 import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import {
-  taxTypeLabel,
   categoryChartHex,
   TAX_PIE_COLORS,
   CHART_COLORS,
   chartLinePalette,
 } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import { useTheme } from "@/lib/hooks/use-theme";
 import {
   formatCurrency,

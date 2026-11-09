@@ -1,13 +1,13 @@
 "use client";
 
 /** Tax Location YTD: side-by-side Retirement and Portfolio tax-type tables.
- *  Labels come from taxTypeLabel() (lib/utils/colors.ts), the source
+ *  Labels come from taxTypeLabel() (lib/config/display-labels.ts), the source
  *  tax-location-pie.tsx uses, so both show the same text. */
 
 import { Card } from "@/components/ui/card";
 import { formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { TaxLocationBreakdown } from "./types";
 
 type SpreadsheetTaxLocationProps = {

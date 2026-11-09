@@ -4,7 +4,8 @@
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
+import { accountTextColor } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import { formatPercent } from "@/lib/utils/format";
 import {
   getAccountTypeConfig,

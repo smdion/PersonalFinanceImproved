@@ -4,8 +4,7 @@
 
 import React, { useId, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
-import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
+import { TAX_TYPE_LABELS, taxTypeLabel } from "@/lib/config/display-labels";
 import { LabelOptions } from "@/components/ui/label-options";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import type { PortfolioSub } from "./contribution-accounts-types";

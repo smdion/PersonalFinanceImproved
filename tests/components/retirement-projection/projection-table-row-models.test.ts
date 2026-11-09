@@ -14,7 +14,7 @@ import type {
   ProjectionResult,
 } from "@/lib/pure/engine/types";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
 import type { TooltipData } from "@/components/retirement-projection/types";
 import {

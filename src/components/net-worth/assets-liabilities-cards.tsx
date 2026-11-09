@@ -6,7 +6,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SyncBadge } from "@/components/ui/sync-badge";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 
 export function AssetsLiabilitiesCards({

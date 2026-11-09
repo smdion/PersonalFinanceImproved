@@ -10,12 +10,12 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_BROKERAGE,
+  taxTypeLabel,
 } from "@/lib/config/display-labels";
 import {
   accountColor,
   accountMatchColor,
   accountTextColor,
-  taxTypeLabel,
 } from "@/lib/utils/colors";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";

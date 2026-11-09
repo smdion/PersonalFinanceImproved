@@ -3,11 +3,8 @@ import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BalanceCell } from "./balance-cell";
-import {
-  accountTextColor,
-  taxTypeTextColor,
-  taxTypeLabel,
-} from "@/lib/utils/colors";
+import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import {
   formatCurrency,
   formatPercent,

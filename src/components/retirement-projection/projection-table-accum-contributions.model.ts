@@ -18,7 +18,7 @@ import {
   specFrac,
 } from "./projection-columns";
 import { safeDivide } from "@/lib/utils/math";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 
 /** One account category's contribution tooltip, per contributing account. */
 export function categoryContributionTooltip(

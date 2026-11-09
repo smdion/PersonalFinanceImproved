@@ -77,6 +77,11 @@ export const TAX_TYPE_LABELS: Record<string, string> = {
   afterTax: "After-tax",
 };
 
+/** Display label for tax treatment (e.g. `taxFree` → `Tax-Free`) */
+export function taxTypeLabel(taxType: string): string {
+  return TAX_TYPE_LABELS[taxType] ?? taxType;
+}
+
 export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   none: "No match",
   percent_of_contribution: "% of contribution",
