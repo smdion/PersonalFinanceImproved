@@ -46,6 +46,7 @@ import {
   type YearRange,
 } from "@/components/performance/year-range-picker";
 import { FilteredSummary } from "@/components/performance/filtered-summary";
+import { selectedAccountIdsFrom } from "@/lib/pure/investments/selected-account-ids";
 import { FilteredAccountTable } from "@/components/performance/filtered-account-table";
 import type {
   AnnualRow,
@@ -229,18 +230,10 @@ export function PerformanceContent() {
   // the category rollups count, so excluding them would break whole-category
   // matches for history. "Show inactive" only affects the picker list.
   const allAccountIds = new Set(typedMasterAccounts.map((m) => m.id));
-  // "" = never chosen (default to all); "none" = explicitly empty selection.
-  const selectedAccountIds =
-    selectedAccountIdsStr === "none"
-      ? new Set<number>()
-      : typeof selectedAccountIdsStr === "string" && selectedAccountIdsStr
-        ? new Set(
-            selectedAccountIdsStr
-              .split(",")
-              .map(Number)
-              .filter((n) => !Number.isNaN(n)),
-          )
-        : allAccountIds;
+  const selectedAccountIds = selectedAccountIdsFrom(
+    selectedAccountIdsStr,
+    allAccountIds,
+  );
   const setSelectedAccountIds = (ids: Set<number>) => {
     const isDefault =
       ids.size === allAccountIds.size &&

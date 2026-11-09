@@ -30,7 +30,7 @@
     "src/app/(dashboard)/house/house-content.tsx": 743,
     "src/app/(dashboard)/networth/networth-content.tsx": 418,
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": 655,
-    "src/app/(dashboard)/performance/performance-content.tsx": 849,
+    "src/app/(dashboard)/performance/performance-content.tsx": 842,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 155,
     "src/app/(dashboard)/portfolio/portfolio-panels.tsx": 87,
     "src/app/(dashboard)/portfolio/portfolio-sections.tsx": 125,
@@ -479,7 +479,7 @@
       "PaycheckContent.map()": 308
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
-      "PerformanceContent": 788
+      "PerformanceContent": 780
     },
     "src/app/(dashboard)/recommendations/recommendations-content.tsx": {
       "RecommendationsContent": 185
