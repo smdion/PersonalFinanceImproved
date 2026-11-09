@@ -1,13 +1,7 @@
 /**
- * The bridge to penalty-free retirement money: the first retirement years,
- * while some retirement money is still locked by early-withdrawal rules
- * (59½, Roth ordering, Rule of 55 when it doesn't apply). Read entirely from
- * the engine's own projection — which money is locked, what was spent and
- * whether it fell short — so it never re-decides eligibility or re-prices a
- * withdrawal (RULES §Single Computation Path).
- *
- * The projection is the fixed-return run: a bad market in these years is
- * exactly how a bridge fails, so callers label it "at assumed returns".
+ * The bridge to penalty-free retirement money: the first retirement years while some is locked
+ * (59½, Roth ordering, Rule of 55), read entirely from the engine's fixed-return projection
+ * (RULES §Single Computation Path); callers label it "at assumed returns".
  */
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import {

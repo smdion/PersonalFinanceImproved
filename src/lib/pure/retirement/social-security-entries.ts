@@ -1,19 +1,7 @@
 /**
- * Builds the engine's per-person `socialSecurityEntries` array from a
- * household's `perPersonSettings`. ONE place for the PIA-adjustment + MFJ
- * spousal-benefit + "worker has filed" logic, so `build-engine-payload.ts`
- * (the real payload), the strategy optimizer's SS-start-age lever
- * (`projection/strategy.ts`), and the claiming-age sweep
- * (`projection/social-security.ts`) can't drift — the sweep in particular
- * needs the WHOLE household rebuilt per candidate age, not just the swept
- * person's own entry, so a spouse's top-up responds correctly.
- *
- * Only meaningful for genuinely multi-person households — a single-person
- * household routes Social Security through the scalar `socialSecurityAnnual`
- * field instead (populating `socialSecurityEntries` there would switch on
- * per-person RMD tracking the engine reserves for multi-person households;
- * see build-engine-payload.ts's own comment). Callers apply the
- * `length > 1` gate; this helper just does the map.
+ * The engine's per-person `socialSecurityEntries` from `perPersonSettings`: the one place for PIA
+ * adjustment, MFJ spousal benefit and "worker has filed", rebuilt per sweep age for the whole
+ * household. Multi-person households only; callers apply the `length > 1` gate.
  */
 import {
   computeAdjustedBenefit,
@@ -51,31 +39,17 @@ type SsEntry = {
   birthYear: number;
 };
 
-/** Per-person what-if override, keyed by `personId`. Used by the claiming-
- *  age sweep to ask "what if THIS person's own PIA/claiming age were X" —
- *  the caller-supplied `pia` is a real what-if axis the client already has
- *  from `perPersonSettings`, distinct from what's persisted. Both fields
- *  are independently optional; an override with only `startAge` keeps the
- *  person's stored PIA, and vice versa. */
+/** Per-person what-if override keyed by `personId` (claiming-age sweep). Each field is optional;
+ *  an unset one keeps the person's stored value. */
 export type SsEntryOverride = {
   pia?: number;
   startAge?: number;
 };
 
 /**
- * @param people          the household's per-person settings
- * @param filingStatus    used only to decide spouses: a two-person return
- *                        and exactly two people. Single/HOH/3+ never do.
- * @param ssStartAgeDelta shift every person's claiming age by this many
- *                        whole years (clamped to [62, 70]). 0 = use each
- *                        person's stored `ssStartAge` as-is. The strategy
- *                        optimizer's "delay SS" lever passes +N; the real
- *                        payload passes 0. Ignored for a person who has a
- *                        `startAge` override.
- * @param overridesByPerson per-person what-if overrides (claiming-age
- *                        sweep). Absent for the real payload and the
- *                        strategy lever, both of which use every person's
- *                        stored data unmodified (aside from the delta).
+ * @param filingStatus    spouses only for a two-person return with exactly two people
+ * @param ssStartAgeDelta whole years added to each stored claiming age, clamped to [62, 70];
+ *                        ignored for a person with a `startAge` override
  */
 export function buildSocialSecurityEntries(
   people: ReadonlyArray<SsPerson>,
@@ -121,18 +95,9 @@ export function buildSocialSecurityEntries(
         ? computeAdjustedBenefit(ownPia, ps.birthYear, startAge * 12)
         : toNumber(ps.socialSecurityMonthly) * 12;
 
-    // Spousal benefit (MFJ + 2 people ⇒ spouses — the data model has no
-    // dedicated spouse-link field, so filing status stands in for it).
-    // Requires the OTHER person to have a PIA on record AND to have
-    // already filed by the time
-    // this person claims — SSA pays no spousal benefit before the worker
-    // files. The engine pays each person at their OWN age, so "has filed"
-    // must compare calendar years each person actually claims
-    // (`birthYear + startAge`), not the claiming ages themselves — spouses
-    // with different birth years reach the same age in different years.
-    // `computeSpousalBenefit`'s own `max()` / excess math means this is
-    // safe to apply symmetrically: the genuinely higher earner just gets
-    // their own benefit back.
+    // Spousal benefit (MFJ + 2 people stand in for a spouse link): needs the other person's PIA
+    // and their claim year (`birthYear + startAge`) no later than this one's. Symmetric:
+    // computeSpousalBenefit's max() gives the higher earner their own benefit back.
     if (isMfjCouple) {
       const other = people[i === 0 ? 1 : 0]!;
       const otherPia = ownPiaFor(other);

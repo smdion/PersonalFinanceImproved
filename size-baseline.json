@@ -334,7 +334,7 @@
     "src/lib/pure/paycheck/person-paycheck.ts": 187,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
     "src/lib/pure/paycheck/year-schedule.ts": 328,
-    "src/lib/pure/retirement/relocation.ts": 491,
+    "src/lib/pure/retirement/relocation.ts": 469,
     "src/lib/pure/simulation/inflation-risk.ts": 26,
     "src/lib/pure/simulation/monte-carlo.ts": 328,
     "src/lib/pure/simulation/stress-test-run.ts": 121,
@@ -990,7 +990,7 @@
       "calculatePaycheck": 265
     },
     "src/lib/pure/retirement/relocation.ts": {
-      "calculateRelocation": 322
+      "calculateRelocation": 316
     },
     "src/lib/pure/savings/brokerage-goals.ts": {
       "calculateBrokerageGoals": 212

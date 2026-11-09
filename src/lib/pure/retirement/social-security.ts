@@ -1,19 +1,7 @@
 /**
- * Social Security claiming-age calculator — spousal "greater of" logic and
- * a claiming-age sweep.
- *
- * Pure calculator — no DB, no tRPC, no React. Sits *above* the engine, same
- * architectural position as `withdrawal-bracket-optimizer.ts` and
- * `coast-fire.ts`: never imports engine internals, only calls
- * `calculateProjection()` as a black box and compares results.
- *
- * PIA (the benefit at Full Retirement Age) is a direct caller-supplied
- * input in this app, not derived from an earnings history — see
- * .scratch/docs/plans/SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1.
- * The early/delayed adjustment math itself lives in
- * `lib/config/social-security.ts` (fixed by law); this file is the layer
- * that applies it to a household's actual `ProjectionInput` and searches
- * across claiming ages.
+ * Social Security claiming-age calculator: spousal "greater of" logic and a claiming-age sweep
+ * calling `calculateProjection()` as a black box. PIA is a caller-supplied input; the
+ * early/delayed adjustment math (fixed by law) lives in `lib/config/social-security.ts`.
  */
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "../engine";
@@ -28,11 +16,8 @@ import {
 } from "../../config/social-security";
 
 /**
- * A worker's own adjusted annual Social Security benefit for claiming at
- * `claimingAgeMonths` instead of FRA. `pia` is the annual benefit at FRA
- * (SSA's PIA is normally quoted monthly; this app's engine inputs are
- * annual, so pass PIA already annualized — same convention as the existing
- * `socialSecurityEntries[].annualAmount` field).
+ * A worker's own adjusted annual benefit for claiming at `claimingAgeMonths` instead of FRA.
+ * `pia` is the annual benefit at FRA (SSA quotes it monthly; the engine is annual).
  */
 export function computeAdjustedBenefit(
   pia: number,
@@ -44,29 +29,9 @@ export function computeAdjustedBenefit(
 }
 
 /**
- * The claiming spouse's actual annual Social Security benefit, taking the
- * spousal benefit into account. A person receives their own benefit plus,
- * if entitled, a spousal top-up — never two full benefits.
- *
- * `workerPia` is the OTHER person's PIA — the only thing about the worker
- * that matters here (annual, as everywhere in this module). The spousal
- * reduction (25/36 of 1% per month early) is counted against the CLAIMING
- * SPOUSE's own Full Retirement Age, per SSA (POMS RS 00202.001 /
- * Pub 05-10035) — NOT the worker's FRA — so `spouseBirthYear` is the
- * claiming spouse's and the worker's birth year is not a parameter.
- *
- * With `spouseOwnPia` (the claiming spouse's OWN annual PIA — pass it
- * whenever the claiming spouse has opted into PIA), this uses SSA's exact
- * formula: `reducedOwn + reducedExcess`, where `reducedOwn` is the own PIA
- * cut by the OWN-benefit reduction schedule and `reducedExcess` is
- * `max(0, 0.5·workerPia − spouseOwnPia)` cut by the SPOUSAL reduction
- * schedule. The two schedules differ, so for an early claimer this is
- * strictly ≥ the `max(own, spousal)` shortcut (identical at/after FRA).
- *
- * Without `spouseOwnPia` (a claiming spouse still on the flat
- * pre-PIA `socialSecurityMonthly` model — no own-benefit-reduction
- * concept), it falls back to `max(ownAdjustedBenefit, reduced spousal
- * amount)`, which can only ever understate, never overstate.
+ * The claiming spouse's annual benefit: own plus any spousal top-up, never two. The spousal
+ * reduction runs on the CLAIMING spouse's FRA (POMS RS 00202.001). With `spouseOwnPia`, SSA's
+ * reducedOwn + reducedExcess; without, max(own, reduced spousal), which can only understate.
  */
 export function computeSpousalBenefit(
   ownAdjustedBenefit: number,
@@ -104,10 +69,8 @@ type ClaimingAgeSweepCandidate = {
   adjustedAnnualBenefit: number;
   /** Total net worth (all tax buckets) at end of plan for this candidate. */
   finalNetWorth: number;
-  /** The plan fails for this candidate (assessPlan: retirement money runs
-   *  out or a year goes unfunded) — a hard exclusion, never ranked in
-   *  regardless of `finalNetWorth`, same convention as
-   *  `withdrawal-bracket-optimizer.ts`'s `fails`. */
+  /** The plan fails for this candidate (assessPlan): a hard exclusion, never ranked in on
+   *  `finalNetWorth`. */
   fails: boolean;
 };
 
@@ -115,41 +78,25 @@ type ClaimingAgeSweepResult = {
   /** The claiming age that scores best among the candidates. `null` when
    *  every candidate fails (nothing safe to recommend). */
   recommendedAge: number | null;
-  /** Sorted by RANK (best first, via `compareCandidates` — depletion
-   *  exclusion, then descending final net worth), NOT by claiming age. A
-   *  caller building an age-ordered comparison table must sort by
+  /** Sorted by rank (`compareCandidates`), not claiming age; an age-ordered table must sort by
    *  `claimingAge` itself. */
   candidates: ClaimingAgeSweepCandidate[];
 };
 
 type ClaimingAgeSweepOptions = {
-  /** Base projection input. Only consulted by the DEFAULT candidate-input
-   *  builder (see `buildCandidateInput`) — a caller that passes its own
-   *  `buildCandidateInput` is free to derive candidates from richer data
-   *  (e.g. the whole household's per-person settings) than this alone. */
+  /** Base projection input, read only by the default candidate builder. */
   input: ProjectionInput;
-  /** Which person's claiming age to sweep. Passed through to the default
-   *  builder and to `computeAdjustedBenefit` for the displayed
-   *  `adjustedAnnualBenefit` — not otherwise used when `buildCandidateInput`
-   *  is supplied. */
+  /** Whose claiming age to sweep, for the default builder and the displayed
+   *  `adjustedAnnualBenefit`. */
   personId: number;
   /** This person's PIA (annual benefit at FRA). */
   pia: number;
   birthYear: number;
   /** Claiming ages to test, in whole years. Defaults to every age 62-70. */
   ages?: number[];
-  /** Overrides how each candidate's `ProjectionInput` is built from a
-   *  claiming age. REQUIRED for a multi-person household: the default
-   *  builder only patches this person's own `socialSecurityEntries` entry
-   *  in place and leaves every other entry (e.g. a spouse's spousal
-   *  top-up, which depends on THIS person's claiming age) frozen at its
-   *  base value — wrong for any household where spousal math is live.
-   *  This module is pure (no server imports), so it can't call
-   *  `buildSocialSecurityEntries` itself; the caller (the
-   *  `sweepSocialSecurityClaimingAges` router, which has the household's
-   *  full `perPersonSettings`) supplies it instead. Not consulted for a
-   *  single-person household — the default scalar-override path is
-   *  already correct there (see `buildCandidateInput`). */
+  /** Builds each candidate's input from a claiming age. Required for a multi-person household
+   *  (the default builder would freeze a spouse's top-up); the router supplies it from the
+   *  household's full `perPersonSettings`. */
   buildCandidateInput?: (
     claimingAge: number,
     adjustedAnnualBenefit: number,
@@ -169,11 +116,8 @@ function defaultCandidateAges(): number[] {
 }
 
 /**
- * Default candidate-input builder — only correct for a single-person
- * household (no `socialSecurityEntries`). A multi-person household MUST
- * supply its own `buildCandidateInput` (see `ClaimingAgeSweepOptions`);
- * this throws rather than silently freezing a spouse's entry if one
- * wasn't provided.
+ * Default candidate builder, correct only for a single-person household (no
+ * `socialSecurityEntries`); throws for a multi-person one rather than freeze a spouse's entry.
  */
 function buildDefaultCandidateInput(
   input: ProjectionInput,
@@ -185,12 +129,8 @@ function buildDefaultCandidateInput(
       "sweepClaimingAges: a multi-person household (socialSecurityEntries present) requires an explicit buildCandidateInput — the default builder only patches one entry and would leave a spouse's spousal top-up frozen.",
     );
   }
-  // Single-person household: mirror build-engine-payload.ts's own scalar
-  // path exactly. Do NOT synthesize a socialSecurityEntries array here —
-  // that would activate per-person RMD tracking (rmdStartAgeByPerson) that
-  // a real single-person household's projection never uses, producing a
-  // candidate whose RMD behavior doesn't match what production would
-  // actually compute for this household.
+  // Single person: the scalar path, as build-engine-payload.ts does. A synthesized
+  // socialSecurityEntries array would switch on per-person RMD tracking production never uses.
   return {
     ...input,
     socialSecurityAnnual: adjustedAnnualBenefit,
@@ -206,12 +146,8 @@ function finalNetWorth(result: ReturnType<typeof calculateProjection>): number {
 }
 
 /**
- * Lexicographic rank: `fails` first (a candidate whose portfolio runs
- * out is a hard exclusion, never ranked in on `finalNetWorth` alone — same
- * convention as `withdrawal-bracket-optimizer.ts`'s `compareCandidates`),
- * then `finalNetWorth` descending (higher is better — unlike the bracket
- * optimizer's cost-minimization framing, this is a benefit-maximization
- * framing, so the sort direction is intentionally reversed).
+ * Rank: `fails` first (a hard exclusion), then `finalNetWorth` descending (benefit-maximizing,
+ * the reverse of the bracket optimizer's cost sort).
  */
 function compareCandidates(
   a: ClaimingAgeSweepCandidate,
@@ -222,13 +158,8 @@ function compareCandidates(
 }
 
 /**
- * Search claiming ages 62-70 (or a caller-supplied subset) for the one
- * person's Social Security claiming age that maximizes household net worth
- * at end of plan, while excluding any candidate that depletes the
- * portfolio.
- *
- * Cost: one `calculateProjection` call per candidate age (9 by default),
- * same order of magnitude as `optimizeRothBracketTarget`'s search.
+ * Sweeps one person's claiming age over 62-70 (or a given subset) for the highest end-of-plan
+ * household net worth, excluding failing candidates. One `calculateProjection` per age.
  */
 export function sweepClaimingAges(
   options: ClaimingAgeSweepOptions,

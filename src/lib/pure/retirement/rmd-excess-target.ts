@@ -1,12 +1,7 @@
 /**
- * Where reinvested RMD money goes in the projection (Retirement settings →
- * "Unspent required withdrawals"). Retirement money stays retirement money:
- * the household's chosen Retirement brokerage, else every Retirement
- * brokerage by balance (the engine's default) — never a Portfolio account.
- * A household with no Retirement brokerage gets a projection-only one,
- * whatever the RMD setting: it is also where contribution overflow lands.
- * Parent category comes from the performance account (canonical), falling
- * back to the snapshot row's copy for entries without one.
+ * Where reinvested RMD money goes: the chosen Retirement brokerage, else every Retirement brokerage
+ * by balance, never Portfolio; with none, a projection-only one (also for contribution overflow).
+ * Parent category comes from the performance account, else the snapshot row's copy.
  */
 import {
   isRetirementParent,

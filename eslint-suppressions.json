@@ -5937,17 +5937,9 @@
       "count": 2
     }
   },
-  "src/lib/pure/retirement/plan-pace.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/retirement/relocation.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-abbreviation": {
       "count": 1
@@ -5960,54 +5952,21 @@
     }
   },
   "src/lib/pure/retirement/retirement-bridge.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 9
     }
   },
   "src/lib/pure/retirement/rmd-excess-target.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 4
     }
   },
-  "src/lib/pure/retirement/social-security-entries.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/retirement/social-security.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/retirement/strategy-spending.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/retirement/strategy-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
   },
   "src/lib/pure/retirement/withdrawal-bracket-optimizer.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }

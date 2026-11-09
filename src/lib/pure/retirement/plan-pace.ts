@@ -1,10 +1,7 @@
 /**
- * Where the plan expected the money to be today: the last finalized
- * year's ending balance, grown at the plan's return for the part of this
- * year gone by, plus the contributions the plan set for that part (they
- * arrive through the period, so on average they've grown for half of it).
- * A projection starts from today's balances, so it can't answer this
- * itself; a finalized year is a starting point it can't move.
+ * Where the plan expected the money to be today: the last finalized year's ending balance grown
+ * at the plan's return for the year so far, plus that part's planned contributions (half-grown on
+ * average). A projection starts from today's balances, so it can't answer this.
  */
 import { MS_PER_DAY } from "@/lib/constants";
 

@@ -1,10 +1,8 @@
 import { safeDivide } from "@/lib/utils/math";
 
 /**
- * A strategy's summary figures for the comparison table. Each year is put in
- * the display's dollars by that year's own deflator before it's averaged or
- * compared: a 40-year-out Legacy balance deflated from the retirement year
- * reads about twice what it's worth today.
+ * A strategy's summary figures for the comparison table. Each year is put in display dollars by
+ * its own deflator before averaging or comparing (one year's deflator misstates far-out years).
  */
 type StrategyYear = {
   year: number;
