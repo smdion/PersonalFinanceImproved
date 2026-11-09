@@ -55,10 +55,8 @@ export function PreviewPanel({
 
   const allApiCats = apiCategories;
 
-  // Cross-section linking helper: BudgetSection lets the user link an
-  // unmatched API category to either a budget item or a sinking-fund goal.
-  // The savings path goes through this callback so BudgetSection does not
-  // need a direct handle to `savingsMutations`.
+  // BudgetSection can link an unmatched API category to a sinking-fund goal;
+  // that path goes through this callback, not `savingsMutations` directly.
   const handleLinkSavingsFromBudget = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);
     if (!cat) return;

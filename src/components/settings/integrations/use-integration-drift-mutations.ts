@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Mutations for the drift-banner + profile header region of the integrations
- * preview panel. Covers bulk name-drift reconciliation and the
- * profile/column selectors that live at the very top of the panel.
- *
- * Isolated into its own hook so that a drift-mutation's pending flip does
- * not cause re-renders in the budget/savings/contrib/portfolio sections.
+ * Mutations for the preview panel header: bulk name-drift reconciliation and the profile/column
+ * selectors. A separate hook so a pending flip doesn't re-render other sections.
  */
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";

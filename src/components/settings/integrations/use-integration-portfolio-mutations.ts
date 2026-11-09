@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Mutations for the portfolio → tracking-account-mapping section of the
- * integrations preview panel. Covers bulk mapping updates and asset
- * creation from unmapped remote tracking accounts.
- *
- * Isolated into its own hook so that a portfolio mutation's pending flip
- * does not cause re-renders in the budget/savings/contrib sections.
+ * Tracking-account-mapping mutations (bulk mapping updates, assets from unmapped remote accounts).
+ * A separate hook so a pending flip doesn't re-render other sections.
  */
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";

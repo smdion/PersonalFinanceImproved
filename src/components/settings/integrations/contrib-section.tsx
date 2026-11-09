@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Non-payroll contribution-account-linking section of the integrations
- * preview panel. Lets the user tie a Ledgr budget item (e.g. "401k
- * contribution") to a contribution account so the push-sync flow knows
- * which account the monthly amount should land in.
- *
- * Section is only rendered when there is at least one contribution
- * account and at least one linked or unlinked item to show.
+ * Integrations preview section linking a Ledgr budget item to a non-payroll contribution account,
+ * so push-sync knows where the monthly amount lands. Renders only when there is something to show.
  */
 import type { PreviewData } from "../integrations-types";
 import { useIntegrationContributionAccountMutations } from "./use-integration-contribution-account-mutations";

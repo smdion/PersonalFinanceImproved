@@ -29,11 +29,8 @@ export const STATUS_STYLES = {
     text: "text-faint",
     label: "No match",
   },
-  // A stored id that no longer resolves to any current API category — e.g.
-  // the household's budget was rebuilt/re-imported upstream, regenerating
-  // every category's id. Distinct from "unmatched" (never linked) so a
-  // household can tell "needs a first link" apart from "was linked, broke
-  // silently".
+  // A stored id that matches no current API category (e.g. the budget was
+  // re-imported upstream). Distinct from "unmatched", which was never linked.
   orphaned: {
     bg: "bg-red-50",
     text: "text-red-700",

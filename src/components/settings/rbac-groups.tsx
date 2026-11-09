@@ -178,11 +178,8 @@ export function RbacGroupsSettings() {
             <div key={p.permission} className="flex items-center gap-3">
               <label className="text-secondary w-32 shrink-0 text-sm font-medium capitalize">
                 {
-                  // Display-only rename: the persisted permission key stays
-                  // "scenario" (no DB/RBAC-data migration) — the UI everywhere
-                  // else already calls this concept "Plan", and this
-                  // admin-facing label
-                  // was the one place still showing the raw internal key.
+                  // Display-only: the stored permission key is "scenario";
+                  // the UI calls it "Plan".
                   p.permission === "scenario" ? "Plan" : p.permission
                 }
               </label>

@@ -2729,9 +2729,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-raw-button": {
       "count": 5
     },
@@ -2741,9 +2738,6 @@
   },
   "src/components/settings/integrations-preview-panel.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -2766,20 +2760,9 @@
       "count": 1
     }
   },
-  "src/components/settings/integrations-types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/components/settings/integrations.tsx": {
     "max-lines-per-function": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
     },
     "ratchet/no-raw-button": {
       "count": 1
@@ -2788,12 +2771,6 @@
   "src/components/settings/integrations/budget-section.tsx": {
     "max-lines-per-function": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 15
@@ -2805,25 +2782,16 @@
     }
   },
   "src/components/settings/integrations/contrib-section.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
   "src/components/settings/integrations/drift-banner.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
   "src/components/settings/integrations/portfolio-mapping-lists.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -2838,9 +2806,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -2852,16 +2817,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 6
-    }
-  },
-  "src/components/settings/integrations/section-summary-badge.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/settings/integrations/sync-behavior.tsx": {
@@ -2869,47 +2826,14 @@
       "count": 1
     }
   },
-  "src/components/settings/integrations/use-integration-budget-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/settings/integrations/use-integration-contribution-account-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    }
-  },
-  "src/components/settings/integrations/use-integration-drift-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/settings/integrations/use-integration-portfolio-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/settings/integrations/use-integration-savings-mutations.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/settings/integrations/use-invalidate-preview.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/settings/irmaa-brackets.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    }
-  },
-  "src/components/settings/irs-limit-growth.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/settings/ltcg-brackets.tsx": {
@@ -2926,9 +2850,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -2942,9 +2863,6 @@
   "src/components/settings/return-rates.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-raw-button": {
       "count": 4
@@ -2981,12 +2899,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -3005,9 +2917,6 @@
   "src/components/settings/use-deep-link-param.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/settings/year-selector.tsx": {
@@ -3015,16 +2924,8 @@
       "count": 1
     }
   },
-  "src/components/tax-optimization/irmaa-cliff-alert.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/tax-optimization/roth-explorer.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-input": {

@@ -1,25 +1,9 @@
 "use client";
 
 /**
- * Consolidated "Reference Data" settings shell — IRS Limits, Tax Brackets,
- * LTCG Brackets, IRMAA Tables, ACA/FPL, and Return Rates used to be 6
- * separate top-level Settings tabs. The first 5 are one conceptual unit
- * (every one of them is "what does the tax law say for year X") and share
- * a year toggle in the top right that persists as you switch between them;
- * Return Rates (age-indexed market-return assumptions, not tax law — no
- * year axis at all) and Fixed by law (the statutory, non-indexed figures,
- * read-only) join the same left-column nav for one-stop "external inputs
- * the projection engine reads" reference data; the year toggle hides for
- * them since it doesn't apply.
- *
- * The 5 tax tables have no FK/join relating them — a year existing in one
- * doesn't mean it exists in the others (resolveTaxParams, see
- * src/lib/config/tax-params.ts, already resolves each independently and
- * degrades to an engine default when a slice is empty). The shared toggle
- * lists the UNION of years across all 5, annotated with how many of the 5
- * have a row for that year ("2027 · 3/5") so a partial year — previously
- * invisible, now a single click to create — is visible instead of silently
- * degrading downstream.
+ * "Reference Data" settings shell. The 5 yearly tax tables share a year toggle listing the union
+ * of their years, annotated with coverage ("2027 · 3/5") since each table is resolved separately;
+ * Return Rates and Fixed by law have no year axis, so the toggle hides for them.
  */
 import { useState } from "react";
 import { SourceLinks } from "./source-links";
@@ -54,12 +38,9 @@ type SectionKey = TaxDataSectionKey;
 const SECTION_KEYS = SECTIONS.map((s) => s.key);
 type TaxYearSectionKey = (typeof TAX_YEAR_SECTIONS)[number]["key"];
 
-/** Old top-level Settings tab keys (pre-consolidation) — still what
- *  SK_SETTINGS_ACTIVE_TAB may hold for an existing user, and what
- *  SK_SETTINGS_TAX_DATA_SECTION is seeded from the first time a user with
- *  one of these old values lands here (see settings/settings-content.tsx).
- *  Identical to SectionKey today, but kept as its own type so the mapping
- *  stays explicit if either side's keys ever diverge. */
+/** Top-level tab keys SK_SETTINGS_ACTIVE_TAB may still hold; they seed
+ *  SK_SETTINGS_TAX_DATA_SECTION (see settings-content.tsx). Kept apart from SectionKey on purpose,
+ *  though the keys are the same. */
 export const OLD_TAX_TAB_KEYS: readonly string[] = [
   "limits",
   "tax",
@@ -97,10 +78,8 @@ export function TaxDataSettings() {
   );
   // Return Rates and Fixed by law have no year axis.
   const isYearSection = TAX_YEAR_SECTIONS.some((s) => s.key === section);
-  // Client-side-only years with no backing row anywhere yet — added via
-  // "+Year" below so a brand-new year is selectable before any of the 5
-  // tables has a row for it. Not persisted: once a row exists for a year
-  // it shows up in the union computed from real data below regardless.
+  // Years added via "+Year" that no table has a row for yet (not persisted;
+  // a year with a row appears in the union below).
   const [extraYears, setExtraYears] = useState<number[]>([]);
 
   const unionYears = Array.from(
@@ -122,9 +101,8 @@ export function TaxDataSettings() {
     SK_SETTINGS_TAX_DATA_YEAR,
     new Date().getFullYear(),
   );
-  // Clamp: a persisted year that no longer appears in the union (e.g. the
-  // last table holding it just had that year deleted, and it wasn't a
-  // still-being-viewed extraYear) falls back to the newest year that does.
+  // Clamp: a persisted year missing from the union (e.g. its last row was
+  // deleted) falls back to the newest year in it.
   const activeYear = unionYears.includes(persistedYear)
     ? persistedYear
     : (unionYears[0] ?? persistedYear);
@@ -220,11 +198,8 @@ export function TaxDataSettings() {
           </div>
         )}
 
-        {/* All 6 sections stay mounted — several hold in-progress local
-            draft state (add-year/add-row dialogs, copy-from selections)
-            that would silently reset on a switch away and back otherwise,
-            same risk class the Integrations and General shells guard
-            against. Only visibility toggles. */}
+        {/* All sections stay mounted so drafts (add-year/add-row dialogs,
+            copy-from selections) survive switching; only visibility toggles. */}
         <div className={section === "limits" ? "" : "hidden"}>
           <ContributionLimitsSettings year={activeYear} />
           <IrsLimitGrowthSetting />

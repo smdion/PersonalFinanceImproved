@@ -173,11 +173,8 @@ export function renderUnmappedTracking(
                   defaultValue=""
                   onChange={(e) => {
                     if (!e.target.value) return;
-                    // Match on localId+localName together — localId
-                    // alone isn't unique for performance accounts
-                    // shared by two owners, so a plain localId match
-                    // would silently resolve to the wrong owner's
-                    // account when both share one option value.
+                    // Match localId+localName: localId alone is
+                    // shared by two owners of one performance account.
                     const opt = availableLocal.find(
                       (o) => `${o.localId}|${o.localName}` === e.target.value,
                     );
@@ -251,24 +248,9 @@ export function renderLocalAccountOptions(
         <optgroup label="Portfolio Accounts">
           {unmappedPortfolio.map((a) => (
             <option
-              // Keyed on (performanceAccountId, ownerPersonId)
-              // — the same tuple the server already dedupes
-              // portfolioLocalAccounts on — not the label.
-              // Two people can share one performance account
-              // (e.g. both have an IRA at the same
-              // institution); their labels are normally
-              // distinct, but the label alone isn't safe
-              // identity (it silently collides if a
-              // displayName is ever set on the shared
-              // performance account — accountDisplayName
-              // prefers displayName over the owner-specific
-              // name). The option's `value` still has to stay
-              // label-based below: AccountMapping (the stored
-              // mapping shape) has no ownerPersonId field at
-              // all, only localId ("performance:{perfId}",
-              // ambiguous between owners) + localName — so
-              // localName is the only thing that can actually
-              // distinguish two owners' mappings once saved.
+              // Key on (performanceAccountId, ownerPersonId), the server's dedupe tuple;
+              // `value` stays label-based because AccountMapping has no ownerPersonId,
+              // so localName is what tells two owners' mappings apart.
               key={`p:${a.performanceAccountId}:${a.ownerPersonId ?? ""}`}
               value={`performance:${a.performanceAccountId}|${a.label}`}
             >
@@ -307,13 +289,9 @@ export function renderLocalAccountOptions(
           ))}
         </optgroup>
       )}
-      {/* Fixed pseudo-accounts, not tied to a single Ledgr
-       * row — many on-budget accounts (Actual has no
-       * account-type field to auto-detect these) can share
-       * either bucket, summed by getEffectiveCash /
-       * getEffectiveCreditCardDebt. Always offered, never
-       * hidden by mappedKeys, since a second/third mapping
-       * to the same bucket is the normal case here. */}
+      {/* Fixed pseudo-accounts many on-budget accounts can share (summed by
+       * getEffectiveCash/getEffectiveCreditCardDebt); never hidden by
+       * mappedKeys, since several mappings to one bucket are normal. */}
       <optgroup label="Cash / Credit Card">
         <option value="cash|Cash">Cash (combine accounts)</option>
         <option value="creditCard|Credit Card">
@@ -337,10 +315,8 @@ export function renderRemoteAccountOptions(
       </option>
     ));
   }
-  // Cash/Credit Card map to on-budget accounts, which
-  // trackingAccounts (off-budget only) excludes — offer the
-  // full account list instead, minus whatever's already
-  // mapped to THIS same bucket.
+  // Cash/Credit Card map to on-budget accounts (not in trackingAccounts), so
+  // offer the full list minus accounts already in this bucket.
   const bucketLocalId = newPortfolioLocal.split("|")[0];
   const alreadyInBucket = new Set(
     portfolio.existingMappings

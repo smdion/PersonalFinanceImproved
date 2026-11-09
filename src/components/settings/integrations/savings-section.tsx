@@ -1,15 +1,9 @@
 "use client";
 
 /**
- * Sinking-fund matching section of the integrations preview panel.
- *
- * Renders the collapsible savings block: linked / suggested / unmatched
- * goals plus the reimbursement-category picker for the emergency fund.
- *
- * State note: `savingsOverrides` lives in the parent orchestrator because
- * the budget section's "Apply all suggested matches" counter needs to know
- * how many savings overrides are queued. Passing the state up is cheaper
- * than duplicating it or drilling a callback both ways.
+ * Sinking-fund matching section of the integrations preview panel: linked/suggested/unmatched goals
+ * and the emergency fund's reimbursement category. `savingsOverrides` lives in the parent because
+ * the budget section's "Apply all suggested matches" counter includes it.
  */
 import React from "react";
 import { formatCurrency } from "@/lib/utils/format";

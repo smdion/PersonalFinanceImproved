@@ -211,12 +211,12 @@
     "src/components/savings/transactions/filters.tsx": 207,
     "src/components/savings/transactions/row.tsx": 592,
     "src/components/savings/transactions/tab.tsx": 662,
-    "src/components/settings/general.tsx": 448,
+    "src/components/settings/general.tsx": 439,
     "src/components/settings/integrations-simplefin.tsx": 438,
-    "src/components/settings/integrations.tsx": 706,
-    "src/components/settings/integrations/budget-section.tsx": 690,
-    "src/components/settings/integrations/portfolio-mapping-lists.tsx": 357,
-    "src/components/settings/integrations/portfolio-section.tsx": 337,
+    "src/components/settings/integrations.tsx": 691,
+    "src/components/settings/integrations/budget-section.tsx": 677,
+    "src/components/settings/integrations/portfolio-mapping-lists.tsx": 333,
+    "src/components/settings/integrations/portfolio-section.tsx": 328,
     "src/components/tools/relocation/large-purchase-fields.tsx": 214,
     "src/components/tools/relocation/projection-table.tsx": 416,
     "src/lib/budget-api/actual-client.ts": 764,
@@ -842,10 +842,10 @@
       "FplByHouseholdSettings": 177
     },
     "src/components/settings/general.tsx": {
-      "LivingCostMappingEditor": 234
+      "LivingCostMappingEditor": 232
     },
     "src/components/settings/integrations-preview-panel.tsx": {
-      "PreviewPanel": 225
+      "PreviewPanel": 223
     },
     "src/components/settings/integrations-sec.tsx": {
       "SecCard": 186
@@ -855,8 +855,8 @@
       "SimplefinCard": 234
     },
     "src/components/settings/integrations.tsx": {
-      "IntegrationsSettings": 180,
-      "ServiceCard": 454
+      "IntegrationsSettings": 177,
+      "ServiceCard": 445
     },
     "src/components/settings/integrations/budget-section.tsx": {
       "BudgetSection": 636,
@@ -864,13 +864,13 @@
       "BudgetSection.map().map()": 171
     },
     "src/components/settings/integrations/portfolio-section.tsx": {
-      "PortfolioSection": 298
+      "PortfolioSection": 293
     },
     "src/components/settings/integrations/savings-section.tsx": {
       "SavingsSection": 240
     },
     "src/components/settings/rbac-groups.tsx": {
-      "RbacGroupsSettings": 220
+      "RbacGroupsSettings": 217
     },
     "src/components/settings/return-rates.tsx": {
       "ReturnRatesSettings": 257
@@ -879,7 +879,7 @@
       "TaxBracketsSettings": 296
     },
     "src/components/settings/tax-data.tsx": {
-      "TaxDataSettings": 202
+      "TaxDataSettings": 196
     },
     "src/components/tax-optimization/roth-explorer.tsx": {
       "RothExplorer": 233

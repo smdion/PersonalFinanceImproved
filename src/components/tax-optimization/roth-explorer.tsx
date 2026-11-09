@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * Roth conversion explorer (roadmap #1). Two moves, both over the shared
- * `rothConversionWhatIf` procedure:
- *  - "Optimize" → the engine's own multi-year search for the lifetime-tax-
- *    minimizing bracket target (delegates to optimizeRothBracketTarget).
- *  - An explicit target-rate applied from a start year → before/after:
- *    lifetime tax with vs. without, break-even year, and a per-year
- *    conversion / tax / RMD-reduction table.
- *
- * "Simulation" wording, never "Monte Carlo" (this is the deterministic
- * run). Values the user sets are "adjusted", never "overridden".
+ * Roth conversion explorer over `rothConversionWhatIf`: "Optimize" (optimizeRothBracketTarget's
+ * lifetime-tax search) or a target rate from a start year, shown before/after with break-even year
+ * and a per-year table. User-set values are "adjusted", never "overridden".
  */
 import { useState, type ReactNode } from "react";
 import type { RouterInputs } from "@/lib/trpc";

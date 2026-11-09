@@ -64,11 +64,8 @@ export function GeneralSettings() {
       </nav>
 
       <div>
-        {/* Both stay mounted — LivingCostMappingEditor holds in-progress
-         *  local draft state (category assignments not yet saved) that
-         *  would silently reset if switching away and back unmounted it,
-         *  same risk the Integrations shell's connection cards have. Only
-         *  visibility toggles. */}
+        {/* Both stay mounted so LivingCostMappingEditor's unsaved category
+         *  assignments survive switching sections; only visibility toggles. */}
         <div className={section === "people" ? "" : "hidden"}>
           <PeopleSettings />
         </div>
@@ -139,12 +136,8 @@ function RetirementSettings() {
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
-  // Default false — Coast FIRE MC now runs on demand (when the
-  // scenario is actually selected), not eagerly on every page load. This
-  // toggle is the opt-in back to the old always-prefetched behavior. Must
-  // match the default in use-projection-queries.ts's own usePersistedToggle
-  // call for this same key, or this page shows the toggle in a state that
-  // disagrees with actual behavior until the user touches it.
+  // Default false: the Coast FIRE simulation runs on demand; this opts into
+  // prefetching. Must match the default in use-projection-queries.ts.
   const [coastFireSimulationAutoload, setCoastFireSimulationAutoload] =
     usePersistedToggle(SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD, false);
 
@@ -349,10 +342,8 @@ function LivingCostMappingEditor() {
                     of income
                   </span>
                 </div>
-                {/* Matches the "+Year"/"+ Add year" blue-link pattern used
-                 *  by the other Settings add-flows (YearSelector and
-                 *  friends) rather than Button's ghost variant, which
-                 *  reads as a neutral toggle, not an "add" affordance. */}
+                {/* Blue-link "add" pattern of the other Settings add-flows,
+                 *  not Button's ghost variant (which reads as a toggle). */}
                 <button
                   onClick={() =>
                     setAddingTo(addingTo === range.name ? null : range.name)
