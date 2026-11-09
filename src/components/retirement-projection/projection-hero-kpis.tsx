@@ -133,7 +133,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     getPersonYearTotals,
     deflate,
     mcQuery,
-    mcLoading,
+    simulationLoading,
     debouncedBaseInput,
     projectionView,
     coastFireMcQuery,
@@ -185,21 +185,23 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   // future change to the views. Intentionally
   // null while the alt-scenario MC is loading — the existing
   // `!simulation && simulationLoading` skeleton branch below handles the loading state.
-  const mc =
+  const simulation =
     projectionView === "coastFire" ||
     projectionView === "coastFireToday" ||
     projectionView === "rateSeeded"
       ? (activeAltMcResult ?? null)
-      : mcQuery.data?.result && !mcLoading
+      : mcQuery.data?.result && !simulationLoading
         ? mcQuery.data.result
         : null;
   // In the shown dollars — today's from the Simulation's per-trial deflation.
-  const mcBands = mc ? simulationDollars(mc, dollarMode).percentileBands : null;
+  const simulationBands = simulation
+    ? simulationDollars(simulation, dollarMode).percentileBands
+    : null;
   // One rule for simulated vs baseline (nest-egg-display.ts, shared with
   // the dashboard): a person filter shows the baseline — the simulation is
   // the whole household's.
   const nestEggDisplay = simulatedOrBaseline({
-    bands: mcBands,
+    bands: simulationBands,
     baseline: nestEgg,
     targetAge: alreadyRetired ? currentAge : engineSettings.retirementAge,
     personFiltered: isPersonFiltered,
@@ -216,7 +218,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   const lastYear = result.projectionByYear.at(-1);
   const lastPt = lastYear ? getPersonYearTotals(lastYear) : null;
   const endDisplay = simulatedOrBaseline({
-    bands: mcBands,
+    bands: simulationBands,
     baseline: lastYear
       ? deflate(lastPt ? lastPt.balance : rowTotal(lastYear), lastYear.year)
       : 0,
@@ -239,7 +241,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       : null;
 
   // MC loading — show skeleton instead of flashing deterministic cards
-  if (!mc && mcLoading) {
+  if (!simulation && simulationLoading) {
     return (
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => (
@@ -256,9 +258,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     );
   }
 
-  if (mc) {
+  if (simulation) {
     // MC-primary hero
-    const hasBudgetStability = mc.budgetStabilityRate !== null;
+    const hasBudgetStability = simulation.budgetStabilityRate !== null;
     const retSpan = engineSettings.endAge - engineSettings.retirementAge;
 
     // The long-horizon tip used to blanket-suggest
@@ -297,10 +299,10 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           ]}
         >
           <div className="flex flex-1 flex-col items-center justify-center gap-1">
-            <CompactRing rate={mc.successRate} size={68} />
+            <CompactRing rate={simulation.successRate} size={68} />
             <div className="text-micro text-faint">
-              {mc.distributions.failureAge
-                ? `${dominantFailureReason(mc.failureReasonRates) === "depleted" ? "runs out" : "falls short"} ~${yearOfAge(Math.round(mc.distributions.failureAge.median))}`
+              {simulation.distributions.failureAge
+                ? `${dominantFailureReason(simulation.failureReasonRates) === "depleted" ? "runs out" : "falls short"} ~${yearOfAge(Math.round(simulation.distributions.failureAge.median))}`
                 : `through ${lastYear?.year ?? "?"}`}
             </div>
           </div>
@@ -316,7 +318,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           // unmet-need alert, which gets its own separate affordance
           // rather than being grafted onto this MC statistic.
           const strategyGapUrgent =
-            mc.successRate - mc.spendingStabilityRate >
+            simulation.successRate - simulation.spendingStabilityRate >
             MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD;
           return (
             <KpiCard
@@ -328,14 +330,17 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 "Fixed and Forgo track your Retirement budget, so the rings stay close; Guardrails and Spending Decline move away from it by design. Balance-based strategies (RMD-Based, Constant %, Endowment, Vanguard, VPW) follow the balance; the gap shows how often they cover your Retirement budget.",
                 ...(strategyGapUrgent
                   ? [
-                      `⚠ Your money survives in ${(mc.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(mc.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((mc.successRate - mc.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
+                      `⚠ Your money survives in ${(simulation.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(simulation.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((simulation.successRate - simulation.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
                     ]
                   : []),
               ]}
             >
               <div className="flex flex-1 items-center justify-center gap-4">
                 <div className="flex flex-col items-center gap-1">
-                  <CompactRing rate={mc.spendingStabilityRate} size={56} />
+                  <CompactRing
+                    rate={simulation.spendingStabilityRate}
+                    size={56}
+                  />
                   <div
                     className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "font-medium text-red-500" : "text-faint"}`}
                   >
@@ -347,8 +352,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                   <CompactRing
                     rate={
                       hasBudgetStability
-                        ? mc.budgetStabilityRate!
-                        : mc.spendingStabilityRate
+                        ? simulation.budgetStabilityRate!
+                        : simulation.spendingStabilityRate
                     }
                     size={56}
                   />
@@ -427,11 +432,11 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <CoastFireCard
           input={debouncedBaseInput}
           coastFireMcResult={coastFireMcQuery.data?.result ?? undefined}
-          coastFireMcLoading={
+          coastFireSimulationLoading={
             coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
           }
-          coastFireMcComputedAt={coastFireMcQuery.data?.computedAt}
-          coastFireMcNotConfigured={
+          coastFireSimulationComputedAt={coastFireMcQuery.data?.computedAt}
+          coastFireSimulationNotConfigured={
             coastFireMcQuery.data && "notConfigured" in coastFireMcQuery.data
               ? coastFireMcQuery.data.notConfigured
               : null
@@ -498,7 +503,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       <CoastFireCard
         input={debouncedBaseInput}
         coastFireMcResult={undefined}
-        coastFireMcLoading={false}
+        coastFireSimulationLoading={false}
         ageLabel={ageLabel}
       />
     </div>

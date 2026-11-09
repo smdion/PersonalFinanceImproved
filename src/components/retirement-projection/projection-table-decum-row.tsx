@@ -43,8 +43,8 @@ import {
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
-  renderMcCell,
-  type RenderMcCellOptions,
+  renderSimulationCell,
+  type RenderSimulationCellOptions,
 } from "./projection-table-mc-cell";
 import { buildFullAccountNote } from "./account-notes";
 import {
@@ -81,7 +81,7 @@ type DecumulationRowProps = {
   decumulationBudgetColumn?: number;
   decumulationExpenseOverride?: number;
   people?: { id: number; name: string; birthYear: number }[];
-  mcCellOpts: RenderMcCellOptions;
+  simulationCellOpts: RenderSimulationCellOptions;
 };
 
 /** The portfolio total's tooltip, by tax type, or depleted. */
@@ -145,14 +145,14 @@ export function DecumulationRow({
   decumulationBudgetColumn,
   decumulationExpenseOverride,
   people,
-  mcCellOpts,
+  simulationCellOpts,
 }: DecumulationRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   useScrollToFocus(rowRef, focused);
   const {
     decumOverrides: _decumOverrides,
     balanceView,
-    contribView,
+    contributionView,
     diagMode,
     personFilter,
     isPersonFiltered,
@@ -252,12 +252,12 @@ export function DecumulationRow({
       <Tooltip content="No contribution rate during retirement" side="top">
         <td className="text-faint px-2 py-1.5 text-right">---</td>
       </Tooltip>
-      {contribView === "account"
+      {contributionView === "account"
         ? getAllCategories()
-            .filter((c) => visibleColumns.contribCats.has(c))
+            .filter((c) => visibleColumns.contributionCats.has(c))
             .map((cat) => {
               const dSlot = dSlotMap.get(cat);
-              const wd = dSlot?.withdrawal ?? 0;
+              const withdrawal = dSlot?.withdrawal ?? 0;
               // Get growth from individualAccountBalances for this category
               const iabs = yearRow.individualAccountBalances ?? [];
               const categoryAccounts = dpt
@@ -270,7 +270,7 @@ export function DecumulationRow({
                 (s, ia) => s + ia.growth,
                 0,
               );
-              const catBal = categoryAccounts.reduce(
+              const catBalance = categoryAccounts.reduce(
                 (s, ia) => s + ia.balance,
                 0,
               );
@@ -280,7 +280,7 @@ export function DecumulationRow({
                   content={categoryWithdrawalTooltip(
                     dSlotMap,
                     cat,
-                    wd,
+                    withdrawal,
                     categoryAccounts,
                     yearRow,
                     deflate,
@@ -289,36 +289,42 @@ export function DecumulationRow({
                     engineSettings,
                     renderTooltip,
                     catGrowth,
-                    catBal,
+                    catBalance,
                   )}
                   side="top"
                   maxWidth={420}
                 >
                   <td
-                    className={`px-2 py-1.5 text-right ${categoryCellColor(yearLumpSums, cat, wd)}`}
+                    className={`px-2 py-1.5 text-right ${categoryCellColor(yearLumpSums, cat, withdrawal)}`}
                   >
-                    {categoryCellText(yearLumpSums, cat, wd, deflate, yearRow)}
+                    {categoryCellText(
+                      yearLumpSums,
+                      cat,
+                      withdrawal,
+                      deflate,
+                      yearRow,
+                    )}
                   </td>
                 </Tooltip>
               );
             })
         : /* Withdrawal columns by tax type */
           (["preTax", "taxFree", "hsa", "afterTax"] as const)
-            .filter((t) => visibleColumns.contribTaxTypes.has(t))
+            .filter((t) => visibleColumns.contributionTaxTypes.has(t))
             .map((bucket) => {
-              let bucketWd = 0;
+              let bucketWithdrawal = 0;
               const parts: {
                 cat: string;
-                wd: number;
+                withdrawal: number;
               }[] = [];
               for (const slot of dyr.slots) {
-                const wd = slotBucketWithdrawal(slot, bucket);
-                if (wd > 0) {
+                const withdrawal = slotBucketWithdrawal(slot, bucket);
+                if (withdrawal > 0) {
                   parts.push({
                     cat: slot.category,
-                    wd,
+                    withdrawal,
                   });
-                  bucketWd += wd;
+                  bucketWithdrawal += withdrawal;
                 }
               }
               // Per-account breakdown (same "why was this account used"
@@ -359,7 +365,7 @@ export function DecumulationRow({
                           noteFor,
                           parts,
                           renderTooltip,
-                          bucketWd,
+                          bucketWithdrawal,
                         )
                       : taxTypeLumpSumTooltip(
                           yearLumpSums,
@@ -372,12 +378,12 @@ export function DecumulationRow({
                   side="top"
                 >
                   <td
-                    className={`px-2 py-1.5 text-right ${taxTypeCellColor(yearLumpSums, bucket, bucketWd)}`}
+                    className={`px-2 py-1.5 text-right ${taxTypeCellColor(yearLumpSums, bucket, bucketWithdrawal)}`}
                   >
                     {taxTypeCellText(
                       yearLumpSums,
                       bucket,
-                      bucketWd,
+                      bucketWithdrawal,
                       deflate,
                       yearRow,
                     )}
@@ -430,11 +436,11 @@ export function DecumulationRow({
         (["preTax", "taxFree", "hsa", "afterTax"] as const)
           .filter((t) => visibleColumns.balanceTaxTypes.has(t))
           .map((bucket) => {
-            const bal = dpt
+            const balance = dpt
               ? dpt.byTaxType[bucket]
               : yearRow.balanceByTaxType[bucket];
             const dptTotal = dpt ? dpt.balance : rowTotal(yearRow);
-            const pct = percentOf(bal, dptTotal);
+            const pct = percentOf(balance, dptTotal);
             // Compute growth for this tax bucket from individualAccountBalances
             const bucketIabs = yearRow.individualAccountBalances ?? [];
             const bucketAccounts = (
@@ -449,7 +455,7 @@ export function DecumulationRow({
             return (
               <BalanceCell
                 key={bucket}
-                amount={deflate(bal, yearRow.year)}
+                amount={deflate(balance, yearRow.year)}
                 color={taxTypeTextColor(bucket)}
                 tooltip={taxTypeBalanceTooltip(
                   bucketAccounts,
@@ -480,18 +486,18 @@ export function DecumulationRow({
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = dpt ? (dpt.byAccount[col.key] ?? 0) : col.val;
-              const dptTotalBal = dpt ? dpt.balance : rowTotal(yearRow);
-              const pct = percentOf(bal, dptTotalBal);
+              const dptTotalBalance = dpt ? dpt.balance : rowTotal(yearRow);
+              const pct = percentOf(bal, dptTotalBalance);
               // Compute authoritative total change from engine
               const decumulationPreviousYear = result.projectionByYear.find(
                 (y) => y.year === yearRow.year - 1,
               );
-              const decPrevPt = decumulationPreviousYear
+              const decumulationPrevPt = decumulationPreviousYear
                 ? getPersonYearTotals(decumulationPreviousYear)
                 : null;
-              const decPrevVal = decumulationPreviousYear
-                ? decPrevPt
-                  ? (decPrevPt.byAccount[col.key] ?? 0)
+              const decumulationPrevVal = decumulationPreviousYear
+                ? decumulationPrevPt
+                  ? (decumulationPrevPt.byAccount[col.key] ?? 0)
                   : colBalance(
                       decumulationPreviousYear.balanceByAccount,
                       col.key,
@@ -499,31 +505,34 @@ export function DecumulationRow({
                 : 0;
               // Build account items as data
               const decumulationAccountItems: TooltipLineItem[] = [];
-              const decColTaxType = colEngineTaxType(col.key);
+              const decumulationColTaxType = colEngineTaxType(col.key);
               // Use engine's individualAccountBalances
-              const decIabs = (yearRow.individualAccountBalances ?? []).filter(
+              const decumulationIabs = (
+                yearRow.individualAccountBalances ?? []
+              ).filter(
                 (ia) =>
                   ia.category === catKey &&
-                  (decColTaxType == null || ia.taxType === decColTaxType) &&
+                  (decumulationColTaxType == null ||
+                    ia.taxType === decumulationColTaxType) &&
                   (!isPersonFiltered || ia.ownerPersonId === personFilter),
               );
               {
                 // Compute from balance changes — data-driven, no routing layers
-                const _decPrevIabs =
+                const _decumulationPrevIabs =
                   decumulationPreviousYear?.individualAccountBalances ?? [];
                 const seenDecumulationAccounts = new Set<string>();
-                const decSplits: {
+                const decumulationSplits: {
                   name: string;
                   entryTaxType: string;
                   balance: number;
                   growth: number;
                   withdrawal: number;
                 }[] = [];
-                for (const ia of decIabs) {
+                for (const ia of decumulationIabs) {
                   const dk = `${catKey}-${ia.name}-${ia.taxType}`;
                   if (seenDecumulationAccounts.has(dk)) continue;
                   seenDecumulationAccounts.add(dk);
-                  decSplits.push({
+                  decumulationSplits.push({
                     name: ia.name,
                     entryTaxType: ia.taxType,
                     balance: ia.balance,
@@ -531,17 +540,17 @@ export function DecumulationRow({
                     withdrawal: ia.draw?.withdrawal ?? 0,
                   });
                 }
-                const splitsTotal = decSplits.reduce(
+                const splitsTotal = decumulationSplits.reduce(
                   (s, e) => s + e.balance,
                   0,
                 );
                 for (const {
                   name: accountName,
                   entryTaxType,
-                  balance: spBal,
+                  balance: spBalance,
                   growth: spGrowth,
-                } of decSplits) {
-                  const frac = safeDivide(spBal, splitsTotal, 0);
+                } of decumulationSplits) {
+                  const frac = safeDivide(spBalance, splitsTotal, 0);
                   const subItems: TooltipLineItem[] = [];
                   if (Math.abs(spGrowth) > 1)
                     subItems.push({
@@ -552,7 +561,7 @@ export function DecumulationRow({
                     });
                   decumulationAccountItems.push({
                     label: accountName,
-                    amount: deflate(Math.max(0, spBal), yearRow.year),
+                    amount: deflate(Math.max(0, spBalance), yearRow.year),
                     percent: Math.round(frac * 100),
                     taxType: itemTaxType(catKey, entryTaxType),
                     sub: subItems.length > 0 ? subItems : undefined,
@@ -595,39 +604,54 @@ export function DecumulationRow({
                 });
               }
               // Calculate total withdrawal from slot data (data-driven via colWithdrawal)
-              const decTotalWd = colWithdrawal(dyr.slots, col.key);
+              const decumulationTotalWithdrawal = colWithdrawal(
+                dyr.slots,
+                col.key,
+              );
               // Sum growth from engine's individual account balances for this column
-              const decSplitGrowth = decIabs.reduce(
+              const decumulationSplitGrowth = decumulationIabs.reduce(
                 (s, ia) => s + ia.growth,
                 0,
               );
-              const decDeflatedBal = deflate(bal, yearRow.year);
-              const decDeflatedPrev = decumulationPreviousYear
-                ? deflate(decPrevVal, decumulationPreviousYear.year)
+              const decumulationDeflatedBalance = deflate(bal, yearRow.year);
+              const decumulationDeflatedPrev = decumulationPreviousYear
+                ? deflate(decumulationPrevVal, decumulationPreviousYear.year)
                 : 0;
-              const decDisplayChange = decumulationPreviousYear
-                ? decDeflatedBal - decDeflatedPrev
-                : deflate(decSplitGrowth - decTotalWd, yearRow.year);
-              const decDisplayWd = deflate(decTotalWd, yearRow.year);
-              const decDisplayGrowth = deflate(decSplitGrowth, yearRow.year);
-              const decBoyBal = decumulationPreviousYear
-                ? decDeflatedPrev
-                : deflate(bal - decSplitGrowth + decTotalWd, yearRow.year);
-              const decChangeParts: {
+              const decumulationDisplayChange = decumulationPreviousYear
+                ? decumulationDeflatedBalance - decumulationDeflatedPrev
+                : deflate(
+                    decumulationSplitGrowth - decumulationTotalWithdrawal,
+                    yearRow.year,
+                  );
+              const decumulationDisplayWithdrawal = deflate(
+                decumulationTotalWithdrawal,
+                yearRow.year,
+              );
+              const decumulationDisplayGrowth = deflate(
+                decumulationSplitGrowth,
+                yearRow.year,
+              );
+              const decumulationBoyBalance = decumulationPreviousYear
+                ? decumulationDeflatedPrev
+                : deflate(
+                    bal - decumulationSplitGrowth + decumulationTotalWithdrawal,
+                    yearRow.year,
+                  );
+              const decumulationChangeParts: {
                 label: string;
                 amount: number;
                 color: TipColor;
               }[] = [];
-              if (Math.abs(decDisplayGrowth) > 1)
-                decChangeParts.push({
+              if (Math.abs(decumulationDisplayGrowth) > 1)
+                decumulationChangeParts.push({
                   label: "growth",
-                  amount: decDisplayGrowth,
-                  color: decDisplayGrowth >= 0 ? "blue" : "red",
+                  amount: decumulationDisplayGrowth,
+                  color: decumulationDisplayGrowth >= 0 ? "blue" : "red",
                 });
-              if (decDisplayWd > 0)
-                decChangeParts.push({
+              if (decumulationDisplayWithdrawal > 0)
+                decumulationChangeParts.push({
                   label: "withdrawn",
-                  amount: -decDisplayWd,
+                  amount: -decumulationDisplayWithdrawal,
                   color: "red",
                 });
               return (
@@ -638,18 +662,22 @@ export function DecumulationRow({
                   tooltip={renderTooltip({
                     kind: "money",
                     header: `${col.label}: ${pct}% of portfolio`,
-                    meta: `${yearRow.year} · BoY: ${formatCurrency(decBoyBal)} → EoY: ${formatCurrency(decDeflatedBal)} · ${formatPercent(yearRow.returnRate, 1)} return`,
+                    meta: `${yearRow.year} · BoY: ${formatCurrency(decumulationBoyBalance)} → EoY: ${formatCurrency(decumulationDeflatedBalance)} · ${formatPercent(yearRow.returnRate, 1)} return`,
                     items:
                       decumulationAccountItems.length > 0
                         ? decumulationAccountItems
                         : undefined,
                     withdrawals:
-                      decDisplayWd > 0 ? { amount: decDisplayWd } : undefined,
+                      decumulationDisplayWithdrawal > 0
+                        ? { amount: decumulationDisplayWithdrawal }
+                        : undefined,
                     yearChange: {
-                      total: decDeflatedBal,
-                      change: decDisplayChange,
+                      total: decumulationDeflatedBalance,
+                      change: decumulationDisplayChange,
                       parts:
-                        decChangeParts.length > 0 ? decChangeParts : undefined,
+                        decumulationChangeParts.length > 0
+                          ? decumulationChangeParts
+                          : undefined,
                     },
                     legend: [
                       {
@@ -686,10 +714,10 @@ export function DecumulationRow({
           )}
         </td>
       </Tooltip>
-      {renderMcCell(
+      {renderSimulationCell(
         yearRow,
         deflate(dpt ? dpt.balance : rowTotal(yearRow), yearRow.year),
-        mcCellOpts,
+        simulationCellOpts,
       )}
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">
         {dyr.taxCost > 0 && (
@@ -751,11 +779,11 @@ export function DecumulationRow({
                           ?.supportsRothSplit,
                     )
                     .map((c) => {
-                      const bal =
+                      const balance =
                         dyr.preWithdrawalAcctBal![c as AccountCategory];
-                      return bal && "roth" in bal
+                      return balance && "roth" in balance
                         ? // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
-                          ` ${c} pre-wd: trad=${formatCurrency(deflate((bal as unknown as Record<string, number>).traditional ?? 0, yearRow.year))}, roth=${formatCurrency(deflate((bal as unknown as Record<string, number>).roth ?? 0, yearRow.year))}`
+                          ` ${c} pre-wd: trad=${formatCurrency(deflate((balance as unknown as Record<string, number>).traditional ?? 0, yearRow.year))}, roth=${formatCurrency(deflate((balance as unknown as Record<string, number>).roth ?? 0, yearRow.year))}`
                         : ` ${c} pre-wd: n/a`;
                     })
                 : []),

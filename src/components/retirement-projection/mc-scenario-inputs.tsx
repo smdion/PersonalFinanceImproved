@@ -72,20 +72,20 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
 }
 
 export type InflationRiskRowProps = {
-  draftInflStdDev: string;
+  draftInflationStdDev: string;
   editingInflation: boolean;
   inputs: SimulationInputs;
   onInflationRiskChange: ((stdDev: number) => void) | undefined;
-  setDraftInflStdDev: Dispatch<SetStateAction<string>>;
+  setDraftInflationStdDev: Dispatch<SetStateAction<string>>;
   setEditingInflation: Dispatch<SetStateAction<boolean>>;
 };
 
 export function InflationRiskRow({
-  draftInflStdDev,
+  draftInflationStdDev,
   editingInflation,
   inputs,
   onInflationRiskChange,
-  setDraftInflStdDev,
+  setDraftInflationStdDev,
   setEditingInflation,
 }: InflationRiskRowProps) {
   return (
@@ -101,8 +101,8 @@ export function InflationRiskRow({
           <input
             type="number"
             step="0.1"
-            value={draftInflStdDev}
-            onChange={(e) => setDraftInflStdDev(e.target.value)}
+            value={draftInflationStdDev}
+            onChange={(e) => setDraftInflationStdDev(e.target.value)}
             className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
           />
           <span className="text-faint text-caption">%</span>
@@ -110,7 +110,7 @@ export function InflationRiskRow({
             type="button"
             onClick={() => {
               if (onInflationRiskChange) {
-                onInflationRiskChange(parseFloat(draftInflStdDev) / 100);
+                onInflationRiskChange(parseFloat(draftInflationStdDev) / 100);
               }
               setEditingInflation(false);
             }}
@@ -137,7 +137,7 @@ export function InflationRiskRow({
             <button
               type="button"
               onClick={() => {
-                setDraftInflStdDev(
+                setDraftInflationStdDev(
                   (inputs.inflationRisk.stdDev * 100).toFixed(1),
                 );
                 setEditingInflation(true);

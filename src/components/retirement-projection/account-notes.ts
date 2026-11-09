@@ -107,7 +107,7 @@ export function buildEligibilityNote(
 function buildRoutingReasonClause(
   ia: Pick<IndividualAccountYearBalance, "category" | "taxType">,
   yearRow: EngineDecumulationYear,
-  deflate: (v: number, yr: number) => number,
+  deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
@@ -232,7 +232,7 @@ function buildRoutingReasonClause(
 export function buildFullAccountNote(
   ia: IndividualAccountYearBalance,
   yearRow: EngineDecumulationYear,
-  deflate: (v: number, yr: number) => number,
+  deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,

@@ -6,7 +6,7 @@ import type { ProjectionState, ReportMode } from "../projection-table-types";
 export function useProjectionReport(state: ProjectionState) {
   const {
     projectionView,
-    mcTaxMode,
+    simulationTaxMode,
     sharedInput,
     debouncedInput,
     engineQuery,
@@ -40,7 +40,7 @@ export function useProjectionReport(state: ProjectionState) {
   const handlePrintAdvisor = () => {
     const gate = checkReportGate({
       projectionView,
-      mcTaxMode,
+      simulationTaxMode,
       sharedInput,
       debouncedInput,
       engineQuery: {

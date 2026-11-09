@@ -188,7 +188,7 @@ export function salaryTooltip(
   // Use person-filtered salary if applicable
   const personId =
     isPersonFiltered && enginePeople?.find((p) => p.id === personFilter)?.id;
-  const currentSal = personId
+  const currentSalary = personId
     ? (yearRow.projectedSalaryByPerson?.[personId] ?? yearRow.projectedSalary)
     : yearRow.projectedSalary;
   const prevSalary =
@@ -201,7 +201,7 @@ export function salaryTooltip(
       : null;
   const percentChange =
     prevSalary && prevSalary > 0
-      ? (currentSal - prevSalary) / prevSalary
+      ? (currentSalary - prevSalary) / prevSalary
       : null;
   const lines: {
     text: string;

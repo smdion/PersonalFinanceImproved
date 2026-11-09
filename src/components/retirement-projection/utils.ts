@@ -114,7 +114,7 @@ export const bucketSlotMap: Record<
   string,
   {
     /** Which slot field holds the contribution for this bucket? */
-    contribField: "traditionalContrib" | "rothContrib" | "employeeContrib";
+    contributionField: "traditionalContrib" | "rothContrib" | "employeeContrib";
     /** Which slot field holds the withdrawal for this bucket? */
     withdrawalField: "traditionalWithdrawal" | "rothWithdrawal" | "withdrawal";
     /** Only match slots whose category is this value (null = all categories). */
@@ -128,7 +128,7 @@ export const bucketSlotMap: Record<
   }
 > = {
   preTax: {
-    contribField: "traditionalContrib",
+    contributionField: "traditionalContrib",
     withdrawalField: "traditionalWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
@@ -140,7 +140,7 @@ export const bucketSlotMap: Record<
     matchIsAssociated: false,
   },
   taxFree: {
-    contribField: "rothContrib",
+    contributionField: "rothContrib",
     withdrawalField: "rothWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
@@ -157,7 +157,7 @@ export const bucketSlotMap: Record<
       .map((cat) => [
         ACCOUNT_TYPE_CONFIG[cat].taxBucketKey,
         {
-          contribField: "employeeContrib" as const,
+          contributionField: "employeeContrib" as const,
           withdrawalField: "withdrawal" as const,
           categoryFilter: cat,
           specTreatments: null,
@@ -257,16 +257,16 @@ export function filterYearByParentCategory(
         roth,
       };
     } else if (cfg.balanceStructure === "basis_tracking") {
-      const bal = catIabs.reduce((s, ia) => s + ia.balance, 0);
-      const origCatBal = getTotalBalance(yearRow.balanceByAccount[cat]);
-      const ratio = safeDivide(bal, origCatBal);
+      const balance = catIabs.reduce((s, ia) => s + ia.balance, 0);
+      const origCatBalance = getTotalBalance(yearRow.balanceByAccount[cat]);
+      const ratio = safeDivide(balance, origCatBalance);
       const origCatBasis =
         yearRow.balanceByAccount[cat].structure === "basis_tracking"
           ? yearRow.balanceByAccount[cat].basis
           : 0;
       byAccount[cat] = {
         structure: "basis_tracking" as const,
-        balance: bal,
+        balance: balance,
         basis: roundToCents(origCatBasis * ratio),
       };
     } else {
@@ -490,11 +490,11 @@ export function colBalance(
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
-  const bal = ba[category as AccountCategory];
-  if (!bal) return 0;
-  if (isRothColumn(treatment)) return getRothBalance(bal);
-  if (isTraditionalColumn(treatment)) return getTraditionalBalance(bal);
-  return getTotalBalance(bal);
+  const balance = ba[category as AccountCategory];
+  if (!balance) return 0;
+  if (isRothColumn(treatment)) return getRothBalance(balance);
+  if (isTraditionalColumn(treatment)) return getTraditionalBalance(balance);
+  return getTotalBalance(balance);
 }
 
 /** Safe division — 0 when the divisor is 0 (`safeDivide` in `@/lib/utils/math`). */
@@ -554,7 +554,7 @@ export function slotBucketWithdrawal(
 }
 
 /** Get contribution amount for a tax bucket from a single slot. */
-export function slotBucketContrib(
+export function slotBucketContribution(
   slot: {
     category: string;
     traditionalContrib: number;
@@ -569,7 +569,7 @@ export function slotBucketContrib(
   // preTax/taxFree don't apply to single-bucket categories (they have their own tax bucket)
   if (!map.categoryFilter && _singleBucketCategories.has(slot.category))
     return 0;
-  return slot[map.contribField as keyof typeof slot] as number;
+  return slot[map.contributionField as keyof typeof slot] as number;
 }
 
 /** Total balance inflow (employee + match) for a specific account column — mirrors engine balance routing. */
@@ -593,7 +593,7 @@ export function slotsBucketBalanceInflow(
 ): number {
   let total = 0;
   for (const slot of slots) {
-    const emp = slotBucketContrib(slot, bucket);
+    const emp = slotBucketContribution(slot, bucket);
     if (emp <= 0 && slot.employerMatch <= 0) continue;
     const map = bucketSlotMap[bucket];
     if (!map) continue;
@@ -603,7 +603,7 @@ export function slotsBucketBalanceInflow(
         total += slot.employeeContrib + slot.employerMatch;
     } else if (!_singleBucketCategories.has(slot.category)) {
       // roth_traditional: preTax gets traditionalContrib + ALL match; taxFree gets rothContrib only
-      if (map.contribField === "traditionalContrib") {
+      if (map.contributionField === "traditionalContrib") {
         total += slot.traditionalContrib + slot.employerMatch;
       } else {
         total += slot.rothContrib;
@@ -682,26 +682,26 @@ export function matchFracOf({
 
 export function computeColumnChange({
   deflate,
-  bal,
+  balance,
   year,
   prev,
-  splitContrib,
+  splitContribution,
   splitGrowth,
 }: ColumnChangeInput) {
-  const deflatedBal = deflate(bal, year);
-  const deflatedPrev = prev ? deflate(prev.bal, prev.year) : 0;
-  const displayContrib = deflate(splitContrib, year);
+  const deflatedBalance = deflate(balance, year);
+  const deflatedPrev = prev ? deflate(prev.balance, prev.year) : 0;
+  const displayContribution = deflate(splitContribution, year);
   const displayGrowth = deflate(splitGrowth, year);
   const displayChange = prev
-    ? deflatedBal - deflatedPrev
-    : displayContrib + displayGrowth;
+    ? deflatedBalance - deflatedPrev
+    : displayContribution + displayGrowth;
   return {
     displayChange,
-    displayContrib,
+    displayContribution,
     displayGrowth,
-    boyBal: prev
+    boyBalance: prev
       ? deflatedPrev
-      : deflate(bal - splitContrib - splitGrowth, year),
+      : deflate(balance - splitContribution - splitGrowth, year),
   };
 }
 
@@ -718,27 +718,27 @@ export function computeAccountSplits(
     contribution: number;
     growth: number;
   }[] = [];
-  let splitContrib = 0;
+  let splitContribution = 0;
   let splitGrowth = 0;
   for (const ia of accounts) {
     const key = `${ia.category}::${ia.name}::${ia.taxType}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const contrib = Math.max(0, ia.contribution + ia.employerMatch);
-    if (ia.balance > 0 || contrib > 1 || Math.abs(ia.growth) > 1) {
+    const contribution = Math.max(0, ia.contribution + ia.employerMatch);
+    if (ia.balance > 0 || contribution > 1 || Math.abs(ia.growth) > 1) {
       splits.push({
         name: ia.name,
         category: ia.category,
         taxType: ia.taxType,
         balance: ia.balance,
-        contribution: contrib,
+        contribution: contribution,
         growth: ia.growth,
       });
-      splitContrib += contrib;
+      splitContribution += contribution;
       splitGrowth += ia.growth;
     }
   }
-  return { splits, splitContrib, splitGrowth };
+  return { splits, splitContribution, splitGrowth };
 }
 
 // ---------------------------------------------------------------------------

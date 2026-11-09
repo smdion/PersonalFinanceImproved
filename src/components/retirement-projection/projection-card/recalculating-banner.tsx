@@ -12,10 +12,10 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
     rateSeededMcQuery,
     coastFireProbeLoading,
     isRerunning,
-    mcProgressQuery,
-    mcPrefetchProgressQuery,
-    coastFireMcProgressQuery,
-    rateSeededMcProgressQuery,
+    simulationProgressQuery,
+    simulationPrefetchProgressQuery,
+    coastFireSimulationProgressQuery,
+    rateSeededSimulationProgressQuery,
     coastFireProbeProgressQuery,
   } = state;
   // Pinned to the top of the viewport, it covers every query that can make
@@ -32,18 +32,20 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
   // The run the user is looking at outranks the background prefetch; each
   // progress query has data only while its own run is in flight, so the
   // chain matters only when two overlap (Re-run starts two).
-  const mcProgress = mcQuery.isFetching
-    ? (mcProgressQuery.data ?? null)
+  const simulationProgress = mcQuery.isFetching
+    ? (simulationProgressQuery.data ?? null)
     : coastFireMcQuery.isFetching
-      ? (coastFireMcProgressQuery.data ?? null)
+      ? (coastFireSimulationProgressQuery.data ?? null)
       : rateSeededMcQuery.isFetching
-        ? (rateSeededMcProgressQuery.data ?? null)
+        ? (rateSeededSimulationProgressQuery.data ?? null)
         : coastFireProbeLoading
           ? (coastFireProbeProgressQuery.data ?? null)
           : mcPrefetchQuery.isFetching
-            ? (mcPrefetchProgressQuery.data ?? null)
+            ? (simulationPrefetchProgressQuery.data ?? null)
             : isRerunning
-              ? (mcProgressQuery.data ?? coastFireMcProgressQuery.data ?? null)
+              ? (simulationProgressQuery.data ??
+                coastFireSimulationProgressQuery.data ??
+                null)
               : null;
   if (!isRecalculating) return null;
   return (
@@ -56,20 +58,23 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
         className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white"
         aria-hidden="true"
       />
-      {mcProgress && mcProgress.total > 0 ? (
+      {simulationProgress && simulationProgress.total > 0 ? (
         <>
           <span>
-            Running simulation… {mcProgress.done.toLocaleString()}
+            Running simulation… {simulationProgress.done.toLocaleString()}
             {" / "}
-            {mcProgress.total.toLocaleString()} trials (
-            {formatPercent(safeDivide(mcProgress.done, mcProgress.total, 0), 0)}
+            {simulationProgress.total.toLocaleString()} trials (
+            {formatPercent(
+              safeDivide(simulationProgress.done, simulationProgress.total, 0),
+              0,
+            )}
             )
           </span>
           <span className="h-1.5 w-32 shrink-0 overflow-hidden rounded-full bg-white/25">
             <span
               className="block h-full rounded-full bg-white transition-[width]"
               style={{
-                width: `${Math.min(100, safeDivide(mcProgress.done, mcProgress.total, 0) * 100)}%`,
+                width: `${Math.min(100, safeDivide(simulationProgress.done, simulationProgress.total, 0) * 100)}%`,
               }}
             />
           </span>

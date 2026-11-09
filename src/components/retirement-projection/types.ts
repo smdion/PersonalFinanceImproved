@@ -324,7 +324,7 @@ type AccountSplit = {
 
 export type AccountSplitsResult = {
   splits: AccountSplit[];
-  splitContrib: number;
+  splitContribution: number;
   splitGrowth: number;
 };
 
@@ -339,10 +339,10 @@ export type SpecFracInput = {
 };
 export type MatchFracInput = { matchAnnual: number; allMatchAnnual: number };
 export type ColumnChangeInput = {
-  deflate: (v: number, yr: number) => number;
-  bal: number;
+  deflate: (v: number, year: number) => number;
+  balance: number;
   year: number;
-  prev: { bal: number; year: number } | null;
-  splitContrib: number;
+  prev: { balance: number; year: number } | null;
+  splitContribution: number;
   splitGrowth: number;
 };

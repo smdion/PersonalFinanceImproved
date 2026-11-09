@@ -23,10 +23,10 @@ import {
 import { TAX_BUCKET_DESCRIPTIONS } from "@/lib/config/display-labels";
 import { catDisplayLabel, _singleBucketCategories, isAccumYear } from "./utils";
 import type { ProjectionTableProps } from "./projection-table-types";
-import { type RenderMcCellOptions } from "./projection-table-mc-cell";
+import { type RenderSimulationCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";
 import { DecumulationRow } from "./projection-table-decum-row";
-import { ContribMethodologySection } from "./projection-table-contrib-methodology";
+import { ContributionMethodologySection } from "./projection-table-contrib-methodology";
 import { TaxSummaryCard } from "./tax-summary-card";
 
 /**
@@ -50,8 +50,8 @@ export function ProjectionTable({
     decumOverrides,
     balanceView,
     setBalanceView,
-    contribView,
-    setContribView,
+    contributionView,
+    setContributionView,
     showAllYears,
     setShowAllYears,
     diagMode,
@@ -59,12 +59,12 @@ export function ProjectionTable({
     personFilterName,
     dbSalaryOverrides,
     dbBudgetOverrides,
-    mcBandsByYear,
-    mcDetByYear,
+    simulationBandsByYear,
+    simulationDetByYear,
     getFilteredYears,
     visibleColumns,
     columnLabel,
-    contribHeaderTooltip,
+    contributionHeaderTooltip,
     balanceHeaderTooltip,
     result,
     deflate,
@@ -83,9 +83,9 @@ export function ProjectionTable({
   );
 
   // Shared MC cell rendering options — passed to row components
-  const mcCellOpts: RenderMcCellOptions = {
-    mcBandsByYear,
-    mcDetByYear,
+  const simulationCellOpts: RenderSimulationCellOptions = {
+    simulationBandsByYear,
+    simulationDetByYear,
     deflate,
     isPersonFiltered,
     parentCategoryFilter,
@@ -113,13 +113,13 @@ export function ProjectionTable({
           <div className="mb-2 flex flex-wrap items-center gap-2 print:hidden">
             <LabeledPillGroup label="Contributions">
               <PillBtn
-                active={contribView === "account"}
-                onClick={() => setContribView("account")}
+                active={contributionView === "account"}
+                onClick={() => setContributionView("account")}
                 label="Account"
               />
               <PillBtn
-                active={contribView === "taxType"}
-                onClick={() => setContribView("taxType")}
+                active={contributionView === "taxType"}
+                onClick={() => setContributionView("taxType")}
                 label="Tax Type"
               />
             </LabeledPillGroup>
@@ -150,9 +150,9 @@ export function ProjectionTable({
               aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
               style={{
                 minWidth:
-                  (balanceView === "account" || contribView === "account"
+                  (balanceView === "account" || contributionView === "account"
                     ? 1400
-                    : 1100) + (mcBandsByYear ? 120 : 0),
+                    : 1100) + (simulationBandsByYear ? 120 : 0),
               }}
             >
               <caption className="sr-only">
@@ -173,19 +173,20 @@ export function ProjectionTable({
                   <th
                     colSpan={
                       3 +
-                      (contribView === "account"
+                      (contributionView === "account"
                         ? getAllCategories().filter((c) =>
-                            visibleColumns.contribCats.has(c),
+                            visibleColumns.contributionCats.has(c),
                           ).length
                         : (
                             ["preTax", "taxFree", "hsa", "afterTax"] as const
-                          ).filter((t) => visibleColumns.contribTaxTypes.has(t))
-                            .length)
+                          ).filter((t) =>
+                            visibleColumns.contributionTaxTypes.has(t),
+                          ).length)
                     }
                     className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Contributions{" "}
-                    {contribView === "taxType" ? "(by Tax Type)" : ""}
+                    {contributionView === "taxType" ? "(by Tax Type)" : ""}
                   </th>
                   <th
                     colSpan={
@@ -210,7 +211,7 @@ export function ProjectionTable({
                         : "(by Tax Type)"
                       : ""}
                   </th>
-                  {mcBandsByYear && (
+                  {simulationBandsByYear && (
                     <th className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase">
                       Simulation
                     </th>
@@ -236,9 +237,9 @@ export function ProjectionTable({
                     Rate
                     <HelpTip text="Contribution rate as % of salary — total employee contributions divided by gross salary" />
                   </th>
-                  {contribView === "account"
+                  {contributionView === "account"
                     ? getAllCategories()
-                        .filter((c) => visibleColumns.contribCats.has(c))
+                        .filter((c) => visibleColumns.contributionCats.has(c))
                         .map((cat) => (
                           <th
                             key={cat}
@@ -247,14 +248,16 @@ export function ProjectionTable({
                             {catDisplayLabel[cat] ?? cat}
                             <HelpTip
                               text={
-                                contribHeaderTooltip[cat] ??
+                                contributionHeaderTooltip[cat] ??
                                 `Contributions to ${catDisplayLabel[cat] ?? cat}`
                               }
                             />
                           </th>
                         ))
                     : (["preTax", "taxFree", "hsa", "afterTax"] as const)
-                        .filter((t) => visibleColumns.contribTaxTypes.has(t))
+                        .filter((t) =>
+                          visibleColumns.contributionTaxTypes.has(t),
+                        )
                         .map((bucket) => (
                           <th
                             key={bucket}
@@ -320,7 +323,7 @@ export function ProjectionTable({
                     Balance
                     <HelpTip text="Total portfolio balance across all accounts and tax types at year end" />
                   </th>
-                  {mcBandsByYear && (
+                  {simulationBandsByYear && (
                     <th className="text-muted border-subtle border-l px-2 py-1.5 text-right font-medium whitespace-nowrap">
                       Sim. Median
                       <HelpTip text="Simulation median (50th percentile) — half of simulated outcomes are above, half below. Hover for p5–p95 range." />
@@ -379,7 +382,7 @@ export function ProjectionTable({
                           accumulationExpenseOverride
                         }
                         people={people}
-                        mcCellOpts={mcCellOpts}
+                        simulationCellOpts={simulationCellOpts}
                       />
                     );
                   }
@@ -400,7 +403,7 @@ export function ProjectionTable({
                       decumulationBudgetColumn={decumulationBudgetColumn}
                       decumulationExpenseOverride={decumulationExpenseOverride}
                       people={people}
-                      mcCellOpts={mcCellOpts}
+                      simulationCellOpts={simulationCellOpts}
                     />
                   );
                 })}
@@ -422,7 +425,7 @@ export function ProjectionTable({
           detail, not report content — the print report's own "Behind the
           Scenes" section covers assumptions instead. */}
       <div className="print:hidden">
-        <ContribMethodologySection state={state} />
+        <ContributionMethodologySection state={state} />
       </div>
     </>
   );

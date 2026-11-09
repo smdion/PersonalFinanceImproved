@@ -191,7 +191,7 @@ export function OverridesPanel({
         return (
           <SalaryOverrideForm
             year={year}
-            contribProfiles={state.contribProfileSummaries ?? []}
+            contributionProfiles={state.contributionProfileSummaries ?? []}
             personId={state.salaryOverridePersonId ?? 1}
             initialValue={editingOverride?.initialValue}
             onSubmit={(salary, profileId, notes) => {

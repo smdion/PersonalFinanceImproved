@@ -141,7 +141,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     deleteSalaryOverride: { mutate: vi.fn() },
     createBudgetOverride: { mutate: vi.fn() },
     deleteBudgetOverride: { mutate: vi.fn() },
-    contribProfileSummaries: [],
+    contributionProfileSummaries: [],
     engineSettings: {
       retirementAge: 65,
       endAge: 95,
@@ -154,9 +154,9 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     engineQuery: { isLoading: false, error: null },
     mcPrefetchQuery: { data: null, isFetching: false },
     mcQuery: { data: null, error: null },
-    mcLoading: false,
-    mcBandsByYear: null,
-    mcIsPrefetch: false,
+    simulationLoading: false,
+    simulationBandsByYear: null,
+    simulationIsPrefetch: false,
     mcChartPending: false,
     coastFireMcQuery: {
       data: null,
@@ -186,18 +186,18 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     // View state
     projectionMode: "monteCarlo" as const,
     setProjectionMode: vi.fn(),
-    mcTrials: 1000,
-    setMcTrials: vi.fn(),
-    mcPreset: "default",
-    setMcPreset: vi.fn(),
-    mcTaxMode: "simple",
-    setMcTaxMode: vi.fn(),
+    simulationTrials: 1000,
+    setSimulationTrials: vi.fn(),
+    simulationPreset: "default",
+    setSimulationPreset: vi.fn(),
+    simulationTaxMode: "simple",
+    setSimulationTaxMode: vi.fn(),
     dollarMode: "real",
     setDollarMode: vi.fn(),
     balanceView: "taxType",
     setBalanceView: vi.fn(),
-    contribView: "account",
-    setContribView: vi.fn(),
+    contributionView: "account",
+    setContributionView: vi.fn(),
     showAllYears: false,
     setShowAllYears: vi.fn(),
     fanBandRange: "p25-p75",
@@ -213,8 +213,8 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     showAssumptions: false,
     setShowAssumptions: vi.fn(),
     setPersonFilter: vi.fn(),
-    mcAssetClassOverrides: null,
-    setMcAssetClassOverrides: vi.fn(),
+    simulationAssetClassOverrides: null,
+    setSimulationAssetClassOverrides: vi.fn(),
     showDecumConfig: false,
     setShowDecumConfig: vi.fn(),
     withdrawalRoutingMode: "waterfall",
@@ -344,7 +344,7 @@ describe("ProjectionHeroKpis", () => {
     const s = baseMockState({
       result: minResult,
       mcQuery: { data: mcData, error: null },
-      mcLoading: false,
+      simulationLoading: false,
     });
     render(<ProjectionHeroKpis state={s} />);
     expect(screen.getByText("92%")).toBeInTheDocument();
@@ -444,7 +444,7 @@ describe("McResultsSection", () => {
       await import("@/components/retirement-projection/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
-      mcLoading: true,
+      simulationLoading: true,
     });
     const { container } = render(<McResultsSection state={s} />);
     expect(container.querySelector(".space-y-3")).toBeInTheDocument();

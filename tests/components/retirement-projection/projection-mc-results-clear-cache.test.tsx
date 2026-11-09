@@ -38,7 +38,7 @@ function baseState(overrides: Partial<ProjectionState> = {}): ProjectionState {
   const state = {
     result: { projectionByYear: [] },
     projectionMode: "monteCarlo" as const,
-    mcLoading: false,
+    simulationLoading: false,
     mcQuery: {
       error: null,
       data: {

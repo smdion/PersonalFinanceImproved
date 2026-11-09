@@ -45,7 +45,7 @@ export type ReportGateFailure =
 
 export interface ReportGateInput {
   projectionView: string;
-  mcTaxMode: "simple" | "advanced";
+  simulationTaxMode: "simple" | "advanced";
   /** Deep-equal-able live query input (`ProjectionQueries.sharedInput`). */
   sharedInput: unknown;
   /** Deep-equal-able debounced query input (`ProjectionQueries.debouncedInput`) —
@@ -82,7 +82,7 @@ export function checkReportGate(input: ReportGateInput): ReportGateResult {
   if (input.projectionView !== "baseline") {
     return { ok: false, failure: "not-baseline-scenario" };
   }
-  if (input.mcTaxMode === "simple") {
+  if (input.simulationTaxMode === "simple") {
     return { ok: false, failure: "simple-tax-mode" };
   }
   if (!deepEqual(input.sharedInput, input.debouncedInput)) {

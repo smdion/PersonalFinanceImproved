@@ -2631,7 +2631,7 @@
       "count": 7
     },
     "ratchet/no-abbreviation": {
-      "count": 18
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -2731,9 +2731,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
     "ratchet/no-history-comment": {
       "count": 1
     },
@@ -2747,30 +2744,14 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/mc-scenario-section.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 4
-    }
-  },
-  "src/components/retirement-projection/mc-simulation-assumptions.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 2
-    }
-  },
   "src/components/retirement-projection/mc-simulation-bar.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/mc-summary-tiles.tsx": {
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -2787,9 +2768,6 @@
   "src/components/retirement-projection/override-forms.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     },
     "ratchet/no-raw-button": {
       "count": 4
@@ -2845,12 +2823,7 @@
   },
   "src/components/retirement-projection/projection-card/compute-controls.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 3
-    }
-  },
-  "src/components/retirement-projection/projection-card/display-secondary-row.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-card/engine-notices.tsx": {
@@ -2863,7 +2836,7 @@
   },
   "src/components/retirement-projection/projection-card/loader-strip.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 4
     }
   },
   "src/components/retirement-projection/projection-card/projection-results.tsx": {
@@ -2876,7 +2849,7 @@
   },
   "src/components/retirement-projection/projection-card/recalculating-banner.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 9
+      "count": 4
     }
   },
   "src/components/retirement-projection/projection-card/report-controls.tsx": {
@@ -2891,21 +2864,18 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 6
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
   },
   "src/components/retirement-projection/projection-card/slide-panels.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-card/use-projection-report.ts": {
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-hand-date-format": {
       "count": 1
@@ -2927,7 +2897,7 @@
       "count": 20
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 5
@@ -2947,7 +2917,7 @@
       "count": 3
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 3
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -2960,9 +2930,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 7
-    },
     "ratchet/no-raw-button": {
       "count": 3
     }
@@ -2972,23 +2939,15 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-history-comment": {
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-table-accum-balances.model.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 6
-    }
-  },
   "src/components/retirement-projection/projection-table-accum-row.model.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-config-reach-through": {
       "count": 1
@@ -2999,7 +2958,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 26
+      "count": 3
     },
     "ratchet/no-config-reach-through": {
       "count": 1
@@ -3013,7 +2972,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 1
     },
     "ratchet/no-raw-button": {
       "count": 4
@@ -3026,9 +2985,6 @@
     "ratchet/max-comment-lines": {
       "count": 3
     },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
     "ratchet/no-history-comment": {
       "count": 1
     }
@@ -3036,9 +2992,6 @@
   "src/components/retirement-projection/projection-table-decum-row.model.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3058,7 +3011,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 28
+      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
@@ -3068,9 +3021,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-abbreviation": {
-      "count": 5
-    },
     "ratchet/no-history-comment": {
       "count": 1
     }
@@ -3078,9 +3028,6 @@
   "src/components/retirement-projection/projection-table-mc-cell.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 8
     }
   },
   "src/components/retirement-projection/projection-table-skeleton.tsx": {
@@ -3094,9 +3041,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
     }
   },
   "src/components/retirement-projection/report/report-action-items.tsx": {
@@ -3149,9 +3093,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 7
-    },
-    "ratchet/no-abbreviation": {
-      "count": 5
     }
   },
   "src/components/retirement-projection/tax-summary-card.tsx": {
@@ -3183,9 +3124,6 @@
     "ratchet/max-comment-lines": {
       "count": 7
     },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
     "ratchet/no-history-comment": {
       "count": 3
     },
@@ -3209,7 +3147,7 @@
       "count": 6
     },
     "ratchet/no-abbreviation": {
-      "count": 10
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 5
@@ -3224,9 +3162,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 8
-    },
-    "ratchet/no-abbreviation": {
-      "count": 10
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3243,7 +3178,7 @@
       "count": 26
     },
     "ratchet/no-abbreviation": {
-      "count": 49
+      "count": 12
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3256,16 +3191,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 3
-    }
-  },
-  "src/components/retirement-projection/use-simulation-assumption-drafts.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/components/retirement-projection/utils.ts": {
@@ -3277,9 +3204,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 9
-    },
-    "ratchet/no-abbreviation": {
-      "count": 15
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -5771,7 +5695,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1

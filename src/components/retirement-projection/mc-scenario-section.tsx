@@ -5,22 +5,22 @@ import { InflationRiskRow, withdrawalRateRows } from "./mc-scenario-inputs";
 import type { Dispatch, SetStateAction } from "react";
 
 export type ScenarioInputsProps = {
-  draftInflStdDev: string;
+  draftInflationStdDev: string;
   editingInflation: boolean;
   inputs: SimulationInputs;
   numTrials: number;
   onInflationRiskChange: ((stdDev: number) => void) | undefined;
-  setDraftInflStdDev: Dispatch<SetStateAction<string>>;
+  setDraftInflationStdDev: Dispatch<SetStateAction<string>>;
   setEditingInflation: Dispatch<SetStateAction<boolean>>;
 };
 
 export function ScenarioInputs({
-  draftInflStdDev,
+  draftInflationStdDev,
   editingInflation,
   inputs,
   numTrials,
   onInflationRiskChange,
-  setDraftInflStdDev,
+  setDraftInflationStdDev,
   setEditingInflation,
 }: ScenarioInputsProps) {
   return (
@@ -70,11 +70,11 @@ export function ScenarioInputs({
           tip="Fixed annual inflation rate used in the deterministic projection. The Fed targets 2%; historical US average is ~3%."
         />
         <InflationRiskRow
-          draftInflStdDev={draftInflStdDev}
+          draftInflationStdDev={draftInflationStdDev}
           editingInflation={editingInflation}
           inputs={inputs}
           onInflationRiskChange={onInflationRiskChange}
-          setDraftInflStdDev={setDraftInflStdDev}
+          setDraftInflationStdDev={setDraftInflationStdDev}
           setEditingInflation={setEditingInflation}
         />
         <AssumptionRow

@@ -6,14 +6,14 @@ import { toast } from "@/lib/hooks/use-toast";
 import { maskAmountsInText } from "@/lib/utils/format";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
-import { McSimulationBar } from "./mc-simulation-bar";
+import { SimulationBar } from "./mc-simulation-bar";
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {
   const {
     result,
     projectionMode,
-    mcLoading,
+    simulationLoading,
     mcQuery,
     setShowAssumptions,
     rerunAllMc,
@@ -79,12 +79,12 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
           Simulation failed: {mcQuery.error.message}
         </div>
       )}
-      {notConfigured && !mcLoading && (
+      {notConfigured && !simulationLoading && (
         <div className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-600">
           {SIMULATION_NOT_CONFIGURED_MESSAGE[notConfigured]}
         </div>
       )}
-      {mcQuery.data?.result && !mcLoading && (
+      {mcQuery.data?.result && !simulationLoading && (
         <>
           {/* MC warnings */}
           {mcQuery.data.result.warnings.length > 0 && (
@@ -95,7 +95,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
             </div>
           )}
           {/* MC compact summary bar */}
-          <McSimulationBar
+          <SimulationBar
             si={mcQuery.data.simulationInputs}
             mcr={mcQuery.data.result}
             result={result}
@@ -109,7 +109,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
           />
         </>
       )}
-      {!mcQuery.data?.result && !mcLoading && !mcQuery.error && (
+      {!mcQuery.data?.result && !simulationLoading && !mcQuery.error && (
         <div className="text-muted py-4 text-sm">
           No simulation data available. Ensure asset classes and glide path are
           configured.

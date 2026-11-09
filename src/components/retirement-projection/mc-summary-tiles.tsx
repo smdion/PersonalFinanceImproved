@@ -10,7 +10,7 @@ import {
   formatRelativeTime,
 } from "@/lib/utils/format";
 
-export type McRateTilesProps = {
+export type SimulationRateTilesProps = {
   si: NonNullable<
     Extract<
       NonNullable<ProjectionState["mcQuery"]["data"]>,
@@ -21,7 +21,11 @@ export type McRateTilesProps = {
   gkImpliedRate: number | null;
 };
 
-export function McRateTiles({ si, mixLines, gkImpliedRate }: McRateTilesProps) {
+export function SimulationRateTiles({
+  si,
+  mixLines,
+  gkImpliedRate,
+}: SimulationRateTilesProps) {
   return (
     <>
       <div className="text-center">
@@ -105,7 +109,7 @@ export function McRateTiles({ si, mixLines, gkImpliedRate }: McRateTilesProps) {
   );
 }
 
-export type McRunTilesProps = {
+export type SimulationRunTilesProps = {
   firstDecumYear: EngineDecumulationYear | null;
   deflate: ProjectionState["deflate"];
   si: NonNullable<
@@ -118,13 +122,13 @@ export type McRunTilesProps = {
   mcr: NonNullable<NonNullable<ProjectionState["mcQuery"]["data"]>["result"]>;
 };
 
-export function McRunTiles({
+export function SimulationRunTiles({
   firstDecumYear,
   deflate,
   si,
   dollarMode,
   mcr,
-}: McRunTilesProps) {
+}: SimulationRunTilesProps) {
   return (
     <>
       {firstDecumYear && (
@@ -171,7 +175,7 @@ export function McRunTiles({
   );
 }
 
-export type McRunControlsProps = {
+export type SimulationRunControlsProps = {
   si: NonNullable<
     Extract<
       NonNullable<ProjectionState["mcQuery"]["data"]>,
@@ -186,7 +190,7 @@ export type McRunControlsProps = {
   ps: { border: string; pill: string; accent: string };
 };
 
-export function McRunControls({
+export function SimulationRunControls({
   si,
   handleRerun,
   isRerunning,
@@ -194,7 +198,7 @@ export function McRunControls({
   clearProjectionCacheMutation,
   setShowAssumptions,
   ps,
-}: McRunControlsProps) {
+}: SimulationRunControlsProps) {
   return (
     <>
       {/* Explicit full-width fallback below the ~1024px point

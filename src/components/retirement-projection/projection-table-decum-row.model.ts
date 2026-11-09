@@ -46,7 +46,7 @@ export const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
 /** One category's withdrawal lines: each account drawn from, or the
  *  category's Traditional and Roth totals when no account data exists. */
 export function categoryWithdrawalItems(
-  wd: number,
+  withdrawal: number,
   categoryAccounts: AccountBalances,
   catCfg: ReturnType<typeof getAccountTypeConfig>,
   dSlot: DecumulationSlot | undefined,
@@ -63,7 +63,7 @@ export function categoryWithdrawalItems(
   // basis-remaining figure is reconstructed rather than
   // reusing the reason's nominal basis.
   const buildNote = noteFor;
-  if (wd > 0) {
+  if (withdrawal > 0) {
     // Per-account breakdown ("no magic money"): when a
     // category holds more than one tracked account (e.g.
     // both spouses' 401ks, or a Trad + Roth sub-account),
@@ -191,11 +191,11 @@ export function totalWithdrawalItems(
       for (const sbCat of getAllCategories().filter(
         (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
       )) {
-        const sbWd = dSlotMap.get(sbCat)?.withdrawal ?? 0;
-        if (sbWd > 0)
+        const sbWithdrawal = dSlotMap.get(sbCat)?.withdrawal ?? 0;
+        if (sbWithdrawal > 0)
           items.push({
             label: getAccountTypeConfig(sbCat).displayLabel,
-            amount: deflate(sbWd, yearRow.year),
+            amount: deflate(sbWithdrawal, yearRow.year),
             prefix: "-",
             color:
               sbCat === getAllCategories().find(isOverflowTarget)
@@ -241,11 +241,11 @@ export function decumYearAgesTooltip(
 export function categoryCellColor(
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
   cat: AccountCategory,
-  wd: number,
+  withdrawal: number,
 ) {
   const catLumps = lumpSumsForCategory(yearLumpSums, cat);
   const catLumpTotal = lumpSumTotal(catLumps);
-  if (catLumpTotal > 0 && catLumpTotal > wd) return "text-green-600";
+  if (catLumpTotal > 0 && catLumpTotal > withdrawal) return "text-green-600";
   return accountTextColor(cat);
 }
 
@@ -253,21 +253,22 @@ export function categoryCellColor(
 export function categoryCellText(
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
   cat: AccountCategory,
-  wd: number,
+  withdrawal: number,
   deflate: ProjectionState["deflate"],
   yearRow: EngineDecumulationYear,
 ) {
   const catLumps = lumpSumsForCategory(yearLumpSums, cat);
   const catLumpTotal = lumpSumTotal(catLumps);
-  if (catLumpTotal > 0 && wd > 0) {
-    const net = catLumpTotal - wd;
+  if (catLumpTotal > 0 && withdrawal > 0) {
+    const net = catLumpTotal - withdrawal;
     return net >= 0
       ? `+${formatCurrency(deflate(net, yearRow.year))}`
       : `-${formatCurrency(deflate(Math.abs(net), yearRow.year))}`;
   }
   if (catLumpTotal > 0)
     return `+${formatCurrency(deflate(catLumpTotal, yearRow.year))}`;
-  if (wd > 0) return `-${formatCurrency(deflate(wd, yearRow.year))}`;
+  if (withdrawal > 0)
+    return `-${formatCurrency(deflate(withdrawal, yearRow.year))}`;
   return "---";
 }
 
@@ -275,11 +276,11 @@ export function categoryCellText(
 export function taxTypeCellColor(
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
-  bucketWd: number,
+  bucketWithdrawal: number,
 ) {
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
   const bucketLumpTotal = lumpSumTotal(bucketLumps);
-  if (bucketLumpTotal > 0 && bucketLumpTotal > bucketWd)
+  if (bucketLumpTotal > 0 && bucketLumpTotal > bucketWithdrawal)
     return "text-green-600";
   return taxTypeTextColor(bucket);
 }
@@ -288,22 +289,22 @@ export function taxTypeCellColor(
 export function taxTypeCellText(
   yearLumpSums: EngineDecumulationYear["config"]["lumpSums"],
   bucket: "preTax" | "taxFree" | "hsa" | "afterTax",
-  bucketWd: number,
+  bucketWithdrawal: number,
   deflate: ProjectionState["deflate"],
   yearRow: EngineDecumulationYear,
 ) {
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
   const bucketLumpTotal = lumpSumTotal(bucketLumps);
-  if (bucketLumpTotal > 0 && bucketWd > 0) {
-    const net = bucketLumpTotal - bucketWd;
+  if (bucketLumpTotal > 0 && bucketWithdrawal > 0) {
+    const net = bucketLumpTotal - bucketWithdrawal;
     return net >= 0
       ? `+${formatCurrency(deflate(net, yearRow.year))}`
       : `-${formatCurrency(deflate(Math.abs(net), yearRow.year))}`;
   }
   if (bucketLumpTotal > 0)
     return `+${formatCurrency(deflate(bucketLumpTotal, yearRow.year))}`;
-  if (bucketWd > 0)
-    return `-${formatCurrency(deflate(bucketWd, yearRow.year))}`;
+  if (bucketWithdrawal > 0)
+    return `-${formatCurrency(deflate(bucketWithdrawal, yearRow.year))}`;
   return "---";
 }
 

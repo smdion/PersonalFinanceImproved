@@ -26,7 +26,7 @@ export function useSimulationAssumptionDrafts(
 
   // Inflation risk edit state
   const [editingInflation, setEditingInflation] = useState(false);
-  const [draftInflStdDev, setDraftInflStdDev] = useState("");
+  const [draftInflationStdDev, setDraftInflationStdDev] = useState("");
 
   // Clamp bounds edit state
   const [editingClamps, setEditingClamps] = useState(false);
@@ -114,8 +114,8 @@ export function useSimulationAssumptionDrafts(
     setDraftGlidePath,
     editingInflation,
     setEditingInflation,
-    draftInflStdDev,
-    setDraftInflStdDev,
+    draftInflationStdDev,
+    setDraftInflationStdDev,
     editingClamps,
     setEditingClamps,
     draftClampMin,

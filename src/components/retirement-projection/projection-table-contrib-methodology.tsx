@@ -23,11 +23,13 @@ import {
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import type { ProjectionState } from "./projection-table-types";
 
-type ContribMethodologyProps = {
+type ContributionMethodologyProps = {
   state: ProjectionState;
 };
 
-export function ContribMethodologySection({ state }: ContribMethodologyProps) {
+export function ContributionMethodologySection({
+  state,
+}: ContributionMethodologyProps) {
   const {
     showModels,
     setShowModels,

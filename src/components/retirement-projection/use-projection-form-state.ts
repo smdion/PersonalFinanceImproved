@@ -164,9 +164,9 @@ export function useProjectionFormState() {
   const [projectionMode, setProjectionMode] = useState<
     "deterministic" | "monteCarlo"
   >("monteCarlo");
-  const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
+  const [simulationTrials, setSimulationTrials] = useState(MC_DEFAULT_TRIALS);
   // Shared with the strategy comparison.
-  const [mcPreset, setMcPreset] = useSimulationPreset();
+  const [simulationPreset, setSimulationPreset] = useSimulationPreset();
   // Default to Advanced (real per-account tax tracking) rather than
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about
@@ -174,19 +174,18 @@ export function useProjectionFormState() {
   // when displayed as if it were a real account breakdown. Simple stays
   // available for anyone who specifically wants the cFIREsim-comparable
   // view.
-  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">(
-    DEFAULT_SIMULATION.taxMode,
-  );
-  const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
-    AssetClassOverride[]
-  >([]);
+  const [simulationTaxMode, setSimulationTaxMode] = useState<
+    "simple" | "advanced"
+  >(DEFAULT_SIMULATION.taxMode);
+  const [simulationAssetClassOverrides, setSimulationAssetClassOverrides] =
+    useState<AssetClassOverride[]>([]);
   const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   const [balanceView, setBalanceView] = useState<"taxType" | "account">(
     "taxType",
   );
-  const [contribView, setContribView] = useState<"account" | "taxType">(
-    "account",
-  );
+  const [contributionView, setContributionView] = useState<
+    "account" | "taxType"
+  >("account");
   const [chartView, setChartView] = useState<"balance" | "strategy" | "budget">(
     "balance",
   );
@@ -308,20 +307,20 @@ export function useProjectionFormState() {
     setDecumForm,
     projectionMode,
     setProjectionMode,
-    mcTrials,
-    setMcTrials,
-    mcPreset,
-    setMcPreset,
-    mcTaxMode,
-    setMcTaxMode,
-    mcAssetClassOverrides,
-    setMcAssetClassOverrides,
+    simulationTrials,
+    setSimulationTrials,
+    simulationPreset,
+    setSimulationPreset,
+    simulationTaxMode,
+    setSimulationTaxMode,
+    simulationAssetClassOverrides,
+    setSimulationAssetClassOverrides,
     dollarMode,
     setDollarMode,
     balanceView,
     setBalanceView,
-    contribView,
-    setContribView,
+    contributionView,
+    setContributionView,
     chartView,
     setChartView,
     projectionView,

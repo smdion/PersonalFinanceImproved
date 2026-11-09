@@ -43,9 +43,9 @@ export function ProjectionSlidePanels({
     showAssumptions,
     setShowAssumptions,
     mcQuery,
-    setMcAssetClassOverrides,
+    setSimulationAssetClassOverrides,
     updateAssetClassOverrides,
-    mcAssetClassOverrides,
+    simulationAssetClassOverrides,
     fanBandRange,
     updateGlidePath,
     updateInflationOverrides,
@@ -91,10 +91,10 @@ export function ProjectionSlidePanels({
             inputs={mcQuery.data.simulationInputs}
             numTrials={mcQuery.data.result.numTrials}
             onAssetClassOverridesChange={(overrides) => {
-              setMcAssetClassOverrides(overrides);
+              setSimulationAssetClassOverrides(overrides);
               updateAssetClassOverrides.mutate(overrides);
             }}
-            assetClassOverrides={mcAssetClassOverrides}
+            assetClassOverrides={simulationAssetClassOverrides}
             fanBandRange={fanBandRange}
             onGlidePathChange={(entries) => updateGlidePath.mutate({ entries })}
             onInflationRiskChange={(stdDev) =>

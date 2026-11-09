@@ -6,9 +6,13 @@ import { ControlZone } from "./pill-btn";
 import { formatPercent } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types";
 import type { ProjectionState } from "./projection-table-types";
-import { McRateTiles, McRunTiles, McRunControls } from "./mc-summary-tiles";
+import {
+  SimulationRateTiles,
+  SimulationRunTiles,
+  SimulationRunControls,
+} from "./mc-summary-tiles";
 
-export type McSimulationBarProps = {
+export type SimulationBarProps = {
   si: NonNullable<
     Extract<
       NonNullable<ProjectionState["mcQuery"]["data"]>,
@@ -27,7 +31,7 @@ export type McSimulationBarProps = {
 };
 
 /** The Simulation bar: the preset, the stat tiles and the run controls. */
-export function McSimulationBar({
+export function SimulationBar({
   si,
   mcr,
   result,
@@ -38,7 +42,7 @@ export function McSimulationBar({
   handleClearCache,
   clearProjectionCacheMutation,
   setShowAssumptions,
-}: McSimulationBarProps) {
+}: SimulationBarProps) {
   // First decumulation year — the same year Guyton-Klinger's
   // anchor rate below is captured from, and also the source
   // for the "starting income" tile: `spending` is what the
@@ -140,12 +144,12 @@ export function McSimulationBar({
           )}
         </div>
         <div className="text-muted flex items-center gap-3 text-xs">
-          <McRateTiles
+          <SimulationRateTiles
             si={si}
             mixLines={mixLines}
             gkImpliedRate={gkImpliedRate}
           />
-          <McRunTiles
+          <SimulationRunTiles
             firstDecumYear={firstDecumYear}
             deflate={deflate}
             si={si}
@@ -153,7 +157,7 @@ export function McSimulationBar({
             mcr={mcr}
           />
         </div>
-        <McRunControls
+        <SimulationRunControls
           si={si}
           handleRerun={handleRerun}
           isRerunning={isRerunning}

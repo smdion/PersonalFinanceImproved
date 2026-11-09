@@ -181,7 +181,7 @@ function makeQueries(
       isLoading: false,
       isFetching: false,
     },
-    contribProfilesQuery: { data: undefined },
+    contributionProfilesQuery: { data: undefined },
     salaryProfilesQuery: { data: undefined },
     coastFireMcResult: undefined,
     ...overrides,
@@ -273,7 +273,7 @@ describe("useProjectionDerived", () => {
           coastFireMcResult: {
             deterministicProjection: { projectionByYear: coastYears },
           },
-          activeCoastFireMcResult: {
+          activeCoastFireSimulationResult: {
             deterministicProjection: { projectionByYear: coastYears },
           },
           activeAltMcResult: {

@@ -53,7 +53,7 @@ export function SpendingStabilityChart({
   const {
     result,
     engineSettings,
-    mcStabilityBands,
+    simulationStabilityBands,
     fanBandRange,
     deflate,
     showStabilityBars,
@@ -83,11 +83,11 @@ export function SpendingStabilityChart({
   if (!result) return null;
 
   const years = result.projectionByYear;
-  const decYears = years.filter(
+  const decumulationYears = years.filter(
     (y): y is EngineDecumulationYear => y.phase === "decumulation",
   );
 
-  if (decYears.length === 0) {
+  if (decumulationYears.length === 0) {
     return (
       <div className="bg-surface-sunken rounded-lg p-3">
         <h5 className="text-muted mb-2 text-xs font-medium uppercase">
@@ -101,7 +101,7 @@ export function SpendingStabilityChart({
     );
   }
 
-  const year1Withdrawal = decYears[0]!.totalWithdrawal;
+  const year1Withdrawal = decumulationYears[0]!.totalWithdrawal;
   const inflationRate = parseFloat(engineSettings.annualInflation);
 
   const isStrategy = view === "strategy";
@@ -116,11 +116,12 @@ export function SpendingStabilityChart({
     STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.usesPostRetirementRaise ??
     true;
 
-  const hasMcData = !!mcStabilityBands;
-  const mcBandMap = isStrategy
-    ? mcStabilityBands?.stratRatio
-    : mcStabilityBands?.budgetRatio;
-  const showMc = hasMcData && !!mcBandMap && fanBandRange !== "off";
+  const hasSimulationData = !!simulationStabilityBands;
+  const simulationBandMap = isStrategy
+    ? simulationStabilityBands?.stratRatio
+    : simulationStabilityBands?.budgetRatio;
+  const showSimulation =
+    hasSimulationData && !!simulationBandMap && fanBandRange !== "off";
   // reactsToVolatility computed earlier (before the early returns, for the
   // smart-default effect). Bars now read the shared showStabilityBars
   // toggle directly -- no re-gating here, so the BASELINE pill is the one
@@ -135,10 +136,10 @@ export function SpendingStabilityChart({
         ? { lo: "p10" as const, hi: "p90" as const }
         : { lo: "p25" as const, hi: "p75" as const };
 
-  const chartData = decYears
-    .filter((_, i) => i % 2 === 0 || i === decYears.length - 1)
+  const chartData = decumulationYears
+    .filter((_, i) => i % 2 === 0 || i === decumulationYears.length - 1)
     .map((yearRow) => {
-      const decumulationIndex = yearRow.age - decYears[0]!.age;
+      const decumulationIndex = yearRow.age - decumulationYears[0]!.age;
       const inflationFactor = Math.pow(1 + inflationRate, decumulationIndex);
 
       const baseline = isStrategy
@@ -164,7 +165,7 @@ export function SpendingStabilityChart({
         : strategySpending(yearRow);
       const ratio = safeDivide(measured, baseline, 0);
 
-      const band = mcBandMap?.get(yearRow.age);
+      const band = simulationBandMap?.get(yearRow.age);
 
       // MC band data — match Balance chart's stacked area pattern
       const pct = (v: number) => Math.round(v * 1000) / 10;
@@ -224,10 +225,10 @@ export function SpendingStabilityChart({
   const year1Baseline = deflate(
     isStrategy
       ? usesPostRetirementRaise
-        ? decYears[0]!.targetWithdrawal
+        ? decumulationYears[0]!.targetWithdrawal
         : year1Withdrawal
-      : decYears[0]!.budgetOnlyExpenses,
-    decYears[0]!.year,
+      : decumulationYears[0]!.budgetOnlyExpenses,
+    decumulationYears[0]!.year,
   );
 
   return (
@@ -269,7 +270,7 @@ export function SpendingStabilityChart({
             above to see them anyway.
           </>
         )}
-        {showMc && (
+        {showSimulation && (
           <>
             {" "}
             The orange <strong>Breached floor</strong> line is the % of
@@ -430,7 +431,7 @@ export function SpendingStabilityChart({
           />
 
           {/* MC fan bands — always render all 6 layers (unused ones have height 0) */}
-          {showMc && (
+          {showSimulation && (
             <>
               <Area
                 yAxisId="left"
@@ -515,7 +516,7 @@ export function SpendingStabilityChart({
           )}
 
           {/* MC median line — same as Balance chart */}
-          {showMc && (
+          {showSimulation && (
             <Line
               yAxisId="left"
               type="monotone"
@@ -534,7 +535,7 @@ export function SpendingStabilityChart({
               deviation shows up even when p5-p95 (or narrower) leaves the
               band itself looking flat. Right axis (0-100%, shares the
               hidden forcing line's scale). */}
-          {showMc && (
+          {showSimulation && (
             <Line
               yAxisId="right"
               type="monotone"

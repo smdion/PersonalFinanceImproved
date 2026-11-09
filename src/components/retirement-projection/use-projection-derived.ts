@@ -29,7 +29,7 @@ import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
 import type {
   UseProjectionStateProps,
-  EngineContribRate,
+  EngineContributionRate,
   AccountBreakdown,
 } from "./use-projection-state";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
@@ -56,7 +56,7 @@ export function useProjectionDerived(
 
   const {
     engineQuery,
-    contribProfilesQuery,
+    contributionProfilesQuery,
     salaryProfilesQuery,
     activeAltMcResult,
   } = queries;
@@ -178,7 +178,7 @@ export function useProjectionDerived(
     engineData && engineData.result
       ? engineData.budgetProfileSummaries
       : undefined;
-  const contribProfileSummaries = contribProfilesQuery.data;
+  const contributionProfileSummaries = contributionProfilesQuery.data;
   const salaryProfileSummaries = salaryProfilesQuery.data;
 
   const contribSpecs = useMemo(() => {
@@ -265,16 +265,16 @@ export function useProjectionDerived(
           byAccount[cat] = (byAccount[cat] ?? 0) + ia.balance;
         }
       }
-      const byCategoryContrib: Record<
+      const byCategoryContribution: Record<
         string,
         { employee: number; match: number }
       > = {};
       for (const ia of mine) {
         const cat = ia.category;
-        if (!byCategoryContrib[cat])
-          byCategoryContrib[cat] = { employee: 0, match: 0 };
-        byCategoryContrib[cat].employee += ia.contribution;
-        byCategoryContrib[cat].match += ia.employerMatch;
+        if (!byCategoryContribution[cat])
+          byCategoryContribution[cat] = { employee: 0, match: 0 };
+        byCategoryContribution[cat].employee += ia.contribution;
+        byCategoryContribution[cat].match += ia.employerMatch;
       }
       return {
         balance,
@@ -282,7 +282,7 @@ export function useProjectionDerived(
         growth,
         byTaxType,
         byAccount,
-        byCategoryContrib,
+        byCategoryContribution,
       };
     },
     [isPersonFiltered, personFilter],
@@ -337,8 +337,8 @@ export function useProjectionDerived(
 
   // --- Visible columns ---
   const visibleColumns = useMemo(() => {
-    const contribCats = new Set<string>();
-    const contribTaxTypes = new Set<string>();
+    const contributionCats = new Set<string>();
+    const contributionTaxTypes = new Set<string>();
     const balanceAccounts = new Set<string>();
     const balanceTaxTypes = new Set<string>();
     if (result) {
@@ -351,11 +351,11 @@ export function useProjectionDerived(
           for (const slot of (yearRow as unknown as Record<string, unknown>)
             .slots as Record<string, unknown>[]) {
             /* eslint-enable no-restricted-syntax */
-            const hasContrib =
+            const hasContribution =
               (slot.employeeContrib ?? 0) !== 0 ||
               (slot.employerMatch ?? 0) !== 0;
             const hasWithdrawal = (slot.withdrawal ?? 0) !== 0;
-            if (hasContrib || hasWithdrawal) {
+            if (hasContribution || hasWithdrawal) {
               const slotCat = slot.category as string;
               if (
                 parentCategoryFilter &&
@@ -373,7 +373,7 @@ export function useProjectionDerived(
                     }[];
                   }
                 ).individualAccountBalances;
-                const hasMatchingContrib = iabs?.some(
+                const hasMatchingContribution = iabs?.some(
                   (ia) =>
                     ia.category === slotCat &&
                     ia.parentCategory === parentCategoryFilter &&
@@ -381,28 +381,28 @@ export function useProjectionDerived(
                       ia.employerMatch !== 0 ||
                       (ia.draw?.withdrawal ?? 0) !== 0),
                 );
-                if (hasMatchingContrib) contribCats.add(slotCat);
+                if (hasMatchingContribution) contributionCats.add(slotCat);
               } else {
-                contribCats.add(slotCat);
+                contributionCats.add(slotCat);
               }
             }
             if (
               (slot.traditionalContrib ?? 0) !== 0 ||
               (slot.traditionalWithdrawal ?? 0) !== 0
             )
-              contribTaxTypes.add("preTax");
+              contributionTaxTypes.add("preTax");
             if (
               (slot.rothContrib ?? 0) !== 0 ||
               (slot.rothWithdrawal ?? 0) !== 0
             )
-              contribTaxTypes.add("taxFree");
+              contributionTaxTypes.add("taxFree");
             if (
-              (hasContrib || hasWithdrawal) &&
+              (hasContribution || hasWithdrawal) &&
               _singleBucketCategories.has(slot.category as string)
             ) {
               const slotCfg =
                 ACCOUNT_TYPE_CONFIG[slot.category as AccountCategory];
-              contribTaxTypes.add(slotCfg.taxBucketKey);
+              contributionTaxTypes.add(slotCfg.taxBucketKey);
             }
           }
         }
@@ -426,7 +426,12 @@ export function useProjectionDerived(
         }
       }
     }
-    return { contribCats, contribTaxTypes, balanceAccounts, balanceTaxTypes };
+    return {
+      contributionCats,
+      contributionTaxTypes,
+      balanceAccounts,
+      balanceTaxTypes,
+    };
   }, [result, parentCategoryFilter, hasIndividualAccountData]);
 
   // --- Column labels and tooltips ---
@@ -434,7 +439,7 @@ export function useProjectionDerived(
     getAccountSegments().map((seg) => [seg.key, seg.label]),
   );
 
-  const contribHeaderTooltip = useMemo(() => {
+  const contributionHeaderTooltip = useMemo(() => {
     const tips: Record<string, string> = {};
     for (const cat of getAllCategories()) {
       const accounts = filteredBreakdown[cat];
@@ -511,7 +516,7 @@ export function useProjectionDerived(
       onContributionRates?.([]);
       return;
     }
-    const rates: EngineContribRate[] = [];
+    const rates: EngineContributionRate[] = [];
     let prevRate: number | null = null;
     for (const yearRow of result.projectionByYear) {
       if (yearRow.phase !== "accumulation") break;
@@ -602,7 +607,7 @@ export function useProjectionDerived(
     annualExpenses,
     decumulationExpenses,
     budgetProfileSummaries,
-    contribProfileSummaries,
+    contributionProfileSummaries,
     salaryProfileSummaries,
     contribSpecs,
     rothBracketPresets,
@@ -613,7 +618,7 @@ export function useProjectionDerived(
     filteredBreakdown,
     visibleColumns,
     columnLabel,
-    contribHeaderTooltip,
+    contributionHeaderTooltip,
     balanceHeaderTooltip,
     inflationRate,
     baseYear,

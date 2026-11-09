@@ -32,7 +32,7 @@ import { taxTypeLabel } from "@/lib/utils/colors";
 export function categoryWithdrawalTooltip(
   dSlotMap: Map<AccountCategory, DecumulationSlot>,
   cat: AccountCategory,
-  wd: number,
+  withdrawal: number,
   categoryAccounts: NonNullable<
     EngineDecumulationYear["individualAccountBalances"]
   >,
@@ -46,12 +46,12 @@ export function categoryWithdrawalTooltip(
   engineSettings: ProjectionState["engineSettings"],
   renderTooltip: ProjectionState["renderTooltip"],
   catGrowth: number,
-  catBal: number,
+  catBalance: number,
 ) {
   const dSlot = dSlotMap.get(cat);
   const catCfg = getAccountTypeConfig(cat);
   const items = categoryWithdrawalItems(
-    wd,
+    withdrawal,
     categoryAccounts,
     catCfg,
     dSlot,
@@ -134,9 +134,9 @@ export function categoryWithdrawalTooltip(
     header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 || qcdAmount > 0.01 ? " Activity" : " Withdrawals"}`,
     items: items.length > 0 ? items : undefined,
     withdrawals:
-      wd > 0 && items.length === 0
+      withdrawal > 0 && items.length === 0
         ? {
-            amount: deflate(wd, yearRow.year),
+            amount: deflate(withdrawal, yearRow.year),
           }
         : undefined,
     growth:
@@ -151,7 +151,7 @@ export function categoryWithdrawalTooltip(
         amount: deflate(t.amount, yearRow.year),
       })),
     ),
-    balance: deflate(catBal, yearRow.year),
+    balance: deflate(catBalance, yearRow.year),
   });
 }
 
@@ -168,12 +168,12 @@ export function taxTypeWithdrawalTooltip(
     note?: string;
     noteLocked?: boolean;
   },
-  parts: { cat: string; wd: number }[],
+  parts: { cat: string; withdrawal: number }[],
   renderTooltip: ProjectionState["renderTooltip"],
-  bucketWd: number,
+  bucketWithdrawal: number,
 ) {
   const taxPrefCat = categoriesWithTaxPreference()[0]!;
-  const wdTaxType = bucketSlotMap[bucket]?.taxField
+  const withdrawalTaxType = bucketSlotMap[bucket]?.taxField
     ? itemTaxType(taxPrefCat, bucketSlotMap[bucket]!.taxField)
     : undefined;
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
@@ -186,15 +186,15 @@ export function taxTypeWithdrawalTooltip(
             : (catDisplayLabel[ia.category] ?? ia.category),
           amount: deflate(ia.draw!.withdrawal, yearRow.year),
           prefix: "-" as const,
-          taxType: itemTaxType(ia.category, wdTaxType),
+          taxType: itemTaxType(ia.category, withdrawalTaxType),
           color: "red" as TipColor,
           ...noteFor(ia),
         }))
       : parts.map((p) => ({
           label: catDisplayLabel[p.cat] ?? p.cat,
-          amount: deflate(p.wd, yearRow.year),
+          amount: deflate(p.withdrawal, yearRow.year),
           prefix: "-" as const,
-          taxType: itemTaxType(p.cat, wdTaxType),
+          taxType: itemTaxType(p.cat, withdrawalTaxType),
           color: "red" as TipColor,
         }))),
     ...bucketLumps.map((ls) => ({
@@ -213,8 +213,8 @@ export function taxTypeWithdrawalTooltip(
       allItems.length > 1
         ? {
             label: "Net",
-            amount: deflate(bucketLumpTotal - bucketWd, yearRow.year),
-            prefix: bucketLumpTotal >= bucketWd ? "+" : "-",
+            amount: deflate(bucketLumpTotal - bucketWithdrawal, yearRow.year),
+            prefix: bucketLumpTotal >= bucketWithdrawal ? "+" : "-",
           }
         : undefined,
   });

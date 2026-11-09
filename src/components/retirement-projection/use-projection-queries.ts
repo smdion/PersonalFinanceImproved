@@ -32,7 +32,7 @@ type CoastFireProbeResult = NonNullable<
 // Safety ceiling for every getMonteCarloProgress poller below (400ms
 // interval x 450 = ~3 minutes) — see useBoundedPollInterval's own
 // docblock for why a poll needs one at all.
-const MC_PROGRESS_POLL_MAX = 450;
+const SIMULATION_PROGRESS_POLL_MAX = 450;
 
 export function useProjectionQueries(
   form: ProjectionFormState,
@@ -51,11 +51,11 @@ export function useProjectionQueries(
     accumOverridesTouched,
     decumOverridesTouched,
     projectionMode,
-    mcTrials,
-    mcPreset,
-    mcTaxMode,
-    mcAssetClassOverrides,
-    setMcAssetClassOverrides,
+    simulationTrials,
+    simulationPreset,
+    simulationTaxMode,
+    simulationAssetClassOverrides,
+    setSimulationAssetClassOverrides,
     projectionView,
     coastFireCustomAge,
     dollarMode,
@@ -254,7 +254,7 @@ export function useProjectionQueries(
     trpc.retirement.projectionOverrides.clear.useMutation({
       onSuccess: invalidateEngine,
     });
-  const invalidateMc = () => {
+  const invalidateSimulation = () => {
     utils.projection.computeMonteCarloProjection.invalidate();
     utils.projection.computeStrategyComparison.invalidate();
   };
@@ -265,15 +265,15 @@ export function useProjectionQueries(
       onSuccess: invalidateEngine,
     });
   const updateClampBounds = trpc.projection.updateClampBounds.useMutation({
-    onSuccess: invalidateMc,
+    onSuccess: invalidateSimulation,
   });
   const updateAssetClassOverrides =
     trpc.projection.updateAssetClassOverrides.useMutation({
-      onSuccess: invalidateMc,
+      onSuccess: invalidateSimulation,
     });
   const updateInflationOverrides =
     trpc.projection.updateInflationOverrides.useMutation({
-      onSuccess: invalidateMc,
+      onSuccess: invalidateSimulation,
     });
 
   // --- Explicit re-run actions ---
@@ -298,14 +298,22 @@ export function useProjectionQueries(
   // input coincide at their initial values — that's why this went unnoticed.
   const runMonteCarloInput = useMemo(
     () => ({
-      numTrials: mcTrials,
-      preset: mcPreset,
-      taxMode: mcTaxMode,
+      numTrials: simulationTrials,
+      preset: simulationPreset,
+      taxMode: simulationTaxMode,
       assetClassOverrides:
-        mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+        simulationAssetClassOverrides.length > 0
+          ? simulationAssetClassOverrides
+          : undefined,
       ...debouncedBaseInput,
     }),
-    [mcTrials, mcPreset, mcTaxMode, mcAssetClassOverrides, debouncedBaseInput],
+    [
+      simulationTrials,
+      simulationPreset,
+      simulationTaxMode,
+      simulationAssetClassOverrides,
+      debouncedBaseInput,
+    ],
   );
   // Shared by coastFireMcQuery/mcQuery further down (same inputs, same
   // ids) so the manual "Re-run" buttons and the queries they refresh
@@ -318,11 +326,11 @@ export function useProjectionQueries(
   // Memoized — these ran on every render otherwise, re-stringifying an
   // input object that (per the docblock above) only needs to change when
   // the underlying input actually does.
-  const coastFireMcRunId = useMemo(
+  const coastFireSimulationRunId = useMemo(
     () => JSON.stringify(debouncedBaseInput),
     [debouncedBaseInput],
   );
-  const mcRunId = useMemo(
+  const simulationRunId = useMemo(
     () => JSON.stringify(runMonteCarloInput),
     [runMonteCarloInput],
   );
@@ -345,10 +353,10 @@ export function useProjectionQueries(
   // shared boolean would get clipped false by whichever one finishes
   // first while the other is still running. A count only reaches 0 once
   // every in-flight run has actually finished.
-  const [activeMcReruns, setActiveMcReruns] = useState(0);
-  const isRerunning = activeMcReruns > 0;
+  const [activeSimulationReruns, setActiveSimulationReruns] = useState(0);
+  const isRerunning = activeSimulationReruns > 0;
   const runMonteCarlo = async () => {
-    setActiveMcReruns((n) => n + 1);
+    setActiveSimulationReruns((n) => n + 1);
     try {
       // `simulationRunId`/`coastFireSimulationRunId` (below runMonteCarloInput/
       // coastFireMcQuery further down in this file — referenced here via
@@ -359,31 +367,31 @@ export function useProjectionQueries(
       // steady-state query path. See simulationProgressQuery's docblock.
       const result = await utils.projection.computeMonteCarloProjection.fetch({
         ...runMonteCarloInput,
-        runId: mcRunId,
+        runId: simulationRunId,
         forceRefresh: true,
       });
       utils.projection.computeMonteCarloProjection.setData(
-        { ...runMonteCarloInput, runId: mcRunId },
+        { ...runMonteCarloInput, runId: simulationRunId },
         result,
       );
     } finally {
-      setActiveMcReruns((n) => n - 1);
+      setActiveSimulationReruns((n) => n - 1);
     }
   };
   const runCoastFireMc = async () => {
-    setActiveMcReruns((n) => n + 1);
+    setActiveSimulationReruns((n) => n + 1);
     try {
       const result = await utils.projection.computeCoastFireMC.fetch({
         ...debouncedBaseInput,
-        runId: coastFireMcRunId,
+        runId: coastFireSimulationRunId,
         forceRefresh: true,
       });
       utils.projection.computeCoastFireMC.setData(
-        { ...debouncedBaseInput, runId: coastFireMcRunId },
+        { ...debouncedBaseInput, runId: coastFireSimulationRunId },
         result,
       );
     } finally {
-      setActiveMcReruns((n) => n - 1);
+      setActiveSimulationReruns((n) => n - 1);
     }
   };
   /** Both baseline MC + Coast FIRE MC together — what the "Re-run" button
@@ -450,7 +458,7 @@ export function useProjectionQueries(
     coastFireProbeLoading && coastFireProbeRunId != null;
   const coastFireProbeProgressInterval = useBoundedPollInterval(
     400,
-    MC_PROGRESS_POLL_MAX,
+    SIMULATION_PROGRESS_POLL_MAX,
     coastFireProbeProgressEnabled,
     "coastFireProbeProgress",
   );
@@ -486,21 +494,21 @@ export function useProjectionQueries(
   // stable, input-derived id (not a fresh UUID per mount) is what makes
   // the progress poll survive remounts and reconnect to an in-flight
   // server-side run instead of resetting to indeterminate.
-  const mcPrefetchQueryInput = useMemo(
+  const simulationPrefetchQueryInput = useMemo(
     () => ({
       numTrials: DEFAULT_SIMULATION.numTrials,
       preset: DEFAULT_SIMULATION.preset,
-      taxMode: mcTaxMode,
+      taxMode: simulationTaxMode,
       ...debouncedBaseInput,
     }),
-    [mcTaxMode, debouncedBaseInput],
+    [simulationTaxMode, debouncedBaseInput],
   );
-  const mcPrefetchRunId = useMemo(
-    () => JSON.stringify(mcPrefetchQueryInput),
-    [mcPrefetchQueryInput],
+  const simulationPrefetchRunId = useMemo(
+    () => JSON.stringify(simulationPrefetchQueryInput),
+    [simulationPrefetchQueryInput],
   );
   const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
-    { ...mcPrefetchQueryInput, runId: mcPrefetchRunId },
+    { ...simulationPrefetchQueryInput, runId: simulationPrefetchRunId },
     {
       enabled:
         mcAutoloadEnabled && engineQuery.isSuccess && !engineQuery.isFetching,
@@ -512,18 +520,18 @@ export function useProjectionQueries(
   // mcQuery/"Simulation" run; this tracks the passive one that starts
   // right after the engine finishes, in every projection mode). See
   // index.tsx's mcProgress for how these are merged into one banner.
-  const mcPrefetchProgressInterval = useBoundedPollInterval(
+  const simulationPrefetchProgressInterval = useBoundedPollInterval(
     400,
-    MC_PROGRESS_POLL_MAX,
+    SIMULATION_PROGRESS_POLL_MAX,
     mcPrefetchQuery.isFetching,
     "mcPrefetchProgress",
   );
-  const mcPrefetchProgressQuery =
+  const simulationPrefetchProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
-      { runId: mcPrefetchRunId },
+      { runId: simulationPrefetchRunId },
       {
         enabled: mcPrefetchQuery.isFetching,
-        refetchInterval: mcPrefetchProgressInterval,
+        refetchInterval: simulationPrefetchProgressInterval,
         staleTime: 0,
       },
     );
@@ -554,18 +562,20 @@ export function useProjectionQueries(
   // already computed from it there; not re-derived here to avoid the two
   // silently drifting apart if one of the two literals is ever edited
   // without the other.
-  const mcQueryInput = {
-    numTrials: mcTrials,
-    preset: mcPreset,
-    taxMode: mcTaxMode,
+  const simulationQueryInput = {
+    numTrials: simulationTrials,
+    preset: simulationPreset,
+    taxMode: simulationTaxMode,
     assetClassOverrides:
-      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+      simulationAssetClassOverrides.length > 0
+        ? simulationAssetClassOverrides
+        : undefined,
     ...debouncedBaseInput,
   };
   const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
-      ...mcQueryInput,
-      runId: mcRunId,
+      ...simulationQueryInput,
+      runId: simulationRunId,
     },
     {
       enabled:
@@ -583,21 +593,22 @@ export function useProjectionQueries(
   // query path. See monte-carlo-worker-client.ts's module docblock for
   // why this is a lightweight poll against an in-memory map rather than a
   // subscription.
-  const mcProgressEnabled = mcQuery.isFetching || isRerunning;
-  const mcProgressInterval = useBoundedPollInterval(
+  const simulationProgressEnabled = mcQuery.isFetching || isRerunning;
+  const simulationProgressInterval = useBoundedPollInterval(
     400,
-    MC_PROGRESS_POLL_MAX,
-    mcProgressEnabled,
+    SIMULATION_PROGRESS_POLL_MAX,
+    simulationProgressEnabled,
     "mcProgress",
   );
-  const mcProgressQuery = trpc.projection.getMonteCarloProgress.useQuery(
-    { runId: mcRunId },
-    {
-      enabled: mcProgressEnabled,
-      refetchInterval: mcProgressInterval,
-      staleTime: 0,
-    },
-  );
+  const simulationProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: simulationRunId },
+      {
+        enabled: simulationProgressEnabled,
+        refetchInterval: simulationProgressInterval,
+        staleTime: 0,
+      },
+    );
 
   // Coast FIRE Monte Carlo — on demand by default, same
   // pattern as rateSeededMcQuery below: fires once the household actually
@@ -625,15 +636,15 @@ export function useProjectionQueries(
   // computation can reuse this instead of re-deriving the same condition
   // (previously copy-pasted there, with only a comment tying the two
   // together).
-  const coastFireMcQueryEnabled =
+  const coastFireSimulationQueryEnabled =
     coastFireMcAutoloadEnabled ||
     projectionView === "coastFire" ||
     projectionView === "coastFireToday";
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
-    { ...debouncedBaseInput, runId: coastFireMcRunId },
+    { ...debouncedBaseInput, runId: coastFireSimulationRunId },
     {
       enabled:
-        coastFireMcQueryEnabled &&
+        coastFireSimulationQueryEnabled &&
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
       placeholderData: (prev) => prev,
@@ -646,19 +657,20 @@ export function useProjectionQueries(
   // currently running, resetting to 0 as each new one starts. Also polls
   // during a manual "Re-run Coast FIRE" (runCoastFireMc reuses this same
   // coastFireSimulationRunId).
-  const coastFireMcProgressEnabled = coastFireMcQuery.isFetching || isRerunning;
-  const coastFireMcProgressInterval = useBoundedPollInterval(
+  const coastFireSimulationProgressEnabled =
+    coastFireMcQuery.isFetching || isRerunning;
+  const coastFireSimulationProgressInterval = useBoundedPollInterval(
     400,
-    MC_PROGRESS_POLL_MAX,
-    coastFireMcProgressEnabled,
+    SIMULATION_PROGRESS_POLL_MAX,
+    coastFireSimulationProgressEnabled,
     "coastFireMcProgress",
   );
-  const coastFireMcProgressQuery =
+  const coastFireSimulationProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
-      { runId: coastFireMcRunId },
+      { runId: coastFireSimulationRunId },
       {
-        enabled: coastFireMcProgressEnabled,
-        refetchInterval: coastFireMcProgressInterval,
+        enabled: coastFireSimulationProgressEnabled,
+        refetchInterval: coastFireSimulationProgressInterval,
         staleTime: 0,
       },
     );
@@ -690,23 +702,23 @@ export function useProjectionQueries(
   // autoloaded in the background like Coast FIRE — a third always-on MC
   // run per page load was judged not worth the extra background server
   // cost for a scenario most households won't open every visit.
-  const rateSeededMcQueryInput = useMemo(
+  const rateSeededSimulationQueryInput = useMemo(
     () => ({
       numTrials: DEFAULT_SIMULATION.numTrials,
       preset: DEFAULT_SIMULATION.preset,
-      taxMode: mcTaxMode,
+      taxMode: simulationTaxMode,
       ...debouncedBaseInput,
       rateSeededDecumulationYear1: true,
     }),
-    [mcTaxMode, debouncedBaseInput],
+    [simulationTaxMode, debouncedBaseInput],
   );
-  const rateSeededMcRunId = useMemo(
-    () => JSON.stringify(rateSeededMcQueryInput),
-    [rateSeededMcQueryInput],
+  const rateSeededSimulationRunId = useMemo(
+    () => JSON.stringify(rateSeededSimulationQueryInput),
+    [rateSeededSimulationQueryInput],
   );
   const rateSeededMcQuery =
     trpc.projection.computeMonteCarloProjection.useQuery(
-      { ...rateSeededMcQueryInput, runId: rateSeededMcRunId },
+      { ...rateSeededSimulationQueryInput, runId: rateSeededSimulationRunId },
       {
         enabled:
           projectionView === "rateSeeded" &&
@@ -716,42 +728,42 @@ export function useProjectionQueries(
         staleTime: 5 * PROJECTION_STALE_TIME_MS,
       },
     );
-  const rateSeededMcResult = rateSeededMcQuery.data?.result as
+  const rateSeededSimulationResult = rateSeededMcQuery.data?.result as
     MonteCarloResult | undefined;
   // No manual "Re-run" action exists for this scenario (unlike mc/coast
   // fire above) — only the steady-state query itself, so this doesn't
   // need an `isRerunning` OR'd into its enabled condition.
-  const rateSeededMcProgressInterval = useBoundedPollInterval(
+  const rateSeededSimulationProgressInterval = useBoundedPollInterval(
     400,
-    MC_PROGRESS_POLL_MAX,
+    SIMULATION_PROGRESS_POLL_MAX,
     rateSeededMcQuery.isFetching,
     "rateSeededMcProgress",
   );
-  const rateSeededMcProgressQuery =
+  const rateSeededSimulationProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
-      { runId: rateSeededMcRunId },
+      { runId: rateSeededSimulationRunId },
       {
         enabled: rateSeededMcQuery.isFetching,
-        refetchInterval: rateSeededMcProgressInterval,
+        refetchInterval: rateSeededSimulationProgressInterval,
         staleTime: 0,
       },
     );
 
   // Initialize asset class overrides from saved DB values on first MC query success
-  const mcOverridesInitialized = useRef(false);
+  const simulationOverridesInitialized = useRef(false);
   useEffect(() => {
-    if (mcOverridesInitialized.current) return;
+    if (simulationOverridesInitialized.current) return;
     const saved =
       mcQuery.data?.savedOverrides ?? mcPrefetchQuery.data?.savedOverrides;
     if (!saved) return;
-    mcOverridesInitialized.current = true;
+    simulationOverridesInitialized.current = true;
     if (saved.assetClassOverrides.length > 0) {
-      setMcAssetClassOverrides(saved.assetClassOverrides);
+      setSimulationAssetClassOverrides(saved.assetClassOverrides);
     }
   }, [
     mcQuery.data?.savedOverrides,
     mcPrefetchQuery.data?.savedOverrides,
-    setMcAssetClassOverrides,
+    setSimulationAssetClassOverrides,
   ]);
 
   // Two separate gates:
@@ -768,7 +780,7 @@ export function useProjectionQueries(
   // fields of its response.
   const inCoastFireScenario =
     projectionView === "coastFire" || projectionView === "coastFireToday";
-  const activeCoastFireMcResult =
+  const activeCoastFireSimulationResult =
     projectionView === "coastFireToday"
       ? coastFireTodayMcResult
       : coastFireMcResult;
@@ -784,7 +796,7 @@ export function useProjectionQueries(
     projectionView === "coastFireCustom";
   const activeAltMcResult =
     projectionView === "rateSeeded"
-      ? rateSeededMcResult
+      ? rateSeededSimulationResult
       : projectionView === "coastFireCustom"
         ? // Without this guard, changing the
           // custom age (committing a new coastFireCustomAge) without
@@ -798,10 +810,10 @@ export function useProjectionQueries(
           coastFireProbeResult?.probeAge === coastFireCustomAge
           ? coastFireProbeResult.mcResult
           : undefined
-        : activeCoastFireMcResult;
-  const useCoastFireMc = inAltScenario && !!activeAltMcResult;
+        : activeCoastFireSimulationResult;
+  const useCoastFireSimulation = inAltScenario && !!activeAltMcResult;
 
-  const mcLoading =
+  const simulationLoading =
     projectionMode === "monteCarlo" &&
     (isRerunning ||
       (projectionView === "rateSeeded"
@@ -812,16 +824,16 @@ export function useProjectionQueries(
             ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
             : mcQuery.isLoading || mcQuery.isFetching));
 
-  const mcBandsByYear = useMemo(() => {
+  const simulationBandsByYear = useMemo(() => {
     if (
       projectionMode === "monteCarlo" &&
       mcQuery.isFetching &&
-      !useCoastFireMc
+      !useCoastFireSimulation
     )
       return null;
     // In the dollars the chart shows — today's come from the Simulation,
     // each trial deflated by its own inflation (never re-deflated here).
-    const source = useCoastFireMc
+    const source = useCoastFireSimulation
       ? activeAltMcResult
       : ((projectionMode === "monteCarlo" ? mcQuery.data?.result : null) ??
         mcPrefetchQuery.data?.result);
@@ -837,19 +849,19 @@ export function useProjectionQueries(
     mcQuery.isFetching,
     mcQuery.data?.result,
     mcPrefetchQuery.data?.result,
-    useCoastFireMc,
+    useCoastFireSimulation,
     activeAltMcResult,
     dollarMode,
   ]);
 
-  const mcStabilityBands = useMemo(() => {
+  const simulationStabilityBands = useMemo(() => {
     if (
       projectionMode === "monteCarlo" &&
       mcQuery.isFetching &&
-      !useCoastFireMc
+      !useCoastFireSimulation
     )
       return null;
-    const bands = useCoastFireMc
+    const bands = useCoastFireSimulation
       ? activeAltMcResult.spendingStabilityBands
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.spendingStabilityBands
@@ -868,24 +880,24 @@ export function useProjectionQueries(
     mcQuery.isFetching,
     mcQuery.data?.result?.spendingStabilityBands,
     mcPrefetchQuery.data?.result?.spendingStabilityBands,
-    useCoastFireMc,
+    useCoastFireSimulation,
     activeAltMcResult,
   ]);
 
-  const mcIsPrefetch =
+  const simulationIsPrefetch =
     projectionMode !== "monteCarlo" || !mcQuery.data?.result?.percentileBands;
 
   const mcChartPending =
-    mcLoading || (!mcBandsByYear && mcPrefetchQuery.isFetching);
+    simulationLoading || (!simulationBandsByYear && mcPrefetchQuery.isFetching);
 
-  const mcDetByYear = useMemo(() => {
+  const simulationDetByYear = useMemo(() => {
     if (
       projectionMode === "monteCarlo" &&
       mcQuery.isFetching &&
-      !useCoastFireMc
+      !useCoastFireSimulation
     )
       return null;
-    const det = useCoastFireMc
+    const det = useCoastFireSimulation
       ? activeAltMcResult.deterministicProjection
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.deterministicProjection
@@ -907,12 +919,12 @@ export function useProjectionQueries(
     mcQuery.data?.result?.deterministicProjection,
     mcPrefetchQuery.data?.result?.deterministicProjection,
     parentCategoryFilter,
-    useCoastFireMc,
+    useCoastFireSimulation,
     activeAltMcResult,
   ]);
 
   // Contribution profiles query
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const contributionProfilesQuery = trpc.contributionProfile.list.useQuery();
   const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
 
   return {
@@ -925,17 +937,17 @@ export function useProjectionQueries(
     bracketOptimizerQuery,
     bracketOptimizerResult,
     coastFireMcQuery,
-    coastFireMcQueryEnabled,
-    mcProgressQuery,
-    mcPrefetchProgressQuery,
-    coastFireMcProgressQuery,
-    rateSeededMcProgressQuery,
+    coastFireSimulationQueryEnabled,
+    simulationProgressQuery,
+    simulationPrefetchProgressQuery,
+    coastFireSimulationProgressQuery,
+    rateSeededSimulationProgressQuery,
     coastFireProbeProgressQuery,
     coastFireMcResult,
     coastFireTodayMcResult,
-    activeCoastFireMcResult,
+    activeCoastFireSimulationResult,
     rateSeededMcQuery,
-    rateSeededMcResult,
+    rateSeededSimulationResult,
     coastFireProbeResult,
     coastFireProbeLoading,
     coastFireProbeError,
@@ -953,12 +965,12 @@ export function useProjectionQueries(
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
-    mcLoading,
-    mcBandsByYear,
-    mcStabilityBands,
-    mcIsPrefetch,
+    simulationLoading,
+    simulationBandsByYear,
+    simulationStabilityBands,
+    simulationIsPrefetch,
     mcChartPending,
-    mcDetByYear,
+    simulationDetByYear,
     createSalaryOverride,
     deleteSalaryOverride,
     createBudgetOverride,
@@ -969,7 +981,7 @@ export function useProjectionQueries(
     updateClampBounds,
     updateAssetClassOverrides,
     updateInflationOverrides,
-    contribProfilesQuery,
+    contributionProfilesQuery,
     salaryProfilesQuery,
   };
 }

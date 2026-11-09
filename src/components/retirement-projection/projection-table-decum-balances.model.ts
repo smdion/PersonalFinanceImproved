@@ -61,7 +61,7 @@ export function totalWithdrawalTooltip(
     noteFor,
   );
   const totalGrowth = filteredIabs.reduce((s, ia) => s + ia.growth, 0);
-  const decBudgetProfile =
+  const decumulationBudgetProfile =
     decumulationBudgetProfileId != null
       ? budgetProfileSummaries?.find(
           (p) => p.id === decumulationBudgetProfileId,
@@ -70,8 +70,8 @@ export function totalWithdrawalTooltip(
   const budgetProfileName =
     decumulationExpenseOverride != null
       ? `Set for this year${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
-      : decBudgetProfile
-        ? `${decBudgetProfile.name}${decumulationBudgetColumn != null && decBudgetProfile.columnLabels[decumulationBudgetColumn] ? ` (${decBudgetProfile.columnLabels[decumulationBudgetColumn]})` : ""}${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
+      : decumulationBudgetProfile
+        ? `${decumulationBudgetProfile.name}${decumulationBudgetColumn != null && decumulationBudgetProfile.columnLabels[decumulationBudgetColumn] ? ` (${decumulationBudgetProfile.columnLabels[decumulationBudgetColumn]})` : ""}${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
         : undefined;
   // SS/RMD context for withdrawal tooltip
   const hasSs = dyr.ssIncome > 0;
@@ -186,7 +186,7 @@ export function taxTypeBalanceTooltip(
   pct: number,
   bucketGrowth: number,
 ) {
-  const wdLineItems: TooltipLineItem[] = [];
+  const withdrawalLineItems: TooltipLineItem[] = [];
   // Per-account items in BOTH household and person-filtered
   // views — previously the household view fell back to a
   // per-CATEGORY slot aggregate here, collapsing e.g. two
@@ -196,13 +196,13 @@ export function taxTypeBalanceTooltip(
   if (bucketAccounts.length > 0) {
     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
     for (const ia of bucketAccounts) {
-      const wd = ia.draw?.withdrawal ?? 0;
-      if (wd > 0) {
-        wdLineItems.push({
+      const withdrawal = ia.draw?.withdrawal ?? 0;
+      if (withdrawal > 0) {
+        withdrawalLineItems.push({
           label: multiAccountBucket
             ? ownerAccountLabel(ia)
             : (catDisplayLabel[ia.category] ?? ia.category),
-          amount: deflate(wd, yearRow.year),
+          amount: deflate(withdrawal, yearRow.year),
           prefix: "-",
           taxType: bucketTaxField
             ? itemTaxType(ia.category, bucketTaxField)
@@ -215,11 +215,11 @@ export function taxTypeBalanceTooltip(
     // Fallback when no individual-account data exists.
     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
     for (const slot of dyr.slots) {
-      const wd = slotBucketWithdrawal(slot, bucket);
-      if (wd > 0) {
-        wdLineItems.push({
+      const withdrawal = slotBucketWithdrawal(slot, bucket);
+      if (withdrawal > 0) {
+        withdrawalLineItems.push({
           label: catDisplayLabel[slot.category] ?? slot.category,
-          amount: deflate(wd, yearRow.year),
+          amount: deflate(withdrawal, yearRow.year),
           prefix: "-",
           taxType: bucketTaxField
             ? itemTaxType(slot.category, bucketTaxField)
@@ -232,7 +232,7 @@ export function taxTypeBalanceTooltip(
   // Add lump sum items for this bucket
   const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
   for (const ls of bucketLumps) {
-    wdLineItems.push({
+    withdrawalLineItems.push({
       label: ls.label ?? "Lump sum",
       amount: deflate(ls.amount, yearRow.year),
       prefix: "+",
@@ -250,13 +250,13 @@ export function taxTypeBalanceTooltip(
   const bucketRmdMode = engineSettings?.rmdExcessHandling;
   if (isAfterTaxType(bucket) && bucketRmdExcess > 0.01) {
     if (bucketRmdMode === "spend") {
-      wdLineItems.push({
+      withdrawalLineItems.push({
         label: "RMD excess spent (not reinvested)",
         amount: deflate(bucketRmdExcess, yearRow.year),
         color: "gray",
       });
     } else {
-      wdLineItems.push({
+      withdrawalLineItems.push({
         label: "RMD excess reinvested",
         amount: deflate(bucketRmdExcess, yearRow.year),
         prefix: "+",
@@ -266,7 +266,7 @@ export function taxTypeBalanceTooltip(
   }
   const bucketQcd = yearRow.qcdAmount ?? 0;
   if (isPreTaxType(bucket) && bucketQcd > 0.01) {
-    wdLineItems.push({
+    withdrawalLineItems.push({
       label: "QCD to charity (excluded from taxable income)",
       amount: deflate(bucketQcd, yearRow.year),
       prefix: "-",
@@ -277,7 +277,7 @@ export function taxTypeBalanceTooltip(
     kind: "money",
     header: `${taxTypeLabel(bucket)}: ${pct}% of portfolio`,
     meta: `${yearRow.year} · ${formatPercent(yearRow.returnRate, 1)} return`,
-    items: wdLineItems.length > 0 ? wdLineItems : undefined,
+    items: withdrawalLineItems.length > 0 ? withdrawalLineItems : undefined,
     growth:
       Math.abs(bucketGrowth) > 1
         ? {

@@ -10,9 +10,9 @@ import type {
 } from "@/lib/pure/engine/types";
 import type { MonteCarloPercentileBand } from "@/lib/pure/simulation/monte-carlo.types";
 
-export type RenderMcCellOptions = {
-  mcBandsByYear: Map<number, MonteCarloPercentileBand> | null;
-  mcDetByYear: Map<number, EngineYearProjection> | null;
+export type RenderSimulationCellOptions = {
+  simulationBandsByYear: Map<number, MonteCarloPercentileBand> | null;
+  simulationDetByYear: Map<number, EngineYearProjection> | null;
   deflate: (amount: number, year: number) => number;
   isPersonFiltered: boolean;
   parentCategoryFilter?: string;
@@ -25,30 +25,30 @@ export type RenderMcCellOptions = {
   }) => React.ReactNode;
 };
 
-export function renderMcCell(
+export function renderSimulationCell(
   yearRow: EngineYearProjection,
-  detBal: number,
-  opts: RenderMcCellOptions,
+  detBalance: number,
+  opts: RenderSimulationCellOptions,
 ) {
   const {
-    mcBandsByYear,
-    mcDetByYear,
+    simulationBandsByYear,
+    simulationDetByYear,
     deflate,
     isPersonFiltered,
     parentCategoryFilter,
     diagMode,
     renderTooltip,
   } = opts;
-  if (!mcBandsByYear) return null;
-  const band = mcBandsByYear.get(yearRow.year);
+  if (!simulationBandsByYear) return null;
+  const band = simulationBandsByYear.get(yearRow.year);
   if (!band) return <td className="text-faint px-2 py-1.5 text-right">---</td>;
-  const mcP50 = deflate(band.p50, yearRow.year);
+  const simulationP50 = deflate(band.p50, yearRow.year);
   const showDelta = !isPersonFiltered && !parentCategoryFilter;
-  const delta = mcP50 - detBal;
+  const delta = simulationP50 - detBalance;
   const deltaColor = delta >= 0 ? "text-green-600" : "text-red-500";
   // Proof: show MC's own deterministic year data to verify overrides are applied (diag mode only)
   const simulationDeterministicYear = diagMode
-    ? mcDetByYear?.get(yearRow.year)
+    ? simulationDetByYear?.get(yearRow.year)
     : undefined;
   let proofNote: string | undefined;
   if (simulationDeterministicYear) {
@@ -56,7 +56,7 @@ export function renderMcCell(
     parts.push(
       `Simulation det. bal: ${formatCurrency(deflate(rowTotal(simulationDeterministicYear), yearRow.year))}`,
     );
-    parts.push(`Standalone: ${formatCurrency(detBal)}`);
+    parts.push(`Standalone: ${formatCurrency(detBalance)}`);
     parts.push(
       simulationDeterministicYear.phase === "decumulation"
         ? `Spending: ${formatCurrency(deflate(simulationDeterministicYear.spending, yearRow.year))}/yr`
@@ -101,7 +101,7 @@ export function renderMcCell(
             label: "75th",
             amount: deflate(band.p75, yearRow.year),
           },
-          { label: "Median", amount: mcP50 },
+          { label: "Median", amount: simulationP50 },
           {
             label: "25th",
             amount: deflate(band.p25, yearRow.year),
@@ -127,7 +127,7 @@ export function renderMcCell(
       side="top"
     >
       <td className="border-subtle border-l px-2 py-1.5 text-right text-purple-700 tabular-nums">
-        {formatCurrency(Math.max(0, mcP50))}
+        {formatCurrency(Math.max(0, simulationP50))}
         {showDelta && Math.abs(delta) > 1 && (
           <div className={`text-micro ${deltaColor}`}>
             {delta >= 0 ? "+" : ""}

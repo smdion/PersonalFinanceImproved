@@ -113,12 +113,12 @@ export function RoutingForm({
 
 /** Salary override form — "From contribution profile" or custom salary amount. */
 export function SalaryOverrideForm({
-  contribProfiles,
+  contributionProfiles,
   initialValue,
   onSubmit,
 }: {
   year: number;
-  contribProfiles: {
+  contributionProfiles: {
     id: number;
     name: string;
     summary?: { combinedSalary: number };
@@ -128,13 +128,13 @@ export function SalaryOverrideForm({
   onSubmit: (salary: number, profileId: number | null, notes: string) => void;
 }) {
   const [source, setSource] = useState<"custom" | "profile">(
-    contribProfiles.length > 0 ? "profile" : "custom",
+    contributionProfiles.length > 0 ? "profile" : "custom",
   );
-  const [profileId, setProfileId] = useState(contribProfiles[0]?.id ?? 0);
+  const [profileId, setProfileId] = useState(contributionProfiles[0]?.id ?? 0);
   const [customValue, setCustomValue] = useState(initialValue ?? "");
   const [notes, setNotes] = useState("");
 
-  const selectedProfile = contribProfiles.find((p) => p.id === profileId);
+  const selectedProfile = contributionProfiles.find((p) => p.id === profileId);
   const resolvedSalary =
     source === "profile" && selectedProfile?.summary
       ? selectedProfile.summary.combinedSalary
@@ -143,7 +143,7 @@ export function SalaryOverrideForm({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end gap-3">
-        {contribProfiles.length > 0 && (
+        {contributionProfiles.length > 0 && (
           <label className="block">
             <span className="text-muted text-xs">Source</span>
             <select
@@ -166,7 +166,7 @@ export function SalaryOverrideForm({
               onChange={(e) => setProfileId(Number(e.target.value))}
               className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
             >
-              {contribProfiles.map((cp) => (
+              {contributionProfiles.map((cp) => (
                 <option key={cp.id} value={String(cp.id)}>
                   {cp.name}
                   {cp.summary

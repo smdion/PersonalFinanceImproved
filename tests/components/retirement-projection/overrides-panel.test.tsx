@@ -39,7 +39,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
       { name: "401k - Alice", category: "401k" },
       { name: "Brokerage - Joint", category: "brokerage" },
     ],
-    contribProfileSummaries: [],
+    contributionProfileSummaries: [],
     budgetProfileSummaries: [],
     salaryOverridePersonId: 1,
     createSalaryOverride: { mutate: vi.fn() },

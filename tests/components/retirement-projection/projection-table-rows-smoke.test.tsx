@@ -33,7 +33,7 @@ import type { ProjectionQueries } from "@/components/retirement-projection/use-p
 import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
 import { AccumulationRow } from "@/components/retirement-projection/projection-table-accum-row";
 import { DecumulationRow } from "@/components/retirement-projection/projection-table-decum-row";
-import type { RenderMcCellOptions } from "@/components/retirement-projection/projection-table-mc-cell";
+import type { RenderSimulationCellOptions } from "@/components/retirement-projection/projection-table-mc-cell";
 import { annAndBo, engineDataFor, people } from "../projection-household";
 
 /** The card's state for one engine result: the real derived-state hook,
@@ -42,7 +42,7 @@ function stateFor(result: ProjectionResult): ProjectionState {
   const engineData = engineDataFor(result);
   const queries = {
     engineQuery: { data: engineData, isLoading: false, isFetching: false },
-    contribProfilesQuery: { data: undefined },
+    contributionProfilesQuery: { data: undefined },
     salaryProfilesQuery: { data: undefined },
   } as unknown as ProjectionQueries;
   const form = {
@@ -61,16 +61,16 @@ function stateFor(result: ProjectionResult): ProjectionState {
     ...form,
     ...derived.current,
     balanceView: "taxType",
-    contribView: "account",
+    contributionView: "account",
     diagMode: false,
     withdrawalRoutingMode: "waterfall",
     bracketOptimizerResult: null,
   } as unknown as ProjectionState;
 }
 
-const mcCellOpts = (state: ProjectionState): RenderMcCellOptions => ({
-  mcBandsByYear: null,
-  mcDetByYear: null,
+const mcCellOpts = (state: ProjectionState): RenderSimulationCellOptions => ({
+  simulationBandsByYear: null,
+  simulationDetByYear: null,
   deflate: state.deflate,
   isPersonFiltered: false,
   diagMode: false,
@@ -103,7 +103,7 @@ function renderAccum(year: number) {
             isPhaseTransition={false}
             hasOverride={false}
             people={people}
-            mcCellOpts={mcCellOpts(state)}
+            simulationCellOpts={mcCellOpts(state)}
           />
         </tbody>
       </table>
@@ -124,7 +124,7 @@ function renderDecum(year: number) {
             isPhaseTransition={false}
             hasOverride={false}
             people={people}
-            mcCellOpts={mcCellOpts(state)}
+            simulationCellOpts={mcCellOpts(state)}
           />
         </tbody>
       </table>

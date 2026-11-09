@@ -29,7 +29,7 @@ type CoastFireInput = Parameters<
 >[0];
 
 /** The part of computeCoastFireMC's result the card reads. */
-type CoastFireMcResult = Pick<
+type CoastFireSimulationResult = Pick<
   NonNullable<RouterOutputs["projection"]["computeCoastFireMC"]["result"]>,
   | "coastFireAge"
   | "status"
@@ -49,11 +49,11 @@ type CoastFireMcResult = Pick<
  *  caption (previously duplicated as a literal `0.05` in each). */
 const COAST_FIRE_GAP_MATERIALITY_THRESHOLD = 0.05;
 
-function hasCoastFireGapAmount(mc: CoastFireMcResult): boolean {
+function hasCoastFireGapAmount(simulation: CoastFireSimulationResult): boolean {
   return (
-    mc.stopNowPenaltyAvoidedShortfallRate >
+    simulation.stopNowPenaltyAvoidedShortfallRate >
       COAST_FIRE_GAP_MATERIALITY_THRESHOLD &&
-    mc.stopNowMedianPenaltyAvoidedShortfallPV > 0
+    simulation.stopNowMedianPenaltyAvoidedShortfallPV > 0
   );
 }
 
@@ -73,25 +73,25 @@ interface CoastFireCardProps {
    *  once the household selects a Coast FIRE scenario, not on page load —
    *  so this card usually shows deterministic-only at first; the headline
    *  automatically upgrades to combined once the MC result arrives. */
-  coastFireMcResult?: CoastFireMcResult;
+  coastFireMcResult?: CoastFireSimulationResult;
   /** True while the shared coast MC query is fetching. */
-  coastFireMcLoading?: boolean;
+  coastFireSimulationLoading?: boolean;
   /** When the Coast FIRE MC result was computed — ISO string, or null when
    *  it came from a fresh (uncached) run just now. Surfaced so the user can
    *  tell a cached result apart from a just-computed one. */
-  coastFireMcComputedAt?: string | null;
+  coastFireSimulationComputedAt?: string | null;
   /** Why the simulated answer can't be computed (no preset, classes or
    *  glide path); the card shows that in place of a simulated figure. */
-  coastFireMcNotConfigured?: SimulationNotConfigured | null;
+  coastFireSimulationNotConfigured?: SimulationNotConfigured | null;
 }
 
 export function CoastFireCard({
   input,
   ageLabel,
   coastFireMcResult,
-  coastFireMcLoading = false,
-  coastFireMcComputedAt,
-  coastFireMcNotConfigured,
+  coastFireSimulationLoading = false,
+  coastFireSimulationComputedAt,
+  coastFireSimulationNotConfigured,
 }: CoastFireCardProps) {
   const { data: deterministic } = trpc.projection.computeCoastFire.useQuery(
     input,
@@ -102,8 +102,9 @@ export function CoastFireCard({
   );
 
   const det = deterministic?.result ?? undefined;
-  const mcAvailable = coastFireMcResult != null;
-  const hasGapAmount = mcAvailable && hasCoastFireGapAmount(coastFireMcResult);
+  const simulationAvailable = coastFireMcResult != null;
+  const hasGapAmount =
+    simulationAvailable && hasCoastFireGapAmount(coastFireMcResult);
 
   return (
     <KpiCard
@@ -123,28 +124,32 @@ export function CoastFireCard({
       {/* Headline upgrades automatically: baseline-only while simulated is
           prefetching, combined baseline+simulated once it lands. Does NOT
           show "Already ✓" unless BOTH baseline and simulated agree. */}
-      {mcAvailable ? (
+      {simulationAvailable ? (
         <CombinedStatus det={det} mc={coastFireMcResult} ageLabel={ageLabel} />
       ) : (
         <DeterministicStatus result={det} ageLabel={ageLabel} />
       )}
       <div className="mt-auto pt-2">
-        {coastFireMcLoading && !coastFireMcResult && (
+        {coastFireSimulationLoading && !coastFireMcResult && (
           <div className="text-caption text-muted animate-pulse">
             Running simulations...
           </div>
         )}
-        {!mcAvailable && coastFireMcNotConfigured && (
+        {!simulationAvailable && coastFireSimulationNotConfigured && (
           <div className="text-caption text-faint leading-tight">
             Simulated:{" "}
-            {SIMULATION_NOT_CONFIGURED_MESSAGE[coastFireMcNotConfigured]}
+            {
+              SIMULATION_NOT_CONFIGURED_MESSAGE[
+                coastFireSimulationNotConfigured
+              ]
+            }
           </div>
         )}
-        {mcAvailable && (
+        {simulationAvailable && (
           <SimulatedDetail
             ageLabel={ageLabel}
             mc={coastFireMcResult}
-            computedAt={coastFireMcComputedAt}
+            computedAt={coastFireSimulationComputedAt}
           />
         )}
       </div>
@@ -164,7 +169,7 @@ function CombinedStatus({
   ageLabel,
 }: {
   det: DeterministicResult | undefined;
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
   // If baseline hasn't loaded, fall back to simulated-only headline.
@@ -233,8 +238,8 @@ function CombinedStatus({
   // Both "found" — show the more conservative (later) age.
   if (det.status === "found" && mc.status === "found") {
     const detAge = det.coastFireAge ?? 0;
-    const mcAge = mc.coastFireAge ?? 0;
-    const headlineAge = Math.max(detAge, mcAge);
+    const simulationAge = mc.coastFireAge ?? 0;
+    const headlineAge = Math.max(detAge, simulationAge);
     return (
       <>
         <div className="text-primary text-xl font-bold tabular-nums">
@@ -271,7 +276,7 @@ function SimulatedOnlyStatus({
   mc,
   ageLabel,
 }: {
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
   if (mc.status === "unreachable") {
@@ -359,7 +364,7 @@ function SimulatedDetail({
   computedAt,
   ageLabel,
 }: {
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   computedAt?: string | null;
   ageLabel: (age: number) => string;
 }) {

@@ -34,7 +34,7 @@ export function totalContributionTooltip(
   personFilterName: ProjectionState["personFilterName"],
   accumOverrideNotes: string | undefined,
   accumOverrides: ProjectionState["accumOverrides"],
-  contribSpecs: ProjectionState["contribSpecs"],
+  contributionSpecs: ProjectionState["contribSpecs"],
 ) {
   const iabs = yearRow.individualAccountBalances ?? [];
   const totalGrowth = (
@@ -129,7 +129,10 @@ export function totalContributionTooltip(
       yearRow.proRateFraction != null
         ? (() => {
             const totalAnnual =
-              contribSpecs?.reduce((s, sp) => s + (sp.baseAnnual || 0), 0) ?? 0;
+              contributionSpecs?.reduce(
+                (s, sp) => s + (sp.baseAnnual || 0),
+                0,
+              ) ?? 0;
             return totalAnnual > 0
               ? {
                   months: proRateMonths(yearRow.proRateFraction),
@@ -144,7 +147,7 @@ export function totalContributionTooltip(
 
 /** One balance column's tooltip, per account. */
 export function accountBalanceTooltip(
-  colDisplayContrib: number,
+  colDisplayContribution: number,
   colDisplayGrowth: number,
   splits: ReturnType<typeof computeAccountSplits>["splits"],
   colSplitsTotal: number,
@@ -154,8 +157,8 @@ export function accountBalanceTooltip(
   renderTooltip: ProjectionState["renderTooltip"],
   col: { key: string; val: number; color: string; label: string },
   pct: number,
-  colBoyBal: number,
-  colDeflatedBal: number,
+  colBoyBalance: number,
+  colDeflatedBalance: number,
   colDisplayChange: number,
 ) {
   const colChangeParts: {
@@ -163,10 +166,10 @@ export function accountBalanceTooltip(
     amount: number;
     color: TipColor;
   }[] = [];
-  if (colDisplayContrib > 0)
+  if (colDisplayContribution > 0)
     colChangeParts.push({
       label: "contrib",
-      amount: colDisplayContrib,
+      amount: colDisplayContribution,
       color: "green",
     });
   if (Math.abs(colDisplayGrowth) > 1)
@@ -179,16 +182,16 @@ export function accountBalanceTooltip(
     ({
       name: accountName,
       taxType: spTaxType,
-      balance: spBal,
-      contribution: spContrib,
+      balance: spBalance,
+      contribution: spContribution,
       growth: spGrowth,
     }) => {
-      const entryPercent = percentOf(spBal, colSplitsTotal);
+      const entryPercent = percentOf(spBalance, colSplitsTotal);
       const subItems: TooltipLineItem[] = [];
-      if (spContrib > 1)
+      if (spContribution > 1)
         subItems.push({
           label: "contrib",
-          amount: deflate(spContrib, yearRow.year),
+          amount: deflate(spContribution, yearRow.year),
           prefix: "+",
           color: "green",
         });
@@ -201,7 +204,7 @@ export function accountBalanceTooltip(
         });
       return {
         label: accountName,
-        amount: deflate(spBal, yearRow.year),
+        amount: deflate(spBalance, yearRow.year),
         percent: entryPercent,
         taxType: itemTaxType(catKey, spTaxType),
         sub: subItems.length > 0 ? subItems : undefined,
@@ -211,10 +214,10 @@ export function accountBalanceTooltip(
   return renderTooltip({
     kind: "money",
     header: `${col.label}: ${pct}% of portfolio`,
-    meta: `${yearRow.year} · BoY: ${formatCurrency(colBoyBal)} → EoY: ${formatCurrency(colDeflatedBal)} · ${formatPercent(yearRow.returnRate, 1)} return${yearRow.proRateFraction != null && yearRow.proRateFraction > 0 ? ` (${formatPercent(yearRow.annualizedReturnRate, 1)} annual)` : ""}`,
+    meta: `${yearRow.year} · BoY: ${formatCurrency(colBoyBalance)} → EoY: ${formatCurrency(colDeflatedBalance)} · ${formatPercent(yearRow.returnRate, 1)} return${yearRow.proRateFraction != null && yearRow.proRateFraction > 0 ? ` (${formatPercent(yearRow.annualizedReturnRate, 1)} annual)` : ""}`,
     items: splitItems,
     yearChange: {
-      total: colDeflatedBal,
+      total: colDeflatedBalance,
       change: colDisplayChange,
       parts: colChangeParts.length > 0 ? colChangeParts : undefined,
     },

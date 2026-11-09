@@ -76,9 +76,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     getPersonYearTotals,
     agesInYear,
     deflate,
-    mcBandsByYear,
+    simulationBandsByYear,
     mcPrefetchQuery,
-    mcIsPrefetch,
+    simulationIsPrefetch,
     visibleColumns,
     columnLabel,
     balanceView,
@@ -171,7 +171,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     // MC percentile band areas — already in the shown dollars
     // (simulationDollars: today's are deflated per trial), never deflated
     // here.
-    const band = mcBandsByYear?.get(yearRow.year);
+    const band = simulationBandsByYear?.get(yearRow.year);
     // This year's assumptions, for the tooltip.
     datum._planReturn = yearRow.annualizedReturnRate;
     datum._inflation =
@@ -330,8 +330,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           label: s.label,
         }));
 
-  const hasMcData = mcBandsByYear != null;
-  const showMc = hasMcData && fanBandRange !== "off";
+  const hasSimulationData = simulationBandsByYear != null;
+  const showSimulation = hasSimulationData && fanBandRange !== "off";
   const { showBars, showIncome } = state;
 
   // Decumulation-year income overlay (total portfolio withdrawal + Social
@@ -395,12 +395,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               {personFilterName}
             </span>
           )}
-          {!mcBandsByYear && mcPrefetchQuery.isFetching && (
+          {!simulationBandsByYear && mcPrefetchQuery.isFetching && (
             <span className="text-micro ml-2 animate-pulse font-normal text-purple-600 normal-case">
               Simulating...
             </span>
           )}
-          {hasMcData && mcIsPrefetch && (
+          {hasSimulationData && simulationIsPrefetch && (
             <span className="text-micro ml-2 font-normal text-purple-600 normal-case">
               Sim. preview
             </span>
@@ -459,7 +459,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 if (!active || !payload?.length) return null; // Recharts' runtime props, not our types: kept guarded.
                 const d = payload[0]?.payload;
                 if (!d) return null;
-                const totalBal = segmentKeys.reduce(
+                const totalBalance = segmentKeys.reduce(
                   (s, k) => s + (Number(d[k.key]) || 0),
                   0,
                 );
@@ -536,10 +536,10 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     <div className="mt-1 flex justify-between border-t border-white/10 pt-1 font-medium">
                       <span>Total</span>
                       <span className="tabular-nums">
-                        {formatCurrency(totalBal)}
+                        {formatCurrency(totalBalance)}
                       </span>
                     </div>
-                    {hasMcData && d.mc_p50 != null && (
+                    {hasSimulationData && d.mc_p50 != null && (
                       <div className="mt-1 border-t border-white/10 pt-1">
                         <div
                           className={`flex justify-between ${tipColorClass.purple}`}
@@ -814,7 +814,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             />
 
             {/* MC percentile fan — behind bars */}
-            {showMc && (
+            {showSimulation && (
               <>
                 <Area
                   type="monotone"
@@ -940,7 +940,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             )}
 
             {/* MC median line */}
-            {showMc && (
+            {showSimulation && (
               <Line
                 type="monotone"
                 yAxisId="balance"
@@ -1071,7 +1071,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
           </>
         )}
-        {hasMcData && (
+        {hasSimulationData && (
           <>
             <span className="flex items-center gap-1">
               <span
@@ -1079,7 +1079,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 style={{ backgroundColor: c.mcMedian }}
               />{" "}
               Sim. median
-              {mcIsPrefetch && (
+              {simulationIsPrefetch && (
                 <span className="text-faint ml-0.5">(preview)</span>
               )}
             </span>

@@ -15,7 +15,7 @@ import { ProjectionResults } from "./projection-card/projection-results";
 import { TableArea } from "./projection-card/table-area";
 import {
   useProjectionState,
-  type EngineContribRate,
+  type EngineContributionRate,
 } from "./use-projection-state";
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ import {
 
 type ProjectionCardProps = {
   people?: { id: number; name: string; birthYear: number }[];
-  onContributionRates?: (rates: EngineContribRate[]) => void;
+  onContributionRates?: (rates: EngineContributionRate[]) => void;
   withdrawalRate: number;
   accumulationBudgetProfileId?: number;
   accumulationBudgetColumn?: number;
