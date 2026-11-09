@@ -1,21 +1,7 @@
 /**
- * Paycheck Calculator
- *
- * Computes per-period net pay by walking through the paycheck waterfall:
- *   Gross salary ÷ periods → Pre-tax deductions → Federal withholding → FICA → Post-tax deductions → Net pay
- *
- * Key concepts:
- *   - FICA base ≠ federal taxable base. Section 125 deductions (health insurance, marked ficaExempt)
- *     and payroll contributions to an account type flagged payrollFicaExempt (HSA, within its
- *     yearly cap) reduce BOTH FICA and income tax. 401k deferrals only reduce income tax, NOT FICA.
- *   - Federal withholding uses the IRS annualized method: multiply per-period taxable income by
- *     periods/year, look up tax in annual brackets, divide back by periods/year.
- *   - The bracket set passed in may be W-4 2(c) checked or unchecked — the tRPC layer selects the
- *     correct set based on job settings. 2(c) brackets are halved for dual-income households.
- *   - Social Security tax has a wage base cap ($184,500 in 2026). Once YTD FICA base exceeds the cap,
- *     SS withholding drops to $0 for remaining periods. The year schedule models this transition.
- *   - Contribution accounts (401k, IRA, HSA, brokerage) are only included as paycheck deductions
- *     when `isPayrollDeducted` is true. IRA and brokerage contributions flow outside the paycheck.
+ * Per-period net pay: gross ÷ periods → pre-tax deductions → federal withholding (IRS annualized
+ * method) → FICA → post-tax deductions. Only payroll-deducted contribution accounts are deductions;
+ * Section 125 and payroll-FICA-exempt money (HSA) leave the FICA base, 401k deferrals don't.
  */
 import type {
   PaycheckInput,
@@ -38,15 +24,9 @@ import {
 } from "./pay-periods-in-year";
 
 /**
- * IRS annualized bracket lookup for federal withholding.
- *
- * Walks brackets bottom-to-top, accumulating tax on each slice of income that falls within
- * each bracket's [min, max) range. Returns the total annual tax, the marginal rate (highest
- * bracket touched), the bracket floor, and the base withholding (tax from all brackets below
- * the marginal one — useful for the IRS withholding worksheet display).
- *
- * Bracket structure: { min: lower_bound, max: upper_bound | null (for top bracket), rate: decimal }
- * Example: { min: 0, max: 11600, rate: 0.10 } means 10% on the first $11,600.
+ * IRS annualized bracket lookup: total annual tax, marginal rate (highest bracket touched), its
+ * floor, and the base withholding below it (for the withholding worksheet display).
+ * Brackets are { min, max (null = top), rate (decimal) }, each taxing [min, max).
  */
 function lookupFederalWithholding(
   adjustedAnnualWage: number,
@@ -60,11 +40,8 @@ function lookupFederalWithholding(
   let marginalRate = 0;
   let bracketMin = 0;
 
-  // First pass: find the highest bracket that applies (for marginal rate reporting).
-  // Boundary-inclusive (>=), unlike sumBracketTax's own marginalRate — this
-  // function needs the bracket the wage has REACHED (even if its taxable
-  // slice is 0, exactly at the boundary) to compute bracketMin/baseWithholding
-  // for the IRS withholding-table display; kept as its own pass deliberately.
+  // Highest bracket reached (>=, even with a 0 slice at the boundary), unlike sumBracketTax's
+  // marginalRate: bracketMin/baseWithholding for the withholding-table display need it.
   for (let i = brackets.length - 1; i >= 0; i--) {
     const bracket = brackets[i]!;
     if (adjustedAnnualWage >= bracket.min) {
@@ -136,10 +113,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   );
 
   // ── Step 1: Classify deductions ──
-  // Split all deductions into pre-tax (reduces taxable income) and post-tax (deducted after taxes).
-  // Two sources of deductions:
-  //   1. input.deductions — paycheck line items like health/dental/vision insurance
-  //   2. input.contributionAccounts — 401k, HSA, etc. (only if isPayrollDeducted is true)
+  // Pre-tax and post-tax lines from input.deductions (insurance, etc.) and payroll-deducted
+  // input.contributionAccounts (401k, HSA).
   const preTaxDeductions: DeductionLine[] = [];
   const postTaxDeductions: DeductionLine[] = [];
 
@@ -152,13 +127,9 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     }
   }
 
-  // Source 2: Payroll-deducted contribution accounts (e.g. 401k, HSA)
-  // Non-payroll accounts (IRA, brokerage) are skipped — they're contributed outside the paycheck.
-  // A contribution is FICA-exempt only when its account type says payroll
-  // money goes in under a §125 cafeteria plan (config payrollFicaExempt —
-  // HSA), up to its yearly cap (ficaExemptAnnualCap, sized server-side
-  // from the IRS limit less employer money). 401(k)/403(b) deferrals are
-  // always FICA wages.
+  // Source 2: payroll-deducted contribution accounts (IRA, brokerage are outside the paycheck).
+  // FICA-exempt only for a payrollFicaExempt account type (§125, HSA), up to ficaExemptAnnualCap
+  // (IRS limit less employer money); 401(k)/403(b) deferrals are always FICA wages.
   for (const ca of input.contributionAccounts) {
     if (!ca.isPayrollDeducted) continue;
     const line: DeductionLine = {
@@ -178,12 +149,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const totalPostTax = sumBy(postTaxDeductions, (d) => d.amount);
 
   // ── Step 2: Compute FICA base ──
-  // FICA base = gross minus FICA-exempt money: Section 125 deductions
-  // (health/dental/vision) and payroll contributions to an account type
-  // that is FICA-exempt through payroll (HSA), within its yearly cap.
-  // 401(k) deferrals reduce income tax but NOT FICA.
-  // A deduction only counts as FICA-exempt when it is also pre-tax — a row
-  // flagged exempt but after-tax (bad data, an old backup) is FICA wages.
+  // Gross minus pre-tax Section 125 deductions and payroll-FICA-exempt contributions (HSA, within
+  // its cap). 401(k) deferrals stay FICA wages; an exempt-flagged after-tax row counts as wages.
   const ficaExemptFromDeductions = sumBy(
     input.deductions.filter((d) => d.ficaExempt && isPreTax(d.taxTreatment)),
     (d) => d.amount,
@@ -202,10 +169,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // plus taxable benefits not paid in cash (imputed income).
   const federalTaxableGross = gross - totalPreTax + federalEarningsAdjustment;
 
-  // Annualize for bracket lookup, then divide result back to per-period.
-  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment —
-  // previously missing, meaning a w4Checkbox=false employee was over-
-  // withheld by w4Adjustment * marginalRate every year.
+  // Annualize for the bracket lookup, then divide back to per-period.
+  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment.
   const adjustedAnnualWage = Math.max(
     0,
     federalTaxableGross * periodsPerYear - input.taxBrackets.w4Adjustment,
@@ -214,23 +179,14 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     adjustedAnnualWage,
     input.taxBrackets.brackets,
   );
-  // W-4 Line 4c: a flat extra dollar amount added directly to PER-CHECK
-  // withholding, never folded into adjustedAnnualWage before the bracket
-  // lookup (that would incorrectly annualize a per-check amount) and never
-  // applied to marginalRate (which feeds the bonus supplemental-rate path
-  // below — that's a flat rate, not the per-check W-4 mechanism).
+  // W-4 Line 4c: a flat per-check extra, added after the bracket lookup (never annualized) and
+  // kept out of marginalRate, which feeds the bonus supplemental-rate path.
   const federalWithholding =
     safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
-  // Social Security: 6.2% (from input) on FICA base, capped at wage base ($184,500 in 2026).
-  // If the employee's YTD earnings already exceed the wage base, SS drops to $0.
-  //
-  // SINGLE-EMPLOYER ASSUMPTION: This calculator models one W-2 employer. Each employer
-  // withholds SS independently up to the wage base — if the employee has multiple jobs,
-  // total SS withheld across all employers may exceed the annual maximum. The excess is
-  // recovered as a credit on the tax return (Form 1040 line 11 / Schedule 3). Multi-job
-  // SS wage base coordination is not modeled here.
+  // Social Security on the FICA base, capped at the wage base. One W-2 employer is modeled;
+  // excess SS across several employers (refunded on the return) isn't.
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
   const ssRate = input.taxBrackets.socialSecurityRate;
   const annualFicaBase = ficaBase * periodsPerYear;
@@ -239,12 +195,9 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     // Full-year SS applies — every period pays SS
     ficaSS = ficaBase * ssRate;
   } else {
-    // The wage base is reached during the year: SS stops once it is. The
-    // per-check figure is the year's SS spread evenly, so per-check net
-    // × periods is the true annual take-home (checks before the cap pay
-    // more, after it none — the year schedule shows the timing).
-    // A caller that knows this check is already past the base (YTD) gets
-    // this check's real figure instead.
+    // Wage base reached during the year: per-check SS is the year's SS spread evenly, so
+    // per-check net × periods is true take-home (the year schedule shows timing). A check
+    // already past the base (YTD) gets its real figure.
     if (input.ytdGrossEarnings > 0 && input.ytdGrossEarnings >= ssWageBase) {
       ficaSS = 0;
       warnings.push("SS wage base exceeded for this period");
@@ -256,10 +209,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     }
   }
 
-  // Medicare: 1.45% (from input) on FICA base, no cap.
-  // Additional Medicare is withheld on wages past the threshold, so the checks
-  // late in the year carry it. Per-check figures average it over the year,
-  // like Social Security above; the year schedule shows the real checks.
+  // Medicare on the FICA base, no cap. Additional Medicare past the threshold is averaged
+  // over the year's checks, like Social Security; the year schedule shows the real checks.
   const additionalMedicarePerCheck =
     (input.taxBrackets.medicareAdditionalRate *
       Math.max(
@@ -285,9 +236,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const bonusEstimate = calculateBonus(input, marginalRate, annualFicaBase);
 
   // ── Step 7: Extra paycheck months ──
-  // For biweekly pay, 2 months per year have 3 paydays instead of 2.
-  // Uses anchorPayDate directly (a known real payday) to calculate which months.
-  // No payWeek shift needed — the anchor already represents the person's actual pay schedule.
+  // Biweekly pay has 2 months with 3 paydays, found from anchorPayDate (a real payday, so no
+  // payWeek shift).
   const extraPaycheckMonths = findExtraPaycheckMonths(
     input.asOfDate,
     input.payPeriod,
@@ -295,11 +245,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   );
 
   // ── Step 8: Year schedule ──
-  // Full year amortization of all pay periods, modeling when SS tax stops mid-year.
-  // If bonusMonth is set, the bonus is injected into the correct period so SS cap timing is accurate.
-  // A job started this year pays nothing before its start: those paydays
-  // stay in the schedule (calendar numbering) but empty, so this
-  // employer's Social Security wage base counts from its first check.
+  // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
+  // before a job's start this year stay (numbering) but pay nothing.
   const beforeStart = periodsBeforeStart(
     input.asOfDate,
     input.payPeriod,

@@ -1,13 +1,7 @@
 /**
- * One rule for showing a nest egg, simulated or baseline — used by the
- * dashboard's Retirement card and the Retirement page's hero so the two
- * never pick, convert or label the figure differently.
- *
- * With a simulation for the current inputs: its median and middle-half
- * range at the target age (retirement age, or today when already retired),
- * with the fixed-return baseline alongside. Without one — or for a person
- * filter, since the simulation is the whole household's — the baseline
- * alone.
+ * One rule for showing a nest egg (dashboard Retirement card, Retirement hero): the simulation's
+ * median and middle-half range at the target age with the fixed-return baseline alongside, or the
+ * baseline alone without a current simulation or under a person filter.
  */
 import type { MonteCarloPercentileBand } from "@/lib/pure/simulation/monte-carlo.types";
 
@@ -52,11 +46,9 @@ export function simulatedOrBaseline(opts: {
 }
 
 /**
- * The fixed-return nest egg in nominal dollars, and its year: the engine's
- * retirement money (`retirementBalance`) at the target age — the retirement
- * answer, never a view's summed tax buckets. The caller converts it with
- * the view's own deflator; `simulatedOrBaseline`'s bands arrive already
- * in display dollars. Null when the projection has no year at that age.
+ * The fixed-return nest egg (engine `retirementBalance`) in nominal dollars at the target age,
+ * and its year; the caller deflates it (simulated bands arrive in display dollars). Null when
+ * the projection has no year at that age.
  */
 export function baselineNestEgg(
   years: readonly { age: number; year: number; retirementBalance: number }[],

@@ -1,30 +1,14 @@
 /**
- * One judge for "does this plan work": every success/failure verdict
- * (simulation trials, Coast FIRE, strategy comparison, optimizers, stress
- * tests, reports, "runs out" text) reads it instead of its own rule.
- *
- * A plan fails in the first retirement year that either
- * - leaves spending unmet (`unmetNeedMaterial` — the engine's one
- *   materiality verdict, covering money that ran out, money locked behind
- *   early-withdrawal penalties, and money only in Portfolio accounts), or
- * - ends with retirement money gone (below the engine's materiality floor)
- *   while a later year still needs withdrawals — spending down to the last
- *   year, or onto Social Security / a pension that covers the rest, is a
- *   plan that worked.
- * Portfolio money never keeps a plan alive: it isn't spent in retirement.
- *
- * Survival only — callers with an extra test (Coast FIRE's first-year need)
- * add it on top.
+ * The one judge of "does this plan work": it fails in the first retirement year with material
+ * unmet spending, or with retirement money gone while a later year still needs withdrawals
+ * (Portfolio money never counts). Survival only; callers add extra tests on top.
  */
 import { shortfallFloor } from "../engine/gap-year-draw";
 import type { EngineDecumulationYear, ProjectionResult } from "../engine/types";
 
-/** Why a plan failed:
- *  - `depleted`: retirement money ran out;
- *  - `penaltyGap`: money was there but locked behind early-withdrawal
- *    penalties (e.g. a 401(k) before 59½) — short for a stretch, not broke;
- *  - `shortfall`: spending went unmet while retirement money remained
- *    (what's reachable couldn't cover it). */
+/** Why a plan failed: `depleted` (retirement money ran out), `penaltyGap` (money locked behind
+ *  early-withdrawal penalties, e.g. a 401(k) before 59½), or `shortfall` (spending unmet while
+ *  retirement money remained). */
 export type PlanFailureReason = "depleted" | "penaltyGap" | "shortfall";
 
 type PlanOutcome =
@@ -54,10 +38,8 @@ function moneyGone(y: EngineDecumulationYear): boolean {
   return y.retirementBalance < (y.shortfallMaterialityFloor ?? 1);
 }
 
-/** The reason a year with unmet spending failed. Penalty-locked money is
- *  the reason when it is most of what went unmet (`unmetNeed` is the
- *  year's whole shortfall — what routing couldn't reach and any spending
- *  lost to tax it couldn't fund). */
+/** Why a year with unmet spending failed: `depleted` when money is gone, else `penaltyGap` when
+ *  penalty-locked money is at least half of `unmetNeed` (the year's whole shortfall). */
 function shortfallReason(y: EngineDecumulationYear): PlanFailureReason {
   if (moneyGone(y)) return "depleted";
   const unmet = y.unmetNeed ?? 0;

@@ -93,13 +93,8 @@ export function yearEarnings<P>(
   },
   person: P,
 ) {
-  // Blended annual computation. Salary is a flat number under the
-  // active Salary Profile — no mid-year timeline to blend across
-  // any more (see resolveCompensation's docblock), so this is
-  // always a single segment: the job's checks this year, from its
-  // start to its last day.
-  // A last day later this year (the job is still current): its
-  // checks inside the year stop there.
+  // One segment: the job's checks this year, from its start to its last day (when that's
+  // later this year, the job's checks stop there).
   const lastDay =
     activeJob.endDate != null &&
     Number(String(activeJob.endDate).slice(0, 4)) === taxYear
@@ -131,13 +126,8 @@ export function yearEarnings<P>(
     blendedAnnual = calculateBlendedAnnual(salarySegments, taxBracketInput);
   }
 
-  // This person's year: salary + the resolved bonus, pre-tax money
-  // and FICA wages — what the household tax and every income
-  // figure read (household annual income, DESIGN.md).
-  // This person's year: every job they had in it, each for the
-  // checks it pays inside the year — the current job from its
-  // start (to its last day when that's later this year), plus any
-  // job that ended this year (household-income.ts).
+  // This person's year: every job they had in it, each for its checks inside the year (salary,
+  // resolved bonus, pre-tax money, FICA wages) — what household tax and income figures read.
   const currentJobYear = computeAnnualEarnings({
     salary,
     periodsPerYear,

@@ -5897,18 +5897,9 @@
   "src/lib/pure/paycheck/per-check.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 13
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/pure/paycheck/person-paycheck.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5919,20 +5910,11 @@
     }
   },
   "src/lib/pure/paycheck/withholding.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/paycheck/year-schedule.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
@@ -5941,33 +5923,16 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/retirement/gk-anchor-rate.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
   },
-  "src/lib/pure/retirement/nest-egg-display.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/lib/pure/retirement/plan-outcome.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }

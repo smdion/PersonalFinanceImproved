@@ -1,47 +1,7 @@
 /**
- * Coast FIRE Calculator
- *
- * Pure calculator — no DB, no tRPC, no React.
- *
- * Finds the earliest age at which the user can stop contributing to retirement
- * accounts and still fund their plan through end-of-plan. Wraps the projection
- * engine with an accumulationOverride that zeros contributionRate at a
- * candidate "coast age" and binary-searches for the earliest passing age.
- *
- * Success criterion: the plan judge passes it (`assessPlan` — every
- * retirement year funded, retirement money lasting) AND the strategy's
- * actual first-decumulation-year spending
- * (`projectionByYear[firstDecumYear].projectedExpenses` — already the real
- * per-strategy output, not a generic rate) covers the household's stated
- * need (`firstDecumulationYearStatedNeed`, the inflated retirement budget).
- * The first check ensures retirement money funds every year; the
- * second ensures the strategy's actual withdrawal covers what the household
- * said they need. Together they answer "funds annual expenses through end
- * of plan".
- *
- * Previously this compared `sustainableWithdrawal` (a flat
- * `balance × withdrawalRate` reference figure that only 4 of 8 strategies'
- * spending math ever reads) against `projectedExpenses`. For the other 4
- * strategies (RMD-Based, Constant %, Endowment, Vanguard Dynamic),
- * `projectedExpenses` IS the strategy's own computed spending by this point
- * in the year (see pre-year-setup.ts's spending-strategy dispatch), so the
- * old check compared an unrelated rate against the strategy's real number
- * instead of against the household's need — comparing against
- * `sustainableWithdrawal` here would make the check `X >= X` (always true)
- * once that field is made strategy-real, so this deliberately compares
- * against the stated need instead, never against `sustainableWithdrawal`.
- *
- * Note this check has real discriminating power only for the 4
- * balance-derived strategies above. For the 4 budget-continuation strategies
- * (Fixed, Forgo-Inflation-After-Loss, Spending-Decline, Guyton-Klinger on an
- * ordinary first year), `projectedExpenses` passes through unchanged from
- * the same stated-need value on the first decumulation year — so
- * `projectedExpenses >= firstDecumulationYearStatedNeed` is `X >= X` by
- * construction for those 4, and this check contributes nothing beyond the
- * `assessPlan` check above. That's correct,
- * not a bug — those strategies' entire premise is "spend what you said you
- * need" — but it means their Coast FIRE result rests entirely on the plan
- * judge.
+ * Coast FIRE: the earliest age contributions can stop and the plan still works — `assessPlan`
+ * passes and the strategy's first-retirement-year spending covers the stated need (for
+ * budget-continuation strategies that second test is X >= X, so the plan judge decides).
  */
 import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import { strategySpending } from "./strategy-spending";
@@ -112,31 +72,18 @@ function passes(projection: ProjectionResult): boolean {
   if (!assessPlan(projection).succeeded) return false;
   const retirementYear = firstRetirementYear(projection);
   if (!retirementYear) return false;
-  // Compare the strategy's actual first-year spending against the
-  // household's stated need — NOT against `sustainableWithdrawal` (see the
-  // strategy-real fix note above). When no retirement budget is set
-  // (`firstDecumulationYearStatedNeed` is null), there's no stated need to
-  // check against — fall back to the old behavior so an unconfigured
-  // household doesn't get a spurious failure.
+  // Against the stated need, never `sustainableWithdrawal`. With no retirement budget set
+  // there's no stated need, so the withdrawal is compared instead (no spurious failure).
   if (projection.firstDecumulationYearStatedNeed == null) {
-    // Making `sustainableWithdrawal` strategy-real changed
-    // `sustainableWithdrawal`'s meaning to the strategy's actual
-    // tax-grossed-up withdrawal (`targetWithdrawal` — gross of tax, net of
-    // Social Security), but this fallback still compared it directly
-    // against `projectedExpenses` (gross of Social Security, net of tax) —
-    // mixed units, systematically wrong by both the tax bill and whatever
-    // Social Security covers. Undo both adjustments before comparing so
-    // both sides are in the same "total household spending" terms
-    // `strategySpending` is in.
+    // `sustainableWithdrawal` is gross of tax and net of Social Security; undo both so it's in
+    // the same total-spending terms as `strategySpending`.
     const netSustainableWithdrawal = roundToCents(
       projection.sustainableWithdrawal -
         retirementYear.taxCost +
         retirementYear.ssIncome,
     );
-    // For the budget-continuation strategies the two sides are the same
-    // figure rebuilt from separately-rounded parts, so they can differ by a
-    // cent — and a strict `>=` then failed every probe, reporting a
-    // fully-funded plan as "unreachable". Compare with a $1 tolerance.
+    // The two sides can be one figure rebuilt from separately-rounded parts, a cent apart,
+    // so compare with a $1 tolerance.
     return (
       netSustainableWithdrawal >=
       strategySpending(retirementYear) - NET_WITHDRAWAL_ROUNDING_TOLERANCE
@@ -158,13 +105,8 @@ function firstRetirementYear(
 }
 
 /**
- * Finds the earliest age at which contributions can stop and the plan still
- * funds expenses through end of plan.
- *
- * Algorithm: binary search over [currentAge, retirementAge). For each
- * candidate age, clones the input with an additional accumulationOverride
- * zeroing contributionRate at that year, then calls calculateProjection().
- * Cost: ~log₂(retirementAge - currentAge) engine calls.
+ * Earliest age contributions can stop and the plan still funds expenses through end of plan:
+ * binary search over [currentAge, retirementAge), one engine run per probe.
  */
 export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   const { currentAge } = input;
@@ -213,27 +155,9 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
 }
 
 /**
- * Build a merged `profileSwitches` array that zeros contributions + employer
- * match from the Coast FIRE age onward.
- *
- * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
- * - currentAge)` with empty contribution specs, zero employer match rates,
- * zero base-year contributions/match, and contribution rate 0. The engine at
- * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
- * every year from coastYear onward sees zero contributions AND zero employer
- * match. An accumulation override of `contributionRate: 0` pauses only
- * retirement contributions (Portfolio savings and flat employer money keep
- * going), so every Coast FIRE probe (this file's baseline finder included)
- * uses this.
- *
- * Merges with the user's own `profileSwitches`: keeps any user-authored
- * switches strictly before the coast year (so pre-coast years still reflect
- * the user's configured future), and drops user switches at or after the
- * coast year (those are moot — everything's zero from coast year forward).
- *
- * Used by findCoastFireAge (the baseline), computeProjection,
- * computeMonteCarloProjection (when rendering the coast scenario chart),
- * and computeCoastFireMC (when probing inside the binary search).
+ * `profileSwitches` plus a synthetic switch at the coast year zeroing contributions, employer
+ * match and contribution rate (sticky forward; later user switches dropped). Every Coast FIRE
+ * probe uses this: `contributionRate: 0` alone keeps Portfolio savings and flat employer money.
  */
 export function buildCoastFireProfileSwitches(
   baseEngineInput: Pick<
