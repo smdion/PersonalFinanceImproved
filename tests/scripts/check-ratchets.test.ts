@@ -714,6 +714,54 @@ describe("checkRatchets in a repository", () => {
       ),
     ]);
   });
+  it("moves an unrowed export's register entry with a proven rename (owner Q2)", () => {
+    const register = (names: string[]) =>
+      JSON.stringify({
+        risk: {},
+        highRiskWithoutIndependentTest: [],
+        exportsWithoutRow: names,
+      });
+    git("checkout", "-q", "-B", "register-rename", base);
+    write("src/lib/pure/a.ts", "export const calc = 1;\n");
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calc"]),
+    );
+    const before = commit("chore: an export with no row");
+    write("src/lib/pure/a.ts", "export const calculate = 1;\n");
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calculate"]),
+    );
+    commit(
+      "refactor: calc is calculate\n\nA full name.\n\nMechanical: rename\nRename: calc → calculate",
+    );
+    const report = checkRatchets(before, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining(
+        "src/lib/pure/a.ts:calculate: added to exportsWithoutRow, by the proven",
+      ),
+    ]);
+
+    git("checkout", "-q", "-B", "register-unrenamed", before);
+    write(
+      "src/lib/pure/a.ts",
+      "export const calc = 1;\nexport const calculate = 2;\n",
+    );
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calculate"]),
+    );
+    commit(
+      "refactor: calc is calculate\n\nA full name.\n\nMechanical: rename\nRename: calc → calculate",
+    );
+    expect(checkRatchets(before, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(
+        /a\.ts:calculate: added to exportsWithoutRow: a Rename: commit check-commit doesn't prove/,
+      ),
+    ]);
+  });
   const sha = () => git("rev-parse", "--short=8", "HEAD");
   const rBody = (aCount: number, bFrom = 0) =>
     [...lines("a", aCount), ...lines("b", 300).slice(bFrom)].join("\n");

@@ -66,6 +66,7 @@ import {
   gitIn,
   mechanicalProblem,
   parseNumstat,
+  readRenames,
   structuralMoves,
   trailerValues,
   type Git,
@@ -474,6 +475,49 @@ function notRewrapped(git: Git, sha: string, rise: Rise): string | undefined {
     : `rose +${rise.by ?? 0} in a Rename: commit check-commit doesn't prove (${problem})`;
 }
 
+/**
+ * Owner Q2: a proven rename of an export the register doesn't row moves its
+ * `exportsWithoutRow` entry to the new name. The entry is the same one when
+ * the commit's `Rename:` list maps the old name to it, the old entry at the
+ * same path is gone, and check-commit proves the commit. Undefined: not such
+ * a move (judged as any other rise).
+ */
+function renamedRegisterEntry(
+  git: Git,
+  sha: string,
+  message: string,
+  rise: Rise,
+): { ok: true; old: string } | { ok: false; why: string } | undefined {
+  if (rise.file !== REGISTER_FILE) return undefined;
+  const entry = rise.id.slice(rise.file.length + 1);
+  const at = entry.lastIndexOf(":");
+  if (at < 0 || !rise.text.endsWith("added to exportsWithoutRow"))
+    return undefined;
+  const [file, name] = [entry.slice(0, at), entry.slice(at + 1)];
+  const old = [...readRenames(message).map].find(([, to]) => to === name)?.[0];
+  if (old === undefined) return undefined;
+  const list = (ref: string) =>
+    (
+      JSON.parse(git("show", `${ref}:${REGISTER_FILE}`)) as {
+        exportsWithoutRow: string[];
+      }
+    ).exportsWithoutRow;
+  const [was, now] = [list(`${sha}^`), list(sha)];
+  if (!was.includes(`${file}:${old}`) || now.includes(`${file}:${old}`))
+    return undefined;
+  const problem = mechanicalProblem(
+    message,
+    parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+    git("show", "-M", "-U1000000", "--format=", sha),
+  );
+  return problem === undefined
+    ? { ok: true, old }
+    : {
+        ok: false,
+        why: `a Rename: commit check-commit doesn't prove (${problem})`,
+      };
+}
+
 /** The import-lines rule alone (before owner Q14). */
 function importLinesOnly(
   git: Git,
@@ -545,6 +589,17 @@ export function checkRatchets(
         excused.push(
           `${where}, by the revert of ${short(undone!)}: back to its value before it`,
         );
+        continue;
+      }
+      const moved = renamed
+        ? renamedRegisterEntry(git, sha, message, rise)
+        : undefined;
+      if (moved?.ok) {
+        excused.push(`${where}, by the proven "${RENAME}: ${moved.old} → …"`);
+        continue;
+      }
+      if (moved) {
+        failures.push(`${where}: ${moved.why}`);
         continue;
       }
       const verdict = excuse(rise, message);
