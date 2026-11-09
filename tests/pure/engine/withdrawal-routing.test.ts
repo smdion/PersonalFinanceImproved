@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { routeWithdrawals } from "@/lib/pure/engine/withdrawal-routing/waterfall";
+import { routeWithdrawalsWaterfall } from "@/lib/pure/engine/withdrawal-routing/waterfall";
 import { routeWithdrawalsPercentage } from "@/lib/pure/engine/withdrawal-routing/percentage";
 import { routeWithdrawalsBracketFilling } from "@/lib/pure/engine/withdrawal-routing/bracket-filling";
 import { routeForMode } from "@/lib/pure/engine/withdrawal-routing";
@@ -38,7 +38,11 @@ describe("waterfall routing", () => {
       afterTax: 80000,
       afterTaxBasis: 40000,
     });
-    const { slots, warnings } = routeWithdrawals(30000, config, balances);
+    const { slots, warnings } = routeWithdrawalsWaterfall(
+      30000,
+      config,
+      balances,
+    );
     // Should draw from 401k first
     const s401k = slotFor(slots, "401k")!;
     expect(s401k.withdrawal).toBeGreaterThan(0);
@@ -57,7 +61,11 @@ describe("waterfall routing", () => {
       },
     });
     const balances = makeAccountBalances({ preTax: 200000 });
-    const { slots, warnings } = routeWithdrawals(25000, config, balances);
+    const { slots, warnings } = routeWithdrawalsWaterfall(
+      25000,
+      config,
+      balances,
+    );
     const s401k = slotFor(slots, "401k")!;
     expect(s401k.withdrawal).toBe(10000);
     expect(s401k.cappedByAccount).toBe(true);
@@ -82,7 +90,7 @@ describe("waterfall routing", () => {
       preTax: 100000,
       taxFree: 100000,
     });
-    const { slots } = routeWithdrawals(30000, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(30000, config, balances);
     const s = slotFor(slots, "401k")!;
     expect(s.traditionalWithdrawal).toBeGreaterThan(0);
     expect(s.traditionalWithdrawal).toBeGreaterThanOrEqual(s.rothWithdrawal);
@@ -103,7 +111,7 @@ describe("waterfall routing", () => {
       preTax: 100000,
       taxFree: 100000,
     });
-    const { slots } = routeWithdrawals(30000, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(30000, config, balances);
     const s = slotFor(slots, "401k")!;
     expect(s.rothWithdrawal).toBeGreaterThan(0);
     expect(s.rothWithdrawal).toBeGreaterThanOrEqual(s.traditionalWithdrawal);
@@ -118,7 +126,7 @@ describe("waterfall routing", () => {
       preTax: 300000,
       taxFree: 200000,
     });
-    const { slots } = routeWithdrawals(60000, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(60000, config, balances);
     const totalTrad = slots.reduce((s, sl) => s + sl.traditionalWithdrawal, 0);
     expect(totalTrad).toBeLessThanOrEqual(20000);
   });
@@ -134,14 +142,14 @@ describe("waterfall routing", () => {
       afterTax: 0,
       afterTaxBasis: 0,
     });
-    const { warnings } = routeWithdrawals(100000, config, balances);
+    const { warnings } = routeWithdrawalsWaterfall(100000, config, balances);
     expect(warnings.some((w) => w.includes("unmet"))).toBe(true);
   });
 
   it("handles zero withdrawal target", () => {
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances();
-    const { slots } = routeWithdrawals(0, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(0, config, balances);
     expect(slots.every((s) => s.withdrawal === 0)).toBe(true);
   });
 
@@ -150,7 +158,7 @@ describe("waterfall routing", () => {
       withdrawalOrder: ["hsa"],
     });
     const balances = makeAccountBalances({ hsa: 10000 });
-    const { slots } = routeWithdrawals(5000, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(5000, config, balances);
     const sHsa = slotFor(slots, "hsa")!;
     expect(sHsa.withdrawal).toBe(5000);
     expect(sHsa.traditionalWithdrawal).toBe(5000); // HSA is "traditional" for tax
@@ -162,7 +170,7 @@ describe("waterfall routing", () => {
       withdrawalOrder: ["brokerage"],
     });
     const balances = makeAccountBalances({ afterTax: 50000 });
-    const { slots } = routeWithdrawals(10000, config, balances);
+    const { slots } = routeWithdrawalsWaterfall(10000, config, balances);
     const sBrok = slotFor(slots, "brokerage")!;
     expect(sBrok.withdrawal).toBe(10000);
     expect(sBrok.traditionalWithdrawal).toBe(0);

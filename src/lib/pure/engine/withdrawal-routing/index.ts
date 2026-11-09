@@ -11,7 +11,7 @@ import type {
   EligibilityRecord,
   NonRetirementExclusion,
 } from "@/lib/pure/accounts/eligibility";
-import { routeWithdrawals } from "./waterfall";
+import { routeWithdrawalsWaterfall } from "./waterfall";
 import { routeWithdrawalsPercentage } from "./percentage";
 import {
   capsLeftAfter,
@@ -45,12 +45,16 @@ function dispatchOnce(
   }
   // Waterfall mode — apply Roth bracket optimization overlay if configured.
   const routeConfig = applyRothBracketOverlay(config, bracketInfo);
-  let result = routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  let result = routeWithdrawalsWaterfall(
+    targetWithdrawal,
+    routeConfig,
+    balances,
+  );
   // The target is a preference, not a limit on spending. Every other account
   // has had its turn above; what's left comes from what the target held back,
   // in the household's own order, under only their own caps.
   if (routeConfig !== config && (result.unmetNeed ?? 0) > 0) {
-    const beyond = routeWithdrawals(
+    const beyond = routeWithdrawalsWaterfall(
       result.unmetNeed!,
       capsLeftAfter(config, result.slots),
       applySlotsToBalances(balances, result.slots),

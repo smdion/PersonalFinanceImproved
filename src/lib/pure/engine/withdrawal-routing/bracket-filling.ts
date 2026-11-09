@@ -17,7 +17,7 @@ import {
 } from "../../../config/account-balance";
 import { rankWithdrawalTiers } from "../withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
-import { routeWithdrawals } from "./waterfall";
+import { routeWithdrawalsWaterfall } from "./waterfall";
 import { computeBracketTraditionalCap, pastTargetWarning } from "./caps";
 import type { RouteBracketInfo, RouteResult } from "./types";
 
@@ -49,7 +49,7 @@ export function routeWithdrawalsBracketFilling(
     bracketInfo.taxBrackets.length === 0 ||
     bracketInfo.rothBracketTarget == null
   ) {
-    return routeWithdrawals(targetWithdrawal, config, balances);
+    return routeWithdrawalsWaterfall(targetWithdrawal, config, balances);
   }
 
   // Max Traditional withdrawals before exceeding the target bracket, net of SS
