@@ -696,6 +696,20 @@ describe("notAMove: a procedure's body moves to a service function", () => {
     ).toBeUndefined();
   });
 
+  it("passes a body whose string holds the word this, and fails one that reads this", () => {
+    const withLine = (line: string) =>
+      diff({ inService: [line, ...moved] }).replace(
+        "-      const rows",
+        `-      ${line}\n-      const rows`,
+      );
+    expect(
+      notAMove(numstat, withLine('log("near this age");')),
+    ).toBeUndefined();
+    expect(notAMove(numstat, withLine("log(this.year);"))).toMatch(
+      /changed line\(s\)|not whole top-level statements/,
+    );
+  });
+
   it("fails a body with one statement changed", () => {
     expect(
       notAMove(

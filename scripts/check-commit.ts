@@ -662,7 +662,8 @@ function allChanged(
   return true;
 }
 
-/** A moved body may not read its own `this` or `arguments`. */
+/** A moved body may not read its own `this` or `arguments` (a token, not
+ *  a word inside a string). */
 const OWN_BINDING = new Set(["this", "arguments", "super"]);
 
 /**
@@ -854,7 +855,10 @@ function cutMovedBodies(
     const visit = (node: ts.Node) => {
       if (movableBody(node, entry.old, oldSource)) {
         const key = bodyKey(node.body, oldSource);
-        if (!key.some((s) => s.split(" ").some((t) => OWN_BINDING.has(t))))
+        const tokens = node.body.statements.flatMap((s) =>
+          tokensOf(s, oldSource),
+        );
+        if (!tokens.some((t) => OWN_BINDING.has(t)))
           sources.push({ f, node, key });
         return;
       }
