@@ -5791,48 +5791,23 @@
     }
   },
   "src/lib/pure/engine/individual-accounts/reconcile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/inflation-path.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/lib/pure/engine/input-validation.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/irmaa-check.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/override-resolution.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
     }
   },
   "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
@@ -5842,9 +5817,6 @@
   },
   "src/lib/pure/engine/projection-year-handlers/context.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -5876,11 +5848,6 @@
   },
   "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },

@@ -1,17 +1,7 @@
 /**
- * The inflation a run sees, year by year — resolved once and read by every
- * site that compounds it, so expenses, Social Security, tax tables and the
- * Simulation's today's-dollars deflator can't disagree.
- *
- * A plain run has one rate per phase and each answer is its closed form
- * (`Math.pow`), byte for byte. A Simulation trial adds a shock per year; one
- * shock moves both rates, keeping the household's gap between them. Year
- * indexes count from the input's year: `growth(k)` is the price level at
- * index k against index 0, so `shocks[0]` is never compounded. Past the
- * shocks (a look ahead beyond the horizon) the plan's rate applies.
- *
- * No clamp beyond SIMULATION_INFLATION_GROWTH_FLOOR: truncating draws would bias
- * inflation up.
+ * The run's inflation per year, resolved once so every compounding site agrees. A plain run uses
+ * the closed form; a Simulation trial adds a per-year shock to both rates. `growth(k)` is index k
+ * vs 0; past the shocks the plan's rate applies. No clamp beyond the growth floor constant.
  */
 import { SIMULATION_INFLATION_GROWTH_FLOOR } from "../../constants";
 import { taxGrowthFactor } from "./bracket-growth";

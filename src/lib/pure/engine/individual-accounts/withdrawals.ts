@@ -70,25 +70,9 @@ export function distributeGoalWithdrawal(
 }
 
 /**
- * Distributes each slot's withdrawal across the individual accounts in its
- * category/tax-slice, proportionally. For roth_traditional categories,
- * routes traditional and roth withdrawals separately to the correct
- * tax-type accounts.
- *
- * `eligibility` — when provided,
- * prefers eligible (not-yet-penalty-exposed) accounts within each
- * category/tax-slot before reaching into penalty-exposed ones. Has no
- * config lever, always applies: this is the fan-out-only preference,
- * distinct from and independent of `avoidPenalizedWithdrawals`'s
- * cross-category `routeForMode` behavior (Tier B) — it only ever changes
- * WHICH account inside an already-decided category/slot supplies a given
- * dollar, never the slot totals themselves.
- *
- * Mutates `indBalance` in place. Returns the per-account amounts plus any
- * shortfall warnings — a warning means `Σ decumulationIndWithdrawal` for that slot
- * came up short of `slot.withdrawal` because the individual-account track's
- * balance was genuinely exhausted. With `reconcileIndividualToAggregate`
- * running at end of year, the warnings are empty for every fixture.
+ * Spreads each slot's withdrawal over its category/tax-slice accounts by balance, preferring
+ * penalty-free dollars first (only which account pays, never slot totals). Mutates `indBalance`;
+ * returns per-account amounts and shortfall warnings when the per-account track runs out.
  */
 export function distributeWithdrawals(
   slots: DecumulationSlot[],
@@ -111,13 +95,8 @@ export function distributeWithdrawals(
 
   for (const slot of slots) {
     if (slot.withdrawal <= 0) continue;
-    // Portfolio-parented accounts are never a withdrawal fan-out
-    // target — defense-in-depth alongside the category-level exclusion
-    // routeForMode already applies (subtractExcluded); the category total
-    // decided upstream should already fit within Retirement-parented
-    // accounts' balances, so this filter should be a no-op in practice,
-    // but it's what makes the exclusion a hard guarantee rather than
-    // "should never happen if the upstream math is right."
+    // Portfolio-parented accounts are never a withdrawal target: a hard
+    // guarantee behind the category-level exclusion upstream (subtractExcluded).
     const catAccounts = indAccounts.filter(
       (ia) =>
         ia.category === slot.category && isRetirementMoney(ia.parentCategory),
@@ -195,28 +174,9 @@ export function distributeWithdrawals(
 }
 
 /**
- * Wraps `distributeProportionally` with a penalty-free-first, penalty-
- * exposed-second two-pass split (Tier A — see `distributeWithdrawals`'s
- * docblock). Partitions PER DOLLAR, using each account's own
- * `penaltyFreeAmount` as a draw ceiling rather than sorting whole accounts
- * into two buckets: a Roth IRA with some contribution basis is only
- * PARTIALLY penalty-free, so its penalty-exposed growth must wait.
- *
- * Tier A has no config lever and always applies — it only decides which
- * INDIVIDUAL ACCOUNT within a category receives a category-level total
- * `routeForMode` already decided; when `avoidPenalizedWithdrawals` is on
- * (default), that category total already excludes penalty-exposed money
- * entirely, so the second (penalty-exposed) draw below should be
- * mathematically unreachable in the default configuration — reached only
- * when the household has the lever off, mirroring today's un-excluded
- * total.
- *
- * Falls through to a single unchanged `distributeProportionally` call
- * whenever the partition would be a no-op (no `exposure` passed, nothing
- * penalty-exposed at all, or nothing penalty-exposed among *this specific*
- * account list) — that fallthrough is what keeps a
- * nothing-penalty-exposed household's output byte-identical, not a
- * separate code path that has to be kept in sync.
+ * Two-pass split: penalty-free dollars first (each account's `penaltyFreeAmount` as a ceiling, so
+ * partly penalty-free Roth IRAs count), then penalty-exposed. Falls through to one plain
+ * `distributeProportionally` call when nothing in the list is penalty-exposed.
  */
 function distributeProportionallyPreferringPenaltyFree(
   amount: number,
@@ -271,12 +231,9 @@ function distributeProportionallyPreferringPenaltyFree(
     penaltyFreeCapacity,
   );
   if (shortfall <= 0) return 0;
-  // Second pass: a category pool that includes an allowed account's
-  // penalty-exposed dollars (see `subtractPenaltyExposed`) can leave
-  // `routeForMode` deciding to draw more than the penalty-free total — that
-  // residual must come from an ALLOWED account's exposed balance before it
-  // touches any other account's. Capacity here is the full remaining
-  // balance for an allowed account, 0 for everyone else.
+  // Second pass: a residual past the penalty-free total comes from an
+  // allowed account's exposed balance before any other account's
+  // (capacity = full balance when allowed, else 0).
   const hasAllowedInList = accounts.some(
     (ia) => exposure.byKey.get(indKey(ia))?.allowPenalizedWithdrawals,
   );
@@ -296,21 +253,14 @@ function distributeProportionallyPreferringPenaltyFree(
       withdrawalMap,
       allowedExposedCapacity,
     );
-    // Still short even after every allowed account's exposed money —
-    // report it (reportShortfall, in the caller) rather than falling
-    // through to a disallowed sibling's exposed balance. A disallowed
-    // account's penalty-exposed dollars must stay fully unreachable, even
-    // when the allowed pool in this list can't cover the residual —
-    // `routeForMode`'s category-level total already accounted for only the
-    // allowed pool, so this really is a genuine indBalance-vs-accountBalance drift
-    // case, not a place to silently spend a disallowed account's money.
+    // Still short after every allowed account: report it (reportShortfall,
+    // in the caller); a disallowed account's exposed dollars stay
+    // unreachable, so this is indBalance-vs-accountBalance drift.
     return shortfall2;
   }
-  // Residual reaches into penalty-exposed capacity — no capacity ceiling
-  // here, whatever balance remains at this point IS the exposed portion.
-  // Structurally unreachable when `avoidPenalizedWithdrawals` is on and no
-  // account in this list has the penalized-withdrawal override, mirroring the un-excluded
-  // total when the household has the lever off entirely.
+  // Residual draws penalty-exposed money: whatever balance remains is the
+  // exposed portion. Reached only when the household allows penalized
+  // withdrawals (the lever off, or an account override).
   return distributeProportionally(
     shortfall,
     accounts,
@@ -321,17 +271,8 @@ function distributeProportionallyPreferringPenaltyFree(
 }
 
 /**
- * Distribute an amount proportionally across accounts by balance (or, when
- * `capacity` is supplied, by `min(balance, capacity)` per account — used by
- * `distributeProportionallyPreferringPenaltyFree` to draw against only the
- * penalty-free portion of each account's balance). Handles zero-balance
- * safety (#33) and rounding residual (#35 — replaced
- * the old single lastKey-only assignment with a bounded re-routing loop
- * across the whole group, so a residual that the first account can't fully
- * absorb re-routes to the next one with capacity instead of being silently
- * capped away). Mutates `indBalance` and `withdrawalMap` in place. Returns any
- * amount that could not be allocated because the group's capacity was
- * genuinely exhausted — 0 in the overwhelmingly common case.
+ * Spreads an amount by balance (or `min(balance, capacity)`), re-routing rounding residual through
+ * the group. Mutates `indBalance` and `withdrawalMap`; returns what the group couldn't cover.
  */
 function distributeProportionally(
   amount: number,
@@ -361,10 +302,8 @@ function distributeProportionally(
     distributed += withdrawal;
   }
 
-  // Re-route any rounding residual within the same account group instead of
-  // a single lastKey assignment — iterate in the same deterministic order,
-  // drawing what's left from each account with remaining capacity, until
-  // the residual is placed or the group's capacity is genuinely exhausted.
+  // Re-route rounding residual through the group in the same order, until
+  // it's placed or the group's capacity is exhausted.
   let remaining = roundToCents(amount - distributed);
   for (const ia of accounts) {
     if (remaining <= 0) break;

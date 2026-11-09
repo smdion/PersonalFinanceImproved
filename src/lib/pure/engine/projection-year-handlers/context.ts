@@ -74,11 +74,9 @@ export function buildProjectionContext(
     }
   }
 
-  // Each person's working years: their job's (input.workingYearsByPerson),
-  // ending by the year before their own retirement when that comes before
-  // the plan's — a partial retirement. Outside them the person has no
-  // pay and their contributions stop (pre-year-setup), fixed-dollar ones
-  // included; the other person keeps working.
+  // Each person's working years: their job's, ending the year before their
+  // own retirement when that precedes the plan's. Outside them they have no
+  // pay and all their contributions stop (pre-year-setup).
   const workingYearsByPerson: Record<
     number,
     { start: number | null; end: number | null }

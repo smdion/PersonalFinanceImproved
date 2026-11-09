@@ -30,21 +30,8 @@ import {
 } from "@/lib/pure/accounts/roth-basis-tracking";
 
 /**
- * Build individual account year balance records for output.
- *
- * `eligibility` (decumulation only) —
- * when provided, each output record's `draw.eligibilityLocked`/`reason`
- * are read straight from the matching `AccountEligibility` entry, so the
- * UI can show why the engine did or didn't prefer an account this year.
- * Purely a read/pass-through here — this module never computes eligibility
- * itself (see `@/lib/pure/accounts/eligibility`).
- *
- * `maps.basis`/`maps.draws` (tracked Roth basis follow-up) — when
- * provided, populate `roth.basisRemaining`/`basisDrawn`/
- * `basisUncertain`. Called AFTER accrual (accumulation) or depletion
- * (decumulation) has already run for this year, so this reads end-of-year
- * state directly out of `indBasis` — no `start − drawn` recomputation to
- * drift out of sync with it.
+ * Builds per-account year records. `eligibility` (decumulation) passes through lock state and
+ * reason; `maps.basis`/`maps.draws` fill the Roth basis fields from end-of-year `indBasis`.
  */
 export function buildIndividualYearBalances(
   indAccounts: IndividualAccountInput[],
@@ -73,12 +60,8 @@ export function buildIndividualYearBalances(
       withdrawal: maps.withdrawal?.get(k) ?? 0,
       ...(accountEligibility
         ? {
-            // "Locked" (whole-account, backward-compatible UI meaning) —
-            // every dollar in the account is penalty-exposed. A PARTIALLY
-            // exposed account (some penalty-free capacity remaining) is
-            // NOT locked under this definition, even though it now has a
-            // nonzero penaltyExposedAmount (eligibility.ts's module docblock:
-            // `locked` vs `penalty-exposed`).
+            // "Locked" means every dollar is penalty-exposed; a partially
+            // exposed account is not locked (eligibility.ts docblock).
             eligibilityLocked:
               accountEligibility.penaltyFreeAmount <= 0.005 &&
               accountEligibility.penaltyExposedAmount > 0,
@@ -207,33 +190,9 @@ export function clampIndividualBalances(
 }
 
 /**
- * Reconciles the per-individual-account track (`indBalance`) to the aggregate
- * track (`accountBalance`) once per projected year, so `Σ indBalance[cat] ===
- * accountBalance[cat]` exactly before the NEXT year's withdrawal-eligibility
- * computation runs.
- *
- * The two tracks are deliberately separate (different granularity, lifecycle,
- * consumers) but drift accumulates from per-account
- * `roundToCents` vs. one aggregate rounding at several pipeline stages, and
- * that drift compounds across years via growth. Left unreconciled, a
- * category that `computeWithdrawalEligibility` (summing over `indBalance`)
- * reports as 100% locked can still show a nonzero "eligible" balance to
- * `subtractPenaltyExposed` (which reads `accountBalance`).
- *
- * `accountBalance` is the authoritative track (it feeds Tax Buckets, routing, tax,
- * and every aggregate the UI shows) — this pushes `indBalance` onto it, never
- * the reverse. Zero writes when a group already matches, which is what
- * keeps a non-drifting household's projection byte-identical. It corrects
- * `indBalance` itself, off the authoritative track, before eligibility ever
- * reads it.
- *
- * Call at END of year, after `clampIndividualBalances` (itself a drift
- * source — it zeroes negatives on the individual track only) and before
- * `clampIndividualBasis` (so tracked basis re-clamps to the reconciled
- * balance). Mutates `indBalance` in place. Returns diagnostic strings — empty
- * in the overwhelmingly common case; a dollar-scale (>$1) drift is a
- * structural finding, not rounding, and is surfaced rather than silently
- * absorbed.
+ * Pushes `indBalance` onto the authoritative `accountBalance` each year so eligibility sees
+ * matching tracks; no writes when a group already matches. Run after `clampIndividualBalances`,
+ * before `clampIndividualBasis`. Mutates `indBalance`; returns drift (>$1) diagnostics.
  */
 export function reconcileIndividualToAggregate(
   indAccounts: IndividualAccountInput[],
@@ -277,17 +236,9 @@ export function reconcileIndividualToAggregate(
   return diagnostics;
 }
 
-/** One (category, tax-slice) group's reconciliation — see
- *  `reconcileIndividualToAggregate`'s docblock for the full contract.
- *
- *  The drift is absorbed by retirement money. Portfolio-parented accounts
- *  change only through their own per-account flows (contributions,
- *  growth, goal draws, the ramp), so the aggregate-only operations that
- *  drift (withdrawals, RMDs, conversions, overflow) are retirement-side;
- *  spreading the correction over Portfolio accounts too would move money
- *  between the two. A shortfall empties retirement money first and takes
- *  only what's left from Portfolio. A group with no Portfolio account
- *  reconciles exactly as before (by balance; no weight → left alone). */
+/** One (category, tax-slice) group's reconciliation. Retirement money absorbs the drift; a
+ *  shortfall takes from Portfolio accounts only after retirement money is empty. With no
+ *  weight the group is left alone. */
 function reconcileGroup(
   groupAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
@@ -384,12 +335,8 @@ function reconcileGroup(
 }
 
 /**
- * Clamps tracked Roth basis to each account's (already-clamped) balance —
- * market losses, or a dust-cleaned zero balance, can otherwise leave
- * tracked basis exceeding what the account actually holds. Mirrors
- * `early-access.ts`'s own balance clamp (see `clampBasisToBalance`'s
- * docblock). Call AFTER balance clamping/dust cleanup, so it reads the
- * final balance for the year. Mutates `indBasis` in place.
+ * Clamps tracked Roth basis to each account's final (clamped, dust-cleaned) balance. Run after
+ * balance clamping. Mutates `indBasis`.
  */
 export function clampIndividualBasis(
   indAccounts: IndividualAccountInput[],

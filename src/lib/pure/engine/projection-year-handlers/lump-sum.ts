@@ -62,16 +62,9 @@ export function applyLumpSums(
 }
 
 /**
- * The individual account a lump sum lands in. A named account wins: name
- * AND owner when the lump sum carries `targetOwnerName` (two people can
- * have an identically named account), else the first by name — lump sums
- * saved before that field existed. With no account named, by whose money
- * it is: the Brokerage page's are Portfolio savings (Portfolio accounts
- * first), the retirement projection's stay retirement money (Retirement
- * accounts first — the projection-only retirement brokerage included, so
- * with no real Retirement brokerage it doesn't become Portfolio money).
- * Within the category, the matching tax type first. Shared with Simple tax
- * mode, which keeps only lump sums that land in retirement money.
+ * A lump sum's account: the named one (matching `targetOwnerName` when set, else first by name);
+ * else by whose money it is (Brokerage page → Portfolio first, projection → Retirement first),
+ * then matching tax type. Shared with Simple tax mode.
  */
 export function resolveLumpSumTarget(
   ls: LumpSum,
