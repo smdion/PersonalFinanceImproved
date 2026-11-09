@@ -136,6 +136,27 @@ const isOverlayClasses = (text) =>
 const HISTORY_PHRASE =
   /\bthe fix\b|\b(?:this|that|it|which|what|each|null|code|as)\s+used to\b|\bused to (?:be|have|also|still|do|just|only|not)\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\bdesign (?:doc|decision)\b|\bdecision (?:#\d|[A-Z]\d)|\b[A-Z]+(?:-[A-Z]+)*-PLAN\.md\b|\.scratch\/|\b[\w-]+\.tsx?:\d+\b/i;
 const VERSION_CITATION = /\bv\d+\.\d+\.\d+\b/i;
+// Owner-question and plan-item ids (`owner Q12`, `FQ8`, `N3`, `V6`, `Q18`):
+// the plans aren't shipped, so a reader can't follow one. A quarter
+// (`2026 Q1`, `Q4 2026`, `YTD (Q1)`) and the W2 and W4 tax forms aren't ids.
+const OWNER_ID =
+  /\bowner\s+[A-Z]{1,2}\d{1,3}[a-z]?\b|(?<![\w/.-])(?:FQ|[QNVWD])\d{1,3}[a-z]?(?![\w-])/g;
+const QUARTER_BEFORE = /(?:\b\d{4}|\bYTD)\s*\(?$/;
+
+/** The first owner or plan id in a comment, or undefined. */
+function ownerIdIn(text) {
+  for (const match of text.matchAll(OWNER_ID)) {
+    const id = match[0];
+    const quarter =
+      /^Q[1-4]$/.test(id) &&
+      (QUARTER_BEFORE.test(text.slice(0, match.index)) ||
+        /^\s+\d{4}\b/.test(text.slice(match.index + id.length)));
+    if (quarter) continue;
+    if (/^W[24]$/.test(id)) continue;
+    return id;
+  }
+  return undefined;
+}
 // The backup ladder and the migration converters are keyed by release.
 const RELEASE_KEYED_FILE =
   /src\/lib\/db\/(?:backup-transforms|v0810-profile-sets|migration-converters)\.ts$/;
@@ -397,10 +418,16 @@ const customRules = {
             const match =
               HISTORY_PHRASE.exec(comment.value) ??
               (releaseKeyed ? null : VERSION_CITATION.exec(comment.value));
+            const id = match ? undefined : ownerIdIn(comment.value);
             if (match)
               context.report({
                 loc: comment.loc,
                 message: `History in a comment ("${match[0]}"). State what is true now; history goes in the commit.`,
+              });
+            else if (id)
+              context.report({
+                loc: comment.loc,
+                message: `A plan or owner-question id in a comment ("${id}"). State the reason itself; the id goes in the commit.`,
               });
           }
         },

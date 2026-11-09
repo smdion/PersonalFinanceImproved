@@ -207,6 +207,32 @@ describe("ratchet/no-config-reach-through", () => {
   });
 });
 
+describe("ratchet/no-history-comment: plan and owner-question ids", () => {
+  it("counts an owner or plan id, bare or named, not a quarter, a tax form or an answer-key case", () => {
+    const lines = (comments: string[]) =>
+      reported(
+        "no-history-comment",
+        comments.map((c, i) => `// ${c}\nconst a${i} = ${i};`).join("\n"),
+      ).map((line) => (line + 1) / 2);
+    expect(
+      lines([
+        "the boundary names the failed load in words (owner Q18)",
+        "falls back to the strategy's key (FQ8)",
+        "kept per person: N3",
+        "a proven comments-only commit, V6.",
+        "the saved changes apply (D6)",
+        "owner H6 settled the basis",
+        "2026 YTD (Q1)",
+        "Q4 2026 estimate",
+        "the W2 box 1 wages",
+        "the answer key's ret/R12 case",
+        "a NAT64 prefix on an IPv6 network",
+        "P5 worst case",
+      ]),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
 describe("ratchet/no-lint-violation-ok (owner Q10c)", () => {
   it("counts each escape in a line, block or JSX comment, with a reason or without", () => {
     const messages = linter.verify(
