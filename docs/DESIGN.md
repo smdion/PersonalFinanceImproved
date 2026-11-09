@@ -967,6 +967,14 @@ SQLite and PostgreSQL).
   and deletes, all by `id`; they apply as deletes, then updates, then
   inserts, and each must change exactly one row or the migration stops.
   The tag logs one line per phase with the counts.
+- **Refusing the start:** rows a converter can't convert without changing
+  what they read as make it throw `MigrationRefusal`
+  (`src/lib/db/migrate/converter-refusal.ts`). Its message names each
+  table's row ids and field names, never a value, says nothing was
+  changed and gives the fix. The migration's one transaction (every
+  pending tag) rolls back, the migrator logs `migration_failed` with the
+  ids and exits non-zero, so the container doesn't start and the previous
+  image still runs. On restore it fails the restore before any write.
 - **A new migration never recreates a SQLite table** (0005 and 0015 do,
   and replay handles those as above); a shape that seems to need one stops
   for an owner decision.

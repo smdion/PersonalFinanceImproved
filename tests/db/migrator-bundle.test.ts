@@ -34,6 +34,7 @@ describe("the migrator bundle", () => {
         "db-migrate.ts",
         "src/lib/db/backup/backup-file.ts",
         "src/lib/db/migrate/converter-rows.ts",
+        "src/lib/db/migrate/converter-refusal.ts",
         "src/lib/db/migrate/demo-schema-marker.ts",
         "src/lib/db/env-file.ts",
         "src/lib/db/migrate/migration-converters.ts",

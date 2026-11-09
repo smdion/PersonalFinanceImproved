@@ -23,6 +23,7 @@ import {
 } from "./src/lib/db/migrate/reference-reconcile-core";
 import { VERSION_TABLE_NAMES } from "./src/lib/db/backup/version-tables";
 import { loadEnvFile } from "./src/lib/db/env-file";
+import { MigrationRefusal } from "./src/lib/db/migrate/converter-refusal";
 import {
   restrictBackupFile,
   writeBackupFile,
@@ -1031,7 +1032,7 @@ export function requireBackupOrAbort(backupPath: string | null): void {
   );
 }
 
-async function runPostgres() {
+export async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
   const { Pool } = await import("pg");
@@ -1945,6 +1946,9 @@ async function run() {
       dialect,
       error: err instanceof Error ? err.message : String(err),
       code: (err as NodeJS.ErrnoException).code,
+      ...(err instanceof MigrationRefusal
+        ? { refused: err.refused, fields: err.fields }
+        : {}),
     });
     process.exit(1);
   }
