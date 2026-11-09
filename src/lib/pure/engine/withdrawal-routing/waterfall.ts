@@ -11,7 +11,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import type { RouteResult } from "./types";
 
 /**

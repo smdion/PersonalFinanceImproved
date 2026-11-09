@@ -12,7 +12,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 
 /**
  * Route withdrawals by percentage split across accounts.

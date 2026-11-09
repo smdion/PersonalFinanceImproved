@@ -8,7 +8,7 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../config/account-types";
-import { setBasis } from "../../config/account-balance";
+import { setBasis } from "../accounts/account-balance";
 import type {
   AccountBalances,
   IndividualAccountInput,

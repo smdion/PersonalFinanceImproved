@@ -14,7 +14,8 @@ import {
   computeTaxableSS,
 } from "@/lib/pure/engine/tax-estimation";
 import { computeLtcgTax } from "@/lib/pure/tax/ltcg";
-import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
+import { NIIT_THRESHOLDS } from "@/lib/config/niit";
+import { computeNiit } from "@/lib/pure/tax/niit";
 import {
   TEST_BRACKETS,
   makeAccumulationDefaults,

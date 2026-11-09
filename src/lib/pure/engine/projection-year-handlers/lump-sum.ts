@@ -14,7 +14,7 @@ import {
   addRoth,
   addBalance,
   addBasis,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 

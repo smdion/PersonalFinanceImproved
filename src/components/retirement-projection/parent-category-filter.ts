@@ -12,7 +12,7 @@ import {
   isPreTaxType,
   tracksCostBasis,
 } from "@/lib/config/account-types";
-import { getTotalBalance } from "@/lib/config/account-balance";
+import { getTotalBalance } from "@/lib/pure/accounts/account-balance";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 

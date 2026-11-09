@@ -20,7 +20,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {

@@ -14,7 +14,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import { rankWithdrawalTiers } from "../withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
 import { routeWithdrawalsWaterfall } from "./waterfall";

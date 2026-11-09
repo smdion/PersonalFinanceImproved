@@ -615,7 +615,7 @@ The rules are RULES.md § Data-Driven Architecture.
 | File                                                | Role                                                                                             |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `src/lib/config/account-types.ts`                   | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate         |
-| `src/lib/config/account-balance.ts`                 | Balance-structure helpers (Traditional, Roth, basis)                                             |
+| `src/lib/pure/accounts/account-balance.ts`          | Balance-structure helpers (Traditional, Roth, basis)                                             |
 | `src/lib/config/display-labels.ts`                  | Label maps and performance-category constants                                                    |
 | `src/lib/config/account-types.types.ts`             | `AccountTypeConfig` (the entry shape), `AccountBalance` union                                    |
 | `src/lib/constants.ts`                              | App-wide defaults and thresholds                                                                 |

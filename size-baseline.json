@@ -290,7 +290,7 @@
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 68,
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 567,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
-    "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 156,
+    "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 152,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 99,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 477,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,

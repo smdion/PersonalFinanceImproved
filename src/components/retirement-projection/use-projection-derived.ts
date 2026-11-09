@@ -21,7 +21,7 @@ import {
   isTaxFreeBucket,
   isOverflowTarget,
 } from "@/lib/config/account-types";
-import { getSegmentBalance } from "@/lib/config/account-balance";
+import { getSegmentBalance } from "@/lib/pure/accounts/account-balance";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";

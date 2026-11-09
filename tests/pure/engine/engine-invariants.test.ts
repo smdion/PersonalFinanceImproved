@@ -31,7 +31,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getTotalBalance,
   getTraditionalBalance,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";

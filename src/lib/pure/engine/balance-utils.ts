@@ -20,7 +20,7 @@ import {
   setTraditional,
   setRoth,
   setBalance,
-} from "../../config/account-balance";
+} from "../accounts/account-balance";
 import { roundToCents, safeDivide } from "../../utils/math";
 import type {
   EligibilityRecord,

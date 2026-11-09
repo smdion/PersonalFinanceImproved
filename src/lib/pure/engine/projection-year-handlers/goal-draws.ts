@@ -1,11 +1,7 @@
 import { followDraws, groupBasisRatio } from "../brokerage-basis";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
-import {
-  addBalance,
-  setBasis,
-  getBasis,
-} from "../../../config/account-balance";
+import { addBalance, setBasis, getBasis } from "../../accounts/account-balance";
 import { DEFAULT_TAX_RATE_BROKERAGE } from "../../../constants";
 import {
   distributeGoalWithdrawal,

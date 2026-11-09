@@ -38,7 +38,7 @@ import {
   getRothBalance,
   getTotalBalance,
   getBasis,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import {
   CONTRIBUTION_METHOD_LABELS,
   CONTRIBUTION_METHOD_LABELS_SHORT,

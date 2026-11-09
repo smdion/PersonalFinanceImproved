@@ -14,7 +14,7 @@ import {
   isPreTaxType,
   isRetirementMoney,
 } from "../../config/account-types";
-import { getTraditionalBalance } from "../../config/account-balance";
+import { getTraditionalBalance } from "../accounts/account-balance";
 import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";

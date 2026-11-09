@@ -12,7 +12,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import { safeDivide } from "@/lib/utils/math";
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import type {

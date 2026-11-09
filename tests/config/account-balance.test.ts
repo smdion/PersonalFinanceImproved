@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { zeroBalanceForStructure } from "@/lib/config/account-balance";
 import {
   getTraditionalBalance,
   getRothBalance,
@@ -12,10 +13,9 @@ import {
   setRoth,
   setBalance,
   setBasis,
-  zeroBalanceForStructure,
   cloneBalance,
   getSegmentBalance,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import type { AccountBalance } from "@/lib/config/account-types.types";
 
 const makeRothTrad = (

@@ -25,7 +25,7 @@ import {
   getDisplayConfig,
   isOverflowTarget,
 } from "@/lib/config/account-types";
-import { getSegmentBalance } from "@/lib/config/account-balance";
+import { getSegmentBalance } from "@/lib/pure/accounts/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
 import { catDisplayLabel } from "./projection-display";
 import { rowTotal } from "./parent-category-filter";

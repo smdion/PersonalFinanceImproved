@@ -33,7 +33,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { getAccountSegments } from "@/lib/config/account-types";
-import { getSegmentBalance } from "@/lib/config/account-balance";
+import { getSegmentBalance } from "@/lib/pure/accounts/account-balance";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { ChartFrame } from "@/components/charts/chart-frame";
 import { balanceSummary } from "./projection-chart.summary";
