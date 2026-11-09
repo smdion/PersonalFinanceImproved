@@ -24,7 +24,7 @@
     "src/app/(dashboard)/budget/what-if-savings-step.tsx": 49,
     "src/app/(dashboard)/budget/what-if-step.tsx": 67,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 622,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 977,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 964,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
     "src/app/(dashboard)/historical/historical-content.tsx": 935,
     "src/app/(dashboard)/house/house-content.tsx": 733,
@@ -447,7 +447,7 @@
       "WhatIfTab": 548
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
-      "ContributionsContent": 875,
+      "ContributionsContent": 874,
       "ContributionsContent.map()": 234,
       "ContributionsContent.map().map()": 169
     },

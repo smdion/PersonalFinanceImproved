@@ -51,6 +51,12 @@ const BEFORE: Record<SegmentedLook, [string, string, string, string]> = {
     STANDARD_ON,
     "text-muted hover:text-secondary",
   ],
+  pill: [
+    "bg-surface-elevated flex gap-1 rounded-full p-0.5",
+    "rounded-full px-3 py-1 text-xs transition-colors",
+    "bg-blue-600 text-white",
+    "text-muted hover:text-primary",
+  ],
   "tray-lg": [
     "bg-surface-elevated flex gap-1 rounded-lg p-1",
     "rounded-md px-4 py-1.5 text-sm transition-colors",

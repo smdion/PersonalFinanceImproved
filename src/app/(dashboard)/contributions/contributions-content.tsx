@@ -11,6 +11,12 @@ import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
+import {
+  ContribPeriodToggle,
+  getPeriodSuffix,
+  toContributionPeriod,
+  type ContribPeriod,
+} from "@/components/ui/contrib-period-toggle";
 import { ContributionsQueryBoundary } from "./contributions-query-boundary";
 import { queryPending } from "@/components/ui/query-boundary";
 import {
@@ -35,24 +41,6 @@ import {
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
-type PeriodMode = "annual" | "monthly" | "per-period";
-
-function toDisplay(
-  annual: number,
-  periodsPerYear: number,
-  mode: PeriodMode,
-): number {
-  if (mode === "monthly") return annual / 12;
-  if (mode === "per-period") return annual / periodsPerYear;
-  return annual;
-}
-
-function periodLabel(mode: PeriodMode): string {
-  if (mode === "monthly") return "/mo";
-  if (mode === "per-period") return "/period";
-  return "/yr";
-}
-
 export function ContributionsContent() {
   const { viewMode } = useScenario();
   const user = useUser();
@@ -60,7 +48,7 @@ export function ContributionsContent() {
   const canEditPriorYear = isAdmin(user);
   const utils = trpc.useUtils();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
-  const [period, setPeriod] = useState<PeriodMode>("annual");
+  const [period, setPeriod] = useState<ContribPeriod>("annual");
   const [activeProfileId] = useActiveContribProfile();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
@@ -207,7 +195,7 @@ export function ContributionsContent() {
   const totalWithout = savingsWithout.total;
   const totalEmployerMatch = totalWith - totalWithout;
 
-  const pl = periodLabel(period);
+  const pl = getPeriodSuffix(period);
 
   return (
     <div>
@@ -242,25 +230,12 @@ export function ContributionsContent() {
               </select>
             </label>
           )}
-          <div className="bg-surface-elevated flex gap-1 rounded-full p-0.5">
-            {(["annual", "monthly", "per-period"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setPeriod(m)}
-                className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                  period === m
-                    ? "bg-blue-600 text-white"
-                    : "text-muted hover:text-primary"
-                }`}
-              >
-                {m === "annual"
-                  ? "Annual"
-                  : m === "monthly"
-                    ? "Monthly"
-                    : "Per Period"}
-              </button>
-            ))}
-          </div>
+          <ContribPeriodToggle
+            value={period}
+            onChange={setPeriod}
+            order="annualFirst"
+            look="pill"
+          />
         </div>
       </PageHeader>
       <CoastFireNote />
@@ -342,7 +317,7 @@ export function ContributionsContent() {
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
                 rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
                 altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
+                amount={toContributionPeriod(
                   counted(excludeMatch ? savingsWithout : savingsWith),
                   avgPeriodsPerYear,
                   period,
@@ -355,7 +330,7 @@ export function ContributionsContent() {
                 rate={primary === "without" ? retRateWithout : retRateWith}
                 rateAlt={primary === "without" ? retRateWith : retRateWithout}
                 altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
+                amount={toContributionPeriod(
                   excludeMatch ? totalRetirementWithout : totalRetirementWith,
                   avgPeriodsPerYear,
                   period,
@@ -368,7 +343,7 @@ export function ContributionsContent() {
                 rate={primary === "without" ? portRateWithout : portRateWith}
                 rateAlt={primary === "without" ? portRateWith : portRateWithout}
                 altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
+                amount={toContributionPeriod(
                   excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
                   avgPeriodsPerYear,
                   period,
@@ -388,7 +363,11 @@ export function ContributionsContent() {
           <div className="flex items-center gap-4 py-2">
             <div className="text-2xl font-bold text-emerald-600">
               {formatCurrency(
-                toDisplay(totalEmployerMatch, avgPeriodsPerYear, period),
+                toContributionPeriod(
+                  totalEmployerMatch,
+                  avgPeriodsPerYear,
+                  period,
+                ),
               )}
               <span className="text-muted ml-1 text-sm font-normal">{pl}</span>
             </div>
@@ -436,7 +415,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
@@ -445,7 +424,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right text-emerald-600">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employerMatch,
                             person.periodsPerYear,
                             period,
@@ -454,7 +433,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right font-medium">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].totalContrib,
                             person.periodsPerYear,
                             period,
@@ -488,7 +467,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].employeeContrib,
                           avgPeriodsPerYear,
                           period,
@@ -497,7 +476,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right text-emerald-600">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].employerMatch,
                           avgPeriodsPerYear,
                           period,
@@ -506,7 +485,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right font-medium">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].totalContrib,
                           avgPeriodsPerYear,
                           period,
@@ -588,7 +567,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-2 text-right">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
@@ -599,7 +578,7 @@ export function ContributionsContent() {
                         {a.employerMatch > 0 ? (
                           <span className="text-emerald-600">
                             {formatCurrency(
-                              toDisplay(
+                              toContributionPeriod(
                                 a.views[viewMode].employerMatch,
                                 person.periodsPerYear,
                                 period,
@@ -719,7 +698,7 @@ export function ContributionsContent() {
                 <td className="py-2 font-medium">Total</td>
                 <td className="py-2 text-right font-medium">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
                       period,
@@ -728,7 +707,7 @@ export function ContributionsContent() {
                 </td>
                 <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       person.totals.views[viewMode].totalWithMatch -
                         person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
@@ -759,7 +738,7 @@ export function ContributionsContent() {
       {/* Joint accounts */}
       {jointAccountTypes.length > 0 && (
         <Card
-          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}${pl}`}
+          title={`Joint — ${formatCurrency(toContributionPeriod(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}${pl}`}
           className="mb-6"
         >
           <table className="w-full text-sm">
@@ -793,7 +772,7 @@ export function ContributionsContent() {
                   </td>
                   <td className="py-2 text-right">
                     {formatCurrency(
-                      toDisplay(
+                      toContributionPeriod(
                         a.views[viewMode].employeeContrib,
                         avgPeriodsPerYear,
                         period,
@@ -804,7 +783,7 @@ export function ContributionsContent() {
                     {a.employerMatch > 0 ? (
                       <span className="text-emerald-600">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employerMatch,
                             avgPeriodsPerYear,
                             period,
@@ -827,7 +806,7 @@ export function ContributionsContent() {
                 <td className="py-2 font-medium">Total</td>
                 <td className="py-2 text-right font-medium">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       jointTotals.totalWithoutMatch,
                       avgPeriodsPerYear,
                       period,
@@ -836,7 +815,7 @@ export function ContributionsContent() {
                 </td>
                 <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       jointTotals.totalWithMatch -
                         jointTotals.totalWithoutMatch,
                       avgPeriodsPerYear,
@@ -902,12 +881,20 @@ export function ContributionsContent() {
                     <td className="py-1.5">{row.label}</td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(row.current, avgPeriodsPerYear, period),
+                        toContributionPeriod(
+                          row.current,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
                       )}
                     </td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(row.profile, avgPeriodsPerYear, period),
+                        toContributionPeriod(
+                          row.profile,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
                       )}
                     </td>
                     <td
@@ -915,7 +902,7 @@ export function ContributionsContent() {
                     >
                       {delta > 0 ? "+" : ""}
                       {formatCurrency(
-                        toDisplay(delta, avgPeriodsPerYear, period),
+                        toContributionPeriod(delta, avgPeriodsPerYear, period),
                       )}
                     </td>
                   </tr>

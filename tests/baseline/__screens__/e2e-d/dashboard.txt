@@ -35,7 +35,7 @@ Monthly pool$0.00/mo
 Living Costs
 Add a job on the Paycheck page to calculate living cost ratios.
 Contributions
-Per check
+Per paycheck
 Monthly
 Annual
 Retirement

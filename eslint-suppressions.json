@@ -301,9 +301,6 @@
     "ratchet/no-jsx-iife": {
       "count": 3
     },
-    "ratchet/no-raw-button": {
-      "count": 1
-    },
     "ratchet/no-raw-input": {
       "count": 1
     },

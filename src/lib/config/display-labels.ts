@@ -26,6 +26,13 @@ export function payPeriodLabel(payPeriod: string): string {
   return isPayPeriod(payPeriod) ? PAY_PERIOD_LABELS[payPeriod] : payPeriod;
 }
 
+/** A contribution view's period: its option label and an amount's suffix. */
+export const CONTRIBUTION_PERIOD_TEXT = {
+  paycheck: { label: "Per paycheck", suffix: "/paycheck" },
+  monthly: { label: "Monthly", suffix: "/mo" },
+  annual: { label: "Annual", suffix: "/yr" },
+} as const;
+
 /** "Bonus goes to" choices (Salary Profile entry `bonusDestination`). */
 export const BONUS_DESTINATION_OPTIONS = [
   { value: "budget", label: "Budget" },

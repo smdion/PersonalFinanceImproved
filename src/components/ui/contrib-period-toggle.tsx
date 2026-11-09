@@ -1,24 +1,13 @@
 "use client";
 
 import { safeDivide } from "@/lib/utils/math";
-import { SegmentedControl } from "./segmented-control";
+import { CONTRIBUTION_PERIOD_TEXT } from "@/lib/config/display-labels";
+import { SegmentedControl, type SegmentedLook } from "./segmented-control";
 
-export type ContribPeriod = "annual" | "monthly" | "paycheck";
-
-const PERIOD_LABELS: Record<ContribPeriod, string> = {
-  paycheck: "Per check",
-  monthly: "Monthly",
-  annual: "Annual",
-};
-
-const PERIOD_SUFFIXES: Record<ContribPeriod, string> = {
-  paycheck: "/check",
-  monthly: "/mo",
-  annual: "/yr",
-};
+export type ContribPeriod = keyof typeof CONTRIBUTION_PERIOD_TEXT;
 
 export function getPeriodSuffix(period: ContribPeriod): string {
-  return PERIOD_SUFFIXES[period];
+  return CONTRIBUTION_PERIOD_TEXT[period].suffix;
 }
 
 /**
@@ -40,26 +29,49 @@ export function getContribMultiplier(
   }
 }
 
-const PERIOD_OPTIONS = (["paycheck", "monthly", "annual"] as const).map(
-  (value) => ({ value, label: PERIOD_LABELS[value] }),
-);
+/** An annual amount in the chosen period, by division; no pay periods
+ *  gives $0 per paycheck, as getContribMultiplier does. */
+export function toContributionPeriod(
+  annual: number,
+  periodsPerYear: number,
+  period: ContribPeriod,
+): number {
+  if (period === "monthly") return annual / 12;
+  if (period === "paycheck") return safeDivide(annual, periodsPerYear, 0)!;
+  return annual;
+}
+
+/** Each page's option order: Dashboard and Paycheck start from the
+ *  paycheck, Contributions from the year. */
+const ORDERS = {
+  paycheckFirst: ["paycheck", "monthly", "annual"],
+  annualFirst: ["annual", "monthly", "paycheck"],
+} as const satisfies Record<string, readonly ContribPeriod[]>;
 
 export function ContribPeriodToggle({
   value,
   onChange,
   className,
+  order = "paycheckFirst",
+  look,
 }: {
   value: ContribPeriod;
   onChange: (period: ContribPeriod) => void;
   className?: string;
+  order?: keyof typeof ORDERS;
+  look?: SegmentedLook;
 }) {
   return (
     <div className={className}>
       <SegmentedControl
         ariaLabel="Show amounts"
         value={value}
-        options={PERIOD_OPTIONS}
+        options={ORDERS[order].map((v) => ({
+          value: v,
+          label: CONTRIBUTION_PERIOD_TEXT[v].label,
+        }))}
         onChange={onChange}
+        look={look}
       />
     </div>
   );
