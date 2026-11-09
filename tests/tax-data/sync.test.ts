@@ -137,6 +137,24 @@ describe("checkForTaxDataUpdate", () => {
     }
   });
 
+  it("refuses a signed file without the file's structure; a signed JSON null is an error, as before", async () => {
+    const { updates, check, cleanup } = await setup();
+    try {
+      const misshapen = release((f) => {
+        Object.assign(f.years["2026"]!.limits.ira_limit!, { notes: 7 });
+      });
+      expect(await check(github(misshapen))).toBe("invalid");
+      const nullText = "null\n";
+      const signedNull = packSignedTaxData(nullText, [
+        signTaxData(nullText, keys.privateKey, "test"),
+      ]);
+      expect(await check(github(signedNull))).toBe("error");
+      expect(updates()).toEqual([]);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("keeps limit keys it doesn't know instead of refusing the file", async () => {
     const { check, cleanup } = await setup();
     try {

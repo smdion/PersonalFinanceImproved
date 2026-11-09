@@ -15,10 +15,7 @@ import {
   SK_TAX_DATA_LAST_CHECK,
   SK_TAX_DATA_SYNC_ENABLED,
 } from "@/lib/constants/settings-keys";
-import {
-  TAX_DATA_FORMAT_VERSION,
-  type TaxDataFile,
-} from "@/lib/db/migrate/reference-reconcile-core";
+import { TAX_DATA_FORMAT_VERSION } from "@/lib/db/migrate/reference-reconcile-core";
 import {
   previewCommunityTaxData,
   readTaxDataFile,
@@ -27,7 +24,7 @@ import {
   unpackSignedTaxData,
   verifyTaxDataSignature,
 } from "@/lib/tax-data/signature";
-import { validateTaxDataFile } from "@/lib/tax-data/validate";
+import { checkTaxDataFile } from "@/lib/tax-data/checked-file";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
@@ -158,6 +155,20 @@ async function knownDataVersion(db: Db): Promise<number> {
   return Math.max(readTaxDataFile().dataVersion, ...rows.map((r) => r.v));
 }
 
+/** A version field of the parsed file, read before it is checked: one that
+ *  isn't a number reads as absent; a JSON null file throws, as reading a
+ *  field of null does. */
+function versionField(
+  parsed: unknown,
+  key: "formatVersion" | "dataVersion",
+): number | undefined {
+  if (parsed === null)
+    throw new TypeError(`Cannot read properties of null (reading '${key}')`);
+  const value: unknown =
+    typeof parsed === "object" ? Reflect.get(parsed, key) : undefined;
+  return typeof value === "number" ? value : undefined;
+}
+
 /**
  * Check for a newer community release; keep a verified one for review.
  * `force` skips the on/off setting (an admin's "Check now" still respects
@@ -200,27 +211,29 @@ export async function checkForTaxDataUpdate(
         result: "needs-newer-ledgr",
         detail: "signed with a key this Ledgr doesn't have",
       });
-    const parsed = JSON.parse(fileText) as TaxDataFile;
-    if (parsed.formatVersion > TAX_DATA_FORMAT_VERSION)
+    const parsed: unknown = JSON.parse(fileText);
+    const formatVersion = versionField(parsed, "formatVersion");
+    if (formatVersion !== undefined && formatVersion > TAX_DATA_FORMAT_VERSION)
       return await done({
         result: "needs-newer-ledgr",
         detail: "a newer tax-data format",
       });
     // Not newer than what's shipped or already fetched (incl. a replay of
     // an older signed file): nothing to do.
+    const dataVersion = versionField(parsed, "dataVersion");
     if (
-      !Number.isSafeInteger(parsed.dataVersion) ||
-      parsed.dataVersion <= (await knownDataVersion(db))
+      dataVersion === undefined ||
+      !Number.isSafeInteger(dataVersion) ||
+      dataVersion <= (await knownDataVersion(db))
     )
       return await done({ result: "current" });
     // A limit key this version doesn't know is kept (shown as not used
     // here, in place for a version that uses it), never a reason to refuse.
-    const file = parsed;
-    const problems = validateTaxDataFile(file, {
+    const { file, problems } = checkTaxDataFile(parsed, {
       unknownKeys: "ignore",
       citations: "lenient",
     });
-    if (problems.length) {
+    if (!file) {
       log("warn", "tax_data_update_invalid", { problems });
       return await done({
         result: "invalid",

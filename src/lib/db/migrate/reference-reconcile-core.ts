@@ -492,7 +492,7 @@ export function pickApprovedCommunityFile(
   for (const r of rows) {
     let f: TaxDataFile;
     try {
-      f = JSON.parse(String(r.file_text)) as TaxDataFile;
+      f = JSON.parse(String(r.file_text)) as TaxDataFile; // eslint-disable-line @typescript-eslint/consistent-type-assertions -- applied files passed checkTaxDataFile; the migrator bundles no parser
     } catch {
       continue;
     }

@@ -3391,7 +3391,7 @@
   },
   "src/lib/db/migrate/reference-reconcile-core.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 6
     },
     "max-lines-per-function": {
       "count": 1
@@ -5213,9 +5213,6 @@
     }
   },
   "src/server/routers/settings/tax-data-sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-clock-read": {
       "count": 2
     }
@@ -5906,9 +5903,6 @@
     }
   },
   "src/server/services/tax/tax-data-sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }

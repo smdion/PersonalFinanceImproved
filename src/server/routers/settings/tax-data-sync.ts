@@ -13,14 +13,13 @@ import {
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { TaxDataFile } from "@/lib/db/migrate/reference-reconcile-core";
 import {
   applyCommunityTaxData,
   previewCommunityTaxData,
   readTaxDataFile,
 } from "@/lib/db/migrate/reference-data";
 import { verifyTaxDataSignature } from "@/lib/tax-data/signature";
-import { validateTaxDataFile } from "@/lib/tax-data/validate";
+import { checkTaxDataFile } from "@/lib/tax-data/checked-file";
 import { describeTaxDataChanges } from "@/lib/tax-data/describe";
 import { getValidCronSecret } from "@/lib/auth/cron";
 import {
@@ -56,12 +55,11 @@ function verifiedFile(row: { fileText: string; signature: string }) {
       code: "BAD_REQUEST",
       message: "The stored update no longer verifies — it can't be applied.",
     });
-  const file = JSON.parse(row.fileText) as TaxDataFile;
-  const problems = validateTaxDataFile(file, {
+  const { file, problems } = checkTaxDataFile(JSON.parse(row.fileText), {
     unknownKeys: "ignore",
     citations: "lenient",
   });
-  if (problems.length)
+  if (!file)
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: `The update fails its checks: ${problems[0]}`,
