@@ -1,18 +1,7 @@
 /**
- * Uninvested cash, per account — judged once here; the cash-drag and HSA
- * cash recommendations map the results.
- *
- * An account's cash = its holdings' cash (each fund's composition) plus
- * money outside any reported position (uninvestedCash, from the feed's
- * same-day balance). Only accounts that report holdings are judged: a feed
- * that reports none can't be told apart from an all-cash account.
- *
- * Cash drag compares an account's share in the current glide path's cash
- * class with its target, using the rebalancing band (one band rule) and the
- * same minimum move. No current glide path → nothing (the simulation's
- * glide path isn't a holding target). HSA accounts are judged on a cash
- * buffer instead: the household setting, else the year's HDHP minimum
- * deductible for the owner's coverage (unknown coverage → nothing).
+ * Uninvested cash per account (holdings' cash plus money outside any position), judged for
+ * cash drag against the current glide path's cash target, or for HSAs against a cash buffer.
+ * Only accounts that report holdings are judged.
  */
 import {
   isPreTaxType,
@@ -137,10 +126,8 @@ export function resolveHsaCashBuffer(
   );
 }
 
-/** The current glide path's cash class for judgeCashDrag, from the
- *  holdings overview: the class the `cash` bucket counts toward and its
- *  target. null unless the target comes from the household's current glide
- *  path (the simulation's glide path isn't a holding target). */
+/** The current glide path's cash class and target for judgeCashDrag; null unless the
+ *  target comes from the household's current glide path. */
 export function currentCashClass(overview: {
   targetSource: string;
   allocation: {

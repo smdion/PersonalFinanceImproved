@@ -1,11 +1,7 @@
 /**
- * Early-access (Rule of 55 / Roth ordering rules) computation for the Tax
- * Buckets analysis tool.
- *
- * Two independent flags per balance slice — `penaltyFree` and `taxFree` —
- * never one collapsed "accessible" flag. Penalty-free and tax-free are
- * genuinely different IRS questions (e.g. Rule of 55 makes a Traditional
- * 401k withdrawal penalty-free, but it's still taxable income).
+ * Early access (Rule of 55 / Roth ordering) for the Tax Buckets tool. Each slice carries
+ * separate `penaltyFree` and `taxFree` flags: Rule of 55 makes Traditional 401k money
+ * penalty-free but still taxable.
  */
 import {
   RULE_OF_55_AGE,
@@ -22,23 +18,16 @@ import { roundToCents } from "@/lib/utils/math";
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
 
 type SeparationResolution = {
-  /** Calendar year the person actually separated from the employer funding
-   *  this account. Null when not yet separated (still employed there) or
-   *  when there's no data to resolve it at all — NEVER a hypothetical
-   *  future year. Rule of 55 requires separation to have already happened;
-   *  a plan to retire at some target age someday is not evidence of that. */
+  /** Year the person actually separated from this account's employer; null when still
+   *  employed there or unknown. Never a planned future year: Rule of 55 needs a real one. */
   year: number | null;
   source: SeparationSource;
 };
 
 /**
- * Resolve the separation year for a 401k/403b account — "now," using only
- * real, already-happened separations. Prefers the durable, user-set
- * `performanceAccounts.separationDate`. Otherwise derives from linked jobs'
- * real `endDate`s that have actually passed as of `currentDate`. A linked
- * job with no `endDate` (or one in the future) is still-employed, not
- * "unknown" — reported distinctly as `source: "active"` since it's real,
- * known information (just not separation evidence), not a data gap.
+ * Separation year for a 401k/403b "now": the user-set `separationDate`, else linked jobs'
+ * `endDate`s already past at `currentDate`. A linked job with no or a future `endDate` is
+ * `source: "active"` (still employed), not a data gap.
  */
 export function resolveSeparationYear(input: {
   explicitSeparationYear: number | null;
@@ -48,10 +37,8 @@ export function resolveSeparationYear(input: {
   if (input.explicitSeparationYear != null) {
     return { year: input.explicitSeparationYear, source: "explicit" };
   }
-  // Do NOT filter to only currently-active jobs (filterActiveJobs()) or only
-  // isActive contributionAccounts rows — a separated employer's job/link is
-  // exactly the one likely to look "inactive," and it's exactly the
-  // evidence Rule of 55 needs to see.
+  // Include inactive jobs and links: a separated employer's job looks inactive,
+  // and it's exactly the evidence Rule of 55 needs.
   const candidateJobs = input.linkedJobs.filter((j) => !j.isSpeculative);
   if (candidateJobs.length === 0) {
     return { year: null, source: "no_data" };
@@ -68,11 +55,9 @@ export function resolveSeparationYear(input: {
   return { year: Math.max(...endedYears), source: "derived" };
 }
 
-/** Rule of 55: separating from that plan's employer in or after the
- *  calendar year the person turns 55 grants permanent penalty-free access
- *  to that plan — regardless of whether it's their *current* job, and
- *  regardless of whether the plan has sat dormant since. Only meaningful
- *  once separation has actually happened (see resolveSeparationYear). */
+/** Rule of 55: separating from the plan's employer in or after the year the person
+ *  turns 55 grants permanent penalty-free access to that plan, current job or not.
+ *  Only meaningful once separation has happened (see resolveSeparationYear). */
 export function isRuleOf55Eligible(
   separationYear: number,
   birthYear: number,
@@ -88,22 +73,8 @@ export type EarlyAccessSlice = {
 };
 
 /**
- * Penalty-free capacity = the sum of the LEADING, CONTIGUOUSLY penalty-free
- * PREFIX of an account's slices, in the order its own distribution
- * ordering rules release them. NOT the sum of every penalty-free slice
- * regardless of position: a Roth IRA's ordering forces dollars out
- * contribution → conversion → growth, and an unseasoned conversion slice
- * (`penaltyFree: false`) blocks access to any penalty-free slice behind it
- * even if one existed. Today the prefix rule and a naive "sum every
- * penalty-free slice" rule happen to coincide for every account shape this
- * engine models (a pre-59½ owner always has penalized growth behind any
- * unseasoned conversion anyway) — the prefix rule is implemented regardless
- * of that coincidence, because summing would be wrong the moment a shape
- * existed where it mattered.
- *
- * Lives here (next to `EarlyAccessSlice`), not inside `eligibility.ts`, so
- * the Tax Buckets UI imports it directly rather than re-deriving
- * "accessible now" with its own sum-every-penalty-free-slice loop.
+ * Sum of the leading, contiguous penalty-free slices in the account's release order: an
+ * unseasoned Roth conversion slice blocks every slice behind it. Shared with the Tax Buckets UI.
  */
 export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
   let sum = 0;
@@ -144,10 +115,8 @@ export function computeTraditionalIraAccess(
   ];
 }
 
-/** Traditional (preTax) slice of a 401k/403b: always taxable, but
- *  penalty-free once Rule-of-55-eligible for that specific account OR
- *  age ≥ 59½ — the same gate the Roth slice of the same account uses,
- *  since Rule of 55 frees the whole plan, not just part of it. */
+/** Traditional (preTax) slice of a 401k/403b: always taxable; penalty-free once Rule of 55
+ *  applies to this account or at 59½ (same gate as its Roth slice: it frees the whole plan). */
 export function computeEmployerPlanPreTaxAccess(
   balance: number,
   currentAge: number,
@@ -163,11 +132,9 @@ export function computeEmployerPlanPreTaxAccess(
   ];
 }
 
-/** Roth (taxFree) sub-election of a 401k/403b — IRS pro-rata rule: a
- *  distribution can't cleanly isolate basis, so the entered basis is only
- *  realized as a fraction of a *full* distribution. Both fractions share
- *  the same penalty-free gate (Rule of 55 frees the whole plan); only the
- *  basis fraction is tax-free. */
+/** Roth sub-election of a 401k/403b, pro-rata: basis is realized only as a fraction of a
+ *  full distribution. Both fractions share the plan's penalty-free gate; only the basis
+ *  fraction is tax-free. */
 export function computeEmployerPlanRothAccess(
   balance: number,
   currentAge: number,
@@ -193,13 +160,9 @@ export function computeEmployerPlanRothAccess(
   ];
 }
 
-/** Roth IRA: real ordering rules apply — contribution basis is always
- *  penalty-free and tax-free with no clock; conversion basis is always
- *  tax-free but penalty-free once its own 5-year clock has passed (gated
- *  conservatively on the *latest* tracked conversion year) or the owner is
- *  59½ — the conversion penalty doesn't apply past 59½; growth
- *  needs age ≥ 59½ for both flags (v1 approximates "qualified" as this age
- *  check alone — no per-conversion clock beyond latestConversionYear). */
+/** Roth IRA ordering: contribution basis free always; conversion basis tax-free, penalty-free
+ *  after the latest conversion's 5-year clock or at 59½; growth needs 59½ for both flags
+ *  ("qualified" approximated by age alone). */
 export function computeRothIraAccess(input: {
   balance: number;
   currentAge: number;
@@ -254,20 +217,13 @@ export function computeRothIraAccess(input: {
 }
 
 /**
- * How a projection treats an HSA withdrawal, in one sentence for every
- * surface that shows it. The engine doesn't model medical spending, so it
- * can't know a draw paid a medical bill: each is general spending — the
- * same assumption as `computeHsaAccess`'s slice. That can overstate tax for
- * a household that pays medical costs from its HSA.
+ * One sentence for every surface showing an HSA draw: the engine treats each as non-medical
+ * spending (as `computeHsaAccess` does), which can overstate tax.
  */
 export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
 
-/** HSA: modeled as non-medical spending money, not qualified medical
- *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
- *  even though that's real and available. Under that assumption, an HSA
- *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
- *  account's own age gate, not the 59½ IRA one), always ordinary income
- *  tax. No basis concept, so no split — the whole balance moves together. */
+/** HSA, modeled as non-medical spending (medical tax-free use not assumed): like a
+ *  Traditional IRA, penalty-free at 65 and always ordinary income; no basis split. */
 export function computeHsaAccess(
   balance: number,
   currentAge: number,

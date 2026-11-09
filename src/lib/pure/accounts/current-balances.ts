@@ -1,20 +1,7 @@
 /**
- * The most accurate balance Ledgr can give each tracked account, part by
- * part (a part's money is never pooled with another's), from the newest of
- * what it knows:
- *
- * - the snapshot, unless a feed's data is from a later market close: the
- *   household's own figures are the most accurate for their day, and
- *   feeds lag a day or two — a feed on the snapshot's own close, or
- *   behind it, says nothing new;
- * - the feed, once its data is from a later close than the snapshot;
- * - either one rolled forward to the target close (the latest every
- *   ticker fund has a price for) by each fund's own total-return price
- *   moves, marked as an estimate. Holdings without a price stay at the
- *   base figure, and the roll says it's partial.
- *
- * Only accounts whose feed has caught up to the snapshot are compared with
- * it. Nothing here is ever written to a snapshot or to Performance.
+ * Each tracked account's most accurate balance, per part: the snapshot unless a feed is from
+ * a later close, optionally rolled forward to the target close by fund price moves (an
+ * estimate). Read-only: never written to a snapshot or Performance.
  */
 import {
   easternDay,
@@ -99,11 +86,8 @@ function sharesOn(p: BalancePosition, day: string): number {
 }
 
 /**
- * What the held shares made from one close to a later one, at each fund's
- * own total-return prices (distributions in). The one price path: the
- * roll to the latest close and every daily move both come from it, so the
- * moves add up to the roll. Cash never moves. `partial`: some fund had no
- * price for one of the two closes.
+ * What held shares made between two closes at each fund's total-return prices; the one price
+ * path for both the roll and daily moves. Cash never moves; `partial` = a fund lacked a price.
  */
 export function priceMove(
   positions: readonly BalancePosition[],
@@ -131,10 +115,8 @@ export function priceMove(
 }
 
 /**
- * One entry's market move into the close `day` from the session before
- * it; null when it can't be told in full (no holdings reported, or a fund
- * with no price for either close) — a partial move would read as the
- * whole.
+ * One entry's market move into close `day` from the prior session; null when it can't be
+ * told in full (no holdings, or a fund missing a price), since a partial move reads as whole.
  */
 export function moveIntoClose(
   positions: readonly BalancePosition[],
@@ -147,12 +129,9 @@ export function moveIntoClose(
 }
 
 /**
- * Money that went into (or out of) an entry between the close before `day`
- * and `day`, read from its share counts: each fund's change in shares at
- * that close's price (cash at face value). Share counts come with the
- * balances, so this shows a deposit days before the institution sends it
- * as a transaction. Reinvested dividends count too. Null when a fund has
- * no report for `day` or no price for it.
+ * Money into (or out of) an entry at close `day`, from each fund's change in shares at that
+ * close's price (cash at face); shows deposits before the transaction arrives. Null when a
+ * fund has no report or price for `day`.
  */
 export function addedIntoClose(
   positions: readonly BalancePosition[],
@@ -227,10 +206,8 @@ export function changeSinceSnapshot(balances: readonly CurrentBalance[]) {
 }
 
 /**
- * The market day a snapshot's figures reflect. Saved on its own date, the
- * save time decides (as for a feed's report: before the close, the prior
- * session). Backdated, only the date is known: that day's close. Never a
- * close later than the save.
+ * The market day a snapshot reflects: saved on its own date, the save time decides (before
+ * the close → prior session); backdated, that date's close. Never later than the save.
  */
 export function snapshotDataDay(snapshotDate: string, savedAt: Date): string {
   const dated = tradingDayOnOrBefore(snapshotDate);
@@ -289,11 +266,8 @@ type BalancePart = {
 };
 
 /**
- * Pair feeds with the snapshot's parts. A feed linked to a part compares
- * with that part. A whole-account feed, or one whose part is gone (it
- * counts for the whole account until it's relinked), compares with the
- * whole account. A feed with no tracked account or no parts has nothing to
- * compare with: it counts, unchanged.
+ * Pair feeds with snapshot parts: a part-linked feed compares with its part; a whole-account
+ * feed (or one whose part is gone) with the whole account; one with nothing to compare counts.
  */
 export function pairFeedsWithParts(args: {
   feeds: readonly BalanceFeed[];

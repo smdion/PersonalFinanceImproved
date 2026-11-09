@@ -5013,9 +5013,6 @@
     }
   },
   "src/lib/pure/accounts/account-balances.types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 5
     }
@@ -5025,15 +5022,7 @@
       "count": 2
     }
   },
-  "src/lib/pure/accounts/balance-dates.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/accounts/basis-consistency.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -5042,17 +5031,11 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/lib/pure/accounts/cost-basis.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -5063,21 +5046,8 @@
     }
   },
   "src/lib/pure/accounts/current-balances.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/lib/pure/accounts/early-access.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 11
-    }
-  },
-  "src/lib/pure/accounts/early-withdrawal-penalty.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/accounts/eligibility.ts": {

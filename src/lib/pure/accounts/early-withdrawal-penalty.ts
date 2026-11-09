@@ -22,14 +22,8 @@ type EarlyWithdrawalPenalty = {
 };
 
 /**
- * Per account: `penalized = max(0, withdrawn − penaltyFreeAmount)` —
- * whatever was actually drawn beyond the account's own penalty-free
- * capacity this year. Under the default `avoidPenalizedWithdrawals: true`
- * (see `withdrawal-routing/index.ts`'s `routeForMode`), the router already
- * excludes penalty-exposed money from the routed total, so `penalized`
- * should be 0 for every account in the overwhelmingly common case — this
- * function does not know or care why a penalized dollar was withdrawn (the
- * lever being off, or a future exception), it only prices whatever was.
+ * Per account: `penalized = max(0, withdrawn − penaltyFreeAmount)`. Normally 0, since the
+ * router excludes penalty-exposed money by default; this only prices what was drawn.
  */
 export function computeEarlyWithdrawalPenalty(input: {
   exposure: EligibilityRecord;

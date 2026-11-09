@@ -1,12 +1,6 @@
 /**
- * Suggested cost basis for a taxable account from what its institution
- * reports: shares × average cost per share, summed over current holdings.
- * Pure; a suggestion the household confirms.
- *
- * A holding with no reported average cost but a steady $1 price (a money
- * market or settlement fund) cost what it's worth. Any other holding
- * without a cost leaves the suggestion incomplete — its value is reported
- * so the household can judge.
+ * Suggested cost basis for a taxable account: shares × reported average cost. A $1-priced
+ * holding with no cost counts at value; any other leaves the suggestion incomplete.
  */
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 

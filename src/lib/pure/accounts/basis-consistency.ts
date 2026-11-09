@@ -1,14 +1,6 @@
 /**
- * Basis that is missing or inconsistent. Pure.
- *
- * Year-to-year consistency of Roth conversion basis:
- *
- * Basis is cumulative: a row's conversion basis includes every conversion
- * up to its year. So when a later row says the latest conversion was in
- * year Y, year Y's own row must already hold at least that much conversion
- * basis (withdrawals only ever lower later rows). A smaller figure in year
- * Y means a conversion was entered on a later row but not on its own
- * year's — the year's history understates it.
+ * Missing or inconsistent basis. Roth conversion basis is cumulative, so year Y's row must
+ * hold at least the conversion basis a later row dates to Y; less means year Y understates it.
  */
 import { HALF_CENT } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
@@ -64,11 +56,8 @@ export function findBasisGaps(rows: readonly BasisHistoryRow[]): BasisGap[] {
 }
 
 /**
- * Brokerage accounts holding money with no cost basis. Cost basis defaults
- * to 0, so 0 can't tell "not entered" from a real zero — and the
- * projection taxes every dollar drawn from such an account as a capital
- * gain. `category` is the account type (brokerage-style types track cost
- * basis; others are ignored).
+ * Brokerage-style accounts holding money with no cost basis (0 can't tell "not entered"
+ * from a real zero, and the projection taxes every dollar drawn as a gain).
  */
 export function findMissingCostBasis<
   T extends { category: string; balance: number; costBasis: number },
