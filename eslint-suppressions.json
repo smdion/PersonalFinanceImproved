@@ -2232,9 +2232,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 8
     }
   },
   "src/components/retirement-projection/use-projection-queries.ts": {

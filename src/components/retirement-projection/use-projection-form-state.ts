@@ -30,27 +30,9 @@ import { SIMULATION_DEFAULT_TRIALS } from "@/lib/constants";
 import { SK_DIAG_MODE } from "@/lib/constants/settings-keys";
 
 export function useProjectionFormState() {
-  // --- Withdrawal config ---
-  // Each seeded from defaultDecumulationConfig() (account-types.ts) — the
-  // SAME shared default the dashboard Retirement tile's cache-key-matching
-  // "peek" queries reproduce, so the two can't independently drift the way
-  // they had before this was consolidated.
-  // `withdrawalRoutingModeTouched` gates whether this session's selection
-  // is actually SENT as a decumulationDefaults override (use-projection-
-  // queries.ts's baseSharedInput) — untouched, the query omits the field
-  // entirely so the server resolves the household's persisted
-  // `retirement_settings.withdrawal_routing_mode` instead
-  // (buildDecumulationDefaults, server/routers/projection/_shared.ts).
-  // This state's own initial value is `DEFAULT_WITHDRAWAL_ROUTING_MODE`
-  // (NOT the fetched settings value) deliberately — it's never SENT until
-  // touched anyway, so what it starts at doesn't affect the engine input;
-  // `decumulation-config.tsx` derives its own display-only value (from the
-  // real persisted setting) for what the toggle/sub-controls actually
-  // show. `defaultDecumulationConfig()` (account-types.ts) deliberately
-  // does NOT carry this field any more — see that function's docblock for
-  // the bug this state used to cause (the dashboard tile's "peek" query
-  // sending a hardcoded "bracket_filling" that silently overruled a
-  // household's real "waterfall"/"percentage" setting).
+  // --- Withdrawal config --- (seeded from defaultDecumulationConfig())
+  // Routing mode is sent only once touched; until then the server resolves
+  // the persisted `withdrawal_routing_mode`, so the initial value is unused.
   const [withdrawalRoutingMode, setWithdrawalRoutingModeRaw] = useState<
     "bracket_filling" | "waterfall" | "percentage"
   >(DEFAULT_WITHDRAWAL_ROUTING_MODE);
@@ -63,13 +45,9 @@ export function useProjectionFormState() {
     },
     [],
   );
-  // Same touched-gating as `withdrawalRoutingMode` above — the order and
-  // splits are only SENT as a decumulationDefaults override once the user
-  // edits them this session; until then the query omits them and the server
-  // resolves `retirement_settings.withdrawal_order` / `.withdrawal_splits`.
-  // Initial values are the config defaults (NOT the fetched settings) since
-  // they're never sent until touched; `decumulation-config.tsx` derives its
-  // own display value from the real persisted setting.
+  // Touched-gated like `withdrawalRoutingMode`: order/splits are sent only once
+  // edited this session; until then the server resolves the persisted
+  // `withdrawal_order` / `withdrawal_splits`.
   const [withdrawalOrder, setWithdrawalOrderRaw] = useState<AccountCategory[]>(
     () => getDefaultDecumulationOrder(),
   );
@@ -119,10 +97,9 @@ export function useProjectionFormState() {
     : decumQuery.data && decumQuery.data.length > 0
       ? (decumQuery.data as DecumOverride[])
       : decumOverridesLocal;
-  // The first edit applies to the saved rows the section is showing, not
-  // the empty local list — otherwise deleting one saved row after a reload
-  // saved [] (all gone) and adding one saved only the new row. The refs
-  // flip at once, so two edits in one tick don't both start from the DB.
+  // The first edit starts from the saved rows the section shows, not the
+  // empty local list. The refs flip at once, so two edits in one tick don't
+  // both start from the DB.
   const accumTouchedRef = useRef(false);
   const decumTouchedRef = useRef(false);
   const setAccumOverrides: React.Dispatch<
@@ -169,13 +146,9 @@ export function useProjectionFormState() {
   );
   // Shared with the strategy comparison.
   const [simulationPreset, setSimulationPreset] = useSimulationPreset();
-  // Default to Advanced (real per-account tax tracking) rather than
-  // Simple (cFIREsim-style single-bucket comparison) — most households
-  // have real Traditional/Roth/HSA/brokerage splits they care about
-  // seeing, and Simple mode's collapse turned out to actively mislead
-  // when displayed as if it were a real account breakdown. Simple stays
-  // available for anyone who specifically wants the cFIREsim-comparable
-  // view.
+  // Default Advanced (real per-account tax tracking): Simple's single-bucket
+  // collapse misleads when read as an account breakdown. Simple stays
+  // available for a cFIREsim-comparable view.
   const [simulationTaxMode, setSimulationTaxMode] = useState<
     "simple" | "advanced"
   >(DEFAULT_SIMULATION.taxMode);
@@ -198,46 +171,26 @@ export function useProjectionFormState() {
     | "coastFireCustom"
     | "rateSeeded"
   >("baseline");
-  // Coast FIRE "Custom Age" picker. `null` until the
-  // household has typed/stepped a value OR `currentAge` becomes known
-  // (derived layer defaults the DISPLAYED value to currentAge when this
-  // is null — kept null here, not seeded to currentAge directly, since
-  // this hook has no access to currentAge at initialization time; it
-  // only arrives later from engineQuery's server response).
+  // Coast FIRE "Custom Age" picker; `null` until the user sets a value. The
+  // derived layer displays currentAge while null (unknown here at init; it
+  // arrives from engineQuery).
   const [coastFireCustomAge, setCoastFireCustomAge] = useState<number | null>(
     null,
   );
-  // Raw text the "Check age" input displays WHILE typing — separate from
-  // coastFireCustomAge (the committed, clamped number). Clamping on every
-  // keystroke (the original implementation) corrupted multi-digit entry:
-  // typing "42" with a min bound above 4 clamped the first "4" up to the
-  // min immediately, forcing the DOM value to e.g. "38" mid-keystroke, so
-  // the next digit landed in the wrong place and produced a mangled number
-  // like "54" instead of "42". Clamping now happens only on blur / "Check
-  // this age", via commitCoastFireAgeDraft
-  // in index.tsx — this field just tracks whatever the user has typed so
-  // far, unclamped.
+  // Raw, unclamped text the "Check age" input shows while typing. Clamping
+  // per keystroke would mangle multi-digit entry, so it happens only on blur /
+  // "Check this age" (commitCoastFireAgeDraft in index.tsx).
   const [coastFireCustomAgeDraft, setCoastFireCustomAgeDraft] = useState<
     string | null
   >(null);
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
-  // Separate from `showBars` (the Balance chart's own baseline toggle) so
-  // the Yearly Income Stability chart can default this off for a
-  // reactive strategy (Guyton-Klinger etc. -- flat/uneventful without
-  // real volatility) without silently also hiding the Balance chart's
-  // baseline, which is meaningful regardless of strategy. The shared
-  // BASELINE pill in index.tsx's toolbar reads/writes whichever of the two
-  // is relevant for the currently-active chart, so there's still only one
-  // visible toggle -- not two overlapping ones. A separate "Show anyway"
-  // link was confusing because the real BASELINE toggle appeared to do
-  // nothing on this chart.
+  // Separate from `showBars` so the Yearly Income Stability chart can default
+  // off for reactive strategies without hiding the Balance chart's baseline.
+  // The one BASELINE pill reads/writes whichever applies to the active chart.
   const [showStabilityBars, setShowStabilityBars] = useState(true);
-  // Balance chart's decumulation-year income overlay (total portfolio
-  // withdrawal + Social Security, secondary axis) — see projection-chart.tsx.
-  // Default on: this answers a real question ("what am I actually living
-  // on, and how much of it is SS") every retiree-facing view of this chart
-  // should surface, not an opt-in power-user feature.
+  // Balance chart's decumulation income overlay (withdrawal + SS, secondary
+  // axis; see projection-chart.tsx). On by default: "what am I living on".
   const [showIncome, setShowIncome] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
     "off" | "p25-p75" | "p10-p90" | "p5-p95"
