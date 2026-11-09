@@ -7,6 +7,7 @@ import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
+import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
 import {
   closedSetImportCases,
   unknownAccountTypeCases,
@@ -24,6 +25,10 @@ async function fresh() {
 
 describe("backup connections fence (SQLite)", () => {
   backupFenceCases(fresh);
+});
+
+describe("settings through a version restore (SQLite)", () => {
+  versionRestoreSettingsCases(fresh);
 });
 
 describe("closed-set values on import and restore (SQLite)", () => {

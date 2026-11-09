@@ -6,11 +6,13 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../schema";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
+import { jsonbColumns, restoredValue } from "./restored-values";
 import {
   truncateTables,
   resetSequences,
@@ -202,22 +204,21 @@ async function insertRows(
 ): Promise<number> {
   const columns = unionColumns(rows);
   validateColumns(tableName, columns);
+  const jsonb = isPostgres()
+    ? await jsonbColumns(
+        (q) => queryRaw<{ column_name: string }>(tx, q),
+        tableName,
+      )
+    : new Set<string>();
   const colList = columns.map((c) => `"${c}"`).join(", ");
   const BATCH_SIZE = 500;
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
     const valueClauses = batch.map((row) => {
-      const values = columns.map((col) => {
-        const val = row[col];
-        if (val === null || val === undefined) return sql`NULL`;
-        if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
-        if (typeof val === "object") {
-          const jsonStr = JSON.stringify(val);
-          return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
-        }
-        return sql`${val}`;
-      });
+      const values = columns.map((col) =>
+        restoredValue(row[col], jsonb.has(col)),
+      );
       return sql`(${sql.join(values, sql.raw(", "))})`;
     });
     await execRaw(
@@ -429,19 +430,14 @@ async function importBackupPg(
     let restoredRows = 0;
     const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
-    // Cache jsonb column sets per table
+    // Each table's jsonb columns, read on this client
+    const onClient = async (q: SQL) => {
+      const { sql: text, params } = new PgDialect().sqlToQuery(q);
+      return (await client.query(text, params)).rows;
+    };
     const jsonbCols = new Map<string, Set<string>>();
-    for (const t of sortedTables) {
-      const { rows: colRows } = await client.query(
-        `SELECT column_name FROM information_schema.columns
-         WHERE table_schema = 'public' AND table_name = $1 AND data_type = 'jsonb'`,
-        [t.name],
-      );
-      jsonbCols.set(
-        t.name,
-        new Set(colRows.map((r: { column_name: string }) => r.column_name)),
-      );
-    }
+    for (const t of sortedTables)
+      jsonbCols.set(t.name, await jsonbColumns(onClient, t.name));
 
     for (const tableEntry of sortedTables) {
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
