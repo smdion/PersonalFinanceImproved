@@ -1,24 +1,7 @@
 /**
- * OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) — a
- * $6,000-per-person deduction for taxpayers age 65+, tax years 2025-2028
- * only, phased out at 6% of MAGI above $75,000 (Single/HoH/MFS) / $150,000
- * (MFJ). Separate from, and in addition to, the long-standing IRC §63(f)
- * additional standard deduction (`ADDITIONAL_STANDARD_DEDUCTION_AGE`,
- * folded in directly by `decumulation-year.ts`).
- *
- * This MUST be folded into the standard deduction BEFORE withdrawal
- * routing/tax estimation runs, same injection point as §63(f) — by the time
- * `decumulation-year.ts`'s post-withdrawal tax recompute runs,
- * `actualTraditionalRate` is already fixed by `computeTaxFromSlots` and
- * there is no live taxable-income variable left to apply a deduction to.
- *
- * MAGI circularity: this year's real MAGI isn't known until AFTER this
- * deduction needs to be folded in (routing hasn't run yet). Uses LAST
- * YEAR'S MAGI as the phaseout basis — the same 1-year-lag pattern IRMAA's
- * 2-year lookback already uses to break an identical circularity. Year 1 of
- * decumulation (no prior-year MAGI exists yet) gets $0 — a deliberate,
- * understood, self-healing gap (consistent with every other "undefined ⇒ 0"
- * deduction convention in this engine), not silently zeroed by accident.
+ * OBBBA senior deduction: $6,000/person 65+, 2025-2028, phased out 6% of MAGI over $75k/$150k MFJ,
+ * on top of §63(f). Folded into the standard deduction before routing, with last year's MAGI as
+ * the phaseout basis (this year's isn't known yet), so decumulation year 1 gets $0.
  */
 
 type ObbbaSeniorDeductionInput = {
@@ -39,11 +22,8 @@ type ObbbaSeniorDeductionInput = {
   phaseoutRate: number | undefined;
   /** The projection year this deduction is being computed for. */
   year: number;
-  /** Last year Congress authorized this deduction (2028) — from
-   *  `contribution_limits` (`obbba_senior_deduction_sunset_year`), NOT a
-   *  hardcoded literal, so the sunset tracks the seed data rather than a
-   *  second, independently-maintained boundary. Undefined ⇒ not seeded ⇒ $0
-   *  (treated as "the deduction doesn't exist" rather than "no sunset"). */
+  /** Last year the deduction is authorized, from `contribution_limits`
+   *  (`obbba_senior_deduction_sunset_year`). Undefined (not seeded) ⇒ $0. */
   sunsetYear: number | undefined;
 };
 

@@ -1,14 +1,7 @@
 /**
- * Simple tax mode (simulation only, cFIREsim-comparable): retirement money
- * as one tax-free pot. Retirement answers count retirement money only, so
- * Simple is the retirement side of the household collapsed — never Portfolio
- * balances, Portfolio contributions or match, brokerage goals, or injections
- * that land in Portfolio money in the full (Advanced) projection. Its total
- * then equals its retirement balance by construction.
- *
- * Built from the Advanced input while it still has its individual accounts,
- * so lump sums are judged by the same target rule the engine uses
- * (`resolveLumpSumTarget`).
+ * Simple tax mode (simulation only, cFIREsim-comparable): retirement money as one tax-free pot,
+ * with nothing that lands in Portfolio money in the Advanced projection. Built from the Advanced
+ * input while it has its accounts, so lump sums follow `resolveLumpSumTarget`.
  */
 import {
   getAllCategories,
@@ -133,10 +126,8 @@ export function toSimpleTaxMode(
         ...sw.retirementOnly,
       };
     }),
-    // Tax-free means no table-based tax either: with a filing status the
-    // engine taxes the pot's gains on the capital-gains brackets (not the
-    // 0 brokerage rate above) and adds NIIT; IRMAA and the ACA check read
-    // the same gains as MAGI. None of them belong in one tax-free pot.
+    // Tax-free means no table-based tax either: no capital-gains brackets, NIIT, IRMAA or ACA
+    // MAGI on the pot's gains.
     filingStatus: undefined,
     enableIrmaaAwareness: false,
     irmaaAwareRothConversions: false,
@@ -153,7 +144,7 @@ export function toSimpleTaxMode(
     ),
     // Simple discards account identity: the one pot is the only
     // representation (per-account tracking would route withdrawals against
-    // real accounts the aggregate no longer has).
+    // real accounts the aggregate doesn't have).
     individualAccounts: [],
   };
 }

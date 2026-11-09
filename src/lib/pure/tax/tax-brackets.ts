@@ -1,16 +1,6 @@
 /**
- * Shared progressive-bracket tax accumulation, used by both tax.ts (annual
- * liability) and per-check.ts (per-period withholding, via the IRS
- * annualized method). Consolidated per audit Batch 4 Finding 1 — both files
- * independently walked the same bracket structure summing tax per slice.
- *
- * Deliberately scoped to ONLY the tax-total accumulation. Marginal-rate
- * determination stays separate in each caller: tax.ts derives it as a
- * byproduct of this same walk (the last bracket with positive taxable
- * amount), while per-check.ts needs a distinct highest-bracket-reached pass
- * (plus bracketMin/baseWithholding for the IRS withholding-table display)
- * that tax.ts has no use for — audit flagged these as "differently
- * structured," not interchangeable.
+ * Progressive-bracket tax accumulation for tax.ts (annual liability) and per-check.ts (annualized
+ * withholding). Tax total only: each caller finds its marginal rate its own way.
  */
 
 interface TaxBracket {
@@ -49,17 +39,9 @@ export function sumBracketTax(
 }
 
 /**
- * Convert Pub 15-T percentage-method withholding brackets (thresholds in
- * ADJUSTED-ANNUAL-WAGE space — Worksheet 1A's deduction already folded in,
- * already) into Form 1040 rate-schedule brackets (real TAXABLE-INCOME
- * space, i.e. post-standard-deduction). The two tables share identical
- * widths — Pub 15-T's standard percentage-method table is the 1040 rate
- * schedule shifted by exactly `standardDeduction - worksheet1AAdjustment`
- * (verified against IRS Rev. Proc. 2025-32 boundaries) — so they differ
- * only by a constant shift equal to the first non-zero bracket's threshold.
- *
- * Only valid for w4_checkbox=false (standard) rows — the 2(c) half-tables
- * are a withholding-only device with no 1040 analogue.
+ * Pub 15-T percentage-method brackets (adjusted-annual-wage space) to Form 1040 taxable-income
+ * brackets: the same widths shifted by the first non-zero threshold. Only for w4_checkbox=false
+ * rows; the 2(c) half-tables have no 1040 analogue.
  */
 export function toTaxableIncomeBrackets(brackets: TaxBracket[]): TaxBracket[] {
   const firstTaxed = brackets.findIndex((b) => b.rate > 0);

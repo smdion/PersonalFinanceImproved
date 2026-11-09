@@ -1,13 +1,7 @@
 /**
- * Filing status, one chain for every reader:
- * - THIS year's return: the household setting (SK_TAX_FILING_STATUS), else
- *   the active Retirement Profile's, else a W-4 (the primary person's
- *   first) — server/services/tax/filing-status.ts resolves it. The household
- *   tax, the Roth IRA check and the IRS-limit caps read it.
- * - Retirement years: the active Retirement Profile's, or "Auto" (null) —
- *   this year's.
- * - Nothing known at all: FILING_STATUS_IF_UNKNOWN, and Ledgr asks
- *   (a recommendation) — never a silent guess.
+ * Filing status, one chain: this year's return = household setting, else the active Retirement
+ * Profile's, else a W-4 (server/services/tax/filing-status.ts); retirement years = the profile's
+ * or this year's. Nothing known: FILING_STATUS_IF_UNKNOWN, and Ledgr asks, never guesses silently.
  */
 import {
   parseReturnFilingStatus,

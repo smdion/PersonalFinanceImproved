@@ -1,36 +1,7 @@
 /**
- * Annual Tax Liability Calculator
- *
- * Estimates total federal tax burden for the year. Unlike the paycheck calculator (which
- * computes per-period withholding), this computes the actual annual tax liability.
- *
- * Flow: per-person earnings → household wage AGI → Taxable Income → Federal Tax (brackets)
- *       + per-person FICA + household Additional Medicare → Total
- *
- * calculateHouseholdTax is the one path: federal on the household's combined
- * income with ONE standard deduction; Social Security per person on that
- * person's FICA wages, capped at the wage base; Medicare per person; the
- * 0.9% Additional Medicare Tax on the household's combined Medicare wages
- * above the filing status's LIABILITY threshold (reference data). Employers
- * withhold it per employee above a different, WITHHOLDING threshold — that
- * one belongs to paycheck withholding only; here it only sizes the
- * withheld-vs-owed warning.
- *
- * Known limitation: Tax-exempt interest (e.g. municipal bond interest) is not included
- * in provisional income for Social Security benefit taxation. The engine's computeTaxableSS()
- * already accepts a taxExemptInterest param (defaults to 0), but no data model exists to
- * capture projected muni bond income. If muni bond tracking is added, wire the annual
- * tax-exempt income through to computeTaxableSS() callers. Only affects retirees with
- * significant muni portfolios — underestimates SS tax liability by up to ~4% of SS income.
- *
- * Key differences from the paycheck calculator:
- *   - Uses actual annual income (not annualized per-period)
- *   - Applies standard deduction (paycheck withholding doesn't)
- *   - Includes Additional Medicare Tax (0.9% above the liability threshold)
- *   - SS wage base cap is applied to each person's annual FICA wages, not per-period
- *
- * Liability uses the standard (non-2(c)) brackets: the W-4 Step 2(c)
- * tables only shape paycheck withholding.
+ * Annual federal tax liability: one standard deduction and brackets on combined income, SS and
+ * Medicare per person, and 0.9% Additional Medicare above the LIABILITY threshold. Tax-exempt
+ * interest isn't in provisional income for SS taxation (no muni data model).
  */
 import type { TaxBracketInput } from "../paycheck/paycheck.types";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";

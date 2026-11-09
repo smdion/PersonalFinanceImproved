@@ -1,9 +1,7 @@
 /**
- * Is the household's tax data current? For the "tax data is behind" notice
- * (Settings → Reference Data, the sidebar's Data indicator) and the CI
- * check (scripts/check-tax-params.ts) — one rule, set by each table's
- * usual publication date (lib/config/tax-data-publication.ts), so the
- * notice says "expected about November" instead of nagging in March.
+ * Whether the household's tax data is current, for the "tax data is behind" notice and the CI
+ * check (scripts/check-tax-params.ts): one rule, set by each table's usual publication date
+ * (lib/config/tax-data-publication.ts), so the notice never nags before a table is expected.
  */
 import {
   TAX_DATA_SECTIONS,
