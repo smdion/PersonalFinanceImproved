@@ -188,7 +188,7 @@ export function useProjectionQueries(
   // has toggled to the Coast FIRE scenario view. Only set when the age is
   // sharedInput is baseSharedInput as-is. We intentionally do NOT thread
   // coastFireOverrideAge through engineQuery anymore — that caused a visual
-  // lag when toggling scenarioView (engineQuery refetches with new input,
+  // lag when toggling the card's view (engineQuery refetches with new input,
   // 600ms debounce + ~500ms fetch, while MC data swaps synchronously). The
   // deterministic coast projection is instead sourced from
   // coastFireMcResult.deterministicProjection at the derived layer, which
@@ -480,7 +480,7 @@ export function useProjectionQueries(
   // mcPrefetchQuery + mcQuery use debouncedBaseInput (never include the Coast
   // FIRE override). Coast FIRE scenario rendering is powered by
   // coastFireMcQuery below — the chart data selectors pick between the two
-  // based on scenarioView so switching scenarios doesn't invalidate the
+  // based on the card's view so switching scenarios doesn't invalidate the
   // baseline MC cache.
   // Derived the same way mcRunId is below — see that comment for why a
   // stable, input-derived id (not a fresh UUID per mount) is what makes
@@ -619,7 +619,7 @@ export function useProjectionQueries(
   //
   // IMPORTANT: `inCoastFireScenario` isn't defined yet at this point in
   // the file (it's derived below, after this query, from the same
-  // `scenarioView` this reads directly) — keep this condition and that
+  // card view this reads directly) — keep this condition and that
   // one in sync if either changes.
   // Exposed on the return value below so index.tsx's progress-strip phase
   // computation can reuse this instead of re-deriving the same condition
@@ -762,8 +762,8 @@ export function useProjectionQueries(
   // - useCoastFireMc: which MC source to READ from once data is available
   //   (controls band/detail selectors). Requires the active result to exist.
   // activeCoastFireMcResult picks between the found/passing-age result
-  // (scenarioView "coastFire") and the stop-at-current-age result
-  // (scenarioView "coastFireToday") — both come from the SAME query
+  // (the "coastFire" view) and the stop-at-current-age result
+  // (the "coastFireToday" view) — both come from the SAME query
   // (computeCoastFireMC already computes both internally), just different
   // fields of its response.
   const inCoastFireScenario =

@@ -24,7 +24,7 @@
  * fetching/data-presence checks below are sufficient for it without a
  * separate placeholder flag.
  *
- * Scoped to `scenarioView === "baseline"` only (see aca-irmaa-narrative.ts) —
+ * Scoped to the "baseline" view only (see aca-irmaa-narrative.ts) —
  * Coast FIRE/Rate-Seeded scenarios
  * source both their MC result AND their deterministic projection from a
  * different place (`activeAltMcResult`), and the report's assumptions

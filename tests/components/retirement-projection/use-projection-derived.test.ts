@@ -268,7 +268,7 @@ describe("useProjectionDerived", () => {
           // `coastFireMcResult`/`coastFireTodayMcResult` itself (code
           // review, 2026-08-27 — that re-derivation used to happen
           // independently in 3 places). Set all three so this mock matches
-          // what the real hook would have produced for scenarioView
+          // what the real hook would have produced for the view
           // "coastFire".
           coastFireMcResult: {
             deterministicProjection: { projectionByYear: coastYears },

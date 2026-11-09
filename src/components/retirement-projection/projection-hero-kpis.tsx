@@ -173,14 +173,14 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     peakPt ? peakPt.balance : rowTotal(peakYear),
     peakYear.year,
   );
-  // When scenarioView is a Coast FIRE variant OR Rate-Seeded, swap the MC
+  // When the card's view is a Coast FIRE variant OR Rate-Seeded, swap the MC
   // data source so all the hero KPIs — Portfolio Survival, Lifetime Income
   // Stability, Nest Egg, End Balance — reflect that scenario, not the
   // baseline plan. Reads the SAME `activeAltMcResult` use-projection-
   // queries.ts and use-projection-derived.ts consume — previously hand-
-  // derived a third time here with its own copy of the scenarioView
+  // derived a third time here with its own copy of the view
   // ternary, which risked silently disagreeing with the other two on a
-  // future scenarioView change. Intentionally
+  // future change to the views. Intentionally
   // null while the alt-scenario MC is loading — the existing
   // `!mc && mcLoading` skeleton branch below handles the loading state.
   const mc =
