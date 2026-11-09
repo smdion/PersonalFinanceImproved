@@ -19,7 +19,7 @@ import {
   buildStrategyEventStyle,
   tipColorClass,
   formatDiscretionaryTierBreakdown,
-} from "./utils";
+} from "./projection-display";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";
 import {
   ComposedChart,
@@ -275,7 +275,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       );
       // Guardrail event detail for the tooltip on a marked year.
       datum._strategyAction = yearRow.strategyAction ?? "";
-      // "Why was this account used" hover note (see utils.ts
+      // "Why was this account used" hover note (see projection-display.ts
       // formatDiscretionaryTierBreakdown), pre-formatted since this datum
       // otherwise only carries numbers/flags for Recharts' dataKey lookups.
       datum._discretionaryRoutingNote =
@@ -316,7 +316,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
 
   // Markers for sporadic strategy adjustments (Guyton-Klinger guardrails;
   // Vanguard Dynamic / Constant % / Endowment clamps). Every-year actions are
-  // excluded as noise. Styling is shared with the table tooltip via utils.ts.
+  // excluded as noise. Styling is shared with the table tooltip via projection-display.ts.
   const STRATEGY_EVENT_STYLE = buildStrategyEventStyle(engineSettings);
   const strategyEventStyleKeys = Object.keys(STRATEGY_EVENT_STYLE);
   const guardrailEvents = years

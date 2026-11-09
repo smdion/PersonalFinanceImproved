@@ -17,7 +17,7 @@ import {
   tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import { describeEligibility } from "@/lib/config/eligibility-labels";
-import { formatDiscretionaryTierBreakdown } from "./utils";
+import { formatDiscretionaryTierBreakdown } from "./projection-display";
 
 /** One account's eligibility + tracked-basis tooltip note. The basis clause
  *  is rebuilt from `roth.basisRemaining + basisDrawn`, deflated like the

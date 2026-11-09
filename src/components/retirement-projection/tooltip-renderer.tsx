@@ -3,7 +3,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { isRothType } from "@/lib/config/account-types";
 import type { TooltipLineItem, TooltipData } from "./types";
-import { tipColorClass } from "./utils";
+import { tipColorClass } from "./projection-display";
 
 /**
  * Renders a single tooltip line item (contribution, withdrawal, balance, etc.).

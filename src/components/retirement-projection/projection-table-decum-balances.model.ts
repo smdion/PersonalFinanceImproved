@@ -12,7 +12,7 @@ import {
   buildStrategyEventStyle,
   catDisplayLabel,
   formatRmdDivisorDetail,
-} from "./utils";
+} from "./projection-display";
 import { lumpSumsForBucket } from "./lump-sums";
 import { itemTaxType } from "./projection-columns";
 import { bucketSlotMap, slotBucketWithdrawal } from "./bucket-slots";

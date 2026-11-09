@@ -84,7 +84,7 @@ export type TooltipData =
       };
       /** Guardrail/spending-strategy event for this year (e.g. Guyton-Klinger
        *  raise/cut), as marked on the Balance chart. Build via
-       *  `buildStrategyEventStyle` in utils.ts to share the chart's wording/color. */
+       *  `buildStrategyEventStyle` in projection-display.ts to share the chart's wording/color. */
       strategyEvent?: { color: string; text: string };
       items?: TooltipLineItem[];
       total?: {

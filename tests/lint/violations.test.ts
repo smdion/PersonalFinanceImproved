@@ -2058,7 +2058,7 @@ const BUILT_AT_LOAD = [
   "src/components/retirement-projection/projection-table-decum-row.model.ts CATEGORY_ORDER",
   "src/components/retirement-projection/types.ts emptyAccumForm",
   "src/components/retirement-projection/types.ts emptyDecumForm",
-  "src/components/retirement-projection/utils.ts catDisplayLabel",
+  "src/components/retirement-projection/projection-display.ts catDisplayLabel",
   "src/components/retirement-projection/bucket-slots.ts bucketSlotMap",
   "src/components/retirement-projection/bucket-slots.ts _singleBucketCategories",
   "src/lib/config/account-types.ts DEFAULT_WITHDRAWAL_SPLITS",

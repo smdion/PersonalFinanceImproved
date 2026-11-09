@@ -27,7 +27,7 @@ import {
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
-import { catDisplayLabel } from "./utils";
+import { catDisplayLabel } from "./projection-display";
 import { rowTotal } from "./parent-category-filter";
 import {
   itemTaxType,

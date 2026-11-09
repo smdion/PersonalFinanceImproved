@@ -20,7 +20,7 @@ import {
 } from "@/lib/utils/colors";
 import type { ProjectionState } from "./projection-table-types";
 import type { TooltipLineItem } from "./types";
-import { catDisplayLabel } from "./utils";
+import { catDisplayLabel } from "./projection-display";
 import {
   lumpSumTotal,
   lumpSumsForBucket,

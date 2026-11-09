@@ -8,7 +8,10 @@ import type {
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionState } from "./projection-table-types";
 import type { TipColor } from "./types";
-import { catDisplayLabel, formatDiscretionaryTierBreakdown } from "./utils";
+import {
+  catDisplayLabel,
+  formatDiscretionaryTierBreakdown,
+} from "./projection-display";
 import {
   lumpSumTotal,
   lumpSumsForBucket,

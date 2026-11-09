@@ -33,7 +33,7 @@ import type {
   AccountBreakdown,
 } from "./use-projection-state.types";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
-import { ROTH_CONVERSION_BRACKET_PRESETS } from "./utils";
+import { ROTH_CONVERSION_BRACKET_PRESETS } from "./projection-display";
 import { filterYearByParentCategory } from "./parent-category-filter";
 import { _singleBucketCategories } from "./bucket-slots";
 

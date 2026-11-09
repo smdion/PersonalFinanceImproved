@@ -13,7 +13,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import { catDisplayLabel } from "./utils";
+import { catDisplayLabel } from "./projection-display";
 import { itemTaxType, proRateMonths } from "./projection-columns";
 import { safeDivide } from "@/lib/utils/math";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";

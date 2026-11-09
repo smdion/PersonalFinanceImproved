@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import {
   catDisplayLabel,
   formatDiscretionaryTierBreakdown,
-} from "@/components/retirement-projection/utils";
+} from "@/components/retirement-projection/projection-display";
 import {
   isAccumYear,
   filterYearByParentCategory,
