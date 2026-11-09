@@ -338,7 +338,7 @@ export function useProjectionQueries(
   // chart/table loading skeleton) showed anything during a manual Re-run —
   // `isRerunning` is the explicit stand-in signal
   // for exactly that gap; every consumer that reads *Query.isFetching for
-  // "is MC busy" must OR this in too (see mcLoading below and
+  // "is MC busy" must OR this in too (see simulationLoading below and
   // index.tsx's isRecalculating).
   // Counted, not a plain boolean — runMonteCarlo/runCoastFireMc can run
   // concurrently (the "Re-run" button fires both via Promise.all), and a
@@ -350,13 +350,13 @@ export function useProjectionQueries(
   const runMonteCarlo = async () => {
     setActiveMcReruns((n) => n + 1);
     try {
-      // `mcRunId`/`coastFireMcRunId` (below runMonteCarloInput/
+      // `simulationRunId`/`coastFireSimulationRunId` (below runMonteCarloInput/
       // coastFireMcQuery further down in this file — referenced here via
       // closure, safe: this body only runs on a later button click, well
       // after those consts have initialized) are the SAME ids mcQuery /
       // coastFireMcQuery poll progress under — passing them here means a
       // manual "Re-run" reports live trial progress too, not just the
-      // steady-state query path. See mcProgressQuery's docblock.
+      // steady-state query path. See simulationProgressQuery's docblock.
       const result = await utils.projection.computeMonteCarloProjection.fetch({
         ...runMonteCarloInput,
         runId: mcRunId,
@@ -482,7 +482,7 @@ export function useProjectionQueries(
   // coastFireMcQuery below — the chart data selectors pick between the two
   // based on the card's view so switching scenarios doesn't invalidate the
   // baseline MC cache.
-  // Derived the same way mcRunId is below — see that comment for why a
+  // Derived the same way simulationRunId is below — see that comment for why a
   // stable, input-derived id (not a fresh UUID per mount) is what makes
   // the progress poll survive remounts and reconnect to an in-flight
   // server-side run instead of resetting to indeterminate.
@@ -508,7 +508,7 @@ export function useProjectionQueries(
     },
   );
   // Live "N / total trials" for this background prefetch specifically —
-  // separate from mcProgressQuery below (that one tracks the FOREGROUND
+  // separate from simulationProgressQuery below (that one tracks the FOREGROUND
   // mcQuery/"Simulation" run; this tracks the passive one that starts
   // right after the engine finishes, in every projection mode). See
   // index.tsx's mcProgress for how these are merged into one banner.
@@ -549,8 +549,8 @@ export function useProjectionQueries(
   // progress poll reconnects to the correct in-flight job. Genuinely new
   // inputs naturally get a new id, matching the new (different) job the
   // server will actually run.
-  // mcQueryInput is the exact same shape as runMonteCarloInput above (that
-  // one's docblock explains why they must match) — mcRunId itself was
+  // simulationQueryInput is the exact same shape as runMonteCarloInput above (that
+  // one's docblock explains why they must match) — simulationRunId itself was
   // already computed from it there; not re-derived here to avoid the two
   // silently drifting apart if one of the two literals is ever edited
   // without the other.
@@ -578,7 +578,7 @@ export function useProjectionQueries(
   );
   // Live "N / total trials" for the "recalculating" indicator (index.tsx) —
   // polls while mcQuery is fetching OR a manual "Re-run" is in flight
-  // (runMonteCarlo reuses this same mcRunId — see its own comment) so a
+  // (runMonteCarlo reuses this same simulationRunId — see its own comment) so a
   // forced re-run reports real progress too, not just the steady-state
   // query path. See monte-carlo-worker-client.ts's module docblock for
   // why this is a lightweight poll against an in-memory map rather than a
@@ -640,12 +640,12 @@ export function useProjectionQueries(
       staleTime: 5 * PROJECTION_STALE_TIME_MS,
     },
   );
-  // Same live-progress treatment as mcProgressQuery — the binary search
+  // Same live-progress treatment as simulationProgressQuery — the binary search
   // runs several sequential probes server-side (see computeCoastFireMC's
   // docblock), each up to numTrials=1000; this shows whichever probe is
   // currently running, resetting to 0 as each new one starts. Also polls
   // during a manual "Re-run Coast FIRE" (runCoastFireMc reuses this same
-  // coastFireMcRunId).
+  // coastFireSimulationRunId).
   const coastFireMcProgressEnabled = coastFireMcQuery.isFetching || isRerunning;
   const coastFireMcProgressInterval = useBoundedPollInterval(
     400,
@@ -755,13 +755,13 @@ export function useProjectionQueries(
   ]);
 
   // Two separate gates:
-  // - inCoastFireScenario: which MC source to LOAD (controls mcLoading etc).
+  // - inCoastFireScenario: which MC source to LOAD (controls simulationLoading etc).
   //   As soon as the user toggles Coast FIRE (either variant), we're
   //   waiting on coast MC — the spinner should show even before the result
   //   arrives.
-  // - useCoastFireMc: which MC source to READ from once data is available
+  // - useCoastFireSimulation: which MC source to READ from once data is available
   //   (controls band/detail selectors). Requires the active result to exist.
-  // activeCoastFireMcResult picks between the found/passing-age result
+  // activeCoastFireSimulationResult picks between the found/passing-age result
   // (the "coastFire" view) and the stop-at-current-age result
   // (the "coastFireToday" view) — both come from the SAME query
   // (computeCoastFireMC already computes both internally), just different
@@ -790,7 +790,7 @@ export function useProjectionQueries(
           // custom age (committing a new coastFireCustomAge) without
           // clicking "Check this age" again kept rendering the PREVIOUS
           // age's MC bands/deterministic line with no loading indicator —
-          // mcLoading below is only tied to coastFireProbeLoading, so
+          // simulationLoading below is only tied to coastFireProbeLoading, so
           // nothing signaled the chart was showing the wrong scenario.
           // The pass/fail label (index.tsx) already guards on this same
           // probeAge === committedAge check; the chart/table data needs

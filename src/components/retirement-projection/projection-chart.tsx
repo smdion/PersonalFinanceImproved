@@ -86,7 +86,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   } = state;
 
   // Bars always show standalone deterministic projection.
-  // MC fan bands + median line overlay on top via mcBandsByYear.
+  // MC fan bands + median line overlay on top via simulationBandsByYear.
   const years = result.projectionByYear;
   // As the engine reads them: no post-retirement rate = the general rate.
   const generalInflation = Number(engineSettings.annualInflation);

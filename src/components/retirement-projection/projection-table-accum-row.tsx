@@ -595,7 +595,7 @@ export function AccumulationRow({
                 ? prevPt.byTaxType[bucket]
                 : previousYear.balanceByTaxType[bucket]
               : 0;
-            // Compute splitContrib from authoritative slot data (mirrors engine balance routing)
+            // Compute splitContribution from authoritative slot data (mirrors engine balance routing)
             const splitContrib = slotsBucketBalanceInflow(yr.slots, bucket);
             // Build per-account items from individual account balances (for balance/growth detail)
             const bucketAccounts = (yr.individualAccountBalances ?? []).filter(
@@ -742,7 +742,7 @@ export function AccumulationRow({
                   ? (colPrevPt.byAccount[col.key] ?? 0)
                   : colBalance(columnPreviousYear.balanceByAccount, col.key)
                 : 0;
-              // splitContrib from authoritative slot data (mirrors engine balance routing)
+              // splitContribution from authoritative slot data (mirrors engine balance routing)
               const colSplitContrib = slotsColumnBalanceInflow(
                 yr.slots,
                 col.key,

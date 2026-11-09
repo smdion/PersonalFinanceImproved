@@ -145,7 +145,7 @@ describe("colBalance", () => {
   it("returns 0 for a category with no balance entry at all (not just a zero-valued one)", () => {
     // accountBalancesFromTaxBuckets always populates every category (even
     // with a zero-valued structure), so it can't exercise the truly-missing
-    // -key branch (`if (!bal) return 0`) — construct a partial object
+    // -key branch (`if (!balance) return 0`) — construct a partial object
     // directly to hit that branch specifically.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentionally partial to omit the "hsa" key entirely
     const ba = {} as any;
@@ -227,7 +227,7 @@ describe("colEngineTaxType", () => {
 });
 
 // ---------------------------------------------------------------------------
-// slotBucketWithdrawal / slotBucketContrib
+// slotBucketWithdrawal / slotBucketContribution
 // ---------------------------------------------------------------------------
 
 describe("slotBucketWithdrawal", () => {

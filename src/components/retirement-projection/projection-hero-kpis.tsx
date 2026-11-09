@@ -184,7 +184,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   // ternary, which risked silently disagreeing with the other two on a
   // future change to the views. Intentionally
   // null while the alt-scenario MC is loading — the existing
-  // `!mc && mcLoading` skeleton branch below handles the loading state.
+  // `!simulation && simulationLoading` skeleton branch below handles the loading state.
   const mc =
     projectionView === "coastFire" ||
     projectionView === "coastFireToday" ||

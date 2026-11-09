@@ -219,7 +219,7 @@ export function SpendingStabilityChart({
     });
 
   // Year-1 baseline for left axis dollar conversion (100% = this amount) —
-  // deflated at decYears[0]'s year so this label matches the Today's $ /
+  // deflated at decumulationYears[0]'s year so this label matches the Today's $ /
   // Future $ toggle like the rest of the chart, not raw nominal dollars.
   const year1Baseline = deflate(
     isStrategy

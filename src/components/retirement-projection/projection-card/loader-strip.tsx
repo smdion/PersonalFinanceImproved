@@ -30,7 +30,7 @@ export function ProjectionLoaderStrip({ state }: { state: ProjectionState }) {
         ? ("done" as const)
         : ("pending" as const);
 
-  // "disabled" hides the strip. coastFireMcQueryEnabled is the value that
+  // "disabled" hides the strip. coastFireSimulationQueryEnabled is the value that
   // gates coastFireMcQuery itself, so the two always agree.
   const coastFireMcPhase = !coastFireMcQueryEnabled
     ? ("disabled" as const)
