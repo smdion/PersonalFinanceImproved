@@ -7109,9 +7109,6 @@
     }
   },
   "src/server/trpc-server.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -7119,9 +7116,6 @@
   "src/server/trpc.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
