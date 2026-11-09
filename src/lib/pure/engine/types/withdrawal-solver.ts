@@ -23,7 +23,7 @@ export interface SolverFigures {
   derivedAfterTaxNeed?: number;
   /** Estimated early-withdrawal penalty: 0 without per-account tracking or
    *  when nothing was penalized (routing skips penalized money when told to
-   *  avoid it). Part of the solver's cost beside `estTax`. */
+   *  avoid it). Part of the solver's cost beside `estimatedTax`. */
   estPenalty: number;
 }
 

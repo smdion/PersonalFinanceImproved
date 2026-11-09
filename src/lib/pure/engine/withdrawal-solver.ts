@@ -128,13 +128,13 @@ interface TaxEstimationInput {
   /** Individual-account state for Roth growth-vs-basis taxability —
    *  this estimate must slice the SAME way the real execution does
    *  (distributeWithdrawals + depleteIndividualBasis), against CLONED
-   *  indBal/indBasis so the estimate can never mutate real state. Omitted
+   *  indBalance/indBasis so the estimate can never mutate real state. Omitted
    *  ⇒ rothTaxableGrowth stays 0, same as before this pass. */
   indAccts?: IndividualAccountInput[];
   indKey?: IndKeyFn;
   indBal?: Map<string, number>;
   indBasis?: Map<string, RothBasisState>;
-  /** Projected calendar year -- required alongside the indAccts/indBal/
+  /** Projected calendar year -- required alongside the indAccounts/indBalance/
    *  indBasis quartet above to compute Roth qualification (age gate). */
   year?: number;
 }

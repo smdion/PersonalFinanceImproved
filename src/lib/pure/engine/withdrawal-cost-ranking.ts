@@ -58,7 +58,7 @@ export function deriveBasisRankingInputs(params: {
    *  tracked per Roth ACCOUNT, but a Portfolio-parented account is
    *  unconditionally excluded from the routable pool
    *  (`computeNonRetirementExclusion`, no config lever, no opt-out). Without
-   *  `indAccts`/`indKey` here, a household whose Roth basis happens to sit
+   *  `indAccounts`/`indKey` here, a household whose Roth basis happens to sit
    *  in a Portfolio-parented account would still count it as "free"
    *  capacity in a pool that structurally can never draw from that
    *  account -- Tier-0's `Math.min(rothBasisAvailable, rothAvailable)`
