@@ -1,8 +1,8 @@
 /** Tax Buckets "at retirement": a brokerage's cost basis is the engine's
  *  own per-account figure. Invented figures only. */
 import { describe, it, expect } from "vitest";
-import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
-import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-bucket-analysis";
+import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
+import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
 
 const now: AccountAnalysisEntry = {

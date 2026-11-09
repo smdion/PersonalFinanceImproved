@@ -839,8 +839,8 @@ export const ratchetConfig = [
     files: [
       "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx",
       "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts",
-      "src/lib/pure/accounts/tax-bucket-analysis.ts",
-      "src/lib/pure/accounts/tax-bucket-projection.ts",
+      "src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts",
+      "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts",
     ],
     rules: { "ratchet/no-identity-predicate-import": "off" },
   },

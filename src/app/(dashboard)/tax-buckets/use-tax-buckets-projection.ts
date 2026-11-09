@@ -1,6 +1,6 @@
 import { useMemo, type SetStateAction, type Dispatch } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
-import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
+import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";

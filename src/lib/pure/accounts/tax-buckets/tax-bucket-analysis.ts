@@ -12,7 +12,7 @@ import {
 } from "@/lib/config/account-types";
 import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import { ageInYear } from "@/lib/utils/date";
-import type { TaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
+import type { TaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import {
   resolveSeparationYear,
   isRuleOf55Eligible,

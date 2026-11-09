@@ -2,7 +2,7 @@
 
 import type * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
 import { toNumber } from "@/lib/utils/numbers";
 

@@ -157,7 +157,7 @@ function countSavingsComponents(): number {
   return listFiles(path.join(ROOT, "src/components/savings"), /\.tsx$/).length;
 }
 
-const NET_WORTH_COMPONENTS = "src/components/networth";
+const NET_WORTH_COMPONENTS = "src/components/net-worth";
 
 function countNetworthComponents(): number {
   return listFiles(path.join(ROOT, NET_WORTH_COMPONENTS), /\.tsx$/).length;

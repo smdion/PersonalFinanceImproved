@@ -433,9 +433,9 @@ describe("ratchet/no-identity-predicate-import", () => {
     expect(
       await counted("src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts"),
     ).toBe(false);
-    expect(await counted("src/lib/pure/accounts/tax-bucket-analysis.ts")).toBe(
-      false,
-    );
+    expect(
+      await counted("src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts"),
+    ).toBe(false);
   }, 30_000);
 });
 

@@ -5,7 +5,7 @@ import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import { contributionRouter } from "./contribution";
 import { mortgageRouter } from "./mortgage";
-import { networthRouter } from "./networth";
+import { networthRouter } from "./net-worth";
 import { milestonesRouter } from "./milestones";
 import { savingsRouter } from "./savings";
 import { brokerageRouter } from "./brokerage";

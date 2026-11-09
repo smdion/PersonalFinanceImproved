@@ -282,7 +282,7 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
     try {
       const { exportBackup, importBackup, ClosedSetRefusal } = await app();
       const { computeTaxBucketBreakdown } =
-        await import("@/lib/pure/accounts/tax-buckets");
+        await import("@/lib/pure/accounts/tax-buckets/tax-buckets");
       await snapshot(db);
       const backup = JSON.parse(
         JSON.stringify(await exportBackup(db)),

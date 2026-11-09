@@ -6,7 +6,7 @@ import * as schema from "@/lib/db/schema";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
-import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
+import { computeMortgageActiveSummary } from "@/server/services/debts/mortgage-active-summary";
 
 // --- CRUD Zod schemas ---
 

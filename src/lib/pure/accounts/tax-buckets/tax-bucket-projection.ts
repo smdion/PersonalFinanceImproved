@@ -30,7 +30,7 @@ import type {
   AccountAnalysisEntry,
   AgeThresholdStatus,
   PersonInfo,
-} from "@/lib/pure/accounts/tax-bucket-analysis";
+} from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import type {
   RothBasisMeta,
   RuleOf55Status,

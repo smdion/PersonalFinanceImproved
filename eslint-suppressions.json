@@ -1255,7 +1255,7 @@
       "count": 4
     }
   },
-  "src/components/networth/assets-liabilities-cards.tsx": {
+  "src/components/net-worth/assets-liabilities-cards.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1263,7 +1263,7 @@
       "count": 1
     }
   },
-  "src/components/networth/net-worth-compare.tsx": {
+  "src/components/net-worth/net-worth-compare.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1277,17 +1277,17 @@
       "count": 2
     }
   },
-  "src/components/networth/spreadsheet/spreadsheet-controls.tsx": {
+  "src/components/net-worth/spreadsheet/spreadsheet-controls.tsx": {
     "ratchet/no-raw-input": {
       "count": 3
     }
   },
-  "src/components/networth/spreadsheet/spreadsheet-health-stats.tsx": {
+  "src/components/net-worth/spreadsheet/spreadsheet-health-stats.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
     }
   },
-  "src/components/networth/spreadsheet/spreadsheet-view.tsx": {
+  "src/components/net-worth/spreadsheet/spreadsheet-view.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -1295,7 +1295,7 @@
       "count": 2
     }
   },
-  "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
+  "src/components/net-worth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
     "max-lines-per-function": {
       "count": 2
     },
@@ -3593,7 +3593,7 @@
       "count": 2
     }
   },
-  "src/lib/pure/accounts/tax-bucket-analysis.ts": {
+  "src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -3610,7 +3610,7 @@
       "count": 4
     }
   },
-  "src/lib/pure/accounts/tax-bucket-projection.ts": {
+  "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": {
     "max-lines-per-function": {
       "count": 2
     },
@@ -3618,7 +3618,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/accounts/tax-buckets.ts": {
+  "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
@@ -5059,7 +5059,7 @@
       "count": 1
     }
   },
-  "src/server/routers/networth/comparison.ts": {
+  "src/server/routers/net-worth/comparison.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
@@ -5070,12 +5070,12 @@
       "count": 4
     }
   },
-  "src/server/routers/networth/history.ts": {
+  "src/server/routers/net-worth/history.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
   },
-  "src/server/routers/networth/snapshots.ts": {
+  "src/server/routers/net-worth/snapshots.ts": {
     "max-lines-per-function": {
       "count": 1
     },
@@ -5083,7 +5083,7 @@
       "count": 4
     }
   },
-  "src/server/routers/networth/summary.ts": {
+  "src/server/routers/net-worth/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },

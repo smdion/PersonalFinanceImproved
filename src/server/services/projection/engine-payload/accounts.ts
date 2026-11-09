@@ -6,7 +6,7 @@ import {
   findMissingCostBasis,
   missingCostBasisWarning,
 } from "@/lib/pure/accounts/basis-consistency";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { buildIndividualAccounts } from "./individual-accounts";
 import type { fetchRetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
@@ -38,7 +38,7 @@ export function startingAccounts(
   asOfDate: Date,
 ) {
   // Portfolio by tax bucket + per-account balances (combined for engine).
-  // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets.ts.
+  // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets/tax-buckets.ts.
   const taxBucketBreakdown = computeTaxBucketBreakdown(
     snapshotData,
     people,

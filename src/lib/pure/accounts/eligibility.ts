@@ -16,7 +16,7 @@ import {
   penaltyFreePrefixAmount,
   type EarlyAccessSlice,
 } from "@/lib/pure/accounts/early-access";
-import { projectRuleOf55 } from "@/lib/pure/accounts/tax-bucket-projection";
+import { projectRuleOf55 } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import { ageInYear } from "@/lib/utils/date";
 import type {
   RuleOf55Status,

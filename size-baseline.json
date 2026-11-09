@@ -101,7 +101,7 @@
     "src/components/methodology/decumulation-content.tsx": 861,
     "src/components/methodology/methodology-content.tsx": 550,
     "src/components/methodology/validation-content.tsx": 524,
-    "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 461,
+    "src/components/net-worth/spreadsheet/spreadsheet-year-over-year-table.tsx": 461,
     "src/components/onboarding/admin-step.tsx": 111,
     "src/components/onboarding/done-step.tsx": 38,
     "src/components/onboarding/income-job-list.tsx": 42,
@@ -241,7 +241,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 365,
-    "src/lib/pure/accounts/tax-bucket-projection.ts": 455,
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": 455,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/financial-order-of-operations.ts": 383,
     "src/lib/pure/advice/milestones/habits.ts": 391,
@@ -359,11 +359,11 @@
     "src/server/routers/contribution-profiles.ts": 562,
     "src/server/routers/demo.ts": 79,
     "src/server/routers/milestones.ts": 50,
-    "src/server/routers/networth/comparison.ts": 245,
-    "src/server/routers/networth/index.ts": 19,
-    "src/server/routers/networth/portfolio-snapshots.ts": 61,
-    "src/server/routers/networth/snapshots.ts": 303,
-    "src/server/routers/networth/summary.ts": 267,
+    "src/server/routers/net-worth/comparison.ts": 245,
+    "src/server/routers/net-worth/index.ts": 19,
+    "src/server/routers/net-worth/portfolio-snapshots.ts": 61,
+    "src/server/routers/net-worth/snapshots.ts": 303,
+    "src/server/routers/net-worth/summary.ts": 267,
     "src/server/routers/performance/finalize-year.ts": 36,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
@@ -620,16 +620,16 @@
     "src/components/methodology/validation-content.tsx": {
       "ValidationContent": 519
     },
-    "src/components/networth/assets-liabilities-cards.tsx": {
+    "src/components/net-worth/assets-liabilities-cards.tsx": {
       "AssetsLiabilitiesCards": 225
     },
-    "src/components/networth/net-worth-compare.tsx": {
+    "src/components/net-worth/net-worth-compare.tsx": {
       "NetWorthCompare": 329
     },
-    "src/components/networth/spreadsheet/spreadsheet-view.tsx": {
+    "src/components/net-worth/spreadsheet/spreadsheet-view.tsx": {
       "SpreadsheetView": 190
     },
-    "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
+    "src/components/net-worth/spreadsheet/spreadsheet-year-over-year-table.tsx": {
       "SpreadsheetYearOverYearTable": 297,
       "SpreadsheetYearOverYearTable.map()": 188
     },
@@ -934,14 +934,14 @@
     "src/lib/pure/accounts/eligibility.ts": {
       "computeWithdrawalEligibility": 180
     },
-    "src/lib/pure/accounts/tax-bucket-analysis.ts": {
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts": {
       "computeTaxBucketAnalysis": 239
     },
-    "src/lib/pure/accounts/tax-bucket-projection.ts": {
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": {
       "computeTaxBucketProjection": 269,
       "computeTaxBucketProjection.entries.map()": 183
     },
-    "src/lib/pure/accounts/tax-buckets.ts": {
+    "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 232
     },
     "src/lib/pure/advice/milestones/input.ts": {
@@ -1013,13 +1013,13 @@
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
-    "src/server/routers/networth/comparison.ts": {
+    "src/server/routers/net-worth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
     },
-    "src/server/routers/networth/snapshots.ts": {
+    "src/server/routers/net-worth/snapshots.ts": {
       "snapshotProcedures.listSnapshots.query()": 213
     },
-    "src/server/routers/networth/summary.ts": {
+    "src/server/routers/net-worth/summary.ts": {
       "summaryProcedures.computeSummary.query()": 243
     },
     "src/server/services/budget/active-summary.ts": {

@@ -4,9 +4,9 @@
  * (Rule of 55 / Roth ordering) helper.
  */
 import { describe, it, expect } from "vitest";
-import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
-import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets";
+import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
+import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 
 const people = [
   { id: 1, name: "Alex", birthYear: 1987 },
