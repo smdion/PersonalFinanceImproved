@@ -1796,7 +1796,7 @@ erDiagram
 | created_by    | text   |          |         |             |
 | updated_by    | text   |          |         |             |
 
-- `overrides`: type `Record<string, unknown>[]`; read through `resolveProjectionOverrides` (server/routers/projection/_shared.ts); parsed by override_type; a row that fails reads as none
+- `overrides`: type `Record<string, unknown>[]`; read through `resolveProjectionOverrides` (server/services/projection/projection-run.ts); parsed by override_type; a row that fails reads as none
 
 ### property_taxes
 

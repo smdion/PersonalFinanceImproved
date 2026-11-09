@@ -23,7 +23,7 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
-import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
+import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {
   AccumulationOverride,

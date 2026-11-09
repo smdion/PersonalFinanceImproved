@@ -4,9 +4,11 @@
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
-import { prepareEngineInput } from "./engine-input";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const stressTestRouter = createTRPCRouter({

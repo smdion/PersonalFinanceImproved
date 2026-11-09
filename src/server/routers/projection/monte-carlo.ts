@@ -40,12 +40,14 @@ import {
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
 } from "./_shared";
-import { prepareEngineInput } from "./engine-input";
 import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { loadSavedAssetOverrides } from "@/server/services/simulation/simulation-preset";

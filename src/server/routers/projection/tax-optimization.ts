@@ -15,12 +15,14 @@ import type {
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { taxYearFlags } from "@/lib/pure/advice/report/year-table";
 import { accountCategoryEnum } from "@/lib/config/account-types";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
 } from "./_shared";
-import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

@@ -22,13 +22,15 @@ import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildCoastFireProfileSwitches,
 } from "./_shared";
-import { prepareEngineInput } from "./engine-input";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {

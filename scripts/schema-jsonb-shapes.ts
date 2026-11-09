@@ -109,7 +109,8 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
   },
   "projection_cache.result": { note: "cache, loose by design" },
   "projection_overrides.overrides": {
-    reader: "server/routers/projection/_shared.ts#resolveProjectionOverrides",
+    reader:
+      "server/services/projection/projection-run.ts#resolveProjectionOverrides",
     note: "parsed by override_type; a row that fails reads as none",
   },
   "relocation_scenarios.params": {

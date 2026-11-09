@@ -19,7 +19,7 @@ import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
-import { buildDecumulationDefaults } from "./_shared";
+import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import { safeDivide } from "@/lib/utils/math";
 import {
   precomputePurchases,

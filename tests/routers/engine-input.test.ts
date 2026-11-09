@@ -1,5 +1,5 @@
 /**
- * `prepareEngineInput` (server/routers/projection/engine-input.ts): the one
+ * `prepareEngineInput` (server/services/projection/projection-run.ts): the one
  * engine-input assembly the projection procedures share. Guards the
  * cross-path rule (TESTING keep rule 2): every procedure runs the payload's
  * base with `buildDecumulationDefaults` and the "Changes by year" a caller
@@ -9,8 +9,10 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller } from "./setup";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { prepareEngineInput } from "@/server/routers/projection/engine-input";
+import {
+  buildDecumulationDefaults,
+  prepareEngineInput,
+} from "@/server/services/projection/projection-run";
 
 const SETTINGS = {
   withdrawalRate: "0.04",

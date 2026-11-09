@@ -1,6 +1,6 @@
 /**
  * `computeStrategyComparison`, `analyzeStrategy` and `updateAssetClassOverrides`. Both
- * procedures build decumulation defaults via `buildDecumulationDefaults` (_shared.ts) and
+ * procedures build decumulation defaults via `buildDecumulationDefaults` (projection-run.ts) and
  * override only the compared variable (withdrawalStrategy + strategyParams per candidate).
  */
 import {
@@ -36,7 +36,11 @@ import { formatPercent } from "@/lib/utils/percent";
 import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  buildDecumulationDefaults,
+  prepareProjectionRun,
+  resolveProjectionOverrides,
+} from "@/server/services/projection/projection-run";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
@@ -48,10 +52,8 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import {
   buildStrategyParams,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
-} from "./_shared";
+} from "@/lib/pure/retirement/projection-settings";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import type {
   AccumulationOverride,

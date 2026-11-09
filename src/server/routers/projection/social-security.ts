@@ -8,7 +8,10 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import {
   buildSocialSecurityEntries,
   type SsEntryOverride,
@@ -17,7 +20,6 @@ import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
 } from "./_shared";
-import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

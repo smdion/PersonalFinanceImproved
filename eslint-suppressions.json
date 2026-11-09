@@ -5191,11 +5191,6 @@
       "count": 5
     }
   },
-  "src/server/routers/projection/engine-input.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/server/routers/projection/monte-carlo.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5798,6 +5793,11 @@
       "count": 14
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/server/services/projection/projection-run.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },

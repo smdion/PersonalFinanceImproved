@@ -2073,7 +2073,7 @@ const BUILT_AT_LOAD = [
   "src/server/routers/networth/portfolio-snapshots.ts portfolioSnapshotInput",
   "src/server/routers/networth/snapshot-accounts.ts snapshotAccountInput",
   "src/server/routers/performance/accounts.ts performanceAccountInput",
-  "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
+  "src/server/services/projection/projection-run.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
   "src/server/routers/settings/contribution-accounts.ts contributionAccountInput",
 ];

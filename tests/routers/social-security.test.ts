@@ -37,7 +37,7 @@ import { buildEnginePayload } from "@/server/services/projection/engine-payload/
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
-import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
+import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import type {
   AccumulationOverride,
