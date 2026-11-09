@@ -43,13 +43,13 @@ Three communities shape the app's design:
 This is the architectural foundation. Every data model, UI component, and calculation must be designed so that change is easy and expected.
 
 1. **Nothing is hardcoded that could change.** Contribution limits, tax brackets, budget categories, savings buckets, account types — all configurable data, never constants in code.
-2. **Entities are generic, not special-cased.** Contribution accounts are one generic system — adding a 529 plan is adding a row, not writing new code (the target; see RULES.md § Known Gaps).
+2. **Entities are generic, not special-cased.** Contribution accounts are one generic system — adding a 529 plan is one config entry, not new code (the target; see RULES.md § Known Gaps).
 3. **Budget profiles are fully user-created.** Not hard-wired scenarios.
 4. **Savings buckets are user-defined.** Users can add, rename, archive, or remove goals.
 5. **Retirement scenarios are fully composable.** Different withdrawal rates, target incomes, start years — all mix-and-match.
 6. **The calculation engine is modular.** Each calculator takes inputs and returns outputs with no hidden dependencies.
 7. **Job changes are a first-class event.** Old job gets an end date, new job starts. Historical data preserved.
-8. **Year-over-year limits are versioned.** IRS limits, tax brackets — all keyed by year in the DB.
+8. **Year-over-year limits are versioned.** IRS limits, tax brackets — all keyed by year in the DB. Figures set by law and not indexed (the NIIT thresholds, penalty rates and ages, the RMD table) live in code, each cited (`src/lib/config/`, `lib/constants.ts`); Settings → Reference Data → Fixed by law lists the single figures (`lib/config/fixed-by-law.ts`).
 
 ---
 
@@ -147,7 +147,7 @@ An eye button in the sidebar hides every dollar amount (Actual Budget's "hide" m
 
 See § Settings Belong on Their Pages for the full domain-to-page mapping.
 
-Each page owns its domain's settings inline. The central Settings page holds only cross-cutting data: people and household, reference data (IRS limits, tax/LTCG brackets, IRMAA, ACA/FPL, return rates), integrations, access control.
+Each page owns its domain's settings inline. The central Settings page holds only cross-cutting data, in the tabs and sections `lib/config/settings-sections.ts` lists: General (people, household, the Retirement page's auto-load switches, the living-costs mapping, data sources), Reference Data (IRS limits, tax/LTCG brackets, IRMAA, ACA/FPL, return rates, the figures fixed by law), Integrations, and for admins Access Control and Debug.
 
 ---
 
@@ -186,8 +186,8 @@ Helpers: `taxTypeTextColor()`, `taxTypeLabel()` (reads `TAX_TYPE_LABELS` in `lib
 - Generic UI badges (BG, PC, etc.) use indigo or gray to avoid collision
 - **Contrast floor (WCAG 1.4.11):** a data-carrying chart stroke or its legend swatch must clear 3:1 against the card background (and against any fill it's drawn over) in **both** themes. A single `CHART_COLORS` hex often can't — see `chartLinePalette(dark)` in `colors.ts` for the theme-aware escape hatch (mirrors `trajectoryChartPalette`). Decorative reference/zero lines are exempt.
 - **Charts render in `ChartFrame`** (`components/charts/chart-frame.tsx`; `ratchet/no-raw-chart-container` counts a `ResponsiveContainer` anywhere else). It keeps Recharts' keyboard layer on, names the chart `role="img"` and points `aria-describedby` at an sr-only summary, which the chart's pure `<chart>.summary.ts` builds only from values the chart plots, formatted as its tooltip shows them: never a figure it doesn't show. A hand-drawn chart (no Recharts) sets `role="img"` itself and points at the same sr-only `ChartSummaryText`.
-- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers; `CATEGORY_CHART_HEX` is still a separate table
-- **Portfolio scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ Portfolio.
+- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers, and its `chartHex` into `CATEGORY_CHART_HEX`, which adds only ESPP and pension
+- **Account scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ all accounts (§ Account Categories: "Portfolio money" is the other part).
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
 - **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. `AccountMapping.localId` uses the format `"performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}"`. Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
 
@@ -681,7 +681,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 
 ### Public API
 
-`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `shortfallFloor()` (the shortfall floor (gap and retirement years)), plus their types. Code outside the engine may also name its types, and the Zod schemas for its stored inputs, through `engine/types/index.ts`. Everything else is internal to `engine/`.
+`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `shortfallFloor()` (the unmet need below which a gap or retirement year still counts as funded), plus their types. Code outside the engine may also name its types, and the Zod schemas for its stored inputs, through `engine/types/index.ts`. Everything else is internal to `engine/`.
 
 ---
 
@@ -720,10 +720,11 @@ Portfolio Snapshots + Performance Data + Settings
 | Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`                                           | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                                                                                |
 | Budget column                      | `app_settings`                                                                | `budget_active_column`                                                                                                                                                                                                                                                                                                      |
 | Annual expenses                    | `getAnnualExpensesFromBudget()` (DB) over `computeBudgetAnnualTotal()` (pure) | Uses `budget_active_column`                                                                                                                                                                                                                                                                                                 |
+| Retirement budget                  | None on the server                                                            | The client reads `retirement_dec_budget_profile_id`, `retirement_decumulation_budget_column` and `retirement_dec_expense_override` (`lib/constants/settings-keys.ts`; `usePlanEngineInput`, `retirement-profile-tab.tsx`) and sends them in the request's profile selection                                                 |
 | Total compensation (profile-aware) | `resolveCompensation()`                                                       | `lib/pure/household/compensation.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                                                                               |
 | Salary override merge              | `applyActiveSalary()`                                                         | Final `active ?? raw` merge of the What-If sandbox salary onto an already-resolved raw salary                                                                                                                                                                                                                               |
 | Salary override map                | `loadAndApplySalaryProfile()`                                                 | The active (or requested) Salary Profile's entries                                                                                                                                                                                                                                                                          |
-| Portfolio balances                 | `getLatestSnapshot()`                                                         | Latest `portfolio_snapshots` row                                                                                                                                                                                                                                                                                            |
+| Portfolio balances (today)         | `getLatestSnapshot()`                                                         | Latest `portfolio_snapshots` row: today's balances only; a year-level figure reads `YearEndRow` (§ Historical as Single Source of Truth)                                                                                                                                                                                    |
 | Contribution accounts              | `buildContribAccounts()`                                                      | `contribution_accounts` table                                                                                                                                                                                                                                                                                               |
 | Employer match                     | `computeGroupedEmployerMatch()`                                               | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, and through it the relocation analysis) routes through this                                                                |
 | Contribution specs                 | `buildContributionDisplaySpecs()`                                             | Per-account specs, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                                                                                                                          |
@@ -889,8 +890,8 @@ The Simulation runs the whole projection many times, each trial with its own ran
 
    If the inputs are preserved, the computation is deterministic, AND nothing downstream treats the value as a settled point-in-time commitment, compute at read time — unless the computation is expensive enough to justify a class (c) performance cache, in which case store it keyed by a hash of every input that affects the result, with an explicit invalidation path (TTL, version bump, or explicit force-refresh). If the inputs may not survive (snapshots pruned, accounts restructured) — class (a) — or the value is itself a deliberate "recorded as of when this was saved" commitment — class (b) — store at finalization/save time, but document the sync/cascade mechanism (or the explicit absence of one, and why, for class (b)).
 
-5. **Limits and rules are data, not code.** IRS limits, tax brackets, return rates — all in the DB, versioned by year.
-6. **DB is the single source of truth.** No hardcoded fallback values for user-specific data. Universal mathematical defaults (`DEFAULT_WITHDRAWAL_RATE = 0.04`, `DEFAULT_TAX_RATE_*` in `constants.ts`) are acceptable as they represent well-established financial planning conventions, not user data.
+5. **Limits and rules are data, not code.** IRS limits, tax brackets, return rates — all in the DB, versioned by year. Figures set by law and not indexed are the exception: they live in code, each cited (§ The #1 Design Principle, 8).
+6. **DB is the single source of truth.** No hardcoded fallback values for user-specific data. Universal mathematical defaults (`DEFAULT_WITHDRAWAL_RATE = 0.04`, `DEFAULT_TAX_RATE_BROKERAGE = 0.15` in `constants.ts`) are acceptable as they represent well-established financial planning conventions, not user data.
 7. **Standardized naming.** Tax buckets use canonical keys everywhere: `preTax`, `taxFree`, `hsa`, `afterTax`. Display labels are applied at the UI layer via lookup maps. `parentCategory` (not `goalCategory`) is the unified field name across all tables.
 8. **No hardcoded user data.** Never reference specific names, employers, job titles, or other user-specific data in code. Everything comes from the DB. The app must work for any household, not just the current users.
 9. **Account type validation is app-level, not DB-level.** `accountType` columns are `text` (not enum), validated at the app layer against `ACCOUNT_TYPE_CONFIG` keys via `accountCategoryEnum()`. This allows adding new account types without DB migrations.
@@ -1009,7 +1010,7 @@ This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels
 
 **Data freshness:** Balance snapshot and performance data are updated manually at different times. A global sidebar indicator shows when each was last updated. Totals may differ between pages because of stale data — this is expected and visible.
 
-**User-editable:** `parentCategory` is editable per account in the Portfolio page and in Settings → Performance Accounts. Users assign each account's "goal" (Retirement or Portfolio). This affects contribution engine routing and retirement projections, but does **not** affect Performance page tab grouping (which uses `accountType`).
+**User-editable:** `parentCategory` is editable per account on the Portfolio page (its account settings). Users assign each account's "goal" (Retirement or Portfolio). This affects contribution engine routing and retirement projections, but does **not** affect Performance page tab grouping (which uses `accountType`).
 
 ---
 
@@ -1035,19 +1036,22 @@ Each page owns its domain data. Users should never have to leave a page to confi
 | Mortgage loans, extra payments                     | Mortgage page          |
 | Cash, house value, home improvements, other assets | Assets page            |
 | Savings goals, allocations                         | Savings page           |
-| Performance accounts                               | Performance page       |
+| Performance accounts (the accounts themselves)     | Portfolio page         |
+| Performance figures by year                        | Performance page       |
 | Full job/salary history                            | Historical page        |
 | ESPP gain calculator, Relocation calculator        | Tools page             |
 
 **Exceptions (centralized Settings page):**
 
-- **People** (name, DOB) — foundational identity used across all pages
-- **IRS Limits** — yearly reference data (401k/IRA/HSA caps, FICA rates, standard deductions)
-- **Tax Brackets** — yearly, multi-filing-status reference data
+- **People** (name, DOB) and **Household** — foundational identity used across all pages
+- **IRS Limits, Tax and LTCG Brackets, IRMAA, ACA/FPL** — yearly, multi-filing-status reference data
 - **Return Rates** (age-based expected rate of return) — reference/assumption data feeding projections broadly, not a single page's user-editable setting, despite superficially reading like retirement-adjacent settings
-- **Retirement Profile** (retirement ages, timeline, income, decumulation plan, taxes, healthcare, Social Security — `retirement_settings`) — lives on the Profiles page's Retirement tab, not the Retirement page. Originally page-local, but the other profile levers (Salary, Contributions, Budget, Savings) need visibility into these same assumptions, the same cross-cutting reasoning as Return Rates above — moved here in v0.7.8 rather than duplicated or left orphaned on a page that no longer owns it.
+- **Fixed by law** — the figures set by law, read-only
+- **Integrations** — budget apps, SimpleFIN, Tiingo, SEC fund facts, tax data updates
 
 These are true cross-cutting reference data that no single page owns.
+
+**On the Profiles page:** the **Retirement Profile** (retirement ages, timeline, income, decumulation plan, taxes, healthcare, Social Security — `retirement_settings`) lives on the Profiles page's Retirement tab, not the Retirement page. Originally page-local, but the other profile levers (Salary, Contributions, Budget, Savings) need visibility into these same assumptions, the same cross-cutting reasoning as Return Rates above — moved there in v0.7.8 rather than duplicated or left orphaned on a page that no longer owns it.
 
 ---
 
@@ -1086,6 +1090,8 @@ These are true cross-cutting reference data that no single page owns.
 
 8. **Brokerage commissions = `fees`.** Foreign withholding tax on dividends also goes in `fees`.
 
+9. **Two basis figures, by name.** `cost_basis` records the price paid (as on Form 3922). The Projection's tax basis for a sale is the market value at purchase, since the discount is already taxed as pay. Shares the projection buys get it: contributions and match (here the discount, rule 3) both add basis 1:1 (§ Savings Page Architecture). Shares held today start from the entered cost basis, the price paid.
+
 ### Source documents
 
 Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are kept in a local audit file (`.scratch/docs/ops/ESPP_calculations.md`, not in the repo). Verify DB values against it before editing ESPP rows.
@@ -1098,7 +1104,7 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 1. **Resolution helper lives in `src/server/services/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/pure/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
-2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). Revisit if the fields exceed ~25 or change often.
+2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). They hold 29 fields today (17 in a salary entry, 11 on a contribution account, 1 on a deduction), past the ~25 this deviation named as the point to revisit; revisit if they change often.
 
 3. **Plans keep the internal name `scenarios`** (table, router, permission key `scenario`): renaming would be a migration plus an RBAC-data change for no user-facing gain. Everything user-facing says "Plan".
 
