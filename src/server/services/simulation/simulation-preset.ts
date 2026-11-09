@@ -26,9 +26,25 @@ import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
 import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
+import { loadStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 type CustomClampBounds = { returnClampMin: number; returnClampMax: number };
 type AssetClassOverride = { id: number; meanReturn?: number; stdDev?: number };
+
+/** The stored shapes, as `updateClampBounds` and `updateAssetClassOverrides`
+ *  write them. */
+const customClampBounds: z.ZodType<CustomClampBounds> = z.looseObject({
+  returnClampMin: z.number(),
+  returnClampMax: z.number(),
+});
+const assetClassOverrides: z.ZodType<AssetClassOverride[]> = z.array(
+  z.looseObject({
+    id: z.number(),
+    meanReturn: z.number().optional(),
+    stdDev: z.number().optional(),
+  }),
+);
 
 export type SimulationPreset = {
   key: SimulationPresetKey;
@@ -53,25 +69,22 @@ export async function loadSimulationPreset(
 ): Promise<SimulationPreset> {
   const isCustom = key === "custom";
   const p = schema.simulationPresets;
-  const [presetRow, customRows, savedRow, customClamps] = await Promise.all([
-    isCustom
-      ? Promise.resolve(undefined)
-      : db.select().from(p).where(eq(p.key, key)).then(firstRow),
-    db.select().from(schema.glidePathAllocations),
-    db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "mc_asset_class_overrides"))
-      .then((r) => r[0] ?? null),
-    // Custom has no preset row: its bounds are a setting.
-    isCustom
-      ? db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_SIMULATION_CUSTOM_CLAMP_BOUNDS))
-          .then((r) => r[0]?.value as CustomClampBounds | undefined)
-      : Promise.resolve(undefined),
-  ]);
+  const [presetRow, customRows, savedOverrides, customClamps] =
+    await Promise.all([
+      isCustom
+        ? Promise.resolve(undefined)
+        : db.select().from(p).where(eq(p.key, key)).then(firstRow),
+      db.select().from(schema.glidePathAllocations),
+      loadStoredSetting(db, "mc_asset_class_overrides", assetClassOverrides),
+      // Custom has no preset row: its bounds are a setting.
+      isCustom
+        ? loadStoredSetting(
+            db,
+            SK_SIMULATION_CUSTOM_CLAMP_BOUNDS,
+            customClampBounds,
+          )
+        : Promise.resolve(undefined),
+    ]);
   const [presetGlide, presetReturns] = presetRow
     ? await Promise.all([
         db
@@ -107,7 +120,7 @@ export async function loadSimulationPreset(
     returnOverrides: new Map(
       presetReturns.map((r) => [r.assetClassId, toNumber(r.meanReturn)]),
     ),
-    savedAssetOverrides: (savedRow?.value ?? []) as AssetClassOverride[],
+    savedAssetOverrides: savedOverrides ?? [],
   };
 }
 

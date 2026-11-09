@@ -7206,7 +7206,7 @@
   },
   "src/lib/tax-data/sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/max-comment-lines": {
       "count": 1
@@ -8720,9 +8720,6 @@
     }
   },
   "src/server/services/simulation/simulation-preset.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/max-comment-lines": {
       "count": 2
     }

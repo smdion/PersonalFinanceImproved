@@ -35,26 +35,39 @@ import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
+import { readStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 const TIMEOUT_MS = 15_000;
 const MAX_BYTES = 1024 * 1024;
 const USER_AGENT = "Ledgr self-hosted personal finance (tax-data updates)";
 
-type TaxDataCheckResult =
-  | "off"
-  | "current" // nothing newer than this install has (or nothing published)
-  | "pending" // a verified update is waiting for an admin
-  | "applied" // a newer release changed nothing here: recorded as applied
-  | "needs-newer-ledgr" // a newer file format, or no bundled key verifies
-  | "invalid" // signed but fails the checks — never offered
-  | "rate-limited"
-  | "error";
+const TAX_DATA_CHECK_RESULTS = [
+  "off",
+  "current", // nothing newer than this install has (or nothing published)
+  "pending", // a verified update is waiting for an admin
+  "applied", // a newer release changed nothing here: recorded as applied
+  "needs-newer-ledgr", // a newer file format, or no bundled key verifies
+  "invalid", // signed but fails the checks — never offered
+  "rate-limited",
+  "error",
+] as const;
+type TaxDataCheckResult = (typeof TAX_DATA_CHECK_RESULTS)[number];
 
 type TaxDataLastCheck = {
   at: string;
   result: TaxDataCheckResult;
   detail?: string;
 };
+
+/** The stored last check, as `checkForTaxDataUpdate` writes it. */
+const lastCheckShape: z.ZodType<TaxDataLastCheck | null> = z
+  .looseObject({
+    at: z.string(),
+    result: z.enum(TAX_DATA_CHECK_RESULTS),
+    detail: z.string().optional(),
+  })
+  .nullable();
 
 /** Where to fetch from (tests point this at a fake). */
 type TaxDataSource = {
@@ -95,8 +108,8 @@ export async function setTaxDataSyncEnabled(db: Db, enabled: boolean) {
 export async function lastTaxDataCheck(
   db: Db,
 ): Promise<TaxDataLastCheck | null> {
-  return ((await getSetting(db, SK_TAX_DATA_LAST_CHECK)) ??
-    null) as TaxDataLastCheck | null;
+  const stored = (await getSetting(db, SK_TAX_DATA_LAST_CHECK)) ?? null;
+  return readStoredSetting(SK_TAX_DATA_LAST_CHECK, stored, lastCheckShape);
 }
 
 class RateLimited extends Error {}
