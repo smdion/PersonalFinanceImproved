@@ -227,7 +227,7 @@
   },
   "src/app/(dashboard)/budget/what-if-pickers.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 4
     },
     "ratchet/no-raw-button": {
       "count": 2
@@ -270,7 +270,7 @@
       "count": 8
     },
     "ratchet/no-abbreviation": {
-      "count": 22
+      "count": 21
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -287,7 +287,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-jsx-iife": {
       "count": 3
@@ -378,9 +378,6 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -487,7 +484,7 @@
       "count": 5
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -935,7 +932,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -1117,9 +1114,6 @@
     }
   },
   "src/components/budget/types.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -1137,7 +1131,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -2205,7 +2199,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/performance/filtered-summary.tsx": {
@@ -2240,11 +2234,6 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 1
-    }
-  },
-  "src/components/performance/realized-vs-assumed-card.tsx": {
-    "ratchet/no-abbreviation": {
       "count": 1
     }
   },
@@ -2532,9 +2521,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 9
-    },
     "ratchet/no-guarded-division": {
       "count": 4
     }
@@ -2594,7 +2580,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 12
+      "count": 11
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
@@ -5330,7 +5316,7 @@
       "count": 5
     },
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 10
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -5454,9 +5440,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -5652,7 +5635,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
@@ -5754,9 +5737,6 @@
   "src/lib/pure/advice/report/bracket-target-narrative.ts": {
     "ratchet/max-comment-lines": {
       "count": 10
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     },
     "ratchet/no-lint-violation-ok": {
       "count": 2
@@ -6078,7 +6058,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 10
     }
   },
   "src/lib/pure/contributions/profile-contrib-data.ts": {
@@ -6145,7 +6125,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-string-closed-set-field": {
       "count": 2
@@ -6158,7 +6138,7 @@
   },
   "src/lib/pure/contributions/ytd-actuals.ts": {
     "ratchet/no-abbreviation": {
-      "count": 5
+      "count": 3
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -6904,9 +6884,6 @@
     "ratchet/max-comment-lines": {
       "count": 1
     },
-    "ratchet/no-abbreviation": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6929,7 +6906,7 @@
   },
   "src/lib/pure/investments/finalize-year.ts": {
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/investments/flow-suggestions.ts": {
@@ -7038,9 +7015,6 @@
   "src/lib/pure/investments/realized-vs-assumed.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
     }
   },
   "src/lib/pure/investments/returns.ts": {
@@ -7048,7 +7022,7 @@
       "count": 4
     },
     "ratchet/no-abbreviation": {
-      "count": 14
+      "count": 7
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
@@ -7122,7 +7096,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 1
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -8182,7 +8156,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-clock-read": {
       "count": 1
@@ -8272,9 +8246,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 5
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
@@ -8750,9 +8721,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
-    "ratchet/no-abbreviation": {
-      "count": 3
-    },
     "ratchet/no-history-comment": {
       "count": 1
     },
@@ -8809,7 +8777,7 @@
       "count": 7
     },
     "ratchet/no-abbreviation": {
-      "count": 12
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -8850,7 +8818,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 10
+      "count": 6
     }
   },
   "src/server/services/contributions/account-edits.ts": {
@@ -8994,9 +8962,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -9052,9 +9017,6 @@
     "ratchet/max-comment-lines": {
       "count": 8
     },
-    "ratchet/no-abbreviation": {
-      "count": 4
-    },
     "ratchet/no-clock-read": {
       "count": 2
     },
@@ -9104,9 +9066,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
-    },
-    "ratchet/no-abbreviation": {
-      "count": 2
     }
   },
   "src/server/services/performance/performance-edit.ts": {

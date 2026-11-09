@@ -3539,7 +3539,10 @@ function shapeKeyProblem(
   id: ts.Node,
   file: string,
   from: string,
-  shapes: { keys: Set<string>; isShapeFile: (file: string) => boolean },
+  shapes: {
+    keys: { has: (name: string) => boolean };
+    isShapeFile: (file: string) => boolean;
+  },
 ): string | undefined {
   if (!isKey(id)) return undefined;
   if (shapes.keys.has(from))
@@ -3665,8 +3668,11 @@ export function mechanicalProblem(
   diff: string,
 ): string | undefined {
   if (trailerValues(raw, RENAME).length === 0) return notAMove(numstat, diff);
+  let keys: Set<string> | undefined;
   return notARename(numstat, diff, raw, {
-    keys: storedAndResponseKeys(),
+    // Read only when a renamed name stands as a key: reading the router
+    // output types builds the program.
+    keys: { has: (name) => (keys ??= storedAndResponseKeys()).has(name) },
     isShapeFile,
   });
 }
