@@ -1,10 +1,6 @@
 /**
- * Budget lines that end: each line linked to a loan stops the year after
- * that loan's payoff, on the loan's own schedule (extra payments included).
- *
- * A line can hold more than the payment (escrow lumped in), so only the
- * principal and interest leaves the budget: taxes and insurance outlive the
- * loan. A link to a refinanced loan follows it to the loan that replaced it.
+ * Budget lines that end: a line linked to a loan (or the loan refinancing it) stops the year after
+ * its payoff, on its own schedule; only principal and interest leave (escrow outlives the loan).
  * Spending typed in for a phase has no lines, so nothing ends in it.
  */
 import * as schema from "@/lib/db/schema";

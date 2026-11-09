@@ -408,10 +408,10 @@
     "src/server/services/profiles/first-retirement-profile.ts": 122,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 86,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 911,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 847,
     "src/server/services/projection/engine-payload/load.ts": 156,
-    "src/server/services/projection/engine-payload/profile-switches.ts": 506,
-    "src/server/services/projection/projection-cache.ts": 221,
+    "src/server/services/projection/engine-payload/profile-switches.ts": 445,
+    "src/server/services/projection/projection-cache.ts": 183,
     "src/server/services/projection/relocation-analysis.ts": 470,
     "src/server/services/savings/summary.ts": 371,
     "src/server/services/simulation/mc-inputs.ts": 114,
@@ -1078,13 +1078,13 @@
       "finalizePerformanceYear.transaction()": 370
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 825
+      "buildEnginePayload": 771
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
-      "buildIndividualAccounts": 190
+      "buildIndividualAccounts": 170
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
-      "buildProfileSwitches": 326
+      "buildProfileSwitches": 276
     },
     "src/server/services/projection/relocation-analysis.ts": {
       "computeRelocationAnalysis": 374

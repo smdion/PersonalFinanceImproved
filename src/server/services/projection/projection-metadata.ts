@@ -55,10 +55,8 @@ export function projectionContributionSpecs(
     activeJobs,
     jobSalaries,
   ).map(({ id, personId, ...rest }) => {
-    // Add parentCategory from the linked performance account.
-    // Looked up by the source row's stable id — personId/ownerName
-    // can't disambiguate between multiple joint contributions in the
-    // same category, since both are null for every joint row.
+    // parentCategory from the linked performance account, looked up by the row's
+    // stable id (personId/ownerName are null for every joint row).
     const contribution = activeContribs.find((c) => c.id === id);
     const parentCategory =
       contribution?.parentCategory ??
@@ -91,13 +89,9 @@ export function projectionContributionSpecs(
       catAccounts.find(
         (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
       );
-    // Fallback: use linked performance account's display name,
-    // routed through the shared precedence rule (portfolio-labels.ts)
-    // so THIS contribution row's own real owner (personId) wins over
-    // perfAccount's own ownershipType — a shared, jointly-tracked master
-    // (e.g. one Vanguard IRA both spouses contribute to separately)
-    // has ownershipType "joint", which would otherwise render "Joint
-    // ..." for every such row instead of each person's own name.
+    // Fallback: the linked performance account's display name via the shared
+    // precedence rule (portfolio-labels.ts), so this row's own owner (personId)
+    // wins over a joint master's ownershipType.
     const perfAccount = contribution?.performanceAccountId
       ? perfAccountMap.get(contribution.performanceAccountId)
       : undefined;
@@ -135,16 +129,12 @@ export function projectionSettings(payload: Payload) {
     annualInflation: settings.annualInflation,
     postRetirementInflation: settings.postRetirementInflation,
     salaryAnnualIncrease: settings.salaryAnnualIncrease,
-    // From app_settings["brokerage_contribution_increase"], resolved
-    // into the engine payload — surfaced so the assumptions report can
-    // state it (it compounds into projected brokerage balance). Read
-    // from the server-resolved payload, never recomputed client-side.
+    // app_settings["brokerage_contribution_increase"] from the server-resolved
+    // payload, so the assumptions report can state it.
     brokerageContributionIncrease: baseEngineInput.brokerageContributionRamp,
     personId: settings.personId,
-    // Retirement Profiles phase 4 (the assumptions band) — client
-    // writes must scope back to the profile these values came from,
-    // not the household's globally-active one. See
-    // buildSettingsPatch/retirementSettings.upsert's docblocks.
+    // Client writes scope back to the profile these values came from, not the
+    // globally-active one (see retirementSettings.upsert).
     profileId: settings.profileId,
     returnAfterRetirement: settings.returnAfterRetirement,
     salaryCap: settings.salaryCap,

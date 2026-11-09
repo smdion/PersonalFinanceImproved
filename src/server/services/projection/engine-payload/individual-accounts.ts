@@ -1,9 +1,6 @@
 /**
- * The engine's per-account starting list: every snapshot account (by
- * category, tax type and owner) with its basis, owner's birth year, early-
- * access eligibility (Rule of 55, Roth basis — from the Tax Buckets
- * analysis), the per-account penalty allowance (fail-closed on an
- * ambiguous match), and the unspent-RMD target; plus the projection-only
+ * The engine's per-account starting list (category, tax type, owner, basis, birth year, early-
+ * access eligibility, penalty allowance, unspent-RMD target), plus the projection-only
  * Retirement brokerage when there's none to receive that money.
  */
 import { calendarYear } from "@/lib/utils/date";
@@ -58,15 +55,9 @@ export function buildIndividualAccounts({
 }): IndividualAccountInput[] {
   const { accountBreakdownByCategory } = taxBucketBreakdown;
   const OVERFLOW_TARGET_CATEGORY = getAllCategories().find(isOverflowTarget)!;
-  // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
-  // verbatim (RULES.md § Single Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
-  // resolution a third time. Keyed with the same indKey format the engine's
-  // individual-accounts modules use, so Group 2's eligibility gate
-  // can look a given `IndividualAccountInput` up directly. Retirement-only
-  // (computeTaxBucketAnalysis walks `accountRollup`, which excludes
-  // Portfolio-category holdings) — a Portfolio-category individualAccounts
-  // entry simply has no match here, which is correct: early-access rules
-  // don't apply to a taxable brokerage account.
+  // Per-account early-access eligibility from computeTaxBucketAnalysis (RULES §
+  // Single Computation Path). Retirement accounts only: a Portfolio account has
+  // no entry, since early-access rules don't apply to a taxable account.
   const accountAnalysis = computeTaxBucketAnalysis({
     breakdown: taxBucketBreakdown,
     ...earlyAccessInputs({
@@ -82,14 +73,9 @@ export function buildIndividualAccounts({
     })),
     currentDate: asOfDate,
   });
-  // Local join key only — (name, category, taxType, ownerPersonId), same
-  // tuple `accountRollup`/`accountBreakdownByCategory` already merge on.
-  // Deliberately NOT the engine's own `makeIndKey()` format: that's an
-  // engine-internal concern (`@/lib/pure/engine/*` absolute imports
-  // outside the barrel are a lint-enforced layering violation —
-  // tests/lint/violations.test.ts), and this data attaches directly onto
-  // each `individualAccounts` entry below rather than traveling as a
-  // separately-keyed side-map, so no shared key format is needed at all.
+  // Local join key (name, category, taxType, ownerPersonId), the tuple
+  // `accountRollup` merges on; not the engine's `makeIndKey()`, since this data
+  // attaches directly onto each `individualAccounts` entry below.
   function eligibilityJoinKey(
     name: string,
     category: string,
@@ -114,23 +100,14 @@ export function buildIndividualAccounts({
       { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
   }
-  // Per-account penalty-allowance override — account-level, not
-  // person-level, so (unlike ruleOf55/rothBasisMeta above) joint accounts
-  // are included, not skipped. Only ever records `true`: same omit-when-
-  // false cache-hash-stability convention as `ruleOf55ForceIneligible`.
+  // Per-account penalty allowance: account-level, so joint accounts are
+  // included. Records only `true` (omit-when-false, for cache-hash stability).
   const allowPenalizedByPerfAccountId = new Map(
     perfAccounts.map((p) => [p.id, p.allowPenalizedWithdrawals]),
   );
-  // The join key (name/category/taxType/owner) is NOT guaranteed unique —
-  // `performanceAccounts`' own unique index is on
-  // (institution, accountType, subType, label, ownerPersonId), a different
-  // tuple. Two distinct real accounts can collide onto the same join key
-  // (e.g. same display name, different institution). Fail CLOSED on that
-  // ambiguity: never allow the penalty on a join key that maps to more than
-  // one distinct performanceAccountId, even if one of the colliding
-  // accounts has the override set — this flag only ever authorizes a real
-  // tax penalty, so an ambiguous match must default to "not allowed", never
-  // silently apply to an account the user never touched.
+  // The join key isn't unique (performanceAccounts is unique on another tuple),
+  // so fail CLOSED: a key mapping to more than one performanceAccountId never
+  // allows the penalty, since the flag authorizes a real tax penalty.
   const perfAccountIdsByJoinKey = new Map<string, Set<number>>();
   for (const entry of accountAnalysis) {
     if (entry.performanceAccountId == null) continue;
