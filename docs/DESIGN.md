@@ -938,6 +938,30 @@ whole when a statement is already done or moved past, or when the table has
 a column a later migration adds that the recreate would drop (the database
 is past it); any other error stops the replay.
 
+**What a converter may decide by.** A converter reruns on every squash
+replay and every restore, with no signal of what it is past, so each one is
+idempotent by construction, and its test must prove it: run twice over
+its own output, it writes nothing and every row stays byte-identical.
+
+- **Allowed:** a gate on structure (a column or key that is empty or
+  absent, a missing row, a JSON shape such as the encryption envelope) or
+  on a closed-set discriminant (a match type, a contribution method, a
+  stored key from a fixed list, a boolean); content computed from the
+  values read, once the gate has chosen the row; and an in-place rewrite
+  only when it is a projection, giving the same result applied to its own
+  output (padding an array, copying a value from its master row, removing
+  keys named by a fixed list).
+- **Forbidden:** inferring a unit, or "already converted", from a
+  magnitude (0.5 is both a whole percent and a fraction), and any in-place
+  rewrite that is not idempotent.
+- **Frozen:** a later release replays the converter with that release's
+  code, so it reads only its tables and its own constants (no live schema,
+  config or key list), and it deletes or strips by an explicit retired
+  list, never by "not in today's set".
+- **A new migration never recreates a SQLite table** (0005 and 0015 do,
+  and replay handles those as above); a shape that seems to need one stops
+  for an owner decision.
+
 ### A backup's closed-set values
 
 A restore or import checks a backup's rows after the transforms and the

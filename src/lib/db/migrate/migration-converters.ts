@@ -26,9 +26,9 @@ export type DataConverter = {
   /** Before the tag's SQL (it drops what the converter reads) or after it
    *  (it adds what the converter writes). */
   readonly runs: "beforeSql" | "afterSql";
-  /** Idempotent by storage: a replay reruns it, so it writes only where its
-   *  new column or key is empty, never deciding by the value it reads (0.5
-   *  is both a whole percent and a fraction). */
+  /** Idempotent: gates on structure or a closed set, rewrites in place only
+   *  as a projection, never infers "done" or a unit from a magnitude (DESIGN
+   *  § Data-converting migrations: "What a converter may decide by"). */
   readonly convert: (tables: ConverterTables) => ConverterResult;
 };
 
