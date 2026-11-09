@@ -3,7 +3,6 @@ import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { cacheGet } from "@/lib/budget-api";
-import type { BudgetCategoryGroup } from "@/lib/budget-api";
 import {
   loadBudgetItemLinks,
   setBudgetItemLink,
@@ -53,11 +52,7 @@ export async function syncAllNames(
   const apiCategoryMap = new Map<string, { name: string; groupName: string }>();
   if (input.direction === "pull") {
     {
-      const cached = await cacheGet<BudgetCategoryGroup[]>(
-        ctx.db,
-        service,
-        "categories",
-      );
+      const cached = await cacheGet(ctx.db, service, "categories");
       if (cached) {
         for (const group of cached.data) {
           for (const cat of group.categories) {

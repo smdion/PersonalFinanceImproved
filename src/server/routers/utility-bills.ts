@@ -12,10 +12,6 @@ import {
 import type { UtilitySource } from "@/lib/config/enum-values";
 import { cacheGet } from "@/lib/budget-api/cache";
 import { getActiveBudgetApi } from "@/lib/budget-api/factory";
-import type {
-  BudgetCategoryGroup,
-  BudgetTransaction,
-} from "@/lib/budget-api/types";
 import {
   feedMonths,
   reconcileFeed,
@@ -415,11 +411,7 @@ export const utilitiesRouter = createTRPCRouter({
   listBudgetApiCategories: protectedProcedure.query(async ({ ctx }) => {
     const service = await getActiveBudgetApi(ctx.db);
     if (service === "none") return { service, categories: [] };
-    const cached = await cacheGet<BudgetCategoryGroup[]>(
-      ctx.db,
-      service,
-      "categories",
-    );
+    const cached = await cacheGet(ctx.db, service, "categories");
     // A category in use stays listed even if it's been hidden since.
     const mapped = new Set(
       (await ctx.db.select().from(schema.utilityService))
@@ -539,11 +531,7 @@ async function planBudgetApiFeed(db: Db) {
     gone: [] as Plan["gone"],
   };
   if (service === "none" || fed.length === 0) return empty;
-  const cached = await cacheGet<BudgetTransaction[]>(
-    db,
-    service,
-    "transactions",
-  );
+  const cached = await cacheGet(db, service, "transactions");
   if (!cached) return empty;
   const readings = await db.select().from(schema.utilityReading);
   let months;

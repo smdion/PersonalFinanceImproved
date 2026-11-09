@@ -3251,11 +3251,6 @@
       "count": 2
     }
   },
-  "src/lib/budget-api/cache.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/lib/budget-api/errors.ts": {
     "ratchet/no-clock-read": {
       "count": 1

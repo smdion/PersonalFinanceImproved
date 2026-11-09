@@ -17,7 +17,7 @@ export async function getApiAccountBalanceMap(
   db: Db,
   service: BudgetApiService,
 ): Promise<Map<string, number> | null> {
-  const cached = await cacheGet<BudgetAccount[]>(db, service, "accounts");
+  const cached = await cacheGet(db, service, "accounts");
   if (!cached) return null;
   return getApiAccountBalanceMapFromAccounts(cached.data);
 }

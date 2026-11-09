@@ -19,7 +19,7 @@ import {
   nothingChanged,
   userMessageFor,
 } from "@/lib/budget-api/errors";
-import type { PreparedGoalWrite, BudgetCategoryGroup } from "@/lib/budget-api";
+import type { PreparedGoalWrite } from "@/lib/budget-api";
 import {
   getEssentialExpenses,
   resolveEfundTierIndex,
@@ -101,11 +101,7 @@ export async function pushContributionsToApi(
 
   // A fund taken to $0 clears the target it had; one that never had a
   // target isn't written to.
-  const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
-    ctx.db,
-    active,
-    "categories",
-  );
+  const categoriesCache = await cacheGet(ctx.db, active, "categories");
   const currentTarget = new Map(
     (categoriesCache?.data ?? [])
       .flatMap((g) => g.categories)

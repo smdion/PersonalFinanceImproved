@@ -49,8 +49,7 @@ async function sumMappedAccountBalances(
   );
   if (mapped.length === 0) return null;
 
-  type BudgetAccount = { id: string; balance: number };
-  const cached = await cacheGet<BudgetAccount[]>(
+  const cached = await cacheGet(
     db,
     service,
     "accounts",
@@ -104,13 +103,7 @@ export async function getEffectiveCash(
       };
     }
 
-    type BudgetAccount = {
-      onBudget: boolean;
-      closed: boolean;
-      type: string;
-      balance: number;
-    };
-    const cached = await cacheGet<BudgetAccount[]>(
+    const cached = await cacheGet(
       db,
       active,
       "accounts",

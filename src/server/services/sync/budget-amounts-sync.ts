@@ -17,7 +17,7 @@ import {
   requireActiveBudgetApi,
   requireBudgetClient,
 } from "@/server/services/budget/budget-client";
-import type { BudgetMonthDetail, PreparedGoalWrite } from "@/lib/budget-api";
+import type { PreparedGoalWrite } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { writeStamp } from "@/lib/utils/clock";
 import { log } from "@/lib/logger";
@@ -31,11 +31,7 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
   // Get current month detail from cache
   const now = ctx.scope.asOf;
   const currentMonth = currentMonthKey(now);
-  const monthCache = await cacheGet<BudgetMonthDetail>(
-    ctx.db,
-    active,
-    `months/${currentMonth}`,
-  );
+  const monthCache = await cacheGet(ctx.db, active, `months/${currentMonth}`);
   if (!monthCache) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",

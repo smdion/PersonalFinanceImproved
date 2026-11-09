@@ -7,6 +7,7 @@ import {
   refreshCategoryCache,
 } from "@/lib/budget-api/cache";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
+import { logWarnOnce } from "@/lib/logger";
 import { createTestDb } from "../helpers/db-harness";
 
 type Db = Parameters<typeof cacheSet>[0];
@@ -31,12 +32,56 @@ describe("refreshCategoryCache", () => {
         ),
       ).rejects.toThrow();
 
-      const categories = await cacheGet<{ id: string }[]>(
-        db as never,
-        "ynab",
-        "categories",
-      );
+      const categories = await cacheGet(db as never, "ynab", "categories");
       expect(categories?.data).toEqual([{ id: "old" }]);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+describe("cacheGet", () => {
+  it("reads data that fits its key's shape as itself, without a warning", async () => {
+    const { rawDb, cleanup } = await createTestDb();
+    const db = rawDb as unknown as Db;
+    vi.mocked(logWarnOnce).mockClear();
+    try {
+      const accounts = [
+        {
+          id: "a1",
+          name: "Checking",
+          type: "checking",
+          onBudget: true,
+          closed: false,
+          balance: 120.5,
+          clearedBalance: 100,
+        },
+      ];
+      await cacheSet(db, "ynab", "accounts", accounts);
+      expect((await cacheGet(db, "ynab", "accounts"))?.data).toEqual(accounts);
+      expect(logWarnOnce).not.toHaveBeenCalled();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("reads data an older version cached in another shape as stored, with a warning keyed by key and service", async () => {
+    const { rawDb, cleanup } = await createTestDb();
+    const db = rawDb as unknown as Db;
+    vi.mocked(logWarnOnce).mockClear();
+    try {
+      const month = { month: "2026-03-01", categories: [{ id: "c1" }] };
+      await cacheSet(db, "actual", "months/2026-03-01", month);
+      expect((await cacheGet(db, "actual", "months/2026-03-01"))?.data).toEqual(
+        month,
+      );
+      expect(logWarnOnce).toHaveBeenCalledWith(
+        "stored_value_unexpected_shape",
+        "budget_api_cache.months/2026-03-01 (actual)",
+        expect.objectContaining({
+          source: "budget_api_cache.months/2026-03-01 (actual)",
+        }),
+      );
     } finally {
       cleanup();
     }

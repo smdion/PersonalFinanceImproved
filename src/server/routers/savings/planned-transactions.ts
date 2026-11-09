@@ -10,7 +10,6 @@ import * as schema from "@/lib/db/schema";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
-import type { BudgetTransaction } from "@/lib/budget-api";
 import type { DbOrTx } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
@@ -243,11 +242,7 @@ export const plannedTransactionProcedures = {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") return { suggestions: [] };
 
-      const transactionsCache = await cacheGet<BudgetTransaction[]>(
-        ctx.db,
-        active,
-        "transactions",
-      );
+      const transactionsCache = await cacheGet(ctx.db, active, "transactions");
       if (!transactionsCache) return { suggestions: [] };
       const realTransactions = transactionsCache.data;
 

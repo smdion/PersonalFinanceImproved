@@ -12,7 +12,6 @@ import {
   cacheGet,
   cacheSet,
   type BudgetApiService,
-  type BudgetAccount,
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
@@ -40,11 +39,9 @@ export async function syncAll(
   try {
     // Read previous cached account list BEFORE the new fetch so we
     // can diff for drift detection.
-    const cachedBefore = await cacheGet<BudgetAccount[]>(
-      ctx.db,
-      service,
-      "accounts",
-    ).catch(() => null);
+    const cachedBefore = await cacheGet(ctx.db, service, "accounts").catch(
+      () => null,
+    );
     const cachedAccountsBefore = cachedBefore?.data ?? [];
 
     // ── Phase 1: Network fetch (no DB writes) ────────────────────
