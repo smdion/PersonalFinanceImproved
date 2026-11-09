@@ -1,10 +1,7 @@
 "use client";
 
-/** Financial analysis tools page — currently hosts the Relocation decision
- *  calculator. Large UI sub-sections live in
- *  `src/components/tools/relocation/`; this file owns tRPC queries/mutations +
- *  local state and orchestrates them.
- */
+/** Financial tools page (Relocation calculator): owns queries, mutations and
+ *  state; sub-sections live in `src/components/tools/relocation/`. */
 
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -144,12 +141,8 @@ export function ToolsContent() {
   const effectiveTargetContributionProfileId =
     relocTargetContributionProfileId ?? defaultContributionProfileId ?? null;
 
-  // Salary Profile axis (the active profile) — one profile
-  // applies to both scenarios, matching every other engine-backed endpoint
-  // (Retirement page, Monte Carlo, Coast FIRE). Without this the engine-
-  // backed relocation projection silently fell back to whichever Salary
-  // Profile is globally active, diverging from the Retirement page's own
-  // number for the same "current" baseline.
+  // The active Salary Profile, applied to both scenarios like every other
+  // engine-backed page, so the "current" baseline matches the Retirement page.
   const { salaryProfileId: effectiveSalaryProfileId } =
     useEffectiveSalaryProfileId();
 

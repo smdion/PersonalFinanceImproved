@@ -100,10 +100,8 @@ export function renderSavingsRows(
           const totalSavings = netMonthly - r.totalMonthly;
           const overage =
             payrollBreakdowns[i] !== null ? totalSinking - totalSavings : 0;
-          // In weighted profiles, a single mode running "over"
-          // (e.g. a one-month travel splurge) doesn't mean
-          // savings capacity is actually blown for the year —
-          // only the blended column's warning reflects that.
+          // In weighted profiles one mode running over doesn't blow the year's
+          // capacity; only the blended column warns.
           const isOverCapacity = !isWeighted && overage > 0.01;
           return (
             <td

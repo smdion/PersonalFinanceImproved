@@ -42,16 +42,16 @@
     "src/app/(dashboard)/portfolio/snapshot-rows.tsx": 154,
     "src/app/(dashboard)/portfolio/use-portfolio-page.ts": 143,
     "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": 101,
-    "src/app/(dashboard)/savings/savings-content.tsx": 875,
+    "src/app/(dashboard)/savings/savings-content.tsx": 870,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 299,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 289,
     "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": 123,
     "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-groups.tsx": 94,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 147,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": 113,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-sections.tsx": 333,
-    "src/app/(dashboard)/tax-buckets/use-tax-buckets-projection.ts": 88,
-    "src/app/(dashboard)/tools/tools-content.tsx": 577,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 142,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts": 101,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-sections.tsx": 331,
+    "src/app/(dashboard)/tax-buckets/use-tax-buckets-projection.ts": 86,
+    "src/app/(dashboard)/tools/tools-content.tsx": 570,
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 513,
     "src/app/(dashboard)/versions/versions-content.tsx": 740,
     "src/components/budget/budget-summary-table.tsx": 570,
@@ -485,13 +485,13 @@
       "RecommendationsContent": 185
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
-      "RetirementContent": 301
+      "RetirementContent": 300
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsContent": 791
+      "SavingsContent": 786
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
-      "ToolsContent": 534
+      "ToolsContent": 530
     },
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": {
       "UtilityCard": 337,
@@ -507,13 +507,13 @@
       "BrokerageGoalsSection": 283
     },
     "src/components/budget/api-category-picker.tsx": {
-      "ApiCategoryPicker": 159
+      "ApiCategoryPicker": 156
     },
     "src/components/budget/budget-category-row.tsx": {
-      "BudgetCategoryRow": 184
+      "BudgetCategoryRow": 180
     },
     "src/components/budget/budget-item-row.tsx": {
-      "BudgetItemRow": 268
+      "BudgetItemRow": 260
     },
     "src/components/budget/budget-mode-manager.tsx": {
       "BudgetModeManager": 174

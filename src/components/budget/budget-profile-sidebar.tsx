@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Left-rail profile picker for the budget page master-detail layout.
- *
- * Parent owns: profile list query, tRPC mutations (set-active, create,
- * rename, delete), and permission gating. This component is purely
- * presentational: it renders the list and wires click / keyboard controls
- * back up through callbacks. Rename is a click-to-edit on the row name
- * (shared `ProfileListRow` behavior) — one `onRename` callback.
+ * Presentational left-rail budget profile picker; the parent owns the query,
+ * mutations and permissions. Rename is click-to-edit via `onRename`.
  */
 
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";

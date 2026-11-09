@@ -362,10 +362,8 @@ export function SavingsContent() {
   const goalProjections: GoalProjection[] = parentFundGoals.map((goal) => {
     const raw = goalById.get(goal.goalId);
     const goalId = goal.goalId;
-    // The stored snapshot (goal.monthlyAllocation) is the source of truth
-    // even for percentage-based goals — it only moves when the user
-    // explicitly hits "Recalculate" (recalculateAllocation), not whenever
-    // paycheck/budget data shifts underneath it.
+    // The stored snapshot (goal.monthlyAllocation) is the source of truth even
+    // for percentage goals; it changes only on "Recalculate".
     const baseAllocation = goal.monthlyAllocation;
     const { balances, monthEvents, monthlyAllocations, hasOverride } =
       projectGoalBalances(
@@ -751,12 +749,9 @@ export function SavingsContent() {
                       )}
                     </div>
 
-                    {/* Extra paycheck rules — one column per earner. The
-                        Savings/Budget toggle also lives on Profiles → Salary
-                        Profiles (comp-layer decision), but the detailed
-                        mechanics — splits across savings goals, growth
-                        rates, month overrides — are Savings-domain and
-                        belong here, not cluttering the profile screen. */}
+                    {/* Extra paycheck rules, one column per earner. The
+                        Savings/Budget toggle is also on Salary Profiles; the
+                        goal splits, growth and month overrides live here. */}
                     <ExtraPaycheckRulesEditor
                       goals={rawGoals
                         .filter((g) => g.isActive && !g.parentGoalId)

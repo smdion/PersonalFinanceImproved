@@ -64,9 +64,8 @@ export function RetirementContent() {
       activeProfileId: activeRetirementId,
     },
   );
-  // The plan's projection input — the one builder the dashboard uses too
-  // (usePlanEngineInput), so both read the same cached runs. The editors
-  // for the retirement-budget settings live on the Budget page's Retirement
+  // Projection input from usePlanEngineInput, shared with the dashboard so both
+  // read the same cached runs. Retirement-budget editors live on the Retirement
   // Profile tab; the snapshot picker below writes its setting.
   const plan = usePlanEngineInput();
   const {

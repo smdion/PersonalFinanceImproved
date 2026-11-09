@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Thin wrapper around PushPreviewModal for the budget page's "Pull from YNAB"
- * flow — confirms which local budget amounts will change before applying the
- * API's goal targets.
- *
- * The parent owns the pullPreviewItems state + the tRPC syncFromApi mutation;
- * this component is a presentational binding that wires the modal's
- * onConfirm/onCancel to the parent's close callback.
+ * PushPreviewModal binding for "Pull from YNAB": shows which local amounts the
+ * API's goal targets will change. The parent owns the items and mutation.
  */
 
 import { budgetApiServiceLabel } from "@/lib/utils/format";

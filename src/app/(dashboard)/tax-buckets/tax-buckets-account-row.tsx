@@ -15,21 +15,13 @@ import {
 } from "@/lib/config/account-types";
 import { RuleOf55Badge } from "./tax-buckets-account-badges";
 
-// The pure type, not a tRPC-inferred one — inferRouterOutputs types
-// `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
-// but it actually arrives as an ISO string (no superjson transformer on
-// this router). Using the pure AccountAnalysisEntry type (whose
-// `updatedAt` is `Date | string` for exactly this reason) lets "now" data
-// (from the wire) and "at retirement" data (computed client-side by
-// computeTaxBucketProjection, same pure type) share one type everywhere
-// on this page instead of fighting a spurious Date-vs-string mismatch.
+// The pure type, not the tRPC-inferred one: `rothBasisMeta.updatedAt` arrives
+// as an ISO string (no superjson), and "now" and "at retirement" data share
+// this type (`Date | string`).
 export type AccountEntry = AccountAnalysisEntry;
 
-/** Richer label ("Roth IRA", "Traditional 401k") than
- *  `@/lib/utils/colors.ts`'s canonical `taxTypeLabel(taxType)` (which only
- *  returns "Traditional"/"Roth"/"HSA"/"After-tax") — deliberately named
- *  differently to avoid a same-name, different-signature collision with
- *  that function. */
+/** Richer label ("Roth IRA", "Traditional 401k") than colors.ts's
+ *  `taxTypeLabel(taxType)`; named differently to avoid a same-name clash. */
 export function bucketTaxTypeLabel(category: string, taxType: string): string {
   const label = getDisplayConfig(category).displayLabel;
   if (isTaxFreeBucket(taxType)) {
@@ -73,10 +65,8 @@ export function AccountDetailRow({
     tracksRothBasis(entry.category) &&
     entry.performanceAccountId != null &&
     entry.ownerPersonId != null;
-  // Hidden while still employed there (source "active") — there's no real
-  // separation date to enter yet, and showing a blank editable field
-  // invites entering a planned/future date, which is exactly what Rule of
-  // 55 must never be evaluated against.
+  // Hidden while still employed there (source "active"): Rule of 55 must never
+  // be evaluated against a planned future separation date.
   const isSeparationEditable =
     entry.ruleOf55 !== null &&
     entry.ruleOf55.source !== "active" &&

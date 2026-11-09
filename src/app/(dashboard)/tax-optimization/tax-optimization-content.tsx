@@ -1,22 +1,9 @@
 "use client";
 
 /**
- * Tax Optimization — client content.
- *
- * Two decision tools that run the projection engine N times and score the
- * results: the Roth-conversion explorer (search the household's real
- * marginal brackets for the conversion ceiling that minimises lifetime
- * tax) and the withdrawal-strategy comparison (rank sequencing strategies
- * by lifetime tax + terminal balance). Neither is a "view" of a single
- * run — that lives on the Retirement page.
- *
- * Assumptions are NOT edited here with bespoke controls — the same
- * `AssumptionsBand` the Retirement page uses is embedded, bound to the
- * active Retirement Profile, so a change saves to the profile and every
- * surface recomputes (via the `projection` invalidation the band fires).
- *
- * `projectTaxYears` is still queried — not to render a table, but for the
- * IRMAA-exposure callout and the "brackets current through {year}" note.
+ * Tax Optimization: Roth-conversion explorer and withdrawal-strategy comparison, each
+ * scoring many engine runs. Assumptions edit via the shared `AssumptionsBand` (active
+ * Retirement Profile); `projectTaxYears` feeds the IRMAA callout and brackets note.
  */
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useMemo, useState } from "react";

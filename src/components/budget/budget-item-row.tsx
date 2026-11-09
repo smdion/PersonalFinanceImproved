@@ -37,15 +37,8 @@ type BudgetItemRowProps = {
   showApiColumn?: boolean;
   nameColWidth?: number;
   /**
-   * Sandbox mode: amounts are editable via `editMode` alone (not `editMode
-   * && canEdit`), and every OTHER control that reaches a live mutation —
-   * the essential toggle, the API-category link/unlink picker, and the
-   * move/reorder/delete/convert-to-goal action cluster — renders in its
-   * fully inert/hidden form regardless of `editMode`/`canEdit`. This is the
-   * structural-omission pattern used elsewhere in the What-If tab: not
-   * disabled-but-present, actually absent, so nothing here can reach
-   * `budget.linkToApi`/`unlinkFromApi`/`updateCategoryEssential`/etc. even
-   * if a caller passes `canEdit: true` to unlock amount editing.
+   * Sandbox mode: amounts edit via `editMode` alone, and every other control that
+   * reaches a live mutation is omitted outright, even when `canEdit` is true.
    */
   amountsOnly?: boolean;
 };
@@ -254,17 +247,9 @@ export function BudgetItemRow({
           (item.contribAmount != null
             ? item.contribAmount
             : (item.amounts[col] ?? 0));
-        // The padlock is the ONE thing that gates amount editing here: an
-        // amount is only editable when the tab is unlocked (editMode) AND the
-        // user has write permission. Every other case renders static text.
-        // (Previously the locked-but-editable case rendered an InlineEdit,
-        // which had its own click-to-edit affordance that saved immediately
-        // and so bypassed the padlock entirely.)
-        // In amountsOnly (sandbox) mode, `canEdit` doesn't gate the amount —
-        // every OTHER control on this row is already structurally omitted
-        // above regardless of canEdit, so editMode alone is the right gate:
-        // someone without the `budget` permission can still play in a
-        // sandbox that writes nothing.
+        // Editable only when unlocked (editMode) AND permitted (canEdit); else
+        // static text. Sandbox (amountsOnly) needs editMode only: it writes
+        // nothing, and its other controls are omitted.
         const amountEditable = amountsOnly ? editMode : editMode && canEdit;
         if (!amountEditable) {
           const n = parseFloat(String(amount));

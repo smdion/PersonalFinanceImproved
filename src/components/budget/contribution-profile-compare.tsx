@@ -1,17 +1,9 @@
 "use client";
 
 /**
- * Contribution Profile compare view — accounts as rows, profiles as
- * columns, each cell showing that profile's own active value for the
- * account, or "Not set" when the profile has no value for it at all. A
- * standing audit tool, not just a pre-swap warning: lets you sanity-check
- * coverage across every profile at once, not one at a time — "Not set" is
- * a real gap to flag, not a benign fallback, since accounts carry no value
- * of their own (see applyContribActiveFields).
- *
- * `contributionProfile.compareData` is the one data source this and the
- * swap-time diff share. Each cell resolves its display state (value, amber
- * when set, DISABLED badge) with resolveContributionFieldDisplayState, per cell.
+ * Contribution Profile compare: accounts × profiles from `compareData`. "Not set"
+ * is a real gap (accounts hold no value of their own); cells use
+ * resolveContributionFieldDisplayState.
  */
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";

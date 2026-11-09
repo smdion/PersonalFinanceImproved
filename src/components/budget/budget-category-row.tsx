@@ -209,12 +209,8 @@ export function BudgetCategoryRow({
           categoryNames={categoryNames}
           currentCategory={categoryName}
           contributionMonthly={
-            // A linked item's own resolved amount is the real number
-            // (matches what getCatTotals uses) — the fuzzy name match is
-            // only ever a display estimate for items with NO real link,
-            // so a linked item must never show the fuzzy figure instead
-            // of its own (e.g. two accounts sharing a keyword like
-            // "brokerage", one linked, one not).
+            // A linked item shows its own resolved amount (as getCatTotals
+            // does); the fuzzy name match is only for items with NO link.
             item.contributionAccountId != null
               ? (item.contribAmounts?.[activeColumn] ??
                 item.contribAmount ??

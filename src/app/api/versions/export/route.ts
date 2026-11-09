@@ -12,10 +12,8 @@ export async function GET() {
   }
 
   try {
-    // Check auth — require session with version permission or admin. Only
-    // `next dev` with ALLOW_DEV_MODE skips it, the same rule as every
-    // request's session (auth-mode.ts); validateEnv() (src/lib/env.ts) also
-    // refuses to boot a production build with ALLOW_DEV_MODE set.
+    // Require a session with version permission or admin. Only `next dev` with
+    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
     const allowDev = devBypass() === "admin";
     const session = await auth();
     if (!allowDev && !session?.user) {

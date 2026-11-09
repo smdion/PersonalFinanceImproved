@@ -1,18 +1,8 @@
 "use client";
 
 /**
- * Active budget summary bar. The JSX block above the master-detail grid:
- * displays the active (or viewing-only) profile name, API link badge,
- * current mode / weighted label, total, and the cluster of right-aligned
- * action buttons (Manage Modes, Pull, Push). The edit padlock lives in the
- * right column (BudgetDetailPanel), matching the other three profile tabs.
- *
- * The parent owns all state + tRPC mutations. This component receives
- * plain primitive props and event callbacks — no queries, no mutations,
- * no data-shape narrowing.
- *
- * Stable per-context values are consumed from BudgetPageContext, and the
- * remaining props grouped into bundles.
+ * Presentational budget summary bar above the grid: profile name, API badge,
+ * mode, total and action buttons. Reads BudgetPageContext; no queries/mutations.
  */
 
 import { formatCurrency } from "@/lib/utils/format";

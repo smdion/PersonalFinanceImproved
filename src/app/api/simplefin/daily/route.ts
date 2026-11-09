@@ -20,10 +20,8 @@ export async function GET(request: Request) {
 }
 
 async function syncSimplefin(): Promise<Response> {
-  // Resolved once and threaded through both the "already synced today"
-  // check and the sync call itself — two independent `new Date()` calls in
-  // one request can disagree right at a midnight boundary (docs/RULES.md
-  // Time Resolution).
+  // One timestamp for both the "already synced today" check and the sync, so
+  // they can't straddle midnight (docs/RULES.md Time Resolution).
   const asOfDate = new Date();
 
   try {
@@ -35,11 +33,9 @@ async function syncSimplefin(): Promise<Response> {
       });
     }
 
-    // This route is polled hourly by instrumentation.node.ts; skip once
-    // today's real sync has already happened so we don't burn SimpleFIN's
-    // ~24-requests/day quota on repeat calls. Deliberately not applied
-    // inside runSimplefinSync itself — the "Sync Now" button must always
-    // be able to force a fresh pull, even on a day the cron already ran.
+    // Polled hourly (instrumentation.node.ts): skip after today's sync to save
+    // SimpleFIN's ~24/day quota. Not in runSimplefinSync, so "Sync Now" can
+    // always force a pull.
     if (await hasSyncedToday(db, asOfDate)) {
       return NextResponse.json({
         skipped: true,

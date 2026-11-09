@@ -1,14 +1,7 @@
 /**
- * Tax Optimization page — server shell.
- *
- * Mirrors `tax-buckets/page.tsx`: prefetch the default view on the server,
- * dehydrate, hand off to the client content component. The default
- * `projectTaxYears` input is `{}` — every field on `taxOptimizationBaseInput`
- * is optional or defaulted, and this matches the client's first query
- * exactly (no profile-resolution mismatch), so the prefetch is never
- * wasted. It powers the IRMAA-exposure callout and the brackets note; the
- * strategy-comparison and Roth what-if tabs are profile/selection-dependent
- * and load on the client when opened.
+ * Tax Optimization server page: prefetches `projectTaxYears({})`, which matches the
+ * client's first query (IRMAA callout, brackets note). The strategy and Roth tabs
+ * depend on profiles/selection and load on the client.
  */
 import { HydrationBoundary } from "@tanstack/react-query";
 import { prefetchForPage } from "@/server/trpc-server";
