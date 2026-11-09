@@ -518,30 +518,13 @@
     {
       "step": "delete with the active id stored as a string",
       "outcome": {
-        "result": {
-          "ok": true
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
         }
       },
       "rows": {
-        "contributionProfiles": [
-          {
-            "id": 1,
-            "name": "Current",
-            "description": "Contribution settings as they stand",
-            "contributionActiveFields": {},
-            "createdAt": "<timestamp>"
-          },
-          {
-            "id": 4,
-            "name": "Bare",
-            "description": null,
-            "contributionActiveFields": {
-              "contributionAccounts": {},
-              "deductions": {}
-            },
-            "createdAt": "<timestamp>"
-          }
-        ],
+        "contributionProfiles": "unchanged",
         "plans": "unchanged",
         "activeSettings": [
           {
@@ -578,6 +561,43 @@
     },
     {
       "step": "delete profile 1 with no active profile",
+      "outcome": {
+        "result": {
+          "ok": true
+        }
+      },
+      "rows": {
+        "contributionProfiles": [
+          {
+            "id": 2,
+            "name": "Joint percent",
+            "description": "a joint account at a percent of salary",
+            "contributionActiveFields": {
+              "contributionAccounts": {
+                "2": {
+                  "contributionMethod": "percent_of_salary"
+                }
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Bare",
+            "description": null,
+            "contributionActiveFields": {
+              "contributionAccounts": {},
+              "deductions": {}
+            },
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete profile 2 with no active profile",
       "outcome": {
         "result": {
           "ok": true
@@ -1044,7 +1064,7 @@
       "outcome": {
         "error": {
           "code": "BAD_REQUEST",
-          "message": "No tax bracket data found for filing status \"HOH\" (multiple jobs: true) for tax year 2026 \u2014 cannot save this entry for job 1."
+          "message": "No tax bracket data found for filing status \"HOH\" (multiple jobs: true) for tax year 2026 — cannot save this entry for job 1."
         }
       },
       "rows": {
@@ -1650,80 +1670,13 @@
     {
       "step": "delete with the active id stored as a string",
       "outcome": {
-        "result": {
-          "ok": true
+        "error": {
+          "code": "BAD_REQUEST",
+          "message": "Cannot delete the active profile. Switch to a different profile first."
         }
       },
       "rows": {
-        "salaryProfiles": [
-          {
-            "id": 1,
-            "name": "Current",
-            "description": "Every salary follows its job record",
-            "salaries": {
-              "1": {
-                "salary": 120000,
-                "bonusPercent": 0,
-                "bonusMultiplier": 1,
-                "monthsInBonusYear": 12,
-                "bonusOverride": null,
-                "payPeriod": "biweekly",
-                "payWeek": "na",
-                "anchorPayDate": null,
-                "budgetPeriodsPerMonth": null,
-                "w4FilingStatus": "MFJ",
-                "w4Box2cChecked": false,
-                "additionalFedWithholding": 0,
-                "bonusMonth": null,
-                "bonusDayOfMonth": null,
-                "extraPaycheckRouting": null
-              },
-              "2": {
-                "salary": 120000,
-                "bonusPercent": 0,
-                "bonusMultiplier": 1,
-                "monthsInBonusYear": 12,
-                "bonusOverride": null,
-                "payPeriod": "biweekly",
-                "payWeek": "na",
-                "anchorPayDate": null,
-                "budgetPeriodsPerMonth": null,
-                "w4FilingStatus": "MFJ",
-                "w4Box2cChecked": false,
-                "additionalFedWithholding": 0,
-                "bonusMonth": null,
-                "bonusDayOfMonth": null,
-                "extraPaycheckRouting": null
-              }
-            },
-            "createdAt": "<timestamp>"
-          },
-          {
-            "id": 3,
-            "name": "Raise",
-            "description": "after the promotion",
-            "salaries": {
-              "1": {
-                "salary": 110000,
-                "bonusPercent": 10,
-                "bonusMultiplier": 1,
-                "monthsInBonusYear": 12,
-                "bonusOverride": null,
-                "payPeriod": "biweekly",
-                "payWeek": "na",
-                "anchorPayDate": null,
-                "budgetPeriodsPerMonth": null,
-                "w4FilingStatus": "MFJ",
-                "w4Box2cChecked": false,
-                "additionalFedWithholding": 0,
-                "bonusMonth": null,
-                "bonusDayOfMonth": null,
-                "extraPaycheckRouting": null
-              }
-            },
-            "createdAt": "<timestamp>"
-          }
-        ],
+        "salaryProfiles": "unchanged",
         "plans": "unchanged",
         "savingsPlannedTransactions": "unchanged",
         "activeSettings": [
@@ -1762,6 +1715,53 @@
     },
     {
       "step": "delete profile 1 with no active profile",
+      "outcome": {
+        "result": {
+          "ok": true
+        }
+      },
+      "rows": {
+        "salaryProfiles": [
+          {
+            "id": 3,
+            "name": "Raise",
+            "description": "after the promotion",
+            "salaries": {
+              "1": {
+                "salary": 110000,
+                "bonusPercent": 10,
+                "bonusMultiplier": 1,
+                "monthsInBonusYear": 12,
+                "bonusOverride": null,
+                "payPeriod": "biweekly",
+                "payWeek": "na",
+                "anchorPayDate": null,
+                "budgetPeriodsPerMonth": null,
+                "w4FilingStatus": "MFJ",
+                "w4Box2cChecked": false,
+                "additionalFedWithholding": 0,
+                "bonusMonth": null,
+                "bonusDayOfMonth": null,
+                "extraPaycheckRouting": null
+              }
+            },
+            "createdAt": "<timestamp>"
+          },
+          {
+            "id": 4,
+            "name": "Empty",
+            "description": null,
+            "salaries": {},
+            "createdAt": "<timestamp>"
+          }
+        ],
+        "plans": "unchanged",
+        "savingsPlannedTransactions": "unchanged",
+        "activeSettings": "unchanged"
+      }
+    },
+    {
+      "step": "delete profile 4 with no active profile",
       "outcome": {
         "result": {
           "ok": true

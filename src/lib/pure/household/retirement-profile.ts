@@ -7,7 +7,7 @@ import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /** Coerce an app_settings jsonb value to a profile id. Stored as a bare
  *  number (`1`), but tolerate a numeric string from older writes. */
-function toProfileId(raw: unknown): number | null {
+export function toProfileId(raw: unknown): number | null {
   if (typeof raw === "number" && Number.isInteger(raw)) return raw;
   if (typeof raw === "string" && /^\d+$/.test(raw)) return Number(raw);
   return null;
