@@ -959,10 +959,13 @@ SQLite and PostgreSQL).
 - **Frozen:** a later release replays the converter with that release's
   code, so it reads only its tables and its own constants (no live schema,
   config or key list), and it deletes or strips by an explicit retired
-  list, never by "not in today's set".
+  list, never by "not in today's set". Its tables arrive as a deep-frozen
+  copy on every path, so changing one in place throws.
 - **Several shapes, one tag:** a tag registers one converter or a list
   that runs in order, each over a fresh read of its tables, so the second
-  sees what the first wrote. A converter returns row updates, inserts
+  sees what the first wrote. A list's `beforeSql` converters come before
+  its `afterSql` ones, so the restore step, which runs the whole list in
+  order, runs them in the live order. A converter returns row updates, inserts
   (the database numbers the row; a restore gives it the table's next id)
   and deletes, all by `id`; they apply as deletes, then updates, then
   inserts, and each must change exactly one row or the migration stops.

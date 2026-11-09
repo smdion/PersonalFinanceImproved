@@ -75,7 +75,26 @@ export function tagConverters(
 ): readonly DataConverter[] {
   const entry = Object.hasOwn(converters, tag) ? converters[tag] : undefined;
   if (!entry) return [];
-  return "convert" in entry ? [entry] : entry;
+  const list = "convert" in entry ? [entry] : entry;
+  const after = list.findIndex((c) => c.runs === "afterSql");
+  if (after >= 0 && list.slice(after).some((c) => c.runs === "beforeSql"))
+    throw new Error(
+      `Migration ${tag}: its beforeSql converters must come before its afterSql ones`,
+    );
+  return list;
+}
+
+/** A deep copy no converter can change in place: what it reads is input
+ *  only, on every path. */
+function frozenCopy(rows: readonly unknown[]): unknown[] {
+  const freeze = (v: unknown): unknown => {
+    if (typeof v === "object" && v !== null && !Object.isFrozen(v)) {
+      Object.freeze(v);
+      for (const x of Object.values(v)) freeze(x);
+    }
+    return v;
+  };
+  return rows.map((r) => freeze(structuredClone(r)));
 }
 
 const convertersAt = (
@@ -165,7 +184,8 @@ export async function runConverterPg(
         "SELECT to_regclass($1) IS NOT NULL AS present",
         [table],
       );
-      if (rows[0]?.["present"]) tables[table] = await selectPg(client, table);
+      if (rows[0]?.["present"])
+        tables[table] = frozenCopy(await selectPg(client, table));
     }
     const result = c.convert(tables, ENV_CONTEXT);
     for (const s of statements(result, (i) => `$${i}`, false))
@@ -203,7 +223,9 @@ export function runConverterSqlite(
           )
           .get(table)
       )
-        tables[table] = sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all();
+        tables[table] = frozenCopy(
+          sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all(),
+        );
     const result = c.convert(tables, ENV_CONTEXT);
     for (const s of statements(result, () => "?", true))
       assertOneRow(s.label, sqlite.prepare(s.sql).run(...s.params).changes);
@@ -223,7 +245,10 @@ export function convertBackup(
   if (list.length === 0) return null;
   const results = list.map((c) => {
     const read: Record<string, unknown[] | undefined> = {};
-    for (const table of c.tables) read[table] = tables[table];
+    for (const table of c.tables) {
+      const rows = tables[table];
+      read[table] = rows && frozenCopy(rows);
+    }
     const result = c.convert(read, ENV_CONTEXT);
     applyToBackup(tables, result);
     return result;

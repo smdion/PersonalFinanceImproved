@@ -168,7 +168,9 @@ export function applyToBackup(
     const rows = rowsWithId(tables, u.table, u.id);
     assertOneRow(updateLabel(u), rows.length);
     for (const column of Object.keys(u.set))
-      rows[0]![column] = checked(updateLabel(u), column, u.set[column]);
+      rows[0]![column] = structuredClone(
+        checked(updateLabel(u), column, u.set[column]),
+      );
   }
   for (const i of r.inserts ?? []) {
     insertSql(i, () => "?", false); // the same checks as the database's
@@ -177,6 +179,6 @@ export function applyToBackup(
       const id = isBackupRow(x) ? x["id"] : undefined;
       return typeof id === "number" && id > max ? id : max;
     }, 0);
-    list.push({ ...i.row, id: last + 1 });
+    list.push({ ...structuredClone(i.row), id: last + 1 });
   }
 }
