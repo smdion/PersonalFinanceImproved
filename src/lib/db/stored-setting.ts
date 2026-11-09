@@ -81,3 +81,12 @@ export function findStoredStamp(
     stampShape,
   );
 }
+
+/** A stamp setting's stored value, checked: for a reader that sets a
+ *  refused stamp aside instead of passing it on. */
+export function checkStoredStamp(
+  key: string,
+  value: unknown,
+): StoredShapeRead<string | undefined> {
+  return checkStoredValue(`app_settings.${key}`, value, stampShape);
+}

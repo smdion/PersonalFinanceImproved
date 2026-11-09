@@ -4,7 +4,11 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod/v4";
-import { findStoredStamp, readStoredSetting } from "@/lib/db/stored-setting";
+import {
+  checkStoredStamp,
+  findStoredStamp,
+  readStoredSetting,
+} from "@/lib/db/stored-setting";
 
 vi.mock("@/lib/db/schema", () => ({}));
 
@@ -51,5 +55,31 @@ describe("findStoredStamp", () => {
   it("passes a stamp stored as another type on as stored", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     expect(findStoredStamp(rows, "test_stamp_number")).toBe(1772445600000);
+  });
+});
+
+describe("checkStoredStamp", () => {
+  it("fits a string stamp and an unset one", () => {
+    expect(checkStoredStamp("test_check_ok", "2026-03-02")).toEqual({
+      fits: true,
+      value: "2026-03-02",
+    });
+    expect(checkStoredStamp("test_check_unset", undefined)).toEqual({
+      fits: true,
+      value: undefined,
+    });
+  });
+
+  it.each([
+    ["number", 1772445600000],
+    ["JSON null", null],
+    ["object", {}],
+  ])("marks a %s stamp as stored and warns once", (label, value) => {
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    const read = checkStoredStamp(`test_check_${label}`, value);
+    checkStoredStamp(`test_check_${label}`, value);
+    expect(read.fits).toBe(false);
+    expect(!read.fits && read.asStored).toBe(value);
+    expect(logged).toHaveBeenCalledTimes(1);
   });
 });

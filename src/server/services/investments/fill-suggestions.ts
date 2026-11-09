@@ -1,6 +1,7 @@
 /** Loaders the Performance and basis fills (and the live year-to-date) share. */
 import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { checkStoredStamp } from "@/lib/db/stored-setting";
 import { getTransactionCoverageStart } from "@/server/services/sync/simplefin/sync";
 import { utcDayOf } from "@/lib/utils/date";
 import { mixFor } from "@/lib/pure/investments/flow-suggestions";
@@ -59,11 +60,16 @@ export async function loadPerformanceSuggestions(
       loadYearRows(db, year),
     ]);
   const perAccount = rowsPerAccount(perfRows);
+  // A stamp stored as anything but a string reads as none (logged once).
+  const stampRead = checkStoredStamp(
+    "performance_last_updated",
+    stamp[0]?.value,
+  );
   const shared = {
     year,
     stamped:
-      typeof stamp[0]?.value === "string"
-        ? utcDayOf(new Date(stamp[0].value))
+      stampRead.fits && stampRead.value !== undefined
+        ? utcDayOf(new Date(stampRead.value))
         : null,
     feeds: context.feeds,
     subs: context.subs,
