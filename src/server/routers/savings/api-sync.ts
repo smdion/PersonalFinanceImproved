@@ -27,15 +27,9 @@ import {
 
 export const apiSyncProcedures = {
   /**
-   * Push goal target amounts to the budget API for linked sinking funds.
-   * - Sinking funds: pushes monthlyContribution as a "monthly" goal write
-   *   (recurring monthly-assignment amount).
-   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials)
-   *   as a "target-balance" goal write — amount only, never touches the
-   *   goal's type/cadence (that has to be configured once, manually, in
-   *   YNAB; see YnabClient's writeTargetBalance for why).
-   * Every target is read before the first write.
-   * Can optionally push a single goal by ID.
+   * Push goal targets for linked funds (optionally one `goalId`): sinking funds as a
+   * "monthly" goal, the emergency fund as a "target-balance" amount (its type/cadence is
+   * set once in YNAB). Every target is read before the first write.
    */
   pushContributionsToApi: savingsProcedure
     .input(z.object({ goalId: z.number().int().optional() }).optional())
@@ -150,13 +144,8 @@ export const apiSyncProcedures = {
               });
             }
           } else {
-            // Push the resolved snapshot, not a live percentage-of-income
-            // recompute — a percentage-based goal's dollar amount should
-            // only move when the user explicitly hits "Recalculate"
-            // (recalculateAllocation), not silently whenever paycheck/
-            // budget data changes underneath it. See recalculateAllocation
-            // for the live derivation and resolveEffectiveMonthlyContribution
-            // for the shared formula it uses.
+            // Push the resolved snapshot: a percentage goal's dollars move only when the
+            // user hits "Recalculate" (recalculateAllocation), not with paycheck changes.
             const monthly =
               resolvedByGoal.get(goal.id)?.monthlyContribution ?? 0;
             if (

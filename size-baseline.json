@@ -374,8 +374,8 @@
     "src/server/routers/projection/strategy.ts": 763,
     "src/server/routers/projection/tax-optimization.ts": 448,
     "src/server/routers/retirement/index.ts": 17,
-    "src/server/routers/salary-profiles.ts": 597,
-    "src/server/routers/savings/api-sync.ts": 243,
+    "src/server/routers/salary-profiles.ts": 497,
+    "src/server/routers/savings/api-sync.ts": 232,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 407,
     "src/server/routers/settings/admin.ts": 407,
@@ -1039,7 +1039,7 @@
       "strategyRouter.computeStrategyComparison.query()": 241
     },
     "src/server/routers/savings/api-sync.ts": {
-      "apiSyncProcedures.pushContributionsToApi.mutation()": 201
+      "apiSyncProcedures.pushContributionsToApi.mutation()": 196
     },
     "src/server/routers/simplefin/accounts.ts": {
       "accountsProcedures.listAccounts.query()": 155

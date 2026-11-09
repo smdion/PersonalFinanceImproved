@@ -6561,31 +6561,7 @@
       "count": 5
     }
   },
-  "src/server/routers/retirement/profile-people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/retirement/profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/routers/retirement/settings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
   "src/server/routers/salary-profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 12
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 5
     }
@@ -6602,16 +6578,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/server/routers/savings/extra-paycheck-routing.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/server/routers/savings/goals.ts": {

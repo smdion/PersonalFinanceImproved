@@ -17,17 +17,9 @@ import type { DbOrTx } from "@/lib/db";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 
 /**
- * Write a job's extraPaycheckRouting field into its entry in the globally-
- * ACTIVE Salary Profile — never a locally-viewed/What-If-pinned one. This
- * mirrors baseNetPayPerCheck's existing rule (see ExtraPaycheckRoutingData's
- * docblock, schema-pg.ts): switching which profile a user is casually
- * comparing must never silently rewrite already-materialized real
- * savings_planned_transactions, so routing always targets whichever profile
- * is the deliberate, globally-active one at write time.
- *
- * Throws PRECONDITION_FAILED when there's no active profile, or the job has
- * no entry in it — same "explicit user-initiated save should reject rather
- * than fabricate a home for the data" rule as computeJobNetPayPerCheck.
+ * Write a job's extraPaycheckRouting into the globally-ACTIVE Salary Profile only, so
+ * comparing profiles never rewrites materialized transactions. Throws
+ * PRECONDITION_FAILED when there's no active profile or the job has no entry in it.
  */
 async function writeJobExtraPaycheckRouting(
   db: DbOrTx,
@@ -95,15 +87,9 @@ export const extraPaycheckRoutingProcedures = {
         .select({ id: schema.people.id, name: schema.people.name })
         .from(schema.people);
       const personMap = new Map(people.map((p) => [p.id, p.name]));
-      // Prefer the routing snapshot's own payPeriod/anchorPayDate (frozen at
-      // save time — see ExtraPaycheckRoutingData's docblock) so a later job
-      // correction doesn't retroactively change what this editor shows for
-      // already-saved rules. Only a job with no routing saved yet (or a
-      // pre-snapshot routing row) has no frozen schedule to read — resolve
-      // live from the job's Salary Profile entry in that case, the one
-      // place a live resolution still belongs (nothing to freeze until the
-      // first save). `null` here is a genuine "incomplete" state — no
-      // snapshot AND no active Salary Profile entry for this job.
+      // Prefer the routing snapshot's frozen payPeriod/anchorPayDate so job corrections
+      // don't change saved rules; without one, resolve live from the active Salary
+      // Profile entry. `null` = no snapshot AND no active entry for this job.
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
         null,
@@ -267,12 +253,8 @@ export const extraPaycheckRoutingProcedures = {
       }),
 
     /**
-     * Pause or resume routing without touching the configured rules —
-     * "Budget" mode (enabled: false) means the extra paycheck isn't
-     * diverted to any goal and stays as regular income, same as a job with
-     * no routing at all; switching back to "Savings" (enabled: true)
-     * restores exactly what was configured before. A no-op if the job has
-     * no routing configured yet (nothing to pause).
+     * Pause ("Budget", extra paycheck stays regular income) or resume ("Savings") routing
+     * without touching its rules. A no-op if the job has no routing configured.
      */
     setEnabled: savingsProcedure
       .input(z.object({ jobId: z.number().int(), enabled: z.boolean() }))
