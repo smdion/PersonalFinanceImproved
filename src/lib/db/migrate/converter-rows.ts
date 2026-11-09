@@ -9,17 +9,27 @@ export const isRow = (v: unknown): v is Row =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 export const isEmpty = (v: unknown) => v === null || v === undefined;
 
-/** A JSON column in either dialect's form as an object; null for anything
- *  else, text that isn't JSON too. */
+/** A JSON column in either dialect's form, parsed; undefined for text
+ *  that isn't JSON. */
+function parsedJson(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+/** A JSON column as an object; null for anything else. */
 export function jsonObject(value: unknown): Row | null {
-  let v: unknown = value;
-  if (typeof v === "string")
-    try {
-      v = JSON.parse(v);
-    } catch {
-      return null;
-    }
+  const v = parsedJson(value);
   return isRow(v) ? v : null;
+}
+
+/** A JSON column as an array; null for anything else. */
+export function jsonArray(value: unknown): readonly unknown[] | null {
+  const v = parsedJson(value);
+  return Array.isArray(v) ? v : null;
 }
 
 /** A boolean column: true/false on PostgreSQL, 1/0 on SQLite, "1"/"true"

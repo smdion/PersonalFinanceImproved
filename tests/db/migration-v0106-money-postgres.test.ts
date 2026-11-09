@@ -4,7 +4,8 @@
  * the tag before it gets the per-person retirement rows of
  * retirement-people-cases.ts, as a pending migration and in a squash
  * replay, twice over; every reader reads each person as before; run twice
- * more over its own output, the converter writes nothing. Only when
+ * more over its own output, the converters write nothing; every budget
+ * item's amounts get one number per column (budget-amounts-cases.ts). Only when
  * TEST_DATABASE_URL names a throwaway database (CI's PostgreSQL job): it
  * drops the database's schemas.
  */
@@ -24,7 +25,13 @@ import {
   MONEY_TAG,
   RETIREMENT_PEOPLE_CONVERTER,
 } from "@/lib/db/migrate/v0106-retirement-people";
+import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
 import { expectPgReplaySafe } from "./converter-replay";
+import {
+  ITEMS,
+  PROFILES as BUDGETS,
+  reads as budgetReads,
+} from "./budget-amounts-cases";
 import {
   ADDED,
   HELD,
@@ -146,6 +153,16 @@ describe.skipIf(skipWithoutPostgres)(
             r.salary_annual_increase,
           ],
         );
+      for (const b of BUDGETS)
+        await client.query(
+          "INSERT INTO budget_profiles (id, name, column_labels) VALUES ($1, $2, $3::jsonb)",
+          [b.id, b.name, JSON.stringify(b.column_labels)],
+        );
+      for (const c of ITEMS)
+        await client.query(
+          "INSERT INTO budget_items (id, profile_id, category, subcategory, amounts) VALUES ($1, $2, 'Invented', $3, $4::jsonb)",
+          [c.id, c.profile_id, `Item ${c.id}`, JSON.stringify(c.before)],
+        );
       // Explicit ids leave the sequence behind; the app's own restore resets it.
       await client.query(
         "SELECT setval(pg_get_serial_sequence('retirement_profile_people', 'id'), (SELECT max(id) FROM retirement_profile_people))",
@@ -177,7 +194,17 @@ describe.skipIf(skipWithoutPostgres)(
         ).rows,
         retirement_profile_people: rows,
       };
-      return { rows, reads: read(tables) };
+      const items = (
+        await client.query<{ profile_id: number; amounts: unknown[] }>(
+          "SELECT profile_id, amounts FROM budget_items ORDER BY id",
+        )
+      ).rows;
+      return {
+        rows,
+        reads: read(tables),
+        amounts: items.map((i) => i.amounts),
+        budget: budgetReads(items),
+      };
     };
 
     const expected = [
@@ -194,6 +221,8 @@ describe.skipIf(skipWithoutPostgres)(
       const first = await state();
       expect(first.rows).toEqual(expected);
       expect(first.reads).toEqual(before.reads);
+      expect(first.amounts).toEqual(ITEMS.map((c) => c.after));
+      expect(first.budget).toEqual(before.budget);
       migrate();
       expect(await state()).toEqual(first);
     });
@@ -211,6 +240,7 @@ describe.skipIf(skipWithoutPostgres)(
         migrate();
         const added = await state();
         expect(added.rows).toEqual(expected);
+        expect(added.amounts).toEqual(ITEMS.map((c) => c.after));
         for (let run = 0; run < 2; run++) {
           await client.query(damage);
           migrate();
@@ -222,7 +252,10 @@ describe.skipIf(skipWithoutPostgres)(
     it("run twice more over its own output, it writes nothing", async () => {
       await installBefore();
       migrate();
-      await expectPgReplaySafe(client, RETIREMENT_PEOPLE_CONVERTER);
+      await expectPgReplaySafe(client, [
+        RETIREMENT_PEOPLE_CONVERTER,
+        BUDGET_AMOUNTS_CONVERTER,
+      ]);
     });
   },
 );

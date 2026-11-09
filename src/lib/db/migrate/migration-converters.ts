@@ -23,6 +23,7 @@ import {
 } from "./converter-writes";
 import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
 import { MATCH_VALUE_CONVERTER, MATCH_VALUE_TAG } from "./v0102-match-value";
+import { BUDGET_AMOUNTS_CONVERTER } from "./v0106-budget-amounts";
 import {
   MONEY_TAG,
   RETIREMENT_PEOPLE_CONVERTER,
@@ -72,7 +73,7 @@ export type TagConverters = DataConverter | readonly DataConverter[];
 export const MIGRATION_CONVERTERS: Readonly<Record<string, TagConverters>> = {
   [MATCH_RATE_TAG]: MATCH_RATE_CONVERTER,
   [MATCH_VALUE_TAG]: MATCH_VALUE_CONVERTER,
-  [MONEY_TAG]: [RETIREMENT_PEOPLE_CONVERTER],
+  [MONEY_TAG]: [RETIREMENT_PEOPLE_CONVERTER, BUDGET_AMOUNTS_CONVERTER],
 };
 
 type Phase = DataConverter["runs"];

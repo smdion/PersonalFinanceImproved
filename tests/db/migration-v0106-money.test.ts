@@ -3,7 +3,8 @@
  * the tag before it gets the per-person retirement rows of
  * retirement-people-cases.ts, exactly as the restore step gives them, as a
  * pending migration and in either squash replay, twice over; every reader
- * reads each person as before.
+ * reads each person as before; and every budget item's amounts get one
+ * number per column (budget-amounts-cases.ts), read as before.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
@@ -15,7 +16,13 @@ import {
   MONEY_TAG,
   RETIREMENT_PEOPLE_CONVERTER,
 } from "@/lib/db/migrate/v0106-retirement-people";
+import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
 import { expectSqliteReplaySafe } from "./converter-replay";
+import {
+  ITEMS,
+  PROFILES as BUDGETS,
+  reads as budgetReads,
+} from "./budget-amounts-cases";
 import {
   ADDED,
   HELD,
@@ -127,6 +134,16 @@ describe("the money tag through the real migrator (SQLite)", () => {
         r.rule_of_55_override == null ? null : r.rule_of_55_override ? 1 : 0,
         r.salary_annual_increase,
       );
+    const budget = db.prepare(
+      "INSERT INTO budget_profiles (id, name, column_labels) VALUES (?, ?, ?)",
+    );
+    for (const b of BUDGETS)
+      budget.run(b.id, b.name, JSON.stringify(b.column_labels));
+    const item = db.prepare(
+      "INSERT INTO budget_items (id, profile_id, category, subcategory, amounts) VALUES (?, ?, 'Invented', ?, ?)",
+    );
+    for (const c of ITEMS)
+      item.run(c.id, c.profile_id, `Item ${c.id}`, JSON.stringify(c.before));
     db.close();
     fs.writeFileSync(journalPath(), shipped);
   }
@@ -140,8 +157,21 @@ describe("the money tag through the real migrator (SQLite)", () => {
       retirement_settings: all<Settings>(db, "retirement_settings"),
       retirement_profile_people: personRows(db),
     };
+    const items = (
+      db
+        .prepare("SELECT profile_id, amounts FROM budget_items ORDER BY id")
+        .all() as { profile_id: number; amounts: string }[]
+    ).map((r) => ({
+      profile_id: r.profile_id,
+      amounts: JSON.parse(r.amounts) as unknown[],
+    }));
     db.close();
-    return { rows: tables.retirement_profile_people, reads: read(tables) };
+    return {
+      rows: tables.retirement_profile_people,
+      reads: read(tables),
+      amounts: items.map((i) => i.amounts),
+      budget: budgetReads(items),
+    };
   };
 
   function expectAdded(s: ReturnType<typeof state>) {
@@ -149,6 +179,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
       ...HELD,
       ...ADDED.map((r, i) => ({ ...r, id: HELD.length + 1 + i })),
     ]);
+    expect(s.amounts).toEqual(ITEMS.map((c) => c.after));
   }
 
   it("adds the rows as a pending migration, reads as before, and a later start adds none", () => {
@@ -158,6 +189,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
     const first = state();
     expectAdded(first);
     expect(first.reads).toEqual(before.reads);
+    expect(first.budget).toEqual(before.budget);
     runSQLite();
     expect(state()).toEqual(first);
   });
@@ -186,7 +218,10 @@ describe("the money tag through the real migrator (SQLite)", () => {
     installBefore();
     runSQLite();
     const db = open();
-    expectSqliteReplaySafe(db, RETIREMENT_PEOPLE_CONVERTER);
+    expectSqliteReplaySafe(db, [
+      RETIREMENT_PEOPLE_CONVERTER,
+      BUDGET_AMOUNTS_CONVERTER,
+    ]);
     db.close();
   });
 });

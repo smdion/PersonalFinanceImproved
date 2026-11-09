@@ -11,11 +11,13 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
 import { RETIREMENT_PEOPLE_CONVERTER } from "@/lib/db/migrate/v0106-retirement-people";
+import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
 import {
   expectRegistryReplaySafe,
   expectRestoreMatchesSqlite,
 } from "./converter-replay";
 import { HELD, PEOPLE, PROFILES, SETTINGS } from "./retirement-people-cases";
+import { ITEMS, PROFILES as BUDGETS } from "./budget-amounts-cases";
 
 const REPO = process.cwd();
 
@@ -36,8 +38,20 @@ const retirementRows = (): Fixture => ({
   retirement_profile_people: HELD.map((r) => ({ ...r })),
 });
 
+/** The budget amounts' cases. */
+const budgetRows = (): Fixture => ({
+  budget_profiles: BUDGETS.map((b) => ({ ...b })),
+  budget_items: ITEMS.map((c) => ({
+    id: c.id,
+    profile_id: c.profile_id,
+    category: "Invented",
+    subcategory: `Item ${c.id}`,
+    amounts: c.before,
+  })),
+});
+
 /** Every shape's rows, for the registry at the head. */
-const allRows = (): Fixture => ({ ...retirementRows() });
+const allRows = (): Fixture => ({ ...retirementRows(), ...budgetRows() });
 
 describe("the money tag's shapes at the journal head", () => {
   let dir: string;
@@ -89,6 +103,10 @@ describe("the money tag's shapes at the journal head", () => {
       RETIREMENT_PEOPLE_CONVERTER,
       retirementRows(),
     );
+  });
+
+  it("budget amounts: the restore step gives SQLite's rows", () => {
+    expectRestoreMatchesSqlite(db, BUDGET_AMOUNTS_CONVERTER, budgetRows());
   });
 
   it("the whole registry over every shape's rows writes nothing the second time", () => {

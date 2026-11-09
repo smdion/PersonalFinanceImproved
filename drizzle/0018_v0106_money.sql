@@ -4,3 +4,6 @@
 -- Per-person retirement rows: a person with a settings row in a profile and
 -- no retirement_profile_people row there gets one, copied from that
 -- settings row. A replay adds nothing: the row is then there.
+-- Budget amounts: an item's amounts get one number per column of its
+-- profile, a missing or null column as 0; never truncated. A replay pads
+-- nothing: the array is then whole.
