@@ -277,6 +277,50 @@ describe("notARename", () => {
         "Rename: calc → calculate",
       ),
     ).toBeUndefined();
+    // A longer name re-pads the table: padding and the rule row may change.
+    const table = (n: string, width: number) =>
+      [
+        `| Id      | ${"Function".padEnd(width)} |`,
+        `| ------- | ${"-".repeat(width)} |`,
+        `| CALC-01 | ${`\`lib/pure/a.ts:${n}\``.padEnd(width)} |`,
+        `| CALC-02 | ${"`lib/pure/b.ts:other`".padEnd(width)} |`,
+      ].join("\n");
+    expect(
+      prove(
+        [
+          {
+            file: "src/lib/pure/a.ts",
+            old: "export const calc = 1;",
+            new: "export const calculate = 1;",
+          },
+          {
+            file: "docs/CALCULATIONS.md",
+            old: table("calc", 21),
+            new: table("calculate", 26),
+          },
+        ],
+        "Rename: calc → calculate",
+      ),
+    ).toBeUndefined();
+    expect(
+      prove(
+        [
+          {
+            file: "src/lib/pure/a.ts",
+            old: "export const calc = 1;",
+            new: "export const calculate = 1;",
+          },
+          {
+            file: "docs/CALCULATIONS.md",
+            old: table("calc", 21),
+            new: table("calculate", 26).replace("other", "another"),
+          },
+        ],
+        "Rename: calc → calculate",
+      ),
+    ).toBe(
+      "docs/CALCULATIONS.md: a changed line is more than the renamed names",
+    );
     expect(
       prove([
         {

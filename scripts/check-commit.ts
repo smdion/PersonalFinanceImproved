@@ -3647,9 +3647,17 @@ export function notARename(
       const [was, now] = [entry.old, entry.new].map((s) =>
         s.changed.map(({ at }) => s.lines[at]!),
       );
+      // A longer name widens its column: prettier re-pads the whole table,
+      // so cells compare without their padding.
+      const cells = (line: string) =>
+        line
+          .split("|")
+          .map((cell) => cell.trim())
+          .join("|")
+          .replace(/^\|-+(\|-+)*\|$/, "|-|");
       if (
         was!.length !== now!.length ||
-        was!.some((l, i) => words(l) !== now![i])
+        was!.some((l, i) => cells(words(l)) !== cells(now![i]!))
       )
         return `${file}: a changed line is more than the renamed names`;
     } else
