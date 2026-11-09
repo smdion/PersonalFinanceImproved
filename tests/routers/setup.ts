@@ -19,6 +19,10 @@ import type { Session } from "next-auth";
 import { openTestSqlite } from "../helpers/db-harness";
 import type { Permission } from "@/lib/config/permissions";
 import { releaseTopLevelTestDb, setTopLevelTestDb } from "./setup-mocks";
+import {
+  openPostgresTestDatabase,
+  ROUTERS_ON_POSTGRES,
+} from "./postgres-router-db";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
@@ -114,6 +118,24 @@ export async function createTestCaller(
       vi.useFakeTimers({ toFake: ["Date"], now: TEST_NOW });
     clockHolders++;
   }
+  let released = false;
+  const releaseClock = () => {
+    if (holdsClock && !released) {
+      released = true;
+      clockHolders--;
+      if (clockHolders === 0) vi.useRealTimers();
+    }
+  };
+  if (ROUTERS_ON_POSTGRES) {
+    const pg = await createPostgresTestCaller(session);
+    return {
+      ...pg,
+      cleanup: () => {
+        releaseClock();
+        pg.cleanup();
+      },
+    };
+  }
   // A fresh in-memory copy of the migrated, seeded template (built once
   // per worker — see openTestSqlite).
   const sqlite = openTestSqlite();
@@ -137,13 +159,8 @@ export async function createTestCaller(
   // logMutation (trpc.ts) writes through the top-level db: into this one.
   setTopLevelTestDb(db);
 
-  let released = false;
   const cleanup = () => {
-    if (holdsClock && !released) {
-      released = true;
-      clockHolders--;
-      if (clockHolders === 0) vi.useRealTimers();
-    }
+    releaseClock();
     // Audit writes stop with this db; a later caller's db stays current.
     releaseTopLevelTestDb(db);
     try {
@@ -153,6 +170,27 @@ export async function createTestCaller(
     }
   };
 
+  return { caller, db, rawDb, sqlite, cleanup };
+}
+
+/** createTestCaller on PostgreSQL (postgres-router-db.ts): the procedures
+ *  run on the app's PostgreSQL db; `db` and `sqlite` keep SQLite's shape
+ *  over the same database, for the seed helpers. */
+async function createPostgresTestCaller(
+  session: Session | null,
+): Promise<TestCaller> {
+  const pgTest = await openPostgresTestDatabase();
+  // eslint-disable-next-line no-restricted-syntax -- better-sqlite3's surface over PostgreSQL, for the SQLite-typed seed helpers
+  const sqlite = pgTest.sqlite as unknown as InstanceType<typeof Database>;
+  const db = drizzle(sqlite, { schema: sqliteSchema });
+  // eslint-disable-next-line no-restricted-syntax -- the app's db type; node-postgres drizzle with the PostgreSQL schema
+  const rawDb = pgTest.db as unknown as DbType;
+  const caller = _callerFactory({ db: rawDb, session, demoSchema: null });
+  setTopLevelTestDb(rawDb);
+  const cleanup = () => {
+    releaseTopLevelTestDb(rawDb);
+    pgTest.drop();
+  };
   return { caller, db, rawDb, sqlite, cleanup };
 }
 
