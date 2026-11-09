@@ -15,6 +15,9 @@ import {
 
 export const settingsProcedures = {
   retirementSettings: createTRPCRouter({
+    /**
+     * Every retirement settings row (one per profile and person), by person.
+     */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()

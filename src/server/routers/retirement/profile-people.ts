@@ -14,6 +14,10 @@ export const profilePeopleProcedures = {
   // getProjection and getMonteCarloProjection moved to projection.ts
 
   retirementProfilePeople: createTRPCRouter({
+    /**
+     * Every Retirement profile's per-person rows (retirement age, end age, Social Security),
+     * by profile then person.
+     */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()

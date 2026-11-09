@@ -23,6 +23,7 @@ export const profileProcedures = {
    * sensible blank default. adminProcedure throughout, like retirementSettings.upsert.
    */
   retirementProfiles: createTRPCRouter({
+    /** Every Retirement profile, by id. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -64,6 +65,7 @@ export const profileProcedures = {
           .then(firstRow),
       ),
 
+    /** Refused for the last profile, the active one, or one a Plan holds. */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
