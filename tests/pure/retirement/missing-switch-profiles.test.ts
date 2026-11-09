@@ -3,7 +3,7 @@
  * state and says so (owner FQ6).
  */
 import { describe, expect, it } from "vitest";
-import { missingSwitchProfileWarnings } from "@/server/services/projection/engine-payload/missing-switch-profiles";
+import { missingSwitchProfileWarnings } from "@/lib/pure/retirement/missing-switch-profiles";
 
 const contribution = new Map([[3, {}]]);
 const salary = new Map([[5, {}]]);

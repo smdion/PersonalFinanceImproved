@@ -56,7 +56,7 @@ import {
   loadSwitchProfiles,
   profileSwitchFrom,
 } from "./profile-switches";
-import { retirementContributions } from "./retirement-contributions";
+import { retirementContributions } from "@/lib/pure/contributions/retirement-contributions";
 import { applyProfiles, type fetchRetirementData } from "./load";
 import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { budgetSummaries } from "./display";

@@ -3945,6 +3945,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/retirement-contributions.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/contributions/roth-ira.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -5756,11 +5761,6 @@
       "count": 10
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/services/projection/engine-payload/retirement-contributions.ts": {
-    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },

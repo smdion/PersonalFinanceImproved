@@ -53,7 +53,7 @@ import {
   loadLatestHoldings,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
-import { withNoHoldings } from "./no-holdings";
+import { withNoHoldings } from "@/lib/pure/accounts/no-holdings";
 
 /** Days of closes before the oldest date in play — enough for a long
  *  weekend and a feed a few sessions behind. */
