@@ -173,18 +173,13 @@ export function DecumulationRow({
   // Alias for code extracted from inline — uses `yearRow` throughout
   const yearRow = dyr;
 
-  // The household-wide discretionary-capacity paragraph
-  // (describeDiscretionaryCapacityMath) is the same text regardless of
-  // WHICH roth/brokerage account row triggers it —
-  // a household with 1 Roth + 2 brokerage accounts saw it verbatim 3 times
-  // in one year. Show it on the first qualifying row only per year (this
-  // component renders once per year, so a plain local flag object closed over by
-  // the per-account calls below is safe — synchronous, no cross-row state).
+  // The household-wide capacity paragraph is identical for every roth/brokerage
+  // row, so it shows on the first qualifying row only. Safe as a local flag:
+  // this component renders once per year, synchronously.
   const capacityNote = { shownThisYear: false };
 
-  // Shared by all three withdrawal-by-tax-type/withdrawal-by-account
-  // branches below — was the same 6-arg buildFullAccountNote call (incl.
-  // the same capacityNote closure) copy-pasted 3x.
+  // Shared by the three withdrawal-by-tax-type/withdrawal-by-account
+  // branches below.
   const noteFor = (ia: IndividualAccountYearBalance) =>
     buildFullAccountNote(
       ia,
@@ -327,11 +322,9 @@ export function DecumulationRow({
                   bucketWithdrawal += withdrawal;
                 }
               }
-              // Per-account breakdown (same "why was this account used"
-              // reasoning the Account view already shows — see buildNote
-              // above) — grouping by tax type shouldn't mean losing it.
-              // Falls back to the coarser `parts` aggregate below when no
-              // individual-account data exists, same as the Account view.
+              // Per-account "why was this account used" breakdown (see
+              // buildNote), falling back to the `parts` aggregate below when
+              // no individual-account data exists.
               const bucketIabsAll = yearRow.individualAccountBalances ?? [];
               const bucketIabs = (
                 dpt
@@ -568,11 +561,8 @@ export function DecumulationRow({
                   });
                 }
               }
-              // Same RMD-excess / QCD visibility as the taxType-view
-              // balance tooltips and the contribution-view tooltips —
-              // gated on the account-view column's own category rather
-              // than a fixed bucket, so this fires no matter which
-              // overflow/IRA-category column the segment maps to.
+              // RMD-excess / QCD lines, gated on this column's own category so
+              // they fire whichever overflow/IRA column the segment maps to.
               const colRmdExcess = yearRow.rmdExcessAmount ?? 0;
               const colRmdMode = engineSettings?.rmdExcessHandling;
               if (
@@ -831,12 +821,9 @@ export function DecumulationRow({
             side="left"
             maxWidth={320}
           >
-            {/* This "diag" label is the Tooltip's TRIGGER, rendered on the
-                page's own (theme-adaptive) background — NOT inside the
-                tooltip's always-dark popup content. blue-300 has a real
-                --c-blue-300 override (globals.css) and correctly tracks
-                page theme here, unlike tipColorClass's shades (used for
-                text INSIDE the dark popup, see retirement-projection/utils.ts). */}
+            {/* The "diag" trigger sits on the theme-adaptive page background,
+                not the dark popup, so it uses blue-300 (theme-tracking via
+                --c-blue-300) rather than tipColorClass. */}
             <span className="ml-1 cursor-help text-blue-300">diag</span>
           </Tooltip>
         )}

@@ -179,13 +179,13 @@
     "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 253,
     "src/components/retirement-projection/projection-table-accum-row.tsx": 890,
     "src/components/retirement-projection/projection-table-decum-balances.model.ts": 277,
-    "src/components/retirement-projection/projection-table-decum-row.tsx": 863,
-    "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": 243,
+    "src/components/retirement-projection/projection-table-decum-row.tsx": 850,
+    "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": 228,
     "src/components/retirement-projection/projection-table.tsx": 432,
-    "src/components/retirement-projection/report/report-assumptions-summary.tsx": 330,
-    "src/components/retirement-projection/spending-stability-chart.tsx": 554,
-    "src/components/retirement-projection/tooltip-renderer.tsx": 409,
-    "src/components/retirement-projection/use-projection-derived.ts": 645,
+    "src/components/retirement-projection/report/report-assumptions-summary.tsx": 319,
+    "src/components/retirement-projection/spending-stability-chart.tsx": 526,
+    "src/components/retirement-projection/tooltip-renderer.tsx": 407,
+    "src/components/retirement-projection/use-projection-derived.ts": 620,
     "src/components/retirement-projection/use-projection-queries.ts": 989,
     "src/components/retirement-projection/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/utils.ts": 868,
@@ -719,23 +719,23 @@
       "AccumulationRow": 737
     },
     "src/components/retirement-projection/projection-table-decum-row.tsx": {
-      "DecumulationRow": 730,
-      "DecumulationRow.map()": 210
+      "DecumulationRow": 717,
+      "DecumulationRow.map()": 207
     },
     "src/components/retirement-projection/projection-table.tsx": {
       "ProjectionTable": 397
     },
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": {
-      "ReportAssumptionsSummary": 269
+      "ReportAssumptionsSummary": 263
     },
     "src/components/retirement-projection/spending-stability-chart.tsx": {
-      "SpendingStabilityChart": 513
+      "SpendingStabilityChart": 490
     },
     "src/components/retirement-projection/tooltip-renderer.tsx": {
       "renderTooltip": 327
     },
     "src/components/retirement-projection/use-projection-derived.ts": {
-      "useProjectionDerived": 604
+      "useProjectionDerived": 579
     },
     "src/components/retirement-projection/use-projection-form-state.ts": {
       "useProjectionFormState": 344

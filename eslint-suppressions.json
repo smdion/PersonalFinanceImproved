@@ -2148,9 +2148,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }
@@ -2158,22 +2155,11 @@
   "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table-mc-cell.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    }
-  },
-  "src/components/retirement-projection/projection-table-skeleton.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-table.tsx": {
@@ -2184,24 +2170,11 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/report/report-action-items.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/report/report-assumptions-summary.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
-  "src/components/retirement-projection/report/report-cover.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -2210,36 +2183,15 @@
       "count": 2
     }
   },
-  "src/components/retirement-projection/report/report-header.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/retirement-projection/report/report-risk-band-chart.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/retirement-projection/report/report-root.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/spending-stability-chart.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 7
     }
   },
   "src/components/retirement-projection/tax-summary-card.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     },
@@ -2250,28 +2202,14 @@
   "src/components/retirement-projection/tooltip-renderer.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 3
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 3
-    }
-  },
-  "src/components/retirement-projection/use-bounded-poll-interval.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/use-projection-derived.ts": {
@@ -2280,9 +2218,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
     },
     "ratchet/no-abbreviation": {
       "count": 2

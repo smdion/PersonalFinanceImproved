@@ -69,17 +69,9 @@ export function categoryWithdrawalTooltip(
       color: "emerald",
     });
   }
-  // RMD-forced excess (beyond stated spending need)
-  // — real money, forced out of Traditional by the RMD
-  // floor regardless of what the strategy needed,
-  // previously invisible anywhere in the UI. What
-  // happened to it depends on the household's
-  // rmdExcessHandling setting: "reinvest" (default)
-  // actually credits this account (overflow target,
-  // always brokerage), so shown as a real "+" line there;
-  // "spend" never credits any account (the household
-  // consumed it), so shown as an informational note
-  // instead, not implied to have landed in this balance.
+  // RMD-forced excess beyond the spending need. Under "reinvest" (default) it
+  // credits the overflow target (brokerage) as a "+" line; under "spend" no
+  // account is credited, so it shows as an informational note.
   const rmdExcess = yearRow.rmdExcessAmount ?? 0;
   const rmdMode = engineSettings?.rmdExcessHandling;
   if (rmdExcess > 0.01 && isOverflowTarget(cat)) {
@@ -111,16 +103,9 @@ export function categoryWithdrawalTooltip(
     });
   }
   const catLumpTotal = lumpSumTotal(catLumps);
-  // "Why was this account used" — which source kind(s)
-  // this category's withdrawal drew through in the
-  // cost-ranked discretionary tier (beyond Traditional's
-  // bracket-fill target). A category can match more than
-  // one kind (e.g. a 401k/IRA with both a Roth sub-
-  // balance AND acting as the overflow/brokerage target
-  // is not possible today, but HSA and brokerage never
-  // overlap with "roth") — filtering by source keeps this
-  // scoped to what's actually relevant to THIS account,
-  // not the whole household's breakdown.
+  // "Why was this account used": only the discretionary-tier source kinds
+  // (roth/brokerage/hsa) that apply to THIS category, not the whole
+  // household's breakdown.
   const catSourceKinds = new Set<"roth" | "brokerage" | "hsa">();
   if (catCfg.isOverflowTarget) catSourceKinds.add("brokerage");
   if (nonMedicalPenaltyRate(cat) !== null) catSourceKinds.add("hsa");

@@ -1,16 +1,8 @@
 "use client";
 
 /**
- * Lifetime Tax Paid card — decumulation only for now.
- *
- * EngineDecumulationYear.taxCost/effectiveTaxRate are computed per year and
- * ready to sum; EngineAccumulationYear has no equivalent field at all —
- * accumulation-year taxes are only ever handled implicitly via paycheck
- * withholding, never tracked as a projected per-year bill. Extending this
- * card to accumulation needs real new calculator work (projecting income
- * tax against inflation-grown salary/brackets for every future working
- * year), not just wiring up existing numbers. Ship what's real now rather
- * than fake the rest.
+ * Lifetime Tax Paid card, decumulation years only: accumulation years have no
+ * projected per-year tax field (taxes there are implicit in withholding).
  */
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";

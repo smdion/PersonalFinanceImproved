@@ -64,30 +64,16 @@ export function useProjectionDerived(
   const { parentCategoryFilter, people, onContributionRates } = props;
 
   // --- Engine data narrowing ---
-  // In Coast FIRE scenario, swap the deterministic projection source from
-  // the baseline engineQuery to the Coast FIRE MC run's internal
-  // deterministicProjection. This swap is synchronous (React Query cache
-  // read) and happens ATOMICALLY with the MC band swap, eliminating the
-  // visual lag that occurred when engineQuery was refetching with
-  // coastFireOverrideAge while MC bands updated instantly.
+  // Alt-scenario views swap the deterministic source to that MC run's
+  // deterministicProjection, synchronously and atomically with the MC bands.
   const engineData = engineQuery.data;
   const rawResult = useMemo(() => {
-    // Gate on engineData.result first, not just the coastFire branch: both
-    // computeProjection and computeCoastFireMC guard on the same
-    // payload-availability check server-side, so a coastFireMcResult can
-    // only be legitimately non-null when engineData.result is too. Without
-    // this guard, a stale/cached coastFireMcResult (longer staleTime,
-    // placeholderData retention) could keep rendering a projection after
-    // the underlying engine result has gone null (e.g. primary person
-    // deleted) — this also keeps `result` truthy always implying
-    // `engineSettings` defined below, removing the need for `!` assertions
-    // at every consumer.
+    // Gate on engineData.result first: the server only returns an alt MC result
+    // when it does, so a stale cached one can't outlive it, and `result`
+    // truthy always implies `engineSettings` defined below.
     if (!engineData?.result) return null;
-    // Rate-Seeded (Feature B) and Coast FIRE Custom Age both join the same
-    // swap Coast FIRE (found/today) already uses — all source their
-    // deterministic line from their own MonteCarloResult rather than the
-    // baseline engineQuery, via the shared activeAltMcResult selector
-    // (use-projection-queries.ts).
+    // Coast FIRE (all variants) and Rate-Seeded source their deterministic line
+    // from their own MonteCarloResult via the shared activeAltMcResult selector.
     if (
       (projectionView === "coastFire" ||
         projectionView === "coastFireToday" ||
@@ -113,15 +99,9 @@ export function useProjectionDerived(
     };
   }, [rawResult, parentCategoryFilter]);
 
-  // MC "Simple" tax mode (the client default) collapses per-account
-  // balances into one fictional bucket server-side — a scenario sourced
-  // from an MC result under that mode (Rate-Seeded today, potentially
-  // others later) has NO real per-account data at all. Computed once here
-  // so every consumer (person-filter pills, visibleColumns' balance-by-
-  // tax-type/account gating below) reads the same signal instead of each
-  // re-deriving it (showing a fake
-  // "everything in Brokerage" breakdown as if it were the real account
-  // split was actively misleading, not just an unfamiliar simplification).
+  // MC "Simple" tax mode collapses per-account balances into one fictional
+  // bucket, so such a scenario has no real per-account data. Computed once
+  // for every consumer (person-filter pills, balance-by-account columns).
   const hasIndividualAccountData = !!result?.projectionByYear.some(
     (y) => (y.individualAccountBalances?.length ?? 0) > 0,
   );
@@ -159,10 +139,8 @@ export function useProjectionDerived(
     return person?.id ?? primaryPersonId;
   }, [isPersonFiltered, personFilter, enginePeople, primaryPersonId]);
 
-  // Internal-only — safe to read with `?.` here since every use below is a
-  // fallback-guarded read, not an assumption the value exists. The
-  // externally-exposed `engineSettings` (in the return statement) is paired
-  // with `result` via a discriminated union instead.
+  // Internal-only and read with `?.` (every use is fallback-guarded); the
+  // returned `engineSettings` is paired with `result` via a union instead.
   const engineSettings =
     engineData && engineData.result ? engineData.settings : undefined;
   const enginePerPersonSettings =
@@ -633,11 +611,8 @@ export function useProjectionDerived(
   };
 
   // Discriminated on `result`: consumers that check `state.result` (property
-  // access, not a pre-destructured local — TS narrowing doesn't survive
-  // destructuring across a union) before reading `state.engineSettings` get
-  // it typed as always-defined, no `!` needed. See callers in
-  // projection-chart.tsx, projection-hero-kpis.tsx, projection-mc-results.tsx,
-  // and retirement-projection/index.tsx.
+  // access, since narrowing doesn't survive destructuring) get
+  // `state.engineSettings` typed as defined.
   if (result && engineSettings) {
     return { ...commonReturn, result, engineSettings };
   }

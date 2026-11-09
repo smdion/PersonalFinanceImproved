@@ -75,10 +75,8 @@ function renderLineItem(
 }
 
 /**
- * Data-driven tooltip renderer — fixed visual order, call sites provide data only.
- * Renders 17 sections in a consistent order: header, meta, override note, items,
- * total, tax split, growth, contributions, withdrawals, year change, rate ceiling,
- * routing note, budget, IRS limit, pro-rate, balance, legend.
+ * Data-driven tooltip renderer: call sites provide data only and the 17
+ * sections (header … legend) always render in the same fixed order.
  */
 export function renderTooltip(data: TooltipData): React.ReactNode {
   if (data.kind === "info") {
