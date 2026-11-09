@@ -140,9 +140,9 @@ export interface RankWithdrawalTiersInput {
   filingStatus: ReturnFilingStatus | null | undefined;
   /** Ordinary taxable income already occupying the bracket stack BEFORE
    *  this ranking's own Roth-growth contribution — i.e.
-   *  totalTraditionalWithdrawal + taxableSS + any conversion-reserved room
-   *  (design decision #5). Used as the LTCG-stacking floor and to locate
-   *  the marginal rate for Roth growth. */
+   *  totalTraditionalWithdrawal + taxableSS + any conversion-reserved room.
+   *  Used as the LTCG-stacking floor and to locate the marginal rate for
+   *  Roth growth. */
   ordinaryIncomeFloor: number;
   taxBrackets: WithholdingBracket[];
   ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
@@ -150,8 +150,8 @@ export interface RankWithdrawalTiersInput {
    *  from, i.e. still-free withdrawal room BEFORE hitting non-qualified
    *  growth. When individual-account tracking isn't enabled there is no
    *  way to know this split — pass `rothAvailable` here too (treat the
-   *  whole balance as basis), which reproduces today's "Roth is free"
-   *  fixed-order behavior exactly, per design decision #4. */
+   *  whole balance as basis), which gives the "Roth is free" fixed-order
+   *  behavior. */
   rothBasisAvailable: number;
   /** Total Roth balance available to route from (basis + growth). */
   rothAvailable: number;
@@ -258,8 +258,8 @@ export function rankWithdrawalTiers(
     // threshold lookup (both are keyed by filing status) — brokerage
     // degrades to today's fixed flat-fallback pricing. Roth growth and HSA
     // (once it reaches this ranking it's ordinarily already the penalty-
-    // free/penalty-excluded portion — see the design decision #8 note
-    // below) both stack as plain ordinary income on the same floor.
+    // free/penalty-excluded portion) both stack as plain ordinary income on
+    // the same floor.
     const ordinaryRate = marginalRateAtIncome(
       ordinaryIncomeFloor,
       taxBrackets,
@@ -458,7 +458,7 @@ export function rankWithdrawalTiers(
     .filter((t): t is WithdrawalTier => t != null)
     // Stable sort (guaranteed by the spec since ES2019) — ties keep their
     // filter order above (roth, brokerage-pre-NIIT, brokerage-post-NIIT,
-    // hsa), preserving decision #4's Roth-favored tie-break.
+    // hsa), so a tie favors Roth.
     .sort((a, b) => a.costRate - b.costRate);
 
   // Tiers 0/1: both free — Roth basis and brokerage's 0%-LTCG room.

@@ -30,15 +30,9 @@ import type {
   EngineDecumulationYear,
 } from "../engine/types";
 
-/**
- * v1 ships this as a fixed constant, empirically checked across a wide
- * range in the design doc's round 3 sensitivity pass (any value above
- * ~3% produced the same ranking for the test household — not fragile for
- * the common case). A real v1.1 candidate is deriving this from the
- * household's own projected future bracket instead of a flat guess;
- * deliberately deferred, not attempted here. Named and exported so it's
- * visible, not buried inside the scoring function.
- */
+/** Tax rate assumed on the Traditional balance left at the plan's end: a
+ *  flat guess, not the household's own future bracket. The ranking is
+ *  insensitive to it above about 3%. */
 export const ASSUMED_TERMINAL_RATE = 0.22;
 
 export type BracketOptimizerCandidate = {
@@ -205,22 +199,9 @@ function scoreCandidate(
   };
 }
 
-/**
- * `shortfallScore` isn't bit-identical across candidates even when the
- * underlying shortfall is genuinely target-independent (the design doc's
- * "known limitation" — a withdrawal-solver convergence artifact, not something
- * this feature causes): different `rothBracketTarget` overrides produce
- * slightly different intermediate rounding paths through the same
- * shortfall year, so two candidates that are financially identical on
- * this dimension can differ by a few dollars. A strict `!==` comparison
- * would let that sub-dollar noise, not the six-figure `netCost` spread it
- * sits in front of, decide the recommendation — empirically verified: it
- * did, on the design doc's own round-4 test household, before this
- * tolerance was added. Matches the codebase's existing $50 materiality
- * floor for "is this shortfall real" (`coast-fire.ts`'s `passes()`,
- * `decumulation-year.ts`'s `shortfallMaterialityFloor`) — a
- * `shortfallScore` gap smaller than this is noise, not a differentiator.
- */
+/** Shortfall gap (dollars) below which two candidates tie: the solver's
+ *  rounding moves `shortfallScore` by a few dollars between targets, and a
+ *  strict comparison would let that noise pick the recommendation. */
 const SHORTFALL_TIE_TOLERANCE = 50;
 
 /**

@@ -468,13 +468,9 @@ export const retirementProfilePeople = pgTable(
       precision: 14,
       scale: 2,
     }),
-    /** PIA (Primary Insurance Amount, monthly benefit at Full Retirement
-     *  Age) — the direct user input the claiming-age optimizer computes
-     *  from, per SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1 (not
-     *  derived from an earnings history). Independent of
-     *  socialSecurityMonthly on purpose: existing rows are left untouched
-     *  (decision #5, opt-in) — a household only starts using PIA-based
-     *  claiming-age optimization once they explicitly fill this in. */
+    /** PIA (monthly benefit at Full Retirement Age), entered by the user;
+     *  the claiming-age optimizer computes from it. Opt-in and independent
+     *  of socialSecurityMonthly: null until the household fills it in. */
     socialSecurityPia: decimal("social_security_pia", {
       precision: 14,
       scale: 2,

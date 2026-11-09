@@ -130,9 +130,15 @@ const isOverlayClasses = (text) =>
   CLASS_TOKENS.test(text) && INSET_TOKEN.test(text);
 
 // Past tense about the code, "the fix", drift claims, citations of versions,
-// findings, scratch docs and file:line. RULES review rule 1.
+// findings, design-doc ids, scratch docs and file:line. RULES review rule 1.
+// "used to" counts only with a subject pronoun or "be"/"have"/"still"/"also":
+// "the rate used to project spending" states a purpose, not history.
 const HISTORY_PHRASE =
-  /\bthe fix\b|\bused to\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\.scratch\/|\b[\w-]+\.tsx?:\d+\b|\bv\d+\.\d+\.\d+\b/i;
+  /\bthe fix\b|\b(?:this|that|it|which|what|each|null|code|as)\s+used to\b|\bused to (?:be|have|also|still|do|just|only|not)\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\bdesign (?:doc|decision)\b|\bdecision (?:#\d|[A-Z]\d)|\b[A-Z]+(?:-[A-Z]+)*-PLAN\.md\b|\.scratch\/|\b[\w-]+\.tsx?:\d+\b/i;
+const VERSION_CITATION = /\bv\d+\.\d+\.\d+\b/i;
+// The backup ladder and the migration converters are keyed by release.
+const RELEASE_KEYED_FILE =
+  /src\/lib\/db\/(?:backup-transforms|v0810-profile-sets|migration-converters)\.ts$/;
 const MAX_COMMENT_LINES = 3;
 
 /** Text lines of a comment, without the delimiter-only lines of a block. */
@@ -384,8 +390,13 @@ const customRules = {
     create(context) {
       return {
         Program() {
+          const releaseKeyed = RELEASE_KEYED_FILE.test(
+            context.filename.replaceAll("\\", "/"),
+          );
           for (const comment of context.sourceCode.getAllComments()) {
-            const match = HISTORY_PHRASE.exec(comment.value);
+            const match =
+              HISTORY_PHRASE.exec(comment.value) ??
+              (releaseKeyed ? null : VERSION_CITATION.exec(comment.value));
             if (match)
               context.report({
                 loc: comment.loc,

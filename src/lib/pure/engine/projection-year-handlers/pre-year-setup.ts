@@ -446,9 +446,9 @@ export function runPreYearSetup(
   };
 }
 
-/** Whether this year runs as a working year. UD-02 (pending decision D3),
- *  today's behaviour: retiring in year 0 after its start runs it as a
- *  pro-rated working year; any other retirement year runs whole. */
+/** Whether this year runs as a working year (UD-02): retiring in year 0
+ *  after its start runs it as a pro-rated working year; any other
+ *  retirement year runs whole. */
 function yearPhase(
   input: ProjectionContext["input"],
   year: number,

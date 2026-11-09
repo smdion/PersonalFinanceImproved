@@ -315,7 +315,7 @@ export function routeWithdrawalsBracketFilling(
     0,
   );
 
-  // Self-referential fixed point (design decision #6): the LTCG-room
+  // Self-referential fixed point: the LTCG-room
   // computation depends on ordinary income, which includes Roth growth —
   // itself an OUTPUT of this ranking. Re-rank up to 3 times, refining the
   // ordinary-income-floor estimate by the previous pass's implied Roth

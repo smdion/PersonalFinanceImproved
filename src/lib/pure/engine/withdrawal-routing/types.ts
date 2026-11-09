@@ -30,10 +30,9 @@ export interface RouteBracketInfo {
   /** Total Roth BASIS dollars (tax-free, non-qualified-growth-free) still
    *  available across the accounts routing will draw from, from
    *  individual-account tracking. Omitted (not 0!) ⇒ the ranking treats
-   *  the WHOLE Roth balance as basis, matching today's "Roth is free"
-   *  behavior exactly when individual tracking isn't enabled (design
-   *  decision #4) — pass 0 explicitly only when tracking IS enabled and
-   *  genuinely confirms no basis remains. */
+   *  the WHOLE Roth balance as basis (the "Roth is free" behavior when
+   *  individual tracking isn't enabled) — pass 0 explicitly only when
+   *  tracking IS enabled and genuinely confirms no basis remains. */
   rothBasisAvailable?: number;
   /** `afterTaxBasis / afterTax` for brokerage, 0..1. Omitted/0 ⇒ every
    *  brokerage dollar is treated as a taxable gain (conservative). */
@@ -48,8 +47,8 @@ export interface RouteBracketInfo {
    *  bracket room Phase 1 left unused (`traditionalCap - totalTradWithdrawn`)
    *  from the LTCG-room floor, since the conversion is unconditional and
    *  will claim that same room later this same year — otherwise routing's
-   *  LTCG-0% estimate assumes headroom the conversion is about to consume
-   *  (design decision #5). Deliberately NOT a duplicate computation of
+   *  LTCG-0% estimate assumes headroom the conversion is about to consume.
+   *  Deliberately NOT a duplicate computation of
    *  `performRothConversion`'s own room formula: Phase 1 already fills
    *  Traditional up to the identical `rothBracketTarget` cap using the
    *  identical balance data, so `traditionalCap - totalTradWithdrawn` IS

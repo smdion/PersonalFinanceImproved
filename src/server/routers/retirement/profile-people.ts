@@ -44,12 +44,9 @@ export const profilePeopleProcedures = {
           retirementAge: z.number().int().min(18).max(100).optional(),
           endAge: z.number().int().min(30).max(120).optional(),
           socialSecurityMonthly: zDecimal.nullable().optional(),
-          // PIA (Primary Insurance Amount, monthly benefit at Full
-          // Retirement Age) — opt-in direct user input, see
-          // SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. Independent
-          // of socialSecurityMonthly; null means "not opted in," never
-          // falls back to a household-wide default (PIA is inherently
-          // per-person).
+          // PIA (monthly benefit at Full Retirement Age), per person and
+          // opt-in; independent of socialSecurityMonthly. null means "not
+          // opted in", never a household-wide default.
           socialSecurityPia: zDecimal.nullable().optional(),
           ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
           ruleOf55Override: z.boolean().nullable().optional(),

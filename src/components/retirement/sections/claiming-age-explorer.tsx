@@ -7,9 +7,8 @@
  *
  * Gated entirely on `pia` being a real positive number — a person who
  * hasn't opted into PIA has nothing to compare (their benefit isn't
- * claiming-age-adjusted at all, per SOCIAL-SECURITY-OPTIMIZATION-PLAN.md
- * decision #1/#5), so this component is never rendered for them (see
- * `SocialSecuritySection`'s call site).
+ * claiming-age-adjusted at all), so this component is never rendered for
+ * them (see `SocialSecuritySection`'s call site).
  */
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useState } from "react";
