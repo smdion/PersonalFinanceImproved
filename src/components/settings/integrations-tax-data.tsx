@@ -32,7 +32,7 @@ const RESULT: Record<string, string> = {
 export function TaxDataSyncCard() {
   const admin = isAdmin(useUser());
   const utils = trpc.useUtils();
-  const { data: status } = trpc.settings.taxDataSync.status.useQuery();
+  const { data: status } = trpc.settings.taxDataSync.getStatus.useQuery();
   const invalidate = () => utils.settings.taxDataSync.invalidate();
   const setEnabled = trpc.settings.taxDataSync.setEnabled.useMutation({
     onSuccess: invalidate,

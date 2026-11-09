@@ -41,7 +41,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   // The server says whether an admin is still needed: a reload or another
   // tab can't bring back an Admin step the server would refuse.
-  const firstRun = trpc.settings.firstRunState.useQuery();
+  const firstRun = trpc.settings.getFirstRunState.useQuery();
   const adminNeeded = firstRun.data?.adminNeeded === true;
   const createLocalAdmin = trpc.settings.createLocalAdmin.useMutation();
   const createPerson = trpc.settings.people.create.useMutation();

@@ -27,7 +27,7 @@ export function useDataSourceStatuses() {
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const { data: taxDataStatus } = trpc.settings.taxData.status.useQuery();
+  const { data: taxDataStatus } = trpc.settings.taxData.getStatus.useQuery();
   const user = useUser();
   // Holdings checks name accounts and values: portfolio permission only.
   const { data: investmentHealth } = trpc.investments.getHealth.useQuery(

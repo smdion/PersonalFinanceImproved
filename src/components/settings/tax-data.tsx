@@ -72,7 +72,7 @@ export const OLD_TAX_TAB_KEYS: readonly string[] = [
 export function TaxDataSettings() {
   const user = useUser();
   const { data: sectionSources } =
-    trpc.settings.taxData.sectionSources.useQuery();
+    trpc.settings.taxData.listSectionSources.useQuery();
   const admin = isAdmin(user);
 
   const { data: limitsData } = trpc.settings.contributionLimits.list.useQuery();

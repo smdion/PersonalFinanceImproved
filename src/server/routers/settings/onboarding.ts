@@ -27,7 +27,7 @@ async function requireAdminNeeded(db: DbOrTx): Promise<void> {
 }
 
 export const onboardingProcedures = {
-  isOnboardingComplete: protectedProcedure.query(async ({ ctx }) => {
+  getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
     return { complete: await checkOnboardingComplete(ctx.db) };
   }),
 
@@ -40,7 +40,7 @@ export const onboardingProcedures = {
 
   /** Signed-out callers read this too: /login and the wizard offer
    *  "Create the first admin" only while it says so. */
-  firstRunState: publicProcedure.query(({ ctx }) => firstRunState(ctx.db)),
+  getFirstRunState: publicProcedure.query(({ ctx }) => firstRunState(ctx.db)),
 
   /**
    * Create the first local admin. Public, because no session exists yet;
@@ -88,7 +88,7 @@ export const onboardingProcedures = {
    * Test whether OIDC (Authentik) is configured and reachable.
    * Checks env vars and fetches the issuer's well-known endpoint.
    */
-  testOidcConnection: publicProcedure.query(async () => {
+  getOidcStatus: publicProcedure.query(async () => {
     const issuer = process.env.AUTH_AUTHENTIK_ISSUER;
     const clientId = process.env.AUTH_AUTHENTIK_ID;
     const clientSecret = process.env.AUTH_AUTHENTIK_SECRET;

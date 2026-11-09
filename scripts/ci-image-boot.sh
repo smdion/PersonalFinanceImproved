@@ -127,12 +127,12 @@ wait_for_health() {
 check_public_trpc() {
   local body code
   body=$(mktemp)
-  code=$(curl -s -o "$body" -w '%{http_code}' "$base_url/api/trpc/settings.testOidcConnection" || true)
+  code=$(curl -s -o "$body" -w '%{http_code}' "$base_url/api/trpc/settings.getOidcStatus" || true)
   if [ "$code" != "200" ]; then
-    fail "$current_file: settings.testOidcConnection answered $code, not 200: $(head -c 500 "$body")"
+    fail "$current_file: settings.getOidcStatus answered $code, not 200: $(head -c 500 "$body")"
   fi
   jq -e '.result.data.configured == false' "$body" >/dev/null ||
-    fail "$current_file: settings.testOidcConnection didn't report OIDC unconfigured: $(head -c 500 "$body")"
+    fail "$current_file: settings.getOidcStatus didn't report OIDC unconfigured: $(head -c 500 "$body")"
   rm -f "$body"
   echo "$current_file: public tRPC call 200 without Authentik: ok"
 }

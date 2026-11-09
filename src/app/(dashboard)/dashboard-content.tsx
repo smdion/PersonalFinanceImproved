@@ -22,7 +22,7 @@ import { trpc } from "@/lib/trpc";
  */
 export function DashboardContent() {
   const utils = trpc.useUtils();
-  const { data: onboarding } = trpc.settings.isOnboardingComplete.useQuery();
+  const { data: onboarding } = trpc.settings.getOnboardingStatus.useQuery();
 
   return (
     <div>

@@ -70,8 +70,8 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "settings.contributionAccounts.list" },
   { path: "settings.earnings.list" },
   { path: "settings.deductions.list" },
-  { path: "settings.taxData.sectionSources" },
-  { path: "settings.taxData.status" },
+  { path: "settings.taxData.listSectionSources" },
+  { path: "settings.taxData.getStatus" },
   { path: "settings.contributionLimits.list" },
   { path: "settings.taxBrackets.list" },
   { path: "settings.ltcgBrackets.list" },
@@ -82,9 +82,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "settings.rbacGroups.get" },
   { path: "settings.scenarios.list" },
   { path: "settings.apiConnections.list" },
-  { path: "settings.isOnboardingComplete" },
-  { path: "settings.firstRunState" },
-  { path: "settings.taxDataSync.status" },
+  { path: "settings.getOnboardingStatus" },
+  { path: "settings.getFirstRunState" },
+  { path: "settings.taxDataSync.getStatus" },
   { path: "paycheck.computeSummary", input: active },
   // As an API caller without the page's ids gets it: no Contribution
   // Profile is applied (see the v0.10.0 report).
@@ -319,9 +319,9 @@ export const PROCEDURES: BaselineProcedure[] = [
 
 /** Queries the baseline doesn't call, and why. */
 export const SKIPPED: Record<string, string> = {
-  "settings.testOidcConnection":
+  "settings.getOidcStatus":
     "external: fetches the OIDC issuer's discovery document",
-  "settings.taxDataSync.preview":
+  "settings.taxDataSync.computePreview":
     "external: fetches the published tax-data index",
   "sync.getPreview":
     "reads a budget connection's cached feed, which no household here has; part d pins it for both services after the recorded syncs (sync-writes.test.ts)",

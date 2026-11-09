@@ -30,7 +30,7 @@ export function DataSourcesSettings() {
     budgetApiCanSync: budgetConnected,
   } = useDataSourceStatuses();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const { data: taxData } = trpc.settings.taxData.status.useQuery();
+  const { data: taxData } = trpc.settings.taxData.getStatus.useQuery();
   const { data: stats } = trpc.simplefin.getCollectionStats.useQuery(
     undefined,
     { enabled: !!simplefin?.connected },

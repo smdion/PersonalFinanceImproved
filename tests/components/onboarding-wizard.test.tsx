@@ -1,6 +1,6 @@
 /**
  * The onboarding wizard's Admin step follows the server's first-run state
- * (`settings.firstRunState`), not local state: an install that already has
+ * (`settings.getFirstRunState`), not local state: an install that already has
  * an admin never sees the step, and a reload after the admin was created
  * can't dead-end on "already exists".
  */
@@ -21,7 +21,7 @@ import {
   utilsCalls,
 } from "./trpc-mock";
 
-const FIRST_RUN = "settings.firstRunState";
+const FIRST_RUN = "settings.getFirstRunState";
 const CREATE_ADMIN = "settings.createLocalAdmin";
 /** What a refetch of the first-run state answers (and then shows). */
 let refetchAnswer = { adminNeeded: false };
@@ -82,7 +82,9 @@ describe("OnboardingWizard Admin step", () => {
         password: "Wizard-admin-pass-1",
       },
     ]);
-    expect(utilsCalls("settings.firstRunState.invalidate")).not.toHaveLength(0);
+    expect(utilsCalls("settings.getFirstRunState.invalidate")).not.toHaveLength(
+      0,
+    );
   });
 
   it("moves past the Admin step when the server refuses because one now exists", async () => {

@@ -80,7 +80,7 @@ let lastManualCheck = 0;
 export const taxDataSyncProcedures = {
   taxDataSync: createTRPCRouter({
     /** On/off, the last check, and a summary of any waiting update. */
-    status: protectedProcedure.query(async ({ ctx }) => {
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
       const off = await taxDataSyncOffReason(ctx.db);
       const pending = await pendingUpdate(ctx.db);
       return {
@@ -98,7 +98,7 @@ export const taxDataSyncProcedures = {
     }),
 
     /** What the waiting update would change, and a hash to approve it by. */
-    preview: protectedProcedure.query(async ({ ctx }) => {
+    computePreview: protectedProcedure.query(async ({ ctx }) => {
       const pending = await pendingUpdate(ctx.db);
       if (!pending) return null;
       const file = verifiedFile(pending);

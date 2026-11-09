@@ -1,6 +1,6 @@
 /**
  * Whether this install still needs its first admin. One answer for the
- * public `settings.firstRunState` query, the /login page and
+ * public `settings.getFirstRunState` query, the /login page and
  * `settings.createLocalAdmin`'s guard, so what the page offers and what
  * the server allows can't drift apart.
  */

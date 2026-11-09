@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     // cards still client-fetch (incremental rollout).
     await Promise.all([
       helpers.networth.computeSummary.prefetch().catch(() => undefined),
-      helpers.settings.isOnboardingComplete.prefetch().catch(() => undefined),
+      helpers.settings.getOnboardingStatus.prefetch().catch(() => undefined),
     ]);
   });
 

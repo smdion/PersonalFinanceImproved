@@ -14,7 +14,7 @@ export function wizardNavigation(
   admin: AdminDraft,
   utils: ReturnType<typeof trpc.useUtils>,
   firstRun: UseTRPCQueryResult<
-    RouterOutputs["settings"]["firstRunState"],
+    RouterOutputs["settings"]["getFirstRunState"],
     RouterError
   >,
   setCurrentStep: Dispatch<SetStateAction<Step>>,
@@ -48,7 +48,7 @@ export function wizardNavigation(
         email: admin.email.trim(),
         password: admin.password,
       });
-      await utils.settings.firstRunState.invalidate();
+      await utils.settings.getFirstRunState.invalidate();
       return true;
     } catch (e) {
       setError(

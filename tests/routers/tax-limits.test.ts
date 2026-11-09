@@ -699,7 +699,7 @@ describe("settings.taxData", () => {
       expect(ira).toMatchObject({ origin: "carried", confirmedAt: null });
       expect(Number(ira.value)).toBe(7500);
 
-      const status = await caller.settings.taxData.status();
+      const status = await caller.settings.taxData.getStatus();
       expect(status.carriedRows.length).toBeGreaterThan(30);
       expect(status.needsAttention).toBe(true);
       // Running it again changes nothing (every table has the year).
@@ -712,7 +712,7 @@ describe("settings.taxData", () => {
         table: "contribution_limits",
         id: ira.id,
       });
-      const after = await caller.settings.taxData.status();
+      const after = await caller.settings.taxData.getStatus();
       expect(after.carriedRows.length).toBe(status.carriedRows.length - 1);
       expect(
         (await caller.settings.contributionLimits.list()).find(

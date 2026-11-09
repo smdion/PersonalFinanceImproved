@@ -61,7 +61,7 @@ vi.mock("@/lib/trpc", async () => ({
 describe("DashboardPage", () => {
   beforeEach(() => {
     resetTrpcMock();
-    setQuery("settings.isOnboardingComplete", { complete: true });
+    setQuery("settings.getOnboardingStatus", { complete: true });
   });
 
   it("renders all dashboard cards", async () => {

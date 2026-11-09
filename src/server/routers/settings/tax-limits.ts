@@ -259,10 +259,10 @@ export const taxLimitsProcedures = {
   /** Is the tax data current, and what was carried forward? */
   taxData: createTRPCRouter({
     /** The documents each year's shipped tables cite, linked. */
-    sectionSources: protectedProcedure.query(
+    listSectionSources: protectedProcedure.query(
       async ({ ctx }) => (await shippedData(ctx.db)).sectionCitations,
     ),
-    status: protectedProcedure.query(async ({ ctx }) => {
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
       const yearsByTable: Partial<Record<YearlyTable, number[]>> = {};
       const carried: CarriedFigure[] = [];
       const carriedRows: {

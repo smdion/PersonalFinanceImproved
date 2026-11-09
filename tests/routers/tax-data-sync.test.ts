@@ -55,11 +55,11 @@ describe("settings.taxDataSync", () => {
     try {
       const version = addPending(db);
       expect(
-        (await caller.settings.taxDataSync.status()).pending,
+        (await caller.settings.taxDataSync.getStatus()).pending,
       ).toMatchObject({
         dataVersion: version,
       });
-      const preview = (await caller.settings.taxDataSync.preview())!;
+      const preview = (await caller.settings.taxDataSync.computePreview())!;
       expect(preview.changes).toEqual([
         expect.objectContaining({
           year: 2026,
@@ -77,8 +77,10 @@ describe("settings.taxDataSync", () => {
         origin: "community",
         shippedValue: 7600,
       });
-      expect((await caller.settings.taxDataSync.status()).pending).toBeNull();
-      expect(await caller.settings.taxDataSync.preview()).toBeNull();
+      expect(
+        (await caller.settings.taxDataSync.getStatus()).pending,
+      ).toBeNull();
+      expect(await caller.settings.taxDataSync.computePreview()).toBeNull();
     } finally {
       cleanup();
     }
@@ -88,7 +90,7 @@ describe("settings.taxDataSync", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const version = addPending(db);
-      const preview = (await caller.settings.taxDataSync.preview())!;
+      const preview = (await caller.settings.taxDataSync.computePreview())!;
       // The household edits the figure after reviewing.
       const row = await ira2026(caller);
       await caller.settings.contributionLimits.update({
@@ -115,9 +117,9 @@ describe("settings.taxDataSync", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       addPending(db, { tamper: true });
-      await expect(caller.settings.taxDataSync.preview()).rejects.toThrow(
-        /no longer verifies/,
-      );
+      await expect(
+        caller.settings.taxDataSync.computePreview(),
+      ).rejects.toThrow(/no longer verifies/);
     } finally {
       cleanup();
     }
@@ -128,7 +130,9 @@ describe("settings.taxDataSync", () => {
     try {
       const version = addPending(db);
       await caller.settings.taxDataSync.dismiss({ dataVersion: version });
-      expect((await caller.settings.taxDataSync.status()).pending).toBeNull();
+      expect(
+        (await caller.settings.taxDataSync.getStatus()).pending,
+      ).toBeNull();
       expect(Number((await ira2026(caller)).value)).toBe(7500);
     } finally {
       cleanup();
@@ -140,7 +144,7 @@ describe("settings.taxDataSync", () => {
     try {
       const version = addPending(db);
       expect(
-        (await caller.settings.taxDataSync.status()).pending,
+        (await caller.settings.taxDataSync.getStatus()).pending,
       ).not.toBeNull();
       await expect(
         caller.settings.taxDataSync.dismiss({ dataVersion: version }),

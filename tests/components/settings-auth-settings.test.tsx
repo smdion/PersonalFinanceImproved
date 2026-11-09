@@ -11,7 +11,7 @@ vi.mock("@/lib/trpc", async () => ({
 }));
 import { resetTrpcMock, setQuery } from "./trpc-mock";
 
-const OIDC = "settings.testOidcConnection";
+const OIDC = "settings.getOidcStatus";
 
 import { AuthSettings } from "@/components/settings/auth-settings";
 

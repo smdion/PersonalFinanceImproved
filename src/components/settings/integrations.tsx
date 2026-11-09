@@ -531,7 +531,7 @@ export function IntegrationsSettings() {
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const { data: taxDataSync } = trpc.settings.taxDataSync.status.useQuery();
+  const { data: taxDataSync } = trpc.settings.taxDataSync.getStatus.useQuery();
   const [section, setSection] = useDeepLinkParam(
     SETTINGS_SECTION_PARAM,
     SECTION_KEYS,
