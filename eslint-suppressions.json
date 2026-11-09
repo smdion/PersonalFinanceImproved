@@ -5203,71 +5203,26 @@
     }
   },
   "src/lib/pure/advice/report/bracket-target-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 2
     }
   },
-  "src/lib/pure/advice/report/executive-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/advice/report/index.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/advice/report/lifetime-tax-summary.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-guarded-division": {
       "count": 1
     }
   },
   "src/lib/pure/advice/report/mc-freshness.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
       "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/advice/report/risk-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/advice/report/withdrawal-strategy-narrative.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/lib/pure/advice/report/year-table.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/advice/standin-advice.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/budget/active-profile.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/pure/budget/annual-total.ts": {
@@ -5276,9 +5231,6 @@
     }
   },
   "src/lib/pure/budget/budget.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -5286,11 +5238,6 @@
   "src/lib/pure/budget/budget.types.ts": {
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    }
-  },
-  "src/lib/pure/budget/transaction-kind.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/budget/utility-cost-feed.ts": {

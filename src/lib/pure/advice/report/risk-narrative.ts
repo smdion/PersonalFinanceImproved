@@ -1,7 +1,5 @@
-/** Risk / Monte Carlo section of the advisor report — the stated
- *  centerpiece. Pure functions: no React, no chart library — the
- *  percentile-band data is shaped here for a static, print-safe SVG the
- *  component layer renders (no Recharts/canvas at print time). */
+/** Advisor report risk / simulation section. Pure: percentile bands are shaped here for a
+ *  static, print-safe SVG (no chart library at print time). */
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
@@ -62,10 +60,8 @@ export interface RiskBandPoint {
   median: number;
 }
 
-/** Shapes percentile-band data for a static print SVG: p10-p90 as the
- *  shaded range, p50 as the line — same convention the interactive fan
- *  chart uses for its default band width, just fixed (no user-adjustable
- *  band range in the printed report). */
+/** Percentile bands for the print SVG: p10-p90 shaded, p50 as the line (the interactive
+ *  fan chart's default band, fixed). */
 export function buildRiskBandPoints(
   mcResult: MonteCarloResult,
 ): RiskBandPoint[] {

@@ -1,17 +1,6 @@
-/** "Why THIS tax bracket, not a lower or higher one" — the full, numeric
- *  version. Reads `BracketOptimizerResult` (the household's own real
- *  marginal bracket rates, each scored by lifetime tax cost —
- *  `withdrawal-bracket-optimizer.ts`), the same data already surfaced on
- *  the Taxes settings page, so this can never disagree with that
- *  recommendation. One shared function, used by both the advisor report
- *  and the interactive table/chart tooltips (projection-table-decum-row.tsx)
- *  — not two independently-worded explanations.
- *
- * Falls back to a qualitative-only explanation (no dollar comparison) when
- * the optimizer result isn't available yet (query still loading, disabled
- * under Waterfall mode, or fewer than 2 real candidates to compare) —
- * callers should still show SOMETHING useful, not nothing, while the
- * richer version loads in. */
+/** Why this tax bracket target, with numbers from `BracketOptimizerResult` (as on the Taxes
+ *  page); shared by the advisor report and the table tooltips. Without an optimizer result
+ *  (loading, Waterfall mode, under 2 candidates) it explains qualitatively. */
 import type {
   BracketOptimizerResult,
   BracketOptimizerCandidate,
@@ -27,15 +16,9 @@ function findCandidate(
   return candidates.find((c) => Math.abs(c.target - target) < RATE_EPSILON);
 }
 
-/** Inputs for `describeBracketCeilingMath` — the pieces
- *  `incomeCapForMarginalRate`/`routeWithdrawalsBracketFilling`
- *  (withdrawal-routing/caps.ts, tax-estimation.ts) already computed for this
- *  year: `bracketTraditionalCap` (the resolved dollar room left for
- *  Traditional withdrawals — engine field of the same name) and
- *  `taxableSS` (the IRS-provisional-income taxable portion of Social
- *  Security already occupying part of that bracket). `standardDeduction`
- *  is the household's filing-status deduction (not stored per-year on the
- *  engine output — callers read it off the resolved settings/config). */
+/** This year's `bracketTraditionalCap` (dollar room left for Traditional withdrawals) and
+ *  `taxableSS` (taxable Social Security in that bracket), plus the household's
+ *  `standardDeduction`, which the engine output doesn't store per year. */
 type BracketCeilingMathInput = {
   bracketTraditionalCap: number;
   taxableSS: number;
@@ -43,30 +26,16 @@ type BracketCeilingMathInput = {
 };
 
 /**
- * "What dollar ceiling, and how was it computed" — the actual math behind
- * `bracketTraditionalCap`: the bracket's ceiling in gross-income terms
- * (adjusted for the household's standard deduction, since the underlying
- * withholding-table threshold only embeds a smaller IRS worksheet offset —
- * see `incomeCapForMarginalRate`'s docblock, tax-estimation.ts), minus
- * whatever taxable Social Security already occupies. Requires
- * `standardDeduction` to say anything meaningful about the gross-income
- * figure — returns undefined without it rather than showing an
- * unexplained number.
+ * The math behind `bracketTraditionalCap`: the bracket ceiling in gross-income terms (plus
+ * the standard deduction) minus taxable Social Security. undefined without `standardDeduction`.
  */
 export function describeBracketCeilingMath(
   currentTargetPercent: number,
   input?: BracketCeilingMathInput | null,
 ): string | undefined {
   if (!input || input.standardDeduction == null) return undefined;
-  // `bracketTraditionalCap` is already clamped to >= 0 upstream
-  // (computeBracketTraditionalCap, withdrawal-routing/caps.ts) — when taxable SS
-  // alone exceeds the bracket's real income cap, the cap clamps to 0 and
-  // that information (how far over it SS pushed things) is gone.
-  // Reconstructing incomeCap as bracketTraditionalCap + taxableSS in that
-  // case silently reports taxableSS itself as "the ceiling," UNDER-stating
-  // the true (higher) ceiling. No honest dollar
-  // figure can be recovered from the clamped value alone, so state the real
-  // fact instead of a fabricated number.
+  // The cap is clamped to >= 0 upstream, so when taxable SS alone exceeds the bracket
+  // the true ceiling can't be recovered; state that fact instead of a number.
   if (input.bracketTraditionalCap <= 0 && input.taxableSS > 0) {
     return `Your taxable Social Security income alone (${formatCurrency(input.taxableSS)}) already fills the ${formatPercent(currentTargetPercent, 0)} bracket's room once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in, leaving no room for Traditional withdrawals at this target.`;
   }
@@ -91,11 +60,8 @@ export function describeBracketTargetQualitative(targetPct: number): string {
 }
 
 /**
- * The full, numeric explanation — names the actual lifetime-cost
- * difference against the neighboring candidate brackets, and flags when
- * the household's current setting ISN'T the optimizer's own
- * recommendation (a real, actionable fact this report/tooltip context
- * should surface, not just narrate the status quo as if it were optimal).
+ * The numeric explanation: lifetime-cost difference against neighboring candidate brackets,
+ * flagging when the household's setting isn't the optimizer's recommendation.
  */
 export function describeBracketTargetChoice(
   optimizer: BracketOptimizerResult | null | undefined,
@@ -165,54 +131,20 @@ export function describeBracketTargetChoice(
   return parts.join(" ");
 }
 
-/** Inputs for `describeDiscretionaryCapacityMath` — the two zero-cost
- *  discretionary tiers' real capacity this year
- *  (`EngineDecumulationYear.rothBasisCapacity`/`brokerageZeroLtcgCapacity`,
- *  a passthrough of `rankWithdrawalTiers`' `RankedWithdrawalTiers` —
- *  withdrawal-cost-ranking.ts), computed BEFORE the household's
- *  `discretionaryWithdrawalOrder` decides which drains first and before
- *  either is actually drawn from. */
+/** This year's capacity in the two zero-cost discretionary tiers
+ *  (`rothBasisCapacity`/`brokerageZeroLtcgCapacity`), computed before the
+ *  `discretionaryWithdrawalOrder` picks which drains first. */
 type DiscretionaryCapacityInput = {
   rothBasisCapacity: number;
-  /** Withdrawal dollars, not raw LTCG gains room — already adjusted for
-   *  brokerage's basis ratio (a $1 gain requires drawing more than $1 when
-   *  part of the withdrawal is basis). See `RankedWithdrawalTiers`'s
-   *  docblock for why this distinction matters. */
+  /** Withdrawal dollars, not LTCG gains room: adjusted for the brokerage basis ratio
+   *  (see `RankedWithdrawalTiers`). */
   brokerageZeroLtcgCapacity: number;
 };
 
 /**
- * "Why isn't brokerage draining before Roth" — the real dollar room in each
- * of the two zero-cost discretionary tiers this year, how much of each was
- * actually drawn, how much of each went unused, and the household's
- * current `discretionaryWithdrawalOrder` setting (a household's Traditional bracket target was crowding out brokerage's
- * 0%-LTCG room down to ~$0, so no order setting could have changed the
- * outcome that year — this function exists so the numbers are visible
- * instead of requiring a multi-message debugging session to work out by
- * hand).
- *
- * Deliberately states ONLY the numbers, never a causal claim about WHY a
- * tier stopped being drawn from (an earlier
- * draft inferred "ran out" from used === capacity, which is wrong whenever
- * a per-category `withdrawalAccountCap`/`rothTypeCap` cuts a draw short
- * before the tier's own household-wide capacity is reached; this function
- * has no way to distinguish that from genuine exhaustion, so it doesn't
- * claim to).
- *
- * Returns `undefined` when there's nothing meaningful to say: no
- * discretionary draw happened this year (`tierBreakdown` empty/undefined),
- * or `rmdOverrodeRouting` is true — the capacities here are snapshotted at
- * routing time, BEFORE RMD enforcement can force more Traditional income
- * than Phase 1 planned, so in an RMD-override year they'd overstate the
- * real 0%-LTCG room relative to what actually happened. A drawn-dollar
- * figure reads as history; a capacity figure reads as "you had this room
- * and didn't use it" — actively misleading if shown in that scenario.
- *
- * Deliberately does not re-explain the ACA/IRMAA tradeoff of the order
- * setting itself — that's already covered where the setting lives
- * (Retirement → Taxes in Retirement,
- * `src/components/retirement/sections/taxes.tsx`); this sticks to the
- * dollar math for THIS year.
+ * This year's room, use and unused room in both zero-cost discretionary tiers, plus the order
+ * setting. Numbers only, never a cause. undefined with no discretionary draw, or in an RMD
+ * override year (capacities predate RMD enforcement and would overstate the room).
  */
 export function describeDiscretionaryCapacityMath(
   capacities: DiscretionaryCapacityInput | undefined | null,
@@ -235,26 +167,13 @@ export function describeDiscretionaryCapacityMath(
     return undefined;
   }
 
-  // Deliberately descriptive only, not causal:
-  // an earlier draft tried to say WHY a tier stopped ("ran out" / "covered
-  // it on its own"), inferred from used === capacity — wrong whenever a
-  // per-category withdrawalAccountCap or rothTypeCap cut a draw short
-  // before the tier's own household-wide capacity was reached. This states
-  // only the numbers, never the mechanism.
-  //
-  // lint-violation-ok: `source` here is WithdrawalTier's cost-ranking kind
-  // (tierBreakdown's own field), not an AccountCategory — same false
-  // positive as describeTierRate's note in withdrawal-strategy-narrative.ts.
+  // Numbers only, no cause: a per-category cap can cut a draw short of capacity.
+  // lint-violation-ok: `source` is WithdrawalTier's cost-ranking kind, not an AccountCategory.
   const rothZeroUsedRaw = tierBreakdown
     .filter((t) => t.source === "roth" && t.costRate === 0)
     .reduce((s, t) => s + t.amount, 0);
-  // Clamped to rothBasisCapacity: a $0-cost Roth entry can be basis OR
-  // growth priced at a genuinely 0% marginal ordinary rate (household in
-  // the 0% bracket) — summing both without a ceiling could report "used"
-  // exceeding the household's actual Roth basis, a self-contradicting
-  // number. This isn't a perfect basis/growth split (that distinction
-  // belongs to the per-account basis/growth note shown elsewhere), just a
-  // sane upper bound on what this sentence claims came from basis.
+  // Capped at rothBasisCapacity: a $0-cost Roth entry may be growth in the 0% bracket,
+  // so "used" must not exceed the basis.
   const rothZeroUsed = Math.min(rothZeroUsedRaw, rothBasisCapacity);
   // lint-violation-ok: `source` is WithdrawalTier's kind, not an AccountCategory.
   const brokerageZeroUsed = tierBreakdown

@@ -1,7 +1,5 @@
-/** Executive-summary section of the retirement advisor report: plan
- *  verdict, key numbers, and a short narrative paragraph. Pure function —
- *  no React, no formatting decisions left to the component layer, so
- *  correctness is testable without a DOM. */
+/** Advisor report executive summary: plan verdict, key numbers and a short narrative.
+ *  Pure, with all formatting decided here. */
 import {
   assessPlan,
   describePlanFailure,
@@ -11,10 +9,8 @@ import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { ReportExecutiveSummary, ReportVerdict } from "./types";
 
-/** Below this Monte Carlo success rate, the plan reads as "needs
- *  attention" even if the deterministic projection never depletes —
- *  the deterministic run is one path among many; a low success rate
- *  means most of the OTHER paths don't end as well. */
+/** Below this simulation success rate the plan "needs attention" even when the
+ *  deterministic run never depletes. */
 const SUCCESS_RATE_ON_TRACK_THRESHOLD = 0.85;
 
 export function buildVerdict(

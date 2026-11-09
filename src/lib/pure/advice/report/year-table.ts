@@ -1,8 +1,5 @@
-/** Simplified, print-scannable year-by-year table for the advisor report —
- *  NOT the full interactive ProjectionTable (many columns, built for
- *  on-screen exploration, print-hostile — see index.tsx's print:hidden on
- *  it in advisor mode). Condensed columns plus a flags column surfacing
- *  only the years where something notable happened. */
+/** Condensed, print-friendly year table for the advisor report (not the interactive
+ *  ProjectionTable), with a flags column for notable years. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { formatCurrency } from "@/lib/utils/format";
 
@@ -15,10 +12,8 @@ export interface YearTableRow {
 }
 
 /**
- * The "something notable happened this year" flag vocabulary — one list,
- * shared by the advisor report's year table and the Tax Optimization page's
- * year-by-year table so the two never drift. Order is deliberate (most
- * consequential first).
+ * The notable-year flags, most consequential first; shared by the advisor report's year
+ * table and the Tax Optimization page's table.
  */
 export function taxYearFlags(
   y: Pick<

@@ -1,21 +1,6 @@
 /**
- * Budget Calculator
- *
- * Aggregates monthly budget items by category and computes essential vs. discretionary totals.
- *
- * Budget items support multiple "columns" representing different spending scenarios:
- *   - Column 0: Standard (normal monthly spending)
- *   - Column 1: Tight (reduced spending for savings goals)
- *   - Column 2: Emergency (bare minimum survival spending)
- * The `selectedColumn` index determines which scenario's amounts are used.
- *
- * Each item is flagged as essential or discretionary. Essential items are things like rent,
- * utilities, and groceries. Discretionary items are things like dining out and entertainment.
- * This split feeds into the savings calculator (essential expenses determine e-fund coverage)
- * and retirement projections (annual expenses).
- *
- * The `amounts` array on each item MUST match the length of `columnLabels` — this is validated
- * via Zod `.refine()` on every database write.
+ * Budget totals by category, essential vs discretionary, for the `selectedColumn` scenario
+ * (each item's `amounts` has one value per `columnLabels` entry, validated on write).
  */
 import type { BudgetInput, BudgetResult } from "./budget.types";
 import { roundToCents, sumBy } from "../../utils/math";

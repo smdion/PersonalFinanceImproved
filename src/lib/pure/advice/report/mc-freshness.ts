@@ -1,39 +1,7 @@
 /**
- * Gate for the retirement advisor report: is there a Monte Carlo result
- * that genuinely reflects the household's CURRENT inputs, for the
- * currently-selected scenario, computed under Advanced tax mode?
- *
- * "Does `mcResult` exist" is NOT a safe proxy for this — verified against
- * the actual query behavior in use-projection-queries.ts:
- *  - `mcPrefetchQuery`/`coastFireMcQuery`/`rateSeededMcQuery` all use
- *    `placeholderData: (prev) => prev` — a stale result from a PREVIOUS
- *    input survives across changes and reads as "present."
- *  - `coastFireProbeResult` is a bare `useState`, never cleared on input
- *    change at all.
- *  - `mcPrefetchQuery` hardcodes preset/trial-count regardless of the
- *    household's actual selection — falling back to it would print risk
- *    numbers computed under different assumptions than the report's own
- *    assumptions section states.
- *  - The debounce window is an unguarded hole: edit a setting and print
- *    immediately, `debouncedInput` hasn't caught up yet, nothing looks
- *    "fetching" — the report would print the pre-edit plan.
- *
- * `mcQuery` itself (the ONLY source this checks — no prefetch fallback,
- * ever) uses `placeholderData: undefined`, so it genuinely has no data
- * for a changed input until that input's own fetch resolves — the
- * fetching/data-presence checks below are sufficient for it without a
- * separate placeholder flag.
- *
- * Scoped to the "baseline" view only (see aca-irmaa-narrative.ts) —
- * Coast FIRE/Rate-Seeded scenarios
- * source both their MC result AND their deterministic projection from a
- * different place (`activeAltMcResult`), and the report's assumptions
- * section always echoes the BASELINE engine settings regardless of
- * scenario. Combining "Coast FIRE numbers" with "baseline assumptions
- * text" would misrepresent the plan, so those scenarios aren't offered
- * the advisor report in this pass — same reasoning covers
- * `coastFireProbeResult`, which additionally has no freshness signal at
- * all to check.
+ * Advisor report gate: a simulation result from `mcQuery` alone (no placeholder or prefetch
+ * fallback) for the current inputs, baseline scenario and Advanced tax mode; other scenarios
+ * pair different results with baseline assumption text, so they're not offered.
  */
 
 export type ReportGateFailure =
@@ -101,11 +69,8 @@ export function checkReportGate(input: ReportGateInput): ReportGateResult {
   return { ok: true };
 }
 
-/** User-facing copy per failure reason — kept alongside the predicate so
- *  the two can't drift. "Run the simulation first," not "Run Monte Carlo
- *  simulation first" (tests/lint/violations.test.ts bans the product name
- *  in user-facing text; see this module's coverage in that test's
- *  filterExt list). */
+/** User-facing copy per failure reason. Says "simulation", never the product name
+ *  (tests/lint/violations.test.ts). */
 export function reportGateFailureMessage(failure: ReportGateFailure): string {
   switch (failure) {
     case "not-baseline-scenario":

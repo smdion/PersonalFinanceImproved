@@ -247,7 +247,7 @@
     "src/lib/pure/advice/milestones/journey.ts": 159,
     "src/lib/pure/advice/milestones/milestones.ts": 149,
     "src/lib/pure/advice/milestones/wealth.ts": 157,
-    "src/lib/pure/budget/active-profile.ts": 11,
+    "src/lib/pure/budget/active-profile.ts": 9,
     "src/lib/pure/budget/annual-total.ts": 51,
     "src/lib/pure/contributions/account-match.ts": 84,
     "src/lib/pure/contributions/account-type-snapshots.ts": 289,

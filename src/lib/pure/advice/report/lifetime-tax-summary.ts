@@ -1,10 +1,5 @@
-/** Lifetime tax totals across decumulation years — shared by the on-screen
- *  Lifetime Tax Paid card (tax-summary-card.tsx) and the advisor report's
- *  own tax section, so the two can never disagree (RULES.md single
- *  computation path). Decumulation only: EngineDecumulationYear.taxCost is
- *  computed per year and ready to sum; EngineAccumulationYear has no
- *  equivalent field — see tax-summary-card.tsx's docblock for why
- *  accumulation isn't included. */
+/** Lifetime tax totals over decumulation years, shared by the Lifetime Tax Paid card and
+ *  the advisor report. Accumulation years have no per-year tax cost to sum. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 
 type LifetimeTaxDecade = {
