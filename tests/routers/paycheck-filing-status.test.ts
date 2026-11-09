@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
-import { createTestCaller, seedJob, seedPerson } from "./setup";
+import { createTestCaller, seedJob, seedPerson, TEST_NOW } from "./setup";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
@@ -47,8 +47,15 @@ describe("paycheck: the household's filing status", () => {
     expect(s.rothIra?.filingStatus).toBe("Single");
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
-        .filingStatus,
+      (
+        await loadCapHousehold(
+          ctx.db as never,
+          people,
+          {},
+          TEST_NOW,
+          TEST_NOW.getFullYear(),
+        )
+      ).filingStatus,
     ).toBe("Single");
   });
 
@@ -80,8 +87,15 @@ describe("paycheck: the household's filing status", () => {
     expect(s.rothIra?.filingStatus).toBe("HOH");
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
-        .filingStatus,
+      (
+        await loadCapHousehold(
+          ctx.db as never,
+          people,
+          {},
+          TEST_NOW,
+          TEST_NOW.getFullYear(),
+        )
+      ).filingStatus,
     ).toBe("HOH");
     // Cleared: back to the profile's.
     await ctx.caller.settings.appSettings.upsert({
@@ -114,8 +128,15 @@ describe("loadCapHousehold: no setting and no job", () => {
   it("is unknown, never assumed married", async () => {
     const people = ctx.db.select().from(schema.people).all();
     expect(
-      (await loadCapHousehold(ctx.db as never, people, {}, new Date(), 2026))
-        .filingStatus,
+      (
+        await loadCapHousehold(
+          ctx.db as never,
+          people,
+          {},
+          TEST_NOW,
+          TEST_NOW.getFullYear(),
+        )
+      ).filingStatus,
     ).toBe("");
   });
 });
@@ -138,9 +159,8 @@ describe("a Retirement Profile's filing status: Auto, saves, the fallback", () =
       .get()?.f;
   const engineStatus = async () => {
     const data = await fetchRetirementData(ctx.db as never, {});
-    return (
-      await buildEnginePayload(ctx.db as never, data, { asOf: new Date() })
-    )?.filingStatus;
+    return (await buildEnginePayload(ctx.db as never, data, { asOf: TEST_NOW }))
+      ?.filingStatus;
   };
 
   beforeAll(async () => {
@@ -221,14 +241,14 @@ describe("w4FilingStatusOf: the request's Salary Profile", () => {
   afterAll(() => ctx.cleanup());
 
   it("reads a What-If's W-4 when given its map, else the active profile's", async () => {
-    expect(
-      await w4FilingStatusOf(ctx.db as never, [personId], new Date()),
-    ).toBe("Single");
+    expect(await w4FilingStatusOf(ctx.db as never, [personId], TEST_NOW)).toBe(
+      "Single",
+    );
     const whatIf = new Map([
       [jobId, { w4FilingStatus: "HOH" } as never],
     ]) as SalaryProfileActiveMap;
     expect(
-      await w4FilingStatusOf(ctx.db as never, [personId], new Date(), whatIf),
+      await w4FilingStatusOf(ctx.db as never, [personId], TEST_NOW, whatIf),
     ).toBe("HOH");
   });
 });

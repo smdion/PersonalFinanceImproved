@@ -4,7 +4,7 @@
  * moved, snapshot flows and permissions. Invented accounts and rows only.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import {
   createTestCaller,
@@ -21,6 +21,10 @@ import {
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: test fixture dates, compared only to each other
 
+/** The file's today: a month after the holdings below were last reported
+ *  (mid-May), so they read as stale. */
+const TODAY = new Date("2026-06-15T18:00:00.000Z");
+
 describe("investments router", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
   let brokerageId: number;
@@ -28,6 +32,7 @@ describe("investments router", () => {
   const tx: Record<string, number> = {};
 
   beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: TODAY });
     ctx = await createTestCaller();
     const db = ctx.db;
     const perf = (accountType: string, label: string) =>
@@ -118,7 +123,10 @@ describe("investments router", () => {
     obs(dropped, "2026-05-14", "3");
   });
 
-  afterAll(() => ctx.cleanup());
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
 
   // The loaders take the app's database type; tests run them on SQLite.
   type AppDb = Parameters<typeof loadLatestHoldings>[0];

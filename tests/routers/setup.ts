@@ -14,6 +14,7 @@ import { withAsyncTransactions } from "@/lib/db/sqlite-transactions";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
+import { vi } from "vitest";
 import type { Session } from "next-auth";
 import { openTestSqlite } from "../helpers/db-harness";
 import type { Permission } from "@/lib/config/permissions";
@@ -85,15 +86,34 @@ interface TestCaller {
   cleanup: () => void;
 }
 
+/** The date a test caller's requests run on (the router baseline's
+ *  BASELINE_NOW): the same answer on every day the suite runs. */
+export const TEST_NOW = new Date("2026-03-07T18:00:00.000Z");
+
+/** Open callers holding the clock this module froze. */
+let clockHolders = 0;
+
 /**
  * Creates an isolated test environment with:
  * - A temp SQLite database with all migrations applied
  * - A tRPC caller bound to an admin session (or `null`: signed out)
  * - A cleanup function to close the DB
+ * - The clock (`Date` only) held at TEST_NOW until the last open caller
+ *   is cleaned up. A test that already fakes the clock keeps its own;
+ *   `{ realTime: true }` leaves the real clock.
  */
 export async function createTestCaller(
   session: Session | null = adminSession,
+  options: { realTime?: boolean } = {},
 ): Promise<TestCaller> {
+  // A clock the test faked itself (none of ours open) is the test's own.
+  const ownClock = clockHolders === 0 && vi.isFakeTimers();
+  const holdsClock = !options.realTime && !ownClock;
+  if (holdsClock) {
+    if (!vi.isFakeTimers())
+      vi.useFakeTimers({ toFake: ["Date"], now: TEST_NOW });
+    clockHolders++;
+  }
   // A fresh in-memory copy of the migrated, seeded template (built once
   // per worker — see openTestSqlite).
   const sqlite = openTestSqlite();
@@ -117,7 +137,13 @@ export async function createTestCaller(
   // logMutation (trpc.ts) writes through the top-level db: into this one.
   setTopLevelTestDb(db);
 
+  let released = false;
   const cleanup = () => {
+    if (holdsClock && !released) {
+      released = true;
+      clockHolders--;
+      if (clockHolders === 0) vi.useRealTimers();
+    }
     // Audit writes stop with this db; a later caller's db stays current.
     releaseTopLevelTestDb(db);
     try {

@@ -28,10 +28,14 @@ vi.mock("@/server/services/investments/market-prices", () => ({
 
 const at = (s: string) => new Date(s);
 
+/** The file's today: the Monday after the last price (Oct 30) and feed. */
+const TODAY = new Date("2026-11-02T18:00:00.000Z");
+
 describe("investments.getCurrentBalances", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
 
   beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: TODAY });
     ctx = await createTestCaller();
     const db = ctx.db;
     const owner = await seedPerson(db, "Example Person", "1980-01-01");
@@ -108,7 +112,10 @@ describe("investments.getCurrentBalances", () => {
       })
       .run();
   });
-  afterAll(() => ctx.cleanup());
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
 
   it("a feed proven older than the snapshot gives way to it, and leaves the comparison", async () => {
     const r = await loadCurrentBalances(ctx.db as never, new Date());

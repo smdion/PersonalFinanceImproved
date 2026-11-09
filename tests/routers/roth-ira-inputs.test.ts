@@ -10,10 +10,12 @@ import {
   createTestCaller,
   seedPerformanceAccount,
   seedSnapshot,
+  TEST_NOW,
 } from "./setup";
 
+// Days before the test caller's clock (TEST_NOW), where its requests run.
 const daysAgo = (n: number) =>
-  new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: fixture dates compared as UTC days
+  new Date(TEST_NOW.getTime() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: fixture dates compared as UTC days
 
 describe("investments.getRothIraInputs", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;

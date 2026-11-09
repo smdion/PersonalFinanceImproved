@@ -607,8 +607,14 @@ describe("simplefin router", () => {
     });
 
     it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
+      // Logged now (the request's clock; SQLite's own default is the real one).
       db.insert(sqliteSchema.syncRequestLog)
-        .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
+        .values({
+          service: "simplefin",
+          endpoint: "/accounts",
+          outcome: "ok",
+          requestedAt: new Date(),
+        })
         .run();
       await expect(caller.simplefin.syncNow()).rejects.toThrow(
         "Ledgr sent SimpleFIN a request less than a minute ago. Try again in 10 minutes — SimpleFIN allows only about 24 requests a day.",
