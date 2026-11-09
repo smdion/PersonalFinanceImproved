@@ -1,6 +1,7 @@
 // Part of the Drizzle schema (PostgreSQL) — see schema-pg.ts.
 
-import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import type { EntityFieldMap } from "./scenarios";
 

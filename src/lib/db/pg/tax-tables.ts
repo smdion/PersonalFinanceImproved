@@ -8,10 +8,10 @@ import {
   boolean,
   timestamp,
   decimal,
-  jsonb,
   uniqueIndex,
   check,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {
   ReturnFilingStatus,

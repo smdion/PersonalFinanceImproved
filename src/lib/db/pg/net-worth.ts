@@ -7,9 +7,9 @@ import {
   integer,
   date,
   decimal,
-  jsonb,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import { people } from "./people";
 
 // ────────────────────────────────────────────────────────────────────────────

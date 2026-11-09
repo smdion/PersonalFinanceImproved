@@ -1,8 +1,7 @@
 {
   "reasons": {
     "sqlite-db": "the test hands its SQLite-shaped db, not rawDb, to a server function that takes PostgreSQL's path",
-    "check": "PostgreSQL's contribution_accounts_parent_cat_check refuses the row the test seeds directly; SQLite's schema has no such CHECK",
-    "jsonb-string": "a string setting that reads as JSON ('42') comes back parsed (42) on PostgreSQL: node-postgres parses jsonb, then drizzle's jsonb column parses the string again"
+    "check": "PostgreSQL's contribution_accounts_parent_cat_check refuses the row the test seeds directly; SQLite's schema has no such CHECK"
   },
   "failures": {
     "tests/routers/investments-current-balances.test.ts > investments.getCurrentBalances > a feed proven older than the snapshot gives way to it, and leaves the comparison": "sqlite-db",
@@ -10,10 +9,6 @@
     "tests/routers/investments.test.ts > investments router > leaves out a deposit Performance already records as moved in": "sqlite-db",
     "tests/routers/investments.test.ts > investments router > pairs a move between two of the household's accounts as a transfer": "sqlite-db",
     "tests/routers/paycheck-contribution-profile-tax-deductions.test.ts > applyContributionAccountEdit — periodsPerYear resolves from the globally-active Salary Profile > resolves the same periodsPerYear regardless of which Contribution Profile the edit targets": "check",
-    "tests/routers/profile-lifecycle-rows.test.ts > profile lifecycle rows > Contribution Profiles write the same rows": "jsonb-string",
-    "tests/routers/profile-lifecycle-rows.test.ts > profile lifecycle rows > Retirement Profiles write the same rows": "jsonb-string",
-    "tests/routers/profile-lifecycle-rows.test.ts > profile lifecycle rows > Salary Profiles write the same rows": "jsonb-string",
-    "tests/routers/settings-admin.test.ts > settings.appSettings > upsert > stores a numeric value as a string": "jsonb-string",
     "tests/routers/tax-limits.test.ts > settings.contributionLimits — provenance > after an approved community update: it's what Ledgr ships, Reset returns to it, and a restore re-applies it": "sqlite-db",
     "tests/routers/tax-limits.test.ts > settings.contributionLimits — provenance > applying the tax data is one transaction: a failure in the update undoes the shipped pass": "sqlite-db"
   }

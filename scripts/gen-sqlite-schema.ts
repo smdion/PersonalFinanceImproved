@@ -11,7 +11,7 @@
  *   boolean("col")                     → integer("col", { mode: "boolean" })
  *   date("col")                        → text("col")     (ISO date strings)
  *   timestamp("col", { ... })          → integer("col", { mode: "timestamp" })  (unix seconds → Date)
- *   jsonb("col")                       → text("col", { mode: "json" })
+ *   jsonb("col") (../pg-jsonb)         → text("col", { mode: "json" })
  *   varchar("col", { length: N })      → text("col")
  *   pgTable                            → sqliteTable
  *   .defaultNow()                      → .default(sql`(unixepoch())`)
@@ -75,6 +75,8 @@ function transform(src: string): string {
   let out = src
     .replace(/import \{[\s\S]*?\} from "drizzle-orm\/pg-core";\n/, "")
     .replace(/import \{ sql \} from "drizzle-orm";\n/, "")
+    // The PostgreSQL jsonb column (read once); SQLite's json text needs none.
+    .replace(/import \{ jsonb \} from "\.\.\/pg-jsonb";\n/, "")
     .replace(
       /^\/\/ Part of the Drizzle schema \(PostgreSQL\)/m,
       "// AUTO-GENERATED from ../pg/ by scripts/gen-sqlite-schema.ts — do not edit.\n// Part of the Drizzle schema (SQLite)",
