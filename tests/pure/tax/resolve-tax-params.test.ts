@@ -13,11 +13,11 @@ import {
   taxDataBrackets,
   taxDataLimits,
   taxDataWithholding,
-} from "../helpers/tax-data";
+} from "../../helpers/tax-data";
 import {
   resolveTaxParams,
   type TaxParamsRowSets,
-} from "@/lib/config/tax-params";
+} from "@/lib/pure/tax/resolve-tax-params";
 
 // ---------------------------------------------------------------------------
 // Fixtures — parsed from the real seed so the parity check is against real
@@ -131,7 +131,7 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
 
   // candidateYears() (and therefore every resolution, pinned or not) is
   // sourced from contribution_limits alone, not the union of all five
-  // tables (see tax-params.ts's candidateYears docblock) — 2027 has
+  // tables (see resolve-tax-params.ts's candidateYears docblock) — 2027 has
   // withholding-bracket rows but no contribution_limits row, so it is not
   // a selectable year at all. Requesting 2027 with onMissing "nearest"
   // degrades to the newest year that DOES have complete data (2026) for

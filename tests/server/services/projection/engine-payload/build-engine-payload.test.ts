@@ -531,7 +531,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     expect(r.taxBracketsYear).toBe(2025);
     expect(r.ltcgBracketsYear).toBe(2025);
     // 2025's own IRMAA and poverty tables (the fallback to the oldest
-    // complete year is covered in tests/config/tax-params.test.ts).
+    // complete year is covered in tests/pure/tax/resolve-tax-params.test.ts).
     expect(r.irmaaBracketsYear).toBe(2025);
     expect(r.fplYear).toBe(2025);
     expect(r.irmaaBrackets).toBeDefined();
@@ -546,7 +546,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
   // the newest year that DOES have complete data (2026), never throws.
   // requireLimit() still throws for a genuinely incomplete resolved year
   // (see the contribution-limits-completeness coverage in
-  // tests/config/tax-params.test.ts) — that's the case this test used to
+  // tests/pure/tax/resolve-tax-params.test.ts) — that's the case this test used to
   // exercise before the fix, but candidateYears() now makes that case
   // unreachable through normal resolution, closing the outage vector
   // where an admin seeding one table early could 500 every household's

@@ -57,7 +57,7 @@ import {
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
 import { findActiveJob } from "@/lib/pure/household/profiles";
-import { resolveTaxParams } from "@/lib/config/tax-params";
+import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import { householdTotals } from "@/server/services/paycheck/household-totals";

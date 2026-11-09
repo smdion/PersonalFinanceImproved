@@ -3299,12 +3299,15 @@
       "count": 2
     }
   },
-  "src/lib/config/tax-params.ts": {
+  "src/lib/pure/tax/resolve-tax-params.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 4
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
     }
   },
   "src/lib/config/withdrawal-strategies.ts": {

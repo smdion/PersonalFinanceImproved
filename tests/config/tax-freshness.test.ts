@@ -493,7 +493,7 @@ describe("Tax law structural checks", () => {
   // (not just data updates) when they change.
 
   // Bracket rates (TCJA, made permanent by OBBBA) are checked row by row in
-  // tests/config/tax-params.test.ts; FICA rate, Medicare surtax threshold,
+  // tests/pure/tax/resolve-tax-params.test.ts; FICA rate, Medicare surtax threshold,
   // HSA/super catch-up and standard deductions against the seed in
   // tests/config/irs-contribution-limits.test.ts.
 

@@ -4,7 +4,7 @@ import {
   resolveTaxParams,
   type TaxParamsRowSets,
   type TaxSection,
-} from "@/lib/config/tax-params";
+} from "@/lib/pure/tax/resolve-tax-params";
 import { ACCOUNT_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 
 /**
