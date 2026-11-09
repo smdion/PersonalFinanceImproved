@@ -40,9 +40,12 @@ function targetPreview(t: AutoMaxTarget): Preview {
       };
     case "fixed_per_period":
       return {
-        label: `${formatCurrency(t.target)}/period`,
-        current: yearly(`${formatCurrency(t.current)}/period`, t.currentAnnual),
-        target: yearly(`${formatCurrency(t.target)}/period`, t.targetAnnual),
+        label: `${formatCurrency(t.target)}/paycheck`,
+        current: yearly(
+          `${formatCurrency(t.current)}/paycheck`,
+          t.currentAnnual,
+        ),
+        target: yearly(`${formatCurrency(t.target)}/paycheck`, t.targetAnnual),
         wouldChange,
       };
     case "fixed_monthly":
@@ -75,7 +78,7 @@ function autoMaxedLine(
   if (method === "percent_of_salary")
     return `Set to ${formatPercent(currentValue / 100)} of salary (${annual}${toward})`;
   if (method === "fixed_per_period")
-    return `Set to ${formatCurrency(currentValue)}/period (${annual}${toward})`;
+    return `Set to ${formatCurrency(currentValue)}/paycheck (${annual}${toward})`;
   if (method === "fixed_monthly")
     return `Set to ${formatCurrency(currentValue)}/month (${annual}${toward})`;
   return `Set to ${formatCurrency(currentValue, 0)}${toward}`;

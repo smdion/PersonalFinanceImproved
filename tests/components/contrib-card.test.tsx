@@ -154,6 +154,31 @@ describe("ContribCard", () => {
     ).toBeInTheDocument();
   });
 
+  it("names a per-paycheck amount per paycheck, in the preview and once auto-maxed", () => {
+    const perPaycheck = {
+      ...baseContrib,
+      contributionMethod: "fixed_per_period",
+      contributionValue: "500",
+    };
+    const { unmount } = render(
+      <ContributionCard {...defaultProps} contrib={perPaycheck} />,
+    );
+    expect(screen.getByText(/→ \$884\.61\/paycheck$/)).toBeInTheDocument();
+    expect(screen.getByText(/^\$500(\.00)?\/paycheck \(/)).toBeInTheDocument();
+    unmount();
+    render(
+      <ContributionCard
+        {...defaultProps}
+        contrib={{ ...perPaycheck, autoMaximize: true }}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /^Set to \$500(\.00)?\/paycheck \(\$13,000\/yr toward \$23,000 limit\)$/,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("accounts for sibling contributions sharing the same IRS limit", () => {
     render(
       <ContributionCard {...defaultProps} siblingAnnualContributions={20000} />,
