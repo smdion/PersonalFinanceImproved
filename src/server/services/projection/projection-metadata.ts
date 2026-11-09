@@ -92,7 +92,7 @@ export function projectionContributionSpecs(
     // Fallback: use linked performance account's display name,
     // routed through the shared precedence rule (portfolio-labels.ts)
     // so THIS contribution row's own real owner (personId) wins over
-    // perfAcct's own ownershipType — a shared, jointly-tracked master
+    // perfAccount's own ownershipType — a shared, jointly-tracked master
     // (e.g. one Vanguard IRA both spouses contribute to separately)
     // has ownershipType "joint", which would otherwise render "Joint
     // ..." for every such row instead of each person's own name.
