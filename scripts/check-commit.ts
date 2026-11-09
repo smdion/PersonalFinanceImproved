@@ -3564,6 +3564,33 @@ function shapeKeyProblem(
   return undefined;
 }
 
+/**
+ * A string literal that names a property in a type, not a value: the index
+ * of `T["key"]`, or a key argument of `Pick`/`Omit` (alone or in a union).
+ */
+function isTypeKeyLiteral(node: ts.Node): boolean {
+  if (node.kind !== ts.SyntaxKind.StringLiteral) return false;
+  let n: ts.Node = node.parent;
+  if (!ts.isLiteralTypeNode(n)) return false;
+  if (ts.isIndexedAccessTypeNode(n.parent) && n.parent.indexType === n)
+    return true;
+  while (ts.isUnionTypeNode(n.parent)) n = n.parent;
+  const ref = n.parent;
+  return (
+    ts.isTypeReferenceNode(ref) &&
+    /^(Pick|Omit)$/.test(ref.typeName.getText()) &&
+    ref.typeArguments?.[1] === n
+  );
+}
+
+/** The old and new names when two tokens are the same type key renamed. */
+function typeKeyRename(x: Leaf, y: Leaf): [string, string] | undefined {
+  if (!isTypeKeyLiteral(x.node) || !isTypeKeyLiteral(y.node)) return undefined;
+  const [q, r] = [x.text[0], y.text[0]];
+  if (q !== r) return undefined;
+  return [x.text.slice(1, -1), y.text.slice(1, -1)];
+}
+
 /** Why one code file's change is more than `map` applied to its names. */
 function codeRenameProblem(
   file: string,
@@ -3585,6 +3612,15 @@ function codeRenameProblem(
     const [x, y] = [a[i], b[i]];
     if (x?.text === y?.text) continue;
     if (!x || !y) return `${at(y ?? x, y ? now : was)}: code added or removed`;
+    const typeKey = typeKeyRename(x, y);
+    if (typeKey) {
+      if (map.get(typeKey[0]) !== typeKey[1])
+        return `${at(y, now)}: "${typeKey[0]}" → "${typeKey[1]}" is not in the ${RENAME}: list`;
+      if (shapes.keys.has(typeKey[0]))
+        return `${at(y, now)}: "${typeKey[0]}" as a key: ${typeKey[0]} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+      used.add(typeKey[0]);
+      continue;
+    }
     if (!isName(x.node) || !isName(y.node))
       return `${at(y, now)}: "${x.text}" → "${y.text}" changes ${STRING_TOKEN.has(x.node.kind) || x.node.kind === ts.SyntaxKind.JsxText ? "a string" : "code"}, not a name`;
     if (map.get(x.text) !== y.text)

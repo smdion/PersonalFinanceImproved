@@ -258,6 +258,56 @@ describe("notARename", () => {
     ).toBe("Rename: wd renamed nowhere in this commit");
   });
 
+  it("lets a type key follow its name, and refuses a value string", () => {
+    const typed = (k: string) =>
+      [
+        `type S = { ${k}: number; other: number };`,
+        `type T = S["${k}"];`,
+        `type U = Pick<S, "${k}" | "other">;`,
+        `type V = Omit<S, "${k}">;`,
+      ].join("\n");
+    expect(
+      prove(
+        [
+          {
+            file: "src/lib/pure/a.ts",
+            old: typed("acctBal"),
+            new: typed("accountBalance"),
+          },
+        ],
+        "Rename: acctBal → accountBalance",
+      ),
+    ).toBeUndefined();
+    const valued = (k: string) =>
+      `type S = { ${k}: number };\nconst key: keyof S = "${k}";`;
+    expect(
+      prove(
+        [
+          {
+            file: "src/lib/pure/a.ts",
+            old: valued("acctBal"),
+            new: valued("accountBalance"),
+          },
+        ],
+        "Rename: acctBal → accountBalance",
+      ),
+    ).toBe(
+      'src/lib/pure/a.ts:2: ""acctBal"" → ""accountBalance"" changes a string, not a name',
+    );
+    expect(
+      prove(
+        [
+          {
+            file: "src/lib/pure/a.ts",
+            old: typed("annualReturnPct"),
+            new: typed("annualReturnPercent"),
+          },
+        ],
+        "Rename: annualReturnPct → annualReturnPercent",
+      ),
+    ).toMatch(/annualReturnPct is a stored, external or response key/);
+  });
+
   it("lets the register's references follow, and refuses other prose", () => {
     const register = (n: string) => `| CALC-01 | \`lib/pure/a.ts:${n}\` | H |`;
     expect(
