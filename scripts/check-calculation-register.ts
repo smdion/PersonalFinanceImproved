@@ -11,8 +11,10 @@
  *    shrink. A new export needs a row; a listed export that gets a row or
  *    goes away must leave the list (a stale entry fails too).
  * 4. Every row has a risk (H, M or L) in the baseline. High-risk rows with
- *    no independent test (no "independent" in the Test column) are listed
- *    too, and that list may only shrink the same way.
+ *    no independent test are listed too, and that list may only shrink the
+ *    same way. A row is independently tested when its Test column says
+ *    "independent" or its generated Tested column counts a passing
+ *    answer-key case (an expected failure or a table check doesn't count).
  *
  * The risk ratings come from the 2026-11-01 calculation-register review
  * (cost of being wrong × households affected × chance of failing
@@ -114,6 +116,16 @@ export function coveredExports(root = ROOT): string[] {
 // ── The checks ──────────────────────────────────────────────────────────
 
 const INDEPENDENT = /(?<!not )\bindependent\b/i;
+/** A passing answer-key case in the Tested column (`6 passing`). */
+const PASSING_ANSWER_KEY = /\b[1-9]\d* passing\b/;
+
+/** The Test column says independent, or an answer-key case passes. */
+function independentlyTested(row: RegisterRow): boolean {
+  return (
+    INDEPENDENT.test(row.cells.Test ?? "") ||
+    PASSING_ANSWER_KEY.test(row.cells.Tested ?? "")
+  );
+}
 
 /** What the register and the code say today. */
 export interface Measured {
@@ -134,10 +146,7 @@ export function measure(
   );
   return {
     highRiskWithoutIndependentTest: rows
-      .filter(
-        (r) =>
-          risk[r.cells.Id!] === "H" && !INDEPENDENT.test(r.cells.Test ?? ""),
-      )
+      .filter((r) => risk[r.cells.Id!] === "H" && !independentlyTested(r))
       .map((r) => r.cells.Id!)
       .sort(),
     exportsWithoutRow: exports.filter((e) => !named.has(e)).sort(),

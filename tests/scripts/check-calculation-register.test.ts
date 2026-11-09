@@ -117,6 +117,32 @@ describe("registerProblems", () => {
     ]);
   });
 
+  it("counts a passing answer-key case as an independent test, not an expected failure", () => {
+    const withTested = (cell: string) =>
+      DOC.replace("| Test |", "| Test | Tested |")
+        .replace("| ---- |", "| ---- | ------ |")
+        .replace(
+          "`pure/credit.test.ts`: self-derived |",
+          `\`pure/credit.test.ts\`: self-derived | ${cell} |`,
+        );
+    expect(
+      registerProblems(
+        withTested("`pure/answer-key-credit.test.ts`: 2 passing"),
+        EXPORTS,
+        BASELINE,
+      ),
+    ).toEqual([expect.stringMatching(/^TAX-02: no longer a high-risk row/)]);
+    expect(
+      registerProblems(
+        withTested(
+          "`pure/answer-key-credit.test.ts`: 3 expected failures, table check",
+        ),
+        EXPORTS,
+        BASELINE,
+      ),
+    ).toEqual([]);
+  });
+
   it("reads 'not independent' as no independent test", () => {
     const doc = DOC.replace(
       "`calculators/tax.test.ts`: independent",
