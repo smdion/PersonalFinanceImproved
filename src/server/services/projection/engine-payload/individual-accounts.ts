@@ -25,8 +25,7 @@ import {
   type RuleOf55Status,
   type RothBasisMeta,
 } from "@/lib/pure/accounts/tax-bucket-analysis";
-import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
-import { toNumber } from "@/lib/utils/numbers";
+import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
 import type { fetchRetirementData } from "./load";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
@@ -68,61 +67,13 @@ export function buildIndividualAccounts({
   // Portfolio-category holdings) — a Portfolio-category individualAccounts
   // entry simply has no match here, which is correct: early-access rules
   // don't apply to a taxable brokerage account.
-  const jobsById = new Map(allJobs.map((j) => [j.id, j]));
-  const jobLinks = jobLinkRows
-    .filter(
-      (l): l is { performanceAccountId: number; jobId: number } =>
-        l.performanceAccountId != null && l.jobId != null,
-    )
-    .map((l) => {
-      const job = jobsById.get(l.jobId);
-      return {
-        performanceAccountId: l.performanceAccountId,
-        endDate: job?.endDate ? new Date(job.endDate) : null,
-        isSpeculative: job?.isSpeculative ?? false,
-      };
-    });
-  const currentRothBasisRows = Array.from(
-    buildCurrentRothBasisMap(
-      accountBasisRows.map((r) => ({
-        id: r.id,
-        performanceAccountId: r.performanceAccountId,
-        ownerPersonId: r.ownerPersonId,
-        year: r.year,
-        contributionBasis: toNumber(r.contributionBasis),
-        conversionBasis: toNumber(r.conversionBasis),
-        latestConversionYear: r.latestConversionYear,
-        isFinalized: r.isFinalized,
-      })),
-    ).values(),
-  );
-  const accountBasisById = new Map(accountBasisRows.map((r) => [r.id, r]));
   const accountAnalysis = computeTaxBucketAnalysis({
     breakdown: taxBucketBreakdown,
-    performanceAccounts: perfAccounts.map((p) => ({
-      id: p.id,
-      accountType: p.accountType as AccountCategory,
-      ownerPersonId: p.ownerPersonId,
-      isActive: p.isActive,
-      separationDate: p.separationDate ? new Date(p.separationDate) : null,
-      costBasis: toNumber(p.costBasis),
-      accountLabel: p.accountLabel,
-      displayName: p.displayName,
-      institution: p.institution,
-    })),
-    jobLinks,
-    rothBasisRows: currentRothBasisRows.map((r) => {
-      const raw = accountBasisById.get(r.id)!;
-      return {
-        performanceAccountId: r.performanceAccountId,
-        ownerPersonId: r.ownerPersonId,
-        year: r.year,
-        contributionBasis: r.contributionBasis,
-        conversionBasis: r.conversionBasis,
-        latestConversionYear: r.latestConversionYear,
-        isSeeded: raw.isSeeded,
-        updatedAt: raw.updatedAt,
-      };
+    ...earlyAccessInputs({
+      jobs: allJobs,
+      jobLinkRows,
+      accountBasisRows,
+      perfAccounts,
     }),
     people: people.map((p) => ({
       id: p.id,

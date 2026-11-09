@@ -1087,7 +1087,7 @@
       "buildEnginePayload": 825
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
-      "buildIndividualAccounts": 238
+      "buildIndividualAccounts": 190
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 326

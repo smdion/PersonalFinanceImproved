@@ -8135,11 +8135,8 @@
     }
   },
   "src/server/routers/tax-buckets.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/routers/tiingo.ts": {
@@ -8605,7 +8602,7 @@
   },
   "src/server/services/projection/engine-payload/individual-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
@@ -8824,6 +8821,11 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
+  "src/server/services/tax/early-access-inputs.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },

@@ -23,11 +23,8 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
-import {
-  buildCurrentRothBasisMap,
-  selectCurrentRothBasisRow,
-} from "@/lib/pure/accounts/roth-basis-rollover";
-import type { AccountCategory } from "@/lib/config/account-types";
+import { selectCurrentRothBasisRow } from "@/lib/pure/accounts/roth-basis-rollover";
+import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 import { writeStamp } from "@/lib/utils/clock";
@@ -66,21 +63,6 @@ export const taxBucketsRouter = createTRPCRouter({
     ]);
 
     const jobs = await ctx.db.select().from(schema.jobs);
-    const jobsById = new Map(jobs.map((j) => [j.id, j]));
-
-    const jobLinks = contributionLinks
-      .filter(
-        (c): c is { performanceAccountId: number; jobId: number } =>
-          c.performanceAccountId != null && c.jobId != null,
-      )
-      .map((c) => {
-        const job = jobsById.get(c.jobId);
-        return {
-          performanceAccountId: c.performanceAccountId,
-          endDate: job?.endDate ? new Date(job.endDate) : null,
-          isSpeculative: job?.isSpeculative ?? false,
-        };
-      });
 
     const breakdown = computeTaxBucketBreakdown(
       snapshotData,
@@ -93,52 +75,13 @@ export const taxBucketsRouter = createTRPCRouter({
       })),
     );
 
-    // Select the "current" row per (account, owner) pair from the full
-    // year-scoped history — the latest non-finalized row, or the latest
-    // finalized one if no successor was ever seeded. Never a single
-    // global latest year: different pairs can have different histories.
-    const currentRothBasisRows = Array.from(
-      buildCurrentRothBasisMap(
-        rothBasisRows.map((r) => ({
-          id: r.id,
-          performanceAccountId: r.performanceAccountId,
-          ownerPersonId: r.ownerPersonId,
-          year: r.year,
-          contributionBasis: toNumber(r.contributionBasis),
-          conversionBasis: toNumber(r.conversionBasis),
-          latestConversionYear: r.latestConversionYear,
-          isFinalized: r.isFinalized,
-        })),
-      ).values(),
-    );
-    const rothBasisById = new Map(rothBasisRows.map((r) => [r.id, r]));
-
     const analysis = computeTaxBucketAnalysis({
       breakdown,
-      performanceAccounts: perfAccounts.map((p) => ({
-        id: p.id,
-        accountType: p.accountType as AccountCategory,
-        ownerPersonId: p.ownerPersonId,
-        isActive: p.isActive,
-        separationDate: p.separationDate ? new Date(p.separationDate) : null,
-        costBasis: toNumber(p.costBasis),
-        accountLabel: p.accountLabel,
-        displayName: p.displayName,
-        institution: p.institution,
-      })),
-      jobLinks,
-      rothBasisRows: currentRothBasisRows.map((r) => {
-        const raw = rothBasisById.get(r.id)!;
-        return {
-          performanceAccountId: r.performanceAccountId,
-          ownerPersonId: r.ownerPersonId,
-          year: r.year,
-          contributionBasis: r.contributionBasis,
-          conversionBasis: r.conversionBasis,
-          latestConversionYear: r.latestConversionYear,
-          isSeeded: raw.isSeeded,
-          updatedAt: new Date(raw.updatedAt),
-        };
+      ...earlyAccessInputs({
+        jobs,
+        jobLinkRows: contributionLinks,
+        accountBasisRows: rothBasisRows,
+        perfAccounts,
       }),
       people: people.map((p) => ({
         id: p.id,
