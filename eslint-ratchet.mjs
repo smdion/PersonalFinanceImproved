@@ -36,11 +36,12 @@ const CLOSED_SET_FIELDS = [
 ].join("|");
 
 /** Abbreviations a name may not use (CONTRIBUTING § Variable naming; owner
- *  Q7, v0.10.5): one list, read by the rule and the carve-out generator. */
+ *  Q7 and W8): one list, read by the rule and the carve-out generator. */
 export const ABBREVIATIONS = [
   ...["pct", "amt", "acct", "yr", "idx", "mo"],
   ...["contrib", "bal", "mc", "dec", "wd", "infl"],
   ...["alloc", "calc", "proj", "sal", "est", "ann"],
+  ...["ind", "perf", "cat", "brok", "decum", "accum", "ret"],
 ];
 
 /** Stored, schema and response keys that keep their abbreviation; generated

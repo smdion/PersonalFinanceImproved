@@ -155,6 +155,24 @@ describe("ratchet/no-abbreviation", () => {
     ).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
+  it("counts the second set (owner W8): ind, perf, cat, brok, decum, accum, ret", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const indKey = 1;",
+          "const perfRows = 1;",
+          "const parentCat = 1;",
+          "const brokAccounts = 1;",
+          "const decumYears = 1;",
+          "const accumPhase = 1;",
+          "const retAge = 1;",
+          "const individualKey = performance + category + brokerage + retirement + returns + catalog + index + decimal;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
   it("passes full words, words that only contain one, uses, imports and carve-outs", () => {
     expect(
       reported(
