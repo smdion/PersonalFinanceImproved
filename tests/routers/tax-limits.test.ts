@@ -15,6 +15,7 @@ import {
   reconcileTaxDataFiles,
 } from "@/lib/db/reference-data";
 import * as schema from "@/lib/db/schema-sqlite";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -48,7 +49,7 @@ describe("settings.contributionLimits", () => {
       expect(result).toBeDefined();
       expect(result!.taxYear).toBe(2099);
       expect(result!.limitType).toBe("test_limit_type");
-      expect(result!.value).toBe("23500");
+      expect(decimalText(result!.value)).toBe("23500");
     } finally {
       cleanup();
     }
@@ -65,7 +66,7 @@ describe("settings.contributionLimits", () => {
       const rows = await caller.settings.contributionLimits.list();
       const found = rows.find((r: { id: number }) => r.id === created!.id);
       expect(found).toBeDefined();
-      expect(found!.value).toBe("5000");
+      expect(decimalText(found!.value)).toBe("5000");
     } finally {
       cleanup();
     }
@@ -100,7 +101,7 @@ describe("settings.contributionLimits", () => {
         limitType: "hsa_update_test",
         value: "8550",
       });
-      expect(updated!.value).toBe("8550");
+      expect(decimalText(updated!.value)).toBe("8550");
     } finally {
       cleanup();
     }

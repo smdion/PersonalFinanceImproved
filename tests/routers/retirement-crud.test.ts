@@ -23,6 +23,7 @@ import {
   viewerSession,
   adminSession,
 } from "./setup";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -93,7 +94,7 @@ describe("retirement.retirementSettings", () => {
       });
       expect(result!.retirementAge).toBe(60);
       expect(result!.endAge).toBe(90);
-      expect(result!.withdrawalRate).toBe("0.035");
+      expect(decimalText(result!.withdrawalRate)).toBe("0.035");
     });
 
     it("still only one row after update", async () => {
@@ -192,9 +193,9 @@ describe("retirement.retirementSettings", () => {
         ssStartAge: 67,
         filingStatus: "MFJ",
       });
-      expect(result!.postRetirementInflation).toBe("0.025");
-      expect(result!.salaryCap).toBe("200000");
-      expect(result!.socialSecurityMonthly).toBe("2500");
+      expect(decimalText(result!.postRetirementInflation)).toBe("0.025");
+      expect(decimalText(result!.salaryCap)).toBe("200000");
+      expect(decimalText(result!.socialSecurityMonthly)).toBe("2500");
       expect(result!.ssStartAge).toBe(67);
     });
 
@@ -299,8 +300,8 @@ describe("retirement.retirementSettings", () => {
       const byPerson = new Map(
         rows.map((r) => [r.personId, r.salaryAnnualIncrease]),
       );
-      expect(byPerson.get(personId)).toBe("0.02");
-      expect(byPerson.get(secondPersonId)).toBe("0.07");
+      expect(decimalText(byPerson.get(personId))).toBe("0.02");
+      expect(decimalText(byPerson.get(secondPersonId))).toBe("0.07");
     });
   });
 
@@ -367,7 +368,7 @@ describe("retirement.retirementSalaryOverrides", () => {
       });
       expect(created).toBeDefined();
       expect(created!.projectionYear).toBe(2030);
-      expect(created!.overrideSalary).toBe("150000");
+      expect(decimalText(created!.overrideSalary)).toBe("150000");
       expect(created!.createdBy).toContain("Test Admin");
       overrideId = created!.id;
     });
@@ -397,7 +398,7 @@ describe("retirement.retirementSalaryOverrides", () => {
         overrideSalary: "160000",
         notes: "Revised promotion",
       });
-      expect(updated!.overrideSalary).toBe("160000");
+      expect(decimalText(updated!.overrideSalary)).toBe("160000");
       expect(updated!.updatedBy).toContain("Test Admin");
     });
 
@@ -447,7 +448,7 @@ describe("retirement.retirementBudgetOverrides", () => {
         notes: "Lower spending after mortgage paid off",
       });
       expect(created).toBeDefined();
-      expect(created!.overrideMonthlyBudget).toBe("5000");
+      expect(decimalText(created!.overrideMonthlyBudget)).toBe("5000");
       expect(created!.createdBy).toContain("Test Admin");
       overrideId = created!.id;
     });
@@ -465,7 +466,7 @@ describe("retirement.retirementBudgetOverrides", () => {
         overrideMonthlyBudget: "4500",
         notes: "Revised estimate",
       });
-      expect(updated!.overrideMonthlyBudget).toBe("4500");
+      expect(decimalText(updated!.overrideMonthlyBudget)).toBe("4500");
       expect(updated!.updatedBy).toContain("Test Admin");
     });
 
@@ -518,7 +519,7 @@ describe("retirement.returnRates", () => {
       });
       expect(result).toBeDefined();
       expect(result!.age).toBe(30);
-      expect(result!.rateOfReturn).toBe("0.08");
+      expect(decimalText(result!.rateOfReturn)).toBe("0.08");
     });
 
     it("upsert inserts a second rate for a different age", async () => {
@@ -540,7 +541,7 @@ describe("retirement.returnRates", () => {
         age: 30,
         rateOfReturn: "0.07",
       });
-      expect(result!.rateOfReturn).toBe("0.07");
+      expect(decimalText(result!.rateOfReturn)).toBe("0.07");
 
       // Still only two rows
       const rows = await caller.retirement.returnRates.list();
@@ -783,7 +784,7 @@ describe("retirement.retirementProfiles", () => {
       const secondAfter = after.find(
         (s) => s.personId === personA && s.profileId === secondProfileId,
       )!;
-      expect(firstAfter.annualInflation).toBe("0.05");
+      expect(decimalText(firstAfter.annualInflation)).toBe("0.05");
       // The OTHER profile's row for the same person must be untouched.
       expect(secondAfter.annualInflation).toBe(secondRow.annualInflation);
     });
@@ -889,11 +890,13 @@ describe("retirement.retirementProfiles", () => {
         // Person B's rate in this profile is now the value we set — and it's
         // genuinely distinct from person A's (the whole point of the
         // per-person control).
-        expect(personBAfter.salaryAnnualIncrease).toBe("0.045");
+        expect(decimalText(personBAfter.salaryAnnualIncrease)).toBe("0.045");
         expect(personAAfter.salaryAnnualIncrease).toBe(
           personARow.salaryAnnualIncrease,
         );
-        expect(personAAfter.salaryAnnualIncrease).not.toBe("0.045");
+        expect(decimalText(personAAfter.salaryAnnualIncrease)).not.toBe(
+          "0.045",
+        );
         // The other profile's row for the same person is untouched.
         expect(personBOtherAfter.salaryAnnualIncrease).toBe(
           personBOtherProfile.salaryAnnualIncrease,

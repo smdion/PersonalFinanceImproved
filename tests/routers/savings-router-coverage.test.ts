@@ -34,6 +34,7 @@ import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { goalClient } from "../helpers/goal-client";
 import { BudgetApiError } from "@/lib/budget-api/errors";
+import { decimalText } from "./decimal-text";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetBudgetAPIClient = vi.fn().mockResolvedValue(null);
@@ -579,7 +580,9 @@ describe("savings.recalculateAllocation", () => {
       });
       expect(result.updated).toBe(1);
       expect(
-        getOverrideRow(ctx.db, goalB, profileId)!.monthlyContribution,
+        decimalText(
+          getOverrideRow(ctx.db, goalB, profileId)!.monthlyContribution,
+        ),
       ).toBe("250");
     } finally {
       ctx.cleanup();
@@ -602,7 +605,9 @@ describe("savings.recalculateAllocation", () => {
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
       expect(
-        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+        decimalText(
+          getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+        ),
       ).toBe("150");
     } finally {
       ctx.cleanup();
@@ -731,7 +736,9 @@ describe("savings.lockInAllocationPercent", () => {
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
       expect(
-        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+        decimalText(
+          getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+        ),
       ).toBe("150");
     } finally {
       ctx.cleanup();
@@ -757,9 +764,11 @@ describe("savings.lockInAllocationPercent", () => {
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-      expect(getOverrideRow(ctx.db, goalB, profileId)!.allocationPercent).toBe(
-        "20",
-      );
+      expect(
+        decimalText(
+          getOverrideRow(ctx.db, goalB, profileId)!.allocationPercent,
+        ),
+      ).toBe("20");
     } finally {
       ctx.cleanup();
     }
@@ -780,9 +789,11 @@ describe("savings.lockInAllocationPercent", () => {
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-      expect(getOverrideRow(ctx.db, goalId, profileId)!.allocationPercent).toBe(
-        "10",
-      );
+      expect(
+        decimalText(
+          getOverrideRow(ctx.db, goalId, profileId)!.allocationPercent,
+        ),
+      ).toBe("10");
     } finally {
       ctx.cleanup();
     }

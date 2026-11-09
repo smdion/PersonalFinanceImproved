@@ -31,12 +31,6 @@ export interface MatchRateDb {
   setFields: (profileId: number, fields: Fields | null) => Promise<void>;
 }
 
-/** PostgreSQL's numeric text as SQLite's: "50.00" → "50", "0.500000" → "0.5". */
-export function sqliteDecimal(v: unknown): unknown {
-  if (typeof v !== "string" || !/^-?\d+\.\d+$/.test(v)) return v;
-  return v.replace(/0+$/, "").replace(/\.$/, "");
-}
-
 export function matchRateWriteCases(h: () => MatchRateDb): void {
   const account = {
     accountType: "401k" as const,

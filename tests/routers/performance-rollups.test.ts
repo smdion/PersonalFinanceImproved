@@ -19,6 +19,7 @@ import {
   seedSnapshot,
 } from "./setup";
 import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -174,22 +175,26 @@ describe("a finalized year takes only the edit's change", () => {
     });
 
     const b = row(2030, "Brokerage")!;
-    expect(b.endingBalance).toBe("925.00");
-    expect(b.yearlyGainLoss).toBe("125.00");
-    expect(b.lifetimeGains).toBe("125.00");
+    expect(decimalText(b.endingBalance)).toBe(decimalText("925.00"));
+    expect(decimalText(b.yearlyGainLoss)).toBe(decimalText("125.00"));
+    expect(decimalText(b.lifetimeGains)).toBe(decimalText("125.00"));
     // Stored 30% on a 200 gain = 666.67 of capital; a gain-only edit keeps it.
     expect(Number(b.annualReturnPct)).toBeCloseTo(125 / (200 / 0.3), 6);
 
     const p = row(2030, "Portfolio")!;
-    expect(p.yearlyGainLoss).toBe("275.00"); // the +50 override survives
-    expect(p.endingBalance).toBe("2025.00");
-    expect(p.lifetimeGains).toBe("9275.00"); // baseline kept, not re-summed
-    expect(p.lifetimeContributions).toBe("40300.00");
+    expect(decimalText(p.yearlyGainLoss)).toBe(decimalText("275.00")); // the +50 override survives
+    expect(decimalText(p.endingBalance)).toBe(decimalText("2025.00"));
+    expect(decimalText(p.lifetimeGains)).toBe(decimalText("9275.00")); // baseline kept, not re-summed
+    expect(decimalText(p.lifetimeContributions)).toBe(decimalText("40300.00"));
     expect(Number(p.annualReturnPct)).toBeCloseTo(275 / (350 / 0.2), 6);
 
-    expect(row(2031, "Brokerage")!.lifetimeGains).toBe("185.00");
-    expect(row(2031, "Portfolio")!.lifetimeGains).toBe("9425.00");
-    expect(row(2030, "401k/IRA")!.lifetimeGains).toBe("5100");
+    expect(decimalText(row(2031, "Brokerage")!.lifetimeGains)).toBe(
+      decimalText("185.00"),
+    );
+    expect(decimalText(row(2031, "Portfolio")!.lifetimeGains)).toBe(
+      decimalText("9425.00"),
+    );
+    expect(decimalText(row(2030, "401k/IRA")!.lifetimeGains)).toBe("5100");
     expect(row(2030, "Retirement")).toBeUndefined();
   });
 
@@ -198,8 +203,8 @@ describe("a finalized year takes only the edit's change", () => {
       id: brokerageRow,
       endingBalance: "1000",
     });
-    expect(row(2030, "Portfolio")!.yearlyGainLoss).toBe("350");
-    expect(row(2031, "Portfolio")!.lifetimeGains).toBe("9500");
+    expect(decimalText(row(2030, "Portfolio")!.yearlyGainLoss)).toBe("350");
+    expect(decimalText(row(2031, "Portfolio")!.lifetimeGains)).toBe("9500");
   });
 
   it("an account changing type moves its figures between categories; Portfolio holds", async () => {
@@ -210,9 +215,13 @@ describe("a finalized year takes only the edit's change", () => {
       ownershipType: "individual",
       parentCategory: "Retirement",
     });
-    expect(row(2030, "Brokerage")!.endingBalance).toBe("0.00");
-    expect(row(2030, "401k/IRA")!.endingBalance).toBe("2100.00");
-    expect(row(2030, "Portfolio")!.endingBalance).toBe("2100");
+    expect(decimalText(row(2030, "Brokerage")!.endingBalance)).toBe(
+      decimalText("0.00"),
+    );
+    expect(decimalText(row(2030, "401k/IRA")!.endingBalance)).toBe(
+      decimalText("2100.00"),
+    );
+    expect(decimalText(row(2030, "Portfolio")!.endingBalance)).toBe("2100");
     expect(row(2030, "Retirement")).toBeUndefined();
   });
 });
@@ -278,11 +287,13 @@ describe("snapshots set ending balances only when they're the year's latest", ()
     ]);
     expect(await sync("2032-03-01", "500")).toBe("earlier-snapshot");
     expect(
-      t.db
-        .select()
-        .from(schema.accountPerformance)
-        .where(eq(schema.accountPerformance.year, 2032))
-        .get()!.endingBalance,
+      decimalText(
+        t.db
+          .select()
+          .from(schema.accountPerformance)
+          .where(eq(schema.accountPerformance.year, 2032))
+          .get()!.endingBalance,
+      ),
     ).toBe("700");
   });
 
@@ -304,7 +315,7 @@ describe("snapshots set ending balances only when they're the year's latest", ()
       { performanceAccountId: brokerage, amount: "800" },
     ]);
     expect(await sync("2030-12-31", "800")).toBe("year-finalized");
-    expect(row(2030, "Portfolio")!.endingBalance).toBe("700");
+    expect(decimalText(row(2030, "Portfolio")!.endingBalance)).toBe("700");
   });
 });
 
@@ -374,7 +385,7 @@ describe("editing a row: balance, next year, preview", () => {
 
   it("a balanced row's gain follows its ending; a row with a deliberate gap keeps its gain", async () => {
     await t.caller.performance.updateAccount({ id: n, endingBalance: "925" });
-    expect(acct(n).yearlyGainLoss).toBe("125.00");
+    expect(decimalText(acct(n).yearlyGainLoss)).toBe(decimalText("125.00"));
 
     const gap = acctRow(2032, brokerage, {
       beginningBalance: "0",
@@ -382,7 +393,7 @@ describe("editing a row: balance, next year, preview", () => {
       yearlyGainLoss: "60",
     });
     await t.caller.performance.updateAccount({ id: gap, endingBalance: "90" });
-    expect(acct(gap).yearlyGainLoss).toBe("60");
+    expect(decimalText(acct(gap).yearlyGainLoss)).toBe("60");
   });
 
   it("chained across a finalized year: next year begins at the new ending and every later lifetime total ends where it started", async () => {
@@ -412,10 +423,12 @@ describe("editing a row: balance, next year, preview", () => {
       endingBalance: "925",
       chainNextYear: true,
     });
-    expect(acct(next)).toMatchObject({
-      beginningBalance: "925.00",
-      yearlyGainLoss: "90",
-    });
+    expect(decimalText(acct(next))).toMatchObject(
+      decimalText({
+        beginningBalance: "925.00",
+        yearlyGainLoss: "90",
+      }),
+    );
   });
 
   it("a preview reports every change — the row, next year, rollups, checks — and writes nothing", async () => {
@@ -440,9 +453,9 @@ describe("editing a row: balance, next year, preview", () => {
     ).toContainEqual({ field: "lifetimeGains", from: 700, to: 625 });
     expect(p.checks[n]).toEqual([]);
 
-    expect(acct(n).endingBalance).toBe("1000");
-    expect(acct(next).beginningBalance).toBe("1000");
-    expect(row(2030, "Portfolio")!.lifetimeGains).toBe("700");
+    expect(decimalText(acct(n).endingBalance)).toBe("1000");
+    expect(decimalText(acct(next).beginningBalance)).toBe("1000");
+    expect(decimalText(row(2030, "Portfolio")!.lifetimeGains)).toBe("700");
     const stamp = t.db
       .select()
       .from(schema.appSettings)
