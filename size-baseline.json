@@ -356,7 +356,7 @@
     "src/server/data/snapshots.ts": 105,
     "src/server/routers/assets.ts": 438,
     "src/server/routers/budget/index.ts": 21,
-    "src/server/routers/contribution-profiles.ts": 735,
+    "src/server/routers/contribution-profiles.ts": 562,
     "src/server/routers/demo.ts": 79,
     "src/server/routers/milestones.ts": 50,
     "src/server/routers/networth/comparison.ts": 245,
@@ -375,7 +375,7 @@
     "src/server/routers/projection/strategy.ts": 85,
     "src/server/routers/projection/tax-optimization.ts": 450,
     "src/server/routers/retirement/index.ts": 17,
-    "src/server/routers/salary-profiles.ts": 500,
+    "src/server/routers/salary-profiles.ts": 377,
     "src/server/routers/savings/api-sync.ts": 14,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 359,
@@ -394,6 +394,7 @@
     "src/server/services/contributions/account-edits.ts": 215,
     "src/server/services/contributions/caps.ts": 326,
     "src/server/services/contributions/live-data.ts": 85,
+    "src/server/services/contributions/profile-detail.ts": 184,
     "src/server/services/contributions/profile.ts": 310,
     "src/server/services/contributions/summary.ts": 719,
     "src/server/services/debts/other-liabilities.ts": 54,
@@ -410,7 +411,7 @@
     "src/server/services/performance/summary.ts": 160,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
     "src/server/services/profiles/retirement-year.ts": 51,
-    "src/server/services/profiles/salary-profile.ts": 86,
+    "src/server/services/profiles/salary-profile.ts": 209,
     "src/server/services/projection/coast-fire.ts": 294,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 847,
     "src/server/services/projection/engine-payload/load.ts": 156,
@@ -1012,9 +1013,6 @@
     "src/server/routers/assets.ts": {
       "assetsRouter.computeSummary.query()": 171
     },
-    "src/server/routers/contribution-profiles.ts": {
-      "contributionProfileRouter.getById.query()": 174
-    },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
     },
@@ -1032,6 +1030,9 @@
     },
     "src/server/services/contributions/contribution-mix.ts": {
       "loadContributionMix": 182
+    },
+    "src/server/services/contributions/profile-detail.ts": {
+      "loadContributionProfileDetail": 172
     },
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 633,

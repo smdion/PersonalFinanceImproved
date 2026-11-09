@@ -5034,13 +5034,10 @@
   },
   "src/server/routers/contribution-profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    },
-    "max-lines-per-function": {
-      "count": 1
+      "count": 5
     },
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 5
     }
   },
   "src/server/routers/investments/account-insights.ts": {
@@ -5151,7 +5148,7 @@
   },
   "src/server/routers/salary-profiles.ts": {
     "ratchet/no-unregistered-fallback": {
-      "count": 5
+      "count": 1
     }
   },
   "src/server/routers/savings/api-links.ts": {
@@ -5385,6 +5382,17 @@
       "count": 1
     }
   },
+  "src/server/services/contributions/profile-detail.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 6
+    }
+  },
   "src/server/services/contributions/profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
@@ -5579,6 +5587,11 @@
   "src/server/services/profiles/first-retirement-profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
+    }
+  },
+  "src/server/services/profiles/salary-profile.ts": {
+    "ratchet/no-unregistered-fallback": {
+      "count": 4
     }
   },
   "src/server/services/projection/coast-fire-probe.ts": {
