@@ -10,7 +10,7 @@
  * index k against index 0, so `shocks[0]` is never compounded. Past the
  * shocks (a look ahead beyond the horizon) the plan's rate applies.
  *
- * No clamp beyond MC_INFLATION_GROWTH_FLOOR: truncating draws would bias
+ * No clamp beyond SIMULATION_INFLATION_GROWTH_FLOOR: truncating draws would bias
  * inflation up.
  */
 import { MC_INFLATION_GROWTH_FLOOR } from "../../constants";
