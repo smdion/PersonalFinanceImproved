@@ -10,7 +10,7 @@ import {
 } from "@/lib/pure/household/what-if.schema";
 import * as schema from "@/lib/db/schema";
 import { canDeleteBudgetProfile } from "@/lib/pure/household/profiles";
-import { columnLabelsSchema } from "@/lib/db/json-schemas";
+import { columnLabelsSchema } from "@/lib/db/shapes/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
 
 export const profileProcedures = {

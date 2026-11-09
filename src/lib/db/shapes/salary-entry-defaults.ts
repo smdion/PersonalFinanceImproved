@@ -4,7 +4,7 @@
  * (a job with no entry contributes $0).
  */
 import type { z } from "zod/v4";
-import type { salaryEntrySchema } from "@/lib/db/json-schemas";
+import type { salaryEntrySchema } from "@/lib/db/shapes/json-schemas";
 
 export type SalaryEntry = z.infer<typeof salaryEntrySchema>;
 

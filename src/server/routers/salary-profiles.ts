@@ -6,7 +6,7 @@ import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,
-} from "@/lib/db/salary-entry-defaults";
+} from "@/lib/db/shapes/salary-entry-defaults";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -15,7 +15,10 @@ import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
+import {
+  salaryEntriesSchema,
+  salaryEntrySchema,
+} from "@/lib/db/shapes/json-schemas";
 import { resolveCompensation } from "@/lib/pure/household/compensation";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";

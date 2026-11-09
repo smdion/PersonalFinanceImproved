@@ -1,4 +1,4 @@
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import type { DemoProfile } from "@/lib/demo";
 import * as schema from "@/lib/db/schema";
 import type { db as appDb } from "@/lib/db";
@@ -10,7 +10,7 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "@/server/data/jobs";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */

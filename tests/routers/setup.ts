@@ -25,7 +25,7 @@ import {
 } from "./postgres-router-db";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 // Import schema for SQLite

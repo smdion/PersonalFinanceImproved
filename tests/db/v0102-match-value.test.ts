@@ -18,7 +18,7 @@ import {
   convertBackupInOrder,
 } from "@/lib/db/migration-converters";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
-import { contribAccountActiveFieldsSchema } from "@/lib/db/json-schemas";
+import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { storedMatchRate } from "@/lib/pure/contributions/employer-match";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";

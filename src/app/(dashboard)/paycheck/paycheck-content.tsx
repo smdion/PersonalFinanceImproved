@@ -22,7 +22,7 @@ import {
 import {
   contributionAccountFieldKind,
   deductionFieldKind,
-} from "@/lib/db/profile-fields";
+} from "@/lib/db/shapes/profile-fields";
 import { EmptyState } from "@/components/ui/empty-state";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
@@ -34,8 +34,8 @@ import {
   EDIT_LOCK_KEYS,
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
-import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import { salaryEntryEdit } from "@/lib/db/shapes/salary-entry-edit";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
 import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 

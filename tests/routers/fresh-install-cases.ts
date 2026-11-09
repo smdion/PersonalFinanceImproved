@@ -12,7 +12,7 @@ import { spawnSync } from "node:child_process";
 import * as path from "node:path";
 import type { Session } from "next-auth";
 import type { AppRouter } from "@/server/routers";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_RETIREMENT_PROFILE_ID,

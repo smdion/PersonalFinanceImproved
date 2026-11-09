@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { budgetAmountsSchema } from "@/lib/db/json-schemas";
+import { budgetAmountsSchema } from "@/lib/db/shapes/json-schemas";
 import {
   loadBudgetItemLinks,
   setBudgetItemLink,

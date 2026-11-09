@@ -8,7 +8,10 @@
 import { describe, it, expect } from "vitest";
 import { readTaxData } from "../helpers/tax-data";
 import { validateTaxDataFile } from "@/lib/tax-data/validate";
-import { irmaaBracketsSchema, ltcgBracketsSchema } from "@/lib/db/json-schemas";
+import {
+  irmaaBracketsSchema,
+  ltcgBracketsSchema,
+} from "@/lib/db/shapes/json-schemas";
 import {
   assembleTaxData,
   readTaxDataDir,

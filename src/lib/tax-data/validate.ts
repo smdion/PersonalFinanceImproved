@@ -13,7 +13,7 @@ import {
   fplByHouseholdAmountsSchema,
   irmaaBracketsSchema,
   ltcgBracketsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 
 /** Indexed dollar figures may move −2%…+15% a year. */
 const INDEXED_BOUNDS = [0.98, 1.15] as const;

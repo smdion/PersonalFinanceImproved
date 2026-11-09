@@ -14,7 +14,7 @@ import { describe, it, expect } from "vitest";
 import {
   deductionActiveFieldsSchema,
   contributionActiveFieldsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 
 describe("deductionActiveFieldsSchema", () => {
   it("accepts amountPerPeriod as a valid decimal string", () => {

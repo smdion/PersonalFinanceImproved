@@ -18,7 +18,7 @@
 import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { eq } from "drizzle-orm";

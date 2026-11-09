@@ -17,7 +17,7 @@ import {
   convertBackup,
 } from "@/lib/db/migration-converters";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
-import { contribAccountActiveFieldsSchema } from "@/lib/db/json-schemas";
+import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { ACCOUNT_CASES, PROFILE_CASES, NOT_JSON } from "./match-rate-cases";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { salaryEntrySchema } from "@/lib/db/json-schemas";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { salaryEntrySchema } from "@/lib/db/shapes/json-schemas";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 
 // salaryEntrySchema is `.strict()` and every stored entry is complete, so a
 // new required field needs a default here: salaryProfile.getById spreads the

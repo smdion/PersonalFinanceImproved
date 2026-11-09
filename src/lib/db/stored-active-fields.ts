@@ -7,7 +7,7 @@ import {
   CONTRIBUTION_METHOD_VALUES,
   EMPLOYER_MATCH_TYPE_VALUES,
 } from "@/lib/config/enum-values";
-import { contributionActiveFieldsSchema } from "@/lib/db/json-schemas";
+import { contributionActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import type { EntityFieldMap } from "@/lib/db/schema";
 import { logWarnOnce } from "@/lib/logger";
 

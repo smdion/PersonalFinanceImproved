@@ -21,7 +21,7 @@ import {
   taxBracketsSchema,
   accountMappingSchema,
   relocationScenarioParamsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 
 // ── Column Labels Schema ──────────────────────────────────────────
 

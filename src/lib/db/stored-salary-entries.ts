@@ -2,8 +2,8 @@
  * salary_profiles.salaries as read: checked once against the entry schema;
  * a row the check refuses is logged and read as stored (any install loads).
  */
-import { salaryEntriesSchema } from "@/lib/db/json-schemas";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import { salaryEntriesSchema } from "@/lib/db/shapes/json-schemas";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { logWarnOnce } from "@/lib/logger";
 
 type SalaryProfileRow = {

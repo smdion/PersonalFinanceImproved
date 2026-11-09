@@ -13,7 +13,7 @@
  */
 import "./setup-mocks";
 import type Database from "better-sqlite3";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { and, eq, type SQL } from "drizzle-orm";

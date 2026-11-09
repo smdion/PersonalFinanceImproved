@@ -10,7 +10,7 @@
  * no salary of its own to fall back to.
  */
 import "./setup-mocks";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { vi, describe, it, expect } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({

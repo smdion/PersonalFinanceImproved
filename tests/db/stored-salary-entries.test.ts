@@ -1,7 +1,7 @@
 /** salary_profiles.salaries is checked once on read and read as stored. */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { salaryEntry } from "../helpers/salary-entry";
 
 afterEach(() => vi.restoreAllMocks());

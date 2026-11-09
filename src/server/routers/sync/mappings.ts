@@ -17,7 +17,7 @@ import {
   remotesPulledTwice,
 } from "@/lib/pure/sync/account-mapping";
 import { clearUnmappedPulledBalances } from "@/server/services/sync/apply-pull-mapping";
-import { accountMappingSchema } from "@/lib/db/json-schemas";
+import { accountMappingSchema } from "@/lib/db/shapes/json-schemas";
 import { pushSnapshotToBudgetApi } from "@/server/services/sync/budget-api-push";
 import { formatList } from "@/lib/utils/format";
 import { serviceEnum } from "./_shared";

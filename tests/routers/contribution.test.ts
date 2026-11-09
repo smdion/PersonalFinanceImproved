@@ -4,7 +4,7 @@
  * Tests the contribution computation pipeline with various data states.
  */
 import "./setup-mocks";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,

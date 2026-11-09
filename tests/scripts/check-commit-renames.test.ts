@@ -26,7 +26,7 @@ const diffOf = (changes: Change[]) =>
 
 const shapes = {
   keys: new Set(["annualReturnPct", "retirementAge"]),
-  isShapeFile: (f: string) => f === "src/lib/db/json-schemas.ts",
+  isShapeFile: (f: string) => f === "src/lib/db/shapes/json-schemas.ts",
 };
 
 const prove = (changes: Change[], trailer = "Rename: retAge → retirementAge") =>
@@ -262,13 +262,13 @@ describe("notARename", () => {
     expect(
       prove([
         {
-          file: "src/lib/db/json-schemas.ts",
+          file: "src/lib/db/shapes/json-schemas.ts",
           old: field("retAge"),
           new: field("retirementAge"),
         },
       ]),
     ).toBe(
-      "src/lib/db/json-schemas.ts:1: retAge as a key: src/lib/db/json-schemas.ts defines a stored shape",
+      "src/lib/db/shapes/json-schemas.ts:1: retAge as a key: src/lib/db/shapes/json-schemas.ts defines a stored shape",
     );
   });
 

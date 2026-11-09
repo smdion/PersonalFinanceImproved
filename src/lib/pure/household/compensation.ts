@@ -3,7 +3,7 @@
  * come from `historical_salaries`, the current picture from the active Salary
  * Profile's complete entry for the job (SalaryEntry).
  */
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import type { BonusTerms } from "@/lib/pure/paycheck/paycheck.types";

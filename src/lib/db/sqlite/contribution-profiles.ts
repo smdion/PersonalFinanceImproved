@@ -4,7 +4,7 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import type { EntityFieldMap } from "./scenarios";
 
 // ────────────────────────────────────────────────────────────────────────────

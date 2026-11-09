@@ -9,8 +9,8 @@
  */
 import type { inferRouterInputs } from "@trpc/server";
 import type { AppRouter } from "@/server/routers";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 
 type Inputs = inferRouterInputs<AppRouter>;
 type ContribInput = Inputs["settings"]["contributionAccounts"]["create"];

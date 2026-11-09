@@ -10,7 +10,7 @@
     "src/server/auth.ts!",
     "src/lib/config/enum-values.ts!",
     "src/lib/config/enum-values.schema.ts!",
-    "src/lib/db/json-schemas.ts!",
+    "src/lib/db/shapes/json-schemas.ts!",
     "src/lib/db/reference-reconcile-core.ts!",
     "src/workers/monte-carlo-worker.ts!",
     "db-migrate.ts!"

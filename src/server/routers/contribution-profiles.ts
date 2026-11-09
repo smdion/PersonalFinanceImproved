@@ -31,7 +31,7 @@ import {
   contribAccountActiveFieldsSchema,
   contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 import type { Db } from "@/lib/db";
 import {
   activeFieldsWithMatchRates,
@@ -46,7 +46,7 @@ import {
 } from "@/server/services/profiles/profile-lifecycle";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
-// Schemas imported from @/lib/db/json-schemas as centralized schemas.
+// Schemas imported from @/lib/db/shapes/json-schemas as centralized schemas.
 
 const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 type Entry = Record<string, unknown>;

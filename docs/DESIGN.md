@@ -747,7 +747,7 @@ data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
 number and election a job needs for a live calculation comes from a
 **Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
 a **complete entry**, `SalaryEntry` (`z.infer` of `salaryEntrySchema` in
-`src/lib/db/json-schemas.ts`):
+`src/lib/db/shapes/json-schemas.ts`):
 
 ```ts
 type SalaryEntry = {
@@ -789,7 +789,7 @@ stored and later misread. It also carries every limit: amounts are ≥ 0,
 
 **One parse for every salary editor.** A field edit from the Paycheck page
 or Profiles → Salary goes through `salaryEntryEdit()`
-(`lib/db/salary-entry-edit.ts`), which checks the value against
+(`lib/db/shapes/salary-entry-edit.ts`), which checks the value against
 `salaryEntrySchema`'s own field, and is saved with `salaryProfile.patchEntry`
 (a field-level merge in one transaction — never a whole-`salaries` PUT from
 a client copy). Never add a second parse or a second set of limits.
@@ -1104,7 +1104,7 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 1. **Resolution helper lives in `src/server/services/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/pure/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
-2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). They hold 29 fields today (17 in a salary entry, 11 on a contribution account, 1 on a deduction), past the ~25 this deviation first named; the owner kept them hand-written at 29 (2026-11-09), so revisit at ~40 fields or if they change often.
+2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/shapes/profile-fields.ts`). They hold 29 fields today (17 in a salary entry, 11 on a contribution account, 1 on a deduction), past the ~25 this deviation first named; the owner kept them hand-written at 29 (2026-11-09), so revisit at ~40 fields or if they change often.
 
 3. **Plans keep the internal name `scenarios`** (table, router, permission key `scenario`): renaming would be a migration plus an RBAC-data change for no user-facing gain. Everything user-facing says "Plan".
 

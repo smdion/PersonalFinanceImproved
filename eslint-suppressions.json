@@ -3361,7 +3361,7 @@
       "count": 1
     }
   },
-  "src/lib/db/json-schemas.ts": {
+  "src/lib/db/shapes/json-schemas.ts": {
     "ratchet/no-abbreviation": {
       "count": 2
     }
@@ -3388,7 +3388,7 @@
       "count": 1
     }
   },
-  "src/lib/db/salary-entry-edit.ts": {
+  "src/lib/db/shapes/salary-entry-edit.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     }

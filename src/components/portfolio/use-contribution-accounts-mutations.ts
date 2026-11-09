@@ -14,7 +14,7 @@ import { trpc, type RouterOutputs } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { resentMatchTerms } from "@/lib/pure/contributions/match-display";
 import type { z } from "zod/v4";
-import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/json-schemas";
+import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/shapes/json-schemas";
 
 type ContributionRecord =
   RouterOutputs["settings"]["contributionAccounts"]["list"][number];

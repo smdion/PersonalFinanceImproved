@@ -32,7 +32,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/pure/engine/types";
-import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
+import { relocationScenarioParamsSchema } from "@/lib/db/shapes/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
 

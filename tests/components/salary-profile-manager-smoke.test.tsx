@@ -13,7 +13,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserProvider } from "@/lib/context/user-context";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { formatCurrency } from "@/lib/utils/format";
 import { mutationCalls, resetTrpcMock, setQuery } from "./trpc-mock";

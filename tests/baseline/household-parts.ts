@@ -1,5 +1,5 @@
 /** Small builders the baseline households share. */
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import type { Household } from "./seed";
 
 type Job = Household["jobs"][number];

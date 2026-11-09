@@ -13,7 +13,7 @@ import {
   ltcgBracketsSchema,
   irmaaBracketsSchema,
   fplByHouseholdAmountsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 import {
   sameReferenceValue,
   shippedReferenceRows,

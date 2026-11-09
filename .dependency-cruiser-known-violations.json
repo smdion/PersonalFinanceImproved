@@ -151,23 +151,23 @@
   },
   {
     "rule": "shapes-above-foundation-only",
-    "from": "src/lib/db/profile-fields.ts",
+    "from": "src/lib/db/shapes/profile-fields.ts",
     "to": "src/lib/pure/paycheck/paycheck-edit-target.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/app/(dashboard)/paycheck/paycheck-content.tsx",
-    "to": "src/lib/db/profile-fields.ts"
+    "to": "src/lib/db/shapes/profile-fields.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/app/(dashboard)/paycheck/paycheck-content.tsx",
-    "to": "src/lib/db/salary-entry-edit.ts"
+    "to": "src/lib/db/shapes/salary-entry-edit.ts"
   },
   {
     "rule": "ui-never-bundles-zod",
     "from": "src/components/budget/salary-profile-edit-actions.ts",
-    "to": "src/lib/db/salary-entry-edit.ts"
+    "to": "src/lib/db/shapes/salary-entry-edit.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

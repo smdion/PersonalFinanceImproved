@@ -22,8 +22,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as s from "@/lib/db/schema-sqlite";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_RETIREMENT_PROFILE_ID,

@@ -3,7 +3,7 @@
  * Salary Profile entry fields it sets, each checked against salaryEntrySchema's own field.
  * Both editors send the result to salaryProfile.patchEntry.
  */
-import { salaryEntrySchema } from "@/lib/db/json-schemas";
+import { salaryEntrySchema } from "@/lib/db/shapes/json-schemas";
 import { isMonthDay } from "@/lib/utils/date";
 import type { z } from "zod/v4";
 

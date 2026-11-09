@@ -8,7 +8,7 @@ import { FILING_STATUS_ORDER, type ReturnFilingStatus } from "./filing-status";
 /**
  * The three per-slice entry shapes, kept local so `src/lib/config/` has no
  * dependency on the DB layer. Structurally identical to the same-named
- * types in `db/schema-pg.ts` and the Zod schemas in `db/json-schemas.ts`.
+ * types in `db/schema-pg.ts` and the Zod schemas in `db/shapes/json-schemas.ts`.
  */
 type TaxBracketEntry = {
   threshold: number;

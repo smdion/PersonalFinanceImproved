@@ -3,7 +3,7 @@
  * field set; salaryEntrySchema validates writes). Defaults: no pay, no
  * bonus, biweekly, MFJ, no extra-paycheck routing.
  */
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 
 export function salaryEntry(overrides: Partial<SalaryEntry> = {}): SalaryEntry {
   return {

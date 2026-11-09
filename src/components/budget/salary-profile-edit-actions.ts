@@ -1,6 +1,6 @@
 import type { trpc, RouterOutputs } from "@/lib/trpc";
-import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { salaryEntryEdit } from "@/lib/db/shapes/salary-entry-edit";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
 import { Detail } from "./salary-profile-entry";
 

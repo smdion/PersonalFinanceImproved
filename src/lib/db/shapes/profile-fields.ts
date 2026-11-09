@@ -6,7 +6,7 @@
 import {
   contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 import type { PaycheckFieldKind } from "@/lib/pure/paycheck/paycheck-edit-target";
 
 /** A contribution-account field is a profile field when a Contribution
