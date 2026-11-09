@@ -46,6 +46,14 @@ const assetClassOverrides: z.ZodType<AssetClassOverride[]> = z.array(
   }),
 );
 
+/** The household's saved asset-class changes; `[]` when none. */
+export async function loadSavedAssetOverrides(
+  db: Db,
+): Promise<AssetClassOverride[]> {
+  const key = "mc_asset_class_overrides";
+  return (await loadStoredSetting(db, key, assetClassOverrides)) ?? [];
+}
+
 export type SimulationPreset = {
   key: SimulationPresetKey;
   isCustom: boolean;
@@ -75,7 +83,7 @@ export async function loadSimulationPreset(
         ? Promise.resolve(undefined)
         : db.select().from(p).where(eq(p.key, key)).then(firstRow),
       db.select().from(schema.glidePathAllocations),
-      loadStoredSetting(db, "mc_asset_class_overrides", assetClassOverrides),
+      loadSavedAssetOverrides(db),
       // Custom has no preset row: its bounds are a setting.
       isCustom
         ? loadStoredSetting(
@@ -120,7 +128,7 @@ export async function loadSimulationPreset(
     returnOverrides: new Map(
       presetReturns.map((r) => [r.assetClassId, toNumber(r.meanReturn)]),
     ),
-    savedAssetOverrides: savedOverrides ?? [],
+    savedAssetOverrides: savedOverrides,
   };
 }
 

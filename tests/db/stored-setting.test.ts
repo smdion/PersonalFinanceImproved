@@ -16,7 +16,7 @@ describe("readStoredSetting", () => {
   it("returns a value in its writer's shape without a warning", () => {
     const logged = vi.spyOn(console, "log").mockImplementation(() => {});
     const value = { date: "2026-03-02", attempts: 2 };
-    expect(readStoredSetting("test_state_ok", value, state)).toEqual(value);
+    expect(readStoredSetting("test_state_ok", value, state)).toBe(value);
     expect(logged).not.toHaveBeenCalled();
   });
 
@@ -29,8 +29,8 @@ describe("readStoredSetting", () => {
     const entry = JSON.parse(String(logged.mock.calls[0]?.[0]));
     expect(entry).toMatchObject({
       level: "warn",
-      event: "app_setting_unexpected_shape",
-      key: "test_state_bad",
+      event: "stored_value_unexpected_shape",
+      source: "app_settings.test_state_bad",
     });
   });
 });

@@ -7771,9 +7771,6 @@
     }
   },
   "src/server/routers/projection/monte-carlo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -7797,7 +7794,7 @@
   },
   "src/server/routers/projection/relocation.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 5
     },
     "max-lines-per-function": {
       "count": 1

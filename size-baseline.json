@@ -368,7 +368,7 @@
     "src/server/routers/performance/summary.ts": 12,
     "src/server/routers/projection/_shared.ts": 231,
     "src/server/routers/projection/coast-fire.ts": 427,
-    "src/server/routers/projection/monte-carlo.ts": 528,
+    "src/server/routers/projection/monte-carlo.ts": 517,
     "src/server/routers/projection/relocation.ts": 648,
     "src/server/routers/projection/scenarios.ts": 140,
     "src/server/routers/projection/strategy.ts": 823,
@@ -1032,7 +1032,7 @@
       "coastFireRouter.computeCoastFireMC.query()": 236
     },
     "src/server/routers/projection/monte-carlo.ts": {
-      "monteCarloRouter.computeMonteCarloProjection.query()": 306
+      "monteCarloRouter.computeMonteCarloProjection.query()": 295
     },
     "src/server/routers/projection/relocation.ts": {
       "relocationProjectionRouter.computeRelocationFiProjection.query()": 473

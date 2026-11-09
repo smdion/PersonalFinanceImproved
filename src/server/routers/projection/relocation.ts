@@ -210,7 +210,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           : computeBudgetAnnualTotal(
               resolvedCurrentItems,
               input.currentBudgetColumn,
-              currentProfile.columnMonths as number[] | null,
+              currentProfile.columnMonths,
             );
       const relocationAnnualExpenses =
         input.relocationExpenseOverride !== null
@@ -218,7 +218,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           : computeBudgetAnnualTotal(
               resolvedRelocItems,
               input.relocationBudgetColumn,
-              relocProfile.columnMonths as number[] | null,
+              relocProfile.columnMonths,
             );
 
       // Build engine payloads — each scenario applies its own contribution

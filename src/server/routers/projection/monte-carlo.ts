@@ -17,7 +17,6 @@ import {
   stockShareByAge,
 } from "@/lib/pure/simulation/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import {
@@ -52,6 +51,7 @@ import {
 import { prepareEngineInput } from "./engine-input";
 import { resolveInflationRisk } from "@/lib/pure/simulation/inflation-risk";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
+import { loadSavedAssetOverrides } from "@/server/services/simulation/simulation-preset";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
@@ -149,26 +149,15 @@ export const monteCarloRouter = createTRPCRouter({
           mcCorrelations,
           savedInflationOverrides,
         },
-        savedAssetOverridesRow,
+        savedAssetOverrides,
       ] = await Promise.all([
         prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),
         buildSimulationInputs(ctx.db),
-        ctx.db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, "mc_asset_class_overrides"))
-          .then((r) => r[0] ?? null),
+        loadSavedAssetOverrides(ctx.db),
       ]);
-
-      // Merge saved overrides: UI-provided overrides take priority over DB-saved ones
-      const savedAssetOverrides = (savedAssetOverridesRow?.value ?? []) as {
-        id: number;
-        meanReturn?: number;
-        stdDev?: number;
-      }[];
 
       // No return rate: the projection card says so.
       if (!payload || payload.notConfigured)
