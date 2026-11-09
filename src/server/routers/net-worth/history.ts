@@ -9,6 +9,10 @@ import { buildYearEndHistory } from "@/server/services/net-worth/year-end-histor
 import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 
 export const historyProcedures = {
+  /**
+   * Net worth at each year end for the charts, at market and at cost basis (the home at its
+   * purchase price plus improvements).
+   */
   listHistory: protectedProcedure
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
