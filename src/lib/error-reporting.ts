@@ -1,14 +1,6 @@
 /**
- * Lightweight error reporting abstraction.
- *
- * Provides a single integration point for error monitoring. The default
- * implementation logs structured JSON to stderr via the app logger.
- * Swap in a real provider (Sentry, OpenTelemetry, etc.) by changing the
- * implementation below — all call sites stay the same.
- *
- * To enable Sentry:
- *   import * as Sentry from '@sentry/nextjs';
- *   Sentry.captureException(error, { extra: context });
+ * Single integration point for error monitoring; logs structured JSON to
+ * stderr via the app logger. Swap the implementation below for a real provider.
  */
 
 import { log } from "@/lib/logger";

@@ -5,17 +5,8 @@ import { useEffectiveProfileId } from "./use-effective-profile-id";
 import { useActiveSalaryProfile } from "./use-active-salary-profile";
 
 /**
- * The Salary Profile axis, resolved once: the active setting.
- *
- * Every page that previews "what would this look like under a different
- * salary" calls this rather than re-deriving the chain, exactly as it calls
- * useEffectiveProfileId("contribution", …) for the contribution axis. The two
- * are independent axes.
- *
- * Returns the id plus a ready-made query-input fragment, since every consumer
- * spreads it into a tRPC input the same way. It is null only before the
- * profile list has loaded — there is no "no profile" state to represent once
- * it has.
+ * The Salary Profile axis, resolved once; independent of contribution. Returns
+ * the id (null only before the list loads) plus a query-input fragment to spread.
  */
 export function useEffectiveSalaryProfileId(): {
   salaryProfileId: number | null;

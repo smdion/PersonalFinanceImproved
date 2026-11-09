@@ -15,21 +15,9 @@ export function resetActiveProfileRepairsForTests(): void {
 }
 
 /**
- * Re-points an "active profile" id at a real row whenever the stored id
- * names one that's gone (or is absent entirely — e.g. a pre-migration
- * snapshot restore). Shared by useActiveContributionProfile/
- * useActiveSalaryProfile/useActiveRetirementProfile — identical repair
- * logic, previously copy-pasted three times. A future tweak to the repair
- * rule, e.g. a different tie-break than "first by id," would have needed
- * editing three files and would likely have missed one.
- *
- * One attempt per broken state per page load, across all instances. When the
- * write can't stick (a viewer without write permission, DEMO_ONLY's mutation
- * guard) usePersistedSetting applies it optimistically and then reverts, so
- * the id looks healthy for a moment and broken again right after; retrying on
- * that looped setActive several times a second forever, and the network never
- * went idle (privacy-mode E2E timeouts). A different broken state — another
- * stored id, or another first profile — gets its own attempt.
+ * Re-points an active-profile id at the first profile when the stored id is
+ * missing or gone. One attempt per broken state per page load across all
+ * instances, so a write that can't stick (no permission, DEMO_ONLY) never loops.
  */
 export function useActiveProfileRepair(
   kind: ActiveProfileKind,

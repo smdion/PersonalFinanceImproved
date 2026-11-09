@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The paycheck summary the Household Income card shows — active salaries,
- * the effective salary/contribution profiles and the Paycheck page's tax
- * year. The card and the Roth IRA recommendation read it through here so
- * React Query shares one request.
+ * The Household Income card's paycheck summary (effective profiles, the Paycheck
+ * page's tax year); other readers go through here to share one request.
  */
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";

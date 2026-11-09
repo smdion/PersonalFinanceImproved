@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The dashboard's live-plan projection: the engine input every dashboard
- * surface sends (Retirement card, Milestones, Net Worth's FI year), so they
- * all share one React Query entry and one persistent projection-cache row —
- * the cache hashes the full built input, so a near-copy would always miss.
+ * The dashboard's live-plan projection. Every dashboard surface sends the same
+ * engine input so they share one query entry and one projection-cache row.
  */
 import { trpc } from "@/lib/trpc";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
@@ -30,10 +28,8 @@ export function useDashboardProjection() {
 }
 
 /**
- * When the live plan reaches the FI number — the Milestones engine's
- * projectedFiYear over the dashboard projection, with today's cash held flat
- * (FI progress counts investments + cash). `fi` is null when the projection
- * never gets there; `hasProjection` is false until one exists.
+ * When the live plan reaches the FI number, with today's cash held flat. `fi`
+ * is null when it never does; `hasProjection` is false until a projection exists.
  */
 export function useProjectedFiYear(fiTargetToday: number, cashToday: number) {
   const { data, isLoading } = useDashboardProjection();

@@ -2,13 +2,8 @@ import { z } from "zod/v4";
 import { getDialect } from "./db/dialect";
 
 /**
- * Validate required environment variables at startup.
- * Import this module early (e.g. in db/index.ts or layout.tsx) so
- * missing vars surface immediately rather than at first use.
- *
- * DATABASE_URL is the single control point for database selection:
- *   - Set to a postgres:// connection string → PostgreSQL
- *   - Absent → SQLite (file at SQLITE_PATH, default: data/ledgr.db)
+ * Validates environment variables at startup. DATABASE_URL picks the database:
+ * a postgres:// string → PostgreSQL; absent → SQLite at SQLITE_PATH.
  */
 
 const baseSchema = z.object({
@@ -26,11 +21,8 @@ const baseSchema = z.object({
     .optional(),
   // Cron secret — optional but must be strong when set
   CRON_SECRET: z.string().min(32).optional(),
-  // At-rest encryption key for api_connections.config (AES-256-GCM).
-  // Must be 32 bytes base64-encoded (44 chars). Generate with:
-  //   node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))'
-  // Optional in dev (allows running without configuring API connections);
-  // required in production by the post-validate check below.
+  // AES-256-GCM key for api_connections.config: 32 bytes base64 (44 chars).
+  // Optional in dev; required in production by the check below.
   ENCRYPTION_KEY: z.string().optional(),
 });
 
@@ -58,31 +50,9 @@ function validateEnv(): Env {
   }
   const env = result.data as Env;
 
-  // Production-only invariants — fail loud at startup so a misconfigured
-  // container is caught at boot, not after first request.
-  //
-  // Skipped in two environments:
-  //
-  //   1. `next build`'s page-data collection phase. Next.js runs server
-  //      modules with NODE_ENV=production to shake out static props even
-  //      when the build container doesn't have the runtime secrets.
-  //
-  //   2. DEMO_ONLY mode. This is NOT a security workaround — it models
-  //      the fact that demo mode has a structurally different threat
-  //      profile enforced by the demoOnlyGuard middleware in
-  //      src/server/trpc.ts:161, which blocks EVERY non-`demo.*`
-  //      mutation at the tRPC layer. Specifically:
-  //        - ENCRYPTION_KEY protects api_connections.config (YNAB /
-  //          Actual API tokens). In demo mode saveConnection is a
-  //          blocked mutation and demo seeds do not populate
-  //          api_connections — no plaintext credentials can ever land
-  //          in the table, so there is nothing to encrypt.
-  //        - CRON_SECRET gates /api/health/detailed. In demo mode the
-  //          health details (DB up, migration version, row counts on
-  //          ephemeral per-tenant schemas) are not sensitive.
-  //      A real prod install must still satisfy both invariants — demo
-  //      mode is the only exception and it's load-bearing exactly because
-  //      the mutation guard is.
+  // Production-only invariants, checked at boot. Skipped during `next build`
+  // (no runtime secrets) and in DEMO_ONLY, where demoOnlyGuard blocks every
+  // non-demo mutation so no credentials land and health details aren't sensitive.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const isDemoOnly = process.env.DEMO_ONLY === "true";
   if (process.env.NODE_ENV === "production" && !isBuildPhase && !isDemoOnly) {

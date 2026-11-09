@@ -10,16 +10,8 @@ type EffectiveProfileId = {
 type EffectiveProfileKind = "budget" | "contribution" | "salary" | "retirement";
 
 /**
- * The single resolver for "which Budget/Contribution/Salary/Retirement
- * Profile does this page show" — every page that shows or edits
- * profile-dependent data calls this instead of re-deriving the fallback
- * locally.
- *
- * Precedence: the page's own local selection (the What-If sandbox, or a
- * profile manager's "which one am I editing") → the active profile. A Plan
- * is not a tier: applying a Plan makes its profiles the active ones.
- * `validIds` is accepted so a stale local selection (a since-deleted
- * profile) falls through to the active profile instead of erroring.
+ * Which profile a page shows: its own valid local selection, else the active
+ * profile (a stale selection of a deleted profile falls through).
  */
 export function useEffectiveProfileId(
   _kind: EffectiveProfileKind,

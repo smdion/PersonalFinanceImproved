@@ -53,11 +53,8 @@ function useFocus(): {
 }
 
 /**
- * Is this page being asked to show `topic`? Its ids when it is (an empty
- * object for a topic without one), null when not — or when the id is
- * missing or stale (a deleted goal), so nothing is revealed or scrolled to.
- * A section that may be hidden (collapsed, filtered out, another tab)
- * reveals itself from this.
+ * The ids when this page is asked to show `topic` ({} for an id-less topic);
+ * null when not, or when the id is missing or stale, so nothing is revealed.
  */
 export function useFocusMatch<K extends FocusKey>(
   topic: K,
@@ -68,10 +65,8 @@ export function useFocusMatch<K extends FocusKey>(
 }
 
 /**
- * A page's own tab/view state that a focus link can set. The focus wins for
- * display and is copied into local state when it arrives, so clearing it
- * (on any choice the user makes) never snaps a tab back. Choosing a value
- * clears the focus. Never writes saved settings.
+ * Page tab/view state a focus link can set: the focus is copied into local
+ * state on arrival, and choosing a value clears it. Never writes saved settings.
  */
 export function useFocusedState<S extends FocusStateKey>(
   key: S,
