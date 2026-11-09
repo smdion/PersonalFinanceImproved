@@ -112,7 +112,7 @@ export const versionRouter = createTRPCRouter({
     }),
 
   /** Tables a restore of this version would empty (it predates them), for the pre-restore warning. */
-  restoreDataLoss: versionProcedure
+  listRestoreDataLoss: versionProcedure
     .input(z.object({ id: z.number().int() }))
     .query(async ({ ctx, input }) => {
       const tables = await ctx.db
@@ -127,7 +127,7 @@ export const versionRouter = createTRPCRouter({
     }),
 
   /** Same check for an uploaded backup file, given only its table names. */
-  importDataLoss: versionProcedure
+  listImportDataLoss: versionProcedure
     .input(z.object({ tableNames: z.array(z.string().max(100)).max(500) }))
     .query(async ({ ctx, input }) => {
       return tablesLostOnRestore(ctx.db, input.tableNames, {

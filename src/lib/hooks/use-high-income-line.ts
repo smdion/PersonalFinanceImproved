@@ -2,7 +2,7 @@
 
 /**
  * The household's high-income line — the saved setting, else the default by
- * this year's filing status (contribution.highIncomeLine). Every savings
+ * this year's filing status (contribution.computeHighIncomeLine). Every savings
  * rate, the Checkup and the Milestones read it here. `threshold` is
  * undefined until known — the saved setting loaded, and the default when
  * nothing's saved — so no surface shows a result for the wrong line.
@@ -32,12 +32,10 @@ export function useHighIncomeLine(): {
     SK_HIGH_INCOME_THRESHOLD,
     null,
   );
-  const { data, error, refetch } = trpc.contribution.highIncomeLine.useQuery(
-    undefined,
-    {
+  const { data, error, refetch } =
+    trpc.contribution.computeHighIncomeLine.useQuery(undefined, {
       staleTime: 60_000,
-    },
-  );
+    });
   const threshold = loaded
     ? effectiveHighIncomeLine(saved, data?.threshold)
     : undefined;

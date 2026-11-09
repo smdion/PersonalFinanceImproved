@@ -15,23 +15,16 @@ const VERB = /^(?:get|list|compute)(?:[A-Z]|$)/;
 
 /** Queries named before the rule; each is renamed with its callers. */
 const OFF_PREFIX_KNOWN = [
-  "budget.mortgageItemChoices",
-  "contribution.highIncomeLine",
   "contributionProfile.compareData",
-  "debts.summary",
   "investments.suggestBasis",
   "investments.suggestPerformance",
   "investments.suggestSnapshot",
-  "milestones.firstReached",
   "projection.analyzeStrategy",
   "projection.compareWithdrawalStrategies",
   "projection.peekMonteCarloSummary",
   "projection.projectTaxYears",
   "projection.rothConversionWhatIf",
   "projection.sweepSocialSecurityClaimingAges",
-  "utilities.previewBudgetApiFeed",
-  "version.importDataLoss",
-  "version.restoreDataLoss",
 ];
 
 /** A query path whose last part doesn't start with a read verb. */

@@ -50,8 +50,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `budget.listApiActuals`                | query    | `protectedProcedure` | `budget/api-links.ts`    | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                                     |
 | `budget.listApiCategories`             | query    | `protectedProcedure` | `budget/api-links.ts`    | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                                 |
 | `budget.listContribAccountsForLinking` | query    | `protectedProcedure` | `budget/item-links.ts`   | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck.              |
+| `budget.listMortgageItemChoices`       | query    | `protectedProcedure` | `budget/item-links.ts`   | profile, and which one is.                                                                                                                                                                               |
 | `budget.listProfiles`                  | query    | `protectedProcedure` | `budget/summary.ts`      | ignored the active Contribution and Salary Profiles. This procedure already loops every profile and already resolves each profile's own savings allocations and per-mode weighting, so resolving the pay |
-| `budget.mortgageItemChoices`           | query    | `protectedProcedure` | `budget/item-links.ts`   | profile, and which one is.                                                                                                                                                                               |
 | `budget.moveItem`                      | mutation | `budgetProcedure`    | `budget/items.ts`        | Move a budget item to a different category.                                                                                                                                                              |
 | `budget.removeColumn`                  | mutation | `budgetProcedure`    | `budget/columns.ts`      | Remove a column (budget mode) from the target profile (active if not given).                                                                                                                             |
 | `budget.renameColumn`                  | mutation | `budgetProcedure`    | `budget/columns.ts`      | Rename a column (budget mode).                                                                                                                                                                           |
@@ -73,10 +73,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution`
 
-| Procedure                     | Kind  | Auth                 | Source            | Description                                                                                                               |
-| ----------------------------- | ----- | -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `contribution.computeSummary` | query | `protectedProcedure` | `contribution.ts` |                                                                                                                           |
-| `contribution.highIncomeLine` | query | `protectedProcedure` | `contribution.ts` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| Procedure                            | Kind  | Auth                 | Source            | Description                                                                                                               |
+| ------------------------------------ | ----- | -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `contribution.computeHighIncomeLine` | query | `protectedProcedure` | `contribution.ts` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| `contribution.computeSummary`        | query | `protectedProcedure` | `contribution.ts` |                                                                                                                           |
 
 ## `contributionProfile`
 
@@ -103,14 +103,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `debts`
 
-| Procedure           | Kind     | Auth                 | Source     | Description                                                       |
-| ------------------- | -------- | -------------------- | ---------- | ----------------------------------------------------------------- |
-| `debts.create`      | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
-| `debts.delete`      | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
-| `debts.list`        | query    | `protectedProcedure` | `debts.ts` | Every debt (open first), with its payoff estimate.                |
-| `debts.markPaidOff` | mutation | `adminProcedure`     | `debts.ts` | Paid off on `date`, keeping its last balance.                     |
-| `debts.summary`     | query    | `protectedProcedure` | `debts.ts` | Other liabilities and its parts — the same figure net worth uses. |
-| `debts.update`      | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
+| Procedure              | Kind     | Auth                 | Source     | Description                                                       |
+| ---------------------- | -------- | -------------------- | ---------- | ----------------------------------------------------------------- |
+| `debts.computeSummary` | query    | `protectedProcedure` | `debts.ts` | Other liabilities and its parts — the same figure net worth uses. |
+| `debts.create`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
+| `debts.delete`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
+| `debts.list`           | query    | `protectedProcedure` | `debts.ts` | Every debt (open first), with its payoff estimate.                |
+| `debts.markPaidOff`    | mutation | `adminProcedure`     | `debts.ts` | Paid off on `date`, keeping its last balance.                     |
+| `debts.update`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
 
 ## `demo`
 
@@ -163,11 +163,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `milestones`
 
-| Procedure                  | Kind     | Auth                 | Source          | Description                                                                                                                                                                                              |
-| -------------------------- | -------- | -------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `milestones.computeInputs` | query    | `protectedProcedure` | `milestones.ts` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
-| `milestones.firstReached`  | query    | `protectedProcedure` | `milestones.ts` | When each milestone was first reached (null before any recording).                                                                                                                                       |
-| `milestones.recordReached` | mutation | `protectedProcedure` | `milestones.ts` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
+| Procedure                    | Kind     | Auth                 | Source          | Description                                                                                                                                                                                              |
+| ---------------------------- | -------- | -------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `milestones.computeInputs`   | query    | `protectedProcedure` | `milestones.ts` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
+| `milestones.getFirstReached` | query    | `protectedProcedure` | `milestones.ts` | When each milestone was first reached (null before any recording).                                                                                                                                       |
+| `milestones.recordReached`   | mutation | `protectedProcedure` | `milestones.ts` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
 
 ## `mortgage`
 
@@ -506,18 +506,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `utilities`
 
-| Procedure                           | Kind     | Auth                 | Source         | Description                                                                                                                                                                      |
-| ----------------------------------- | -------- | -------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `utilities.applyBudgetApiFeed`      | mutation | `adminProcedure`     | `utilities.ts` | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
-| `utilities.computeSummary`          | query    | `protectedProcedure` | `utilities.ts` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
-| `utilities.deleteReading`           | mutation | `adminProcedure`     | `utilities.ts` |                                                                                                                                                                                  |
-| `utilities.listBudgetApiCategories` | query    | `protectedProcedure` | `utilities.ts` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
-| `utilities.listServices`            | query    | `protectedProcedure` | `utilities.ts` | All utility services ordered for display.                                                                                                                                        |
-| `utilities.previewBudgetApiFeed`    | query    | `protectedProcedure` | `utilities.ts` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
-| `utilities.updateReading`           | mutation | `adminProcedure`     | `utilities.ts` | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
-| `utilities.updateService`           | mutation | `adminProcedure`     | `utilities.ts` | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
-| `utilities.upsertReading`           | mutation | `adminProcedure`     | `utilities.ts` | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
-| `utilities.upsertService`           | mutation | `adminProcedure`     | `utilities.ts` | Create or update a service by its kind (unique).                                                                                                                                 |
+| Procedure                               | Kind     | Auth                 | Source         | Description                                                                                                                                                                      |
+| --------------------------------------- | -------- | -------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `utilities.applyBudgetApiFeed`          | mutation | `adminProcedure`     | `utilities.ts` | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
+| `utilities.computeBudgetApiFeedPreview` | query    | `protectedProcedure` | `utilities.ts` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
+| `utilities.computeSummary`              | query    | `protectedProcedure` | `utilities.ts` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
+| `utilities.deleteReading`               | mutation | `adminProcedure`     | `utilities.ts` |                                                                                                                                                                                  |
+| `utilities.listBudgetApiCategories`     | query    | `protectedProcedure` | `utilities.ts` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
+| `utilities.listServices`                | query    | `protectedProcedure` | `utilities.ts` | All utility services ordered for display.                                                                                                                                        |
+| `utilities.updateReading`               | mutation | `adminProcedure`     | `utilities.ts` | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
+| `utilities.updateService`               | mutation | `adminProcedure`     | `utilities.ts` | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
+| `utilities.upsertReading`               | mutation | `adminProcedure`     | `utilities.ts` | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
+| `utilities.upsertService`               | mutation | `adminProcedure`     | `utilities.ts` | Create or update a service by its kind (unique).                                                                                                                                 |
 
 ## `version`
 
@@ -531,10 +531,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `version.getRetention`         | query    | `protectedProcedure` | `version.ts` | Read retention setting.                                                                                                                                                                               |
 | `version.getSchedule`          | query    | `protectedProcedure` | `version.ts` | Read auto-version schedule setting.                                                                                                                                                                   |
 | `version.getUpgradeBanner`     | query    | `protectedProcedure` | `version.ts` | Check if a pre-upgrade backup banner should be shown.                                                                                                                                                 |
-| `version.importDataLoss`       | query    | `versionProcedure`   | `version.ts` | Same check for an uploaded backup file, given only its table names.                                                                                                                                   |
 | `version.list`                 | query    | `protectedProcedure` | `version.ts` | List all versions (metadata only, no JSONB data).                                                                                                                                                     |
+| `version.listImportDataLoss`   | query    | `versionProcedure`   | `version.ts` | Same check for an uploaded backup file, given only its table names.                                                                                                                                   |
+| `version.listRestoreDataLoss`  | query    | `versionProcedure`   | `version.ts` | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                                                                                         |
 | `version.resetAllData`         | mutation | `adminProcedure`     | `version.ts` | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins, and clears the app_settings keys that describe the data (DATA_SETTING_KEYS). |
 | `version.restore`              | mutation | `versionProcedure`   | `version.ts` | Restore from a version.                                                                                                                                                                               |
-| `version.restoreDataLoss`      | query    | `versionProcedure`   | `version.ts` | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                                                                                         |
 | `version.setRetention`         | mutation | `versionProcedure`   | `version.ts` | Update retention setting and trigger cleanup.                                                                                                                                                         |
 | `version.setSchedule`          | mutation | `versionProcedure`   | `version.ts` | Update auto-version schedule.                                                                                                                                                                         |

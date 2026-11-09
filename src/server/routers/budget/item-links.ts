@@ -16,7 +16,7 @@ export const itemLinkProcedures = {
 
   /** The budget lines that could be a loan's payment, on the active budget
    *  profile, and which one is. */
-  mortgageItemChoices: protectedProcedure
+  listMortgageItemChoices: protectedProcedure
     .input(z.object({ loanId: z.number().int() }))
     .query(async ({ ctx, input }) => {
       const [active, settings, loans, profiles, items] = await Promise.all([

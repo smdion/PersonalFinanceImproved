@@ -101,12 +101,14 @@ describe("version.restore and the connections fence", () => {
     ["a version viewer", createViewerSessionWithPermissions(["version"]), []],
     ["an admin", adminSession, ["api_connections"]],
   ] as const)(
-    "importDataLoss names the connections a backup lacks only for an admin (%s)",
+    "listImportDataLoss names the connections a backup lacks only for an admin (%s)",
     async (_who, session, named) => {
       const { caller, db, cleanup } = await createTestCaller(session);
       try {
         connect(db, saved);
-        const lost = await caller.version.importDataLoss({ tableNames: [] });
+        const lost = await caller.version.listImportDataLoss({
+          tableNames: [],
+        });
         const connections = lost.filter(
           (t) => t.tableName === "api_connections",
         );

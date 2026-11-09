@@ -16,10 +16,10 @@ export function RetirementPayoffNote({
   payoffDate: string;
 }) {
   const utils = trpc.useUtils();
-  const { data } = trpc.budget.mortgageItemChoices.useQuery({ loanId });
+  const { data } = trpc.budget.listMortgageItemChoices.useQuery({ loanId });
   const setItem = trpc.budget.setMortgageItem.useMutation({
     onSuccess: () => {
-      void utils.budget.mortgageItemChoices.invalidate({ loanId });
+      void utils.budget.listMortgageItemChoices.invalidate({ loanId });
       void utils.projection.invalidate();
     },
   });

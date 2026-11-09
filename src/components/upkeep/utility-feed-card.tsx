@@ -37,7 +37,7 @@ export function UtilityFeedCard() {
   const { data: cats } = trpc.utilities.listBudgetApiCategories.useQuery();
   const [reviewing, setReviewing] = useState(false);
   const { data: plan, isFetching } =
-    trpc.utilities.previewBudgetApiFeed.useQuery(undefined, {
+    trpc.utilities.computeBudgetApiFeedPreview.useQuery(undefined, {
       enabled: reviewing,
     });
   const update = trpc.utilities.updateService.useMutation({

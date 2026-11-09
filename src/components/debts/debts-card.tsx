@@ -57,7 +57,7 @@ export function DebtsCard() {
   const admin = isAdmin(useUser());
   const utils = trpc.useUtils();
   const { data: debts } = trpc.debts.list.useQuery();
-  const { data: summary } = trpc.debts.summary.useQuery();
+  const { data: summary } = trpc.debts.computeSummary.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
   const done = () => {
     utils.debts.invalidate();

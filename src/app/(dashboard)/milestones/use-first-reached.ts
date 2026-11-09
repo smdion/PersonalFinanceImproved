@@ -14,10 +14,10 @@ export function useFirstReached(): (
   id: string,
 ) => { date: string; isNew: boolean } | null {
   const utils = trpc.useUtils();
-  const { data } = trpc.milestones.firstReached.useQuery();
+  const { data } = trpc.milestones.getFirstReached.useQuery();
   const record = trpc.milestones.recordReached.useMutation({
     onSuccess: (next) => {
-      if (next) utils.milestones.firstReached.setData(undefined, next);
+      if (next) utils.milestones.getFirstReached.setData(undefined, next);
     },
   });
   const asked = useRef(false);

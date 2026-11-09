@@ -73,7 +73,7 @@ export const debtsRouter = createTRPCRouter({
   }),
 
   /** Other liabilities and its parts — the same figure net worth uses. */
-  summary: protectedProcedure.query(async ({ ctx }) => {
+  computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const { manual, itemized, creditCardMapped, total } =
       await getEffectiveOtherLiabilities(ctx.db, { asOf: ctx.scope.asOf });
     return { manual, itemized, creditCardMapped, total };

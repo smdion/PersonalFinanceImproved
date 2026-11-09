@@ -439,7 +439,7 @@ export const utilitiesRouter = createTRPCRouter({
   /** What pulling costs from the budget would write (changes) and what it
    *  leaves alone (conflicts, credits, months no longer in the budget), and
    *  a hash the apply must match — it writes exactly what was reviewed. */
-  previewBudgetApiFeed: protectedProcedure.query(async ({ ctx }) => {
+  computeBudgetApiFeedPreview: protectedProcedure.query(async ({ ctx }) => {
     const plan = await planBudgetApiFeed(ctx.db);
     return { ...plan, planHash: planHash(plan.changes) };
   }),

@@ -141,11 +141,11 @@ export function VersionsContent() {
     { enabled: !!previewVersionId && !!previewTable },
   );
 
-  const { data: restoreDataLoss } = trpc.version.restoreDataLoss.useQuery(
+  const { data: restoreDataLoss } = trpc.version.listRestoreDataLoss.useQuery(
     { id: restoreTarget?.id ?? 0 },
     { enabled: !!restoreTarget },
   );
-  const { data: importDataLoss } = trpc.version.importDataLoss.useQuery(
+  const { data: importDataLoss } = trpc.version.listImportDataLoss.useQuery(
     { tableNames: importTableNames ?? [] },
     { enabled: showImportConfirm && importTableNames !== null },
   );

@@ -24,7 +24,7 @@ export const milestonesRouter = createTRPCRouter({
     .query(({ ctx, input }) => loadMilestoneInputs(ctx, input)),
 
   /** When each milestone was first reached (null before any recording). */
-  firstReached: protectedProcedure.query(async ({ ctx }) => {
+  getFirstReached: protectedProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.db
       .select({ value: schema.appSettings.value })
       .from(schema.appSettings)

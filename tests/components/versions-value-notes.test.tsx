@@ -54,7 +54,7 @@ describe("Versions page: values a restore or import set to their default", () =>
       },
     ]);
     setQuery("version.getRetention", { retentionCount: 30 });
-    setQuery("version.restoreDataLoss", []);
+    setQuery("version.listRestoreDataLoss", []);
   });
   afterEach(() => vi.unstubAllGlobals());
 

@@ -92,13 +92,13 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "budget.listProfiles" },
   { path: "budget.computeActiveSummary", input: none },
   {
-    path: "budget.mortgageItemChoices",
+    path: "budget.listMortgageItemChoices",
     input: loan((loanId) => ({ loanId })),
   },
   { path: "budget.listContribAccountsForLinking" },
   { path: "budget.listApiCategories", input: none },
   { path: "budget.listApiActuals", input: none },
-  { path: "contribution.highIncomeLine" },
+  { path: "contribution.computeHighIncomeLine" },
   { path: "contribution.computeSummary", input: active },
   { path: "mortgage.computeActiveSummary" },
   { path: "mortgage.mortgageLoans.list" },
@@ -122,7 +122,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   },
   { path: "networth.portfolioSnapshots.getLatest" },
   { path: "milestones.computeInputs", input: none },
-  { path: "milestones.firstReached" },
+  { path: "milestones.getFirstReached" },
   { path: "savings.computeSummary", input: none },
   { path: "savings.plannedTransactions.getSettlementSuggestions" },
   {
@@ -246,9 +246,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "utilities.listServices" },
   { path: "utilities.computeSummary" },
   { path: "utilities.listBudgetApiCategories" },
-  { path: "utilities.previewBudgetApiFeed" },
+  { path: "utilities.computeBudgetApiFeedPreview" },
   { path: "debts.list" },
-  { path: "debts.summary" },
+  { path: "debts.computeSummary" },
   { path: "version.list" },
   { path: "version.getRetention" },
   { path: "version.getSchedule" },
@@ -331,8 +331,9 @@ export const SKIPPED: Record<string, string> = {
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",
   "version.getPreview": "needs a saved version; the baseline seeds none",
-  "version.restoreDataLoss": "needs a saved version; the baseline seeds none",
-  "version.importDataLoss":
+  "version.listRestoreDataLoss":
+    "needs a saved version; the baseline seeds none",
+  "version.listImportDataLoss":
     "compares a backup file being imported; the baseline imports none",
   "dataBrowser.listTables":
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",

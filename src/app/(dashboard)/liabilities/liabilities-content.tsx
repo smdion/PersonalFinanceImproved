@@ -30,7 +30,7 @@ export function LiabilitiesContent() {
   const [showManageLoans, setShowManageLoans] = useState(false);
   const summary = trpc.mortgage.computeActiveSummary.useQuery();
   const { data } = summary;
-  const { data: other } = trpc.debts.summary.useQuery();
+  const { data: other } = trpc.debts.computeSummary.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const serviceLabel = budgetApiServiceLabel(syncStatus?.service);
   const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
