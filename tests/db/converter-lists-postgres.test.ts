@@ -1,6 +1,7 @@
 /**
  * A converter list on PostgreSQL: each converter reads after the one
- * before wrote, inserts take the table's sequence, deletes remove one row
+ * before wrote, dates and timestamps read as text, inserts take the
+ * table's sequence, deletes remove one row
  * each, and the replay-twice helper passes them and fails a converter that
  * changes its own output. Only when TEST_DATABASE_URL names a throwaway
  * database (CI's PostgreSQL job): it drops the database's schemas.
@@ -13,7 +14,10 @@ import {
 } from "../routers/setup-postgres";
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import pg from "pg";
-import { runConverterPg } from "@/lib/db/migrate/migration-converters";
+import {
+  runConverterPg,
+  type ConverterTables,
+} from "@/lib/db/migrate/migration-converters";
 import { expectPgReplaySafe } from "./converter-replay";
 import { appends, counts, purges, renames } from "./converter-list-cases";
 
@@ -58,6 +62,34 @@ describe.skipIf(skipWithoutPostgres)("converter lists (PostgreSQL)", () => {
       { id: 1, key: "moved_a", value: "x" },
       { id: 3, key: "kept_c", value: "z" },
       { id: 4, key: "moved_count", value: "1" },
+    ]);
+  });
+
+  it("reads a date as SQLite's YYYY-MM-DD text and a timestamp as ISO text", async () => {
+    await client.query(
+      "CREATE TABLE invented_dates (id serial PRIMARY KEY, day date, at timestamptz)",
+    );
+    await client.query(
+      "INSERT INTO invented_dates (day, at) VALUES ('2026-01-31', '2026-01-31 12:30:00+00')",
+    );
+    const seen: ConverterTables[] = [];
+    await runConverterPg(
+      client,
+      {
+        [TAG]: {
+          tables: ["invented_dates"],
+          runs: "afterSql",
+          convert: (t) => {
+            seen.push(t);
+            return { updates: [], notes: [] };
+          },
+        },
+      },
+      TAG,
+      "afterSql",
+    );
+    expect(seen[0]!["invented_dates"]).toEqual([
+      { id: 1, day: "2026-01-31", at: "2026-01-31T12:30:00.000Z" },
     ]);
   });
 

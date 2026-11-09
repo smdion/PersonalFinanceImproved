@@ -3,6 +3,8 @@
  * (backup-transforms.ts).
  */
 
+import { asBool } from "./converter-rows";
+
 type V0810Row = Record<string, unknown>;
 
 /** The rows the v0.8.10 conversion reads and changes, keyed by table name
@@ -41,10 +43,6 @@ export function v0810Object(value: unknown): Record<string, unknown> | null {
   return v && typeof v === "object" && !Array.isArray(v)
     ? (v as Record<string, unknown>)
     : null;
-}
-
-function v0810Truthy(value: unknown): boolean {
-  return value === true || value === 1 || value === "1" || value === "true";
 }
 
 /**
@@ -91,7 +89,7 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
       (j) =>
         Number(j["person_id"]) === personId &&
         !j["end_date"] &&
-        !v0810Truthy(j["is_speculative"]),
+        asBool(j["is_speculative"]) !== true,
     );
 
   // 1. Plan salaries → their own Salary Profile.
@@ -118,7 +116,7 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
         (j) =>
           Number(j["person_id"]) === Number(personId) &&
           !j["end_date"] &&
-          !v0810Truthy(j["is_speculative"]),
+          asBool(j["is_speculative"]) !== true,
       );
       if (current.length > 1)
         result.notes.push(
@@ -189,15 +187,15 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
   const switchOn = (entry: V0810Row | undefined) =>
     entry === undefined
       ? undefined
-      : v0810Truthy(entry["include401kInBonus"]) ||
-        v0810Truthy(entry["includeBonusInContributions"]);
+      : asBool(entry["include401kInBonus"]) === true ||
+        asBool(entry["includeBonusInContributions"]) === true;
   const payrollJobOf = new Map<number, number>();
   for (const a of accounts) {
     const isPayroll =
       a["is_payroll_deducted"] === null ||
       a["is_payroll_deducted"] === undefined
         ? a["job_id"] !== null && a["job_id"] !== undefined
-        : v0810Truthy(a["is_payroll_deducted"]);
+        : asBool(a["is_payroll_deducted"]) === true;
     if (!isPayroll) continue;
     const jobId =
       a["job_id"] !== null && a["job_id"] !== undefined

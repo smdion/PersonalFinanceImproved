@@ -115,17 +115,33 @@ type PgClient = {
 
 /** json and jsonb type ids. */
 const PG_JSON_TYPES = new Set([114, 3802]);
+/** date and timestamptz type ids (the schema has no zoneless timestamp). */
+const PG_DATE = 1082;
+const PG_TIMESTAMPTZ = 1184;
 
-/** A table's rows as a converter reads them: a json value that node-pg
- *  gives as a string (a JSON string scalar, e.g. a double-encoded column)
- *  becomes its JSON text, so it can't pass for SQLite's object text. */
+/** A date node-pg parsed at local midnight, as SQLite's "YYYY-MM-DD". */
+const dateText = (d: Date) =>
+  [d.getFullYear(), d.getMonth() + 1, d.getDate()]
+    .map((n, i) => String(n).padStart(i === 0 ? 4 : 2, "0"))
+    .join("-");
+
+/** A table's rows as a converter reads them: a json string scalar becomes
+ *  its JSON text (it can't pass for SQLite's object text), a date its
+ *  "YYYY-MM-DD" text and a timestamp ISO text, never a Date. */
 async function selectPg(client: PgClient, table: string) {
-  const { rows, fields } = await client.query(`SELECT * FROM ${quoted(table)}`);
-  const json = (fields ?? []).filter((f) => PG_JSON_TYPES.has(f.dataTypeID));
+  const { rows, fields = [] } = await client.query(
+    `SELECT * FROM ${quoted(table)}`,
+  );
   return rows.map((row) => {
     const out = { ...row };
-    for (const { name } of json)
-      if (typeof out[name] === "string") out[name] = JSON.stringify(out[name]);
+    for (const { name, dataTypeID: type } of fields) {
+      const v = out[name];
+      if (PG_JSON_TYPES.has(type) && typeof v === "string")
+        out[name] = JSON.stringify(v);
+      else if (v instanceof Date && type === PG_DATE) out[name] = dateText(v);
+      else if (v instanceof Date && type === PG_TIMESTAMPTZ)
+        out[name] = v.toISOString();
+    }
     return out;
   });
 }

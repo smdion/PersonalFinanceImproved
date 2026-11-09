@@ -1,6 +1,6 @@
 /** Rows as the data converters read them (migration-converters.ts): snake_
- *  case, a JSON column as an object (PostgreSQL) or text (SQLite). One copy
- *  for every converter; no import from migration-converters.ts. */
+ *  case, JSON as an object (PostgreSQL) or text (SQLite), the rest through
+ *  the helpers below. No import from migration-converters.ts. */
 
 export type Row = Record<string, unknown>;
 export type Update = { table: string; id: number; set: Row };
@@ -20,6 +20,17 @@ export function jsonObject(value: unknown): Row | null {
       return null;
     }
   return isRow(v) ? v : null;
+}
+
+/** A boolean column: true/false on PostgreSQL, 1/0 on SQLite, "1"/"true"
+ *  text in some older backups. Null for anything else. A decimal reads
+ *  "50.00" on PostgreSQL but "50" on SQLite: compare Number(), never text. */
+export function asBool(value: unknown): boolean | null {
+  if (value === true || value === 1 || value === "1" || value === "true")
+    return true;
+  if (value === false || value === 0 || value === "0" || value === "false")
+    return false;
+  return null;
 }
 
 /** What a converter gets besides its tables: the encryption key, read only
