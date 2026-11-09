@@ -50,13 +50,8 @@ export function registerNodeHandlers() {
     versionInterval = setInterval(runAutoVersionCheck, 60 * 60 * 1000);
   }, 30_000);
 
-  // SimpleFIN's own developer docs ask clients to pick a random minute
-  // rather than polling on the hour ("we get more traffic at the top of
-  // the hour"). A random 0-55min startup jitter (not persisted — doesn't
-  // need to be stable across restarts, just spread across processes)
-  // decouples the daily sync's effective fire time from container boot
-  // time, on top of the hourly check itself already skipping once today's
-  // real sync has happened (see hasSyncedToday in lib/simplefin/sync.ts).
+  // SimpleFIN asks clients not to poll on the hour: a random 0-55 min startup
+  // jitter spreads the daily sync (hasSyncedToday skips repeats).
   const simplefinJitterMs = Math.floor(Math.random() * 55 * 60 * 1000);
   setTimeout(() => {
     runSimplefinDailyCheck();

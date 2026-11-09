@@ -1,17 +1,7 @@
 /**
- * Actual Budget has no structured API field for a category's goal amount
- * (verified against `@actual-app/api`'s docs: `updateCategory` only accepts
- * name/group_id/is_income, on any release channel — the newer Budget
- * Automations `goal_def` field was never exposed through the API). The
- * real, working mechanism is Actual's older note-based template syntax
- * (`#template <amount>` / `#template up to <amount>`), written via the
- * actual-http-api wrapper's `PUT /notes/category/:id` endpoint — the SAME
- * endpoint a household's plain free-text category notes live in.
- *
- * This module is the pure merge logic: given whatever a category's note
- * field already contains, decide what to write WITHOUT destroying anything
- * else the household put there. Kept separate from `actual-client.ts` (no
- * I/O here) so the merge behavior is unit-testable without mocking fetch.
+ * Pure merge logic for Actual category goals, which the API can only set via
+ * note templates (`#template <amount>` / `#template up to <amount>`) in the
+ * same note as the household's free text, so other note content is kept.
  */
 
 /** The two goal shapes Ledgr's `BudgetAPIClient.prepareGoalWrite` writes —
@@ -22,14 +12,9 @@ export type ActualTemplateShape = "fixed" | "target-balance";
 type MergeGoalResult =
   { ok: true; note: string } | { ok: false; reason: string };
 
-// Matches ONLY the exact bare shapes Ledgr writes — deliberately narrow.
-// Priority suffixes (`#template-1`), combined forms (`50 up to 300`), and
-// every other template type (`by <date>`, `repeat every...`, `% of`,
-// `average`, `copy from`, `schedule`, `remainder`) are treated as "a
-// different shape already exists" rather than silently reinterpreted or
-// clobbered — the same "never touch an existing goal's shape, only its
-// amount" contract YNAB's target-balance write
-// already keeps.
+// Matches ONLY the bare shapes Ledgr writes. Any other template (priority
+// suffix, combined form, `by <date>`, `% of`, …) counts as "a different shape
+// exists" and is never reinterpreted or overwritten.
 const FIXED_RE = /^#template[ \t]+([0-9]+(?:\.[0-9]+)?)[ \t]*$/im;
 const TARGET_BALANCE_RE =
   /^#template[ \t]+up[ \t]+to[ \t]+([0-9]+(?:\.[0-9]+)?)[ \t]*$/im;
@@ -42,32 +27,16 @@ function formatAmount(amount: number): string {
   return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
 }
 
-/**
- * Compute the new note text for writing `amount` as a `shape` goal.
- *
- * - An existing template of the SAME shape: its amount is replaced in
- *   place, everything else in the note untouched.
- * - No template at all: a fresh `#template` line is appended, preserving
- *   any existing free-text note content.
- * - An existing template of a DIFFERENT shape (priority-tagged, combined,
- *   date-based, percentage, average, copy, schedule, remainder, or the
- *   other bare shape): left alone — `ok: false` with a reason, the same
- *   "don't touch what wasn't asked for" contract as the YNAB target-
- *   balance write.
- */
+/** New note text for writing `amount` as a `shape` goal: replaces a
+ *  same-shape template's amount in place, else appends a `#template` line;
+ *  any other template present returns `ok: false` and is left alone. */
 export function mergeGoalIntoNote(
   existingNote: string | null | undefined,
   shape: ActualTemplateShape,
   amount: number,
 ): MergeGoalResult {
-  // A negative amount would write `#template -50` — FIXED_RE/
-  // TARGET_BALANCE_RE are digits-only (no sign), so that line can never
-  // be matched again on a later write, permanently falling into the
-  // ANY_TEMPLATE_RE "different shape" branch and locking this category's
-  // goal out of all future updates. Reject
-  // up front instead of writing malformed, self-poisoning syntax — a
-  // negative goal amount isn't meaningful in Actual's template syntax
-  // anyway.
+  // A negative amount would write `#template -50`, which the digits-only
+  // regexes never match again, locking the goal out of later updates.
   if (!Number.isFinite(amount) || amount < 0) {
     return {
       ok: false,
@@ -101,18 +70,9 @@ export function mergeGoalIntoNote(
   };
 }
 
-/**
- * Read counterpart to `mergeGoalIntoNote` — extracts the CURRENT amount
- * Ledgr itself last wrote to a category's note, for a given `shape`.
- *
- * The note is where Ledgr writes a goal (Actual's API can't write its
- * structured goal), so a preview compares against what a push wrote.
- *
- * Returns `undefined` when no template of the requested `shape` is
- * present (no goal set via this mechanism yet, or a different shape is
- * there — same "don't guess" contract `mergeGoalIntoNote` uses for its
- * own "different shape" case).
- */
+/** Read counterpart to `mergeGoalIntoNote`: the amount of the note's
+ *  `shape` template, so a preview compares against what a push wrote.
+ *  `undefined` when no template of that shape is present. */
 export function parseGoalFromNote(
   existingNote: string | null | undefined,
   shape: ActualTemplateShape,

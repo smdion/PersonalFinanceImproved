@@ -1,10 +1,6 @@
 /**
- * Password hashing and verification using Node.js built-in crypto.
- *
- * Uses scrypt (memory-hard KDF) with a random 32-byte salt.
- * Storage format: "salt:hash" (both hex-encoded, 64-byte derived key).
- *
- * No external dependencies — uses only `node:crypto`.
+ * Password hashing and verification with `node:crypto` scrypt and a random
+ * 32-byte salt. Storage format: "salt:hash" (hex, 64-byte derived key).
  */
 
 import "server-only";

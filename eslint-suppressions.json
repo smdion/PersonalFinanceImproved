@@ -4109,92 +4109,27 @@
       "count": 2
     }
   },
-  "src/instrumentation.node.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/instrumentation.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/auth/password.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/budget-api/actual-client.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/lib/budget-api/actual-goal-notes.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
     }
   },
   "src/lib/budget-api/cache.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/budget-api/drift-detection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/budget-api/errors.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-clock-read": {
       "count": 1
-    }
-  },
-  "src/lib/budget-api/factory.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/budget-api/interface.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/budget-api/providers.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/lib/budget-api/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/budget-api/ynab-client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/lib/client-address.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/config/aca-tables.ts": {

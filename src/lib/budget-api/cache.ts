@@ -84,18 +84,9 @@ export async function cacheClear(
     .where(eq(schema.budgetApiCache.service, service));
 }
 
-/**
- * Re-fetch categories + current-month detail and refresh the cache.
- *
- * Push mutations (syncBudgetToApi, savings.pushContributionsToApi) write
- * directly to the remote API but never touched budget_api_cache — every
- * preview/comparison (buildPushPreviewItems, listApiActuals, etc.) reads
- * from that cache, so without this, a push "worked" in YNAB but Ledgr kept
- * showing pre-push diffs until a full manual Sync ran. Call this after a
- * push completes. Intentionally lighter than syncAll's full sync (skips
- * accounts/transactions/drift-detection/savings_monthly recording) since
- * push only ever changes category goal data.
- */
+/** Re-fetch categories + current-month detail into budget_api_cache after a
+ *  push, which writes only to the remote API, so previews read fresh data.
+ *  Lighter than syncAll: a push only changes category goal data. */
 export async function refreshCategoryCache(
   { db, scope }: { db: Db; scope: { asOf: Date } },
   service: BudgetApiService,
