@@ -36,6 +36,7 @@ projection-year-handlers/    one year of work
   helpers.ts, types.ts
 individual-accounts/         the per-account ledger: ledger, contributions, withdrawals, reconcile
 withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
+spending-strategies/         the eight spending strategies, each (params, input) → result
 <modules below>              called by the handlers
 ```
 
@@ -90,18 +91,18 @@ withdrawal-routing/          one year's withdrawal by mode: waterfall, percentag
 | `brokerage-basis.ts`    | Cost basis per brokerage account (draws, inflows, reconciliation, the Retirement-group ratio) and `syncAggregateBasis`.      |
 | `growth-application.ts` | Applies the year's return to every balance structure; basis doesn't grow.                                                    |
 
-**Spending strategies** — `spending-strategy.ts` dispatches by strategy key (`STRATEGY_DISPATCH`); each strategy is its own module, a pure `(params, input) → result`:
+**Spending strategies** — `spending-strategy.ts` dispatches by strategy key (`STRATEGY_DISPATCH`); each strategy is its own module in `spending-strategies/`, a pure `(params, input) → result`, and their shared types are `types/spending-strategy.ts`:
 
-| Module                   | Strategy                                                 |
-| ------------------------ | -------------------------------------------------------- |
-| `guyton-klinger.ts`      | Guardrails with the withdrawal and prosperity rules      |
-| `vanguard-dynamic.ts`    | Base % with a ceiling and floor on year-over-year change |
-| `constant-percentage.ts` | Fixed % of the current balance, with a floor             |
-| `endowment.ts`           | Fixed % of a rolling average balance, with a floor       |
-| `spending-decline.ts`    | Fixed real decline per year                              |
-| `forgo-inflation.ts`     | Skip the inflation raise after a losing year             |
-| `rmd-spending.ts`        | Spending scaled by the RMD factor                        |
-| `vpw.ts`                 | Variable Percentage Withdrawal, % of the balance by age  |
+| Module                                       | Strategy                                                 |
+| -------------------------------------------- | -------------------------------------------------------- |
+| `spending-strategies/guyton-klinger.ts`      | Guardrails with the withdrawal and prosperity rules      |
+| `spending-strategies/vanguard-dynamic.ts`    | Base % with a ceiling and floor on year-over-year change |
+| `spending-strategies/constant-percentage.ts` | Fixed % of the current balance, with a floor             |
+| `spending-strategies/endowment.ts`           | Fixed % of a rolling average balance, with a floor       |
+| `spending-strategies/spending-decline.ts`    | Fixed real decline per year                              |
+| `spending-strategies/forgo-inflation.ts`     | Skip the inflation raise after a losing year             |
+| `spending-strategies/rmd-spending.ts`        | Spending scaled by the RMD factor                        |
+| `spending-strategies/vpw.ts`                 | Variable Percentage Withdrawal, % of the balance by age  |
 
 `fixed` is inline in the dispatcher. A new strategy = one module + one dispatch entry. Strategies size spending from the **retirement balance** only.
 
