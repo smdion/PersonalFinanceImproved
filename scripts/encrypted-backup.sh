@@ -30,9 +30,10 @@
 #
 # To restore from a backup:
 #   age -d -i ~/.config/ledgr/backup-key.txt < backup-2026-04-12.json.age > backup.json
-#   pnpm backup:import --in backup.json
+#   pnpm backup:import --dry-run backup.json   # preview: tables and rows
+#   pnpm backup:import backup.json
 #
-# Run a quarterly restore drill (see TIER-F-RUNBOOK below) to verify
+# Run a quarterly restore drill (see the runbook above) to verify
 # backups actually round-trip cleanly.
 
 set -euo pipefail
