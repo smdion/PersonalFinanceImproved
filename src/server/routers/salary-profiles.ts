@@ -1,6 +1,6 @@
 /**
- * Salary Profiles: named per-job salary sets, each a complete independent world keyed
- * by jobId. Every entry is complete (salary + bonus terms) or absent; never partial.
+ * Salary Profiles: named per-job salary sets, each a complete independent world keyed by jobId;
+ * an entry is complete (salary + bonus terms) or absent (DESIGN § The Salary Profile layer).
  */
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import {
