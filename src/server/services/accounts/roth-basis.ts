@@ -1,10 +1,6 @@
 /**
- * Roth basis year-end rollover — called from routers/performance's finalizeYear
- * transaction (one line in the orchestrator; the actual logic is here and
- * in src/lib/pure/accounts/roth-basis-rollover.ts, per RULES.md's thin-orchestrator
- * rule). Mirrors accountPerformance's own finalize-then-seed-next-year
- * shape, but keyed as its own table since accountPerformance doesn't split
- * a jointly-labeled account per owner the way Roth basis correctness needs.
+ * Roth basis year-end rollover, called from routers/performance's finalizeYear transaction.
+ * Its own table because Roth basis is kept per owner, even on a jointly-labeled account.
  */
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -13,10 +9,8 @@ import { computeRothBasisRollover } from "@/lib/pure/accounts/roth-basis-rollove
 import type { Db } from "@/lib/db";
 
 /**
- * Finalize the given year's non-finalized rothBasis rows and seed next
- * year's rows carrying the same values forward. Safe to call even when no
- * rothBasis rows exist at all for this year (no-op) — an account that
- * never had basis entered stays absent, never force-created at $0.
+ * Finalize the year's non-finalized rothBasis rows and seed next year's with the same
+ * values. A no-op without rows: an account with no basis is never created at $0.
  */
 export async function finalizeRothBasisForYear(
   tx: Db,

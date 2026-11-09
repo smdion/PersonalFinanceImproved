@@ -1,10 +1,6 @@
 /**
- * What the paycheck setup sends to each tracked account in a year, split by
- * who pays and how it's taxed. Used to estimate the split of a deposit a
- * feed reports as one amount (see lib/pure/investments/flow-suggestions.ts).
- *
- * Uses the globally active Contribution and Salary Profiles — the setup
- * every page shows unless the household picks another.
+ * What the active paycheck setup sends to each tracked account in a year, by payer and tax
+ * treatment, to split a feed's single deposit (lib/pure/investments/flow-suggestions.ts).
  */
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";

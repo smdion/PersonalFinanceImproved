@@ -14,12 +14,9 @@ import type { Db } from "@/lib/db";
 // Contribution profile resolution
 // ---------------------------------------------------------------------------
 
-/** A live contribution account row, as loadLiveContribData returns it: the
- *  full row (so every consumer — the cap's HSA coverage, payroll vs. manual,
- *  ownership, the match's tax treatment — reads the real fact), with its type
- *  narrowed and its parent category resolved. It carries no
- *  contributionMethod/contributionValue (see applyContribActiveFields):
- *  resolveProfile adds them from a profile's active fields. */
+/** A live contribution account row: the full row with its type narrowed and parent
+ *  category resolved, but no contributionMethod/contributionValue (resolveProfile adds
+ *  them from a profile's active fields). */
 type LiveContributionRow = Omit<
   typeof schema.contributionAccounts.$inferSelect,
   "accountType" | "parentCategory"
@@ -29,20 +26,9 @@ type LiveContributionRow = Omit<
 };
 
 /**
- * Load all live contribution data needed for profile resolution.
- * Intentionally live/unmodified — this is the baseline every named
- * Contribution Profile's active fields get layered ON TOP OF (see
- * resolveProfile's callers), so it can't itself reflect a Plan's active
- * salary without corrupting that layering. See applyActiveSalary's docblock
- * (./salary.ts) for the live-vs-active rule.
- *
- * A job has no salary/bonus of its own — the globally-ACTIVE Salary
- * Profile is the only live source (see resolveCompensation's docblock).
- * Resolving against it here (rather than "no profile at all") is what lets
- * a Contribution Profile's percent-of-salary math have a real number to
- * work from; Contribution and Salary Profiles remain independent axes —
- * this always uses whichever Salary Profile is globally active, never a
- * specific one a caller picked.
+ * Live contribution data for profile resolution: the base profiles layer onto, so it
+ * never reflects a Plan's salary (see applyActiveSalary). Salaries come from the globally
+ * active Salary Profile, never a caller-picked one.
  */
 export async function loadLiveContribData(db: Db, asOf: Date) {
   const [allJobs, allContributions, allPeople, allPerfAccounts] =

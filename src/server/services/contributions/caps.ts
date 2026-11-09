@@ -33,10 +33,8 @@ import {
 } from "@/lib/pure/contributions/cap-pass";
 
 /**
- * The household's cap context for a request: who (birth years), the year's
- * limits, `asOf`'s year's filing status (lib/pure/tax/filing-status.ts — a
- * W-4 is only a last stand-in) and `asOf` itself. The paycheck's household
- * tax and Roth IRA view read it here too, so there is one answer.
+ * The household's cap context for a request: birth years, the year's limits, `asOf`'s
+ * filing status (lib/pure/tax/filing-status.ts) and `asOf`; the one source for caps.
  */
 export async function loadCapHousehold(
   db: Db,
@@ -138,13 +136,9 @@ async function activeContribProfileId(db: Db): Promise<number> {
 }
 
 /**
- * What a save leaves over its IRS limit, one line per touched row: before
- * and after go through the same cap pass on this year's limits and pay,
- * at the ages of the year asked for (this year unless a switch is judged
- * later), and a row counts when a person's limit group it touches ends up
- * further over than it was (so lowering an over-limit row always saves,
- * and an unrelated edit leaves the row showing its error). Each line
- * carries the most the row can be. Loads once; the judge runs per year.
+ * Per touched row, what a save leaves over its IRS limit: before and after run the same
+ * cap pass, and a row counts only when its limit group ends further over than before.
+ * Each line carries the row's maximum. Loads once; the judge runs per year.
  */
 async function irsLimitJudge(
   db: Db,
@@ -228,10 +222,8 @@ async function irsLimitJudge(
 }
 
 /**
- * Refuse a save that makes a contribution over its IRS limit, or more over it —
- * the household's rule: over the limit is an error to fix, never modelled
- * (irsLimitJudge). Only the active Contribution Profile is refused; one used as
- * a future switch gets a warning instead (switchProfileLimitWarning).
+ * Refuse a save that leaves a contribution (further) over its IRS limit, for the active
+ * Contribution Profile only; a switch profile gets switchProfileLimitWarning instead.
  */
 export async function assertWithinIrsLimits(
   db: Db,
@@ -248,13 +240,9 @@ export async function assertWithinIrsLimits(
 }
 
 /**
- * A save to a Contribution Profile that isn't active but is a switch in the
- * Retirement settings ("Changes by year"): what it leaves over the IRS limits
- * in the years it's in effect, as a warning — it still saves. Each year is
- * judged at that year's ages on today's limits and pay, as the projection caps
- * it (buildProfileSwitches). A switch is in effect from its year until the next
- * Contribution Profile switch, through the last working year. Null when the
- * profile is active, not used as a switch, or within the limits every year.
+ * Warning (the save still goes through) for a non-active profile used as a "Changes by
+ * year" switch: what it leaves over IRS limits in each year it's in effect, at that year's
+ * ages. Null when active, unused as a switch, or within limits every year.
  */
 export async function switchProfileLimitWarning(
   db: Db,

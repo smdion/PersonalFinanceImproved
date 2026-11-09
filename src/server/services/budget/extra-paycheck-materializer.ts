@@ -1,16 +1,7 @@
 /**
- * Extra-paycheck materializer.
- *
- * Reads each job's `extraPaycheckRouting` field from its entry in the
- * globally-active Salary Profile (rules + optional overrides) and writes
- * the resulting dollar amounts into `savings_planned_transactions` with
- * `source = 'rule'`, over the months `extra-paycheck-months.ts` walks
- * (120 from the current one).
- *
- * Override priority: if an ExtraPaycheckOverride entry matches the month key,
- * its splits are used instead of the rule's splits.
- *
- * Call after: job create/update/delete, explicit rule/override save.
+ * Writes Savings-mode extra-paycheck routing (active Salary Profile rules; a matching
+ * override's splits win) into `savings_planned_transactions` as `source = 'rule'`.
+ * Call after job create/update/delete and explicit rule/override saves.
  */
 
 import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
@@ -121,14 +112,8 @@ async function _materialize(db: Db, now: Date): Promise<void> {
     }
   }
 
-  // Delete rule-sourced rows and insert fresh ones inside a transaction so
-  // the replacement is atomic at the DB level. Only rows dated this month or
-  // later are candidates for deletion — getExtraPaycheckMonthKeys never
-  // regenerates anything earlier, so a blanket delete would destroy history
-  // with no way to recreate it. Rows with settlement history are preserved
-  // regardless of month: deleting and reinserting allocates a new row id,
-  // which would silently orphan (and cascade-delete) their settlement
-  // records the moment the materializer next ran.
+  // Atomically replace rule rows from this month on (earlier months are never regenerated).
+  // Rows with settlement history are kept: a new row id would orphan their settlements.
   const currentMonthStart = currentMonthKey(now);
   await db.transaction(async (tx) => {
     const settledRows = await tx

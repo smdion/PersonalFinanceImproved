@@ -44,10 +44,9 @@ import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
-/** Each past year whose Performance rows are all finalized: the
- *  household's own contributions (every account, employer money out), its
- *  recorded investment gain, and whether contributions are still estimated.
- *  What the 60/40 and Always Be Buying rules compare year to year. */
+/** Each past year whose Performance rows are all finalized: the household's own
+ *  contributions (employer money out), recorded investment gain, and whether contributions
+ *  are still estimated, for the 60/40 and Always Be Buying rules. */
 function finalizedYears(
   perfRows: readonly {
     year: number;

@@ -244,11 +244,8 @@ export const versionRouter = createTRPCRouter({
         listTablesSQL(),
       );
 
-      // Tables to preserve (versioning system + app config)
-      // local_admins is preserved: it's app auth, not user financial data, and
-      // wiping it (while app_settings.onboarding_completed survives) opens an
-      // unauthenticated admin-takeover window via createLocalAdmin. Manage/delete
-      // accounts via Settings.
+      // Preserve versioning + app config, and local_admins: wiping app auth while
+      // onboarding_completed survives would reopen createLocalAdmin to anyone.
       const preserve = new Set([
         "state_versions",
         "state_version_tables",

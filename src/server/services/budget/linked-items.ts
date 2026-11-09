@@ -30,29 +30,9 @@ import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
 /**
- * Resolve every linked budget item's per-column dollar amounts through the
- * SAME contribution-account resolution `budget.computeActiveSummary` uses,
- * instead of the item's raw `amounts` column (which is intentionally left
- * stale for linked items — see budget.ts router's `updateItemAmount`/
- * `updateItemAmounts`). Any caller that sums `budget_items.amounts` directly
- * for a profile with contribution-linked items (retirement/projection engine
- * inputs, net-worth year-end snapshots) silently undercounts every linked
- * item, since its raw amount is never written past its `0` template value.
- *
- * `profiles` is the (Contribution, Salary) Profile pair the caller already
- * resolved — this function does no resolution of its own, so a linked
- * item's dollar figure can never disagree between the Budget tab and any
- * other consumer. A budget column is a spending level, not a different pay
- * or contribution world, so a linked item's amount is the same in every
- * column.
- *
- * `scope.asOf` is the request's date: this year's limits and jobs.
- *
- * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
- * sandbox's own hand-edited values — the highest-precedence tier, layered
- * on top of the Contribution Profile's resolved values exactly the way `budget.computeActiveSummary` needs them to be
- * for its own linked items, so that endpoint can call this helper directly
- * instead of maintaining its own copy of this resolution.
+ * Per-column amounts for linked budget items via the contribution-account resolution, not
+ * the stale raw `amounts`, under the caller's resolved `profiles` pair (same in every
+ * column). `opts` sandbox values (What-If) layer on top. `scope.asOf` picks limits/jobs.
  */
 export async function resolveLinkedBudgetItemAmounts<
   T extends {

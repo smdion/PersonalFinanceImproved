@@ -6688,9 +6688,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6698,32 +6695,15 @@
   "src/server/routers/version.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/services/accounts/roth-basis.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/services/advice/milestone-inputs.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
   },
   "src/server/services/budget/account-balances.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-clock-read": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
@@ -6737,9 +6717,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-abbreviation": {
       "count": 5
     },
@@ -6752,16 +6729,8 @@
       "count": 1
     }
   },
-  "src/server/services/budget/budget-income-materializer.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    }
-  },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
@@ -6772,9 +6741,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }
@@ -6782,27 +6748,15 @@
   "src/server/services/contributions/account-edits.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
-    },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/services/contributions/caps.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 8
     }
   },
   "src/server/services/contributions/contribution-mix.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-guarded-division": {
@@ -6815,9 +6769,6 @@
   "src/server/services/contributions/live-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-abbreviation": {
       "count": 2
