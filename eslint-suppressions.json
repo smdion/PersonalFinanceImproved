@@ -2050,12 +2050,12 @@
       "count": 3
     }
   },
-  "src/components/retirement-projection/override-field-parts.tsx": {
+  "src/components/retirement-projection/overrides/override-field-parts.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/components/retirement-projection/override-forms.tsx": {
+  "src/components/retirement-projection/overrides/override-forms.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
     },
@@ -2066,12 +2066,12 @@
       "count": 7
     }
   },
-  "src/components/retirement-projection/override-items.ts": {
+  "src/components/retirement-projection/overrides/override-items.ts": {
     "ratchet/no-abbreviation": {
       "count": 2
     }
   },
-  "src/components/retirement-projection/override-wizard-steps.tsx": {
+  "src/components/retirement-projection/overrides/override-wizard-steps.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
     },
@@ -2082,12 +2082,12 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/overrides-list.tsx": {
+  "src/components/retirement-projection/overrides/overrides-list.tsx": {
     "ratchet/no-raw-button": {
       "count": 3
     }
   },
-  "src/components/retirement-projection/overrides-panel.tsx": {
+  "src/components/retirement-projection/overrides/overrides-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },

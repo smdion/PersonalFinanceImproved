@@ -6,8 +6,8 @@
  */
 import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import type { ProjectionState } from "./projection-table-types";
-import type { AccumOverride, DecumOverride } from "./types";
+import type { ProjectionState } from "../projection-table-types";
+import type { AccumOverride, DecumOverride } from "../types";
 import {
   SimpleNumberForm,
   RoutingForm,

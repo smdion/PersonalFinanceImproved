@@ -1,6 +1,6 @@
-import type { AccumOverride, DecumOverride } from "./types";
-import type { ProjectionState } from "./projection-table-types";
-import { LumpSumForm } from "./lump-sum-form";
+import type { AccumOverride, DecumOverride } from "../types";
+import type { ProjectionState } from "../projection-table-types";
+import { LumpSumForm } from "../lump-sum-form";
 import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 
 export type LumpSumFieldsProps = {

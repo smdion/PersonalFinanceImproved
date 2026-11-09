@@ -19,7 +19,7 @@ vi.mock("@/components/ui/help-tip", () => ({
   ),
 }));
 
-import { OverridesPanel } from "@/components/retirement-projection/overrides-panel";
+import { OverridesPanel } from "@/components/retirement-projection/overrides/overrides-panel";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const RETIREMENT_AGE = 65;

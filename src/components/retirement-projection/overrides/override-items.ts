@@ -1,7 +1,7 @@
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { Dispatch, SetStateAction } from "react";
-import type { ProjectionState } from "./projection-table-types";
-import { catDisplayLabel } from "./projection-display";
+import type { ProjectionState } from "../projection-table-types";
+import { catDisplayLabel } from "../projection-display";
 import type { OverrideType } from "./override-options";
 
 export function pushAccumOverrideItems(

@@ -134,13 +134,13 @@
     "src/components/retirement-projection/decumulation-config.tsx": 441,
     "src/components/retirement-projection/index.tsx": 159,
     "src/components/retirement-projection/lump-sums.ts": 39,
-    "src/components/retirement-projection/override-field-parts.tsx": 118,
-    "src/components/retirement-projection/override-forms.tsx": 375,
-    "src/components/retirement-projection/override-items.ts": 178,
-    "src/components/retirement-projection/override-options.ts": 67,
-    "src/components/retirement-projection/override-wizard-steps.tsx": 209,
-    "src/components/retirement-projection/overrides-list.tsx": 126,
-    "src/components/retirement-projection/overrides-panel.tsx": 382,
+    "src/components/retirement-projection/overrides/override-field-parts.tsx": 118,
+    "src/components/retirement-projection/overrides/override-forms.tsx": 375,
+    "src/components/retirement-projection/overrides/override-items.ts": 178,
+    "src/components/retirement-projection/overrides/override-options.ts": 67,
+    "src/components/retirement-projection/overrides/override-wizard-steps.tsx": 209,
+    "src/components/retirement-projection/overrides/overrides-list.tsx": 126,
+    "src/components/retirement-projection/overrides/overrides-panel.tsx": 382,
     "src/components/retirement-projection/parent-category-filter.ts": 255,
     "src/components/retirement-projection/projection-card/chart-area.tsx": 54,
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
@@ -724,7 +724,7 @@
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 159
     },
-    "src/components/retirement-projection/overrides-panel.tsx": {
+    "src/components/retirement-projection/overrides/overrides-panel.tsx": {
       "OverridesPanel": 347,
       "OverridesPanel.renderFields": 168
     },
