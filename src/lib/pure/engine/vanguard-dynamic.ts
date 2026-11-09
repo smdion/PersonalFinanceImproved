@@ -1,9 +1,6 @@
 /**
- * Vanguard Dynamic (Floor & Ceiling) — Morningstar Method 8.
- *
- * Base percentage of current balance, with ceiling and floor on
- * year-over-year spending changes. Limits both upside and downside
- * volatility in cash flows.
+ * Vanguard Dynamic (Floor & Ceiling), Morningstar Method 8: a base percentage of
+ * balance, with a ceiling and floor on year-over-year spending changes.
  * SWR: 4.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
@@ -34,10 +31,9 @@ export function applyVanguardDynamic(
     };
   }
 
-  // Nominal limits, like every rate-based strategy's floor (constant-
-  // percentage.ts): an inflation-adjusted floor would push withdrawals up
-  // in bad years, past what the portfolio sustains. The published method
-  // applies them to inflation-adjusted spending; the guide says so.
+  // Nominal limits, like every rate-based strategy's floor: an inflation-adjusted
+  // floor would push withdrawals past what the portfolio sustains in bad years.
+  // The published method applies them to real spending; the guide says so.
   const prior = crossYearState.priorYearSpending;
   const ceiling = prior * (1 + ceilingPercent);
   const yoyFloor = prior * (1 - floorPercent);

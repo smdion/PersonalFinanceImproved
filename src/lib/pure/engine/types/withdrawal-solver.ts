@@ -2,10 +2,9 @@
 
 /** The figures every solver result carries. */
 export interface SolverFigures {
-  /** The taxable Social Security the accepted trial ROUTED with (routing's
-   *  bracket caps read it). The real year must route with this same figure
-   *  to reproduce the accepted trial's slots, then prices its own taxable
-   *  share from them, exactly as the trial did. */
+  /** The taxable Social Security the accepted trial routed with (bracket caps
+   *  read it). The real year routes with this same figure to reproduce the
+   *  trial's slots, then prices its own taxable share from them. */
   taxableSS: number;
   /** Estimated tax cost */
   estimatedTax: number;

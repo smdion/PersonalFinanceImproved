@@ -5922,34 +5922,13 @@
     }
   },
   "src/lib/pure/engine/types/projection-result.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 31
-    },
     "ratchet/no-string-closed-set-field": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/engine/types/routing.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
-  "src/lib/pure/engine/types/withdrawal-solver.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/types/year-overrides.ts": {
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
   "src/lib/pure/engine/vanguard-dynamic.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/vpw.ts": {
