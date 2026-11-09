@@ -32,6 +32,7 @@ import {
   PROFILES,
   SETTINGS,
   reads,
+  settingsBeforeTag,
   type PersonRow,
   type Settings,
 } from "./retirement-people-cases";
@@ -153,7 +154,7 @@ describe.skipIf(skipWithoutPostgres)(
     }
 
     /** The per-person rows, and what every reader reads from them. */
-    const state = async () => {
+    const state = async (read = reads) => {
       const rows = (
         await client.query<PersonRow>(
           `SELECT ${PERSON_COLUMNS} FROM retirement_profile_people ORDER BY id`,
@@ -176,7 +177,7 @@ describe.skipIf(skipWithoutPostgres)(
         ).rows,
         retirement_profile_people: rows,
       };
-      return { rows, reads: reads(tables) };
+      return { rows, reads: read(tables) };
     };
 
     const expected = [
@@ -186,7 +187,7 @@ describe.skipIf(skipWithoutPostgres)(
 
     it("adds the rows as a pending migration, reads as before, and a later start adds none", async () => {
       await installBefore();
-      const before = await state();
+      const before = await state((t) => reads(t, settingsBeforeTag));
       expect(migrate()).toMatch(
         new RegExp(`"event":"migration_conversion".*"tag":"${MONEY_TAG}"`),
       );

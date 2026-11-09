@@ -23,6 +23,7 @@ import {
   PROFILES,
   SETTINGS,
   reads,
+  settingsBeforeTag,
   type PersonRow,
   type Settings,
 } from "./retirement-people-cases";
@@ -132,7 +133,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
 
   /** The per-person rows, and what every reader reads from them (a squash
    *  replay re-runs older tags' own conversions on other columns). */
-  const state = () => {
+  const state = (read = reads) => {
     const db = open();
     const tables = {
       people: all<(typeof PEOPLE)[number]>(db, "people"),
@@ -140,7 +141,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
       retirement_profile_people: personRows(db),
     };
     db.close();
-    return { rows: tables.retirement_profile_people, reads: reads(tables) };
+    return { rows: tables.retirement_profile_people, reads: read(tables) };
   };
 
   function expectAdded(s: ReturnType<typeof state>) {
@@ -152,7 +153,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
 
   it("adds the rows as a pending migration, reads as before, and a later start adds none", () => {
     installBefore();
-    const before = state();
+    const before = state((t) => reads(t, settingsBeforeTag));
     runSQLite();
     const first = state();
     expectAdded(first);

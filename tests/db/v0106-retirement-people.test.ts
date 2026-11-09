@@ -25,6 +25,7 @@ import {
   PROFILES,
   SETTINGS,
   reads,
+  settingsBeforeTag,
   type PersonRow,
 } from "./retirement-people-cases";
 
@@ -75,7 +76,7 @@ describe("the money tag's per-person retirement rows", () => {
       RETIREMENT_PEOPLE_CONVERTER,
       backup(),
     );
-    const was = reads(asCases(before));
+    const was = reads(asCases(before), settingsBeforeTag);
     expect(was.length).toBe(PROFILES.length * PEOPLE.length);
     expect(reads(asCases(after))).toEqual(was);
   });

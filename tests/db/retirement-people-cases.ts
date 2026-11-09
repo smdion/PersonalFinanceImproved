@@ -176,13 +176,41 @@ function plannedAge(t: Tables, profileId: number, personId: number) {
   );
 }
 
+/** settingsFor as it read before the money tag: a person's settings row
+ *  stood in for a missing per-person row (`pp ?? rs`). Frozen here so the
+ *  tests compare the old read of the old rows with today's of the new. */
+export function settingsBeforeTag(
+  personId: number,
+  profile: ActiveProfileRows,
+): ReturnType<typeof settingsFor> {
+  const { activeProfileId, settings } = profile;
+  const pp = profile.profilePeople.find((r) => r.personId === personId);
+  const rs = profile.retSettings.find(
+    (s) => s.personId === personId && s.profileId === activeProfileId,
+  );
+  const ps = pp ?? rs;
+  const ownRaiseRate = rs ? toNumber(rs.salaryAnnualIncrease) : NaN;
+  return {
+    retirementAge: ps?.retirementAge ?? settings.retirementAge,
+    endAge: ps?.endAge ?? settings.endAge,
+    salaryAnnualIncrease: Number.isFinite(ownRaiseRate)
+      ? ownRaiseRate
+      : profile.primaryRaiseRate,
+    socialSecurityMonthly:
+      ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
+    socialSecurityPia: pp?.socialSecurityPia ?? null,
+    ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
+    ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
+  };
+}
+
 /**
  * What every reader of these rows reads, for each profile with a household
  * row and each person: the engine's per-person settings (settingsFor) and
  * the planned retirement age. Numbers compared as numbers, so PostgreSQL's
  * "2010.00" reads as SQLite's 2010.
  */
-export function reads(t: Tables) {
+export function reads(t: Tables, read = settingsFor) {
   const people = t.people.map((p) => ({
     id: p.id,
     isPrimaryUser: Boolean(p.is_primary_user),
@@ -202,7 +230,7 @@ export function reads(t: Tables) {
       primaryRaiseRate: toNumber(household.salaryAnnualIncrease),
     };
     return t.people.map((p) => {
-      const own = settingsFor(p.id, rows);
+      const own = read(p.id, rows);
       return {
         profile: profile.id,
         person: p.id,
