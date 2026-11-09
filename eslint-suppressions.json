@@ -4998,14 +4998,6 @@
       "count": 5
     }
   },
-  "src/server/routers/budget/api-sync.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 3
-    }
-  },
   "src/server/routers/budget/columns.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
@@ -5168,17 +5160,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/server/routers/savings/api-sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
     }
   },
   "src/server/routers/savings/goals.ts": {
@@ -5817,6 +5798,14 @@
       "count": 3
     }
   },
+  "src/server/services/sync/budget-amounts-sync.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 3
+    }
+  },
   "src/server/services/sync/budget-api-push.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5835,6 +5824,17 @@
       "count": 8
     },
     "ratchet/no-string-closed-set-field": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
+    }
+  },
+  "src/server/services/sync/savings-goal-push.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {

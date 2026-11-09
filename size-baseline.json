@@ -376,7 +376,7 @@
     "src/server/routers/projection/tax-optimization.ts": 450,
     "src/server/routers/retirement/index.ts": 17,
     "src/server/routers/salary-profiles.ts": 500,
-    "src/server/routers/savings/api-sync.ts": 232,
+    "src/server/routers/savings/api-sync.ts": 14,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 359,
     "src/server/routers/settings/admin.ts": 404,
@@ -424,6 +424,7 @@
     "src/server/services/simulation/monte-carlo-projection.ts": 338,
     "src/server/services/sync/budget-api-push.ts": 409,
     "src/server/services/sync/preview.ts": 434,
+    "src/server/services/sync/savings-goal-push.ts": 221,
     "src/server/services/sync/simplefin/ingest.ts": 522,
     "src/server/services/sync/simplefin/sync.ts": 553,
     "src/server/services/sync/sync-all.ts": 253,
@@ -1023,9 +1024,6 @@
     "src/server/routers/networth/summary.ts": {
       "summaryProcedures.computeSummary.query()": 243
     },
-    "src/server/routers/savings/api-sync.ts": {
-      "apiSyncProcedures.pushContributionsToApi.mutation()": 195
-    },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159
     },
@@ -1101,6 +1099,9 @@
     },
     "src/server/services/sync/preview.ts": {
       "computeSyncPreview": 401
+    },
+    "src/server/services/sync/savings-goal-push.ts": {
+      "pushContributionsToApi": 193
     },
     "src/server/services/sync/simplefin/sync.ts": {
       "runSimplefinSync": 190
