@@ -134,36 +134,36 @@ function procedureCall(
   return { kind: method, procType: ts.isIdentifier(base) ? base.text : "?" };
 }
 
-/** The JSDoc / `//` comment block just above a procedure's first line. */
+/** The doc comment just above a procedure's first line, whole: a block
+ *  comment from its opening line, or a run of `//` lines. */
 function descriptionAbove(lines: string[], i: number): string {
-  let description = "";
-  for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
-    const prev = lines[k]!.trim();
-    if (prev === "" || prev === "}") break;
-    if (prev.startsWith("/**")) {
-      // single-line jsdoc
-      const m = prev.match(/\/\*\*\s*(.+?)\s*\*\//);
-      if (m) {
-        description = m[1]!;
-        break;
-      }
+  const trimmed = (k: number) => lines[k]!.trim();
+  if (i > 0 && trimmed(i - 1).endsWith("*/")) {
+    let start = i - 1;
+    while (start >= 0 && !trimmed(start).startsWith("/*")) {
+      if (!trimmed(start).startsWith("*")) return ""; // closes code's comment
+      start--;
     }
-    if (prev.startsWith("*")) {
-      const cleaned = prev
-        .replace(/^\*\s?\/?/, "")
-        .replace(/\*\/$/, "")
-        .trim();
-      if (cleaned && !cleaned.startsWith("@")) {
-        description = cleaned + (description ? " " + description : "");
-      }
-    } else if (prev.startsWith("//")) {
-      description =
-        prev.slice(2).trim() + (description ? " " + description : "");
-    } else {
-      break; // code: a comment above it belongs to something else
-    }
+    if (start < 0) return "";
+    return lines
+      .slice(start, i)
+      .map((line) =>
+        line
+          .trim()
+          .replace(/^\/\*\*?/, "")
+          .replace(/\*\/$/, "")
+          .replace(/^\*\s?/, "")
+          .trim(),
+      )
+      .filter((text) => text !== "" && !text.startsWith("@"))
+      .join(" ");
   }
-  return description;
+  let k = i;
+  while (k > 0 && trimmed(k - 1).startsWith("//")) k--;
+  return lines
+    .slice(k, i)
+    .map((line) => line.trim().slice(2).trim())
+    .join(" ");
 }
 
 function propertyKey(file: string, name: ts.PropertyName): string {

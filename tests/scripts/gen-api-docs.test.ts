@@ -1,6 +1,7 @@
 /**
  * The router catalog reads client paths the way tRPC mounts them, and a
- * procedure written in a group's index.ts fails the run.
+ * procedure written in a group's index.ts fails the run. A procedure's
+ * description is its whole doc comment.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -70,6 +71,44 @@ export const otherRouter = createTRPCRouter({ get: syncProcedure.query(() => 1) 
     expect(
       readRouterCatalog(d).find((e) => e.path === "flat.list")?.description,
     ).toBe("Lists things.");
+  });
+
+  it("reads a doc comment whole: its opening line, every line and // runs", () => {
+    const d = routers({
+      "index.ts": root,
+      "flat.ts": `
+export const flatRouter = createTRPCRouter({
+  /** Opens here,
+   *  goes on here.
+   *  @param ignored
+   */
+  opened: protectedProcedure.query(() => 1),
+  /**
+   * One.
+   * Two.
+   * Three.
+   * Four.
+   * Five.
+   */
+  long: protectedProcedure.query(() => 1),
+  // First line,
+  // second line.
+  slashes: protectedProcedure.query(() => 1),
+  bare: protectedProcedure.query(() => 1), /* not a doc */
+  after: protectedProcedure.query(() => 1),
+});`,
+      "group/index.ts": `export const groupRouter = createTRPCRouter({});`,
+    });
+    const description = Object.fromEntries(
+      readRouterCatalog(d).map((e) => [e.path, e.description]),
+    );
+    expect(description).toEqual({
+      "flat.opened": "Opens here, goes on here.",
+      "flat.long": "One. Two. Three. Four. Five.",
+      "flat.slashes": "First line, second line.",
+      "flat.bare": "",
+      "flat.after": "",
+    });
   });
 
   it("fails on a procedure written in a group's index.ts", () => {
