@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Settings card for community tax-data updates (lib/tax-data/sync.ts):
+ * Settings card for community tax-data updates (server/services/tax/tax-data-sync.ts):
  * on/off, the last weekly check and Check now. An update it finds is
  * reviewed in Reference Data, never applied from here.
  */

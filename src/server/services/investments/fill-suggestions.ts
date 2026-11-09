@@ -1,7 +1,7 @@
 /** Loaders the Performance and basis fills (and the live year-to-date) share. */
 import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
+import { getTransactionCoverageStart } from "@/server/services/sync/simplefin/sync";
 import { utcDayOf } from "@/lib/utils/date";
 import { mixFor } from "@/lib/pure/investments/flow-suggestions";
 import {

@@ -4,7 +4,7 @@ import {
   checkForTaxDataUpdate,
   taxDataCheckDue,
   taxDataSyncOffReason,
-} from "@/lib/tax-data/sync";
+} from "@/server/services/tax/tax-data-sync";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
 

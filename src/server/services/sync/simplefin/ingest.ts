@@ -4,7 +4,7 @@
 import "server-only";
 import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { SimplefinAccount } from "./client";
+import type { SimplefinAccount } from "@/lib/simplefin/client";
 import {
   hasInvestedHoldings,
   planHoldingObservations,

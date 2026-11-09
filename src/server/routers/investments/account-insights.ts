@@ -15,7 +15,7 @@ import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
 } from "@/lib/pure/sync/simplefin-feeds";
-import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
+import { getTransactionCoverageStart } from "@/server/services/sync/simplefin/sync";
 import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { toNumber } from "@/lib/utils/numbers";
 import {

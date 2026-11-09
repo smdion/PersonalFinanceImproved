@@ -259,7 +259,7 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     try {
       const { schema, createVersion, restoreVersion } = await app();
       const { hasSyncedToday, transactionWindowStart } =
-        await import("@/lib/simplefin/sync");
+        await import("@/server/services/sync/simplefin/sync");
       const atVersion = daysAgo(30);
       await household(db, "Kept", ["simplefin"], atVersion);
       const version = await createVersion(db, {

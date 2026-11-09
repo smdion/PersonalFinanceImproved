@@ -10,7 +10,7 @@ import * as schema from "@/lib/db/schema";
 import {
   getTransactionCoverageStart,
   getWindowLimitDays,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   estimateTaxableInvestmentIncome,

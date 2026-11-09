@@ -1,5 +1,5 @@
 /**
- * Community tax-data updates (lib/tax-data/sync.ts): status, last check, and admin
+ * Community tax-data updates (server/services/tax/tax-data-sync.ts): status, last check, and admin
  * review/Apply/Dismiss of a waiting update; Apply refuses if the figures changed since review.
  */
 import { createHash } from "crypto";
@@ -28,7 +28,7 @@ import {
   lastTaxDataCheck,
   setTaxDataSyncEnabled,
   taxDataSyncOffReason,
-} from "@/lib/tax-data/sync";
+} from "@/server/services/tax/tax-data-sync";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
 

@@ -12,7 +12,7 @@ import {
   getAccounts,
   isSimplefinReplayMode,
   type SimplefinAccount,
-} from "./client";
+} from "@/lib/simplefin/client";
 import {
   BudgetApiError,
   nothingChanged,
@@ -23,7 +23,7 @@ import {
   recordSimplefinRequest,
   simplefinRequestRecorder,
   stopAtSimplefinQuota,
-} from "./request-log";
+} from "@/lib/simplefin/request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { reidentifySimplefinAccounts } from "./reidentify";
 import { utcDayOf } from "@/lib/utils/date";

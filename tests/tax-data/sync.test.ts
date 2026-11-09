@@ -24,7 +24,7 @@ import { packSignedTaxData, signTaxData } from "@/lib/tax-data/signature";
 import {
   checkForTaxDataUpdate,
   setTaxDataSyncEnabled,
-} from "@/lib/tax-data/sync";
+} from "@/server/services/tax/tax-data-sync";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";
 

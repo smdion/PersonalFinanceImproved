@@ -51,7 +51,7 @@ import {
   hasSyncedToday,
   getSimplefinLastError,
   MAX_PARTIAL_SYNC_RETRIES_PER_DAY,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
 

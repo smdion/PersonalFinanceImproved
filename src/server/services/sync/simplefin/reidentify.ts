@@ -10,7 +10,7 @@ import {
   planReidentify,
   type ErrorScope,
 } from "@/lib/pure/sync/simplefin-reidentify";
-import type { SimplefinAccount } from "./client";
+import type { SimplefinAccount } from "@/lib/simplefin/client";
 import { REDACTED_MEDICAL_DESCRIPTION } from "./ingest";
 import type { DbOrTx } from "@/lib/db";
 

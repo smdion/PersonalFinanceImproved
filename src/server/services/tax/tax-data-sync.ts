@@ -23,8 +23,11 @@ import {
   previewCommunityTaxData,
   readTaxDataFile,
 } from "@/lib/db/migrate/reference-data";
-import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
-import { validateTaxDataFile } from "./validate";
+import {
+  unpackSignedTaxData,
+  verifyTaxDataSignature,
+} from "@/lib/tax-data/signature";
+import { validateTaxDataFile } from "@/lib/tax-data/validate";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";

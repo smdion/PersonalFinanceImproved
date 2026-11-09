@@ -17,7 +17,7 @@ import {
   runSimplefinSync,
   upsertSimplefinAccounts,
   getSimplefinLastError,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import {
   claimSetupToken,
   getAccounts,
@@ -33,7 +33,7 @@ import {
 } from "@/lib/simplefin/request-log";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
-import type { SimplefinConfig } from "@/lib/simplefin/sync";
+import type { SimplefinConfig } from "@/server/services/sync/simplefin/sync";
 import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
 

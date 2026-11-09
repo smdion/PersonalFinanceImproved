@@ -343,8 +343,6 @@
     "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 576,
     "src/lib/simplefin/client.ts": 458,
-    "src/lib/simplefin/ingest.ts": 522,
-    "src/lib/simplefin/sync.ts": 553,
     "src/lib/tax-data/validate.ts": 395,
     "src/lib/utils/colors.ts": 381,
     "src/server/data/budget-profiles.ts": 37,
@@ -417,6 +415,8 @@
     "src/server/services/simulation/mc-inputs.ts": 113,
     "src/server/services/sync/budget-api-push.ts": 409,
     "src/server/services/sync/preview.ts": 434,
+    "src/server/services/sync/simplefin/ingest.ts": 522,
+    "src/server/services/sync/simplefin/sync.ts": 553,
     "src/server/services/sync/sync-all.ts": 253,
     "src/server/trpc.ts": 548
   },
@@ -999,9 +999,6 @@
     "src/lib/sec/facts-sync.ts": {
       "refreshOne": 203
     },
-    "src/lib/simplefin/sync.ts": {
-      "runSimplefinSync": 190
-    },
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163
     },
@@ -1095,6 +1092,9 @@
     },
     "src/server/services/sync/preview.ts": {
       "computeSyncPreview": 401
+    },
+    "src/server/services/sync/simplefin/sync.ts": {
+      "runSimplefinSync": 190
     },
     "src/server/services/sync/sync-all.ts": {
       "syncAll": 228

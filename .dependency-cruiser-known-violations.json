@@ -40,11 +40,6 @@
     "to": "src/lib/pure/engine/types/index.ts"
   },
   {
-    "rule": "infra-below-server",
-    "from": "src/lib/simplefin/sync.ts",
-    "to": "src/server/services/sync/loan-feed.ts"
-  },
-  {
     "rule": "no-circular",
     "from": "src/lib/db/pg/contribution-profiles.ts",
     "to": "src/lib/db/pg/scenarios.ts"

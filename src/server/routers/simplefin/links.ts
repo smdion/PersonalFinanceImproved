@@ -2,8 +2,8 @@ import { z } from "zod/v4";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
-import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
+import { recomputeTodaySnapshotFromLocal } from "@/server/services/sync/simplefin/sync";
+import { redactStoredCardSpending } from "@/server/services/sync/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/data/sub-accounts";
 import {
   applyLoanFeedBalances,
@@ -18,7 +18,10 @@ import {
   mergeRefusal,
   readdedCandidates,
 } from "@/lib/pure/sync/simplefin-reidentify";
-import { loadFeedIdentities, mergeCopyInto } from "@/lib/simplefin/reidentify";
+import {
+  loadFeedIdentities,
+  mergeCopyInto,
+} from "@/server/services/sync/simplefin/reidentify";
 
 const MERGE_REFUSED = {
   same_row: "An account can't be merged into itself",

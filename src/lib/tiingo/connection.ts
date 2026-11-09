@@ -1,7 +1,7 @@
 /**
  * Tiingo connection storage — one api_connections row (service = "tiingo")
  * holding the API key in an encrypted envelope, same pattern as
- * saveSimplefinConnection in lib/simplefin/sync.ts.
+ * saveSimplefinConnection in server/services/sync/simplefin/sync.ts.
  */
 import "server-only";
 import { eq } from "drizzle-orm";
@@ -32,7 +32,7 @@ export async function getTiingoApiKey(db: Db): Promise<string | null> {
 
 export async function saveTiingoConnection(db: Db, apiKey: string) {
   const config = encryptJson({ apiKey } satisfies TiingoConfig);
-  // eslint-disable-next-line no-restricted-syntax -- encrypted envelope stored in the generic ApiConfig jsonb column, same pattern as saveSimplefinConnection() in simplefin/sync.ts
+  // eslint-disable-next-line no-restricted-syntax -- encrypted envelope stored in the generic ApiConfig jsonb column, same pattern as saveSimplefinConnection() in server/services/sync/simplefin/sync.ts
   const storedConfig = config as unknown as schema.ApiConfig;
   await db
     .insert(schema.apiConnections)

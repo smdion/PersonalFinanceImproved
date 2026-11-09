@@ -4832,31 +4832,7 @@
       "count": 1
     }
   },
-  "src/lib/simplefin/ingest.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
-  "src/lib/simplefin/reidentify.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 8
-    }
-  },
   "src/lib/simplefin/schemas.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/simplefin/sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -4867,14 +4843,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
-    }
-  },
-  "src/lib/tax-data/sync.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/tax-data/validate.ts": {
@@ -5874,6 +5842,30 @@
       "count": 2
     }
   },
+  "src/server/services/sync/simplefin/ingest.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 1
+    }
+  },
+  "src/server/services/sync/simplefin/reidentify.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 8
+    }
+  },
+  "src/server/services/sync/simplefin/sync.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
+      "count": 1
+    }
+  },
   "src/server/services/sync/sync-all.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -5893,6 +5885,14 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
+      "count": 1
+    }
+  },
+  "src/server/services/tax/tax-data-sync.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 1
+    },
+    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },

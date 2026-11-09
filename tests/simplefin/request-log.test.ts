@@ -34,7 +34,7 @@ import {
   runSimplefinSync,
   saveSimplefinConnection,
   transactionWindowStart,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import {
   SIMPLEFIN_DAILY_REQUEST_LIMIT,
   countSimplefinRequestsLastDay,

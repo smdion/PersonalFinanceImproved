@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 import { asc, desc, eq, gte } from "drizzle-orm";
 import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
+import { recomputeTodaySnapshotFromLocal } from "@/server/services/sync/simplefin/sync";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";
 import {

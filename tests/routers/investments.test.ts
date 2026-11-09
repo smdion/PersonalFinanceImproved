@@ -12,7 +12,7 @@ import {
   viewerSession,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { REDACTED_MEDICAL_DESCRIPTION } from "@/lib/simplefin/ingest";
+import { REDACTED_MEDICAL_DESCRIPTION } from "@/server/services/sync/simplefin/ingest";
 import {
   loadClassifiedTransactions,
   loadLatestHoldings,

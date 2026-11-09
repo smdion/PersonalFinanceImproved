@@ -34,12 +34,12 @@ vi.mock("@/lib/db/schema", () => ({
   stateVersions: { id: {}, versionType: {}, name: {} },
 }));
 vi.mock("@/lib/logger", () => ({ log: m.log, logWarnOnce: vi.fn() }));
-vi.mock("@/lib/simplefin/sync", () => ({
+vi.mock("@/server/services/sync/simplefin/sync", () => ({
   getSimplefinConnection: vi.fn().mockResolvedValue({ id: 1 }),
   hasSyncedToday: vi.fn().mockResolvedValue(false),
   runSimplefinSync: m.runSimplefinSync,
 }));
-vi.mock("@/lib/tax-data/sync", () => ({
+vi.mock("@/server/services/tax/tax-data-sync", () => ({
   taxDataSyncOffReason: vi.fn().mockResolvedValue(null),
   taxDataCheckDue: vi.fn().mockResolvedValue(true),
   checkForTaxDataUpdate: m.checkForTaxDataUpdate,

@@ -4,7 +4,7 @@ import {
   runSimplefinSync,
   getSimplefinConnection,
   hasSyncedToday,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
 

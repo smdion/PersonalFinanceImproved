@@ -10,7 +10,7 @@ import {
   ingestInvestmentData,
   redactStoredCardSpending,
   REDACTED_MEDICAL_DESCRIPTION,
-} from "@/lib/simplefin/ingest";
+} from "@/server/services/sync/simplefin/ingest";
 import type { SimplefinAccount } from "@/lib/simplefin/client";
 
 const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
