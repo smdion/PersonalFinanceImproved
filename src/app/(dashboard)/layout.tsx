@@ -8,7 +8,7 @@ import { DashboardLayout as DashboardLayoutClient } from "@/components/layout/da
 import { DashboardShell } from "./dashboard-shell";
 import { UserProvider } from "@/lib/context/user-context";
 import { PrivacyProvider } from "@/lib/context/privacy-context";
-import { PRIVACY_COOKIE } from "@/lib/utils/format";
+import { PRIVACY_COOKIE } from "@/lib/utils/privacy-mode";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { getDemoProfile } from "@/lib/demo";
 import { databaseStatus } from "@/server/data/database-status";

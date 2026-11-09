@@ -12,11 +12,8 @@ import { SkeletonChart } from "@/components/ui/skeleton";
 import { UtilitiesQueryBoundary } from "./utilities-query-boundary";
 import { queryPending } from "@/components/ui/query-boundary";
 import dynamic from "next/dynamic";
-import {
-  budgetApiServiceLabel,
-  formatCurrency,
-  formatPercent,
-} from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { UtilityFeedCard } from "@/components/upkeep/utility-feed-card";
 import { AddUtilityForm } from "@/components/upkeep/add-utility-form";
 import { CHART_COLORS } from "@/lib/utils/colors";

@@ -7,8 +7,8 @@ import {
   formatCurrency,
   formatPercent,
   accountDisplayName,
-  budgetApiServiceLabel,
 } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { sumBy } from "@/lib/utils/math";
 
 // --- Sub-components ---

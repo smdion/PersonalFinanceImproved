@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { PRIVACY_COOKIE, setPrivacyMode } from "@/lib/utils/format";
+import { PRIVACY_COOKIE, setPrivacyMode } from "@/lib/utils/privacy-mode";
 import { startPrivacyTextGuard } from "@/lib/privacy-text-guard";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;

@@ -18,7 +18,7 @@ import {
   recommendationsFromFilingStatus,
 } from "@/lib/pure/advice/recommendations-data";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
-import { budgetApiServiceLabel } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/advice/recommendations-roth";
 import { useInvestingFindings } from "@/lib/hooks/use-investing-findings";

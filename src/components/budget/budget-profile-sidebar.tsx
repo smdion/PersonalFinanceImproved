@@ -5,7 +5,8 @@
  * mutations and permissions. Rename is click-to-edit via `onRename`.
  */
 
-import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
 import { planInUseMessage } from "@/lib/pure/household/plans";

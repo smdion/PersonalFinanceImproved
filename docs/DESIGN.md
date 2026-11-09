@@ -399,7 +399,7 @@ Tooltip rendering for the projection card is data-driven and lives in
 it to `renderTooltip()`. The renderer decides _how_ to render — never _what_
 data to show. Section order is fixed; every section is `{d.field && <render>}`.
 
-Helper modules (`utils.ts`, `use-projection-derived.ts`, `types.ts`) hold the
+Helper modules (`bucket-slots.ts`, `projection-columns.ts`, `use-projection-derived.ts`, `types.ts`) hold the
 data-driven lookups (`bucketSlotMap`, `colKeyParts`, `itemTaxType`, etc.).
 Keep the field-by-field contract in the file header comment of
 `tooltip-renderer.tsx` — not here.

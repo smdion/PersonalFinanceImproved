@@ -5,7 +5,7 @@
  * data-privacy-visible; turning it off restores the text.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { setPrivacyMode } from "@/lib/utils/format";
+import { setPrivacyMode } from "@/lib/utils/privacy-mode";
 import { startPrivacyTextGuard } from "@/lib/privacy-text-guard";
 
 const DOLLAR_AMOUNT = /\$\s?-?\d/;

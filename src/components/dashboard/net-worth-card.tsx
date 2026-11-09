@@ -5,11 +5,8 @@ import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import {
-  budgetApiServiceLabel,
-  formatCurrency,
-  formatDate,
-} from "@/lib/utils/format";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";

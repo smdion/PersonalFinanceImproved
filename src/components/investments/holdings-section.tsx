@@ -34,8 +34,8 @@ import {
   formatCurrency,
   formatNumber,
   formatPercent,
-  isPrivacyMode,
 } from "@/lib/utils/format";
+import { isPrivacyMode } from "@/lib/utils/privacy-mode";
 import {
   combineHoldings,
   fundsInBucket,

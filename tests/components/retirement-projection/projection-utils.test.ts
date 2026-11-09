@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts required to build minimal slot/account fixtures without satisfying every unrelated field of the full engine types */
 /**
  * Unit tests for the pure data-driven helpers in
- * src/components/retirement-projection/ (bucket-slots, projection-columns, lump-sums, parent-category-filter, utils). Uses the real
+ * src/components/retirement-projection/ (bucket-slots, projection-columns, lump-sums, parent-category-filter, projection-display). Uses the real
  * @/lib/config/account-types module (as other pure-function tests in this
  * repo do, e.g. tests/pure/engine/balance-utils.test.ts) rather than mocking
  * it — these helpers are config-driven and their correctness depends on

@@ -17,8 +17,8 @@ import {
   formatDate,
   formatNumber,
   formatPercent,
-  isPrivacyMode,
 } from "@/lib/utils/format";
+import { isPrivacyMode } from "@/lib/utils/privacy-mode";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
 import {

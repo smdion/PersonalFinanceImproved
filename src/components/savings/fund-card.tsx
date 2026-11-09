@@ -5,7 +5,8 @@ import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import dynamic from "next/dynamic";
 import { Popover } from "@/components/ui/popover";
-import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { safeDivide } from "@/lib/utils/math";
 
 // Code-split Recharts mini chart: every FundCard shares one chunk fetched on

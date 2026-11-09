@@ -8,11 +8,11 @@ import { FocusLink } from "@/components/ui/focus-link";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import {
-  budgetApiServiceLabel,
   formatDate,
   formatNumber,
   formatRelativeTime,
 } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { DATA_SOURCES, type DataSourceKey } from "@/lib/config/data-sources";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 

@@ -5,7 +5,7 @@
  * API's goal targets will change. The parent owns the items and mutation.
  */
 
-import { budgetApiServiceLabel } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import {
   PushPreviewModal,
   type PushPreviewItem,

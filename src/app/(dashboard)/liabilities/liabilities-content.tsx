@@ -10,11 +10,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { MortgageSettings } from "@/components/debts/mortgage-settings";
-import {
-  budgetApiServiceLabel,
-  formatCurrency,
-  maskAmountsInText,
-} from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { DebtsCard } from "@/components/debts/debts-card";
 import { ActiveLoanCard } from "@/components/debts/active-loan-card";
 import { HistoricalLoans } from "@/components/debts/historical-loans";
