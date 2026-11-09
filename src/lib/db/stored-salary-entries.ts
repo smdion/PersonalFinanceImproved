@@ -4,7 +4,7 @@
  */
 import { salaryEntriesSchema } from "@/lib/db/json-schemas";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { log } from "@/lib/logger";
+import { logWarnOnce } from "@/lib/logger";
 
 type SalaryProfileRow = {
   id: number;
@@ -15,13 +15,14 @@ type SalaryProfileRow = {
 export function checkSalaryEntries<R extends SalaryProfileRow>(
   row: R,
 ): Omit<R, "salaries"> & { salaries: Record<string, SalaryEntry> } {
-  const issues = salaryEntriesSchema.safeParse(row.salaries).error?.issues;
+  const issues = salaryEntriesSchema
+    .safeParse(row.salaries)
+    .error?.issues.slice(0, 10)
+    .map((i) => `${i.path.join(".")}: ${i.message}`);
   if (issues)
-    log("warn", "salary_entries_unexpected_shape", {
+    logWarnOnce("salary_entries_unexpected_shape", `${row.id}|${issues}`, {
       profileId: row.id,
-      issues: issues
-        .slice(0, 10)
-        .map((i) => `${i.path.join(".")}: ${i.message}`),
+      issues,
     });
   return { ...row, salaries: row.salaries ?? {} };
 }
