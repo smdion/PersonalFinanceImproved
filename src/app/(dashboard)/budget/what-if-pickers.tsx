@@ -10,12 +10,13 @@ export type WhatIfPickersProps = {
   budgetId: number | null;
   budgetProfiles: ReturnType<typeof useBudgetProfilesList>["data"];
   contribId: number | null;
-  contribProfiles: RouterOutputs["contributionProfile"]["list"] | undefined;
+  contributionProfiles:
+    RouterOutputs["contributionProfile"]["list"] | undefined;
   salaryId: number | null;
   salaryProfiles: RouterOutputs["salaryProfile"]["list"] | undefined;
   sandbox: ReturnType<typeof useSandboxState>;
   setPickedBudgetId: Dispatch<SetStateAction<number | null>>;
-  setPickedContribId: Dispatch<SetStateAction<number | null>>;
+  setPickedContributionId: Dispatch<SetStateAction<number | null>>;
   setPickedSalaryId: Dispatch<SetStateAction<number | null>>;
   setTaxYear: Dispatch<SetStateAction<number>>;
   taxYear: number;
@@ -26,12 +27,12 @@ export function WhatIfPickers({
   budgetId,
   budgetProfiles,
   contribId,
-  contribProfiles,
+  contributionProfiles,
   salaryId,
   salaryProfiles,
   sandbox,
   setPickedBudgetId,
-  setPickedContribId,
+  setPickedContributionId,
   setPickedSalaryId,
   setTaxYear,
   taxYear,
@@ -52,8 +53,8 @@ export function WhatIfPickers({
         <ProfilePicker
           label="Contribution"
           value={contribId}
-          options={contribProfiles ?? []}
-          onChange={setPickedContribId}
+          options={contributionProfiles ?? []}
+          onChange={setPickedContributionId}
         />
         <ProfilePicker
           label="Budget"

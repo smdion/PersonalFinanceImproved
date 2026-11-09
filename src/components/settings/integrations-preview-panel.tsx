@@ -9,7 +9,7 @@ import { useIntegrationSavingsMutations } from "./integrations/use-integration-s
 import { DriftBanner } from "./integrations/drift-banner";
 import { BudgetSection } from "./integrations/budget-section";
 import { SavingsSection } from "./integrations/savings-section";
-import { ContribSection } from "./integrations/contrib-section";
+import { ContributionSection } from "./integrations/contrib-section";
 import { PortfolioSection } from "./integrations/portfolio-section";
 
 export function PreviewPanel({
@@ -49,9 +49,9 @@ export function PreviewPanel({
     Object.values(savingsOverrides).filter(Boolean).length;
 
   // Contribution accounts for the contribution linking dropdown
-  const contribAccountsQuery =
+  const contributionAccountsQuery =
     trpc.budget.listContribAccountsForLinking.useQuery();
-  const contribAccounts = contribAccountsQuery.data ?? [];
+  const contributionAccounts = contributionAccountsQuery.data ?? [];
 
   const allApiCats = apiCategories;
 
@@ -228,7 +228,10 @@ export function PreviewPanel({
         setSavingsOverrides={setSavingsOverrides}
       />
 
-      <ContribSection budget={budget} contribAccounts={contribAccounts} />
+      <ContributionSection
+        budget={budget}
+        contributionAccounts={contributionAccounts}
+      />
 
       <PortfolioSection service={service} portfolio={portfolio} />
     </div>

@@ -70,11 +70,11 @@ export function RetirementContent() {
   // Profile tab; the snapshot picker below writes its setting.
   const plan = usePlanEngineInput();
   const {
-    contributionProfileId: effectiveContribProfileId,
+    contributionProfileId: effectiveContributionProfileId,
     salaryProfileId: effectiveSalaryProfileId,
     snapshotId,
   } = plan.ids;
-  const decBudget = plan.input.selection.decumulationBudget;
+  const decumulationBudget = plan.input.selection.decumulationBudget;
   const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
@@ -316,11 +316,13 @@ export function RetirementContent() {
             <ProjectionCard
               people={peopleLookup}
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
-              decumulationBudgetProfileId={decBudget?.profileId}
-              decumulationBudgetColumn={decBudget?.column}
-              decumulationExpenseOverride={decBudget?.annualExpenses}
+              decumulationBudgetProfileId={decumulationBudget?.profileId}
+              decumulationBudgetColumn={decumulationBudget?.column}
+              decumulationExpenseOverride={decumulationBudget?.annualExpenses}
               parentCategoryFilter="Retirement"
-              contributionProfileId={effectiveContribProfileId ?? undefined}
+              contributionProfileId={
+                effectiveContributionProfileId ?? undefined
+              }
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
               retirementProfileId={effectiveRetirementProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}

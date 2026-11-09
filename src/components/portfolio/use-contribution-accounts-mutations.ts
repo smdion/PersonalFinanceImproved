@@ -19,7 +19,7 @@ import { resentMatchTerms } from "@/lib/pure/contributions/match-display";
 import type { z } from "zod/v4";
 import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/json-schemas";
 
-type ContribRecord =
+type ContributionRecord =
   RouterOutputs["settings"]["contributionAccounts"]["list"][number];
 
 type PerfAccountRecord =
@@ -31,7 +31,7 @@ type PerfAccountRecord =
  *  raw account row — everything else here (accountType, personId, jobId,
  *  taxTreatment, ownership, isActive, etc.) has no profile-level fallback
  *  and always writes the raw row directly. */
-const PROFILE_OWNED_CONTRIB_FIELDS = [
+const PROFILE_OWNED_CONTRIBUTION_FIELDS = [
   "employerMatchType",
   "employerMatchValue",
   "employerMaxMatchPct",
@@ -42,16 +42,16 @@ const PROFILE_OWNED_CONTRIB_FIELDS = [
 
 export function useContributionAccountsMutations({
   allContribs,
-  activeContribProfileId,
+  activeContributionProfileId,
 }: {
-  allContribs: ContribRecord[];
+  allContribs: ContributionRecord[];
   /** The globally-effective Contribution Profile id (the active), if any. When set, PROFILE_OWNED_CONTRIBUTION_FIELDS edits route
    *  here instead of the raw account row. */
-  activeContribProfileId?: number | null;
+  activeContributionProfileId?: number | null;
 }) {
   const utils = trpc.useUtils();
 
-  const setContribProfileFieldsMut =
+  const setContributionProfileFieldsMut =
     trpc.contributionProfile.setAccountActiveFields.useMutation({
       onSuccess: () => {
         utils.contributionProfile.invalidate();
@@ -86,7 +86,7 @@ export function useContributionAccountsMutations({
     },
   );
 
-  const updateContribMut =
+  const updateContributionMut =
     trpc.settings.contributionAccounts.update.useMutation({
       onSuccess: () => {
         utils.settings.contributionAccounts.invalidate();
@@ -95,7 +95,7 @@ export function useContributionAccountsMutations({
       },
     });
 
-  const createContribMut =
+  const createContributionMut =
     trpc.settings.contributionAccounts.create.useMutation({
       onSuccess: () => {
         utils.settings.contributionAccounts.invalidate();
@@ -181,7 +181,7 @@ export function useContributionAccountsMutations({
   };
 
   const handleContribUpdate = (
-    c: ContribRecord,
+    c: ContributionRecord,
     updates: Partial<{
       accountType: string;
       personId: number | null;
@@ -210,7 +210,7 @@ export function useContributionAccountsMutations({
     // here lands in the same place the Paycheck/Budget pages write to —
     // otherwise this raw write is silently shadowed by the profile's own
     // resolved value everywhere else in the app (see applyContribActiveFields).
-    if (activeContribProfileId != null) {
+    if (activeContributionProfileId != null) {
       // contribAccountActiveFieldsSchema has no `null` variant for these
       // fields (a profile entry is either set or absent, never explicitly
       // nulled) — a "clear" edit (e.g. blanking Match %) has no profile-level
@@ -223,7 +223,7 @@ export function useContributionAccountsMutations({
         employerMaxMatchPct: string | number;
         autoMaximize: boolean;
       }> = {};
-      for (const field of PROFILE_OWNED_CONTRIB_FIELDS) {
+      for (const field of PROFILE_OWNED_CONTRIBUTION_FIELDS) {
         const value = updates[field];
         if (value !== undefined && value !== null) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -235,8 +235,8 @@ export function useContributionAccountsMutations({
         (profileFields as { rothRoute?: RothIraRoute }).rothRoute = route;
       const unset = route === "direct" ? ["rothRoute"] : [];
       if (Object.keys(profileFields).length > 0 || unset.length > 0) {
-        setContribProfileFieldsMut.mutate({
-          profileId: activeContribProfileId,
+        setContributionProfileFieldsMut.mutate({
+          profileId: activeContributionProfileId,
           accountId: c.id,
           fields: profileFields,
           ...(unset.length > 0 ? { unset } : {}),
@@ -247,7 +247,7 @@ export function useContributionAccountsMutations({
       const rest = Object.fromEntries(
         Object.entries(updates).filter(
           ([key]) =>
-            !(PROFILE_OWNED_CONTRIB_FIELDS as readonly string[]).includes(
+            !(PROFILE_OWNED_CONTRIBUTION_FIELDS as readonly string[]).includes(
               key,
             ) && key !== "rothRoute",
         ),
@@ -255,7 +255,7 @@ export function useContributionAccountsMutations({
       if (Object.keys(rest).length === 0) return;
       updates = rest as typeof updates;
     }
-    updateContribMut.mutate({
+    updateContributionMut.mutate({
       id: c.id,
       personId: updates.personId !== undefined ? updates.personId : c.personId,
       jobId: updates.jobId !== undefined ? updates.jobId : c.jobId,
@@ -299,7 +299,7 @@ export function useContributionAccountsMutations({
     });
   };
 
-  const handleLinkContrib = (
+  const handleLinkContribution = (
     contribId: number,
     perfAccountId: number | null,
   ) => {
@@ -311,11 +311,11 @@ export function useContributionAccountsMutations({
   return {
     createPerfMut,
     deletePerfMut,
-    createContribMut,
+    createContributionMut,
     updatePortfolioAccountMut,
     createPortfolioAccountMut,
     handlePerfUpdate,
     handleContribUpdate,
-    handleLinkContrib,
+    handleLinkContribution,
   };
 }

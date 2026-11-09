@@ -83,7 +83,7 @@ export function UpdatePerformanceForm({
     );
 
     const initial: UpdateFormRow[] = filtered.map((a) => {
-      const snapBal =
+      const snapBalance =
         a.performanceAccountId !== null
           ? (snapshotByPerfAccount.current.get(a.performanceAccountId) ?? null)
           : null;
@@ -120,7 +120,7 @@ export function UpdatePerformanceForm({
         gainLossOverride: false,
         note: a.note ?? "",
         estimatedFields: a.estimatedFields ?? [],
-        snapshotEndingBalance: snapBal,
+        snapshotEndingBalance: snapBalance,
         original: {
           beginningBalance: a.beginningBalance,
           employeeContrib,
@@ -308,7 +308,7 @@ export function UpdatePerformanceForm({
   const handleSave = () => {
     if (!rows) return;
     const accounts = rows.map((r) => {
-      const endBal = getEndingBalance(r);
+      const endBalance = getEndingBalance(r);
       const gainLoss = r.gainLossOverride
         ? parseFloat(r.yearlyGainLoss) || 0
         : getComputedGainLoss(r);
@@ -326,7 +326,7 @@ export function UpdatePerformanceForm({
         distributions: r.distributions,
         rollovers: r.rollovers,
         fees: r.fees,
-        endingBalance: endBal.toFixed(2),
+        endingBalance: endBalance.toFixed(2),
         yearlyGainLoss: gainLoss.toFixed(2),
       };
     });

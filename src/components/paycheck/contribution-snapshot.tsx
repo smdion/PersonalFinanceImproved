@@ -15,11 +15,11 @@ import {
   accountTextColor,
 } from "@/lib/utils/colors";
 import {
-  ContribPeriodToggle,
-  getContribMultiplier,
+  ContributionPeriodToggle,
+  getContributionMultiplier,
   getPeriodSuffix,
   householdPeriodsPerYear,
-  type ContribPeriod,
+  type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
 import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
@@ -48,15 +48,16 @@ export function ContributionSnapshot() {
     null,
   );
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const contribInput = {
+  const contributionInput = {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
     ...salaryProfileInput,
   };
-  const summary = trpc.contribution.computeSummary.useQuery(contribInput);
+  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
   const { data } = summary;
-  const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
+  const [contributionPeriod, setContributionPeriod] =
+    useState<ContributionPeriod>("annual");
   const highIncome = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
@@ -95,7 +96,10 @@ export function ContributionSnapshot() {
   const avgPeriodsPerYear = householdPeriodsPerYear(
     activePeople.map((p) => p.periodsPerYear!),
   );
-  const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
+  const householdMult = getContributionMultiplier(
+    contributionPeriod,
+    avgPeriodsPerYear,
+  );
 
   // Household totals: the same calculation as every savings rate
   // (householdSavings), with and without the match.
@@ -140,7 +144,7 @@ export function ContributionSnapshot() {
     },
   ];
 
-  const periodSuffix = getPeriodSuffix(contribPeriod);
+  const periodSuffix = getPeriodSuffix(contributionPeriod);
 
   return (
     <div className="mt-10 border-t-2 pt-8">
@@ -151,9 +155,9 @@ export function ContributionSnapshot() {
             Household Contribution Snapshot
           </h2>
         </div>
-        <ContribPeriodToggle
-          value={contribPeriod}
-          onChange={setContribPeriod}
+        <ContributionPeriodToggle
+          value={contributionPeriod}
+          onChange={setContributionPeriod}
         />
       </div>
 
@@ -358,8 +362,8 @@ export function ContributionSnapshot() {
               {!isJoint &&
                 activePeople.map((p) => {
                   const at = p.accountTypes.find((a) => a.accountType === type);
-                  const mult = getContribMultiplier(
-                    contribPeriod,
+                  const mult = getContributionMultiplier(
+                    contributionPeriod,
                     p.periodsPerYear!,
                   );
                   if (!at) {

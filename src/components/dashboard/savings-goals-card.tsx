@@ -82,8 +82,8 @@ function SavingsGoalsCardImpl() {
       isEmergencyFund?: boolean;
       currentMonthBudgeted?: number | null;
     };
-    const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
-    if (!calcGoal) continue;
+    const calculatedGoal = savings.goals.find((g) => g.goalId === rg.id);
+    if (!calculatedGoal) continue;
 
     // E-fund status uses effectiveNeeded (after repay minus pending reimb) to
     // stay consistent with the e-fund section above and the savings page detail.
@@ -96,9 +96,9 @@ function SavingsGoalsCardImpl() {
       continue;
     }
 
-    const current = calcGoal.current;
+    const current = calculatedGoal.current;
     // Data-driven: fixed goals use their target, ongoing goals have no fixed target to reach
-    const target = rg.targetMode === "fixed" ? calcGoal.target : 0;
+    const target = rg.targetMode === "fixed" ? calculatedGoal.target : 0;
 
     // All future transactions for this fund (deposits + withdrawals).
     // Date-truncated "today" cutoff (not time-of-day-sensitive), matching
@@ -137,7 +137,7 @@ function SavingsGoalsCardImpl() {
         {
           id: rg.id,
           current,
-          monthlyAllocation: calcGoal.monthlyAllocation,
+          monthlyAllocation: calculatedGoal.monthlyAllocation,
           currentMonthBudgeted: rg.currentMonthBudgeted,
         },
         {
@@ -202,7 +202,7 @@ function SavingsGoalsCardImpl() {
           kind: "shortfall",
           needed: target - current,
         });
-      } else if (calcGoal.monthlyAllocation > 0) {
+      } else if (calculatedGoal.monthlyAllocation > 0) {
         goalStatusMap.set(rg.id, {
           kind: "accumulating",
           needed: target - current,

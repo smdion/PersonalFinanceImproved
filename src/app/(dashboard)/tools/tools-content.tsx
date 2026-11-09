@@ -87,10 +87,14 @@ export function ToolsContent() {
   });
 
   // Contribution profile selectors (default to the live/default profile)
-  const [relocCurrentContribProfileId, setRelocCurrentContribProfileId] =
-    useState<number | null>(null);
-  const [relocTargetContribProfileId, setRelocTargetContribProfileId] =
-    useState<number | null>(null);
+  const [
+    relocCurrentContributionProfileId,
+    setRelocCurrentContributionProfileId,
+  ] = useState<number | null>(null);
+  const [
+    relocTargetContributionProfileId,
+    setRelocTargetContributionProfileId,
+  ] = useState<number | null>(null);
 
   // User-controlled move year (null = show comparison table + earliest viable hint)
   const [relocMoveYear, setRelocMoveYear] = useState<number | null>(null);
@@ -130,15 +134,15 @@ export function ToolsContent() {
     relocTargetProfileId ?? relocDefaultProfileId ?? 0;
 
   // Contribution profiles for relocation selectors
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
+  const contributionProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const contributionProfiles = contributionProfilesQuery.data ?? [];
   // No profile is privileged any more — the first (oldest) one is simply the
   // pre-selection when the relocation scenario hasn't picked one yet.
-  const defaultContribProfileId = contribProfiles[0]?.id;
-  const effectiveCurrentContribProfileId =
-    relocCurrentContribProfileId ?? defaultContribProfileId ?? null;
-  const effectiveTargetContribProfileId =
-    relocTargetContribProfileId ?? defaultContribProfileId ?? null;
+  const defaultContributionProfileId = contributionProfiles[0]?.id;
+  const effectiveCurrentContributionProfileId =
+    relocCurrentContributionProfileId ?? defaultContributionProfileId ?? null;
+  const effectiveTargetContributionProfileId =
+    relocTargetContributionProfileId ?? defaultContributionProfileId ?? null;
 
   // Salary Profile axis (the active profile) — one profile
   // applies to both scenarios, matching every other engine-backed endpoint
@@ -196,8 +200,8 @@ export function ToolsContent() {
         : null,
       yearAdjustments: relocYearAdjustments,
       largePurchases: relocLargePurchases,
-      currentContributionProfileId: effectiveCurrentContribProfileId,
-      relocationContributionProfileId: effectiveTargetContribProfileId,
+      currentContributionProfileId: effectiveCurrentContributionProfileId,
+      relocationContributionProfileId: effectiveTargetContributionProfileId,
       moveYear: relocMoveYear,
     }),
     [
@@ -209,8 +213,8 @@ export function ToolsContent() {
       relocTargetOverride,
       relocYearAdjustments,
       relocLargePurchases,
-      effectiveCurrentContribProfileId,
-      effectiveTargetContribProfileId,
+      effectiveCurrentContributionProfileId,
+      effectiveTargetContributionProfileId,
       relocMoveYear,
     ],
   );
@@ -243,8 +247,8 @@ export function ToolsContent() {
         id: crypto.randomUUID(),
       })),
     );
-    setRelocCurrentContribProfileId(params.currentContributionProfileId);
-    setRelocTargetContribProfileId(params.relocationContributionProfileId);
+    setRelocCurrentContributionProfileId(params.currentContributionProfileId);
+    setRelocTargetContributionProfileId(params.relocationContributionProfileId);
     const loadedMoveYear = params.moveYear ?? null;
     setRelocMoveYear(loadedMoveYear);
     setRelocMoveYearInput(loadedMoveYear != null ? String(loadedMoveYear) : "");
@@ -319,8 +323,8 @@ export function ToolsContent() {
       yearAdjustments: relocYearAdjustments,
       contributionOverrides: [] as never[],
       largePurchases: relocLargePurchases,
-      currentContributionProfileId: effectiveCurrentContribProfileId,
-      relocationContributionProfileId: effectiveTargetContribProfileId,
+      currentContributionProfileId: effectiveCurrentContributionProfileId,
+      relocationContributionProfileId: effectiveTargetContributionProfileId,
       moveYear: relocMoveYear,
     }),
     [
@@ -332,8 +336,8 @@ export function ToolsContent() {
       relocTargetOverride,
       relocYearAdjustments,
       relocLargePurchases,
-      effectiveCurrentContribProfileId,
-      effectiveTargetContribProfileId,
+      effectiveCurrentContributionProfileId,
+      effectiveTargetContributionProfileId,
       relocMoveYear,
     ],
   );
@@ -442,18 +446,18 @@ export function ToolsContent() {
                   setRelocTargetCol={setRelocTargetCol}
                   relocTargetOverride={relocTargetOverride}
                   setRelocTargetOverride={setRelocTargetOverride}
-                  contribProfiles={contribProfiles}
-                  effectiveCurrentContribProfileId={
-                    effectiveCurrentContribProfileId
+                  contributionProfiles={contributionProfiles}
+                  effectiveCurrentContributionProfileId={
+                    effectiveCurrentContributionProfileId
                   }
-                  setRelocCurrentContribProfileId={
-                    setRelocCurrentContribProfileId
+                  setRelocCurrentContributionProfileId={
+                    setRelocCurrentContributionProfileId
                   }
-                  effectiveTargetContribProfileId={
-                    effectiveTargetContribProfileId
+                  effectiveTargetContributionProfileId={
+                    effectiveTargetContributionProfileId
                   }
-                  setRelocTargetContribProfileId={
-                    setRelocTargetContribProfileId
+                  setRelocTargetContributionProfileId={
+                    setRelocTargetContributionProfileId
                   }
                   currentContribProfile={relocQuery.data.currentContribProfile}
                   relocationContribProfile={

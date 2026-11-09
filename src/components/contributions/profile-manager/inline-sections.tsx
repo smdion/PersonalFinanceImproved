@@ -92,11 +92,12 @@ export function renderInlineAccountRows({
     const storedName =
       af.displayNameCustom !== undefined ? String(af.displayNameCustom) : "";
     // No resolved value: the live match isn't in effect, so isn't shown.
-    const { hasValue: contribHasValue } = resolveContribFieldDisplayState(af);
+    const { hasValue: contributionHasValue } =
+      resolveContribFieldDisplayState(af);
     const ownMatch = entryMatchFigure(effectiveMatchType, af);
     const storedMatch =
       ownMatch ??
-      (contribHasValue
+      (contributionHasValue
         ? matchFigureForForm(
             ad.liveMatchType,
             ad.liveMatchValue,
@@ -106,7 +107,7 @@ export function renderInlineAccountRows({
     const storedCap =
       af.employerMaxMatchPct !== undefined
         ? String(Number(af.employerMaxMatchPct) * 100)
-        : contribHasValue && ad.liveMaxMatchPct != null
+        : contributionHasValue && ad.liveMaxMatchPct != null
           ? String(Number(ad.liveMaxMatchPct) * 100)
           : "";
     const row = {

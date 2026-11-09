@@ -102,8 +102,8 @@ function LivingCostsCardImpl() {
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [storedActiveSalaryProfileId] = useActiveSalaryProfile();
   const {
-    contributionProfileId: effectiveContribId,
-    queryInput: contribProfileInput,
+    contributionProfileId: effectiveContributionId,
+    queryInput: contributionProfileInput,
   } = useEffectiveContribProfileId();
   // Budget Profile axis — the active row, through the shared resolver.
   const { data: budgetProfilesList } = useBudgetProfilesList();
@@ -130,7 +130,7 @@ function LivingCostsCardImpl() {
         ? { profileId: displayBudgetProfileId }
         : {}),
       selection: {
-        contribution: effectiveContribId,
+        contribution: effectiveContributionId,
         salary: storedActiveSalaryProfileId,
       },
     });
@@ -138,7 +138,7 @@ function LivingCostsCardImpl() {
   // I actually doing" line next to the plan.
   const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   const lcQueryInput = {
-    ...contribProfileInput,
+    ...contributionProfileInput,
     ...salaryProfileInput,
   };
   const { data: paycheckData, isLoading: isPaycheckLoading } =
@@ -148,7 +148,7 @@ function LivingCostsCardImpl() {
   // Taxes/Retirement/Portfolio/Savings — the non-budget destinations gross
   // income actually goes to, so the card can show the full picture (budget
   // categories alone never sum anywhere near 100% of gross).
-  const { data: contribData, isLoading: isContribLoading } =
+  const { data: contributionData, isLoading: isContributionLoading } =
     trpc.contribution.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
@@ -165,7 +165,7 @@ function LivingCostsCardImpl() {
   if (
     isBudgetLoading ||
     isPaycheckLoading ||
-    isContribLoading ||
+    isContributionLoading ||
     isSavingsLoading ||
     isExtraPaycheckLoading
   )
@@ -345,11 +345,11 @@ function LivingCostsCardImpl() {
           : 0,
       )
     : 0;
-  const contribPeople = contribData?.people ?? [];
-  const contribJoint = contribData?.jointAccountTypes ?? [];
+  const contributionPeople = contributionData?.people ?? [];
+  const contributionJoint = contributionData?.jointAccountTypes ?? [];
   const allAccountTypes = [
-    ...contribPeople.flatMap((p) => p.accountTypes),
-    ...contribJoint,
+    ...contributionPeople.flatMap((p) => p.accountTypes),
+    ...contributionJoint,
   ];
   const retirementTypes = allAccountTypes.filter((a) =>
     isRetirementParent(a.parentCategory),
@@ -363,23 +363,23 @@ function LivingCostsCardImpl() {
   );
   const portfolioNonPayroll = sumBy(portfolioTypes, (a) => a.nonPayrollContrib);
   const jointRetirementNoMatch = sumBy(
-    contribJoint.filter((a) => isRetirementParent(a.parentCategory)),
+    contributionJoint.filter((a) => isRetirementParent(a.parentCategory)),
     (a) => a.employeeContrib,
   );
   const jointPortfolioNoMatch = sumBy(
-    contribJoint.filter((a) => isPortfolioParent(a.parentCategory)),
+    contributionJoint.filter((a) => isPortfolioParent(a.parentCategory)),
     (a) => a.employeeContrib,
   );
   // "projected" (not viewMode) — same full-year-always rule as netIncome/
   // grossIncome above.
   const retirementTotal =
     sumBy(
-      contribPeople,
+      contributionPeople,
       (p) => p.totals.views.projected.retirementWithoutMatch,
     ) + jointRetirementNoMatch;
   const portfolioTotal =
     sumBy(
-      contribPeople,
+      contributionPeople,
       (p) => p.totals.views.projected.portfolioWithoutMatch,
     ) + jointPortfolioNoMatch;
   // Unallocated uses ALL budget categories (not just the Ramsey-mapped

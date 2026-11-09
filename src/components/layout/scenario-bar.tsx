@@ -57,7 +57,10 @@ export function ScenarioBar() {
   const user = useUser();
   const canManagePlans = hasPermission(user, "scenario");
   const canChangeBudget = hasPermission(user, "budget");
-  const canChangeContribOrSalary = hasPermission(user, "contributionProfile");
+  const canChangeContributionOrSalary = hasPermission(
+    user,
+    "contributionProfile",
+  );
   const canChangeRetirement = isAdmin(user);
 
   const { plans, activeIds, planInUse, lastAppliedPlan, sameAsActive, apply } =
@@ -105,13 +108,14 @@ export function ScenarioBar() {
 
   // Profile lists
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  const { data: contribCompareData } =
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
+  const { data: contributionCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  const [, setActiveContribId] = useActiveContribProfile();
+  const [, setActiveContributionId] = useActiveContribProfile();
   const [, setActiveSalaryId] = useActiveSalaryProfile();
   const [, setActiveRetirementId] = useActiveRetirementProfile();
 
@@ -131,16 +135,16 @@ export function ScenarioBar() {
 
   // Warn before a swap silently drops an account's active value, as the
   // contribution profile manager's Activate does.
-  const handleActivateContrib = async (id: number) => {
-    const outgoing = contribCompareData?.profiles.find(
+  const handleActivateContribution = async (id: number) => {
+    const outgoing = contributionCompareData?.profiles.find(
       (p) => p.id === activeIds.contribution,
     );
-    const incoming = contribCompareData?.profiles.find((p) => p.id === id);
-    if (contribCompareData && outgoing) {
+    const incoming = contributionCompareData?.profiles.find((p) => p.id === id);
+    if (contributionCompareData && outgoing) {
       const lines = diffContribProfileSwap(
         outgoing.accountActiveFields,
         incoming?.accountActiveFields ?? {},
-        contribCompareData.accounts,
+        contributionCompareData.accounts,
       );
       if (lines.length > 0) {
         const ok = await confirmWithDiff(
@@ -150,7 +154,7 @@ export function ScenarioBar() {
         if (!ok) return;
       }
     }
-    setActiveContribId(id);
+    setActiveContributionId(id);
   };
 
   const confirmApplyPlan = useConfirmApplyPlan();
@@ -203,13 +207,13 @@ export function ScenarioBar() {
       kind: "salary",
       profiles: salaryProfiles,
       onChange: (id) => setActiveSalaryId(id),
-      canChange: canChangeContribOrSalary,
+      canChange: canChangeContributionOrSalary,
     },
     {
       kind: "contribution",
-      profiles: contribProfiles,
-      onChange: (id) => void handleActivateContrib(id),
-      canChange: canChangeContribOrSalary,
+      profiles: contributionProfiles,
+      onChange: (id) => void handleActivateContribution(id),
+      canChange: canChangeContributionOrSalary,
     },
     {
       kind: "budget",

@@ -135,7 +135,7 @@ function RetirementSettings() {
     SK_RETIREMENT_SIMULATION_AUTOLOAD,
     true,
   );
-  const [mcAutoload, setMcAutoload] = usePersistedToggle(
+  const [simulationAutoload, setSimulationAutoload] = usePersistedToggle(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
@@ -145,10 +145,8 @@ function RetirementSettings() {
   // match the default in use-projection-queries.ts's own usePersistedToggle
   // call for this same key, or this page shows the toggle in a state that
   // disagrees with actual behavior until the user touches it.
-  const [coastFireMcAutoload, setCoastFireMcAutoload] = usePersistedToggle(
-    SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
-    false,
-  );
+  const [coastFireSimulationAutoload, setCoastFireSimulationAutoload] =
+    usePersistedToggle(SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD, false);
 
   return (
     <div>
@@ -185,8 +183,8 @@ function RetirementSettings() {
             </div>
           </div>
           <Toggle
-            isChecked={mcAutoload}
-            onChange={setMcAutoload}
+            isChecked={simulationAutoload}
+            onChange={setSimulationAutoload}
             ariaLabel="Auto-load simulations"
           />
         </div>
@@ -204,8 +202,8 @@ function RetirementSettings() {
             </div>
           </div>
           <Toggle
-            isChecked={coastFireMcAutoload}
-            onChange={setCoastFireMcAutoload}
+            isChecked={coastFireSimulationAutoload}
+            onChange={setCoastFireSimulationAutoload}
             ariaLabel="Auto-load Coast FIRE simulations"
           />
         </div>

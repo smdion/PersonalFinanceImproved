@@ -103,7 +103,7 @@ export function SavingsTrajectoryTable({
     const windowed =
       historyWindow === "all" ? sorted : sorted.slice(-historyWindow);
 
-    return windowed.map(([key, balMap]) => ({ key, balMap }));
+    return windowed.map(([key, balanceMap]) => ({ key, balanceMap }));
   }, [historyData, historyWindow, firstProjectedKey]);
 
   if (goalProjections.length === 0) return null;
@@ -248,7 +248,7 @@ export function SavingsTrajectoryTable({
           </thead>
           <tbody>
             {/* ── Historical rows ── */}
-            {historicalRows.map(({ key, balMap }) => {
+            {historicalRows.map(({ key, balanceMap }) => {
               // Parse key back to a display label
               const [yearRow, month] = key.split("-");
               const displayDate = new Date(
@@ -268,7 +268,7 @@ export function SavingsTrajectoryTable({
                     </span>
                   </td>
                   {visibleProjections.map((gp) => {
-                    const val = balMap.get(gp.goalId);
+                    const val = balanceMap.get(gp.goalId);
                     return (
                       <td
                         key={gp.goalId}
@@ -282,7 +282,7 @@ export function SavingsTrajectoryTable({
                     <td className="text-faint/50 px-3 py-1.5 text-right text-xs tabular-nums">
                       {formatCurrency(
                         hiddenProjections.reduce(
-                          (s, gp) => s + (balMap.get(gp.goalId) ?? 0),
+                          (s, gp) => s + (balanceMap.get(gp.goalId) ?? 0),
                           0,
                         ),
                       )}
@@ -352,9 +352,9 @@ export function SavingsTrajectoryTable({
                             gp.monthlyAllocations[rowIndex] ?? 0;
                           const fundHasEvents =
                             (gp.monthEvents[rowIndex] ?? []).length > 0;
-                          const showInlineAlloc =
+                          const showInlineAllocation =
                             showAllocations && !fundHasEvents && allocation > 0;
-                          const inlineAlloc = showInlineAlloc ? (
+                          const inlineAllocation = showInlineAllocation ? (
                             <span className="text-micro ml-1 text-green-500/60 tabular-nums">
                               +{formatCurrency(allocation)}
                             </span>
@@ -382,7 +382,7 @@ export function SavingsTrajectoryTable({
                                   </span>
                                 )}
                                 {formatCurrency(balance)}
-                                {inlineAlloc}
+                                {inlineAllocation}
                               </td>
                             );
                           }
@@ -400,18 +400,16 @@ export function SavingsTrajectoryTable({
                                   className="px-3 py-1.5 text-right text-xs text-red-500 tabular-nums"
                                 >
                                   {formatCurrency(balance)}
-                                  {inlineAlloc}
+                                  {inlineAllocation}
                                 </td>
                               );
                             }
 
-                            const futureWithdrawalBal = nextWithdrawalBalance(
-                              gp,
-                              rowIndex,
-                            );
+                            const futureWithdrawalBalance =
+                              nextWithdrawalBalance(gp, rowIndex);
                             const isAtRisk =
-                              futureWithdrawalBal !== null &&
-                              futureWithdrawalBal < 0;
+                              futureWithdrawalBalance !== null &&
+                              futureWithdrawalBalance < 0;
 
                             if (isAtRisk) {
                               return (
@@ -420,7 +418,7 @@ export function SavingsTrajectoryTable({
                                   className="px-3 py-1.5 text-right text-xs text-amber-500 tabular-nums"
                                 >
                                   {formatCurrency(balance)}
-                                  {inlineAlloc}
+                                  {inlineAllocation}
                                 </td>
                               );
                             }
@@ -433,7 +431,7 @@ export function SavingsTrajectoryTable({
                             return (
                               <td key={gp.goalId} className={cls}>
                                 {formatCurrency(balance)}
-                                {inlineAlloc}
+                                {inlineAllocation}
                               </td>
                             );
                           }
@@ -447,7 +445,7 @@ export function SavingsTrajectoryTable({
                               }`}
                             >
                               {formatCurrency(balance)}
-                              {inlineAlloc}
+                              {inlineAllocation}
                             </td>
                           );
                         })}

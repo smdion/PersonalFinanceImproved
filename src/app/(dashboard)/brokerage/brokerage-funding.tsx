@@ -81,23 +81,23 @@ export function CostBasisEditor({
 }
 
 export function FundingSources({
-  directContrib,
+  directContribution,
   overflow,
   ramp,
   canEdit,
   onRampChange,
 }: {
-  directContrib: number;
+  directContribution: number;
   overflow: number;
   ramp: number;
   canEdit: boolean;
   onRampChange: (value: number) => void;
 }) {
-  const total = directContrib + overflow + ramp;
+  const total = directContribution + overflow + ramp;
   const rows = [
     {
       label: "Direct contributions",
-      amount: directContrib,
+      amount: directContribution,
       help: "Employee + employer contributions to Portfolio-category accounts",
     },
     // Contributions over the IRS limits go to retirement accounts; they

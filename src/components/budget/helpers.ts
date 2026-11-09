@@ -119,7 +119,7 @@ export function buildPayrollBreakdown(
   };
 }
 
-export function buildNonPayrollContribs(
+export function buildNonPayrollContributions(
   paycheckData: unknown,
   // Contribution accounts already linked to a budget item (via
   // RawItem.contributionAccountId) — excluded here so a linked account's

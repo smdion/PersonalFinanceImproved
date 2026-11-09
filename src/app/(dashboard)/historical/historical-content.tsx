@@ -37,7 +37,7 @@ import {
   NoteableValue,
   ReadOnlyLineItemCell,
   PerfDetailCell,
-  PerfEndBalCell,
+  PerfEndBalanceCell,
   EditableCell,
   EditableRateCell,
   changeColor,
@@ -671,7 +671,7 @@ function HistoricalTable({
                     {row.isCurrent &&
                     row.perfLastUpdated &&
                     row.snapshotDate ? (
-                      <PerfEndBalCell
+                      <PerfEndBalanceCell
                         value={row.perfEndingBalance}
                         perfLastUpdated={row.perfLastUpdated}
                         snapshotDate={row.snapshotDate}

@@ -183,7 +183,8 @@ export function ComparePlans() {
   const { plans, activeIds, planInUse, apply } = usePlans();
   const confirmApplyPlan = useConfirmApplyPlan();
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
@@ -192,7 +193,7 @@ export function ComparePlans() {
     readonly { id: number; name: string }[] | undefined
   > = {
     salary: salaryProfiles,
-    contribution: contribProfiles,
+    contribution: contributionProfiles,
     budget: budgetProfiles,
     retirement: retirementProfiles,
   };

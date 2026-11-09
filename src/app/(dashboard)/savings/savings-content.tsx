@@ -104,12 +104,12 @@ export function SavingsContent() {
     SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Fetch contribution profiles list for subtitle display.
-  const { data: contribProfilesList } =
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
   // ── Shared queries ──
@@ -128,7 +128,7 @@ export function SavingsContent() {
   const [activeSalaryProfileId] = useActiveSalaryProfile();
   // The active ids, sent explicitly (null while loading = none).
   const paySelection = {
-    contribution: activeContribProfileId,
+    contribution: activeContributionProfileId,
     salary: activeSalaryProfileId,
   };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
@@ -141,8 +141,8 @@ export function SavingsContent() {
   // page use, so budget item $ amounts, this page's pool and the payroll
   // breakdown never disagree.
   const paycheckInput = {
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(activeContributionProfileId != null
+      ? { contributionProfileId: activeContributionProfileId }
       : {}),
     ...(activeSalaryProfileId != null
       ? { salaryProfileId: activeSalaryProfileId }
@@ -170,8 +170,8 @@ export function SavingsContent() {
   // The profiles this preview used, threaded into the recalculate and
   // lock-in mutations so their live pool matches it.
   const recalcIncomeParams = {
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(activeContributionProfileId != null
+      ? { contributionProfileId: activeContributionProfileId }
       : {}),
     ...(activeSalaryProfileId != null
       ? { salaryProfileId: activeSalaryProfileId }
@@ -474,9 +474,9 @@ export function SavingsContent() {
           const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
           if (!budgetLabel) return undefined;
           const profileName =
-            activeContribProfileId != null
-              ? (contribProfilesList?.find(
-                  (p) => p.id === activeContribProfileId,
+            activeContributionProfileId != null
+              ? (contributionProfilesList?.find(
+                  (p) => p.id === activeContributionProfileId,
                 )?.name ?? null)
               : null;
           return profileName

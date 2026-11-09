@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
 import type {
   RelocationBudgetInfo,
-  RelocationContribProfile,
-  ContribProfileListItem,
+  RelocationContributionProfile,
+  ContributionProfileListItem,
 } from "./types";
 
 type Props = {
@@ -34,14 +34,14 @@ type Props = {
   setRelocTargetOverride: (value: string) => void;
 
   // Contribution profile pickers
-  contribProfiles: ContribProfileListItem[];
-  effectiveCurrentContribProfileId: number | null;
-  setRelocCurrentContribProfileId: (id: number) => void;
-  effectiveTargetContribProfileId: number | null;
-  setRelocTargetContribProfileId: (id: number) => void;
+  contributionProfiles: ContributionProfileListItem[];
+  effectiveCurrentContributionProfileId: number | null;
+  setRelocCurrentContributionProfileId: (id: number) => void;
+  effectiveTargetContributionProfileId: number | null;
+  setRelocTargetContributionProfileId: (id: number) => void;
 
-  currentContribProfile: RelocationContribProfile | null | undefined;
-  relocationContribProfile: RelocationContribProfile | null | undefined;
+  currentContribProfile: RelocationContributionProfile | null | undefined;
+  relocationContribProfile: RelocationContributionProfile | null | undefined;
 };
 
 export function RelocationBudgetSelectors({
@@ -58,11 +58,11 @@ export function RelocationBudgetSelectors({
   setRelocTargetCol,
   relocTargetOverride,
   setRelocTargetOverride,
-  contribProfiles,
-  effectiveCurrentContribProfileId,
-  setRelocCurrentContribProfileId,
-  effectiveTargetContribProfileId,
-  setRelocTargetContribProfileId,
+  contributionProfiles,
+  effectiveCurrentContributionProfileId,
+  setRelocCurrentContributionProfileId,
+  effectiveTargetContributionProfileId,
+  setRelocTargetContributionProfileId,
   currentContribProfile,
   relocationContribProfile,
 }: Props) {
@@ -236,7 +236,7 @@ export function RelocationBudgetSelectors({
       </div>
 
       {/* Contribution profile selectors */}
-      {contribProfiles.length > 0 && (
+      {contributionProfiles.length > 0 && (
         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
           <div>
             <label
@@ -249,12 +249,12 @@ export function RelocationBudgetSelectors({
             <select
               id={`${id}-current-contrib`}
               className="w-full rounded border px-2 py-1 text-sm"
-              value={effectiveCurrentContribProfileId ?? ""}
+              value={effectiveCurrentContributionProfileId ?? ""}
               onChange={(e) =>
-                setRelocCurrentContribProfileId(Number(e.target.value))
+                setRelocCurrentContributionProfileId(Number(e.target.value))
               }
             >
-              {contribProfiles.map((p) => (
+              {contributionProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -297,12 +297,12 @@ export function RelocationBudgetSelectors({
             <select
               id={`${id}-relocation-contrib`}
               className="w-full rounded border px-2 py-1 text-sm"
-              value={effectiveTargetContribProfileId ?? ""}
+              value={effectiveTargetContributionProfileId ?? ""}
               onChange={(e) =>
-                setRelocTargetContribProfileId(Number(e.target.value))
+                setRelocTargetContributionProfileId(Number(e.target.value))
               }
             >
-              {contribProfiles.map((p) => (
+              {contributionProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>

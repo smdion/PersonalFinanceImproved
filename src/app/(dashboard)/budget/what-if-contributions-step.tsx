@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   WhatIfContributionsEditor,
   WhatIfDeductionsEditor,
-  type ContribAddition,
+  type ContributionAddition,
   type DeductionAddition,
 } from "./what-if-editors";
 import { WhatIfStep } from "./what-if-step";
@@ -13,21 +13,21 @@ import type { Dispatch, SetStateAction } from "react";
 
 export type WhatIfContributionsStepProps = {
   canManagePaycheck: boolean;
-  contribMakeRealPendingId: number | null;
-  contribProfileName: string | null;
+  contributionMakeRealPendingId: number | null;
+  contributionProfileName: string | null;
   contribTotals: { annual: number; match: number };
   deductionMakeRealPendingId: number | null;
   handleMakeDeductionReal: (addition: DeductionAddition, jobId: number) => void;
   paycheckLoading: boolean;
   sandbox: ReturnType<typeof useSandboxState>;
-  setMakeRealAddition: Dispatch<SetStateAction<ContribAddition | null>>;
+  setMakeRealAddition: Dispatch<SetStateAction<ContributionAddition | null>>;
   views: PaycheckPersonView[];
 };
 
 export function WhatIfContributionsStep({
   canManagePaycheck,
-  contribMakeRealPendingId,
-  contribProfileName,
+  contributionMakeRealPendingId,
+  contributionProfileName,
   contribTotals,
   deductionMakeRealPendingId,
   handleMakeDeductionReal,
@@ -39,10 +39,10 @@ export function WhatIfContributionsStep({
   return (
     <WhatIfStep
       number={2}
-      title={`Contributions${contribProfileName ? ` — ${contribProfileName}` : ""}`}
+      title={`Contributions${contributionProfileName ? ` — ${contributionProfileName}` : ""}`}
       description="What you and your employer put toward retirement/savings accounts, and what's deducted from your paycheck."
       headerExtra={
-        views.length > 0 && contribProfileName ? (
+        views.length > 0 && contributionProfileName ? (
           <span className="text-xs font-semibold text-indigo-700">
             {formatCurrency(contribTotals.annual)}/yr you
             {contribTotals.match > 0 && (
@@ -61,16 +61,16 @@ export function WhatIfContributionsStep({
       ) : (
         <WhatIfContributionsEditor
           views={views}
-          activeFields={sandbox.contribActiveFields}
-          onEdit={sandbox.setContribActiveField}
-          onReset={sandbox.resetContribActiveField}
-          additions={sandbox.contribAdditions}
-          onAddAccount={sandbox.addContribAddition}
-          onUpdateAddition={sandbox.updateContribAddition}
-          onRemoveAddition={sandbox.removeContribAddition}
+          activeFields={sandbox.contributionActiveFields}
+          onEdit={sandbox.setContributionActiveField}
+          onReset={sandbox.resetContributionActiveField}
+          additions={sandbox.contributionAdditions}
+          onAddAccount={sandbox.addContributionAddition}
+          onUpdateAddition={sandbox.updateContributionAddition}
+          onRemoveAddition={sandbox.removeContributionAddition}
           canManagePaycheck={canManagePaycheck}
           onMakeReal={setMakeRealAddition}
-          makeRealPendingId={contribMakeRealPendingId}
+          makeRealPendingId={contributionMakeRealPendingId}
         />
       )}
       {!paycheckLoading && views.length > 0 && (

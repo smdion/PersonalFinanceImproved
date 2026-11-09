@@ -106,7 +106,7 @@ export function BudgetContent({
     activeProfileId,
   });
 
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
@@ -118,10 +118,10 @@ export function BudgetContent({
   // the summary query and the edit batch so they resolve alike.
   const paySelection = useMemo(
     () => ({
-      contribution: activeContribProfileId,
+      contribution: activeContributionProfileId,
       salary: activeSalaryProfileIdSetting,
     }),
-    [activeContribProfileId, activeSalaryProfileIdSetting],
+    [activeContributionProfileId, activeSalaryProfileIdSetting],
   );
   const summary = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
@@ -253,7 +253,7 @@ export function BudgetContent({
     columnMonths,
     isWeighted,
     payrollBreakdowns,
-    matchContrib,
+    matchContribution,
     allColumnResults,
     categoryMap,
     categoryNames,
@@ -268,7 +268,7 @@ export function BudgetContent({
     data: summary.data,
     savingsGoals,
     apiActualsData,
-    contribProfileId: activeContribProfileId,
+    contributionProfileId: activeContributionProfileId,
     salaryProfileId: activeSalaryProfileIdSetting,
     editMode,
     getDraft,
@@ -376,8 +376,8 @@ export function BudgetContent({
       }),
     addItemPending: createItem.isPending,
     addItemError: createItem.error,
-    matchContrib: (sub: string, colIndex?: number) =>
-      matchContrib(sub, colIndex),
+    matchContribution: (sub: string, colIndex?: number) =>
+      matchContribution(sub, colIndex),
     addingItemToCategory,
     onSetAddingItemToCategory: setAddingItemToCategory,
   };

@@ -1,9 +1,9 @@
 import { trpc } from "@/lib/trpc";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
-import type { ContribDraft, MatchDraft } from "./account-row-types";
+import type { ContributionDraft, MatchDraft } from "./account-row-types";
 
 export function useNewProfileSave(form: {
-  contribValues: Record<string, ContribDraft>;
+  contributionValues: Record<string, ContributionDraft>;
   nameValues: Record<string, string>;
   disabledAccounts: Record<string, boolean>;
   matchValues: Record<string, MatchDraft>;
@@ -17,13 +17,13 @@ export function useNewProfileSave(form: {
   const handleSave = () => {
     // A new profile starts with no value for an account unless one is
     // entered here: a blank Value leaves it unset, editable afterward.
-    const contribAccounts: Record<string, Record<string, unknown>> = {};
-    for (const [accountId, cVal] of Object.entries(form.contribValues)) {
+    const contributionAccounts: Record<string, Record<string, unknown>> = {};
+    for (const [accountId, cVal] of Object.entries(form.contributionValues)) {
       if (cVal.value && cVal.value.trim()) {
         const num = parseFloat(cVal.value);
         if (!isNaN(num)) {
-          contribAccounts[accountId] = {
-            ...(contribAccounts[accountId] ?? {}),
+          contributionAccounts[accountId] = {
+            ...(contributionAccounts[accountId] ?? {}),
             contributionValue: String(num),
             contributionMethod: cVal.method ?? "percent_of_salary",
           };
@@ -32,24 +32,24 @@ export function useNewProfileSave(form: {
     }
     for (const [accountId, nameVal] of Object.entries(form.nameValues)) {
       if (nameVal.trim()) {
-        contribAccounts[accountId] = {
-          ...(contribAccounts[accountId] ?? {}),
+        contributionAccounts[accountId] = {
+          ...(contributionAccounts[accountId] ?? {}),
           displayNameCustom: nameVal.trim(),
         };
       }
     }
     for (const [accountId, disabled] of Object.entries(form.disabledAccounts)) {
       if (disabled) {
-        contribAccounts[accountId] = {
-          ...(contribAccounts[accountId] ?? {}),
+        contributionAccounts[accountId] = {
+          ...(contributionAccounts[accountId] ?? {}),
           isActive: false,
         };
       }
     }
     for (const [accountId, mVal] of Object.entries(form.matchValues)) {
       if (mVal.matchType) {
-        contribAccounts[accountId] = {
-          ...(contribAccounts[accountId] ?? {}),
+        contributionAccounts[accountId] = {
+          ...(contributionAccounts[accountId] ?? {}),
           employerMatchType: mVal.matchType,
         };
       }
@@ -60,8 +60,8 @@ export function useNewProfileSave(form: {
             mVal.matchType ??
             baseData?.accountDetails.find((a) => String(a.id) === accountId)
               ?.liveMatchType;
-          contribAccounts[accountId] = {
-            ...(contribAccounts[accountId] ?? {}),
+          contributionAccounts[accountId] = {
+            ...(contributionAccounts[accountId] ?? {}),
             employerMatchValue: matchValueToStore(typedUnder, String(num)),
           };
         }
@@ -70,8 +70,8 @@ export function useNewProfileSave(form: {
         const num = parseFloat(mVal.maxMatchPercent);
         if (!isNaN(num)) {
           // Convert display percentage back to decimal (5 → 0.05)
-          contribAccounts[accountId] = {
-            ...(contribAccounts[accountId] ?? {}),
+          contributionAccounts[accountId] = {
+            ...(contributionAccounts[accountId] ?? {}),
             employerMaxMatchPct: String(num / 100),
           };
         }
@@ -93,8 +93,8 @@ export function useNewProfileSave(form: {
       string,
       Record<string, Record<string, unknown>>
     > = {
-      ...(Object.keys(contribAccounts).length > 0
-        ? { contributionAccounts: contribAccounts }
+      ...(Object.keys(contributionAccounts).length > 0
+        ? { contributionAccounts: contributionAccounts }
         : {}),
       ...(Object.keys(deductions).length > 0 ? { deductions } : {}),
     };

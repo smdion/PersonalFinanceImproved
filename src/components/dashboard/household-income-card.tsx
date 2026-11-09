@@ -15,16 +15,17 @@ function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const summary = useHouseholdIncomeSummary();
-  const { data, contributionProfileId: activeContribProfileId } = summary;
+  const { data, contributionProfileId: activeContributionProfileId } = summary;
   if (queryPending(summary))
     return <CardQueryBoundary title="Household Income" query={summary} />;
 
   const activeProfileName =
-    activeContribProfileId != null
-      ? (contribProfiles?.find((p) => p.id === activeContribProfileId)?.name ??
-        null)
+    activeContributionProfileId != null
+      ? (contributionProfiles?.find((p) => p.id === activeContributionProfileId)
+          ?.name ?? null)
       : null;
 
   const people = data?.people.filter((d) => d.paycheck) ?? [];

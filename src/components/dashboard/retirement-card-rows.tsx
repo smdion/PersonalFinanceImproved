@@ -14,7 +14,7 @@ export function renderWithdrawalRow(
     NonNullable<ReturnType<typeof useDashboardProjection>["data"]>,
     { settings: unknown }
   >["settings"],
-  sustainableWd: number,
+  sustainableWithdrawal: number,
 ) {
   const strategyKey = settings.withdrawalStrategy as string | undefined;
   const strategyLabel = strategyKey
@@ -35,7 +35,7 @@ export function renderWithdrawalRow(
         />
       </span>
       <span className="text-primary">
-        {formatCurrency(sustainableWd)}/yr
+        {formatCurrency(sustainableWithdrawal)}/yr
         <span className="text-caption text-faint ml-1">
           ({strategyLabel}
           {isDynamic ? ", varies" : ""})
@@ -47,7 +47,7 @@ export function renderWithdrawalRow(
 
 /** The Coast FIRE row: the baseline age, and the simulated one when run. */
 export function renderCoastFireRow(
-  coastFireMcPeek:
+  coastFireSimulationPeek:
     RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
   ageLabel: (age: number) => string,
   coastFireData: Extract<
@@ -55,7 +55,7 @@ export function renderCoastFireRow(
     { result: object }
   >,
 ) {
-  const simResult = coastFireMcPeek?.result;
+  const simResult = coastFireSimulationPeek?.result;
   const simLabel = simResult
     ? simResult.status === "unreachable"
       ? "not reachable"
@@ -93,11 +93,15 @@ export function renderCoastFireRow(
 
 /** When the last simulation ran, when one has. */
 export function renderLastRunRow(
-  mcPeek: RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
-  coastFireMcPeek:
+  simulationPeek:
+    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+  coastFireSimulationPeek:
     RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
 ) {
-  const lastRunAt = [mcPeek?.computedAt, coastFireMcPeek?.computedAt]
+  const lastRunAt = [
+    simulationPeek?.computedAt,
+    coastFireSimulationPeek?.computedAt,
+  ]
     .filter((v): v is string => !!v)
     .sort()
     .at(-1);

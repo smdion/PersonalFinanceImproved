@@ -59,7 +59,7 @@ import {
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
 import {
-  type ContribAddition,
+  type ContributionAddition,
   type DeductionAddition,
 } from "./what-if-editors";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
@@ -93,10 +93,11 @@ export function WhatIfTab({
 
   // ── Profile lists + defaults (the active profiles) ──
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
 
-  const [activeContribSetting] = usePersistedSetting<number | null>(
+  const [activeContributionSetting] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
@@ -112,12 +113,12 @@ export function WhatIfTab({
     localSelection: null,
     activeProfileId: activeBudgetProfileId,
   });
-  const { profileId: defaultContribId } = useEffectiveProfileId(
+  const { profileId: defaultContributionId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfiles?.map((p) => p.id),
+      validIds: contributionProfiles?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: activeContribSetting,
+      activeProfileId: activeContributionSetting,
     },
   );
   const { profileId: defaultSalaryId } = useEffectiveProfileId("salary", {
@@ -128,12 +129,14 @@ export function WhatIfTab({
 
   // ── The three local pickers (plain state; null = "use the default") ──
   const [pickedBudgetId, setPickedBudgetId] = useState<number | null>(null);
-  const [pickedContribId, setPickedContribId] = useState<number | null>(null);
+  const [pickedContributionId, setPickedContributionId] = useState<
+    number | null
+  >(null);
   const [pickedSalaryId, setPickedSalaryId] = useState<number | null>(null);
 
   const budgetId = pickedBudgetId ?? defaultBudgetId;
   const [activeRetirementId] = useActiveRetirementProfile();
-  const contribId = pickedContribId ?? defaultContribId;
+  const contribId = pickedContributionId ?? defaultContributionId;
   const salaryId = pickedSalaryId ?? defaultSalaryId;
 
   // ── Sandbox edit state (salary/bonus + budget item drafts) ──
@@ -143,14 +146,14 @@ export function WhatIfTab({
   const currentYear = new Date().getFullYear();
   const [taxYear, setTaxYear] = useState<number>(currentYear);
   const { data: taxBrackets } = trpc.settings.taxBrackets.list.useQuery();
-  const { data: contribLimitsAll } =
+  const { data: contributionLimitsAll } =
     trpc.settings.contributionLimits.list.useQuery();
   const availableYears = useMemo(() => {
     const yrs = new Set<number>();
     for (const tb of taxBrackets ?? []) yrs.add(tb.taxYear);
-    for (const l of contribLimitsAll ?? []) yrs.add(l.taxYear);
+    for (const l of contributionLimitsAll ?? []) yrs.add(l.taxYear);
     return Array.from(yrs).sort((a, b) => b - a);
-  }, [taxBrackets, contribLimitsAll]);
+  }, [taxBrackets, contributionLimitsAll]);
 
   // ── Paycheck panel ──
   const { views, isLoading: paycheckLoading } = usePaycheckPersonViews({
@@ -168,10 +171,10 @@ export function WhatIfTab({
   // The tab's picks, else the active ids (null while loading = none).
   const selection = useMemo(
     () => ({
-      contribution: contribId ?? activeContribSetting,
+      contribution: contribId ?? activeContributionSetting,
       salary: salaryId ?? activeSalarySetting,
     }),
-    [contribId, salaryId, activeContribSetting, activeSalarySetting],
+    [contribId, salaryId, activeContributionSetting, activeSalarySetting],
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
@@ -232,7 +235,7 @@ export function WhatIfTab({
     visibleCategories,
     hasMoreCategories,
     getCatTotals,
-    matchContrib,
+    matchContribution,
     allColumnResults,
     apiActualsMap,
     // buildPushPreviewItems / buildPullPreviewItems are deliberately NOT
@@ -241,7 +244,7 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    contribProfileId: selection.contribution,
+    contributionProfileId: selection.contribution,
     salaryProfileId: selection.salary,
     editMode: true,
     getDraft: sandbox.getDraft,
@@ -396,34 +399,35 @@ export function WhatIfTab({
     });
   };
 
-  const [contribMakeRealPendingId, setContribMakeRealPendingId] = useState<
-    number | null
-  >(null);
+  const [contributionMakeRealPendingId, setContributionMakeRealPendingId] =
+    useState<number | null>(null);
   // Holds the sandbox addition being converted — its value/method are what
   // the user was previewing, and get carried into the real account's active
   // field in whichever profile is currently in effect (contribId below), so
   // "Make real" doesn't quietly lose the number the user was testing. The
   // account itself carries no value of its own (see applyContribActiveFields).
-  const contribMakeRealAdditionRef = useRef<ContribAddition | null>(null);
+  const contributionMakeRealAdditionRef = useRef<ContributionAddition | null>(
+    null,
+  );
   const [makeRealAddition, setMakeRealAddition] =
-    useState<ContribAddition | null>(null);
-  const setContribAccountActiveFields =
+    useState<ContributionAddition | null>(null);
+  const setContributionAccountActiveFields =
     trpc.contributionProfile.setAccountActiveFields.useMutation();
   const onMakeRealSettled = (created: { id: number } | undefined) => {
-    const addition = contribMakeRealAdditionRef.current;
+    const addition = contributionMakeRealAdditionRef.current;
     const finish = () => {
       utils.contribution.invalidate();
       utils.paycheck.invalidate();
       utils.contributionProfile.invalidate();
-      if (addition) sandbox.removeContribAddition(addition.localId);
-      setContribMakeRealPendingId(null);
+      if (addition) sandbox.removeContributionAddition(addition.localId);
+      setContributionMakeRealPendingId(null);
       setMakeRealAddition(null);
       toast.success(
         `Added "${created ? accountDisplayName(created as Record<string, unknown>) : ""}" account to Contribution Profiles`,
       );
     };
     if (created && addition && contribId != null) {
-      setContribAccountActiveFields.mutate(
+      setContributionAccountActiveFields.mutate(
         {
           profileId: contribId,
           accountId: created.id,
@@ -439,35 +443,35 @@ export function WhatIfTab({
     }
   };
   const onMakeRealError = (err: { message?: string }) => {
-    setContribMakeRealPendingId(null);
+    setContributionMakeRealPendingId(null);
     toast.error(err.message || "Failed to add contribution account");
   };
-  const createContribAccount =
+  const createContributionAccount =
     trpc.settings.contributionAccounts.create.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });
-  const updateContribAccount =
+  const updateContributionAccount =
     trpc.settings.contributionAccounts.update.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });
   const handleSaveMakeReal = (values: ContribAccountFormValues) => {
     if (!makeRealAddition) return;
-    contribMakeRealAdditionRef.current = makeRealAddition;
-    setContribMakeRealPendingId(makeRealAddition.localId);
+    contributionMakeRealAdditionRef.current = makeRealAddition;
+    setContributionMakeRealPendingId(makeRealAddition.localId);
     const { id, ...rest } = values;
     if (id != null) {
-      updateContribAccount.mutate({ id, ...rest });
+      updateContributionAccount.mutate({ id, ...rest });
     } else {
-      createContribAccount.mutate(rest);
+      createContributionAccount.mutate(rest);
     }
   };
 
   const budgetProfileName =
     budgetProfiles?.find((p) => p.id === budgetId)?.name ?? "";
-  const contribProfileName =
-    contribProfiles?.find((p) => p.id === contribId)?.name ?? null;
+  const contributionProfileName =
+    contributionProfiles?.find((p) => p.id === contribId)?.name ?? null;
   const salaryProfileName =
     salaryProfiles?.find((p) => p.id === salaryId)?.name ?? null;
 
@@ -477,7 +481,7 @@ export function WhatIfTab({
   // callout so "I picked a profile, is it doing anything" has a visible
   // answer. Same figures the summary table already shows (perContribData
   // is resolved once by usePaycheckPersonViews), not a second computation.
-  const contribTotals = useMemo(() => {
+  const contributionTotals = useMemo(() => {
     let annual = 0;
     let match = 0;
     for (const v of views) {
@@ -521,12 +525,12 @@ export function WhatIfTab({
         budgetId={budgetId}
         budgetProfiles={budgetProfiles}
         contribId={contribId}
-        contribProfiles={contribProfiles}
+        contributionProfiles={contributionProfiles}
         salaryId={salaryId}
         salaryProfiles={salaryProfiles}
         sandbox={sandbox}
         setPickedBudgetId={setPickedBudgetId}
-        setPickedContribId={setPickedContribId}
+        setPickedContributionId={setPickedContributionId}
         setPickedSalaryId={setPickedSalaryId}
         setTaxYear={setTaxYear}
         taxYear={taxYear}
@@ -546,9 +550,9 @@ export function WhatIfTab({
           amount of its own, see DESIGN.md's Salary Profile layer section) ── */}
       <WhatIfContributionsStep
         canManagePaycheck={canManagePaycheck}
-        contribMakeRealPendingId={contribMakeRealPendingId}
-        contribProfileName={contribProfileName}
-        contribTotals={contribTotals}
+        contributionMakeRealPendingId={contributionMakeRealPendingId}
+        contributionProfileName={contributionProfileName}
+        contribTotals={contributionTotals}
         deductionMakeRealPendingId={deductionMakeRealPendingId}
         handleMakeDeductionReal={handleMakeDeductionReal}
         paycheckLoading={paycheckLoading}
@@ -571,7 +575,7 @@ export function WhatIfTab({
         getCatTotals={getCatTotals}
         hasMoreCategories={hasMoreCategories}
         leftover={leftover}
-        matchContrib={matchContrib}
+        matchContribution={matchContribution}
         nameColWidth={nameColWidth}
         netMonthlyIncome={netMonthlyIncome}
         noop={noop}
@@ -611,11 +615,11 @@ export function WhatIfTab({
       />
 
       <WhatIfMakeRealPanel
-        createContribAccount={createContribAccount}
+        createContributionAccount={createContributionAccount}
         handleSaveMakeReal={handleSaveMakeReal}
         makeRealAddition={makeRealAddition}
         setMakeRealAddition={setMakeRealAddition}
-        updateContribAccount={updateContribAccount}
+        updateContributionAccount={updateContributionAccount}
       />
     </div>
   );

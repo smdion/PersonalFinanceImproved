@@ -21,7 +21,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineAccountType } from "./inline-account-type";
 import { InstitutionPicker } from "./institution-picker";
 import { trpc } from "@/lib/trpc";
-import type { ContribCardProps } from "./types";
+import type { ContributionCardProps } from "./types";
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
@@ -37,22 +37,22 @@ import {
 } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
 
-export function ContribCard({
+export function ContributionCard({
   contrib: c,
-  onUpdateContrib,
+  onUpdateContribution,
   onToggleAutoMax,
-  onDeleteContrib,
+  onDeleteContribution,
   onUpdateInstitution,
   _methodLabel,
   salary,
   periodsPerYear,
   annualLimit,
-  siblingAnnualContribs = 0,
+  siblingAnnualContributions = 0,
   employerMatchAnnual = 0,
   readOnly,
-  contribValueReadOnly,
-}: ContribCardProps) {
-  const valueEditable = !readOnly && !contribValueReadOnly;
+  contributionValueReadOnly,
+}: ContributionCardProps) {
+  const valueEditable = !readOnly && !contributionValueReadOnly;
   const [editingInstitution, setEditingInstitution] = useState(false);
   const { data: performanceAccounts } =
     trpc.performance.performanceAccounts.list.useQuery(undefined, {
@@ -67,7 +67,7 @@ export function ContribCard({
     c.employerMatchRate,
   );
   const saveMatchFigure = (v: string) =>
-    onUpdateContrib(
+    onUpdateContribution(
       c.id,
       "employerMatchValue",
       matchValueToStore(c.employerMatchType, v),
@@ -75,7 +75,7 @@ export function ContribCard({
 
   return (
     <div className="bg-surface-primary group/card relative rounded-lg border p-3 text-sm shadow-sm">
-      {!readOnly && onDeleteContrib && (
+      {!readOnly && onDeleteContribution && (
         <button
           onClick={async () => {
             if (
@@ -83,7 +83,7 @@ export function ContribCard({
                 `Remove ${accountDisplayName({ accountType: c.accountType })} (${c.taxTreatment}) contribution account?`,
               )
             )
-              onDeleteContrib(c.id);
+              onDeleteContribution(c.id);
           }}
           className="text-caption absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-100 leading-none text-red-500 opacity-0 transition-opacity group-hover/card:opacity-100 hover:bg-red-200"
           title="Delete contribution account"
@@ -101,7 +101,7 @@ export function ContribCard({
             <>
               <InlineAccountType
                 value={c.accountType}
-                onSave={(v) => onUpdateContrib(c.id, "accountType", v)}
+                onSave={(v) => onUpdateContribution(c.id, "accountType", v)}
               />
               {c.ownership === "joint" && (
                 <span className="text-faint text-xs font-medium">(Joint)</span>
@@ -138,7 +138,7 @@ export function ContribCard({
         <div className="flex shrink-0 items-center gap-1">
           <InlineEdit
             value={c.contributionValue}
-            onSave={(v) => onUpdateContrib(c.id, "contributionValue", v)}
+            onSave={(v) => onUpdateContribution(c.id, "contributionValue", v)}
             formatDisplay={(v) => {
               const num = Number(v);
               return c.contributionMethod === "percent_of_salary"
@@ -155,7 +155,7 @@ export function ContribCard({
             disabled={!valueEditable}
             value={c.contributionMethod}
             onChange={(e) =>
-              onUpdateContrib(c.id, "contributionMethod", e.target.value)
+              onUpdateContribution(c.id, "contributionMethod", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary cursor-pointer appearance-none border-none bg-transparent pr-3 focus:outline-none"
             style={{
@@ -267,7 +267,7 @@ export function ContribCard({
                   <InlineEdit
                     value={c.employerMaxMatchPct}
                     onSave={(v) =>
-                      onUpdateContrib(c.id, "employerMaxMatchPct", v)
+                      onUpdateContribution(c.id, "employerMaxMatchPct", v)
                     }
                     formatDisplay={(v) =>
                       `${formatPercent(Number(v))} of salary`
@@ -286,7 +286,7 @@ export function ContribCard({
             disabled={readOnly}
             value={c.employerMatchType}
             onChange={(e) =>
-              onUpdateContrib(c.id, "employerMatchType", e.target.value)
+              onUpdateContribution(c.id, "employerMatchType", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary ml-1 cursor-pointer border-none bg-transparent focus:outline-none"
           >
@@ -307,7 +307,7 @@ export function ContribCard({
             disabled={readOnly}
             value="none"
             onChange={(e) =>
-              onUpdateContrib(c.id, "employerMatchType", e.target.value)
+              onUpdateContribution(c.id, "employerMatchType", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent focus:outline-none"
           >
@@ -329,7 +329,7 @@ export function ContribCard({
         <div className="mt-1">
           <Toggle
             isChecked={c.fromBonus === true}
-            onChange={(v) => onUpdateContrib(c.id, "fromBonus", String(v))}
+            onChange={(v) => onUpdateContribution(c.id, "fromBonus", String(v))}
             label="Also taken from bonus checks"
             size="xs"
             title="The bonus check takes this contribution too: a percent of pay at its rate of the bonus, a fixed amount once more. The employer match follows."
@@ -345,7 +345,7 @@ export function ContribCard({
           <RothRouteSelect
             value={c.rothRoute}
             disabled={!valueEditable}
-            onChange={(v) => onUpdateContrib(c.id, "rothRoute", v)}
+            onChange={(v) => onUpdateContribution(c.id, "rothRoute", v)}
           />
         </div>
       )}
@@ -366,7 +366,7 @@ export function ContribCard({
             annualLimit && annualLimit > 0
               ? Math.max(
                   0,
-                  annualLimit - siblingAnnualContribs - employerToward,
+                  annualLimit - siblingAnnualContributions - employerToward,
                 )
               : 0;
           let automaxPreview: {
@@ -379,8 +379,8 @@ export function ContribCard({
 
           if (remainingLimit > 0) {
             const siblingNote =
-              siblingAnnualContribs > 0
-                ? `${formatCurrency(siblingAnnualContribs)}/yr used by other ${(getLimitGroup(c.accountType as AccountCategory) ?? c.accountType).toUpperCase()} account`
+              siblingAnnualContributions > 0
+                ? `${formatCurrency(siblingAnnualContributions)}/yr used by other ${(getLimitGroup(c.accountType as AccountCategory) ?? c.accountType).toUpperCase()} account`
                 : undefined;
 
             if (
@@ -435,7 +435,7 @@ export function ContribCard({
           } else if (
             annualLimit &&
             annualLimit > 0 &&
-            siblingAnnualContribs >= annualLimit
+            siblingAnnualContributions >= annualLimit
           ) {
             automaxPreview = {
               label: "$0",

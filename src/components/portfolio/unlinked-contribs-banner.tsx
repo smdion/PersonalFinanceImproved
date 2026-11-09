@@ -13,7 +13,7 @@ import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels"
 import { accountDisplayName } from "@/lib/utils/format";
 import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
 
-type ContribEntry = {
+type ContributionEntry = {
   id: number;
   personId: number | null;
   jobId: number | null;
@@ -38,43 +38,43 @@ type PerfAccountEntry = {
 };
 
 type Props = {
-  unlinkedContribs: ContribEntry[];
+  unlinkedContributions: ContributionEntry[];
   activeAccounts: PerfAccountEntry[];
-  contribsByPerfId: Map<number, ContribEntry[]>;
+  contributionsByPerfId: Map<number, ContributionEntry[]>;
   personOptions: Array<{ value: string; label: string }>;
   jobLabel: (id: number | null) => string;
   admin: boolean;
-  onContribOwnerChange: (
-    c: ContribEntry,
+  onContributionOwnerChange: (
+    c: ContributionEntry,
     update: { ownership: "individual" | "joint"; personId?: number | null },
   ) => void;
-  onLinkContrib: (contribId: number, perfAccountId: number) => void;
+  onLinkContribution: (contribId: number, perfAccountId: number) => void;
 };
 
-export function UnlinkedContribsBanner({
-  unlinkedContribs,
+export function UnlinkedContributionsBanner({
+  unlinkedContributions,
   activeAccounts,
-  contribsByPerfId,
+  contributionsByPerfId,
   personOptions,
   jobLabel,
   admin,
-  onContribOwnerChange,
-  onLinkContrib,
+  onContributionOwnerChange,
+  onLinkContribution,
 }: Props) {
-  if (unlinkedContribs.length === 0) return null;
+  if (unlinkedContributions.length === 0) return null;
 
   return (
     <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
       <p className="font-medium text-amber-800">
-        {unlinkedContribs.length} contribution
-        {unlinkedContribs.length > 1 ? "s" : ""} not linked to a portfolio
+        {unlinkedContributions.length} contribution
+        {unlinkedContributions.length > 1 ? "s" : ""} not linked to a portfolio
         account
       </p>
       <p className="mt-1 text-xs text-amber-700">
         Unlinked contributions are excluded from retirement projections.
       </p>
       <div className="mt-2 space-y-1.5">
-        {unlinkedContribs.map((c) => {
+        {unlinkedContributions.map((c) => {
           const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
           const accountType = c.subType ?? c.accountType;
           const matchText = formatEmployerMatch(
@@ -97,12 +97,12 @@ export function UnlinkedContribsBanner({
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === "joint") {
-                    onContribOwnerChange(c, {
+                    onContributionOwnerChange(c, {
                       ownership: "joint",
                       personId: null,
                     });
                   } else {
-                    onContribOwnerChange(c, {
+                    onContributionOwnerChange(c, {
                       personId: parseInt(val, 10),
                       ownership: "individual",
                     });
@@ -126,14 +126,15 @@ export function UnlinkedContribsBanner({
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val) onLinkContrib(c.id, parseInt(val, 10));
+                  if (val) onLinkContribution(c.id, parseInt(val, 10));
                 }}
                 disabled={!admin}
                 className="bg-surface-primary rounded border border-amber-300 px-1.5 py-0.5 text-xs"
               >
                 <option value="">Link to...</option>
                 {compatibleAccounts.map((pa) => {
-                  const linkedCount = contribsByPerfId.get(pa.id)?.length ?? 0;
+                  const linkedCount =
+                    contributionsByPerfId.get(pa.id)?.length ?? 0;
                   return (
                     <option key={pa.id} value={String(pa.id)}>
                       {accountDisplayName(pa)} — {pa.parentCategory}

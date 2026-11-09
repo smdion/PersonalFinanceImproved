@@ -480,10 +480,10 @@ export function FundCard({
               <div className="space-y-2">
                 {childGoals.map((child) => {
                   const childTarget = parseFloat(child.targetAmount ?? "0");
-                  const childGoalCalc = savingsGoals.find(
+                  const childGoalCalculation = savingsGoals.find(
                     (g) => g.goalId === child.id,
                   );
-                  const childCurrent = childGoalCalc?.current ?? 0;
+                  const childCurrent = childGoalCalculation?.current ?? 0;
                   const childProgress = Math.min(
                     safeDivide(childCurrent, childTarget, 0)!,
                     1,

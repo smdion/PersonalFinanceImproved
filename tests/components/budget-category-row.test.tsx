@@ -54,7 +54,7 @@ function renderRow(
           categoryNames={["Investments"]}
           addingItemToCategory={null}
           onSetAddingItemToCategory={noop}
-          matchContrib={matchContrib}
+          matchContribution={matchContrib}
           activeColumn={0}
         />
       </tbody>
@@ -156,7 +156,7 @@ describe("BudgetCategoryRow — linked items use their own amount, not the fuzzy
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={matchContrib}
+            matchContribution={matchContrib}
             activeColumn={2}
           />
         </tbody>
@@ -200,7 +200,7 @@ describe("BudgetCategoryRow — contribStatus badge for linked items", () => {
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={() => null}
+            matchContribution={() => null}
             activeColumn={activeColumn}
           />
         </tbody>
@@ -289,7 +289,7 @@ describe("BudgetCategoryRow — contribStatus badge for linked items", () => {
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={() => null}
+            matchContribution={() => null}
             activeColumn={1}
           />
         </tbody>

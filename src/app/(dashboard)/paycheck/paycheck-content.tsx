@@ -44,7 +44,7 @@ export function PaycheckContent() {
   const canEditProfiles = hasPermission(user, "contributionProfile");
   const { viewMode: mode } = useScenario();
   // A link to contribution elections opens the section (focus-topics).
-  const [contribExpanded, setContribExpanded] = useFocusReveal(
+  const [contributionExpanded, setContributionExpanded] = useFocusReveal(
     "contributionElections",
   );
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
@@ -53,7 +53,7 @@ export function PaycheckContent() {
   const taxYearOverride = taxYearSetting ?? undefined;
   const setTaxYearOverride = (year: number | undefined) =>
     setTaxYearSetting(year ?? null);
-  const [contribProfileId] = useActiveContribProfile();
+  const [contributionProfileId] = useActiveContribProfile();
   const utils = trpc.useUtils();
 
   /** Same shared lock as the Budget page's four profile tabs and the
@@ -67,11 +67,11 @@ export function PaycheckContent() {
   // This page shows and edits the active profiles — switch them in the
   // header. (Each profile is its own world; there is no "viewing another
   // one" here, so what you edit is always what the rest of the app uses.)
-  const displayContribId = contribProfileId;
+  const displayContributionId = contributionProfileId;
 
   const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
-    { id: displayContribId! },
-    { enabled: displayContribId != null },
+    { id: displayContributionId! },
+    { enabled: displayContributionId != null },
   );
   const activeProfile = viewingProfileQuery.data;
 
@@ -158,7 +158,7 @@ export function PaycheckContent() {
   const editTarget = (kind: PaycheckFieldKind) =>
     resolvePaycheckEditTarget(kind, editContext);
   const salaryEditsProfile = editTarget("salary").target === "salaryProfile";
-  const contribEditsProfile =
+  const contributionEditsProfile =
     editTarget("contribution").target === "contributionProfile";
   const lineEditable = editTarget("line").target === "setup";
   const setupEditable = editTarget("setup").target === "setup";
@@ -198,11 +198,11 @@ export function PaycheckContent() {
   // One shared derivation for the whole page — the same hook the Budget
   // page's What-If tab uses.
   const personViews = usePaycheckPersonViews({
-    contributionProfileId: displayContribId,
+    contributionProfileId: displayContributionId,
     salaryProfileId: displaySalaryId,
     taxYearOverride,
   });
-  const { views, rawData, sharedContribGroupOrder } = personViews;
+  const { views, rawData, sharedContributionGroupOrder } = personViews;
   // People with no job now and one that hasn't started (no paycheck yet).
   const upcomingJobs = (rawData?.people ?? []).flatMap((d) =>
     "upcomingJob" in d && d.upcomingJob
@@ -216,11 +216,12 @@ export function PaycheckContent() {
   // safely selectable. Including tax_brackets here would let an admin's
   // early bracket-only seed for a future year surface a picker option that
   // then throws when selected.
-  const { data: contribLimitsAll } =
+  const { data: contributionLimitsAll } =
     trpc.settings.contributionLimits.list.useQuery();
   const availableYears = (() => {
     const yrs = new Set<number>();
-    if (contribLimitsAll) for (const l of contribLimitsAll) yrs.add(l.taxYear);
+    if (contributionLimitsAll)
+      for (const l of contributionLimitsAll) yrs.add(l.taxYear);
     return Array.from(yrs).sort((a, b) => b - a);
   })();
   const currentYear = new Date().getFullYear();
@@ -241,24 +242,27 @@ export function PaycheckContent() {
   const deleteDeduction = trpc.settings.deductions.delete.useMutation({
     onSuccess: () => utils.paycheck.invalidate(),
   });
-  const updateContrib = trpc.settings.contributionAccounts.update.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
-  const createContrib = trpc.settings.contributionAccounts.create.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
-  const deleteContrib = trpc.settings.contributionAccounts.delete.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
+  const updateContribution =
+    trpc.settings.contributionAccounts.update.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
+  const createContribution =
+    trpc.settings.contributionAccounts.create.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
+  const deleteContribution =
+    trpc.settings.contributionAccounts.delete.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
 
   if (queryPending(personViews)) {
     return (
@@ -364,7 +368,7 @@ export function PaycheckContent() {
               // A job has no salary of its own — every edit lands in the
               // active Salary Profile (see editTarget).
               salaryReadOnly={!salaryEditsProfile}
-              contribValueReadOnly={!contribEditsProfile}
+              contribValueReadOnly={!contributionEditsProfile}
               lineReadOnly={!lineEditable}
               setupReadOnly={!setupEditable}
               // Only while editing — locked, the padlock already says "View
@@ -391,10 +395,12 @@ export function PaycheckContent() {
               coverageNote={d.coverageNote}
               coverageNoteGroup={d.coverageNoteGroup}
               otherJointContribs={d.otherJointContribs}
-              contribExpanded={contribExpanded}
-              onToggleContrib={() => setContribExpanded(!contribExpanded)}
+              contribExpanded={contributionExpanded}
+              onToggleContrib={() =>
+                setContributionExpanded(!contributionExpanded)
+              }
               scrollToContribs={d === views[0]}
-              sharedGroupOrder={sharedContribGroupOrder}
+              sharedGroupOrder={sharedContributionGroupOrder}
               interaction={
                 profileLocked
                   ? { kind: "readonly" }
@@ -556,7 +562,7 @@ export function PaycheckContent() {
                             (cc) => cc.id === id,
                           );
                           if (!raw) return;
-                          updateContrib.mutate({
+                          updateContribution.mutate({
                             id: raw.id,
                             personId: raw.personId,
                             accountType: raw.accountType,
@@ -584,7 +590,7 @@ export function PaycheckContent() {
                         onToggleAutoMax: (
                           id: number,
                           value: boolean,
-                          targetContribValue?: number,
+                          targetContributionValue?: number,
                         ) => {
                           const raw = (d.rawContribs as RawContrib[]).find(
                             (cc) => cc.id === id,
@@ -592,7 +598,7 @@ export function PaycheckContent() {
                           if (!raw) return;
                           // autoMaximize is a profile field — read-only
                           // without a profile edit in play (editTarget).
-                          if (contribEditsProfile) {
+                          if (contributionEditsProfile) {
                             // Set autoMaximize (and, when turning it on with a
                             // known target, the resolved contributionValue) via
                             // the field-level patch — the server merges onto the
@@ -609,10 +615,11 @@ export function PaycheckContent() {
                               id,
                               {
                                 autoMaximize: value,
-                                ...(value && targetContribValue != null
+                                ...(value && targetContributionValue != null
                                   ? {
-                                      contributionValue:
-                                        String(targetContribValue),
+                                      contributionValue: String(
+                                        targetContributionValue,
+                                      ),
                                       contributionMethod:
                                         raw.contributionMethod,
                                     }
@@ -625,7 +632,7 @@ export function PaycheckContent() {
                         onDeleteContrib: !setupEditable
                           ? undefined
                           : (id: number) => {
-                              deleteContrib.mutate({ id });
+                              deleteContribution.mutate({ id });
                             },
                         onCreateContrib: !setupEditable
                           ? undefined
@@ -635,9 +642,9 @@ export function PaycheckContent() {
                               // that row instead of creating a duplicate.
                               const { id, ...rest } = data;
                               if (id != null) {
-                                updateContrib.mutate({ id, ...rest });
+                                updateContribution.mutate({ id, ...rest });
                               } else {
-                                createContrib.mutate(rest);
+                                createContribution.mutate(rest);
                               }
                             },
                         onUpdateInstitution: !setupEditable
@@ -650,7 +657,7 @@ export function PaycheckContent() {
                                 (cc) => cc.id === id,
                               );
                               if (!raw) return;
-                              updateContrib.mutate({
+                              updateContribution.mutate({
                                 id: raw.id,
                                 personId: raw.personId,
                                 accountType: raw.accountType,

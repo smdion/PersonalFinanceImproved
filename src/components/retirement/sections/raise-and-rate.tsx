@@ -21,7 +21,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, IsEditable } from "./types";
-import { decToWhole } from "./helpers";
+import { decimalToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
@@ -51,7 +51,7 @@ export function RaiseAndRateSection({
         </span>
         <div className="font-medium">
           <InlineEdit
-            value={decToWhole(
+            value={decimalToWhole(
               settings.postRetirementInflation ?? settings.annualInflation,
             )}
             onSave={(v) =>
@@ -82,7 +82,7 @@ export function RaiseAndRateSection({
         </span>
         <div className="font-medium">
           <InlineEdit
-            value={decToWhole(settings.withdrawalRate)}
+            value={decimalToWhole(settings.withdrawalRate)}
             onSave={(v) => handleSettingPercentUpdate("withdrawalRate", v)}
             formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}

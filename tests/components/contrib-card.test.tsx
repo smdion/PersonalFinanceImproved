@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ContribCard } from "@/components/paycheck/contrib-card";
+import { ContributionCard } from "@/components/paycheck/contrib-card";
 import type { RawContrib } from "@/components/paycheck/types";
 
 // No query is registered: performanceAccounts.list has no data.
@@ -80,27 +80,27 @@ const baseContrib: RawContrib = {
 
 const defaultProps = {
   contrib: baseContrib,
-  onUpdateContrib: vi.fn(),
+  onUpdateContribution: vi.fn(),
   onToggleAutoMax: vi.fn(),
-  onDeleteContrib: vi.fn(),
+  onDeleteContribution: vi.fn(),
   _methodLabel: (m: string) => m,
   salary: 100000,
   periodsPerYear: 26,
   annualLimit: 23000,
-  siblingAnnualContribs: 0,
+  siblingAnnualContributions: 0,
   employerMatchAnnual: 0,
 };
 
 describe("ContribCard", () => {
   it("renders account type and tax treatment", () => {
-    render(<ContribCard {...defaultProps} />);
+    render(<ContributionCard {...defaultProps} />);
     expect(screen.getByText("401k")).toBeInTheDocument();
     expect(screen.getByText("Traditional")).toBeInTheDocument();
   });
 
   it("shows the joint label when ownership is joint", () => {
     render(
-      <ContribCard
+      <ContributionCard
         {...defaultProps}
         contrib={{ ...baseContrib, ownership: "joint" }}
       />,
@@ -109,20 +109,22 @@ describe("ContribCard", () => {
   });
 
   it("shows Auto-max toggle for IRS-limited categories", () => {
-    render(<ContribCard {...defaultProps} />);
+    render(<ContributionCard {...defaultProps} />);
     expect(screen.getByText("Auto-max")).toBeInTheDocument();
   });
 
   it("computes an auto-max preview for percent_of_salary contributions with remaining room", () => {
     // salary=100000, current 5% => $5,000/yr, remainingLimit = 23000 (no
     // siblings/match), targetPct = floor(23000/100000*100) = 23%
-    render(<ContribCard {...defaultProps} />);
+    render(<ContributionCard {...defaultProps} />);
     expect(screen.getByText(/→ 23% of salary/)).toBeInTheDocument();
   });
 
   it("fires onToggleAutoMax with the computed target contribution value when enabled", () => {
     const onToggleAutoMax = vi.fn();
-    render(<ContribCard {...defaultProps} onToggleAutoMax={onToggleAutoMax} />);
+    render(
+      <ContributionCard {...defaultProps} onToggleAutoMax={onToggleAutoMax} />,
+    );
     fireEvent.click(screen.getByRole("switch", { name: "Auto-max" }));
     // 23% target computed from remainingLimit(23000)/salary(100000)*100 floored
     expect(onToggleAutoMax).toHaveBeenCalledWith(1, true, 23);
@@ -130,7 +132,7 @@ describe("ContribCard", () => {
 
   it("shows 'Already at max' when auto-max target equals current value", () => {
     render(
-      <ContribCard
+      <ContributionCard
         {...defaultProps}
         contrib={{ ...baseContrib, contributionValue: "23" }}
       />,
@@ -142,7 +144,7 @@ describe("ContribCard", () => {
 
   it("shows the enabled auto-max status message when autoMaximize is true", () => {
     render(
-      <ContribCard
+      <ContributionCard
         {...defaultProps}
         contrib={{ ...baseContrib, autoMaximize: true }}
       />,
@@ -153,14 +155,21 @@ describe("ContribCard", () => {
   });
 
   it("accounts for sibling contributions sharing the same IRS limit", () => {
-    render(<ContribCard {...defaultProps} siblingAnnualContribs={20000} />);
+    render(
+      <ContributionCard {...defaultProps} siblingAnnualContributions={20000} />,
+    );
     // remainingLimit = 23000 - 20000 = 3000; targetPct = floor(3000/100000*100) = 3%
     expect(screen.getByText(/→ 3% of salary/)).toBeInTheDocument();
   });
 
   it("calls onUpdateContrib when contribution value is changed via method dropdown", () => {
     const onUpdateContrib = vi.fn();
-    render(<ContribCard {...defaultProps} onUpdateContrib={onUpdateContrib} />);
+    render(
+      <ContributionCard
+        {...defaultProps}
+        onUpdateContribution={onUpdateContrib}
+      />,
+    );
     fireEvent.change(screen.getByTitle("Change contribution method"), {
       target: { value: "fixed_annual" },
     });
@@ -173,7 +182,12 @@ describe("ContribCard", () => {
 
   it("calls onDeleteContrib after confirmation when delete button is clicked", async () => {
     const onDeleteContrib = vi.fn();
-    render(<ContribCard {...defaultProps} onDeleteContrib={onDeleteContrib} />);
+    render(
+      <ContributionCard
+        {...defaultProps}
+        onDeleteContribution={onDeleteContrib}
+      />,
+    );
     fireEvent.click(screen.getByTitle("Delete contribution account"));
     await vi.waitFor(() => expect(onDeleteContrib).toHaveBeenCalledWith(1));
   });
@@ -185,10 +199,10 @@ describe("ContribCard", () => {
     it("shows for a payroll account and saves fromBonus", () => {
       const onUpdateContrib = vi.fn();
       render(
-        <ContribCard
+        <ContributionCard
           {...defaultProps}
           contrib={{ ...baseContrib, fromBonus: true }}
-          onUpdateContrib={onUpdateContrib}
+          onUpdateContribution={onUpdateContrib}
         />,
       );
       expect(toggle()).toHaveAttribute("aria-checked", "true");
@@ -198,7 +212,7 @@ describe("ContribCard", () => {
 
     it("isn't offered for an account not paid through payroll", () => {
       render(
-        <ContribCard
+        <ContributionCard
           {...defaultProps}
           contrib={{ ...baseContrib, jobId: null, isPayrollDeducted: null }}
         />,
@@ -207,7 +221,7 @@ describe("ContribCard", () => {
     });
 
     it("is read-only without permission to edit profiles", () => {
-      render(<ContribCard {...defaultProps} contribValueReadOnly />);
+      render(<ContributionCard {...defaultProps} contributionValueReadOnly />);
       expect(toggle()).toBeDisabled();
     });
   });

@@ -301,7 +301,7 @@ export function usePaycheckPersonViews({
   }, [people]);
 
   // Shared contribution group order so both people's cards line up.
-  const sharedContribGroupOrder = useMemo(() => {
+  const sharedContributionGroupOrder = useMemo(() => {
     const getGroupKey = (type: string) =>
       configGetLimitGroup(type as AccountCategory) ?? type;
     const order: string[] = [];
@@ -389,6 +389,6 @@ export function usePaycheckPersonViews({
     isLoading,
     error,
     refetch: summary.refetch,
-    sharedContribGroupOrder,
+    sharedContributionGroupOrder,
   };
 }

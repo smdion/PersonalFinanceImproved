@@ -33,7 +33,7 @@ type BudgetCategoryRowProps = {
   categoryNames: string[];
   addingItemToCategory: string | null;
   onSetAddingItemToCategory: (category: string | null) => void;
-  matchContrib: (subcategory: string, colIndex?: number) => number | null;
+  matchContribution: (subcategory: string, colIndex?: number) => number | null;
   activeColumn: number;
   canEdit?: boolean;
   apiActualsMap?: Map<
@@ -71,7 +71,7 @@ export function BudgetCategoryRow({
   categoryNames,
   addingItemToCategory,
   onSetAddingItemToCategory,
-  matchContrib,
+  matchContribution,
   activeColumn,
   canEdit = true,
   apiActualsMap,
@@ -208,7 +208,7 @@ export function BudgetCategoryRow({
           onReorderItem={onReorderItem}
           categoryNames={categoryNames}
           currentCategory={categoryName}
-          contribMonthly={
+          contributionMonthly={
             // A linked item's own resolved amount is the real number
             // (matches what getCatTotals uses) — the fuzzy name match is
             // only ever a display estimate for items with NO real link,
@@ -219,7 +219,7 @@ export function BudgetCategoryRow({
               ? (item.contribAmounts?.[activeColumn] ??
                 item.contribAmount ??
                 null)
-              : matchContrib(item.subcategory, activeColumn)
+              : matchContribution(item.subcategory, activeColumn)
           }
           contribStatus={item.contribStatus?.[activeColumn] ?? "ok"}
           canEdit={canEdit}

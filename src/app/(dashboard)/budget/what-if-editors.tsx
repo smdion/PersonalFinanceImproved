@@ -32,7 +32,7 @@ export type DeductionAddition = {
 
 /** A hand-added hypothetical contribution account — same localId contract
  *  as DeductionAddition. */
-export type ContribAddition = {
+export type ContributionAddition = {
   localId: number;
   personId: number;
   accountType: AccountCategory;
@@ -409,17 +409,17 @@ export function WhatIfContributionsEditor({
   activeFields: Map<number, string>;
   onEdit: (accountId: number, contributionValue: string) => void;
   onReset: (accountId: number) => void;
-  additions: ContribAddition[];
+  additions: ContributionAddition[];
   onAddAccount: (personId: number) => void;
   onUpdateAddition: (
     localId: number,
-    patch: Partial<Omit<ContribAddition, "localId" | "personId">>,
+    patch: Partial<Omit<ContributionAddition, "localId" | "personId">>,
   ) => void;
   onRemoveAddition: (localId: number) => void;
   /** `settings.contributionAccounts.create` is admin-gated — only admins
    *  see the "Make this real" affordance. */
   canManagePaycheck: boolean;
-  onMakeReal: (addition: ContribAddition) => void;
+  onMakeReal: (addition: ContributionAddition) => void;
   makeRealPendingId: number | null;
 }) {
   if (views.length === 0) return null;

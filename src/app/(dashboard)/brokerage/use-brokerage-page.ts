@@ -85,7 +85,7 @@ export function useBrokeragePage() {
     }
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [accumOverridesFromLumpSums, savedAccumQuery.data]);
-  const contribInput = {
+  const contributionInput = {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
@@ -95,7 +95,7 @@ export function useBrokeragePage() {
     ...(mergedAccumOverrides
       ? { accumulationOverrides: mergedAccumOverrides }
       : {}),
-    selection: profileSelectionFrom(contribInput),
+    selection: profileSelectionFrom(contributionInput),
   };
 
   // With lump sums, wait for the saved rows they're merged into.
@@ -108,10 +108,11 @@ export function useBrokeragePage() {
   const { data } = projectionQuery;
   const isLoading =
     projectionQuery.isLoading || (!engineReady && !projectionQuery.data);
-  const { data: contribData } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
+  const { data: contributionData } =
+    trpc.contribution.computeSummary.useQuery(contributionInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => utils.invalidate(),
   });
@@ -130,9 +131,9 @@ export function useBrokeragePage() {
     projectionQuery,
     data,
     isLoading,
-    contribData,
+    contributionData,
     brokerageData,
-    contribProfiles,
+    contributionProfiles,
     upsertSetting,
     isGoalsOpen,
     setIsGoalsOpen,

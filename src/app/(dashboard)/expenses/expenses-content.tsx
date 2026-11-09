@@ -81,7 +81,7 @@ export function ExpensesContent() {
   const [periodType, setPeriodType] = useState<"month" | "quarter" | "ytd">(
     "month",
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
@@ -96,7 +96,7 @@ export function ExpensesContent() {
   const { data: apiCategories } = trpc.budget.listApiCategories.useQuery();
   const { data: apiActuals } = trpc.budget.listApiActuals.useQuery();
   const { data: budgetProfilesList } = useBudgetProfilesList();
-  const { data: contribProfilesList } =
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
   // Independent Salary Profile axis (the active profile).
@@ -115,12 +115,12 @@ export function ExpensesContent() {
       activeProfileId: activeBudgetProfileId,
     },
   );
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+  const { profileId: effectiveContributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfilesList?.map((p) => p.id),
+      validIds: contributionProfilesList?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: activeContribProfileId,
+      activeProfileId: activeContributionProfileId,
     },
   );
 
@@ -131,14 +131,14 @@ export function ExpensesContent() {
       ? { profileId: effectiveBudgetProfileId }
       : {}),
     selection: {
-      contribution: activeContribProfileId,
+      contribution: activeContributionProfileId,
       salary: storedActiveSalaryProfileId,
     },
   });
 
   const paycheckInput = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(effectiveContributionProfileId != null
+      ? { contributionProfileId: effectiveContributionProfileId }
       : {}),
     ...salaryProfileInput,
   };

@@ -31,10 +31,10 @@ type Props = {
   budgetProfileSummaries: BudgetProfileSummaries;
   decumulationBudgetProfileId: number | null | undefined;
   decumulationBudgetColumn: number;
-  decExpenseOverride: string | null;
-  setDecExpenseOverride: (v: string | null) => void;
-  setDecBudgetProfileId: (id: number | null) => void;
-  setDecBudgetCol: (col: number | null) => void;
+  decumulationExpenseOverride: string | null;
+  setDecumulationExpenseOverride: (v: string | null) => void;
+  setDecumulationBudgetProfileId: (id: number | null) => void;
+  setDecumulationBudgetCol: (col: number | null) => void;
   isEditable: IsEditable;
 };
 
@@ -43,10 +43,10 @@ export function PerPhaseBudgetSection({
   budgetProfileSummaries,
   decumulationBudgetProfileId,
   decumulationBudgetColumn,
-  decExpenseOverride,
-  setDecExpenseOverride,
-  setDecBudgetProfileId,
-  setDecBudgetCol,
+  decumulationExpenseOverride,
+  setDecumulationExpenseOverride,
+  setDecumulationBudgetProfileId,
+  setDecumulationBudgetCol,
   isEditable,
 }: Props) {
   const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
@@ -66,14 +66,15 @@ export function PerPhaseBudgetSection({
   const profiles = budgetProfileSummaries;
   if (profiles.length === 0) return null;
 
-  const decProfile =
+  const decumulationProfile =
     profiles.find((p) => p.id === decumulationBudgetProfileId) ??
     profiles.find((p) => p.isActive);
-  const decLabels = decProfile?.columnLabels ?? [];
-  const decTotals = decProfile?.columnTotals ?? [];
-  const decMonths = (decProfile?.columnMonths as number[] | null) ?? null;
-  const decWeighted =
-    (decProfile?.weightedAnnualTotal as number | null) ?? null;
+  const decumulationLabels = decumulationProfile?.columnLabels ?? [];
+  const decumulationTotals = decumulationProfile?.columnTotals ?? [];
+  const decumulationMonths =
+    (decumulationProfile?.columnMonths as number[] | null) ?? null;
+  const decumulationWeighted =
+    (decumulationProfile?.weightedAnnualTotal as number | null) ?? null;
 
   return (
     <div>
@@ -103,7 +104,7 @@ export function PerPhaseBudgetSection({
             <HelpTip text={budgetTip(meta, "source")} />
           </span>
           <div className="flex flex-col gap-1 font-medium">
-            {decExpenseOverride ? (
+            {decumulationExpenseOverride ? (
               <span className="text-faint text-xs italic">
                 Using the amount you set
               </span>
@@ -114,10 +115,10 @@ export function PerPhaseBudgetSection({
                   value={decumulationBudgetProfileId ?? ""}
                   disabled={!isEditable || budgetNotUsed}
                   onChange={(e) => {
-                    setDecBudgetProfileId(
+                    setDecumulationBudgetProfileId(
                       e.target.value ? Number(e.target.value) : null,
                     );
-                    setDecBudgetCol(null);
+                    setDecumulationBudgetCol(null);
                   }}
                 >
                   {profiles.map((p) => (
@@ -127,28 +128,31 @@ export function PerPhaseBudgetSection({
                     </option>
                   ))}
                 </select>
-                {decMonths ? (
+                {decumulationMonths ? (
                   <Badge color="amber" size="sm" case="normal">
-                    Weighted: {formatCurrency(decWeighted ?? 0)}
+                    Weighted: {formatCurrency(decumulationWeighted ?? 0)}
                     /yr
                     <span className="text-caption text-faint ml-1">
                       (
-                      {decMonths
-                        .map((m, i) => `${m}mo ${decLabels[i] ?? ""}`)
+                      {decumulationMonths
+                        .map((m, i) => `${m}mo ${decumulationLabels[i] ?? ""}`)
                         .join(" +")}
                       )
                     </span>
                   </Badge>
-                ) : decLabels.length >= 2 ? (
+                ) : decumulationLabels.length >= 2 ? (
                   <select
                     className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     value={decumulationBudgetColumn}
                     disabled={!isEditable || budgetNotUsed}
-                    onChange={(e) => setDecBudgetCol(Number(e.target.value))}
+                    onChange={(e) =>
+                      setDecumulationBudgetCol(Number(e.target.value))
+                    }
                   >
-                    {decLabels.map((label: string, index: number) => (
+                    {decumulationLabels.map((label: string, index: number) => (
                       <option key={label} value={index}>
-                        {label} ({formatCurrency((decTotals[index] ?? 0) * 12)}
+                        {label} (
+                        {formatCurrency((decumulationTotals[index] ?? 0) * 12)}
                         /yr)
                       </option>
                     ))}
@@ -166,10 +170,10 @@ export function PerPhaseBudgetSection({
           </span>
           <div className="flex items-center gap-1 font-medium">
             <InlineEdit
-              value={decExpenseOverride ?? ""}
+              value={decumulationExpenseOverride ?? ""}
               onSave={(v) => {
                 const cleaned = v.replace(/[^0-9]/g, "");
-                setDecExpenseOverride(cleaned || null);
+                setDecumulationExpenseOverride(cleaned || null);
               }}
               formatDisplay={(v) =>
                 v ? `${formatCurrency(Number(v))}/yr` : "None (using budget)"
@@ -179,11 +183,11 @@ export function PerPhaseBudgetSection({
               className="text-sm"
               isEditable={isEditable && !budgetNotUsed}
             />
-            {decExpenseOverride && (
+            {decumulationExpenseOverride && (
               <button
                 disabled={!isEditable}
                 className="text-caption text-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => setDecExpenseOverride(null)}
+                onClick={() => setDecumulationExpenseOverride(null)}
               >
                 clear
               </button>

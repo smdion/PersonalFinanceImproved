@@ -16,7 +16,7 @@ import type { useCloneProfile } from "@/components/budget/use-clone-profile";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { Tabs } from "@/components/ui/tabs";
 import {
-  ContribAccountForm,
+  ContributionAccountForm,
   type ContribAccountFormValues,
 } from "@/components/paycheck/contrib-account-form";
 import { ProfileDetailPanel } from "./profile-detail-panel";
@@ -57,18 +57,18 @@ export function ProfileManagerTabs({
   );
 }
 
-export function AddContribAccountPanel({
+export function AddContributionAccountPanel({
   addingAccount,
   setAddingAccount,
-  updateContribAccount,
-  createContribAccount,
+  updateContributionAccount,
+  createContributionAccount,
 }: {
   addingAccount: boolean;
   setAddingAccount: Dispatch<SetStateAction<boolean>>;
-  updateContribAccount: ReturnType<
+  updateContributionAccount: ReturnType<
     typeof trpc.settings.contributionAccounts.update.useMutation
   >;
-  createContribAccount: ReturnType<
+  createContributionAccount: ReturnType<
     typeof trpc.settings.contributionAccounts.create.useMutation
   >;
 }) {
@@ -79,18 +79,19 @@ export function AddContribAccountPanel({
         onClose={() => setAddingAccount(false)}
         title="Add Contribution Account"
       >
-        <ContribAccountForm
+        <ContributionAccountForm
           onSave={(data: ContribAccountFormValues) => {
             const { id, ...rest } = data;
             if (id != null) {
-              updateContribAccount.mutate({ id, ...rest });
+              updateContributionAccount.mutate({ id, ...rest });
             } else {
-              createContribAccount.mutate(rest);
+              createContributionAccount.mutate(rest);
             }
           }}
           onCancel={() => setAddingAccount(false)}
           isPending={
-            createContribAccount.isPending || updateContribAccount.isPending
+            createContributionAccount.isPending ||
+            updateContributionAccount.isPending
           }
         />
       </SlidePanel>
@@ -167,7 +168,7 @@ export function ProfileList({
   profiles,
   creatingNew,
   effectiveSelectedId,
-  activeContribId,
+  activeContributionId,
   renameMutation,
   handleActivate,
   canDeleteAny,
@@ -181,7 +182,7 @@ export function ProfileList({
   profiles: RouterOutputs["contributionProfile"]["list"];
   creatingNew: boolean;
   effectiveSelectedId: number | null;
-  activeContribId: number | null;
+  activeContributionId: number | null;
   renameMutation: ReturnType<
     typeof trpc.contributionProfile.update.useMutation
   >;
@@ -211,7 +212,7 @@ export function ProfileList({
           key={p.id}
           name={p.name}
           isSelected={!creatingNew && effectiveSelectedId === p.id}
-          isActive={activeContribId === p.id}
+          isActive={activeContributionId === p.id}
           onSelect={() => {
             setCreatingNew(false);
             setSelectedProfileId(p.id);

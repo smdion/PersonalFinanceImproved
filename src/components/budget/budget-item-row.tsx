@@ -27,7 +27,7 @@ type BudgetItemRowProps = {
   onReorderItem: (id: number, direction: "up" | "down") => void;
   categoryNames: string[];
   currentCategory: string;
-  contribMonthly: number | null;
+  contributionMonthly: number | null;
   /** Why a LINKED item's contributionMonthly is what it is for the column being
    *  viewed — "ok" for a normal resolved value. Ignored for unlinked items
    *  (their contributionMonthly is always the fuzzy match, never classified). */
@@ -65,7 +65,7 @@ export function BudgetItemRow({
   onReorderItem,
   categoryNames,
   currentCategory,
-  contribMonthly,
+  contributionMonthly,
   contribStatus = "ok",
   canEdit = true,
   apiActual,
@@ -124,14 +124,14 @@ export function BudgetItemRow({
           >
             {item.subcategory}
           </span>
-          {contribMonthly !== null &&
+          {contributionMonthly !== null &&
             (item.contributionAccountId == null || contribStatus === "ok" ? (
               <span
                 className="text-caption flex-shrink-0 rounded bg-indigo-50 px-0.5 leading-tight font-semibold text-indigo-600"
                 title={
                   item.contributionAccountId
-                    ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
-                    : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
+                    ? `Linked to paycheck contribution (${formatCurrency(contributionMonthly)}/mo) — editing here updates it everywhere.`
+                    : `Also tracked as paycheck contribution (${formatCurrency(contributionMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
                 }
               >
                 PC

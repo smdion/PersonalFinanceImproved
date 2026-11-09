@@ -12,11 +12,12 @@ export function brokerageFigures(
       NonNullable<RouterOutputs["projection"]["computeProjection"]>["result"]
     >;
   },
-  contribData: RouterOutputs["contribution"]["computeSummary"] | undefined,
+  contributionData: RouterOutputs["contribution"]["computeSummary"] | undefined,
   brokerageData: RouterOutputs["brokerage"]["computeSummary"] | undefined,
   dollarMode: DollarBasis,
   activeProfileId: number | null,
-  contribProfiles: RouterOutputs["contributionProfile"]["list"] | undefined,
+  contributionProfiles:
+    RouterOutputs["contributionProfile"]["list"] | undefined,
 ) {
   const brokerageGoalsInput = {
     asOfDate: new Date(),
@@ -26,12 +27,12 @@ export function brokerageFigures(
   const brokerageResult = calculateBrokerageGoals(brokerageGoalsInput);
 
   // Portfolio-category accounts from contribution summary
-  const portfolioAccounts = contribData
+  const portfolioAccounts = contributionData
     ? [
-        ...contribData.people.flatMap((p) =>
+        ...contributionData.people.flatMap((p) =>
           p.accountTypes.filter((at) => isPortfolioParent(at.parentCategory)),
         ),
-        ...contribData.jointAccountTypes.filter((at) =>
+        ...contributionData.jointAccountTypes.filter((at) =>
           isPortfolioParent(at.parentCategory),
         ),
       ]
@@ -50,7 +51,10 @@ export function brokerageFigures(
     dollarMode === "nominal" ? value : toTodaysDollars(value, year, deflator);
 
   // Funding sources
-  const totalDirectContrib = sumBy(portfolioAccounts, (at) => at.totalContrib);
+  const totalDirectContribution = sumBy(
+    portfolioAccounts,
+    (at) => at.totalContrib,
+  );
   const firstYear = brokerageResult.projectionByYear[0];
   const totalOverflow = firstYear?.overflow ?? 0;
   const accYears = data.result.projectionByYear.filter(
@@ -62,7 +66,8 @@ export function brokerageFigures(
 
   const activeProfileName =
     activeProfileId != null
-      ? (contribProfiles?.find((p) => p.id === activeProfileId)?.name ?? null)
+      ? (contributionProfiles?.find((p) => p.id === activeProfileId)?.name ??
+        null)
       : null;
   const hasContextOverrides = activeProfileName != null;
 
@@ -72,7 +77,7 @@ export function brokerageFigures(
     apiBalances,
     budgetLinks,
     deflate,
-    totalDirectContrib,
+    totalDirectContribution,
     totalOverflow,
     brokerageRamp,
     activeProfileName,

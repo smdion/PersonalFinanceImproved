@@ -38,7 +38,7 @@ export type WhatIfBudgetStepProps = {
   getCatTotals: (items: RawItem[]) => number[];
   hasMoreCategories: boolean;
   leftover: number | null;
-  matchContrib: (subcategory: string, colIndex?: number) => number | null;
+  matchContribution: (subcategory: string, colIndex?: number) => number | null;
   nameColWidth: number;
   netMonthlyIncome: number | null;
   noop: () => void;
@@ -62,7 +62,7 @@ export function WhatIfBudgetStep({
   getCatTotals,
   hasMoreCategories,
   leftover,
-  matchContrib,
+  matchContribution,
   nameColWidth,
   netMonthlyIncome,
   noop,
@@ -156,7 +156,7 @@ export function WhatIfBudgetStep({
                 onAddItem: noop,
                 addItemPending: false,
                 addItemError: null,
-                matchContrib,
+                matchContribution,
                 addingItemToCategory: null,
                 onSetAddingItemToCategory: noop,
               }}

@@ -42,7 +42,7 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Wealth Score",
     format: (v) => formatPercent(v),
-    accessor: (r, _ann) => r.wealthScoreMarket,
+    accessor: (r, _annualize) => r.wealthScoreMarket,
     isFlowMetric: false,
     accessorCostBasis: {
       market: (r) => r.wealthScoreMarket,
@@ -52,7 +52,7 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "AAW Score",
     format: (v) => v.toFixed(1),
-    accessor: (r, _ann) => r.aawScoreMarket,
+    accessor: (r, _annualize) => r.aawScoreMarket,
     isFlowMetric: false,
     accessorCostBasis: {
       market: (r) => r.aawScoreMarket,
@@ -62,11 +62,11 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Brokerage/ESPP Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r, ann) => {
+    accessor: (r, annualize) => {
       const cat = r.performanceByCategory[PERF_CATEGORY_BROKERAGE];
       if (!cat || r.grossIncome <= 0) return 0;
       const contribs =
-        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+        annualize && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
           ? cat.contributions / r.ytdRatio
           : cat.contributions;
       return contribs / r.grossIncome;
@@ -76,11 +76,11 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Retirement Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r, ann) => {
+    accessor: (r, annualize) => {
       const cat = r.performanceByCategory[PERF_CATEGORY_DEFAULT];
       if (!cat || r.grossIncome <= 0) return 0;
       const contribs =
-        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+        annualize && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
           ? cat.contributions / r.ytdRatio
           : cat.contributions;
       return contribs / r.grossIncome;
@@ -90,10 +90,10 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Portfolio Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r, ann) => {
+    accessor: (r, annualize) => {
       if (!r.perfContributions || r.grossIncome <= 0) return 0;
       const contribs =
-        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+        annualize && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
           ? r.perfContributions / r.ytdRatio
           : r.perfContributions;
       return contribs / r.grossIncome;

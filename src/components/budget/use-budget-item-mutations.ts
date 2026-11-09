@@ -69,16 +69,17 @@ export function useBudgetItemMutations({ selectedColumnRef }: Options) {
                 if (item.contributionAccountId) {
                   const status = item.contribStatus?.[variables.colIndex];
                   if (status && status !== "ok") return item;
-                  const newContribAmounts = item.contribAmounts
+                  const newContributionAmounts = item.contribAmounts
                     ? [...item.contribAmounts]
                     : null;
-                  if (newContribAmounts) {
-                    newContribAmounts[variables.colIndex] = variables.amount;
+                  if (newContributionAmounts) {
+                    newContributionAmounts[variables.colIndex] =
+                      variables.amount;
                   }
                   return {
                     ...item,
                     contribAmount: variables.amount,
-                    contribAmounts: newContribAmounts,
+                    contribAmounts: newContributionAmounts,
                   };
                 }
                 const newAmounts = [...item.amounts];

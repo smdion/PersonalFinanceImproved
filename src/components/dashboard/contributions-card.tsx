@@ -21,11 +21,11 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
 import {
-  ContribPeriodToggle,
-  getContribMultiplier,
+  ContributionPeriodToggle,
+  getContributionMultiplier,
   getPeriodSuffix,
   householdPeriodsPerYear,
-  type ContribPeriod,
+  type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import {
   getAllCategories,
@@ -50,12 +50,13 @@ function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
-  const contribInput = {
-    ...contribProfileInput,
+  const { queryInput: contributionProfileInput } =
+    useEffectiveContribProfileId();
+  const contributionInput = {
+    ...contributionProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-  const summary = trpc.contribution.computeSummary.useQuery(contribInput);
+  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
   const { data } = summary;
   // Live status per tracked account (needs the portfolio permission; the
   // card works without it).
@@ -73,7 +74,8 @@ function ContributionsCardImpl() {
       </span>
     ) : null;
   };
-  const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
+  const [contributionPeriod, setContributionPeriod] =
+    useState<ContributionPeriod>("annual");
   const highIncome = useHighIncomeLine();
   const { threshold: highIncomeThreshold } = highIncome;
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
@@ -132,23 +134,29 @@ function ContributionsCardImpl() {
   const avgPeriodsPerYear = householdPeriodsPerYear(
     people.map((p) => p.periodsPerYear!),
   );
-  const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
-  const suffix = getPeriodSuffix(contribPeriod);
+  const householdMult = getContributionMultiplier(
+    contributionPeriod,
+    avgPeriodsPerYear,
+  );
+  const suffix = getPeriodSuffix(contributionPeriod);
 
   return (
     <Card
       title="Contributions"
       href={focusHref({ topic: "contributionElections" })}
       headerRight={
-        <ContribPeriodToggle
-          value={contribPeriod}
-          onChange={setContribPeriod}
+        <ContributionPeriodToggle
+          value={contributionPeriod}
+          onChange={setContributionPeriod}
         />
       }
     >
       <div className="space-y-3">
         {people.map((p, personIndex) => {
-          const mult = getContribMultiplier(contribPeriod, p.periodsPerYear!);
+          const mult = getContributionMultiplier(
+            contributionPeriod,
+            p.periodsPerYear!,
+          );
           return (
             <div
               key={p.person.id}

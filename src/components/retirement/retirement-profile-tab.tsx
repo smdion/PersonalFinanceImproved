@@ -58,8 +58,8 @@ import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phas
 import { RaiseAndRateSection } from "@/components/retirement/sections/raise-and-rate";
 import type { UpsertSettingsMutation } from "@/components/retirement/sections/types";
 import {
-  decToWhole,
-  wholeToDec,
+  decimalToWhole,
+  wholeToDecimal,
 } from "@/components/retirement/sections/helpers";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -106,19 +106,20 @@ export function RetirementProfileTab({
       SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
       null,
     );
-  const [contribProfileId, setContribProfileId] = useActiveContribProfile();
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
+  const [contributionProfileId, setContributionProfileId] =
+    useActiveContribProfile();
+  const contributionProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const contributionProfiles = contributionProfilesQuery.data ?? [];
   const [salaryProfileId, setSalaryProfileId] = useActiveSalaryProfile();
   const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
   const salaryProfiles = salaryProfilesQuery.data ?? [];
 
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+  const { profileId: effectiveContributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfiles.map((p) => p.id),
+      validIds: contributionProfiles.map((p) => p.id),
       localSelection: null,
-      activeProfileId: contribProfileId,
+      activeProfileId: contributionProfileId,
     },
   );
   const { profileId: effectiveSalaryProfileId } = useEffectiveProfileId(
@@ -136,7 +137,7 @@ export function RetirementProfileTab({
   const baseInput = useMemo(
     () => ({
       selection: profileSelectionFrom({
-        contributionProfileId: effectiveContribProfileId,
+        contributionProfileId: effectiveContributionProfileId,
         salaryProfileId: effectiveSalaryProfileId,
         decumulationBudgetProfileId: decumulationBudgetProfileId,
         decumulationBudgetColumn: decumulationBudgetColumn,
@@ -147,7 +148,7 @@ export function RetirementProfileTab({
       }),
     }),
     [
-      effectiveContribProfileId,
+      effectiveContributionProfileId,
       effectiveSalaryProfileId,
       decumulationBudgetProfileId,
       decumulationBudgetColumn,
@@ -301,9 +302,9 @@ export function RetirementProfileTab({
     (field: string, wholePercent: string) => {
       const settings = data && "settings" in data ? data.settings : null;
       if (!settings) return;
-      const dec = wholeToDec(wholePercent);
+      const decimal = wholeToDecimal(wholePercent);
       upsertSettingsMutation.mutate(
-        buildSettingsPatch(settings, { [field]: dec }),
+        buildSettingsPatch(settings, { [field]: decimal }),
       );
     },
     [data, upsertSettingsMutation],
@@ -342,7 +343,7 @@ export function RetirementProfileTab({
       upsertPersonRaiseRate.mutate({
         profileId: settings.profileId,
         personId,
-        salaryAnnualIncrease: wholeToDec(wholePercent),
+        salaryAnnualIncrease: wholeToDecimal(wholePercent),
       });
     },
     [data, upsertPersonRaiseRate],
@@ -413,9 +414,9 @@ export function RetirementProfileTab({
                 upsertSettings={upsertSettingsMutation}
                 handleSettingPercentUpdate={handleSettingPercentUpdate}
                 handlePerPersonRaiseRate={handlePerPersonRaiseRate}
-                contribProfiles={contribProfiles}
-                contribProfileId={contribProfileId}
-                setContribProfileId={setContribProfileId}
+                contributionProfiles={contributionProfiles}
+                contributionProfileId={contributionProfileId}
+                setContributionProfileId={setContributionProfileId}
                 salaryProfiles={salaryProfiles}
                 salaryProfileId={salaryProfileId}
                 setSalaryProfileId={setSalaryProfileId}
@@ -446,10 +447,10 @@ export function RetirementProfileTab({
                 budgetProfileSummaries={data.budgetProfileSummaries}
                 decumulationBudgetProfileId={data.decumulationBudgetProfileId}
                 decumulationBudgetColumn={data.decumulationBudgetColumn}
-                decExpenseOverride={decumulationExpenseOverride}
-                setDecExpenseOverride={setDecumulationExpenseOverride}
-                setDecBudgetProfileId={setDecumulationBudgetProfileId}
-                setDecBudgetCol={setDecumulationBudgetColumn}
+                decumulationExpenseOverride={decumulationExpenseOverride}
+                setDecumulationExpenseOverride={setDecumulationExpenseOverride}
+                setDecumulationBudgetProfileId={setDecumulationBudgetProfileId}
+                setDecumulationBudgetCol={setDecumulationBudgetColumn}
                 isEditable={admin}
               />
 
@@ -484,7 +485,7 @@ export function RetirementProfileTab({
                 </span>
                 <div className="font-medium">
                   <InlineEdit
-                    value={decToWhole(settings.annualInflation)}
+                    value={decimalToWhole(settings.annualInflation)}
                     onSave={(v) =>
                       handleSettingPercentUpdate("annualInflation", v)
                     }
@@ -518,7 +519,9 @@ export function RetirementProfileTab({
               upsertPerson={upsertProfilePerson}
               upsertHouseholdFields={upsertProfileHouseholdFields}
               isEditable={admin}
-              contributionProfileId={effectiveContribProfileId ?? undefined}
+              contributionProfileId={
+                effectiveContributionProfileId ?? undefined
+              }
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
             />
 

@@ -5,8 +5,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
-  ContribPeriodToggle,
-  getContribMultiplier,
+  ContributionPeriodToggle,
+  getContributionMultiplier,
   getPeriodSuffix,
   householdPeriodsPerYear,
   toContributionPeriod,
@@ -16,13 +16,13 @@ const labels = () => screen.getAllByRole("radio").map((b) => b.textContent);
 
 describe("ContribPeriodToggle", () => {
   it("says Per paycheck, Monthly, Annual by default (Dashboard, Paycheck)", () => {
-    render(<ContribPeriodToggle value="annual" onChange={vi.fn()} />);
+    render(<ContributionPeriodToggle value="annual" onChange={vi.fn()} />);
     expect(labels()).toEqual(["Per paycheck", "Monthly", "Annual"]);
   });
 
   it("starts from the year with annualFirst (Contributions)", () => {
     render(
-      <ContribPeriodToggle
+      <ContributionPeriodToggle
         value="annual"
         onChange={vi.fn()}
         order="annualFirst"
@@ -48,7 +48,7 @@ describe("toContributionPeriod", () => {
 
   it("gives $0 per paycheck when a person has no pay periods", () => {
     expect(toContributionPeriod(12_000, 0, "paycheck")).toBe(0);
-    expect(getContribMultiplier("paycheck", 0)).toBe(0);
+    expect(getContributionMultiplier("paycheck", 0)).toBe(0);
   });
 });
 

@@ -18,11 +18,11 @@ import type {
   Settings,
   PerPersonSettings,
   UpsertSettingsMutation,
-  ContribProfileListEntry as ContribProfile,
+  ContributionProfileListEntry as ContributionProfile,
   IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
-import { decToWhole } from "./helpers";
+import { decimalToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
@@ -47,9 +47,9 @@ type Props = {
    *  receives — the handler converts it to a decimal. Required whenever
    *  `perPersonSettings` has more than one entry. */
   handlePerPersonRaiseRate?: (personId: number, wholePercent: string) => void;
-  contribProfiles: ContribProfile[];
-  contribProfileId: number | null;
-  setContribProfileId: (id: number | null) => void;
+  contributionProfiles: ContributionProfile[];
+  contributionProfileId: number | null;
+  setContributionProfileId: (id: number | null) => void;
   salaryProfiles: { id: number; name: string }[];
   salaryProfileId: number | null;
   setSalaryProfileId: (id: number | null) => void;
@@ -65,9 +65,9 @@ export function IncomeSection({
   upsertSettings,
   handleSettingPercentUpdate,
   handlePerPersonRaiseRate,
-  contribProfiles,
-  contribProfileId,
-  setContribProfileId,
+  contributionProfiles,
+  contributionProfileId,
+  setContributionProfileId,
   salaryProfiles,
   salaryProfileId,
   setSalaryProfileId,
@@ -126,7 +126,7 @@ export function IncomeSection({
               </span>
               <div className="font-medium">
                 <InlineEdit
-                  value={decToWhole(ps.salaryAnnualIncrease)}
+                  value={decimalToWhole(ps.salaryAnnualIncrease)}
                   onSave={(v) => handlePerPersonRaiseRate?.(ps.personId, v)}
                   formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -145,7 +145,7 @@ export function IncomeSection({
             </span>
             <div className="font-medium">
               <InlineEdit
-                value={decToWhole(settings.salaryAnnualIncrease)}
+                value={decimalToWhole(settings.salaryAnnualIncrease)}
                 onSave={(v) =>
                   handleSettingPercentUpdate("salaryAnnualIncrease", v)
                 }
@@ -219,14 +219,14 @@ export function IncomeSection({
             <select
               id={`${id}-contrib`}
               className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-              value={contribProfileId ?? ""}
+              value={contributionProfileId ?? ""}
               onChange={(e) =>
-                setContribProfileId(
+                setContributionProfileId(
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
             >
-              {contribProfiles.map((p) => (
+              {contributionProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>

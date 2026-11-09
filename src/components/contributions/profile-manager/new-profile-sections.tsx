@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { FormField, FormInput } from "@/components/forms";
 import type {
-  ContribDraft,
+  ContributionDraft,
   DeductionRow,
   MatchDraft,
   ProfileDetail,
@@ -71,21 +71,23 @@ export function NewProfileAccounts({
   baseData,
   matchValues,
   disabledAccounts,
-  contribValues,
+  contributionValues,
   setDisabledAccounts,
   nameValues,
   setNameValues,
-  setContribValues,
+  setContributionValues,
   setMatchValues,
 }: {
   baseData: ProfileDetail | null | undefined;
   matchValues: Record<string, MatchDraft>;
   disabledAccounts: Record<string, boolean>;
-  contribValues: Record<string, ContribDraft>;
+  contributionValues: Record<string, ContributionDraft>;
   setDisabledAccounts: Dispatch<SetStateAction<Record<string, boolean>>>;
   nameValues: Record<string, string>;
   setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
-  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  setContributionValues: Dispatch<
+    SetStateAction<Record<string, ContributionDraft>>
+  >;
   setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
 }) {
   return (
@@ -114,9 +116,9 @@ export function NewProfileAccounts({
                 const isPercentMatch =
                   effectiveMatchType === "percent_of_contribution";
                 const isDisabled = disabledAccounts[String(ad.id)] ?? false;
-                const contribVal = contribValues[String(ad.id)] ?? {};
+                const contributionVal = contributionValues[String(ad.id)] ?? {};
                 const effectiveMethod =
-                  contribVal.method ?? "percent_of_salary";
+                  contributionVal.method ?? "percent_of_salary";
                 const isPercent = effectiveMethod === "percent_of_salary";
                 const row = {
                   isDisabled,
@@ -125,9 +127,9 @@ export function NewProfileAccounts({
                   nameValues,
                   setNameValues,
                   effectiveMethod,
-                  setContribValues,
+                  setContributionValues,
                   isPercent,
-                  contribVal,
+                  contributionVal,
                   effectiveMatchType,
                   setMatchValues,
                   hasMatch,

@@ -16,7 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
-  buildNonPayrollContribs,
+  buildNonPayrollContributions,
   fixedContributionMonthly,
 } from "@/components/budget/helpers";
 import { normalizeContribKey } from "@/lib/config/account-types";
@@ -70,7 +70,7 @@ export function useBudgetDerivedData({
   data,
   savingsGoals,
   apiActualsData,
-  contribProfileId,
+  contributionProfileId,
   salaryProfileId,
   editMode,
   getDraft,
@@ -81,7 +81,7 @@ export function useBudgetDerivedData({
   apiActualsData: ApiActualsData;
   /** The profiles budget.computeActiveSummary resolves for this page (its
    *  pick, else the active one), so the payroll breakdown matches it. */
-  contribProfileId: number | null;
+  contributionProfileId: number | null;
   salaryProfileId: number | null;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
@@ -105,8 +105,8 @@ export function useBudgetDerivedData({
   // profiles, as budget.computeActiveSummary resolves them) serves every
   // column.
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery({
-    ...(contribProfileId != null
-      ? { contributionProfileId: contribProfileId }
+    ...(contributionProfileId != null
+      ? { contributionProfileId: contributionProfileId }
       : {}),
     ...(salaryProfileId != null ? { salaryProfileId } : {}),
   });
@@ -152,12 +152,12 @@ export function useBudgetDerivedData({
     [rawItems],
   );
 
-  const contribByCanonicalPerCol: Map<string, number>[] = useMemo(() => {
+  const contributionByCanonicalPerCol: Map<string, number>[] = useMemo(() => {
     return perColumnPaycheckData.map((pData) => {
       const map = new Map<string, number>();
       if (!pData) return map;
 
-      const nonPayroll = buildNonPayrollContribs(
+      const nonPayroll = buildNonPayrollContributions(
         pData.people,
         linkedContributionAccountIds,
       );
@@ -197,11 +197,11 @@ export function useBudgetDerivedData({
   // badge/tooltip) — it must never feed getCatTotals's total below, or the
   // page's own category subtotal disagrees with the server-computed
   // calculateBudget total (RULES.md Single Computation Path).
-  const matchContrib = (
+  const matchContribution = (
     subcategory: string,
     colIndex?: number,
   ): number | null => {
-    const map = contribByCanonicalPerCol[colIndex ?? 0];
+    const map = contributionByCanonicalPerCol[colIndex ?? 0];
     if (!map || map.size === 0) return null;
     const key = normalizeContribKey(subcategory);
     return key ? (map.get(key) ?? null) : null;
@@ -371,7 +371,7 @@ export function useBudgetDerivedData({
     isWeighted,
     perColumnPaycheckData,
     payrollBreakdowns,
-    matchContrib,
+    matchContribution,
     allColumnResults,
     rawItems,
     categoryMap,

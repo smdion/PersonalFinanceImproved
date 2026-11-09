@@ -174,7 +174,7 @@ function checkupStatus(r: MilestoneResult): CheckupStep["status"] {
 
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
-  const contribInput = useContributionSummaryInput();
+  const contributionInput = useContributionSummaryInput();
   const highIncomeLine = useHighIncomeLine();
   const { threshold: highIncomeThreshold } = highIncomeLine;
   const [savingsRateThresholds] = usePersistedSetting<string>(
@@ -182,11 +182,12 @@ function FinancialCheckupCardImpl() {
     `[${DEFAULT_SAVINGS_RATE_BARS.join(", ")}]`,
   );
   const milestones = useRecommendations();
-  const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
+  const contribs = trpc.contribution.computeSummary.useQuery(contributionInput);
 
-  const contribPeople = contribs.data?.people.filter((d) => d.result) ?? [];
+  const contributionPeople =
+    contribs.data?.people.filter((d) => d.result) ?? [];
   const highIncome = isHighIncomeHousehold(
-    householdTotalCompensation(contribPeople),
+    householdTotalCompensation(contributionPeople),
     highIncomeThreshold,
   );
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
@@ -228,7 +229,7 @@ function FinancialCheckupCardImpl() {
 
   // 4. Savings Rate — expands into what it's made of.
   const savingsBreakdown = householdSavings(
-    contribPeople,
+    contributionPeople,
     contribs.data?.jointAccountTypes ?? [],
     viewMode,
     { excludeMatch, includePortfolio },

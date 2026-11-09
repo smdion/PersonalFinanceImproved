@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { getAllCategories } from "@/lib/config/account-types";
 import { type SandboxSalaryEntries } from "@/lib/hooks/use-paycheck-person-views";
 import {
-  type ContribAddition,
+  type ContributionAddition,
   type DeductionAddition,
 } from "./what-if-editors";
 import { type SandboxSalaryEntry } from "./what-if-salary-editor";
@@ -29,12 +29,12 @@ export function useSandboxState(
   const [deductionAdditions, setDeductionAdditions] = useState<
     DeductionAddition[]
   >([]);
-  const [contribActiveFields, setContribActiveFields] = useState<
+  const [contributionActiveFields, setContributionActiveFields] = useState<
     Map<number, string>
   >(new Map());
-  const [contribAdditions, setContribAdditions] = useState<ContribAddition[]>(
-    [],
-  );
+  const [contributionAdditions, setContributionAdditions] = useState<
+    ContributionAddition[]
+  >([]);
   const nextLocalId = useRef(-1);
 
   // A picker switch clears its drafts in the render that first sees the new
@@ -110,23 +110,23 @@ export function useSandboxState(
   const removeDeductionAddition = (localId: number) =>
     setDeductionAdditions((prev) => prev.filter((d) => d.localId !== localId));
 
-  const setContribActiveField = (
+  const setContributionActiveField = (
     accountId: number,
     contributionValue: string,
   ) =>
-    setContribActiveFields((prev) =>
+    setContributionActiveFields((prev) =>
       new Map(prev).set(accountId, contributionValue),
     );
-  const resetContribActiveField = (accountId: number) =>
-    setContribActiveFields((prev) => {
+  const resetContributionActiveField = (accountId: number) =>
+    setContributionActiveFields((prev) => {
       const next = new Map(prev);
       next.delete(accountId);
       return next;
     });
 
-  const addContribAddition = (personId: number) => {
+  const addContributionAddition = (personId: number) => {
     const localId = nextLocalId.current--;
-    setContribAdditions((prev) => [
+    setContributionAdditions((prev) => [
       ...prev,
       {
         localId,
@@ -137,23 +137,25 @@ export function useSandboxState(
       },
     ]);
   };
-  const updateContribAddition = (
+  const updateContributionAddition = (
     localId: number,
-    patch: Partial<Omit<ContribAddition, "localId" | "personId">>,
+    patch: Partial<Omit<ContributionAddition, "localId" | "personId">>,
   ) =>
-    setContribAdditions((prev) =>
+    setContributionAdditions((prev) =>
       prev.map((c) => (c.localId === localId ? { ...c, ...patch } : c)),
     );
-  const removeContribAddition = (localId: number) =>
-    setContribAdditions((prev) => prev.filter((c) => c.localId !== localId));
+  const removeContributionAddition = (localId: number) =>
+    setContributionAdditions((prev) =>
+      prev.filter((c) => c.localId !== localId),
+    );
 
   const resetSandbox = () => {
     setSalaryEntries({});
     setBudgetDrafts(new Map());
     setDeductionEdits(new Map());
     setDeductionAdditions([]);
-    setContribActiveFields(new Map());
-    setContribAdditions([]);
+    setContributionActiveFields(new Map());
+    setContributionAdditions([]);
   };
 
   const itemAmountActiveFields = useMemo(
@@ -190,15 +192,15 @@ export function useSandboxState(
 
   const sandboxContribActiveFields = useMemo(() => {
     const out: Record<string, { contributionValue: string }> = {};
-    for (const [accountId, contributionValue] of contribActiveFields) {
+    for (const [accountId, contributionValue] of contributionActiveFields) {
       out[String(accountId)] = { contributionValue };
     }
     return out;
-  }, [contribActiveFields]);
+  }, [contributionActiveFields]);
 
   const sandboxContribAdditions = useMemo(
     () =>
-      contribAdditions
+      contributionAdditions
         .filter((c) => parseFloat(c.contributionValue) !== 0)
         .map(
           ({
@@ -213,7 +215,7 @@ export function useSandboxState(
             contributionValue,
           }),
         ),
-    [contribAdditions],
+    [contributionAdditions],
   );
 
   return {
@@ -232,14 +234,14 @@ export function useSandboxState(
     removeDeductionAddition,
     sandboxDeductionEdits,
     sandboxDeductionAdditions,
-    contribActiveFields,
-    setContribActiveField,
-    resetContribActiveField,
+    contributionActiveFields,
+    setContributionActiveField,
+    resetContributionActiveField,
     sandboxContribActiveFields,
-    contribAdditions,
-    addContribAddition,
-    updateContribAddition,
-    removeContribAddition,
+    contributionAdditions,
+    addContributionAddition,
+    updateContributionAddition,
+    removeContributionAddition,
     sandboxContribAdditions,
     resetSandbox,
     hasEdits:
@@ -247,7 +249,7 @@ export function useSandboxState(
       budgetDrafts.size > 0 ||
       deductionEdits.size > 0 ||
       deductionAdditions.length > 0 ||
-      contribActiveFields.size > 0 ||
-      contribAdditions.length > 0,
+      contributionActiveFields.size > 0 ||
+      contributionAdditions.length > 0,
   };
 }

@@ -6,7 +6,7 @@ import {
 } from "@/lib/config/display-labels";
 import type {
   AccountDetail,
-  ContribDraft,
+  ContributionDraft,
   MatchDraft,
 } from "./account-row-types";
 import type { AccountFieldKey } from "./account-fields";
@@ -20,9 +20,11 @@ export type NewProfileRowProps = {
   nameValues: Record<string, string>;
   setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
   effectiveMethod: string;
-  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  setContributionValues: Dispatch<
+    SetStateAction<Record<string, ContributionDraft>>
+  >;
   isPercent: boolean;
-  contribVal: ContribDraft;
+  contributionVal: ContributionDraft;
   effectiveMatchType: string;
   setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
   hasMatch: boolean;
@@ -112,7 +114,7 @@ function NewProfileNameCell({
 function NewProfileMethodCell({
   isDisabled,
   effectiveMethod,
-  setContribValues,
+  setContributionValues,
   ad,
 }: NewProfileRowProps) {
   return (
@@ -122,7 +124,7 @@ function NewProfileMethodCell({
           aria-label={`Method, ${ad.liveAccountName}`}
           value={effectiveMethod}
           onChange={(e) =>
-            setContribValues((prev) => ({
+            setContributionValues((prev) => ({
               ...prev,
               [String(ad.id)]: {
                 ...prev[String(ad.id)],
@@ -142,8 +144,8 @@ function NewProfileMethodCell({
 function NewProfileValueCell({
   isDisabled,
   isPercent,
-  contribVal,
-  setContribValues,
+  contributionVal,
+  setContributionValues,
   ad,
 }: NewProfileRowProps) {
   return (
@@ -156,9 +158,9 @@ function NewProfileValueCell({
           <input
             aria-label={`Value, ${ad.liveAccountName}`}
             type="number"
-            value={contribVal.value ?? ""}
+            value={contributionVal.value ?? ""}
             onChange={(e) =>
-              setContribValues((prev) => ({
+              setContributionValues((prev) => ({
                 ...prev,
                 [String(ad.id)]: {
                   ...prev[String(ad.id)],

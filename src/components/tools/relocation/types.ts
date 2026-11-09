@@ -19,7 +19,7 @@ export type RelocationBudgetInfo = NonNullable<
 >;
 
 /** A contribution profile summary on the query result. */
-export type RelocationContribProfile = NonNullable<
+export type RelocationContributionProfile = NonNullable<
   RelocationAnalysis["currentContribProfile"]
 >;
 
@@ -54,7 +54,7 @@ export type LargePurchaseRow = {
 /** Contribution profile list item from `trpc.contributionProfile.list`. Only
  *  the fields actually read by the selector UI are declared.
  */
-export type ContribProfileListItem = {
+export type ContributionProfileListItem = {
   id: number;
   name: string;
 };

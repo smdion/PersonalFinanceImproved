@@ -4,9 +4,9 @@ import { safeDivide } from "@/lib/utils/math";
 import { CONTRIBUTION_PERIOD_TEXT } from "@/lib/config/display-labels";
 import { SegmentedControl, type SegmentedLook } from "./segmented-control";
 
-export type ContribPeriod = keyof typeof CONTRIBUTION_PERIOD_TEXT;
+export type ContributionPeriod = keyof typeof CONTRIBUTION_PERIOD_TEXT;
 
-export function getPeriodSuffix(period: ContribPeriod): string {
+export function getPeriodSuffix(period: ContributionPeriod): string {
   return CONTRIBUTION_PERIOD_TEXT[period].suffix;
 }
 
@@ -14,8 +14,8 @@ export function getPeriodSuffix(period: ContribPeriod): string {
  * Convert an annual amount to the selected period.
  * For paycheck, uses the person's periodsPerYear.
  */
-export function getContribMultiplier(
-  period: ContribPeriod,
+export function getContributionMultiplier(
+  period: ContributionPeriod,
   periodsPerYear: number,
 ): number {
   switch (period) {
@@ -41,7 +41,7 @@ export function householdPeriodsPerYear(periods: readonly number[]): number {
 export function toContributionPeriod(
   annual: number,
   periodsPerYear: number,
-  period: ContribPeriod,
+  period: ContributionPeriod,
 ): number {
   if (period === "monthly") return annual / 12;
   if (period === "paycheck") return safeDivide(annual, periodsPerYear, 0)!;
@@ -53,17 +53,17 @@ export function toContributionPeriod(
 const ORDERS = {
   paycheckFirst: ["paycheck", "monthly", "annual"],
   annualFirst: ["annual", "monthly", "paycheck"],
-} as const satisfies Record<string, readonly ContribPeriod[]>;
+} as const satisfies Record<string, readonly ContributionPeriod[]>;
 
-export function ContribPeriodToggle({
+export function ContributionPeriodToggle({
   value,
   onChange,
   className,
   order = "paycheckFirst",
   look,
 }: {
-  value: ContribPeriod;
-  onChange: (period: ContribPeriod) => void;
+  value: ContributionPeriod;
+  onChange: (period: ContributionPeriod) => void;
   className?: string;
   order?: keyof typeof ORDERS;
   look?: SegmentedLook;

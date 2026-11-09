@@ -25,7 +25,7 @@ import type { PortfolioSub } from "./contribution-accounts-types";
 import { AccountCard } from "./contribution-accounts-card";
 import { CreateAccountForm } from "./contribution-accounts-create-form";
 import { useContributionAccountsMutations } from "./use-contribution-accounts-mutations";
-import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
+import { UnlinkedContributionsBanner } from "./unlinked-contribs-banner";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -72,12 +72,12 @@ export function ContributionAccountsSettings() {
   // account row, or an edit made here would be silently shadowed by the
   // active profile everywhere else in the app.
   const [storedActiveContributionProfileId] = useActiveContribProfile();
-  const { data: contribProfilesList } =
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+  const { profileId: activeContributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfilesList?.map((p) => p.id),
+      validIds: contributionProfilesList?.map((p) => p.id),
       localSelection: null,
       activeProfileId: storedActiveContributionProfileId,
     },
@@ -87,14 +87,15 @@ export function ContributionAccountsSettings() {
   // Profile's own entry does (see applyContribActiveFields), and that fact
   // otherwise lives entirely on the Budget page, two navigations away from
   // where a user would actually notice a row behaving unexpectedly.
-  const { data: contribCompareData } =
+  const { data: contributionCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const activeProfileName =
-    contribProfilesList?.find((p) => p.id === activeContribProfileId)?.name ??
-    null;
+    contributionProfilesList?.find((p) => p.id === activeContributionProfileId)
+      ?.name ?? null;
   const activeProfileFields =
-    contribCompareData?.profiles.find((p) => p.id === activeContribProfileId)
-      ?.accountActiveFields ?? {};
+    contributionCompareData?.profiles.find(
+      (p) => p.id === activeContributionProfileId,
+    )?.accountActiveFields ?? {};
   const [showClosed, setShowClosed] = useState(false);
   // Opened (and scrolled to) by links elsewhere — see PortfolioAccountsLink.
   const linked = useFocusMatch("portfolioAccounts") !== null;
@@ -126,7 +127,7 @@ export function ContributionAccountsSettings() {
   const peopleList = people ?? [];
   const jobsList = jobs ?? [];
 
-  const { contribsByPerfId, unlinkedContribs } = useMemo(() => {
+  const { contributionsByPerfId, unlinkedContributions } = useMemo(() => {
     const map = new Map<number, typeof allContribs>();
     for (const c of allContribs) {
       if (c.performanceAccountId !== null) {
@@ -138,19 +139,20 @@ export function ContributionAccountsSettings() {
     const unlinked = allContribs.filter(
       (c) => c.performanceAccountId === null && c.isActive,
     );
-    return { contribsByPerfId: map, unlinkedContribs: unlinked };
+    return { contributionsByPerfId: map, unlinkedContributions: unlinked };
   }, [allContribs]);
 
   const { balanceByPerfId, portfolioSubsByPerfId } = useMemo(() => {
-    const balMap = new Map<number, number>();
+    const balanceMap = new Map<number, number>();
     const subMap = new Map<number, PortfolioSub[]>();
     if (latestSnap?.accounts) {
       for (const a of latestSnap.accounts) {
         if (a.performanceAccountId) {
           if (a.isActive !== false) {
-            balMap.set(
+            balanceMap.set(
               a.performanceAccountId,
-              (balMap.get(a.performanceAccountId) ?? 0) + parseFloat(a.amount),
+              (balanceMap.get(a.performanceAccountId) ?? 0) +
+                parseFloat(a.amount),
             );
           }
           const subs = subMap.get(a.performanceAccountId) ?? [];
@@ -168,7 +170,7 @@ export function ContributionAccountsSettings() {
         }
       }
     }
-    return { balanceByPerfId: balMap, portfolioSubsByPerfId: subMap };
+    return { balanceByPerfId: balanceMap, portfolioSubsByPerfId: subMap };
   }, [latestSnap]);
 
   // ---- Helpers ----
@@ -194,15 +196,15 @@ export function ContributionAccountsSettings() {
   const {
     createPerfMut,
     deletePerfMut,
-    createContribMut,
+    createContributionMut,
     updatePortfolioAccountMut,
     createPortfolioAccountMut,
     handlePerfUpdate,
     handleContribUpdate,
-    handleLinkContrib,
+    handleLinkContribution,
   } = useContributionAccountsMutations({
     allContribs,
-    activeContribProfileId,
+    activeContributionProfileId,
   });
 
   const hasAccounts = allAccounts.length > 0;
@@ -247,18 +249,18 @@ export function ContributionAccountsSettings() {
         open={expanded}
         onToggle={() => setExpanded(!expanded)}
       >
-        <UnlinkedContribsBanner
-          unlinkedContribs={unlinkedContribs}
+        <UnlinkedContributionsBanner
+          unlinkedContributions={unlinkedContributions}
           activeAccounts={activeAccounts}
-          contribsByPerfId={contribsByPerfId}
+          contributionsByPerfId={contributionsByPerfId}
           personOptions={personOptions}
           jobLabel={jobLabel}
           admin={admin}
-          onContribOwnerChange={(c, update) => {
+          onContributionOwnerChange={(c, update) => {
             const full = allContribs.find((x) => x.id === c.id);
             if (full) handleContribUpdate(full, update);
           }}
-          onLinkContrib={handleLinkContrib}
+          onLinkContribution={handleLinkContribution}
         />
 
         <div>
@@ -319,7 +321,7 @@ export function ContributionAccountsSettings() {
               <AccountCard
                 key={pa.id}
                 account={pa}
-                contributions={contribsByPerfId.get(pa.id) ?? []}
+                contributions={contributionsByPerfId.get(pa.id) ?? []}
                 balance={balanceByPerfId.get(pa.id) ?? null}
                 insight={insightByPerfId.get(pa.id)}
                 holdings={holdingsByPerfId.get(pa.id) ?? []}
@@ -341,7 +343,7 @@ export function ContributionAccountsSettings() {
                 onPerfUpdate={
                   admin ? (updates) => handlePerfUpdate(pa, updates) : undefined
                 }
-                onContribUpdate={admin ? handleContribUpdate : undefined}
+                onContributionUpdate={admin ? handleContribUpdate : undefined}
                 onDelete={
                   admin
                     ? () => {
@@ -356,12 +358,14 @@ export function ContributionAccountsSettings() {
                     : undefined
                 }
                 activeAccounts={activeAccounts}
-                onLinkContrib={admin ? handleLinkContrib : undefined}
-                onCreateContrib={
+                onLinkContribution={admin ? handleLinkContribution : undefined}
+                onCreateContribution={
                   admin
                     ? (data: Record<string, unknown>) =>
-                        createContribMut.mutate(
-                          data as Parameters<typeof createContribMut.mutate>[0],
+                        createContributionMut.mutate(
+                          data as Parameters<
+                            typeof createContributionMut.mutate
+                          >[0],
                         )
                     : undefined
                 }

@@ -12,11 +12,11 @@ import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
 import {
-  ContribPeriodToggle,
+  ContributionPeriodToggle,
   getPeriodSuffix,
   householdPeriodsPerYear,
   toContributionPeriod,
-  type ContribPeriod,
+  type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { ContributionsQueryBoundary } from "./contributions-query-boundary";
 import { queryPending } from "@/components/ui/query-boundary";
@@ -49,7 +49,7 @@ export function ContributionsContent() {
   const canEditPriorYear = isAdmin(user);
   const utils = trpc.useUtils();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
-  const [period, setPeriod] = useState<ContribPeriod>("annual");
+  const [period, setPeriod] = useState<ContributionPeriod>("annual");
   const [activeProfileId] = useActiveContribProfile();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
@@ -58,17 +58,15 @@ export function ContributionsContent() {
   // Live data (see docs/DESIGN.md "Profile Resolution"). This is distinct from
   // selectedProfileId below, which is a "compare against a specific other
   // profile" picker and deliberately stays local-only.
-  const { profileId: effectiveActiveContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
+  const { profileId: effectiveActiveContributionProfileId } =
+    useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
       localSelection: null,
       activeProfileId,
-    },
-  );
+    });
   const dataInput = {
-    ...(effectiveActiveContribProfileId != null
-      ? { contributionProfileId: effectiveActiveContribProfileId }
+    ...(effectiveActiveContributionProfileId != null
+      ? { contributionProfileId: effectiveActiveContributionProfileId }
       : {}),
     ...salaryProfileInput,
   };
@@ -223,7 +221,7 @@ export function ContributionsContent() {
               </select>
             </label>
           )}
-          <ContribPeriodToggle
+          <ContributionPeriodToggle
             value={period}
             onChange={setPeriod}
             order="annualFirst"

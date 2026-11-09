@@ -467,7 +467,7 @@ export function ContributionRow({
   );
 }
 
-export function AddContribForm({
+export function AddContributionForm({
   accountType,
   parentCategory,
   performanceAccountId,

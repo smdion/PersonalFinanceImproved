@@ -328,7 +328,7 @@ export function PerfDetailCell({
 }
 
 /** End Bal cell for current year — shows snapshot value with tooltip explaining the difference */
-export function PerfEndBalCell({
+export function PerfEndBalanceCell({
   value,
   perfLastUpdated,
   snapshotDate,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildNonPayrollContribs,
+  buildNonPayrollContributions,
   fixedContributionMonthly,
 } from "@/components/budget/helpers";
 
@@ -20,7 +20,7 @@ describe("fixedContributionMonthly", () => {
 
 describe("buildNonPayrollContribs", () => {
   it("$6,500 a year is about $542 a month, not $14,083", () => {
-    const map = buildNonPayrollContribs(
+    const map = buildNonPayrollContributions(
       [
         {
           paycheck: { periodsPerYear: 26 },

@@ -35,8 +35,8 @@ export function balanceAfterCell(
         —
       </td>
     );
-  const bal = getBalanceAfter(tx.goalId, tx.transactionDate);
-  if (bal === undefined)
+  const balance = getBalanceAfter(tx.goalId, tx.transactionDate);
+  if (balance === undefined)
     return (
       <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
         —
@@ -45,10 +45,10 @@ export function balanceAfterCell(
   return (
     <td
       className={`px-3 py-2 text-right text-xs font-medium whitespace-nowrap tabular-nums ${
-        bal < 0 ? "text-red-500" : "text-muted"
+        balance < 0 ? "text-red-500" : "text-muted"
       }`}
     >
-      {formatCurrency(bal)}
+      {formatCurrency(balance)}
     </td>
   );
 }

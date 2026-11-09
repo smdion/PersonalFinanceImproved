@@ -13,13 +13,13 @@ export function useTaxBucketsProjection(
   setShowBulkBasis: Dispatch<SetStateAction<boolean>>,
   data: RouterOutputs["taxBuckets"]["computeBreakdown"] | undefined,
 ) {
-  const { queryInput: contribPick } = useEffectiveContribProfileId();
+  const { queryInput: contributionPick } = useEffectiveContribProfileId();
   const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
   // Only fetched when the user actually switches to "At Retirement" — the
   // "now" view stays free of any projected bleed-through, and the page
   // doesn't pay for the heavier call on every visit.
   const projectionQuery = trpc.projection.computeProjection.useQuery(
-    { selection: profileSelectionFrom({ ...contribPick, ...salaryPick }) },
+    { selection: profileSelectionFrom({ ...contributionPick, ...salaryPick }) },
     { enabled: view === "atRetirement" },
   );
 

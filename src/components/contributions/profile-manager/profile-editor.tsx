@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
-import type { ContribDraft, MatchDraft } from "./account-row-types";
+import type { ContributionDraft, MatchDraft } from "./account-row-types";
 import {
   NewProfileAccounts,
   NewProfileDeductions,
@@ -27,8 +27,8 @@ export function ProfileEditor({
   const [matchValues, setMatchValues] = useState<Record<string, MatchDraft>>(
     {},
   );
-  const [contribValues, setContribValues] = useState<
-    Record<string, ContribDraft>
+  const [contributionValues, setContributionValues] = useState<
+    Record<string, ContributionDraft>
   >({});
   const [nameValues, setNameValues] = useState<Record<string, string>>({});
   const [disabledAccounts, setDisabledAccounts] = useState<
@@ -46,7 +46,7 @@ export function ProfileEditor({
   });
 
   const { handleSave, isPending, baseData } = useNewProfileSave({
-    contribValues,
+    contributionValues,
     nameValues,
     disabledAccounts,
     matchValues,
@@ -80,11 +80,11 @@ export function ProfileEditor({
           baseData={baseData}
           matchValues={matchValues}
           disabledAccounts={disabledAccounts}
-          contribValues={contribValues}
+          contributionValues={contributionValues}
           setDisabledAccounts={setDisabledAccounts}
           nameValues={nameValues}
           setNameValues={setNameValues}
-          setContribValues={setContribValues}
+          setContributionValues={setContributionValues}
           setMatchValues={setMatchValues}
         />
         {/* Deductions — same "leave blank = not set" rule as contribution

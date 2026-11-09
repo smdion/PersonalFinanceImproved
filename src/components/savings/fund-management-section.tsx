@@ -518,11 +518,11 @@ export function FundManagementSection({
             })()}
             poolPercent={(() => {
               const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
-              const alloc =
+              const allocation =
                 savings.goals.find((g) => g.goalId === efundGoal?.id)
                   ?.monthlyAllocation ?? 0;
               return totalMonthlyAllocation > 0
-                ? ((alloc / totalMonthlyAllocation) * 100).toFixed(0)
+                ? ((allocation / totalMonthlyAllocation) * 100).toFixed(0)
                 : "0";
             })()}
             isApiSyncEnabled={

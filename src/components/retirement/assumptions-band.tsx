@@ -45,9 +45,9 @@ import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-st
 import { StrategyChip } from "@/components/retirement/sections/strategy-picker";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import {
-  decToWhole,
+  decimalToWhole,
   rothTargetOf,
-  wholeToDec,
+  wholeToDecimal,
 } from "@/components/retirement/sections/helpers";
 import type {
   Settings,
@@ -73,14 +73,14 @@ function PercentChip({
   value: string;
   editable: boolean;
   /** Receives the new value as a decimal fraction, ready for buildSettingsPatch. */
-  onChange: (decValue: string) => void;
+  onChange: (decimalValue: string) => void;
 }) {
   return (
     <span className={chipCls}>
       <span className={labelCls}>{label}</span>
       <InlineEdit
-        value={decToWhole(value)}
-        onSave={(v) => onChange(wholeToDec(v))}
+        value={decimalToWhole(value)}
+        onSave={(v) => onChange(wholeToDecimal(v))}
         formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
         parseInput={(v) => v.replace(/[^0-9.]/g, "")}
         type="number"

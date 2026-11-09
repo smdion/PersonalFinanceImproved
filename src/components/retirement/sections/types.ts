@@ -22,7 +22,7 @@ export type ReturnRateSummary = ProjectionData["returnRateSummary"];
 /** Budget profile summaries for the Per-Phase Budget section. */
 export type BudgetProfileSummaries = ProjectionData["budgetProfileSummaries"];
 /** A contribution profile as the Income section lists it. */
-export type ContribProfileListEntry = Pick<
+export type ContributionProfileListEntry = Pick<
   RouterOutputs["contributionProfile"]["list"][number],
   "id" | "name"
 >;

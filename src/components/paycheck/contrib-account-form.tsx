@@ -107,7 +107,7 @@ function defaultsFor(
   };
 }
 
-export function ContribAccountForm({
+export function ContributionAccountForm({
   initialValues,
   onSave,
   onCancel,

@@ -251,7 +251,7 @@ function ComparisonTable({
           // When a move year is set, use blended data for the move-path column
           // so the gap is $0 before the move and only opens up after.
           const blended = moveYear != null ? blendedByYear.get(row.year) : null;
-          const moveContrib = blended
+          const moveContribution = blended
             ? blended.contribution
             : row.relocationContribution;
           const moveBalance = blended ? blended.balance : row.relocationBalance;
@@ -304,7 +304,7 @@ function ComparisonTable({
                 {formatCurrency(deflate(row.currentBalance, row.year))}
               </td>
               <td className="py-1 pr-3 text-right font-mono">
-                {formatCurrency(deflate(moveContrib, row.year))}
+                {formatCurrency(deflate(moveContribution, row.year))}
               </td>
               <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(moveBalance, row.year))}
