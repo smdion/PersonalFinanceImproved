@@ -8,24 +8,28 @@ import { accountGroupLimits } from "@/lib/pure/contributions/contribution-caps";
 import {
   capEffectiveContribs,
   type CapPassHousehold,
+  type CapPassRow,
 } from "@/lib/pure/contributions/cap-pass";
-import type { thisYearFilingStatus } from "@/server/services/tax/filing-status";
-import type { JobSalaryRef } from "@/lib/pure/contributions/contribution-rows";
-import type { fetchRetirementData, applyProfiles } from "./load";
-import type { resolveTaxYear } from "./tax-year";
+import type {
+  ContributionRow,
+  JobRef,
+  JobSalaryRef,
+} from "@/lib/pure/contributions/contribution-rows";
 
 /**
  * This year's active contribution rows, capped at the IRS limits, with
  * each limit group's household limit and the totals by category.
  */
-export function capContributions(
-  resolvedTax: ReturnType<typeof resolveTaxYear>["resolvedTax"],
-  people: Awaited<ReturnType<typeof fetchRetirementData>>["people"],
+export function capContributions<
+  Row extends CapPassRow & Omit<ContributionRow, "accountType">,
+>(
+  resolvedTax: { limits: Record<string, number> },
+  people: readonly { id: number }[],
   birthYearByPersonId: Map<number, number>,
-  thisYearFiling: Awaited<ReturnType<typeof thisYearFilingStatus>>,
+  thisYearFiling: { status: string | null },
   currentYear: number,
-  allContributions: Awaited<ReturnType<typeof applyProfiles>>["allContribs"],
-  activeJobs: Awaited<ReturnType<typeof applyProfiles>>["patchedJobs"],
+  allContributions: readonly Row[],
+  activeJobs: JobRef[],
   jobSalaries: (JobSalaryRef & { totalComp: number })[],
 ) {
   // IRS limits: the `contribution_limits` rows for the resolved tax year

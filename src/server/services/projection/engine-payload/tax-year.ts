@@ -1,8 +1,11 @@
 /** The engine payload's tax year. */
 import type { retirementFilingStatus } from "@/lib/pure/tax/filing-status";
-import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
+import {
+  resolveTaxParams,
+  type TaxParamsRowSets,
+  type TaxSection,
+} from "@/lib/config/tax-params";
 import { ACCOUNT_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
-import type { fetchRetirementData } from "./load";
 
 /**
  * The tax year every per-year slice is resolved on, through one call,
@@ -11,22 +14,14 @@ import type { fetchRetirementData } from "./load";
  */
 export function resolveTaxYear(
   filingStatus: ReturnType<typeof retirementFilingStatus>,
-  retProfiles: Awaited<ReturnType<typeof fetchRetirementData>>["retProfiles"],
+  retProfiles: readonly { id: number; taxParamsYear: number | null }[],
   activeProfileId: number | null,
-  allTaxParams: Awaited<ReturnType<typeof fetchRetirementData>>["allTaxParams"],
-  allLimits: Awaited<ReturnType<typeof fetchRetirementData>>["allLimits"],
-  allTaxBrackets: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allTaxBrackets"],
-  allLtcgBrackets: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allLtcgBrackets"],
-  allIrmaaBrackets: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allIrmaaBrackets"],
-  allFplByHousehold: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allFplByHousehold"],
+  allTaxParams: TaxParamsRowSets["vintage"],
+  allLimits: TaxParamsRowSets["contributionLimits"],
+  allTaxBrackets: TaxParamsRowSets["withholdingBrackets"],
+  allLtcgBrackets: TaxParamsRowSets["ltcgBrackets"],
+  allIrmaaBrackets: TaxParamsRowSets["irmaaBrackets"],
+  allFplByHousehold: TaxParamsRowSets["fpl"],
 ) {
   // The active profile's pinned year (`tax_params_year`, null: the newest
   // enacted), even for a historical snapshot. An unseeded pin year takes
