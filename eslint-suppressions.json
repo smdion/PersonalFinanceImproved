@@ -8217,7 +8217,7 @@
   },
   "src/server/services/budget/budget-income-materializer.ts": {
     "ratchet/max-comment-lines": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
@@ -8225,7 +8225,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

@@ -15,31 +15,11 @@
 
 import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { ExtraPaycheckRule, YearlyGrowthEntry } from "@/lib/db/schema-pg";
+import type { ExtraPaycheckRule } from "@/lib/db/schema-pg";
 import { currentMonthKey } from "@/lib/utils/date-keys";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import { loadExtraPaycheckJobs } from "./extra-paycheck-months";
 import type { Db } from "@/lib/db";
-
-/**
- * Project a base net-pay-per-check forward to a target year, applying stored
- * growth entries. Each entry modifies the running total (pct = percentage of
- * current total; dollar = flat bump carried forward as the new base).
- * Years with no entry default to 0% growth.
- */
-function projectedNetPay(
-  base: number,
-  targetYear: number,
-  baseYear: number,
-  yearlyGrowth: Record<string, YearlyGrowthEntry>,
-): number {
-  let pay = base;
-  for (let y = baseYear + 1; y <= targetYear; y++) {
-    const e = yearlyGrowth[String(y)];
-    if (!e || e.value === 0) continue;
-    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
-  }
-  return pay;
-}
 
 // Serializes concurrent materializer calls within the same Node.js process.
 // Prevents the delete→insert race when two mutations (e.g. two auto-upgrades)
