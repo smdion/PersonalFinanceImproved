@@ -1,10 +1,11 @@
 /** Sync mappings router for managing account-level mappings between budget API accounts and local portfolio/asset tracking accounts. */
 
 import { z } from "zod/v4";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { getLatestSnapshotId } from "@/server/data/latest-snapshot";
 import type { AccountMapping } from "@/lib/db/schema";
 import { getApiConnection } from "@/lib/budget-api";
 import { requireBudgetClient } from "@/server/services/budget/budget-client";
@@ -218,13 +219,7 @@ export const syncMappingsRouter = createTRPCRouter({
       // account to that old snapshot's totals *as of now* — clobbering the
       // current balance with a stale one. Editing/resyncing the latest
       // snapshot is the one safe case (nothing is after it).
-      const latest = await ctx.db
-        .select({ id: schema.portfolioSnapshots.id })
-        .from(schema.portfolioSnapshots)
-        .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
-        .limit(1)
-        .then(firstRow);
-      const isLatest = latest?.id === snapshot.id;
+      const isLatest = (await getLatestSnapshotId(ctx.db)) === snapshot.id;
       if (!isLatest && !input.confirmNonLatest) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",

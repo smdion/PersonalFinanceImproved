@@ -1,8 +1,9 @@
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { getLatestSnapshotId } from "@/server/data/latest-snapshot";
 import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zDecimal } from "@/lib/utils/zod-fields";
@@ -89,12 +90,7 @@ export const snapshotAccountProcedures = {
         });
       }
 
-      const [latest] = await ctx.db
-        .select({ id: schema.portfolioSnapshots.id })
-        .from(schema.portfolioSnapshots)
-        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-        .limit(1);
-      if (latest?.id !== snap.id) {
+      if ((await getLatestSnapshotId(ctx.db)) !== snap.id) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message:
@@ -156,12 +152,7 @@ export const snapshotAccountProcedures = {
           message: "That snapshot no longer exists.",
         });
       // Same rule as updateAccount: an older snapshot is history.
-      const [latest] = await ctx.db
-        .select({ id: schema.portfolioSnapshots.id })
-        .from(schema.portfolioSnapshots)
-        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-        .limit(1);
-      if (latest?.id !== snap.id)
+      if ((await getLatestSnapshotId(ctx.db)) !== snap.id)
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Accounts can only be added to the most recent snapshot.",
