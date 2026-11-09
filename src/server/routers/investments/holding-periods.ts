@@ -252,6 +252,7 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
       });
     }),
 
+  /** Delete a holding period the household entered; an inferred one stays. */
   deleteHoldingPeriod: portfolioProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {

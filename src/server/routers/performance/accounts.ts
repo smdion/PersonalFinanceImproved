@@ -71,6 +71,7 @@ export const accountProcedures = {
   // ---------------------------------------------------------------------------
 
   performanceAccounts: createTRPCRouter({
+    /** Every performance account, in display order. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -80,6 +81,9 @@ export const accountProcedures = {
           asc(schema.performanceAccounts.id),
         ),
     ),
+    /**
+     * Add a performance account, its label built from owner, type and institution; returns it.
+     */
     create: performanceProcedure
       .input(performanceAccountInput)
       .mutation(async ({ ctx, input }) => {
@@ -113,6 +117,10 @@ export const accountProcedures = {
           .returning();
         return created;
       }),
+    /**
+     * Save an account; its label, owner and category carry to its year rows and linked accounts,
+     * year totals follow, and an ineligible one is cleared as the unspent-RMD account.
+     */
     update: performanceProcedure
       .input(
         z
@@ -220,6 +228,10 @@ export const accountProcedures = {
           return updated;
         });
       }),
+    /**
+     * Refused while it has year rows or holding periods; linked contribution and snapshot accounts
+     * are unlinked, and its budget-API mappings dropped.
+     */
     delete: performanceProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

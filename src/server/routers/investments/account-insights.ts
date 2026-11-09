@@ -28,6 +28,10 @@ import {
 import { valueHoldings } from "@/server/services/investments/holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
+  /**
+   * What SimpleFIN knows about each tracked account for the Portfolio cards: live balance,
+   * link status, holdings, and deposits against the paycheck setup.
+   */
   computeAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
     const today = utcDayOf(ctx.scope.asOf);
     const since = addDays(today, -RECENT_ACTIVITY_DAYS);

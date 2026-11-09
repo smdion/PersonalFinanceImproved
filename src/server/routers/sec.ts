@@ -88,6 +88,7 @@ export const secRouter = createTRPCRouter({
     return syncSecurityFacts(ctx.db, { force: true, now: ctx.scope.asOf });
   }),
 
+  /** Forget the stored SEC contact; fund facts already fetched stay. */
   removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeSecConnection(ctx.db);
     return { ok: true as const };
