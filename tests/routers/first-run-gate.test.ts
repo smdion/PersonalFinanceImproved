@@ -11,7 +11,7 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
 
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 

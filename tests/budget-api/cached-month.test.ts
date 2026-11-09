@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readCachedMonthBalances } from "@/lib/budget-api/cached-month";
 import { log } from "@/lib/logger";
 
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 
 const KEY = "months/2031-04-01";
 

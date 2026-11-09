@@ -20,7 +20,7 @@ import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-st
 import { VERSION_PREVIEW_WITHHELD_TABLES } from "@/lib/db/version-tables";
 import { log } from "@/lib/logger";
 
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 
 type Schema = typeof pgSchema;
 type TableExport = {

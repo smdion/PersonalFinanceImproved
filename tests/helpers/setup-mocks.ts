@@ -40,4 +40,5 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
 // Mock logger
 vi.mock("@/lib/logger", () => ({
   log: vi.fn(),
+  logWarnOnce: vi.fn(),
 }));

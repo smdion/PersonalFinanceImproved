@@ -19,7 +19,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 const ORIGINAL_ENV = { ...process.env };
 
 vi.mock("@/lib/db", () => ({ db: {} }));
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 vi.mock("@/lib/db/version-logic", () => ({
   exportBackup: vi.fn().mockResolvedValue({
     schemaVersion: "0001",

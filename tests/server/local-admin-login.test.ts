@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({ db: {} }));
 vi.mock("@/lib/db/schema", () => ({ localAdmins: {} }));
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 vi.mock("@/lib/auth/password", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/password")>();
   return { ...actual, verifyPassword: vi.fn(actual.verifyPassword) };
