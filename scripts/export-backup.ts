@@ -188,8 +188,10 @@ async function run() {
   }
 }
 
-// Guarded so the tests can import the readers above without a run.
-if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
+// Guarded so the tests can import the readers above without a run. Both
+// paths are real paths, so a run through a symlinked directory still runs.
+const invokedAs = process.argv[1] ? fs.realpathSync(process.argv[1]) : "";
+if (invokedAs === fs.realpathSync(fileURLToPath(import.meta.url))) {
   run().catch((err) => {
     console.error("Export failed:", err);
     process.exit(1);
