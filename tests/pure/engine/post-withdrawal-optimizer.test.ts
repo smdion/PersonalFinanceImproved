@@ -754,7 +754,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
 
   it("byte-identical to the prior behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
     // decumulation-year.ts always computes nonRetirement and
-    // indAccts/indBal/indKey together, gated on the same
+    // indAccounts/indBalance/indKey together, gated on the same
     // hasIndividualAccounts check (see its own comment) -- so the real
     // "not tracking individual accounts" fallback is ALL of these omitted
     // together, not nonRetirement alone.

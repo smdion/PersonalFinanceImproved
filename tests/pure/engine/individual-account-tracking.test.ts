@@ -990,7 +990,7 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
       [indKey(accounts[0]!), 6000],
       [indKey(accounts[1]!), 4000],
     ]);
-    // indBal sums to 10000; acctBal says 10000.09 -- a 9-cent gap.
+    // indBalance sums to 10000; acctBal says 10000.09 -- a 9-cent gap.
     const acctBal = baseBalances({
       ira: { structure: "roth_traditional", traditional: 10000.09, roth: 0 },
     });
@@ -1097,7 +1097,7 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
     ]);
     reconcileIndividualToAggregate([b, a], indKey, indBalReversed, acctBal);
 
-    // Same result regardless of indAccts iteration order.
+    // Same result regardless of indAccounts iteration order.
     expect(indBalForward.get(indKey(a))).toBeCloseTo(
       indBalReversed.get(indKey(a))!,
       2,

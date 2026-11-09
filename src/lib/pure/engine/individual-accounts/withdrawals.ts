@@ -43,7 +43,7 @@ export function goalFundingBalance(
 
 /**
  * Distribute a brokerage goal withdrawal across the goal-funding
- * (Portfolio-parented) brokerages, by balance. Mutates `indBal` in place.
+ * (Portfolio-parented) brokerages, by balance. Mutates `indBalance` in place.
  */
 export function distributeGoalWithdrawal(
   drawAmount: number,
@@ -81,8 +81,8 @@ export function distributeGoalWithdrawal(
  * WHICH account inside an already-decided category/slot supplies a given
  * dollar, never the slot totals themselves.
  *
- * Mutates `indBal` in place. Returns the per-account amounts plus any
- * shortfall warnings — a warning means `Σ decIndWithdrawal` for that slot
+ * Mutates `indBalance` in place. Returns the per-account amounts plus any
+ * shortfall warnings — a warning means `Σ decumulationIndWithdrawal` for that slot
  * came up short of `slot.withdrawal` because the individual-account track's
  * balance was genuinely exhausted. With `reconcileIndividualToAggregate`
  * running at end of year, the warnings are empty for every fixture.
@@ -292,7 +292,7 @@ function distributeProportionallyPreferringPenaltyFree(
     // account's penalty-exposed dollars must stay fully unreachable, even
     // when the allowed pool in this list can't cover the residual —
     // `routeForMode`'s category-level total already accounted for only the
-    // allowed pool, so this really is a genuine indBal-vs-acctBal drift
+    // allowed pool, so this really is a genuine indBalance-vs-accountBalance drift
     // case, not a place to silently spend a disallowed account's money.
     return shortfall2;
   }
@@ -319,7 +319,7 @@ function distributeProportionallyPreferringPenaltyFree(
  * the old single lastKey-only assignment with a bounded re-routing loop
  * across the whole group, so a residual that the first account can't fully
  * absorb re-routes to the next one with capacity instead of being silently
- * capped away). Mutates `indBal` and `withdrawalMap` in place. Returns any
+ * capped away). Mutates `indBalance` and `withdrawalMap` in place. Returns any
  * amount that could not be allocated because the group's capacity was
  * genuinely exhausted — 0 in the overwhelmingly common case.
  */

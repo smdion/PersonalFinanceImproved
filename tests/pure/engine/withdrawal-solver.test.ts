@@ -441,7 +441,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     // silently under-withdrew whenever cost wasn't proportional to
     // withdrawal size — see
     // tests/pure/engine/penalty-hard-exclusion-both-paths-agree.test.ts
-    // for the reproduction). So `est.estTax` is no longer tax evaluated at
+    // for the reproduction). So `est.estimatedTax` is no longer tax evaluated at
     // the raw pre-gross-up `afterTaxNeed` trial -- it's tax at
     // `est.targetWithdrawal`, the amount actually routed. This test still
     // proves the same structural invariant the original was written for

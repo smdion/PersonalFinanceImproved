@@ -1,5 +1,5 @@
 /** The individual track at year end: each account's row, negatives clamped,
- *  each category reconciled to `acctBal`, basis clamped to the balance. */
+ *  each category reconciled to `accountBalance`, basis clamped to the balance. */
 import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
@@ -190,7 +190,7 @@ export function buildIndividualYearBalances(
 
 /**
  * Clamp individual account balances to zero (rounding can create small negatives).
- * Mutates `indBal` in place.
+ * Mutates `indBalance` in place.
  */
 export function clampIndividualBalances(
   indAccts: IndividualAccountInput[],
@@ -205,30 +205,30 @@ export function clampIndividualBalances(
 }
 
 /**
- * Reconciles the per-individual-account track (`indBal`) to the aggregate
- * track (`acctBal`) once per projected year, so `Σ indBal[cat] ===
- * acctBal[cat]` exactly before the NEXT year's withdrawal-eligibility
+ * Reconciles the per-individual-account track (`indBalance`) to the aggregate
+ * track (`accountBalance`) once per projected year, so `Σ indBalance[cat] ===
+ * accountBalance[cat]` exactly before the NEXT year's withdrawal-eligibility
  * computation runs.
  *
  * The two tracks are deliberately separate (different granularity, lifecycle,
  * consumers) but drift accumulates from per-account
  * `roundToCents` vs. one aggregate rounding at several pipeline stages, and
  * that drift compounds across years via growth. Left unreconciled, a
- * category that `computeWithdrawalEligibility` (summing over `indBal`)
+ * category that `computeWithdrawalEligibility` (summing over `indBalance`)
  * reports as 100% locked can still show a nonzero "eligible" balance to
- * `subtractPenaltyExposed` (which reads `acctBal`).
+ * `subtractPenaltyExposed` (which reads `accountBalance`).
  *
- * `acctBal` is the authoritative track (it feeds Tax Buckets, routing, tax,
- * and every aggregate the UI shows) — this pushes `indBal` onto it, never
+ * `accountBalance` is the authoritative track (it feeds Tax Buckets, routing, tax,
+ * and every aggregate the UI shows) — this pushes `indBalance` onto it, never
  * the reverse. Zero writes when a group already matches, which is what
  * keeps a non-drifting household's projection byte-identical. It corrects
- * `indBal` itself, off the authoritative track, before eligibility ever
+ * `indBalance` itself, off the authoritative track, before eligibility ever
  * reads it.
  *
  * Call at END of year, after `clampIndividualBalances` (itself a drift
  * source — it zeroes negatives on the individual track only) and before
  * `clampIndividualBasis` (so tracked basis re-clamps to the reconciled
- * balance). Mutates `indBal` in place. Returns diagnostic strings — empty
+ * balance). Mutates `indBalance` in place. Returns diagnostic strings — empty
  * in the overwhelmingly common case; a dollar-scale (>$1) drift is a
  * structural finding, not rounding, and is surfaced rather than silently
  * absorbed.
@@ -316,7 +316,7 @@ function reconcileGroup(
     (ia) => !isRetirementMoney(ia.parentCategory),
   );
 
-  // Spread `amount` over `accts` by balance (equally when they hold
+  // Spread `amount` over `accounts` by balance (equally when they hold
   // nothing and `equalWhenEmpty`); returns what couldn't be placed.
   const spread = (
     accts: IndividualAccountInput[],
@@ -371,7 +371,7 @@ function reconcileGroup(
 
   if (unplaced !== 0 && sumOf(groupAccts) <= 0 && target > 0) {
     // No weight to distribute by — inventing one would be a second
-    // allocation policy. Leave indBal alone; the diagnostic above (for
+    // allocation policy. Leave indBalance alone; the diagnostic above (for
     // >$1 drift) already surfaces this if it's material.
     if (Math.abs(delta) <= 1) {
       diagnostics.push(

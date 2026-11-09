@@ -189,7 +189,7 @@ export function followReconciliation<T>(
 
 /**
  * Year end: basis never exceeds an account's balance, and the aggregate
- * basis (`balances.afterTaxBasis`, the brokerage `acctBal`) is the sum of
+ * basis (`balances.afterTaxBasis`, the brokerage `accountBalance`) is the sum of
  * the accounts' — when the accounts hold all the brokerage money. A drift
  * over $1 between the year's aggregate bookkeeping and the accounts is
  * surfaced as a diagnostic, like balance drift.

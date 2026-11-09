@@ -48,7 +48,7 @@ interface DeductWithdrawalsInput {
 
 /**
  * Deduct withdrawals from tax buckets and per-account balances.
- * Mutates `balances` and `acctBal` in place.
+ * Mutates `balances` and `accountBalance` in place.
  */
 export function deductWithdrawals(input: DeductWithdrawalsInput): void {
   const { slots, balances, acctBal, brokerageBasisPortion } = input;
@@ -106,7 +106,7 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
 
 /**
  * Ensure no negative balances across all balance systems.
- * Mutates `balances` and `acctBal` in place.
+ * Mutates `balances` and `accountBalance` in place.
  */
 export function clampBalances(
   balances: TaxBuckets,
@@ -149,10 +149,10 @@ export function clampBalances(
  * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
  * an accurate description of what happened under "spend".
  *
- * Mutates `balances` and `acctBal` in place only under "reinvest". When
- * `indAccts`/`indBal`/`indKey` are also supplied, the reinvestment
+ * Mutates `balances` and `accountBalance` in place only under "reinvest". When
+ * `indAccounts`/`indBalance`/`indKey` are also supplied, the reinvestment
  * additionally credits Retirement-parented overflow-target accounts'
- * `indBal` directly, proportional to their own balance — this money is
+ * `indBalance` directly, proportional to their own balance — this money is
  * forced out of a Traditional account by the RMD floor (which only ever
  * forces Retirement-parented money), so it must land back in a
  * Retirement-parented account too. Without this, the credit only touches
@@ -160,7 +160,7 @@ export function clampBalances(
  * parentCategory-blind proportional redistribution can hand most of it to
  * a much-larger Portfolio-parented account instead — the same leak
  * already closed for Roth-conversion tax funding and QCD, surfaced here by
- * a `[DIAG] indBal/acctBal reconciliation` drift report on a real
+ * a `[DIAG] indBalance/accountBalance reconciliation` drift report on a real
  * household. Falls back to crediting proportionally across every
  * overflow-target account (the earlier behavior) only if the household has NO
  * Retirement-parented overflow-target account at all — an edge case, but
@@ -299,7 +299,7 @@ export function trackDepletions(
 
 /**
  * Zero out rounding dust when total portfolio is effectively depleted (< $1).
- * Mutates `balances`, `acctBal`, and `indBal` in place.
+ * Mutates `balances`, `accountBalance`, and `indBalance` in place.
  * Returns true if dust was cleaned.
  */
 export function cleanupDust(

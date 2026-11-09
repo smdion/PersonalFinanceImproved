@@ -406,7 +406,7 @@ export function computeWithdrawalEligibility(input: {
  * overlap on the same dollar and can be summed together safely by
  * `subtractExcluded`, `balance-utils.ts`).
  *
- * Portfolio-parented accounts are NOT removed from `indAccts`/`indBalance`
+ * Portfolio-parented accounts are NOT removed from `indAccounts`/`indBalance`
  * themselves — they still receive contributions and growth normally; only
  * the routing-time VIEW computed here excludes their balance. Mirrors
  * `computeWithdrawalEligibility`'s "recomputed fresh every year from

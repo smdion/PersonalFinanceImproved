@@ -1,4 +1,4 @@
-/** The per-account ledger (`indBal`, composite key → balance): keys,
+/** The per-account ledger (`indBalance`, composite key → balance): keys,
  *  credits, the year's growth and tracked Roth basis. */
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import { roundToCents } from "../../../utils/math";
@@ -50,7 +50,7 @@ export function makeIndKey(): IndKeyFn {
     `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
 }
 
-/** Adds `amount` to account `acct` in each of the year's maps `into`
+/** Adds `amount` to account `account` in each of the year's maps `into`
  *  (its contributions, balance, and the source the amount came from). */
 export function credit(
   acct: string,
@@ -73,7 +73,7 @@ export function specKeyOf(spec: {
 
 /**
  * Apply growth to individual account balances.
- * Mutates `indBal` in place. Returns per-account growth amounts.
+ * Mutates `indBalance` in place. Returns per-account growth amounts.
  */
 export function applyIndividualGrowth(
   indAccts: IndividualAccountInput[],
@@ -102,7 +102,7 @@ export function applyIndividualGrowth(
 
 /**
  * Grows tracked basis by this accumulation year's contributions.
- * `indContribs` is the same map `distributeContributions` returns —
+ * `indContributions` is the same map `distributeContributions` returns —
  * already excludes employer match (see roth-basis-tracking.ts's
  * docblock for why that exclusion is load-bearing). Mutates `indBasis`
  * in place; no-op for accounts with no entry (non-Roth accounts never

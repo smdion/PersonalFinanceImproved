@@ -107,7 +107,7 @@ interface DistributeContributionsResult {
  * Distribute slot-level contributions to individual accounts using spec weights.
  * Also handles employer match, overflow, intentional tracking, and ramp distribution.
  *
- * Mutates `indBal` in place.
+ * Mutates `indBalance` in place.
  */
 export function distributeContributions(
   input: DistributeContributionsInput,

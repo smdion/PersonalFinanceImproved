@@ -68,7 +68,7 @@ interface GrowthInput {
 /**
  * Apply investment growth to all balance structures.
  *
- * Mutates `balances` and `acctBal` in place. Basis is NOT grown —
+ * Mutates `balances` and `accountBalance` in place. Basis is NOT grown —
  * only market value grows.
  */
 export function applyGrowth(input: GrowthInput): void {
