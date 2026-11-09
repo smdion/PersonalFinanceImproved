@@ -912,8 +912,8 @@ after a squash drops it from the journal). `db-migrate.ts` imports the converter
 `src/` nor the Next build): **one copy** serves both paths, as the
 reference-data reconcile, the demo-schema stamp and the versioned table list
 already do. Converters work
-on snake_case rows (JSON as object or text), are idempotent (a no-op once
-their source is gone) and write only non-default values; the restore path
+on snake_case rows (JSON as object or text), are idempotent (below: "What a
+converter may decide by") and write only non-default values; the restore path
 also drops the columns the migration drops. A migration that only renames
 or removes a JSON key, moving the value unchanged (no arithmetic, no lookup
 across rows; migration 0014), may instead be one SQL file per dialect plus a
@@ -941,7 +941,9 @@ is past it); any other error stops the replay.
 **What a converter may decide by.** A converter reruns on every squash
 replay and every restore, with no signal of what it is past, so each one is
 idempotent by construction, and its test must prove it: run twice over
-its own output, it writes nothing and every row stays byte-identical.
+its own output, it writes nothing and every row stays byte-identical
+(`tests/db/converter-replay.ts` does this on each path: a backup's tables,
+SQLite and PostgreSQL).
 
 - **Allowed:** a gate on structure (a column or key that is empty or
   absent, a missing row, a JSON shape such as the encryption envelope) or
@@ -958,6 +960,13 @@ its own output, it writes nothing and every row stays byte-identical.
   code, so it reads only its tables and its own constants (no live schema,
   config or key list), and it deletes or strips by an explicit retired
   list, never by "not in today's set".
+- **Several shapes, one tag:** a tag registers one converter or a list
+  that runs in order, each over a fresh read of its tables, so the second
+  sees what the first wrote. A converter returns row updates, inserts
+  (the database numbers the row; a restore gives it the table's next id)
+  and deletes, all by `id`; they apply as deletes, then updates, then
+  inserts, and each must change exactly one row or the migration stops.
+  The tag logs one line per phase with the counts.
 - **A new migration never recreates a SQLite table** (0005 and 0015 do,
   and replay handles those as above); a shape that seems to need one stops
   for an owner decision.
