@@ -353,7 +353,7 @@
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 41,
     "src/server/data/snapshots.ts": 107,
-    "src/server/routers/assets.ts": 454,
+    "src/server/routers/assets.ts": 438,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 787,
     "src/server/routers/demo.ts": 83,

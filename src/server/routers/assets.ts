@@ -1,11 +1,12 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
 import { loansFedBySimplefin } from "@/server/services/sync/loan-feed";
 import { calendarYear } from "@/lib/utils/date";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { upsertHistoricalNote } from "@/server/data/historical-notes";
 import { loadYearAssets } from "@/server/services/net-worth/year-assets";
 import {
   computeMortgageBalance,
@@ -431,24 +432,7 @@ export const assetsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.note.trim() === "") {
-        await ctx.db
-          .delete(schema.historicalNotes)
-          .where(
-            and(
-              eq(schema.historicalNotes.year, input.year),
-              eq(schema.historicalNotes.field, input.field),
-            ),
-          );
-      } else {
-        await ctx.db
-          .insert(schema.historicalNotes)
-          .values({ year: input.year, field: input.field, note: input.note })
-          .onConflictDoUpdate({
-            target: [schema.historicalNotes.year, schema.historicalNotes.field],
-            set: { note: input.note },
-          });
-      }
+      await upsertHistoricalNote(ctx.db, input);
       return { ok: true };
     }),
 });
