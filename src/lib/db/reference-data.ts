@@ -1,20 +1,7 @@
 /**
- * Reference data (contribution limits, tax brackets, LTCG / IRMAA brackets,
- * poverty lines, tax-data revisions) comes from the tax-data file,
- * `tax-data/us-federal/` — one source, reviewed in the public repo. The
- * migrator applies it on every start (db-migrate.ts); the rules for what it
- * may change are in reference-reconcile-core.ts.
- *
- * Paths that rewrite those tables in a running app — a version restore, a
- * backup import, "Reset all data" — re-apply it here, so the tables never
- * sit older (or empty) until the next restart. A community update an admin
- * approved (tax_data_updates) is applied after the shipped file whenever
- * it's newer, so it stands in for the shipped data from then on. Demo
- * schemas are built from the files too, never from the household's rows.
- *
- * The Simulation presets (`reference-data/simulation-presets.json`) are
- * seeded the same way, only into a database whose preset tables are all
- * empty; existing preset rows are never changed.
+ * Applies the tax-data file (`tax-data/us-federal/`), then a newer admin-approved community
+ * update, on start (db-migrate.ts) and after a restore, import or reset; the rules are in
+ * reference-reconcile-core.ts. Simulation presets are seeded only into empty preset tables.
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -191,10 +178,8 @@ export async function approvedCommunityFile(
   return pickApprovedCommunityFile(rows, shippedVersion);
 }
 
-/** Apply the tax data to `db` (throws on failure), in one transaction:
- *  the shipped file, then a newer approved community update; then, in a
- *  transaction of its own, the presets when the preset tables are empty.
- *  A demo schema finds the install's updates through its search_path. */
+/** Apply the tax data in one transaction (shipped file, then a newer approved community
+ *  update), then the presets in their own when empty. Throws on failure. */
 export async function applyReferenceData(db: RawDb): Promise<void> {
   const file = readTaxDataFile();
   const community = await approvedCommunityFile(db, file.dataVersion);
@@ -233,11 +218,8 @@ export async function previewCommunityTaxData(
   ).changes;
 }
 
-/** Re-apply the tax data — run after anything that replaced or emptied
- *  the reference tables. Never throws: it runs after that change has
- *  committed, so a failure here is logged (the next start's migrate
- *  reconciles anyway) rather than reported as the restore failing. Returns
- *  whether it applied. */
+/** Re-apply the tax data after anything replaces or empties the reference tables; returns
+ *  whether it applied. Never throws: that change already committed, so a failure is logged. */
 export async function reconcileReferenceData(db: RawDb): Promise<boolean> {
   try {
     await applyReferenceData(db);

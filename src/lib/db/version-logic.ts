@@ -1,14 +1,7 @@
 /**
- * Core version logic: create, restore, export, import.
- *
- * All operations use transactions for consistency.
- * PG restore uses a dedicated client connection for SERIALIZABLE isolation.
- * SQLite restore relies on single-writer semantics (WAL mode).
- *
- * IMPORTANT: All state versions live in the same database. Database-level
- * corruption (disk failure, unrecoverable WAL) would lose both live data and all
- * versions. For disaster recovery, pair this with external backups (pg_dump cron,
- * WAL archiving, volume-level snapshots, or SQLite file copies).
+ * Version create, restore, export and import, each in a transaction (PG restore: SERIALIZABLE
+ * on its own client; SQLite: single writer). Versions share the live database, so they are no
+ * substitute for external backups.
  */
 
 import { readFileSync } from "fs";
@@ -38,14 +31,8 @@ import { log } from "@/lib/logger";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
 import { writeStamp } from "@/lib/utils/clock";
 
-/**
- * Column list for an INSERT built from a row set — the UNION of every
- * row's keys, not just `rows[0]`. A cross-version backup transform can
- * append a row with a different key set (e.g. the active-profile pointer
- * added to `app_settings`); keying off `rows[0]` alone would then either
- * drop that row's extra columns or NULL-fill a NOT NULL column on the
- * other rows and abort the whole restore.
- */
+/** An INSERT's columns: the union of every row's keys, since a backup transform can append a
+ *  row with other keys (rows[0] alone would drop columns or NULL a NOT NULL one). */
 function unionColumns(rows: Record<string, unknown>[]): string[] {
   const seen = new Set<string>();
   for (const row of rows) {
@@ -343,10 +330,7 @@ export type BackupData = {
   schemaVersion: string;
   exportedAt: string;
   tables: Record<string, unknown[]>;
-  // The dialect the export ran against. Absent on backups made before this
-  // field existed — those are always treated as "postgres" on import (see
-  // importBackupPg), matching what every backup taken in practice actually
-  // was and what the code did before dialect-aware jsonb encoding existed.
+  // The dialect the export ran against; absent is treated as "postgres" on import.
   sourceDialect?: "postgres" | "sqlite";
 };
 
@@ -380,7 +364,7 @@ export async function importBackup(
   backup: BackupData,
   by: { asAdmin: boolean },
 ) {
-  // Transform backup to current schema if needed (supports v0.1.x → v0.2.0+)
+  // Transform the backup to the current schema if needed.
   const { tables: transformedTables, transformed } =
     transformBackupToCurrentSchema(
       backup.tables,

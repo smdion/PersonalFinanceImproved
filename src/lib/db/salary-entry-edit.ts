@@ -1,12 +1,7 @@
 /**
- * One field edit from a salary editor (Paycheck page, Profiles → Salary) →
- * the Salary Profile entry fields it sets. The one save path for both
- * editors: each sends the result to salaryProfile.patchEntry.
- *
- * Fields arrive as strings from the shared sections (BonusTerms,
- * PayScheduleSection, TaxWithholdingSection, OtherPaySection, …). Each
- * value is checked against salaryEntrySchema's own field — the editors
- * and the server accept exactly the same values.
+ * Maps one salary-editor field edit (Paycheck page, Profiles → Salary; string values) to the
+ * Salary Profile entry fields it sets, each checked against salaryEntrySchema's own field.
+ * Both editors send the result to salaryProfile.patchEntry.
  */
 import { salaryEntrySchema } from "@/lib/db/json-schemas";
 import { isMonthDay } from "@/lib/utils/date";
@@ -47,13 +42,8 @@ function checked(field: EntryField, value: unknown): SalaryEntryFields | null {
 }
 
 /**
- * - `undefined`: not a Salary Profile field (e.g. employer name — a job
- *   column, household setup).
- * - `null`: a Salary Profile field, but the value isn't valid — save nothing.
- * - otherwise the fields to patch.
- *
- * `otherEarnings` is the job's current other-pay amounts, so editing one
- * line keeps the rest.
+ * `undefined`: not a Salary Profile field; `null`: invalid value, save nothing; otherwise the
+ * fields to patch. `otherEarnings` (the job's other-pay amounts) keeps the lines not edited.
  */
 export function salaryEntryEdit(
   field: string,

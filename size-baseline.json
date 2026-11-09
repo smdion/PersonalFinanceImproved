@@ -229,8 +229,8 @@
     "src/lib/db/json-schemas.ts": 376,
     "src/lib/db/pg/api-sync.ts": 550,
     "src/lib/db/pg/retirement.ts": 497,
-    "src/lib/db/reference-reconcile-core.ts": 797,
-    "src/lib/db/version-logic.ts": 573,
+    "src/lib/db/reference-reconcile-core.ts": 752,
+    "src/lib/db/version-logic.ts": 557,
     "src/lib/demo/profiles/debt-payoff.ts": 446,
     "src/lib/demo/profiles/dual-income-family.ts": 866,
     "src/lib/demo/profiles/early-retirement.ts": 666,
@@ -911,7 +911,7 @@
       "transformV07xToCurrent": 185
     },
     "src/lib/db/reference-reconcile-core.ts": {
-      "reconcileSteps": 167
+      "reconcileSteps": 165
     },
     "src/lib/db/v0810-profile-sets.ts": {
       "convertV0810ProfileSets": 260

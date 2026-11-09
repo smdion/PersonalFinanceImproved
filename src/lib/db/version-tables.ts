@@ -1,10 +1,6 @@
 /**
- * Registry of all tables included in state versions, ordered by FK dependency tier.
- *
- * Insert order: tier 0 → 1 → 2 → 3 (parent tables first).
- * Truncate: all tables in a single TRUNCATE ... CASCADE statement.
- *
- * Adding a new table = one entry here. Zero logic changes.
+ * All tables in state versions, by FK tier: inserted tier 0 → 3 (parents first), truncated in
+ * one TRUNCATE ... CASCADE. A new table needs only an entry here.
  */
 
 type VersionTableEntry = {
@@ -35,12 +31,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "api_connections", tier: 0, scope: "installation" },
   { name: "app_settings", tier: 0, scope: "household" },
   { name: "local_admins", tier: 0, scope: "logins" },
-  // These three must stay ahead of "scenarios" — scenarios.salary_profile_id,
-  // .contribution_profile_id and .retirement_profile_id FK into them, and the
-  // tier sort is stable, so array order decides insert order within tier 0.
-  // The restore path in version-logic.ts does NOT disable FK checks (unlike
-  // the session_replication_role import path), so getting this wrong fails
-  // the restore outright.
+  // These three stay ahead of "scenarios", which FKs into them: the tier sort is stable, so
+  // array order is insert order within a tier, and restore keeps FK checks on.
   { name: "salary_profiles", tier: 0, scope: "household" },
   { name: "contribution_profiles", tier: 0, scope: "household" },
   { name: "retirement_profiles", tier: 0, scope: "household" },
@@ -102,7 +94,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "holding_periods", tier: 2, scope: "household" }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2
-  // SimpleFIN history (v0.8.5) — can't be re-fetched after 90 days, so versioned + backed up.
+  // SimpleFIN history can't be re-fetched after 90 days, so it's versioned and backed up.
   { name: "simplefin_account_balances", tier: 3, scope: "household" }, // FK into simplefin_accounts (tier 2)
   { name: "holding_observations", tier: 3, scope: "household" }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)
   { name: "investment_transactions", tier: 3, scope: "household" }, // FK into simplefin_accounts (tier 2)

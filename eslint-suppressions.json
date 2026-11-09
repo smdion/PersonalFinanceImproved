@@ -4468,17 +4468,9 @@
       "count": 2
     }
   },
-  "src/lib/db/pg/tax-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
   "src/lib/db/reference-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 6
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     },
     "ratchet/no-unregistered-fallback": {
       "count": 2
@@ -4491,9 +4483,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
@@ -4501,41 +4490,17 @@
       "count": 1
     }
   },
-  "src/lib/db/salary-entry-defaults.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/db/salary-entry-edit.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/schema-pg.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/db/schema-sqlite.ts": {
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
   "src/lib/db/schema.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/lib/db/serial-client.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -4544,16 +4509,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/lib/db/sqlite/tax-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
     }
   },
   "src/lib/db/v0810-profile-sets.ts": {
@@ -4561,12 +4518,6 @@
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
@@ -4577,21 +4528,7 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/db/version-tables.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
