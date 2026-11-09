@@ -65,12 +65,12 @@
     "src/components/budget/salary-profile-manager.tsx": 170,
     "src/components/budget/savings-allocation-panel.tsx": 524,
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 154,
-    "src/components/contributions/profile-manager/inline-account-cells.tsx": 232,
+    "src/components/contributions/profile-manager/inline-account-cells.tsx": 229,
     "src/components/contributions/profile-manager/inline-deduction-cells.tsx": 171,
-    "src/components/contributions/profile-manager/inline-match-cells.tsx": 153,
+    "src/components/contributions/profile-manager/inline-match-cells.tsx": 150,
     "src/components/contributions/profile-manager/inline-sections.tsx": 293,
     "src/components/contributions/profile-manager/match-groups.ts": 51,
-    "src/components/contributions/profile-manager/new-profile-cells.tsx": 306,
+    "src/components/contributions/profile-manager/new-profile-cells.tsx": 299,
     "src/components/contributions/profile-manager/new-profile-sections.tsx": 238,
     "src/components/contributions/profile-manager/profile-detail-panel.tsx": 125,
     "src/components/contributions/profile-manager/profile-detail-rows.tsx": 60,
@@ -114,8 +114,8 @@
     "src/components/onboarding/wizard-navigation.ts": 120,
     "src/components/onboarding/wizard-saves.ts": 153,
     "src/components/onboarding/wizard-state.ts": 32,
-    "src/components/paycheck/contrib-account-form.tsx": 624,
-    "src/components/paycheck/contrib-card.tsx": 542,
+    "src/components/paycheck/contrib-account-form.tsx": 613,
+    "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
     "src/components/paycheck/person-paycheck.tsx": 453,
@@ -123,7 +123,7 @@
     "src/components/performance/year-row.tsx": 765,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 665,
-    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 662,
+    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 655,
     "src/components/portfolio/contribution-accounts.tsx": 415,
     "src/components/portfolio/new-snapshot-form.tsx": 713,
     "src/components/portfolio/portfolio-chart.tsx": 460,
@@ -621,10 +621,10 @@
       "SpreadsheetYearOverYearTable.map()": 188
     },
     "src/components/paycheck/contrib-account-form.tsx": {
-      "ContribAccountForm": 516
+      "ContribAccountForm": 504
     },
     "src/components/paycheck/contrib-card.tsx": {
-      "ContribCard": 506,
+      "ContribCard": 500,
       "ContribCard.iife()": 182
     },
     "src/components/paycheck/contribution-snapshot.tsx": {
@@ -681,7 +681,7 @@
       "AccountCard": 616
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
-      "AddContribForm": 196,
+      "AddContribForm": 188,
       "ContributionRow": 429
     },
     "src/components/portfolio/contribution-accounts-create-form.tsx": {

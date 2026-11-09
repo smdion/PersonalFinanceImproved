@@ -10,6 +10,7 @@ import type {
   MatchDraft,
 } from "./account-row-types";
 import type { AccountFieldKey } from "./account-fields";
+import { LabelOptions } from "@/components/ui/label-options";
 
 /** One account row's values and setters, as each create-form cell reads them. */
 export type NewProfileRowProps = {
@@ -131,11 +132,7 @@ function NewProfileMethodCell({
           }
           className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
         >
-          {Object.entries(CONTRIBUTION_METHOD_LABELS).map(([k, label]) => (
-            <option key={k} value={k}>
-              {label}
-            </option>
-          ))}
+          <LabelOptions labels={CONTRIBUTION_METHOD_LABELS} />
         </select>
       )}
     </td>
@@ -202,11 +199,7 @@ function NewProfileMatchTypeCell({
         }
         className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
       >
-        {Object.entries(EMPLOYER_MATCH_LABELS).map(([k, label]) => (
-          <option key={k} value={k}>
-            {label}
-          </option>
-        ))}
+        <LabelOptions labels={EMPLOYER_MATCH_LABELS} />
       </select>
     </td>
   );

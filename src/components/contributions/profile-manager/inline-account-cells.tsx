@@ -4,6 +4,7 @@ import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
 import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
 import type { InlineRowProps } from "./account-row-types";
+import { LabelOptions } from "@/components/ui/label-options";
 
 export function InlineEnabledCell({
   isDisabled,
@@ -158,11 +159,7 @@ export function InlineMethodCell({
         }}
         className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
       >
-        {Object.entries(CONTRIBUTION_METHOD_LABELS).map(([k, label]) => (
-          <option key={k} value={k}>
-            {label}
-          </option>
-        ))}
+        <LabelOptions labels={CONTRIBUTION_METHOD_LABELS} />
       </select>
     </td>
   );

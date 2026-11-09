@@ -10,6 +10,7 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { LabelOptions } from "@/components/ui/label-options";
 import { Toggle } from "@/components/ui/toggle";
 import {
   formatCurrency,
@@ -30,6 +31,8 @@ import {
 } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,
+  CONTRIBUTION_METHOD_LABELS_SHORT,
+  EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -163,10 +166,7 @@ export function ContribCard({
             }}
             title="Change contribution method"
           >
-            <option value="percent_of_salary">% of salary</option>
-            <option value="fixed_per_period">$/period</option>
-            <option value="fixed_monthly">$/month</option>
-            <option value="fixed_annual">$/year</option>
+            <LabelOptions labels={CONTRIBUTION_METHOD_LABELS_SHORT} />
           </select>
         </div>
       </div>
@@ -290,10 +290,7 @@ export function ContribCard({
             }
             className="text-caption text-faint hover:text-secondary ml-1 cursor-pointer border-none bg-transparent focus:outline-none"
           >
-            <option value="none">No match</option>
-            <option value="percent_of_contribution">% of contribution</option>
-            <option value="dollar_match">$ match</option>
-            <option value="fixed_annual">Fixed annual</option>
+            <LabelOptions labels={EMPLOYER_MATCH_LABELS} />
           </select>
         </div>
       )}

@@ -70,10 +70,10 @@ export const TAX_TYPE_LABELS: Record<string, string> = {
 };
 
 export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
-  none: "None",
-  percent_of_contribution: "% of Contrib",
-  dollar_match: "$ Match",
-  fixed_annual: "Fixed/Year",
+  none: "No match",
+  percent_of_contribution: "% of contribution",
+  dollar_match: "$ match",
+  fixed_annual: "Fixed annual",
 };
 
 /** Unit glyph for a match type's value field — null for "none" (no value

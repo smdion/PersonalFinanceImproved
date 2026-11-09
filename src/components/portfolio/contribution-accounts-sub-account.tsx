@@ -6,6 +6,7 @@ import React, { useId, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
+import { LabelOptions } from "@/components/ui/label-options";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import type { PortfolioSub } from "./contribution-accounts-types";
 
@@ -121,11 +122,7 @@ export function SubAccountRow({
             className={`text-caption text-faint border-none bg-transparent p-0 focus:ring-0${onUpdate ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}
             title="Tax type"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+            <LabelOptions labels={TAX_TYPE_LABELS} />
           </select>
         </div>
         {onUpdate && (
@@ -238,11 +235,7 @@ export function AddSubAccountForm({
             onChange={(e) => setTaxType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+            <LabelOptions labels={TAX_TYPE_LABELS} />
           </select>
         </div>
         <div>

@@ -45,6 +45,7 @@ import {
   rowMatchValue,
   withMatchClear,
 } from "@/lib/pure/contributions/match-display";
+import { LabelOptions } from "@/components/ui/label-options";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -393,11 +394,7 @@ export function ContribAccountForm({
               set("employerMatchType", e.target.value as EmployerMatchType)
             }
           >
-            {Object.entries(MATCH_LABELS).map(([k, label]) => (
-              <option key={k} value={k}>
-                {label}
-              </option>
-            ))}
+            <LabelOptions labels={MATCH_LABELS} />
           </FormSelect>
         </FormField>
 
@@ -455,11 +452,7 @@ export function ContribAccountForm({
                   )
                 }
               >
-                {Object.entries(MATCH_TAX_LABELS).map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
-                  </option>
-                ))}
+                <LabelOptions labels={MATCH_TAX_LABELS} />
               </FormSelect>
             </FormField>
           </>
@@ -477,11 +470,7 @@ export function ContribAccountForm({
               }
             >
               <option value="">—</option>
-              {Object.entries(HSA_COVERAGE_LABELS).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
-                </option>
-              ))}
+              <LabelOptions labels={HSA_COVERAGE_LABELS} />
             </FormSelect>
           </FormField>
         )}

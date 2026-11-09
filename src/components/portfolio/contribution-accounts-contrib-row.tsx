@@ -33,6 +33,7 @@ import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
+import { LabelOptions } from "@/components/ui/label-options";
 
 export function ContributionRow({
   contrib: c,
@@ -571,11 +572,7 @@ export function AddContribForm({
             onChange={(e) => setTaxTreatment(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            {Object.entries(TAX_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
+            <LabelOptions labels={TAX_LABELS} />
           </select>
         </div>
         <div>
@@ -591,11 +588,7 @@ export function AddContribForm({
             onChange={(e) => setMatchType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            {Object.entries(MATCH_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
+            <LabelOptions labels={MATCH_LABELS} />
           </select>
         </div>
         {matchType !== "none" && (

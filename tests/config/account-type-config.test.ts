@@ -503,9 +503,9 @@ describe("display labels", () => {
   });
 
   it("EMPLOYER_MATCH_LABELS covers all match types", () => {
-    expect(EMPLOYER_MATCH_LABELS["none"]).toBe("None");
+    expect(EMPLOYER_MATCH_LABELS["none"]).toBe("No match");
     expect(EMPLOYER_MATCH_LABELS["percent_of_contribution"]).toBe(
-      "% of Contrib",
+      "% of contribution",
     );
   });
 
