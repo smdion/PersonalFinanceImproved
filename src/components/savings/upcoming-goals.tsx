@@ -52,9 +52,9 @@ export function UpcomingGoals({
 
   // Build one card per fund — only funds with an upcoming expense are shown
   const cards = goalProjections
-    .map((gp, gpIdx) => {
+    .map((gp, gpIndex) => {
       const sg = savingsGoals.find((g) => g.goalId === gp.goalId);
-      const color = FUND_COLORS[gpIdx % FUND_COLORS.length]!;
+      const color = FUND_COLORS[gpIndex % FUND_COLORS.length]!;
 
       // Only consider withdrawals (expenses), skip deposits and transfers
       const nextExpense =

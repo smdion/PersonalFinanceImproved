@@ -144,10 +144,10 @@ export function AccountCard({
   >(insight && insight.status !== "none" ? "live" : "settings");
 
   // Account type from the master record (no resolution needed)
-  const acctType = pa.accountType as AccountCategory | null;
-  const cfg = acctType ? getAccountTypeConfig(acctType) : null;
-  const borderColor = acctType ? accountBorderColor(acctType) : "";
-  const bgLight = acctType ? accountMatchColor(acctType) : "";
+  const accountType = pa.accountType as AccountCategory | null;
+  const cfg = accountType ? getAccountTypeConfig(accountType) : null;
+  const borderColor = accountType ? accountBorderColor(accountType) : "";
+  const bgLight = accountType ? accountMatchColor(accountType) : "";
 
   const activeContribs = contributions.filter((c) => c.isActive);
   const inactiveContribs = contributions.filter((c) => !c.isActive);
@@ -177,7 +177,7 @@ export function AccountCard({
       >
         {/* Color indicator */}
         <div
-          className={`h-8 w-1.5 rounded-full ${acctType ? accountColor(acctType) : "bg-surface-strong"} flex-shrink-0`}
+          className={`h-8 w-1.5 rounded-full ${accountType ? accountColor(accountType) : "bg-surface-strong"} flex-shrink-0`}
         />
         {/* Name */}
         <div className="min-w-0 flex-1">

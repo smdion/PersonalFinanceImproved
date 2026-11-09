@@ -33,7 +33,7 @@ type BudgetCategoryRowProps = {
   categoryNames: string[];
   addingItemToCategory: string | null;
   onSetAddingItemToCategory: (category: string | null) => void;
-  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  matchContrib: (subcategory: string, colIndex?: number) => number | null;
   activeColumn: number;
   canEdit?: boolean;
   apiActualsMap?: Map<
@@ -191,11 +191,11 @@ export function BudgetCategoryRow({
           />
         )}
       {/* Item rows */}
-      {items.map((item, idx) => (
+      {items.map((item, index) => (
         <BudgetItemRow
           key={item.id}
           item={item}
-          index={idx}
+          index={index}
           itemsInCategory={items.length}
           numCols={numCols}
           editMode={editMode}

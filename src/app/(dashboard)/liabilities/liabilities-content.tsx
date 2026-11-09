@@ -161,13 +161,13 @@ export function LiabilitiesContent() {
         <>
           {/* Active loan cards */}
           <FocusTarget topic="mortgage" className="space-y-6">
-            {result.loans.map((loan, idx) => (
+            {result.loans.map((loan, index) => (
               <ActiveLoanCard
                 key={loan.name}
                 loan={loan}
-                showSchedule={showSchedule === idx}
+                showSchedule={showSchedule === index}
                 onToggleSchedule={() =>
-                  setShowSchedule(showSchedule === idx ? null : idx)
+                  setShowSchedule(showSchedule === index ? null : index)
                 }
               />
             ))}

@@ -750,7 +750,7 @@ function GroupRows({
         items
           .sort((a, b) => b.actual - a.actual)
           .map((item) => {
-            const itemPct =
+            const itemPercent =
               item.budgeted > 0
                 ? item.actual / item.budgeted
                 : item.actual > 0
@@ -790,7 +790,7 @@ function GroupRows({
                 <td className="px-3 py-1 text-right">
                   {item.budgeted > 0 ? (
                     <ProgressBar
-                      value={itemPct}
+                      value={itemPercent}
                       variant="success"
                       ariaLabel="Of budget"
                       allowOver

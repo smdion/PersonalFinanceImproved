@@ -10,7 +10,7 @@ export type AccountDetail = ProfileDetail["accountDetails"][number];
 export type MatchDraft = {
   matchType?: string;
   matchValue?: string;
-  maxMatchPct?: string;
+  maxMatchPercent?: string;
 };
 export type ContribDraft = { method?: string; value?: string };
 

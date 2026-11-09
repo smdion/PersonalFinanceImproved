@@ -146,9 +146,9 @@ export function PerPhaseBudgetSection({
                     disabled={!isEditable || budgetNotUsed}
                     onChange={(e) => setDecBudgetCol(Number(e.target.value))}
                   >
-                    {decLabels.map((label: string, idx: number) => (
-                      <option key={label} value={idx}>
-                        {label} ({formatCurrency((decTotals[idx] ?? 0) * 12)}
+                    {decLabels.map((label: string, index: number) => (
+                      <option key={label} value={index}>
+                        {label} ({formatCurrency((decTotals[index] ?? 0) * 12)}
                         /yr)
                       </option>
                     ))}

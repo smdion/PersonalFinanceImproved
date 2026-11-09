@@ -86,14 +86,14 @@ export function ContributionRow({
   const effectiveMatchValue =
     activeMatchFields?.employerMatchValue ?? c.employerMatchValue;
   const effectiveMatchRate = mergedMatchRate(c, activeMatchFields ?? {});
-  const effectiveMaxMatchPct =
+  const effectiveMaxMatchPercent =
     activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
   const isPercentMatch = effectiveMatchType === "percent_of_contribution";
 
   const matchText = formatEmployerMatch(
     effectiveMatchType,
     effectiveMatchValue,
-    effectiveMaxMatchPct,
+    effectiveMaxMatchPercent,
     effectiveMatchRate,
   );
   const sharedMatchText = sharedMatchFrom
@@ -326,8 +326,10 @@ export function ContributionRow({
                   <InlineText
                     label="Match Cap %"
                     value={
-                      effectiveMaxMatchPct
-                        ? String(parseFloat(String(effectiveMaxMatchPct)) * 100)
+                      effectiveMaxMatchPercent
+                        ? String(
+                            parseFloat(String(effectiveMaxMatchPercent)) * 100,
+                          )
                         : ""
                     }
                     placeholder="e.g. 7"
@@ -492,7 +494,7 @@ export function AddContribForm({
   );
   const [matchType, setMatchType] = useState("none");
   const [matchValue, setMatchValue] = useState("");
-  const [maxMatchPct, setMaxMatchPct] = useState("");
+  const [maxMatchPercent, setMaxMatchPercent] = useState("");
   const id = useId();
 
   const handleSubmit = () => {
@@ -507,8 +509,8 @@ export function AddContribForm({
       ...(matchType !== "none" && matchValue
         ? { employerMatchValue: matchValueToStore(matchType, matchValue) }
         : {}),
-      ...(matchType === "percent_of_contribution" && maxMatchPct
-        ? { employerMaxMatchPct: String(parseFloat(maxMatchPct) / 100) }
+      ...(matchType === "percent_of_contribution" && maxMatchPercent
+        ? { employerMaxMatchPct: String(parseFloat(maxMatchPercent) / 100) }
         : {}),
       isActive: true,
     });
@@ -626,8 +628,8 @@ export function AddContribForm({
                 <input
                   id={`${id}-max-match`}
                   type="number"
-                  value={maxMatchPct}
-                  onChange={(e) => setMaxMatchPct(e.target.value)}
+                  value={maxMatchPercent}
+                  onChange={(e) => setMaxMatchPercent(e.target.value)}
                   placeholder="e.g. 7"
                   className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
                 />

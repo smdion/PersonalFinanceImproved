@@ -167,7 +167,7 @@ function ContributionsCardImpl() {
                     ? getAccountTypeConfig(at.categoryKey as AccountCategory)
                         .matchCountsTowardLimit
                     : false;
-                  const matchPctOfLimit =
+                  const matchPercentOfLimit =
                     hasLimit && at.views[viewMode].employerMatch > 0
                       ? at.views[viewMode].employerMatch / at.limit
                       : undefined;
@@ -204,7 +204,7 @@ function ContributionsCardImpl() {
                         <div className="mt-1">
                           <FundingBar
                             pct={at.views[viewMode].fundingPct}
-                            matchPct={matchPctOfLimit}
+                            matchPercent={matchPercentOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
                             limitMarker

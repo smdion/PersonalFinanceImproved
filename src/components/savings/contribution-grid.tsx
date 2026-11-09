@@ -347,15 +347,15 @@ export function ContributionGrid({
             </tr>
           </thead>
           <tbody>
-            {monthDates.map((date, rowIdx) => {
+            {monthDates.map((date, rowIndex) => {
               const mk = monthKey(date);
-              const monthPool = monthlyPools[rowIdx]!;
+              const monthPool = monthlyPools[rowIndex]!;
               const monthTotal = visibleProjections.reduce(
-                (s, gp) => s + (gp.monthlyAllocations[rowIdx] ?? 0),
+                (s, gp) => s + (gp.monthlyAllocations[rowIndex] ?? 0),
                 0,
               );
               const hiddenTotal = hiddenProjections.reduce(
-                (s, gp) => s + (gp.monthlyAllocations[rowIdx] ?? 0),
+                (s, gp) => s + (gp.monthlyAllocations[rowIndex] ?? 0),
                 0,
               );
               const isOverAllocated = Math.abs(monthTotal - monthPool) >= 1;
@@ -396,9 +396,9 @@ export function ContributionGrid({
 
                   {/* Per-fund allocation cells */}
                   {visibleProjections.map((gp) => {
-                    const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
-                    const isOverride = gp.hasOverride[rowIdx];
-                    const balance = gp.balances[rowIdx] ?? 0;
+                    const allocation = gp.monthlyAllocations[rowIndex] ?? 0;
+                    const isOverride = gp.hasOverride[rowIndex];
+                    const balance = gp.balances[rowIndex] ?? 0;
                     const isNegative = balance < 0;
 
                     return (

@@ -123,7 +123,7 @@ export function ProfileEditPanel({
           <table className="w-full border-collapse text-xs">
             <SalaryTableHead />
             <tbody>
-              {details.map((rawSd, rowIdx) => {
+              {details.map((rawSd, rowIndex) => {
                 // Job picker lets a row target a DIFFERENT job than the one
                 // the server picked by default (whichever job has an entry,
                 // else the active one) — e.g. setting terms for a job that
@@ -149,7 +149,7 @@ export function ProfileEditPanel({
                       isSaving={isSaving}
                       rawSd={rawSd}
                       removeEntry={removeEntry}
-                      rowIdx={rowIdx}
+                      rowIndex={rowIndex}
                       sd={sd}
                       setDraft={setDraft}
                       setJobOverride={setJobOverride}

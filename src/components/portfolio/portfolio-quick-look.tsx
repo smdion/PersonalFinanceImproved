@@ -32,16 +32,22 @@ export function PortfolioQuickLook({
     isDollar
       ? `${sign(percent)}${formatPercent(percent / 100, 1)}`
       : `${sign(dollars)}${formatCurrency(dollars)}`;
-  const biggestGain = isDollar ? stats.biggestGainDollar : stats.biggestGainPct;
-  const biggestLoss = isDollar ? stats.biggestLossDollar : stats.biggestLossPct;
+  const biggestGain = isDollar
+    ? stats.biggestGainDollar
+    : stats.biggestGainPercent;
+  const biggestLoss = isDollar
+    ? stats.biggestLossDollar
+    : stats.biggestLossPercent;
   const sharpestGain = isDollar
     ? stats.sharpestGainDollar
-    : stats.sharpestGainPct;
+    : stats.sharpestGainPercent;
   const sharpestLoss = isDollar
     ? stats.sharpestLossDollar
-    : stats.sharpestLossPct;
-  const bestMonth = isDollar ? stats.bestMonthDollar : stats.bestMonthPct;
-  const worstMonth = isDollar ? stats.worstMonthDollar : stats.worstMonthPct;
+    : stats.sharpestLossPercent;
+  const bestMonth = isDollar ? stats.bestMonthDollar : stats.bestMonthPercent;
+  const worstMonth = isDollar
+    ? stats.worstMonthDollar
+    : stats.worstMonthPercent;
   const fmtMonth = (ym: string) => {
     const [y, m] = ym.split("-");
     const months = [
@@ -107,21 +113,21 @@ export function PortfolioQuickLook({
               >
                 {stats.isAtAth
                   ? "At all-time high"
-                  : fmtPrimary(stats.athDistance, stats.athDistancePct)}
+                  : fmtPrimary(stats.athDistance, stats.athDistancePercent)}
               </div>
               {!stats.isAtAth && (
                 <div className="text-faint text-xs">
-                  {fmtSecondary(stats.athDistance, stats.athDistancePct)}
+                  {fmtSecondary(stats.athDistance, stats.athDistancePercent)}
                 </div>
               )}
             </div>
             <div>
               <div className="text-muted text-xs">YTD Change</div>
               <div className={`font-medium ${clr(stats.ytdDelta)}`}>
-                {fmtPrimary(stats.ytdDelta, stats.ytdPct)}
+                {fmtPrimary(stats.ytdDelta, stats.ytdPercent)}
               </div>
               <div className="text-faint text-xs">
-                {fmtSecondary(stats.ytdDelta, stats.ytdPct)}
+                {fmtSecondary(stats.ytdDelta, stats.ytdPercent)}
               </div>
             </div>
             <div>
@@ -129,10 +135,13 @@ export function PortfolioQuickLook({
               {stats.weekChange52 != null ? (
                 <>
                   <div className={`font-medium ${clr(stats.weekChange52)}`}>
-                    {fmtPrimary(stats.weekChange52, stats.weekChange52Pct!)}
+                    {fmtPrimary(stats.weekChange52, stats.weekChange52Percent!)}
                   </div>
                   <div className="text-faint text-xs">
-                    {fmtSecondary(stats.weekChange52, stats.weekChange52Pct!)}
+                    {fmtSecondary(
+                      stats.weekChange52,
+                      stats.weekChange52Percent!,
+                    )}
                   </div>
                 </>
               ) : (
@@ -233,10 +242,10 @@ export function PortfolioQuickLook({
             <div>
               <div className="text-muted text-xs">Avg Change</div>
               <div className={`font-medium ${clr(stats.avgDelta)}`}>
-                {fmtPrimary(stats.avgDelta, stats.avgDeltaPct)}
+                {fmtPrimary(stats.avgDelta, stats.avgDeltaPercent)}
               </div>
               <div className="text-faint text-xs">
-                {fmtSecondary(stats.avgDelta, stats.avgDeltaPct)}
+                {fmtSecondary(stats.avgDelta, stats.avgDeltaPercent)}
               </div>
             </div>
             <div>
@@ -282,7 +291,7 @@ export function PortfolioQuickLook({
             <div>
               <div className="text-muted text-xs">All-Time Growth</div>
               <div className={`font-medium ${clr(stats.allTimeGrowth)}`}>
-                {fmtPrimary(stats.allTimeGrowth, stats.allTimeGrowthPct)}
+                {fmtPrimary(stats.allTimeGrowth, stats.allTimeGrowthPercent)}
               </div>
               <div className="text-faint text-xs">
                 Since {formatDate(stats.firstDate, "medium")} (

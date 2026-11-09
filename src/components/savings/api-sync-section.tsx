@@ -469,17 +469,17 @@ export function useApiSync() {
       for (const g of rawGoals) {
         if (!g.isActive || g.allocationPercent == null) continue;
         if (goalId !== undefined && g.id !== goalId) continue;
-        const currentPct = parseFloat(g.allocationPercent);
+        const currentPercent = parseFloat(g.allocationPercent);
         const stored = parseFloat(g.monthlyContribution ?? "0") || 0;
-        const newPct =
+        const newPercent =
           maxMonthlyFunding != null && maxMonthlyFunding > 0
             ? (stored / maxMonthlyFunding) * 100
-            : currentPct;
+            : currentPercent;
         items.push({
           name: g.name,
           field: "Allocation %",
-          currentYnab: currentPct,
-          newValue: newPct,
+          currentYnab: currentPercent,
+          newValue: newPercent,
         });
       }
       setPendingLockInGoalId(goalId);

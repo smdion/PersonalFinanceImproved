@@ -86,8 +86,8 @@ export function SpreadsheetNetWorthLocation({
               const valB = row.accessor(yearB);
               // Skip rows where both years have zero
               if (valA === 0 && valB === 0) return null;
-              const pctA = safeDivide(valA, grossAssetsA, 0);
-              const pctB = safeDivide(valB, grossAssetsB, 0);
+              const percentA = safeDivide(valA, grossAssetsA, 0);
+              const percentB = safeDivide(valB, grossAssetsB, 0);
 
               return (
                 <tr
@@ -100,12 +100,12 @@ export function SpreadsheetNetWorthLocation({
                   <td className="px-2 py-1.5 text-right">
                     {row.format === "currency"
                       ? formatCurrency(valA)
-                      : formatPercent(pctA)}
+                      : formatPercent(percentA)}
                   </td>
                   <td className="py-1.5 pl-2 text-right">
                     {row.format === "currency"
                       ? formatCurrency(valB)
-                      : formatPercent(pctB)}
+                      : formatPercent(percentB)}
                   </td>
                 </tr>
               );

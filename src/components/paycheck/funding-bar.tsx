@@ -11,20 +11,20 @@ import { fundingBarSummary } from "./funding-bar.summary";
  *  100% line when no match is drawn beyond it (the Dashboard's card). */
 export function FundingBar({
   pct,
-  matchPct,
+  matchPercent,
   matchCountsTowardLimit,
   accountType,
   limitMarker = false,
 }: {
   pct: number;
-  matchPct?: number;
+  matchPercent?: number;
   matchCountsTowardLimit?: boolean;
   accountType?: string;
   limitMarker?: boolean;
 }) {
-  const showMatchBeyond = (matchPct ?? 0) > 0 && !matchCountsTowardLimit;
+  const showMatchBeyond = (matchPercent ?? 0) > 0 && !matchCountsTowardLimit;
   const employeeClamped = Math.min(pct, 1);
-  const totalPct = showMatchBeyond ? pct + (matchPct ?? 0) : pct;
+  const totalPercent = showMatchBeyond ? pct + (matchPercent ?? 0) : pct;
   const typeColor = accountType ? accountColor(accountType) : null;
   const color =
     pct > OVER_LIMIT_THRESHOLD
@@ -78,9 +78,9 @@ export function FundingBar({
   }
 
   // Scale factor: if total > 1 we need to shrink to fit, otherwise use 100%
-  const scale = totalPct > 1 ? 1 / totalPct : 1;
+  const scale = totalPercent > 1 ? 1 / totalPercent : 1;
   const employeeWidth = employeeClamped * scale * 100;
-  const matchWidth = (matchPct ?? 0) * scale * 100;
+  const matchWidth = (matchPercent ?? 0) * scale * 100;
   const limitPosition = 1 * scale * 100; // where 100% IRS limit line falls
 
   return (

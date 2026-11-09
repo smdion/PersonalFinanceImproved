@@ -19,9 +19,9 @@ function monthLabel(d: Date): string {
  */
 function nextWithdrawalBalance(
   gp: GoalProjection,
-  fromIdx: number,
+  fromIndex: number,
 ): number | null {
-  for (let j = fromIdx; j < gp.balances.length; j++) {
+  for (let j = fromIndex; j < gp.balances.length; j++) {
     const hasWithdrawal = (gp.monthEvents[j] ?? []).some((ev) => ev.amount < 0);
     if (hasWithdrawal) return gp.balances[j]!;
   }
@@ -116,8 +116,8 @@ export function SavingsTrajectoryTable({
   const firstFundedIndex: Record<number, number> = {};
   for (const gp of goalProjections) {
     if (gp.targetMode !== "fixed" || gp.target <= 0) continue;
-    const idx = gp.balances.findIndex((b) => b >= gp.target);
-    if (idx !== -1) firstFundedIndex[gp.goalId] = idx;
+    const index = gp.balances.findIndex((b) => b >= gp.target);
+    if (index !== -1) firstFundedIndex[gp.goalId] = index;
   }
 
   const hasAnyFixedTarget = goalProjections.some(
@@ -207,7 +207,7 @@ export function SavingsTrajectoryTable({
                 Month
               </th>
               {visibleProjections.map((gp) => {
-                const colorIdx = goalIdToColorIndex[gp.goalId] ?? 0;
+                const colorIndex = goalIdToColorIndex[gp.goalId] ?? 0;
                 return (
                   <th
                     key={gp.goalId}
@@ -218,7 +218,7 @@ export function SavingsTrajectoryTable({
                         className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{
                           backgroundColor:
-                            FUND_COLORS[colorIdx % FUND_COLORS.length],
+                            FUND_COLORS[colorIndex % FUND_COLORS.length],
                         }}
                       />
                       <span className="text-muted">{gp.name}</span>
@@ -250,8 +250,8 @@ export function SavingsTrajectoryTable({
             {/* ── Historical rows ── */}
             {historicalRows.map(({ key, balMap }) => {
               // Parse key back to a display label
-              const [yr, mo] = key.split("-");
-              const displayDate = new Date(Number(yr), Number(mo) - 1, 1);
+              const [yr, month] = key.split("-");
+              const displayDate = new Date(Number(yr), Number(month) - 1, 1);
               return (
                 <tr
                   key={`hist-${key}`}
@@ -301,29 +301,29 @@ export function SavingsTrajectoryTable({
             )}
 
             {/* ── Projected rows ── */}
-            {monthDates.map((date, rowIdx) => {
+            {monthDates.map((date, rowIndex) => {
               // Collect events across visible funds only
               const rowEvents: {
                 goalId: number;
                 id: string;
                 amount: number;
                 description: string;
-                colorIdx: number;
+                colorIndex: number;
               }[] = [];
               for (const gp of visibleProjections) {
-                for (const ev of gp.monthEvents[rowIdx] ?? []) {
+                for (const ev of gp.monthEvents[rowIndex] ?? []) {
                   rowEvents.push({
                     goalId: gp.goalId,
                     id: ev.id,
                     amount: ev.amount,
                     description: ev.description,
-                    colorIdx: goalIdToColorIndex[gp.goalId] ?? 0,
+                    colorIndex: goalIdToColorIndex[gp.goalId] ?? 0,
                   });
                 }
               }
               rowEvents.sort(
                 (a, b) =>
-                  a.colorIdx - b.colorIdx ||
+                  a.colorIndex - b.colorIndex ||
                   a.description.localeCompare(b.description),
               );
 
@@ -332,7 +332,7 @@ export function SavingsTrajectoryTable({
                   {/* Main month row */}
                   {(() => {
                     const anyNegative = visibleProjections.some(
-                      (gp) => (gp.balances[rowIdx] ?? 0) < 0,
+                      (gp) => (gp.balances[rowIndex] ?? 0) < 0,
                     );
                     return (
                       <tr
@@ -342,11 +342,12 @@ export function SavingsTrajectoryTable({
                           {monthLabel(date)}
                         </td>
                         {visibleProjections.map((gp) => {
-                          const balance = gp.balances[rowIdx] ?? 0;
+                          const balance = gp.balances[rowIndex] ?? 0;
                           const isNegative = balance < 0;
-                          const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                          const allocation =
+                            gp.monthlyAllocations[rowIndex] ?? 0;
                           const fundHasEvents =
-                            (gp.monthEvents[rowIdx] ?? []).length > 0;
+                            (gp.monthEvents[rowIndex] ?? []).length > 0;
                           const showInlineAlloc =
                             showAllocations && !fundHasEvents && allocation > 0;
                           const inlineAlloc = showInlineAlloc ? (
@@ -358,7 +359,7 @@ export function SavingsTrajectoryTable({
                           // Fixed-target mode
                           if (gp.targetMode === "fixed" && gp.target > 0) {
                             const isFirstFunded =
-                              firstFundedIndex[gp.goalId] === rowIdx;
+                              firstFundedIndex[gp.goalId] === rowIndex;
                             const isFunded = balance >= gp.target;
                             let cls =
                               "text-right px-3 py-1.5 text-xs tabular-nums";
@@ -385,7 +386,7 @@ export function SavingsTrajectoryTable({
                           // Revolving mode (ongoing, no fixed target)
                           if (gp.targetMode === "ongoing") {
                             const hasWithdrawalThisMonth = (
-                              gp.monthEvents[rowIdx] ?? []
+                              gp.monthEvents[rowIndex] ?? []
                             ).some((ev) => ev.amount < 0);
 
                             if (isNegative) {
@@ -402,7 +403,7 @@ export function SavingsTrajectoryTable({
 
                             const futureWithdrawalBal = nextWithdrawalBalance(
                               gp,
-                              rowIdx,
+                              rowIndex,
                             );
                             const isAtRisk =
                               futureWithdrawalBal !== null &&
@@ -450,7 +451,7 @@ export function SavingsTrajectoryTable({
                           <td className="text-faint/50 bg-surface-sunken/40 px-3 py-1.5 text-right text-xs tabular-nums">
                             {formatCurrency(
                               hiddenProjections.reduce(
-                                (s, gp) => s + (gp.balances[rowIdx] ?? 0),
+                                (s, gp) => s + (gp.balances[rowIndex] ?? 0),
                                 0,
                               ),
                             )}
@@ -473,9 +474,9 @@ export function SavingsTrajectoryTable({
                         </span>
                       </td>
                       {visibleProjections.map((gp) => {
-                        const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                        const allocation = gp.monthlyAllocations[rowIndex] ?? 0;
                         const fundHasEvents =
-                          (gp.monthEvents[rowIdx] ?? []).length > 0;
+                          (gp.monthEvents[rowIndex] ?? []).length > 0;
                         return (
                           <td key={gp.goalId} className="px-3 py-1 text-right">
                             {allocation > 0 && fundHasEvents && (

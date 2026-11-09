@@ -17,7 +17,7 @@ export function renderDetailAccountRows(profile: ProfileDetail) {
     profile.accountDetails,
   );
 
-  return profile.accountDetails.map((ad, rowIdx) => {
+  return profile.accountDetails.map((ad, rowIndex) => {
     const af = ad.activeFields as ContribAccountActiveFields;
     const {
       hasValue,
@@ -47,7 +47,7 @@ export function renderDetailAccountRows(profile: ProfileDetail) {
       <tr
         key={ad.id}
         className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-          rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+          rowIndex % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isProfileDisabled ? "opacity-40" : ""}`}
       >
         {ACCOUNT_FIELDS.map((field) => {

@@ -389,13 +389,13 @@ export function ContribCard({
               salary > 0
             ) {
               const currentAnnual = salary * (currentValue / 100);
-              const targetPct = Math.floor((remainingLimit / salary) * 100);
-              const targetAnnual = salary * (targetPct / 100);
+              const targetPercent = Math.floor((remainingLimit / salary) * 100);
+              const targetAnnual = salary * (targetPercent / 100);
               automaxPreview = {
-                label: `${targetPct}% of salary`,
+                label: `${targetPercent}% of salary`,
                 current: `${currentValue}% (${formatCurrency(currentAnnual)}/yr)`,
-                target: `${targetPct}% (${formatCurrency(targetAnnual)}/yr)`,
-                wouldChange: targetPct !== currentValue,
+                target: `${targetPercent}% (${formatCurrency(targetAnnual)}/yr)`,
+                wouldChange: targetPercent !== currentValue,
                 siblingNote,
               };
             } else if (

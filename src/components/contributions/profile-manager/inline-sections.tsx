@@ -67,7 +67,7 @@ export function renderInlineAccountRows({
   const { sharedMatchSource: editSharedMatchSource } = groupSharedMatchAccounts(
     profile.accountDetails,
   );
-  return profile.accountDetails.map((ad, rowIdx) => {
+  return profile.accountDetails.map((ad, rowIndex) => {
     const sharedFrom = editSharedMatchSource.get(ad.id);
     const af = accountActiveFields(ad.id);
     const storedMethod =
@@ -131,7 +131,7 @@ export function renderInlineAccountRows({
         key={ad.id}
         aria-busy={isSaving}
         className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-          rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+          rowIndex % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
       >
         {ACCOUNT_FIELDS.map(({ key }) => {
@@ -232,7 +232,7 @@ export function InlineDeductions({
             </tr>
           </thead>
           <tbody>
-            {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+            {deductionRows.map((d: DeductionRow, rowIndex: number) => {
               const df = deductionActiveFields(d.id);
               const storedAmount =
                 df.amountPerPeriod !== undefined
@@ -250,7 +250,7 @@ export function InlineDeductions({
                   key={d.id}
                   aria-busy={isSaving}
                   className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                    rowIdx % 2 === 1
+                    rowIndex % 2 === 1
                       ? "bg-surface-sunken/60"
                       : "bg-surface-primary"
                   } ${isSaving ? "pointer-events-none opacity-60" : ""}`}

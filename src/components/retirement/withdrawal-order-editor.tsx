@@ -35,19 +35,19 @@ export function WithdrawalOrderEditor({
   const filterSet = filter ? new Set(filter) : null;
   const visible = filterSet ? order.filter((c) => filterSet.has(c)) : order;
 
-  function swapWithPrevious(idx: number) {
+  function swapWithPrevious(index: number) {
     if (disabled) return;
     if (!filterSet) {
       const next = [...order];
-      [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
+      [next[index - 1], next[index]] = [next[index]!, next[index - 1]!];
       onChange(next);
       return;
     }
     // Filtered mode: find where these two categories actually sit in the
     // FULL array (not necessarily adjacent there — an unfiltered category
     // may sit between them) and swap only those two slots.
-    const a = visible[idx - 1]!;
-    const b = visible[idx]!;
+    const a = visible[index - 1]!;
+    const b = visible[index]!;
     const posA = order.indexOf(a);
     const posB = order.indexOf(b);
     const next = [...order];
@@ -58,14 +58,14 @@ export function WithdrawalOrderEditor({
 
   return (
     <div className="flex items-center gap-1">
-      {visible.map((cat, idx) => (
+      {visible.map((cat, index) => (
         <span key={cat} className="flex items-center gap-0.5">
-          {idx > 0 && <span className="text-faint mx-0.5">&rarr;</span>}
+          {index > 0 && <span className="text-faint mx-0.5">&rarr;</span>}
           <AccountBadge type={cat} />
-          {idx > 0 && (
+          {index > 0 && (
             <button
               type="button"
-              onClick={() => swapWithPrevious(idx)}
+              onClick={() => swapWithPrevious(index)}
               disabled={disabled}
               className="text-faint p-0.5 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
               title={`Move ${cat} left`}

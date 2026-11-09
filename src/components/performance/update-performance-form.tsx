@@ -58,7 +58,7 @@ export function UpdatePerformanceForm({
   const didInit = useRef(false);
 
   // Build snapshot lookup: performanceAccountId → sum of amounts
-  const snapshotByPerfAcct = useRef(new Map<number, number>());
+  const snapshotByPerfAccount = useRef(new Map<number, number>());
   useEffect(() => {
     if (!latestSnap?.accounts) return;
     const map = new Map<number, number>();
@@ -70,7 +70,7 @@ export function UpdatePerformanceForm({
         );
       }
     }
-    snapshotByPerfAcct.current = map;
+    snapshotByPerfAccount.current = map;
   }, [latestSnap]);
 
   // Initialize form rows from current year account data (once)
@@ -85,7 +85,7 @@ export function UpdatePerformanceForm({
     const initial: UpdateFormRow[] = filtered.map((a) => {
       const snapBal =
         a.performanceAccountId !== null
-          ? (snapshotByPerfAcct.current.get(a.performanceAccountId) ?? null)
+          ? (snapshotByPerfAccount.current.get(a.performanceAccountId) ?? null)
           : null;
       const employeeContrib = a.totalContributions - a.employerContributions;
       return {

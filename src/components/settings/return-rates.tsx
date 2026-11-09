@@ -200,15 +200,15 @@ export function ReturnRatesSettings() {
             <div className="flex h-8 w-full">
               {ranges.map((r) => {
                 const span = (r.endAge ?? DISPLAY_AGE_CAP) - r.age + 1;
-                const widthPct = (span / barSpan) * 100;
+                const widthPercent = (span / barSpan) * 100;
                 return (
                   <div
                     key={r.id}
                     className={`text-caption flex items-center justify-center font-medium text-white ${barColorForRate(r.rate, minRate, maxRate)}`}
-                    style={{ width: `${widthPct}%` }}
+                    style={{ width: `${widthPercent}%` }}
                     title={`Age ${r.age}${r.endAge ? `–${r.endAge}` : "+"}: ${formatPercent(r.rate, 1)}`}
                   >
-                    {widthPct > 8 ? formatPercent(r.rate, 1) : ""}
+                    {widthPercent > 8 ? formatPercent(r.rate, 1) : ""}
                   </div>
                 );
               })}

@@ -173,23 +173,23 @@ export function WhatIfSection({
                   <td className="px-2 py-2 text-center">
                     {scenarioRow &&
                       (() => {
-                        const idx = whatIfScenarios.findIndex(
+                        const index = whatIfScenarios.findIndex(
                           (sc) => sc.id === scenarioRow.id,
                         );
                         return (
                           <div className="flex justify-center gap-0.5">
                             <button
-                              onClick={() => handleSwap(idx, idx - 1)}
-                              disabled={idx <= 0 || reorderMut.isPending}
+                              onClick={() => handleSwap(index, index - 1)}
+                              disabled={index <= 0 || reorderMut.isPending}
                               className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
                               title="Move up"
                             >
                               &#9650;
                             </button>
                             <button
-                              onClick={() => handleSwap(idx, idx + 1)}
+                              onClick={() => handleSwap(index, index + 1)}
                               disabled={
-                                idx >= whatIfScenarios.length - 1 ||
+                                index >= whatIfScenarios.length - 1 ||
                                 reorderMut.isPending
                               }
                               className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"

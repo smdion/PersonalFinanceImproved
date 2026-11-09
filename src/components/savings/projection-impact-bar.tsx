@@ -52,18 +52,18 @@ export function ProjectionImpactBar({
             const color = FUND_COLORS[i % FUND_COLORS.length]!;
             const endBalance = gp.balances[gp.balances.length - 1] ?? 0;
 
-            const negIdx = gp.balances.findIndex((b) => b < 0);
-            const fundedIdx =
+            const negIndex = gp.balances.findIndex((b) => b < 0);
+            const fundedIndex =
               gp.targetMode === "fixed" && gp.target > 0
                 ? gp.balances.findIndex((b) => b >= gp.target)
                 : -1;
             const atRisk = gp.targetMode === "ongoing" && isRevolvingAtRisk(gp);
 
             let statusEl: React.ReactNode;
-            if (negIdx !== -1) {
+            if (negIndex !== -1) {
               statusEl = (
                 <span className="font-medium whitespace-nowrap text-red-500">
-                  ✗ Neg {shortMonth(monthDates[negIdx]!)}
+                  ✗ Neg {shortMonth(monthDates[negIndex]!)}
                 </span>
               );
             } else if (atRisk) {
@@ -72,10 +72,10 @@ export function ProjectionImpactBar({
                   ⚠ At risk
                 </span>
               );
-            } else if (fundedIdx !== -1) {
+            } else if (fundedIndex !== -1) {
               statusEl = (
                 <span className="font-medium whitespace-nowrap text-green-600">
-                  ✓ {shortMonth(monthDates[fundedIdx]!)}
+                  ✓ {shortMonth(monthDates[fundedIndex]!)}
                 </span>
               );
             } else {

@@ -396,7 +396,7 @@ export function ContributionSnapshot() {
                   }
 
                   // Compute match percentage of the limit for the funding bar
-                  const matchPctOfLimit =
+                  const matchPercentOfLimit =
                     hasLimit &&
                     at.limit > 0 &&
                     at.views[viewMode].employerMatch > 0
@@ -452,7 +452,7 @@ export function ContributionSnapshot() {
                         <div className="mt-1.5">
                           <FundingBar
                             pct={at.views[viewMode].fundingPct}
-                            matchPct={matchPctOfLimit}
+                            matchPercent={matchPercentOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={categoryKey}
                           />

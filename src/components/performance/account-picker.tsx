@@ -65,9 +65,9 @@ export function AccountPicker({
     onChange(next);
   };
 
-  const toggleGroup = (accts: MasterAccount[], select: boolean) => {
+  const toggleGroup = (accounts: MasterAccount[], select: boolean) => {
     const next = new Set(selectedAccountIds);
-    for (const m of accts) {
+    for (const m of accounts) {
       if (select) next.add(m.id);
       else next.delete(m.id);
     }
@@ -159,8 +159,8 @@ export function AccountPicker({
               </p>
             )}
 
-            {[...groups.entries()].map(([category, accts]) => {
-              const allSelected = accts.every((m) =>
+            {[...groups.entries()].map(([category, accounts]) => {
+              const allSelected = accounts.every((m) =>
                 selectedAccountIds.has(m.id),
               );
               return (
@@ -170,13 +170,13 @@ export function AccountPicker({
                       {category}
                     </span>
                     <button
-                      onClick={() => toggleGroup(accts, !allSelected)}
+                      onClick={() => toggleGroup(accounts, !allSelected)}
                       className="text-micro text-blue-600 hover:text-blue-700"
                     >
                       {allSelected ? "Deselect all" : "Select all"}
                     </button>
                   </div>
-                  {accts.map((m) => (
+                  {accounts.map((m) => (
                     <label
                       key={m.id}
                       className="text-secondary flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50"

@@ -186,7 +186,7 @@ export function NewProfileDeductions({
               </tr>
             </thead>
             <tbody>
-              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+              {deductionRows.map((d: DeductionRow, rowIndex: number) => {
                 const personName =
                   jobsList?.find((j) => j.id === d.jobId)?.employerName ??
                   `Job ${d.jobId}`;
@@ -194,7 +194,7 @@ export function NewProfileDeductions({
                   <tr
                     key={d.id}
                     className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                      rowIdx % 2 === 1
+                      rowIndex % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
                     }`}

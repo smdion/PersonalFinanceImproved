@@ -9,12 +9,12 @@ export function SummaryTable({
   title,
   rows,
   total,
-  showPct = false,
+  showPercent = false,
 }: {
   title: string;
   rows: { label: string; amount: number }[];
   total: number;
-  showPct?: boolean;
+  showPercent?: boolean;
 }) {
   return (
     <div>
@@ -27,7 +27,7 @@ export function SummaryTable({
             <span className="text-muted text-xs">{r.label}</span>
             <span className="text-primary text-xs font-medium tabular-nums">
               {formatCurrency(r.amount)}
-              {showPct && total > 0 && (
+              {showPercent && total > 0 && (
                 <span className="text-faint ml-1">
                   {/* lint-violation-ok: guarded by total > 0 above */}(
                   {formatPercent(r.amount / total, 1)})

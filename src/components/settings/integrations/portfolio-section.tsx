@@ -292,14 +292,14 @@ export function PortfolioSection({ service, portfolio }: Props) {
             onClick={() => {
               if (!newPortfolioLocal || !newPortfolioRemote) return;
               // Value format: "localId|localName"
-              const pipeIdx = newPortfolioLocal.indexOf("|");
+              const pipeIndex = newPortfolioLocal.indexOf("|");
               const localId =
-                pipeIdx >= 0
-                  ? newPortfolioLocal.slice(0, pipeIdx)
+                pipeIndex >= 0
+                  ? newPortfolioLocal.slice(0, pipeIndex)
                   : newPortfolioLocal;
               const localName =
-                pipeIdx >= 0
-                  ? newPortfolioLocal.slice(pipeIdx + 1)
+                pipeIndex >= 0
+                  ? newPortfolioLocal.slice(pipeIndex + 1)
                   : newPortfolioLocal;
               const updated = [
                 ...portfolio.existingMappings,

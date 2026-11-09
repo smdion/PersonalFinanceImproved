@@ -196,7 +196,7 @@ function ExtraPaycheckJobPanel({
     return keys.map((k) => k.slice(0, 7)); // "YYYY-MM-01" → "YYYY-MM"
   }, [job.anchorPayDate, job.payPeriod, monthDates]);
 
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [addForm, setAddForm] = useState<RuleForm | null>(null);
 
   // Override state: which month is open for override editing
@@ -259,16 +259,16 @@ function ExtraPaycheckJobPanel({
 
   function openAdd() {
     setAddForm(emptyForm());
-    setEditingIdx(null);
+    setEditingIndex(null);
   }
 
   function cancelAdd() {
     setAddForm(null);
   }
 
-  function openEdit(idx: number) {
-    const r = rules[idx]!;
-    setEditingIdx(idx);
+  function openEdit(index: number) {
+    const r = rules[index]!;
+    setEditingIndex(index);
     setAddForm({
       from: r.from,
       to: r.to ?? "",
@@ -277,7 +277,7 @@ function ExtraPaycheckJobPanel({
   }
 
   function cancelEdit() {
-    setEditingIdx(null);
+    setEditingIndex(null);
     setAddForm(null);
   }
 
@@ -293,8 +293,8 @@ function ExtraPaycheckJobPanel({
     };
 
     let updated: ExtraPaycheckRule[];
-    if (editingIdx !== null) {
-      updated = rules.map((r, i) => (i === editingIdx ? newRule : r));
+    if (editingIndex !== null) {
+      updated = rules.map((r, i) => (i === editingIndex ? newRule : r));
     } else {
       updated = [...rules, newRule].sort((a, b) =>
         a.from.localeCompare(b.from),
@@ -307,11 +307,11 @@ function ExtraPaycheckJobPanel({
       yearlyGrowth,
     });
     setAddForm(null);
-    setEditingIdx(null);
+    setEditingIndex(null);
   }
 
-  function deleteRule(idx: number) {
-    const updated = rules.filter((_, i) => i !== idx);
+  function deleteRule(index: number) {
+    const updated = rules.filter((_, i) => i !== index);
     saveMutation.mutate({ jobId: job.id, rules: updated });
   }
 
@@ -327,7 +327,7 @@ function ExtraPaycheckJobPanel({
     setAddForm({ ...addForm, splits });
   }
 
-  function setSplitPct(si: number, pct: string) {
+  function setSplitPercent(si: number, pct: string) {
     if (!addForm) return;
     const splits = addForm.splits.map((s, i) => (i === si ? { ...s, pct } : s));
     setAddForm({ ...addForm, splits });
@@ -464,12 +464,12 @@ function ExtraPaycheckJobPanel({
           {addForm && (
             <div className="border-subtle bg-surface-sunken/50 space-y-3 rounded-md border p-3">
               <RuleFormFields
-                editingIdx={editingIdx}
+                editingIndex={editingIndex}
                 addForm={addForm}
                 setFormField={setFormField}
                 setSplitGoal={setSplitGoal}
                 goals={goals}
-                setSplitPct={setSplitPct}
+                setSplitPercent={setSplitPercent}
                 removeSplit={removeSplit}
                 addSplit={addSplit}
                 splitTotal={splitTotal}
@@ -479,7 +479,7 @@ function ExtraPaycheckJobPanel({
                 saveForm={saveForm}
                 formValid={formValid}
                 saveMutation={saveMutation}
-                editingIdx={editingIdx}
+                editingIndex={editingIndex}
                 cancelEdit={cancelEdit}
                 cancelAdd={cancelAdd}
               />

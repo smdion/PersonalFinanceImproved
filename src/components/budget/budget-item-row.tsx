@@ -249,7 +249,7 @@ export function BudgetItemRow({
         // Per-column first (the server's figure for this column);
         // contribAmount is only the selected column's figure and is the
         // back-compat fallback.
-        const amt =
+        const amount =
           item.contribAmounts?.[col] ??
           (item.contribAmount != null
             ? item.contribAmount
@@ -267,7 +267,7 @@ export function BudgetItemRow({
         // sandbox that writes nothing.
         const amountEditable = amountsOnly ? editMode : editMode && canEdit;
         if (!amountEditable) {
-          const n = parseFloat(String(amt));
+          const n = parseFloat(String(amount));
           return (
             <td
               key={col}
@@ -277,7 +277,7 @@ export function BudgetItemRow({
             </td>
           );
         }
-        const draftVal = getDraft(item.id, col, amt);
+        const draftVal = getDraft(item.id, col, amount);
         return (
           <td key={col} className="px-2 py-1 text-right">
             <input

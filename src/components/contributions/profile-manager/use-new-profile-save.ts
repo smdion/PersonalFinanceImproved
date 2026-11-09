@@ -66,8 +66,8 @@ export function useNewProfileSave(form: {
           };
         }
       }
-      if (mVal.maxMatchPct) {
-        const num = parseFloat(mVal.maxMatchPct);
+      if (mVal.maxMatchPercent) {
+        const num = parseFloat(mVal.maxMatchPercent);
         if (!isNaN(num)) {
           // Convert display percentage back to decimal (5 → 0.05)
           contribAccounts[accountId] = {

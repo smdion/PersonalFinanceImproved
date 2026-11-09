@@ -213,7 +213,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               <h3 className="text-primary font-medium">{group.label}</h3>
             </div>
             <div className="p-3">
-              {group.keys.map((type, idx) => {
+              {group.keys.map((type, index) => {
                 const record = limitsMap.get(type.key);
                 const prevVal = prevYearMap.get(type.key);
                 const currVal = record ? Number(record.value) : null;
@@ -225,7 +225,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                 return (
                   <div
                     key={type.key}
-                    className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
+                    className={`flex items-center justify-between py-1 text-sm ${index > 0 ? "border-subtle border-t" : ""}`}
                   >
                     <span className="text-muted">
                       {type.label}
@@ -307,10 +307,10 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
             </p>
           </div>
           <div className="p-3">
-            {unusedLimits.map((l, idx) => (
+            {unusedLimits.map((l, index) => (
               <div
                 key={l.id}
-                className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
+                className={`flex items-center justify-between py-1 text-sm ${index > 0 ? "border-subtle border-t" : ""}`}
               >
                 <span className="text-muted">{l.limitType}</span>
                 <span className="flex items-center gap-2">

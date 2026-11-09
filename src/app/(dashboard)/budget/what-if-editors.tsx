@@ -288,8 +288,8 @@ export function WhatIfDeductionsEditor({
               </>
             }
           >
-            {v.rawDeductions.map((d, rowIdx) => (
-              <tr key={d.id} className={stripe(rowIdx)}>
+            {v.rawDeductions.map((d, rowIndex) => (
+              <tr key={d.id} className={stripe(rowIndex)}>
                 <td className="text-secondary py-1 pr-3 pl-4">
                   {d.deductionName}
                 </td>
@@ -310,10 +310,10 @@ export function WhatIfDeductionsEditor({
                 <td />
               </tr>
             ))}
-            {personAdditions.map((a, rowIdx) => (
+            {personAdditions.map((a, rowIndex) => (
               <tr
                 key={a.localId}
-                className={stripe(v.rawDeductions.length + rowIdx)}
+                className={stripe(v.rawDeductions.length + rowIndex)}
               >
                 <td className="py-1 pr-3 pl-4">
                   <input
@@ -464,11 +464,11 @@ export function WhatIfContributionsEditor({
               </>
             }
           >
-            {v.rawContribs.map((c, rowIdx) => {
+            {v.rawContribs.map((c, rowIndex) => {
               const isPercent = c.contributionMethod === "percent_of_salary";
               const activeField = activeFields.get(c.id);
               return (
-                <tr key={c.id} className={stripe(rowIdx)}>
+                <tr key={c.id} className={stripe(rowIndex)}>
                   <td className="text-secondary py-1 pr-3 pl-4">
                     {accountDisplayName(
                       { ...c, ownershipType: c.ownership },
@@ -497,12 +497,12 @@ export function WhatIfContributionsEditor({
                 </tr>
               );
             })}
-            {personAdditions.map((a, rowIdx) => {
+            {personAdditions.map((a, rowIndex) => {
               const isPercent = a.contributionMethod === "percent_of_salary";
               return (
                 <tr
                   key={a.localId}
-                  className={stripe(v.rawContribs.length + rowIdx)}
+                  className={stripe(v.rawContribs.length + rowIndex)}
                 >
                   <td className="py-1 pr-3 pl-4">
                     <div className="flex items-center gap-1">

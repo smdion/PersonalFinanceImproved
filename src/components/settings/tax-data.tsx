@@ -111,11 +111,11 @@ export function TaxDataSettings() {
   ).sort((a, b) => b - a);
 
   const coverage: Record<number, string> = {};
-  for (const yr of unionYears) {
+  for (const year of unionYears) {
     const n = TAX_YEAR_SECTIONS.filter((s) =>
-      yearsByTable[s.key].has(yr),
+      yearsByTable[s.key].has(year),
     ).length;
-    coverage[yr] = `${n}/${tableCount}`;
+    coverage[year] = `${n}/${tableCount}`;
   }
 
   const [persistedYear, setPersistedYear] = usePersistedSetting<number>(
@@ -140,11 +140,11 @@ export function TaxDataSettings() {
   /** One step: every table copies its latest year forward as carried
    *  (replaced when a Ledgr update brings the real figures). */
   const handleAddYear = async () => {
-    const yr = parseInt(newYear, 10);
-    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
-    await addYear.mutateAsync({ year: yr });
-    if (!unionYears.includes(yr)) setExtraYears((prev) => [...prev, yr]);
-    setPersistedYear(yr);
+    const year = parseInt(newYear, 10);
+    if (isNaN(year) || year < TAX_YEAR_MIN || year > TAX_YEAR_MAX) return;
+    await addYear.mutateAsync({ year: year });
+    if (!unionYears.includes(year)) setExtraYears((prev) => [...prev, year]);
+    setPersistedYear(year);
     setShowAddYear(false);
     setNewYear("");
   };

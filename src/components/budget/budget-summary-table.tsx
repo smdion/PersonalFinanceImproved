@@ -183,12 +183,12 @@ export function BudgetSummaryTable({
                     <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       {line.name}
                     </td>
-                    {line.amounts.map((amt, i) => (
+                    {line.amounts.map((amount, i) => (
                       <td
                         key={cols[i]}
                         className="text-caption px-2 py-0.5 text-right text-green-700 tabular-nums"
                       >
-                        {formatCurrency(amt ?? 0)}
+                        {formatCurrency(amount ?? 0)}
                       </td>
                     ))}
                     {isWeighted && (
@@ -350,12 +350,12 @@ export function BudgetSummaryTable({
                         <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                           {line.name}
                         </td>
-                        {line.amounts.map((amt, i) => (
+                        {line.amounts.map((amount, i) => (
                           <td
                             key={cols[i]}
                             className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                           >
-                            −{formatCurrency(amt ?? 0)}
+                            −{formatCurrency(amount ?? 0)}
                           </td>
                         ))}
                         {isWeighted && (
@@ -413,12 +413,12 @@ export function BudgetSummaryTable({
                         <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                           {line.name}
                         </td>
-                        {line.amounts.map((amt, i) => (
+                        {line.amounts.map((amount, i) => (
                           <td
                             key={cols[i]}
                             className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                           >
-                            −{formatCurrency(amt ?? 0)}
+                            −{formatCurrency(amount ?? 0)}
                           </td>
                         ))}
                         {isWeighted && (
@@ -478,12 +478,12 @@ export function BudgetSummaryTable({
                     <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       {line.name}
                     </td>
-                    {line.amounts.map((amt, i) => (
+                    {line.amounts.map((amount, i) => (
                       <td
                         key={cols[i]}
                         className="text-caption px-2 py-0.5 text-right text-green-600 tabular-nums"
                       >
-                        {formatCurrency(amt ?? 0)}
+                        {formatCurrency(amount ?? 0)}
                       </td>
                     ))}
                     {isWeighted && (

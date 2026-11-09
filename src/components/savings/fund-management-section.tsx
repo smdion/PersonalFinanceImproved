@@ -516,7 +516,7 @@ export function FundManagementSection({
                   ?.monthlyAllocation ?? 0
               );
             })()}
-            poolPct={(() => {
+            poolPercent={(() => {
               const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
               const alloc =
                 savings.goals.find((g) => g.goalId === efundGoal?.id)

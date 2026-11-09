@@ -33,17 +33,19 @@ export function YearSelector({
         ariaLabel={ariaLabel}
         value={activeYear}
         onChange={onSelectYear}
-        tabs={years.map((yr) => ({
-          value: yr,
+        tabs={years.map((year) => ({
+          value: year,
           label: (
             <>
-              {yr}
-              {coverage?.[yr] && (
+              {year}
+              {coverage?.[year] && (
                 <span
-                  className={yr === activeYear ? "text-blue-100" : "text-faint"}
+                  className={
+                    year === activeYear ? "text-blue-100" : "text-faint"
+                  }
                 >
                   {" "}
-                  · {coverage[yr]}
+                  · {coverage[year]}
                 </span>
               )}
             </>

@@ -265,8 +265,8 @@ export function AllTransactionsTab({
 
   const commitEdit = (tx: PlannedTransaction) => {
     if (!editForm) return;
-    const amt = parseFloat(editForm.amount);
-    if (isNaN(amt)) {
+    const amount = parseFloat(editForm.amount);
+    if (isNaN(amount)) {
       // Revert invalid amount and close without saving
       setEditForm({ ...editForm, amount: String(Math.abs(tx.amount)) });
       setActiveCell(null);
@@ -277,7 +277,7 @@ export function AllTransactionsTab({
       goalId: editForm.goalId,
       transactionDate: editForm.transactionDate,
       description: editForm.description,
-      amount: String(tx.amount < 0 ? -Math.abs(amt) : Math.abs(amt)),
+      amount: String(tx.amount < 0 ? -Math.abs(amount) : Math.abs(amount)),
       isRecurring: editForm.isRecurring,
       recurrenceMonths: editForm.isRecurring ? editForm.recurrenceMonths : null,
     });
@@ -299,40 +299,40 @@ export function AllTransactionsTab({
       : 0;
 
   const commitAdd = () => {
-    const amt = parseFloat(addForm.amount);
+    const amount = parseFloat(addForm.amount);
     if (
       !addGoalId ||
       !addForm.description ||
       !addForm.transactionDate ||
-      isNaN(amt)
+      isNaN(amount)
     )
       return;
     createTx.mutate({
       goalId: addGoalId,
       transactionDate: addForm.transactionDate,
       description: addForm.description,
-      amount: String(addForm.isNegative ? -Math.abs(amt) : Math.abs(amt)),
+      amount: String(addForm.isNegative ? -Math.abs(amount) : Math.abs(amount)),
       isRecurring: addForm.isRecurring,
       recurrenceMonths: addForm.isRecurring ? addForm.recurrenceMonths : null,
     });
   };
 
   const commitTransfer = () => {
-    const amt = parseFloat(transferForm.amount);
+    const amount = parseFloat(transferForm.amount);
     if (
       !fromGoalId ||
       !toGoalId ||
       !transferForm.transactionDate ||
       !transferForm.description ||
-      isNaN(amt) ||
-      amt <= 0
+      isNaN(amount) ||
+      amount <= 0
     )
       return;
     createTransfer.mutate({
       fromGoalId,
       toGoalId,
       transactionDate: transferForm.transactionDate,
-      amount: amt,
+      amount: amount,
       description: transferForm.description,
       isRecurring: transferForm.isRecurring,
       recurrenceMonths: transferForm.isRecurring

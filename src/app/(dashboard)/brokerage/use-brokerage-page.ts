@@ -44,8 +44,8 @@ export function useBrokeragePage() {
     const byYear = new Map<number, AccumOverride>();
     for (const ls of brokerageLumpSums) {
       const y = parseInt(ls.year);
-      const amt = parseFloat(ls.amount);
-      if (isNaN(y) || isNaN(amt) || amt === 0) continue;
+      const amount = parseFloat(ls.amount);
+      if (isNaN(y) || isNaN(amount) || amount === 0) continue;
       let ov = byYear.get(y);
       if (!ov) {
         ov = { year: y, lumpSums: [] };
@@ -53,7 +53,7 @@ export function useBrokeragePage() {
       }
       ov.lumpSums!.push({
         id: ls.id,
-        amount: Math.abs(amt),
+        amount: Math.abs(amount),
         targetAccount: ls.targetAccount,
         // Brokerage-page lump sums are Portfolio savings.
         targetParentCategory: "Portfolio" as const,

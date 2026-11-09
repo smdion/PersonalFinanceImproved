@@ -134,7 +134,7 @@ export function FundProgressAndTargetDate({
   savingsGoal,
   rawGoal,
   progress,
-  progressPct,
+  progressPercent,
   efundResult,
   canEdit,
   onGoalUpdate,
@@ -143,7 +143,7 @@ export function FundProgressAndTargetDate({
   savingsGoal: { current: number; target: number };
   rawGoal: RawGoal;
   progress: number;
-  progressPct: string;
+  progressPercent: string;
   efundResult:
     | { neededAfterRepay: number; targetAmount: number; progress: number }
     | null
@@ -168,7 +168,7 @@ export function FundProgressAndTargetDate({
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-muted text-xs font-semibold tabular-nums">
-                {progressPct}%
+                {progressPercent}%
               </span>
               <span className="text-muted text-xs">
                 {rawGoal.isEmergencyFund && efundResult

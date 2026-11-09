@@ -11,7 +11,7 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
 
   // Find the row closest to today
   const now = new Date();
-  const todayIdx = schedule.findIndex(
+  const todayIndex = schedule.findIndex(
     (entry) => parseLocalDateOnly(entry.date) >= now,
   );
 
@@ -26,7 +26,7 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
       }
     });
     return () => cancelAnimationFrame(raf);
-  }, [todayIdx]);
+  }, [todayIndex]);
 
   return (
     <div
@@ -47,8 +47,8 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
         </thead>
         <tbody>
           {schedule.map((entry, i) => {
-            const isToday = i === todayIdx;
-            const isPast = i < todayIdx;
+            const isToday = i === todayIndex;
+            const isPast = i < todayIndex;
             return (
               <tr
                 key={entry.month}

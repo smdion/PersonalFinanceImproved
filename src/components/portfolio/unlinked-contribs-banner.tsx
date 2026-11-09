@@ -76,7 +76,7 @@ export function UnlinkedContribsBanner({
       <div className="mt-2 space-y-1.5">
         {unlinkedContribs.map((c) => {
           const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
-          const acctType = c.subType ?? c.accountType;
+          const accountType = c.subType ?? c.accountType;
           const matchText = formatEmployerMatch(
             c.employerMatchType,
             c.employerMatchValue,
@@ -92,7 +92,7 @@ export function UnlinkedContribsBanner({
           return (
             <div key={c.id} className="flex flex-wrap items-center gap-2">
               <select
-                aria-label={`Owner of ${taxLabel} ${acctType} (${employer})`}
+                aria-label={`Owner of ${taxLabel} ${accountType} (${employer})`}
                 value={c.ownership === "joint" ? "joint" : String(c.personId)}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -118,11 +118,11 @@ export function UnlinkedContribsBanner({
                 ))}
               </select>
               <span className="text-xs text-amber-800">
-                {taxLabel} {acctType}
+                {taxLabel} {accountType}
                 {matchDetail} ({employer})
               </span>
               <select
-                aria-label={`Link ${taxLabel} ${acctType} (${employer}) to an account`}
+                aria-label={`Link ${taxLabel} ${accountType} (${employer}) to an account`}
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;

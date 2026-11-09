@@ -183,26 +183,26 @@ export function PerformanceTable({
                   a.institution.localeCompare(b.institution),
               );
             // Sort active accounts first, inactive after
-            const activeAccts = yearAccountsAll.filter((a) => {
+            const activeAccounts = yearAccountsAll.filter((a) => {
               const master = masterAccounts.find(
                 (m) => m.id === a.performanceAccountId,
               );
               return master ? master.isActive : true;
             });
-            const inactiveAccts = yearAccountsAll.filter((a) => {
+            const inactiveAccounts = yearAccountsAll.filter((a) => {
               const master = masterAccounts.find(
                 (m) => m.id === a.performanceAccountId,
               );
               return master ? !master.isActive : false;
             });
-            const yearAccounts = [...activeAccts, ...inactiveAccts];
+            const yearAccounts = [...activeAccounts, ...inactiveAccounts];
 
             return (
               <YearRow
                 key={year}
                 row={row}
                 accounts={yearAccounts}
-                activeAccountCount={activeAccts.length}
+                activeAccountCount={activeAccounts.length}
                 isExpanded={isExpanded}
                 onToggle={() => onToggleYear(year)}
                 showAccounts={true}

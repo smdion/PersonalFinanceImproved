@@ -100,7 +100,9 @@ export function ContributionAccountsSettings() {
   const linked = useFocusMatch("portfolioAccounts") !== null;
   const [expanded, setExpanded] = useFocusReveal("portfolioAccounts");
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
+  const [expandedAccountId, setExpandedAccountId] = useState<number | null>(
+    null,
+  );
   const [creatingAccount, setCreatingAccount] = useState(false);
 
   // ---- Derived data ----
@@ -330,9 +332,11 @@ export function ContributionAccountsSettings() {
                 accountTypeOptions={accountTypeOptions}
                 activeProfileName={activeProfileName}
                 activeProfileFields={activeProfileFields}
-                isExpanded={expandedAcctId === pa.id}
+                isExpanded={expandedAccountId === pa.id}
                 onToggleExpand={() =>
-                  setExpandedAcctId(expandedAcctId === pa.id ? null : pa.id)
+                  setExpandedAccountId(
+                    expandedAccountId === pa.id ? null : pa.id,
+                  )
                 }
                 onPerfUpdate={
                   admin ? (updates) => handlePerfUpdate(pa, updates) : undefined

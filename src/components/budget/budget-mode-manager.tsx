@@ -30,20 +30,20 @@ export function BudgetModeManager({
   const isWeighted = !!columnMonths && columnMonths.length > 0;
   const canWeight = cols.length > 1 && onUpdateColumnMonths;
 
-  const monthValueFor = (idx: number) =>
-    monthDrafts[idx] ?? String(columnMonths?.[idx] ?? 0);
+  const monthValueFor = (index: number) =>
+    monthDrafts[index] ?? String(columnMonths?.[index] ?? 0);
 
-  const commitMonths = (idx: number, value: string) => {
+  const commitMonths = (index: number, value: string) => {
     const parsed = Number(value);
     const base =
       columnMonths && columnMonths.length === cols.length
         ? [...columnMonths]
         : cols.map(() => 0);
-    base[idx] = isNaN(parsed) ? 0 : Math.max(0, parsed);
+    base[index] = isNaN(parsed) ? 0 : Math.max(0, parsed);
     onUpdateColumnMonths?.(base);
     setMonthDrafts((prev) => {
       const next = { ...prev };
-      delete next[idx];
+      delete next[index];
       return next;
     });
   };
@@ -61,13 +61,13 @@ export function BudgetModeManager({
         <HelpTip text="Each mode is a separate set of budget amounts — a spending level like 'Lean' vs 'Comfortable', or, weighted by months, parts of the year. Pay and contributions come from the active profiles." />
       </h3>
       <div className="space-y-2">
-        {cols.map((label, idx) => {
+        {cols.map((label, index) => {
           return (
             <div key={label} className="flex items-center gap-2">
               <InlineEdit
                 value={label}
                 onSave={(newLabel) => {
-                  if (newLabel !== label) onRenameColumn(idx, newLabel);
+                  if (newLabel !== label) onRenameColumn(index, newLabel);
                 }}
                 formatDisplay={(v) => v}
                 parseInput={(v) => v.trim()}
@@ -81,14 +81,14 @@ export function BudgetModeManager({
                     type="number"
                     min={0}
                     step="1"
-                    value={monthValueFor(idx)}
+                    value={monthValueFor(index)}
                     onChange={(e) =>
                       setMonthDrafts((prev) => ({
                         ...prev,
-                        [idx]: e.target.value,
+                        [index]: e.target.value,
                       }))
                     }
-                    onBlur={(e) => commitMonths(idx, e.target.value)}
+                    onBlur={(e) => commitMonths(index, e.target.value)}
                     className="text-caption bg-surface-primary text-muted w-14 rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
                     title="Months per year this mode applies — must sum to 12 across all modes"
                   />
@@ -103,7 +103,7 @@ export function BudgetModeManager({
                         `Remove "${label}" mode? All amounts in this column will be deleted.`,
                       )
                     ) {
-                      onRemoveColumn(idx);
+                      onRemoveColumn(index);
                     }
                   }}
                   className="text-xs text-red-400 hover:text-red-600"

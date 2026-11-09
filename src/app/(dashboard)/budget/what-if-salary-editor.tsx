@@ -44,13 +44,15 @@ export function WhatIfSalaryEditor({
         </tr>
       </thead>
       <tbody>
-        {views.map((v, rowIdx) => {
+        {views.map((v, rowIndex) => {
           const entry = entries[String(v.person.id)] ?? {};
           return (
             <tr
               key={v.person.id}
               className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+                rowIndex % 2 === 1
+                  ? "bg-surface-sunken/60"
+                  : "bg-surface-primary"
               }`}
             >
               <td className="text-secondary py-1.5 pr-3 pl-4">

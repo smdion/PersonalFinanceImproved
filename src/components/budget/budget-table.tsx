@@ -53,7 +53,7 @@ export type RowHandlers = {
   ) => void;
   addItemPending: boolean;
   addItemError: { message: string } | null;
-  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  matchContrib: (subcategory: string, colIndex?: number) => number | null;
   // Adding-item state bundled here so the standalone add-item form
   // outside the table can share the same handler via rowHandlers.
   addingItemToCategory: string | null;
@@ -130,7 +130,7 @@ export function BudgetTable({
                 </span>
               </span>
             </th>
-            {cols.map((label, colIdx) => (
+            {cols.map((label, colIndex) => (
               <th
                 key={label}
                 className="text-muted px-3 py-2 text-right font-medium"
@@ -139,7 +139,7 @@ export function BudgetTable({
                 {label}
                 {apiService &&
                   apiLinkedProfileId === profileId &&
-                  apiLinkedColumnIndex === colIdx && (
+                  apiLinkedColumnIndex === colIndex && (
                     <Badge
                       color="blue"
                       case="normal"

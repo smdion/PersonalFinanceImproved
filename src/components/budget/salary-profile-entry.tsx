@@ -114,9 +114,9 @@ export function SalaryTableHead() {
 /** Columns in the table — the detail row under each job spans them all. */
 export const TABLE_COLUMNS = 5;
 
-export function rowClass(rowIdx: number) {
+export function rowClass(rowIndex: number) {
   return `border-b border-subtle hover:bg-blue-50/60 transition-colors ${
-    rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+    rowIndex % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
   }`;
 }
 

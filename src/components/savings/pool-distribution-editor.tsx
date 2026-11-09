@@ -56,8 +56,8 @@ export function PoolDistributionEditor({
   );
 
   const updateFundPercent = useCallback(
-    (goalId: number, newPct: number) => {
-      const newAmount = roundToCents((newPct / 100) * pool);
+    (goalId: number, newPercent: number) => {
+      const newAmount = roundToCents((newPercent / 100) * pool);
       updateFundAmount(goalId, newAmount);
     },
     [pool, updateFundAmount],

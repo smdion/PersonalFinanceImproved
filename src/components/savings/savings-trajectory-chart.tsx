@@ -71,7 +71,7 @@ function EventTooltip({
 }) {
   if (!active || !payload?.length || !label) return null;
 
-  const monthIdx = monthDates.findIndex((d) => monthKey(d) === label);
+  const monthIndex = monthDates.findIndex((d) => monthKey(d) === label);
 
   return (
     <div
@@ -91,7 +91,7 @@ function EventTooltip({
       {payload.map((entry) => {
         const gp = goalProjections.find((g) => g.name === entry.name);
         const events =
-          monthIdx >= 0 && gp ? (gp.monthEvents[monthIdx] ?? []) : [];
+          monthIndex >= 0 && gp ? (gp.monthEvents[monthIndex] ?? []) : [];
         return (
           <div key={entry.name} style={{ marginBottom: events.length ? 4 : 2 }}>
             <span style={{ color: entry.color }}>

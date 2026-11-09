@@ -63,11 +63,13 @@ export function ContributionProfileCompare() {
           </tr>
         </thead>
         <tbody>
-          {data.accounts.map((account, rowIdx) => (
+          {data.accounts.map((account, rowIndex) => (
             <tr
               key={account.id}
               className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+                rowIndex % 2 === 1
+                  ? "bg-surface-sunken/60"
+                  : "bg-surface-primary"
               }`}
             >
               <td className="text-secondary sticky left-0 bg-inherit py-1.5 pr-3 pl-4 whitespace-nowrap">

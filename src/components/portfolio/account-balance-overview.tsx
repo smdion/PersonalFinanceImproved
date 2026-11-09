@@ -62,9 +62,9 @@ export function AccountBalanceOverview() {
     }
     const accountTypeRows = Array.from(byAccountType.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([cat, amt]) => ({
+      .map(([cat, amount]) => ({
         label: ACCOUNT_TYPE_CONFIG[cat as AccountCategory]?.displayLabel ?? cat, // A stored account type this version doesn't know shows as itself.
-        amount: amt,
+        amount: amount,
       }));
 
     // --- By Institution ---
@@ -77,7 +77,7 @@ export function AccountBalanceOverview() {
     }
     const institutionRows = Array.from(byInstitution.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([inst, amt]) => ({ label: inst, amount: amt }));
+      .map(([inst, amount]) => ({ label: inst, amount: amount }));
 
     // --- Per Person (detail: person + taxType) ---
     // Keyed by raw ownerPersonId (not the rendered display name) — person
@@ -125,7 +125,7 @@ export function AccountBalanceOverview() {
     }
     const taxRows = Array.from(byTaxType.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([label, amt]) => ({ label, amount: amt }));
+      .map(([label, amount]) => ({ label, amount: amount }));
 
     // --- Per-Account bar chart (original view) ---
     const balanceByPerfId = new Map<number, number>();
@@ -192,25 +192,25 @@ export function AccountBalanceOverview() {
           title="By Account Type"
           rows={accountTypeRows}
           total={portfolioTotal}
-          showPct
+          showPercent
         />
         <SummaryTable
           title="By Institution"
           rows={institutionRows}
           total={portfolioTotal}
-          showPct
+          showPercent
         />
         <SummaryTable
           title="Per Person"
           rows={personRows}
           total={portfolioTotal}
-          showPct
+          showPercent
         />
         <SummaryTable
           title="Tax Bucket"
           rows={taxRows}
           total={portfolioTotal}
-          showPct
+          showPercent
         />
       </div>
 
@@ -221,7 +221,7 @@ export function AccountBalanceOverview() {
             title="Per Person Detail"
             rows={personDetailRows}
             total={portfolioTotal}
-            showPct
+            showPercent
           />
         </div>
 
@@ -287,7 +287,7 @@ function MixAndCost({
           title="By Asset Class (holdings SimpleFIN reports)"
           rows={rows}
           total={allocation.total}
-          showPct
+          showPercent
         />
       </div>
       <div className="lg:col-span-2">

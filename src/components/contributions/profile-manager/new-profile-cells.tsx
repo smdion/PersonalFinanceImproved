@@ -262,13 +262,13 @@ function NewProfileCapCell({
           <input
             aria-label={`Match Cap, ${ad.liveAccountName}`}
             type="number"
-            value={mVal.maxMatchPct ?? ""}
+            value={mVal.maxMatchPercent ?? ""}
             onChange={(e) =>
               setMatchValues((prev) => ({
                 ...prev,
                 [String(ad.id)]: {
                   ...prev[String(ad.id)],
-                  maxMatchPct: e.target.value,
+                  maxMatchPercent: e.target.value,
                 },
               }))
             }

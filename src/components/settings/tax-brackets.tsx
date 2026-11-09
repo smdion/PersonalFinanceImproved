@@ -73,7 +73,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const handleBracketUpdate = (
     tbId: number,
     brackets: BracketEntry[],
-    bracketIdx: number,
+    bracketIndex: number,
     field: keyof BracketEntry,
     rawValue: string,
   ) => {
@@ -81,7 +81,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
     if (isNaN(numValue)) return;
 
     const newBrackets = brackets.map((b, i) =>
-      i === bracketIdx
+      i === bracketIndex
         ? { ...b, [field]: field === "rate" ? numValue / 100 : numValue }
         : b,
     );

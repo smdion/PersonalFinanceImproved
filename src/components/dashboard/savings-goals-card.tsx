@@ -230,8 +230,8 @@ function SavingsGoalsCardImpl() {
               reselect
               value={efundTierIndex}
               onChange={setEfundBudgetColumn}
-              options={budgetTierLabels.map((label: string, idx: number) => ({
-                value: idx,
+              options={budgetTierLabels.map((label: string, index: number) => ({
+                value: index,
                 label,
               }))}
             />

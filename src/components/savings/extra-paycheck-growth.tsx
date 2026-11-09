@@ -41,18 +41,18 @@ function PaycheckGrowthEditor({
   for (let i = 1; i <= projectionYears; i++) years.push(baseYear + i);
   if (years.length === 0) return null;
 
-  const updateEntry = (yr: number, patch: Partial<YearlyGrowthEntry>) => {
-    const current = yearlyGrowth[yr] ?? { type: "pct", value: 0 };
-    setYearlyGrowth({ ...yearlyGrowth, [yr]: { ...current, ...patch } });
+  const updateEntry = (year: number, patch: Partial<YearlyGrowthEntry>) => {
+    const current = yearlyGrowth[year] ?? { type: "pct", value: 0 };
+    setYearlyGrowth({ ...yearlyGrowth, [year]: { ...current, ...patch } });
   };
-  const removeEntry = (yr: number) => {
+  const removeEntry = (year: number) => {
     const next = { ...yearlyGrowth };
-    delete next[yr];
+    delete next[year];
     setYearlyGrowth(next);
   };
   const applyToAll = (entry: YearlyGrowthEntry) => {
     const next: YearlyGrowth = {};
-    for (const yr of years) next[yr] = { ...entry };
+    for (const year of years) next[year] = { ...entry };
     setYearlyGrowth(next);
   };
 
@@ -71,24 +71,24 @@ function PaycheckGrowthEditor({
           </button>
         )}
       </div>
-      {years.map((yr) => {
-        const entry = yearlyGrowth[yr];
+      {years.map((year) => {
+        const entry = yearlyGrowth[year];
         const hasEntry = entry !== undefined && entry.value !== 0;
         const projected = projectedNetPay(
           baseNetPay,
-          yr,
+          year,
           baseYear,
           yearlyGrowth,
         );
         return (
-          <div key={yr} className="flex items-center gap-2">
-            <span className="text-faint w-10 shrink-0">{yr}</span>
+          <div key={year} className="flex items-center gap-2">
+            <span className="text-faint w-10 shrink-0">{year}</span>
             <SegmentedControl
               look="tray-strong"
-              ariaLabel={`${yr} growth in`}
+              ariaLabel={`${year} growth in`}
               reselect
               value={entry?.type === "dollar" ? "dollar" : "pct"}
-              onChange={(type) => updateEntry(yr, { type })}
+              onChange={(type) => updateEntry(year, { type })}
               options={GROWTH_TYPES}
             />
             <div className="flex items-center gap-0.5">
@@ -104,7 +104,7 @@ function PaycheckGrowthEditor({
                 onChange={(e) => {
                   const val =
                     e.target.value === "" ? 0 : Number(e.target.value);
-                  updateEntry(yr, { value: val });
+                  updateEntry(year, { value: val });
                 }}
                 className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums"
               />
@@ -120,7 +120,7 @@ function PaycheckGrowthEditor({
             </span>
             {hasEntry && (
               <button
-                onClick={() => removeEntry(yr)}
+                onClick={() => removeEntry(year)}
                 className="text-caption text-muted hover:text-faint"
                 title="Remove growth for this year"
               >
@@ -187,8 +187,8 @@ export function SimpleGrowthEditor({
 
   const applyUniform = (entry: YearlyGrowthEntry) => {
     const next: YearlyGrowth = {};
-    for (const yr of years) {
-      if (entry.value !== 0) next[yr] = { ...entry };
+    for (const year of years) {
+      if (entry.value !== 0) next[year] = { ...entry };
     }
     setYearlyGrowth(next);
   };

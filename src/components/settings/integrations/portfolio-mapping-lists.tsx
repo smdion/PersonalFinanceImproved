@@ -54,16 +54,20 @@ export function renderRollupSummary(
           (a) => a.id === remoteId,
         );
         const localTotal = names.reduce((sum, n) => {
-          const localAcct = portfolio.localAccounts.find((a) => a.label === n);
-          if (localAcct) return sum + localAcct.balance;
-          const assetAcct = portfolio.assetAccounts.find((a) => a.label === n);
-          if (assetAcct) return sum + assetAcct.balance;
-          const mortgageAcct = portfolio.mortgageAccounts.find(
+          const localAccount = portfolio.localAccounts.find(
             (a) => a.label === n,
           );
-          if (mortgageAcct) return sum + mortgageAcct.value;
-          const debtAcct = portfolio.debtAccounts.find((a) => a.label === n);
-          if (debtAcct) return sum + debtAcct.value;
+          if (localAccount) return sum + localAccount.balance;
+          const assetAccount = portfolio.assetAccounts.find(
+            (a) => a.label === n,
+          );
+          if (assetAccount) return sum + assetAccount.balance;
+          const mortgageAccount = portfolio.mortgageAccounts.find(
+            (a) => a.label === n,
+          );
+          if (mortgageAccount) return sum + mortgageAccount.value;
+          const debtAccount = portfolio.debtAccounts.find((a) => a.label === n);
+          if (debtAccount) return sum + debtAccount.value;
           return sum;
         }, 0);
         return (

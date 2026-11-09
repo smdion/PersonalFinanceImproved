@@ -58,7 +58,7 @@ type ChartPoint = {
   /** Snapshot total; null on a live-estimate day. */
   total: number | null;
   change: number | null;
-  changePct: number | null;
+  changePercent: number | null;
   /** Live estimate: the last snapshot plus how linked accounts moved since. */
   live?: number;
   liveAccounts?: number;
@@ -113,13 +113,13 @@ export function PortfolioChart({
       const prev = i > 0 ? filtered[i - 1] : null;
       const change = prev ? s.total - prev.total : null;
       const changeRatio = prev ? safeDivide(change!, prev.total, null) : null;
-      const changePct = changeRatio === null ? null : changeRatio * 100;
+      const changePercent = changeRatio === null ? null : changeRatio * 100;
       return {
         date: s.date,
         label: shortLabel(s.date),
         total: s.total,
         change,
-        changePct,
+        changePercent,
       } satisfies ChartPoint;
     });
   }, [snapshots, timeFrame]);
@@ -146,7 +146,7 @@ export function PortfolioChart({
   const first = chartData[0]!;
   const last = chartData[chartData.length - 1]!;
   const totalChange = last.total - first.total;
-  const totalChangePct = safeDivide(totalChange, first.total, 0) * 100;
+  const totalChangePercent = safeDivide(totalChange, first.total, 0) * 100;
 
   // The dashed live line starts at the latest snapshot (when it's in view).
   const latest = snapshots.at(-1);
@@ -164,7 +164,7 @@ export function PortfolioChart({
             label: shortLabel(p.date),
             total: null,
             change: null,
-            changePct: null,
+            changePercent: null,
             live: Math.round((latest!.total + p.change) * 100) / 100,
             liveAccounts: p.accounts,
           })),
@@ -184,7 +184,7 @@ export function PortfolioChart({
             {formatCurrency(totalChange)}
             <span className="ml-1 text-xs">
               ({isPositive ? "+" : ""}
-              {formatPercent(totalChangePct / 100, 1)})
+              {formatPercent(totalChangePercent / 100, 1)})
             </span>
           </span>
           {canStack && (
@@ -285,10 +285,10 @@ export function PortfolioChart({
                       >
                         {p.change >= 0 ? "+" : ""}
                         {formatCurrency(p.change)}
-                        {p.changePct !== null && (
+                        {p.changePercent !== null && (
                           <span className="ml-1">
                             ({p.change >= 0 ? "+" : ""}
-                            {formatPercent(p.changePct / 100, 1)})
+                            {formatPercent(p.changePercent / 100, 1)})
                           </span>
                         )}
                       </div>

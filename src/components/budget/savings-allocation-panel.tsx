@@ -441,11 +441,13 @@ function SavingsAllocationTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, rowIdx) => (
+          {rows.map((r, rowIndex) => (
             <tr
               key={r.goalId}
               className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+                rowIndex % 2 === 1
+                  ? "bg-surface-sunken/60"
+                  : "bg-surface-primary"
               }`}
             >
               <td className="text-secondary py-1.5 pr-3 pl-4">

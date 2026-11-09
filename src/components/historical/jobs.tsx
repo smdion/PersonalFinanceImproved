@@ -25,11 +25,11 @@ function duration(start: string, end: string | null): string {
   const e = end ? new Date(end + "T00:00:00") : new Date();
   const months =
     (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
-  const yrs = Math.floor(months / 12);
+  const years = Math.floor(months / 12);
   const mos = months % 12;
-  if (yrs === 0) return `${mos}mo`;
-  if (mos === 0) return `${yrs}yr`;
-  return `${yrs}yr ${mos}mo`;
+  if (years === 0) return `${mos}mo`;
+  if (mos === 0) return `${years}yr`;
+  return `${years}yr ${mos}mo`;
 }
 
 /**

@@ -34,7 +34,7 @@ export function EmergencyFundDetail({
   onTargetMonthsChange,
   reimbursements,
   monthlyAllocation,
-  poolPct,
+  poolPercent,
   isApiSyncEnabled,
 }: {
   efund: EfundData;
@@ -44,7 +44,7 @@ export function EmergencyFundDetail({
   onTargetMonthsChange?: (months: number) => void;
   reimbursements?: ReimbursementData | null;
   monthlyAllocation?: number;
-  poolPct?: string;
+  poolPercent?: string;
   isApiSyncEnabled?: boolean;
 }) {
   const [showReimbursements, setShowReimbursements] = useState(false);
@@ -139,7 +139,9 @@ export function EmergencyFundDetail({
           <span className="font-bold text-green-600 tabular-nums">
             {formatCurrency(monthlyAllocation)}/mo
           </span>
-          {poolPct && <span className="text-faint">({poolPct}% of pool)</span>}
+          {poolPercent && (
+            <span className="text-faint">({poolPercent}% of pool)</span>
+          )}
           {isApiSyncEnabled && (
             <span
               className="text-caption text-blue-600/70"

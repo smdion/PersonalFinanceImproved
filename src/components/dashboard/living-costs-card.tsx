@@ -488,7 +488,7 @@ function LivingCostsCardImpl() {
   // contributions + savings + budget spending together exceed income),
   // where Unallocated's floor at $0 makes the shown total undercount on
   // purpose rather than display a negative "leftover."
-  const totalPct =
+  const totalPercent =
     sumBy(rows, (r) => r.pct) + sumBy(extraGrossRows, (r) => r.pct);
 
   // Every bar shares one scale, sized to the largest share or range top in
@@ -640,7 +640,7 @@ function LivingCostsCardImpl() {
       </div>
       {extraGrossRows.length > 0 && (
         <p className="text-micro text-faint mt-1 text-right">
-          Total: {formatPercent(totalPct, 0)} of {incomeLabel}
+          Total: {formatPercent(totalPercent, 0)} of {incomeLabel}
         </p>
       )}
       <div className="text-caption text-faint mt-2 flex gap-3">

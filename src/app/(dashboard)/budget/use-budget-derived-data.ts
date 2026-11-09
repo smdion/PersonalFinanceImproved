@@ -199,9 +199,9 @@ export function useBudgetDerivedData({
   // calculateBudget total (RULES.md Single Computation Path).
   const matchContrib = (
     subcategory: string,
-    colIdx?: number,
+    colIndex?: number,
   ): number | null => {
-    const map = contribByCanonicalPerCol[colIdx ?? 0];
+    const map = contribByCanonicalPerCol[colIndex ?? 0];
     if (!map || map.size === 0) return null;
     const key = normalizeContribKey(subcategory);
     return key ? (map.get(key) ?? null) : null;
@@ -326,8 +326,8 @@ export function useBudgetDerivedData({
       // modal must preview (and what syncBudgetToApi actually pushes)
       // lives in `contribAmounts` instead.
       const amounts = (item.contribAmounts ?? item.amounts) as number[];
-      const colIdx = Math.min(activeColumn, amounts.length - 1);
-      const newValue = amounts[colIdx] ?? 0;
+      const colIndex = Math.min(activeColumn, amounts.length - 1);
+      const newValue = amounts[colIndex] ?? 0;
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
@@ -350,8 +350,8 @@ export function useBudgetDerivedData({
       if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
         continue;
       const amounts = item.amounts as number[];
-      const colIdx = Math.min(activeColumn, amounts.length - 1);
-      const currentValue = amounts[colIdx] ?? 0;
+      const colIndex = Math.min(activeColumn, amounts.length - 1);
+      const currentValue = amounts[colIndex] ?? 0;
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,

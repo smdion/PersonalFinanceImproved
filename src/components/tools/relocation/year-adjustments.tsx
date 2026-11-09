@@ -224,9 +224,9 @@ export function RelocationYearAdjustments({
                             }))
                           }
                         >
-                          {labels.map((label, idx) => (
-                            <option key={label} value={idx}>
-                              {label} ({formatCurrency(totals[idx] ?? 0)}/mo)
+                          {labels.map((label, index) => (
+                            <option key={label} value={index}>
+                              {label} ({formatCurrency(totals[index] ?? 0)}/mo)
                             </option>
                           ))}
                         </select>

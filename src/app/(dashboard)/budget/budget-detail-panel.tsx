@@ -122,16 +122,16 @@ export function BudgetDetailPanel({
       {canEdit && showModeManager && (
         <BudgetModeManager
           cols={cols}
-          onRenameColumn={(idx, label) =>
+          onRenameColumn={(index, label) =>
             columnMutations.renameColumn.mutate({
-              colIndex: idx,
+              colIndex: index,
               label,
               ...(profile?.id != null ? { profileId: profile.id } : {}),
             })
           }
-          onRemoveColumn={(idx) =>
+          onRemoveColumn={(index) =>
             columnMutations.removeColumn.mutate({
-              colIndex: idx,
+              colIndex: index,
               ...(profile?.id != null ? { profileId: profile.id } : {}),
             })
           }

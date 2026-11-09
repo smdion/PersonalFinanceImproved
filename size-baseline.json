@@ -9,7 +9,7 @@
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 278,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 142,
-    "src/app/(dashboard)/budget/budget-content.tsx": 656,
+    "src/app/(dashboard)/budget/budget-content.tsx": 657,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
     "src/app/(dashboard)/budget/use-what-if-sandbox.ts": 253,
     "src/app/(dashboard)/budget/what-if-budget-step.tsx": 171,
@@ -18,7 +18,7 @@
     "src/app/(dashboard)/budget/what-if-make-real-panel.tsx": 58,
     "src/app/(dashboard)/budget/what-if-pickers.tsx": 97,
     "src/app/(dashboard)/budget/what-if-profile-picker.tsx": 36,
-    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 110,
+    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 112,
     "src/app/(dashboard)/budget/what-if-salary-step.tsx": 55,
     "src/app/(dashboard)/budget/what-if-save-actions.tsx": 140,
     "src/app/(dashboard)/budget/what-if-savings-step.tsx": 49,
@@ -63,7 +63,7 @@
     "src/components/budget/salary-profile-entry.tsx": 259,
     "src/components/budget/salary-profile-list.tsx": 190,
     "src/components/budget/salary-profile-manager.tsx": 170,
-    "src/components/budget/savings-allocation-panel.tsx": 524,
+    "src/components/budget/savings-allocation-panel.tsx": 526,
     "src/components/contributions/profile-manager/contribution-profile-manager.tsx": 154,
     "src/components/contributions/profile-manager/inline-account-cells.tsx": 229,
     "src/components/contributions/profile-manager/inline-deduction-cells.tsx": 171,
@@ -123,8 +123,8 @@
     "src/components/performance/year-row.tsx": 765,
     "src/components/portfolio/account-live-data.tsx": 409,
     "src/components/portfolio/contribution-accounts-card.tsx": 665,
-    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 655,
-    "src/components/portfolio/contribution-accounts.tsx": 415,
+    "src/components/portfolio/contribution-accounts-contrib-row.tsx": 657,
+    "src/components/portfolio/contribution-accounts.tsx": 419,
     "src/components/portfolio/new-snapshot-form.tsx": 713,
     "src/components/portfolio/portfolio-chart.tsx": 460,
     "src/components/retirement-projection/account-notes.ts": 267,
@@ -206,7 +206,7 @@
     "src/components/savings/fund-card.tsx": 549,
     "src/components/savings/fund-management-section.tsx": 658,
     "src/components/savings/fund-transaction-list.tsx": 440,
-    "src/components/savings/savings-trajectory-table.tsx": 550,
+    "src/components/savings/savings-trajectory-table.tsx": 551,
     "src/components/savings/transactions/editor.tsx": 366,
     "src/components/savings/transactions/filters.tsx": 207,
     "src/components/savings/transactions/row.tsx": 594,
@@ -215,7 +215,7 @@
     "src/components/settings/integrations-simplefin.tsx": 438,
     "src/components/settings/integrations.tsx": 706,
     "src/components/settings/integrations/budget-section.tsx": 690,
-    "src/components/settings/integrations/portfolio-mapping-lists.tsx": 353,
+    "src/components/settings/integrations/portfolio-mapping-lists.tsx": 357,
     "src/components/settings/integrations/portfolio-section.tsx": 337,
     "src/components/tools/relocation/large-purchase-fields.tsx": 214,
     "src/components/tools/relocation/projection-table.tsx": 416,
@@ -428,7 +428,7 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 576
+      "BudgetContent": 577
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 320
@@ -526,7 +526,7 @@
     },
     "src/components/budget/savings-allocation-panel.tsx": {
       "SavingsAllocationPanel": 201,
-      "SavingsAllocationTable": 292
+      "SavingsAllocationTable": 294
     },
     "src/components/budget/use-budget-item-mutations.ts": {
       "useBudgetItemMutations": 182
@@ -682,13 +682,13 @@
     },
     "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
       "AddContribForm": 188,
-      "ContributionRow": 429
+      "ContributionRow": 431
     },
     "src/components/portfolio/contribution-accounts-create-form.tsx": {
       "CreateAccountForm": 197
     },
     "src/components/portfolio/contribution-accounts.tsx": {
-      "ContributionAccountsSettings": 381
+      "ContributionAccountsSettings": 385
     },
     "src/components/portfolio/new-snapshot-form.tsx": {
       "NewSnapshotForm": 592,
@@ -702,7 +702,7 @@
       "derivePortfolioQuickLookStats": 265
     },
     "src/components/portfolio/portfolio-quick-look.tsx": {
-      "PortfolioQuickLook": 287
+      "PortfolioQuickLook": 296
     },
     "src/components/portfolio/use-contribution-accounts-mutations.ts": {
       "useContributionAccountsMutations": 279
@@ -802,7 +802,7 @@
       "DefaultContributionCell": 213
     },
     "src/components/savings/emergency-fund-detail.tsx": {
-      "EmergencyFundDetail": 187
+      "EmergencyFundDetail": 189
     },
     "src/components/savings/extra-paycheck-rules-editor.tsx": {
       "ExtraPaycheckJobPanel": 414
@@ -833,8 +833,8 @@
       "SavingsTrajectoryChart": 213
     },
     "src/components/savings/savings-trajectory-table.tsx": {
-      "SavingsTrajectoryTable": 518,
-      "SavingsTrajectoryTable.map()": 241
+      "SavingsTrajectoryTable": 519,
+      "SavingsTrajectoryTable.map()": 242
     },
     "src/components/savings/transactions/tab.tsx": {
       "AllTransactionsTab": 631

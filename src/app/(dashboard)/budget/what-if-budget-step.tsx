@@ -38,7 +38,7 @@ export type WhatIfBudgetStepProps = {
   getCatTotals: (items: RawItem[]) => number[];
   hasMoreCategories: boolean;
   leftover: number | null;
-  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  matchContrib: (subcategory: string, colIndex?: number) => number | null;
   nameColWidth: number;
   netMonthlyIncome: number | null;
   noop: () => void;
@@ -83,13 +83,13 @@ export function WhatIfBudgetStep({
             <div className="flex items-center gap-2">
               <span className="text-muted text-xs">Mode:</span>
               <div className="flex gap-1">
-                {cols.map((label, idx) => (
+                {cols.map((label, index) => (
                   <button
                     key={label}
                     type="button"
-                    onClick={() => setActiveColumn(idx)}
+                    onClick={() => setActiveColumn(index)}
                     className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
-                      activeColumn === idx
+                      activeColumn === index
                         ? "bg-blue-600 text-white"
                         : "bg-surface-elevated text-muted hover:bg-surface-strong"
                     }`}

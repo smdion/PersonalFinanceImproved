@@ -324,7 +324,7 @@ export function FundCard({
     rawGoal.isEmergencyFund && efundResult
       ? Math.min(efundResult.progress, 1)
       : Math.min(safeDivide(savingsGoal.current, savingsGoal.target, 0)!, 1);
-  const progressPct = (progress * 100).toFixed(0);
+  const progressPercent = (progress * 100).toFixed(0);
 
   const serviceLabel = budgetApiServiceLabel(apiServiceName);
 
@@ -406,7 +406,7 @@ export function FundCard({
               savingsGoal={savingsGoal}
               rawGoal={rawGoal}
               progress={progress}
-              progressPct={progressPct}
+              progressPercent={progressPercent}
               efundResult={efundResult}
               canEdit={canEdit}
               onGoalUpdate={onGoalUpdate}

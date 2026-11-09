@@ -754,13 +754,13 @@ export function SavingsContent() {
                         const endYear = startYear + projectionYears;
                         const endPool =
                           derivedPoolByYear.get(endYear) ?? maxMonthlyFunding;
-                        const totalGrowthPct =
+                        const totalGrowthPercent =
                           maxMonthlyFunding > 0
                             ? ((endPool - maxMonthlyFunding) /
                                 maxMonthlyFunding) *
                               100
                             : 0;
-                        const hasGrowth = Math.abs(totalGrowthPct) >= 0.01;
+                        const hasGrowth = Math.abs(totalGrowthPercent) >= 0.01;
                         return (
                           <p className="text-faint text-xs tabular-nums">
                             {hasGrowth ? (
@@ -775,7 +775,7 @@ export function SavingsContent() {
                                 {" by "}
                                 {endYear}
                                 <span className="ml-1 text-green-600">
-                                  (+{totalGrowthPct.toFixed(1)}%)
+                                  (+{totalGrowthPercent.toFixed(1)}%)
                                 </span>
                               </>
                             ) : (

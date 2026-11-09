@@ -517,11 +517,11 @@ export function ContributionsContent() {
             </thead>
             <tbody>
               {person.accountTypes.map((a) => {
-                const utilPct = a.views[viewMode].fundingPct * 100;
+                const utilPercent = a.views[viewMode].fundingPct * 100;
                 const barColor =
-                  utilPct >= 95
+                  utilPercent >= 95
                     ? "bg-emerald-500"
-                    : utilPct >= 80
+                    : utilPercent >= 80
                       ? "bg-yellow-500"
                       : "bg-blue-500";
 
@@ -592,7 +592,7 @@ export function ContributionsContent() {
                               <div
                                 className={`h-full rounded-full ${barColor}`}
                                 style={{
-                                  width: `${Math.min(100, utilPct)}%`,
+                                  width: `${Math.min(100, utilPercent)}%`,
                                 }}
                               />
                             </div>
