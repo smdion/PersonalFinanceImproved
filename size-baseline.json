@@ -288,7 +288,7 @@
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 156,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 99,
-    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 506,
+    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 477,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 245,
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 463,
@@ -299,7 +299,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-end.ts": 156,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
-    "src/lib/pure/engine/rmd-enforcement.ts": 462,
+    "src/lib/pure/engine/rmd-enforcement.ts": 431,
     "src/lib/pure/engine/roth-conversion.ts": 535,
     "src/lib/pure/engine/tax-estimation.ts": 503,
     "src/lib/pure/engine/types/accumulation.ts": 163,
@@ -960,7 +960,7 @@
       "runDecumulationYear": 529
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
-      "runPreYearSetup": 413
+      "runPreYearSetup": 387
     },
     "src/lib/pure/engine/rmd-enforcement.ts": {
       "enforceOwnerRmds": 152

@@ -1,50 +1,14 @@
 /**
- * Qualified Charitable Distributions (QCD).
- *
- * A QCD is a direct transfer from a Traditional IRA to a qualified charity
- * that satisfies part of the owner's RMD without counting as taxable
- * income. It's a proactive election on the RMD itself — NOT a rule for
- * what happens to spending "excess" — so this runs BEFORE tax gross-up
- * and routing, not after (see `rmdExcessHandling` /
- * `reinvestRmdExcess` in `balance-deduction.ts` for the separate,
- * unrelated "what to do with leftover money" question).
- *
- * Not capped by the RMD amount: IRC
- * §408(d)(8) caps a QCD at the annual per-person dollar limit, full stop —
- * it is legal, and a real tax-planning move, to QCD MORE than the year's
- * RMD (the excess just doesn't count toward satisfying it, but is still
- * excluded from taxable income). `qcdMaximize` means what it says. The
- * only real caps are the IRA balance actually available and the annual
- * IRS limit.
- *
- * Approximation (documented, not IRS-exact): the engine's RMD calculation
- * pools ALL pre-tax accounts (401k + IRA + 403b) into one per-person
- * Traditional balance — it does not model the IRS's real per-account-type
- * RMD math (all IRAs aggregated one way, each 401k calculated separately).
- * Since QCDs are IRA-only, this module caps the QCD-eligible amount at
- * `min(cap, personIraTraditionalBalance)` rather than attempting a full
- * per-account-type RMD split, which this engine doesn't do anywhere
- * today.
- *
- * Only meaningful when individual accounts are tracked — same limitation
- * per-person RMD tracking itself already has (there's no person-level
- * granularity without it). Callers should include anyone at or above
- * `AGE_RULES.qcd` (config/age-rules.ts), not just people who've
- * already reached their RMD start age — QCD eligibility (70½) predates
- * SECURE 2.0's RMD-age delay (72/73/75), and the years before RMDs are
- * required are QCD's highest-value window for shrinking a future one.
+ * Qualified Charitable Distributions: an RMD election applied before gross-up and routing, capped
+ * by the IRA balance and the annual limit (IRC §408(d)(8)), not by the RMD. Eligibility starts at
+ * `AGE_RULES.qcd` (70½), before RMD age; needs individual accounts.
  */
 import { roundToCents } from "../../utils/math";
 
 interface QcdPersonInput {
   personId: number;
-  /** This person's Traditional balance held specifically in IRA-category
-   *  accounts — the only portion eligible for QCD.
-   *
-   *  Timing note: the caller reads this balance
-   *  live from `indBalance` at QCD-computation time, before this year's
-   *  growth runs (QCD runs first) — time-equivalent to the RMD
-   *  snapshot's own timing for a fresh projection year. */
+  /** This person's Traditional balance in IRA-category accounts, the only QCD-eligible money,
+   *  read live from `indBalance` before this year's growth. */
   iraTraditionalBalance: number;
 }
 
@@ -54,11 +18,8 @@ interface QcdPersonResult {
 }
 
 /**
- * Compute each person's QCD amount for the year. Returns only entries
- * with a positive amount. Empty array when `qcdMaximize` is off or no
- * person has an IRA Traditional balance to draw it from. Callers decide
- * who's eligible to pass in (age 70½+, per `AGE_RULES.qcd`) —
- * this function doesn't gate on age or RMD status itself.
+ * Each person's positive QCD amount for the year; empty when `qcdMaximize` is off or no one has
+ * an IRA Traditional balance. Callers pass only eligible people (age is not gated here).
  */
 export function computeQcdAmounts(
   qcdMaximize: boolean,
@@ -77,10 +38,8 @@ export function computeQcdAmounts(
     .filter((r) => r.qcdAmount > 0.01);
 }
 
-/** Sum of all per-person QCD amounts — the total to deduct from the
- *  household's aggregate IRA Traditional balance and to subtract from
- *  the RMD requirement `enforceRmd` still needs to satisfy via a real
- *  taxable distribution. */
+/** Total QCD: deducted from the IRA Traditional aggregate and from the RMD `enforceRmd` must
+ *  still satisfy with a taxable distribution. */
 export function totalQcdAmount(results: QcdPersonResult[]): number {
   return roundToCents(results.reduce((sum, r) => sum + r.qcdAmount, 0));
 }

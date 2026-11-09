@@ -5859,9 +5859,6 @@
   "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 8
     }
   },
   "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": {
@@ -5874,27 +5871,9 @@
       "count": 2
     }
   },
-  "src/lib/pure/engine/projection-year-handlers/state.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/engine/projection-year-handlers/types.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 6
-    }
-  },
   "src/lib/pure/engine/projection.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/lib/pure/engine/qcd.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
     }
   },
   "src/lib/pure/engine/rmd-enforcement.ts": {
@@ -5903,9 +5882,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 5
     },
     "ratchet/no-abbreviation": {
       "count": 8
