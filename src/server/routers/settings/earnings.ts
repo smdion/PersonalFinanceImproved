@@ -56,7 +56,7 @@ export const earningsProcedures = {
           .then(firstRow),
       ),
     // Also drops its amount from every Salary Profile, so no profile keeps
-    // an amount for a line that no longer exists.
+    // an amount for a deleted line.
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>

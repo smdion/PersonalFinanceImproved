@@ -1,8 +1,6 @@
 /**
- * Community tax-data updates (lib/tax-data/sync.ts): whether they're on,
- * the last check, and the review of a waiting update — what it would
- * change, then Apply or Dismiss (admin). Apply re-verifies the stored file
- * and refuses if the figures changed since the admin reviewed them.
+ * Community tax-data updates (lib/tax-data/sync.ts): status, last check, and admin
+ * review/Apply/Dismiss of a waiting update; Apply refuses if the figures changed since review.
  */
 import { createHash } from "crypto";
 import { z } from "zod/v4";

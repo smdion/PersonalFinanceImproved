@@ -10,11 +10,8 @@ import * as schema from "@/lib/db/schema";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
 
-// amountPerPeriod is deliberately NOT here — a deduction is purely
-// structural now; its dollar amount is ALWAYS a Contribution Profile's
-// deductions active-field entry (contributionProfile.update/
-// setDeductionActiveFields write it), same no-base-value rule contribution
-// accounts already follow. See applyDeductionActiveFields.
+// No amountPerPeriod: a deduction is structural; its dollar amount is always a
+// Contribution Profile's active-field entry. See applyDeductionActiveFields.
 const deductionInput = z.object({
   jobId: z.number().int(),
   deductionName: z.string().trim().min(1),
@@ -43,13 +40,8 @@ export const deductionsProcedures = {
         .from(schema.paycheckDeductions)
         .orderBy(asc(schema.paycheckDeductions.jobId)),
     ),
-    // create/update at contributionProfileProcedure's level, not admin — a
-    // deduction's identity (name/isPretax/ficaExempt) is the same class of
-    // previously-admin-gated job fact that W-4/pay-schedule fields already
-    // moved off of (Stage B); its AMOUNT already resolves via a
-    // Contribution Profile's active fields at this same permission level,
-    // so gating identity higher than the value that depends on it doesn't
-    // make sense. delete stays admin — more destructive, not requested.
+    // create/update at contributionProfileProcedure's level: identity shouldn't be gated
+    // higher than the amount that depends on it. delete stays admin (more destructive).
     create: contributionProfileProcedure
       .input(
         deductionInput.refine(

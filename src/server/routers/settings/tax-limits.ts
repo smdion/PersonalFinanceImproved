@@ -66,10 +66,8 @@ const keyText = (vals: unknown[]) =>
     .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
     .join("|");
 
-/** What Ledgr ships here: every row of the shipped file and of a newer approved
- *  community update (both are applied, so neither's rows may be deleted), and
- *  each IRS limit's value by `"year|type"` — the community file's where it has
- *  one, with the documents it cites (a link each, from the year's `sources`).
+/** What Ledgr ships: the rows of the shipped file and any newer approved community update
+ *  (neither deletable), and each IRS limit by `"year|type"` with its cited sources.
  *  Rebuilt only when the approved version changes. */
 type Citation = { name: string; url: string | null };
 type Shipped = {
@@ -188,10 +186,8 @@ async function refuseShippedDelete(
     });
 }
 
-/** `carried`: a "+Year" copy or an empty placeholder — carried forward
- *  until the real figure ships (a release replaces it) rather than the
- *  household's own. A carried row confirmed unchanged stays carried: it
- *  only becomes the household's when its value is actually changed. */
+/** `carried`: a "+Year" copy or empty placeholder held until the real figure ships.
+ *  Confirming keeps it carried; only changing its value makes it the household's. */
 const carriedInput = { carried: z.boolean().optional() };
 const createProvenance = (carried: boolean | undefined) =>
   carried
@@ -365,7 +361,7 @@ export const taxLimitsProcedures = {
       }),
 
     /** The household checked a carried figure: it stays carried (the real
-     *  figure replaces it when it ships), but no longer needs attention. */
+     *  figure replaces it when it ships), but needs no more attention. */
     confirm: adminProcedure
       .input(z.object({ table: yearlyTableSchema, id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

@@ -43,11 +43,8 @@ export const onboardingProcedures = {
   getFirstRunState: publicProcedure.query(({ ctx }) => firstRunState(ctx.db)),
 
   /**
-   * Create the first local admin. Public, because no session exists yet;
-   * callable only while `firstRunState` says an admin is needed, so it
-   * closes for good once any local admin exists or onboarding is complete.
-   * The check repeats under a transaction lock, so two first-run requests
-   * at once can't both create one.
+   * Create the first local admin. Public (no session yet); allowed only while
+   * `firstRunState` says one is needed, rechecked under a transaction lock.
    */
   createLocalAdmin: publicProcedure
     .input(

@@ -24,10 +24,8 @@ export const syncConfigRouter = createTRPCRouter({
     return getActiveBudgetApi(ctx.db);
   }),
 
-  /** URL for the nav's "open budget API" link — YNAB always links to the
-   *  hosted app; Actual only links once the household has set an External
-   *  URL (its `serverUrl` is often a private/internal address a browser
-   *  outside that network can't reach — see ActualConfig's docblock). */
+  /** URL for the nav's "open budget API" link: YNAB's hosted app; Actual only once an
+   *  External URL is set (its `serverUrl` is often unreachable from a browser). */
   getActiveBudgetApiLink: protectedProcedure.query(async ({ ctx }) => {
     const active = await getActiveBudgetApi(ctx.db);
     if (active === "none") return { service: active, url: null } as const;

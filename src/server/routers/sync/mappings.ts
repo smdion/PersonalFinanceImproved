@@ -170,14 +170,9 @@ export const syncMappingsRouter = createTRPCRouter({
     }),
 
   /**
-   * Re-push an existing snapshot to the budget API. Deletes any previously
-   * posted snapshot:{id}-tagged transactions on currently-mapped tracking
-   * accounts, then recomputes deltas against live YNAB balances and posts
-   * fresh tagged transactions.
-   *
-   * Resyncing a non-latest snapshot causes historical drift (later snapshot
-   * deltas were computed against the old state). Pass `confirmNonLatest`
-   * after warning the user.
+   * Re-push an existing snapshot: deletes its snapshot:{id}-tagged transactions on mapped
+   * tracking accounts, then posts fresh deltas against live balances. A non-latest
+   * snapshot requires `confirmNonLatest` after warning the user.
    */
   resyncPortfolioPush: syncProcedure
     .input(
@@ -213,12 +208,9 @@ export const syncMappingsRouter = createTRPCRouter({
         });
       }
 
-      // Block resync of non-latest snapshots unless explicitly confirmed:
-      // each push targets an ABSOLUTE balance (`group.total - currentRemote`,
-      // read live), so resyncing an OLDER snapshot sets the tracking
-      // account to that old snapshot's totals *as of now* — clobbering the
-      // current balance with a stale one. Editing/resyncing the latest
-      // snapshot is the one safe case (nothing is after it).
+      // A push sets an ABSOLUTE balance, so resyncing an older snapshot would
+      // overwrite today's tracking balance with stale totals: only the latest
+      // resyncs without an explicit confirm.
       const isLatest = (await getLatestSnapshotId(ctx.db)) === snapshot.id;
       if (!isLatest && !input.confirmNonLatest) {
         throw new TRPCError({

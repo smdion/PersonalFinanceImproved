@@ -377,11 +377,11 @@
     "src/server/routers/salary-profiles.ts": 497,
     "src/server/routers/savings/api-sync.ts": 232,
     "src/server/routers/savings/index.ts": 28,
-    "src/server/routers/savings/profile-allocations.ts": 407,
-    "src/server/routers/settings/admin.ts": 407,
+    "src/server/routers/savings/profile-allocations.ts": 359,
+    "src/server/routers/settings/admin.ts": 404,
     "src/server/routers/settings/paycheck.ts": 13,
-    "src/server/routers/settings/tax-limits.ts": 783,
-    "src/server/routers/simplefin/accounts.ts": 252,
+    "src/server/routers/settings/tax-limits.ts": 779,
+    "src/server/routers/simplefin/accounts.ts": 233,
     "src/server/routers/simplefin/index.ts": 16,
     "src/server/routers/sync/core.ts": 12,
     "src/server/routers/sync/preview.ts": 14,
@@ -1040,9 +1040,6 @@
     },
     "src/server/routers/savings/api-sync.ts": {
       "apiSyncProcedures.pushContributionsToApi.mutation()": 196
-    },
-    "src/server/routers/simplefin/accounts.ts": {
-      "accountsProcedures.listAccounts.query()": 155
     },
     "src/server/routers/sync/names.ts": {
       "syncNamesRouter.syncAllNames.mutation()": 159

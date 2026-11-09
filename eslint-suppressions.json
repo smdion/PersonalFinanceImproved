@@ -6586,27 +6586,13 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/server/routers/savings/planned-transactions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/routers/savings/profile-allocations.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 8
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -6630,64 +6616,21 @@
       "count": 1
     }
   },
-  "src/server/routers/settings/admin.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/routers/settings/contribution-accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
-  "src/server/routers/settings/deductions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/settings/earnings.ts": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/settings/jobs.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/routers/settings/onboarding.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
-  "src/server/routers/settings/people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    }
-  },
   "src/server/routers/settings/tax-data-sync.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-clock-read": {
@@ -6698,12 +6641,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6711,15 +6648,6 @@
   "src/server/routers/simplefin/accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/simplefin/connections.ts": {
@@ -6730,15 +6658,7 @@
       "count": 4
     }
   },
-  "src/server/routers/simplefin/links.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/routers/sync/config.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6747,19 +6667,8 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 4
-    }
-  },
-  "src/server/routers/sync/mappings.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/server/routers/sync/names.ts": {
@@ -6768,11 +6677,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    }
-  },
-  "src/server/routers/tax-buckets.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
     }
   },
   "src/server/routers/tiingo.ts": {

@@ -142,13 +142,8 @@ export const linksProcedures = {
     }),
 
   /**
-   * Match (or unmatch) a SimpleFIN account to an existing performance_accounts
-   * row, so listAccounts can show live-vs-snapshot drift. Many-to-one:
-   * multiple SimpleFIN accounts can point at the same performance account
-   * (e.g. historical account splits/merges Ledgr still tracks as a single
-   * account) — listAccounts sums every linked account's balance before
-   * comparing against the snapshot, so this intentionally does NOT unlink
-   * any other account pointed at the same target.
+   * Match (or unmatch) a SimpleFIN account to a performance_accounts row. Many-to-one:
+   * listAccounts sums all linked balances, so other accounts on the same target stay linked.
    */
   setAccountMapping: adminProcedure
     .input(

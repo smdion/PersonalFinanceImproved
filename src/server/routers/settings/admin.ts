@@ -376,11 +376,8 @@ export const adminProcedures = {
 
   // ══ API CONNECTIONS ══
   apiConnections: createTRPCRouter({
-    /** Admin-only, and never returns `config`: it holds credentials
-     *  (encrypted envelopes, or plaintext for legacy rows such as FMP).
-     *  Connections are written only through each integration's own save
-     *  (sync), which encrypts, checks the URL and the mappings; a generic
-     *  upsert that stored config in plaintext was removed. */
+    /** Admin-only, and never returns `config` (credentials). Connections are written only
+     *  through each integration's own save, which encrypts and validates. */
     list: adminProcedure.query(({ ctx }) =>
       ctx.db
         .select({

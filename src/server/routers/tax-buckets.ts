@@ -1,12 +1,6 @@
 /**
- * Tax Buckets analysis router — real current-state tax-bucket breakdown,
- * Rule of 55 / Roth-basis-driven early-access flags, and the manual-entry
- * mutations (Roth basis, separation date) it depends on.
- *
- * "Accessible now" reflects real, already-happened separation only — never
- * a hypothetical future retirement date. There is no target-retirement-age
- * input here; a planned future retirement isn't evidence Rule of 55 already
- * applies today.
+ * Tax Buckets: current tax-bucket breakdown, Rule of 55 / Roth-basis early-access flags
+ * (from real past separation only, never a planned date), and their manual-entry mutations.
  */
 import { z } from "zod/v4";
 import { isCalendarDate } from "@/lib/utils/date";
@@ -29,10 +23,8 @@ import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 import { writeStamp } from "@/lib/utils/clock";
 
-/** Stamp basis_last_updated in app_settings — mirrors stampPerformanceUpdated
- *  (services/performance/last-updated.ts). Called on every real basis write
- *  (single or batch) so the sidebar Data Freshness display and the
- *  Performance page subtitle stay current automatically. */
+/** Stamp basis_last_updated in app_settings on every basis write, keeping the sidebar
+ *  Data Freshness and Performance subtitle current (like stampPerformanceUpdated). */
 async function stampBasisUpdated(db: DbOrTx) {
   const now = writeStamp().toISOString();
   await upsertSetting(db, "basis_last_updated", now);
@@ -102,15 +94,9 @@ export const taxBucketsRouter = createTRPCRouter({
     };
   }),
 
-  /** Upsert Roth contribution/conversion basis for one (account, owner)
-   *  pair. Without an explicit `year`, targets that pair's current row
-   *  (the same selection computeBreakdown uses) — no year-boundary awareness
-   *  needed from the caller. An explicit `year` lets the caller
-   *  deliberately correct an older, already-finalized year (no hard
-   *  reject — matches how updateAccount already edits finalized
-   *  accountPerformance rows elsewhere in this app; there is no
-   *  unfinalizeYear escape hatch, so a hard reject would make a typo
-   *  permanently uncorrectable). Editing a row always clears isSeeded. */
+  /** Upsert Roth basis for one (account, owner). Without `year`, targets the pair's current
+   *  row (as computeBreakdown selects it); an explicit `year` may correct a finalized year
+   *  (no unfinalize exists). Editing a row always clears isSeeded. */
   updateRothBasis: performanceProcedure
     .input(
       z.object({
@@ -185,10 +171,8 @@ export const taxBucketsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Update every (account, owner) Roth basis entry in one screen/save,
-   *  mirroring performance.batchUpdateAccounts — each entry targets its
-   *  own already-known current year (from computeBreakdown's rothBasisMeta),
-   *  so no per-row year resolution is needed here. */
+  /** Update every (account, owner) Roth basis entry in one save; each entry targets its
+   *  known current year (computeBreakdown's rothBasisMeta). */
   batchUpdateRothBasis: performanceProcedure
     .input(
       z.object({

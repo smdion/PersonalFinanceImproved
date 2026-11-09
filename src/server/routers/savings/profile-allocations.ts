@@ -29,22 +29,9 @@ import {
 } from "@/lib/pure/household/profile-selection.schema";
 
 /**
- * Live savings-capacity pool ((take-home - budgeted) across earners), via
- * the paycheck and budget summaries — not a re-derived shortcut. Shared by
- * recalculateAllocation and lockInAllocationPercent, the only two mutations
- * allowed to move a percentage-based goal's dollar/percent (see
- * recalculateAllocation's doc comment for why display/push never do this
- * live automatically).
- *
- * `profileId` lets a caller target a specific budget profile instead of
- * whichever one is currently active; omitting it preserves the
- * active-profile default. This is deliberately a *separate* computation
- * from computeSavingsSummary's totalMonthlyPool (which sums each goal's stored
- * monthlyContribution snapshot, not a live paycheck/budget derivation) —
- * they aren't two paths to the same number today. The budget-monthly-total
- * derivation itself goes through deriveBudgetMonthlyTotal — the single
- * computation path for that step, shared with savings/savings-content.tsx's own two
- * capacity computations.
+ * Live savings-capacity pool ((take-home - budgeted) across earners) from the paycheck and
+ * budget summaries, for the only two mutations that move a percentage goal's amounts.
+ * `profileId` targets a budget profile (default: active). Not computeSavingsSummary's pool.
  */
 async function computeLiveMaxMonthlyFunding(
   ctx: { db: Db; scope: RequestScope },
@@ -87,13 +74,8 @@ async function computeLiveMaxMonthlyFunding(
 
 export const profileAllocationProcedures = {
   // ══ PER-PROFILE SAVINGS FUNDING ══
-  // How much a goal is funded, and how (percent vs. flat dollar), is owned
-  // entirely per budget profile — no shared default a profile falls back
-  // to (e.g. "Car fund gets 12% under my current budget, $0 under a
-  // relocation what-if" — both are just that profile's own row). Edited
-  // from the budget page, scoped to whichever profile is being viewed
-  // there — see getResolvedGoalAllocations for the single resolution path
-  // this and every other reader/writer goes through.
+  // A goal's funding (percent vs. flat dollar) is owned per budget profile, with no shared
+  // default; every reader/writer resolves through getResolvedGoalAllocations.
   goalProfileAllocations: createTRPCRouter({
     /** Every active goal's funding for a given profile. */
     list: protectedProcedure
@@ -120,11 +102,8 @@ export const profileAllocationProcedures = {
           };
         });
       }),
-    /** Per-profile summary (total funded monthly + how many goals have a
-     *  nonzero allocation) for every budget profile at once — for the
-     *  profile-picker sidebar. Routes through the same resolver as `list`
-     *  above (one call per profile) rather than re-deriving totals
-     *  independently. */
+    /** Per-profile summary (monthly total + count of funded goals) for every budget
+     *  profile, for the profile picker; uses the same resolver as `list`. */
     listSummaries: protectedProcedure.query(async ({ ctx }) => {
       const [goals, profiles] = await Promise.all([
         ctx.db
@@ -153,10 +132,8 @@ export const profileAllocationProcedures = {
         }),
       );
     }),
-    /** Manual edit — sets (goalId, profileId)'s funding directly, independent
-     *  of the live pool (contrast with recalculateAllocation/
-     *  lockInAllocationPercent, which also write here but derive the value
-     *  from the live pool instead of taking it directly from the caller). */
+    /** Manual edit: sets (goalId, profileId)'s funding as given, unlike
+     *  recalculateAllocation/lockInAllocationPercent, which derive it from the live pool. */
     upsert: savingsProcedure
       .input(
         z.object({
@@ -199,21 +176,9 @@ export const profileAllocationProcedures = {
   }),
 
   /**
-   * Recompute a percentage-based savings goal's monthly_contribution from
-   * the CURRENT live pool ((allocationPercent/100) * maxMonthlyFunding) and
-   * persist it as a savings_goal_profile_allocations override for the
-   * target profile (profileId, or the active profile if omitted) — never
-   * the raw savings_goals columns; see getResolvedGoalAllocations for why
-   * those columns aren't read/written anywhere except goal creation. This
-   * is the only path that lets a percentage-based goal's dollar amount
-   * move — display and push both read the resolved override directly (see
-   * pushContributionsToApi), so a salary/budget change never silently
-   * changes what's shown or sent to the budget API until the user
-   * explicitly asks for it here.
-   * Omitting goalId recalculates every active percentage-based goal (for
-   * the target profile) from one shared live-pool snapshot (a single fetch
-   * applied to all rows, so a batch recalc can't see the pool shift
-   * mid-batch the way N separate live reads could).
+   * The only path that moves a percentage goal's dollars: recomputes monthly_contribution
+   * from the live pool and stores it as the target profile's allocation (default: active).
+   * Omitting goalId recalculates every percentage goal from one pool snapshot.
    */
   recalculateAllocation: savingsProcedure
     .input(
@@ -221,10 +186,7 @@ export const profileAllocationProcedures = {
         .object({
           goalId: z.number().int().optional(),
           profileId: z.number().int().optional(),
-          // See computeLiveMaxMonthlyFunding's `income` param docblock — the
-          // caller's already-resolved Contribution/Salary Profile
-          // selection, so the live pool this mutation recomputes against
-          // can't silently diverge from what its own preview showed.
+          // The caller's resolved pay-profile selection, so the pool matches its preview.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
           selection: payProfileSelectionSchema.optional(),
@@ -244,10 +206,8 @@ export const profileAllocationProcedures = {
         });
       }
 
-      // Resolve against the target profile's own overrides — a goal that's
-      // only percentage-based under this profile (not globally) must still
-      // be picked up, and one that's been overridden to flat-dollar under
-      // this profile must be excluded even if its global default is a %.
+      // Resolve against the target profile's own allocations: percentage vs flat-dollar
+      // is decided per profile.
       const resolvedByGoal = await getResolvedGoalAllocations(
         ctx.db,
         goals,
@@ -303,16 +263,8 @@ export const profileAllocationProcedures = {
     }),
 
   /**
-   * Inverse of recalculateAllocation: holds monthly_contribution (the
-   * dollar amount) fixed and recomputes allocation_percent to match what
-   * share of the CURRENT live pool that dollar amount represents. Use this
-   * after a raise when you want to keep sending the same dollar amount to
-   * a goal (not sweep the raise into it) while keeping the stored percent
-   * an accurate description of "what % of current income this is" rather
-   * than a stale figure computed against a smaller pool.
-   * allocation_percent is decimal(6,3) — rounded to 3 decimals, which at
-   * typical pool sizes is sub-dollar precision (accepted trade-off; see
-   * recalculateAllocation for the shared live-pool computation this reuses).
+   * Inverse of recalculateAllocation: keeps the dollar amount and recomputes
+   * allocation_percent as its share of the live pool (decimal(6,3), rounded to 3 places).
    */
   lockInAllocationPercent: savingsProcedure
     .input(

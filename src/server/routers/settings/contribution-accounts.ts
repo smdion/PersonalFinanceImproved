@@ -32,12 +32,8 @@ import {
 } from "@/server/services/contributions/match-writes";
 import { firstRow } from "@/lib/utils/first-row";
 
-// contributionMethod/contributionValue are deliberately NOT here — an
-// account is purely structural; the actual contribution amount/method is
-// ALWAYS a Contribution Profile's active-field entry
-// (contributionProfile.update writes it, validated there — see
-// jointRequiresJobForPercentOfSalary below, moved to that write boundary
-// since it's the only place contributionMethod is ever set now).
+// No contributionMethod/contributionValue: an account is structural; the amount and
+// method are always a Contribution Profile's active-field entry (contributionProfile.update).
 export const contributionAccountInput = z.object({
   jobId: z.number().int().nullable().optional(),
   personId: z.number().int().nullable(),
@@ -67,10 +63,8 @@ export const contributionAccountInput = z.object({
   priorYearContribAmount: zDecimal.optional(),
 });
 
-// Several downstream consumers (build-engine-payload.ts's activeContribs
-// filter, the engine's salary-fallback matching) treat personId === null as
-// synonymous with ownership === "joint". Enforce that invariant at the
-// write boundary instead of leaving it as an unenforced convention.
+// Downstream consumers treat personId === null as ownership === "joint"; enforce that
+// invariant at the write boundary.
 const ownershipPersonIdInvariant = (data: {
   ownership?: string;
   personId: number | null;
@@ -265,15 +259,8 @@ export const contributionAccountsProcedures = {
         });
       }),
     /**
-     * Toggle isActive alone, without the full contributionAccountInput
-     * shape `update` requires.
-     *
-     * Used by the Contribution Profile editor and Compare view, which only
-     * have the curated accountDetails/compareData view of an account, not
-     * every raw structural field. Deliberately separate from any
-     * profile-scoped mutation: this flag isn't profile-owned (it gates the
-     * account out of computeSummary before any profile is even resolved),
-     * so it's a plain row update, same as `update` above.
+     * Toggle isActive alone, for editors that lack the full account shape. Not
+     * profile-owned: the flag gates the account out of computeSummary before profiles resolve.
      */
     setActive: adminProcedure
       .input(z.object({ id: z.number().int(), isActive: z.boolean() }))
