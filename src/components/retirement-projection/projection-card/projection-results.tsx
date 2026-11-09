@@ -73,10 +73,9 @@ export function ProjectionResults({
                   stays usable while the engine loads. */}
           {result && (
             <div className="space-y-2 print:hidden">
-              {/* COMPUTE zone — decisions that change what gets
-                          calculated. Scenario is the primary control
-                          (bigger, colored active state); everything else
-                          is secondary, below the dashed rule. */}
+              {/* COMPUTE zone — decisions that change what gets calculated.
+                          Scenario is primary; everything else is secondary,
+                          below the dashed rule. */}
               <ComputeControls
                 state={state}
                 result={result}
@@ -84,10 +83,9 @@ export function ProjectionResults({
                 people={people}
               />
 
-              {/* DISPLAY zone — lenses on results already computed.
-                          Chart type is the primary control; Dollars rides
-                          alongside it since it's the other frequently-
-                          touched one. Everything else is secondary. */}
+              {/* DISPLAY zone — lenses on results already computed. Chart
+                          type is primary, with Dollars beside it; everything
+                          else is secondary. */}
               <DisplayControls
                 chartView={chartView}
                 setChartView={setChartView}
@@ -99,10 +97,8 @@ export function ProjectionResults({
           )}
 
           {/* Chart area — engine skeleton, then real chart (with MC skeleton
-                  if MC is still pending after engine completes). The advisor
-                  report is a purpose-built document, not a printout of the
-                  interactive chart — print:hidden whenever "advisor" mode
-                  is active. */}
+                  while MC is pending). Hidden in print for "advisor" mode,
+                  which renders its own document. */}
           <ChartArea
             reportMode={report.reportMode}
             engineQuery={engineQuery}

@@ -175,16 +175,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     peakPt ? peakPt.balance : rowTotal(peakYear),
     peakYear.year,
   );
-  // When the card's view is a Coast FIRE variant OR Rate-Seeded, swap the MC
-  // data source so all the hero KPIs — Portfolio Survival, Lifetime Income
-  // Stability, Nest Egg, End Balance — reflect that scenario, not the
-  // baseline plan. Reads the SAME `activeAltMcResult` use-projection-
-  // queries.ts and use-projection-derived.ts consume — previously hand-
-  // derived a third time here with its own copy of the view
-  // ternary, which risked silently disagreeing with the other two on a
-  // future change to the views. Intentionally
-  // null while the alt-scenario MC is loading — the existing
-  // `!simulation && simulationLoading` skeleton branch below handles the loading state.
+  // Coast FIRE / Rate-Seeded views swap all hero KPIs to that scenario's MC,
+  // the same `activeAltMcResult` the query/derived hooks use. Null while it
+  // loads; the `!simulation && simulationLoading` skeleton covers that.
   const simulation =
     projectionView === "coastFire" ||
     projectionView === "coastFireToday" ||
@@ -263,12 +256,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const hasBudgetStability = simulation.budgetStabilityRate !== null;
     const retSpan = engineSettings.endAge - engineSettings.retirementAge;
 
-    // The long-horizon tip used to blanket-suggest
-    // "a lower withdrawal rate (3-3.5%)" — accurate advice for the budget-
-    // continuation strategies, but there's no user-set rate to lower for
-    // RMD-Based Spending (IRS-formula-driven), and the real knob for
-    // Constant %/Endowment/Vanguard Dynamic is their own Strategy Params
-    // field, not the Initial Withdrawal Rate this tooltip sits near.
+    // Long-horizon tip names the strategy's real knob: the withdrawal rate
+    // for budget-continuation strategies, none for RMD-Based (IRS formula),
+    // Strategy Params for Constant %/Endowment/Vanguard Dynamic.
     const activeStrategy =
       engineSettings.withdrawalStrategy as WithdrawalStrategyType;
     const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
@@ -279,13 +269,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
           : `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
 
-    // when "vs strategy" trails Portfolio
-    // Survival by a real margin, something is forcing deviations
-    // from the strategy's own plan even though the money survives —
-    // worth flagging urgently. This is an MC-vs-MC comparison (both
-    // numbers come from the same run), unlike a deterministic
-    // unmet-need alert, which gets its own separate affordance
-    // rather than being grafted onto this MC statistic.
+    // "vs strategy" trailing Portfolio Survival by a real margin means the
+    // plan deviates from the strategy even though the money survives. Both
+    // figures come from the same Simulation run.
     const strategyGapUrgent =
       simulation.successRate - simulation.spendingStabilityRate >
       SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD;

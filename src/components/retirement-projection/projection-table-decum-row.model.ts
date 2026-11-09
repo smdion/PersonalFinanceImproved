@@ -55,22 +55,14 @@ export function categoryWithdrawalItems(
   noteFor: AccountNote,
 ): TooltipLineItem[] {
   const items: TooltipLineItem[] = [];
-  // Per-account note: merges this account's withdrawal-ordering
-  // eligibility verdict and tracked Roth basis draw-down
-  // into ONE dim line under its amount, instead of
-  // repeating the account name on separate lines for each
-  // fact. See buildEligibilityNote's docblock for why the
-  // basis-remaining figure is reconstructed rather than
-  // reusing the reason's nominal basis.
+  // Per-account note: eligibility verdict and Roth basis draw-down merged into
+  // one dim line under the amount (see buildEligibilityNote for why basis
+  // remaining is reconstructed).
   const buildNote = noteFor;
   if (withdrawal > 0) {
-    // Per-account breakdown ("no magic money"): when a
-    // category holds more than one tracked account (e.g.
-    // both spouses' 401ks, or a Trad + Roth sub-account),
-    // show exactly which account(s) were drawn from
-    // rather than one aggregated Trad/Roth line per
-    // category. Falls back to the old aggregate when no
-    // individual-account data exists for this category.
+    // When a category holds several tracked accounts, show which were drawn
+    // from rather than one Trad/Roth line per category; fall back to the
+    // aggregate when no individual-account data exists.
     const withdrawingAccounts = categoryAccounts
       .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
       .sort((a, b) => {
@@ -131,11 +123,9 @@ export function totalWithdrawalItems(
 ): TooltipLineItem[] {
   const items: TooltipLineItem[] = [];
   if (dyr.totalWithdrawal > 0) {
-    // Per-account breakdown ("no magic money"): every account that was actually drawn from
-    // this year gets its own line, so the total isn't just an
-    // aggregate Trad/Roth split — the user can see exactly which
-    // account(s), whose, funded it. Ordered by category (accum
-    // order), then traditional before roth, then owner name.
+    // One line per account drawn from this year, so the user sees exactly
+    // which account(s), whose, funded it. Ordered by category (accum order),
+    // then traditional before roth, then owner name.
     const withdrawingAccounts = filteredIabs
       .filter((ia) => (ia.draw?.withdrawal ?? 0) > 0.01)
       .sort((a, b) => {
@@ -151,15 +141,9 @@ export function totalWithdrawalItems(
       });
     if (withdrawingAccounts.length > 0) {
       for (const ia of withdrawingAccounts) {
-        // Merge this account's eligibility verdict + tracked Roth
-        // basis draw-down onto its own line instead of a separate
-        // household-wide text block — see `buildEligibilityNote`'s
-        // docblock above (and the fix note there) for why the
-        // basis-remaining dollar figure is reconstructed rather
-        // than reused verbatim. Bounded by construction: only
-        // accounts actually withdrawn from this year appear here,
-        // so this can't regrow into the old "every account in the
-        // household" wall of text.
+        // This account's eligibility verdict + Roth basis draw-down on its own
+        // line (see `buildEligibilityNote` for why basis is reconstructed).
+        // Only accounts withdrawn from this year appear.
         items.push({
           label: ownerAccountLabel(ia),
           amount: deflate(ia.draw!.withdrawal, yearRow.year),

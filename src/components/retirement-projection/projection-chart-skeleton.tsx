@@ -1,12 +1,6 @@
-/** Loading skeleton for ProjectionChart — extracted into its own module so
- *  it can serve as the next/dynamic loading fallback without dragging
- *  recharts into the parent bundle.
- *
- *  The optional `phase` prop controls the overlay label:
- *    "engine"     → "Running projection engine..."  (blue, initial load)
- *    "simulation" → "Simulating scenarios..." (purple, MC prefetch)
- *    undefined    → no overlay (used as dynamic import fallback only)
- */
+/** Loading skeleton for ProjectionChart, its own module so next/dynamic can
+ *  use it without pulling recharts into the parent bundle. `phase` sets the
+ *  overlay: "engine" (blue), "simulation" (purple, MC), undefined = none. */
 
 const BAR_HEIGHTS = [
   18, 24, 30, 38, 46, 55, 62, 70, 78, 84, 88, 92, 95, 90, 85, 80, 74, 68, 60,

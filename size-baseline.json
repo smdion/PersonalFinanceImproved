@@ -165,20 +165,20 @@
     "src/components/retirement-projection/projection-card/hero-panel.tsx": 37,
     "src/components/retirement-projection/projection-card/loader-strip.tsx": 60,
     "src/components/retirement-projection/projection-card/person-view-pills.tsx": 47,
-    "src/components/retirement-projection/projection-card/projection-results.tsx": 117,
+    "src/components/retirement-projection/projection-card/projection-results.tsx": 113,
     "src/components/retirement-projection/projection-card/recalculating-banner.tsx": 87,
     "src/components/retirement-projection/projection-card/report-controls.tsx": 105,
     "src/components/retirement-projection/projection-card/simulation-settings.tsx": 116,
     "src/components/retirement-projection/projection-card/slide-panels.tsx": 124,
     "src/components/retirement-projection/projection-card/table-area.tsx": 42,
     "src/components/retirement-projection/projection-card/use-projection-report.ts": 82,
-    "src/components/retirement-projection/projection-chart.tsx": 1141,
-    "src/components/retirement-projection/projection-hero-kpis.tsx": 504,
-    "src/components/retirement-projection/projection-mc-results.tsx": 120,
+    "src/components/retirement-projection/projection-chart.tsx": 1078,
+    "src/components/retirement-projection/projection-hero-kpis.tsx": 490,
+    "src/components/retirement-projection/projection-mc-results.tsx": 108,
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 235,
     "src/components/retirement-projection/projection-table-accum-contributions.model.ts": 253,
     "src/components/retirement-projection/projection-table-accum-row.tsx": 890,
-    "src/components/retirement-projection/projection-table-decum-balances.model.ts": 288,
+    "src/components/retirement-projection/projection-table-decum-balances.model.ts": 277,
     "src/components/retirement-projection/projection-table-decum-row.tsx": 863,
     "src/components/retirement-projection/projection-table-decum-withdrawals.model.ts": 243,
     "src/components/retirement-projection/projection-table.tsx": 432,
@@ -709,12 +709,11 @@
       "OverridesPanel.renderFields": 168
     },
     "src/components/retirement-projection/projection-chart.tsx": {
-      "ProjectionChart": 1082,
-      "ProjectionChart.chartData.map()": 166,
-      "ProjectionChart.content": 353
+      "ProjectionChart": 1019,
+      "ProjectionChart.content": 339
     },
     "src/components/retirement-projection/projection-hero-kpis.tsx": {
-      "ProjectionHeroKpis": 383
+      "ProjectionHeroKpis": 369
     },
     "src/components/retirement-projection/projection-table-accum-row.tsx": {
       "AccumulationRow": 737

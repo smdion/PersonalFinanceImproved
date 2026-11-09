@@ -30,15 +30,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
 
   if (projectionMode !== "monteCarlo") return null;
 
-  // Refreshes both cache-backed simulations shown on this page together —
-  // the baseline MC bar here and the Coast FIRE hero card both read from
-  // the persistent projection cache, so a "re-run" should mean "give me
-  // fresh randomness for both," not just one of the two. `isRerunning`
-  // lives in the shared state hook (not local to this component) so the
-  // top-of-page "recalculating" banner and the chart/table skeleton in
-  // index.tsx can also react to it — a manual re-run previously showed
-  // neither, since it bypasses the query hooks' own isFetching entirely
-  // (see rerunAllMc's docblock in use-projection-queries.ts).
+  // Re-runs both cache-backed simulations (baseline MC bar and Coast FIRE hero)
+  // with fresh randomness. `isRerunning` lives in the shared state hook so the
+  // page banner and skeletons react too (see rerunAllMc).
   const handleRerun = rerunAllMc;
 
   const handleClearCache = () => {
@@ -54,15 +48,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     clearProjectionCacheMutation.mutate(undefined, {
       onSuccess: (data) => {
         toast(`Cleared ${data.cleared} cached row(s).`, "success");
-        // Wiping the SERVER-side projection_cache table alone doesn't touch
-        // this browser tab's own client-side query cache -- without this,
-        // "Clear Cache" clears the wrong side: the server would compute
-        // fresh on its NEXT request, but nothing tells this tab to actually
-        // make that next request, so the table keeps showing whatever
-        // computeProjection response it already has in memory. Found while
-        // debugging a live household where a Bracket Ceiling
-        // change genuinely persisted and genuinely changed the engine's
-        // output, but "Clear Cache" alone never made the page reflect it.
+        // Clearing the server-side projection_cache doesn't touch this tab's
+        // client query cache; invalidate so the page refetches and shows
+        // fresh results.
         void utils.projection.invalidate();
       },
       onError: (err) => {

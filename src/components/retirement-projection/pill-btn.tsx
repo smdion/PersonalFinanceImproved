@@ -16,16 +16,12 @@ export function PillBtn({
   disabled?: boolean;
   /** Shown on hover — required reading when `disabled` explains why. */
   title?: string;
-  /** "lg" marks a PRIMARY control (the 1-2 choices worth a second look —
-   *  Scenario, Chart type) — bigger and bolder than the "sm" default used
-   *  for everything else, so the eye has an obvious entry point instead
-   *  of every pill competing equally. */
+  /** "lg" marks a PRIMARY control (e.g. Scenario, Chart type), bigger and
+   *  bolder than the "sm" default so the eye has an obvious entry point. */
   size?: "sm" | "lg";
-  /** Active-state color — ties a primary control's fill to its zone
-   *  (compute = blue, display = amber) so color reinforces the same
-   *  grouping the zone background already carries. Secondary controls
-   *  stay "neutral" (today's plain border/shadow) so the zone accent
-   *  isn't repeated on every single pill. */
+  /** Active-state color matching a primary control's zone (compute = blue,
+   *  display = amber). Secondary controls stay "neutral" so the zone accent
+   *  isn't repeated on every pill. */
   tone?: "neutral" | "compute" | "display";
 }) {
   const sizeClasses =
@@ -99,10 +95,8 @@ export function LabeledPillGroup({
   );
 }
 
-/** Labeled `<select>` matching `LabeledPillGroup`'s visual weight — a
- *  small uppercase label beside a bordered/backgrounded box, so a native
- *  select reads as a first-class grouped control instead of a bare
- *  floating dropdown next to unrelated pills. */
+/** Labeled `<select>` matching `LabeledPillGroup`'s visual weight, so a
+ *  native select reads as a grouped control rather than a bare dropdown. */
 export function LabeledSelect({
   label,
   helpTip,
@@ -141,30 +135,18 @@ export function LabeledSelect({
   );
 }
 
-/** Tinted zone container — the load-bearing grouping device from the
- *  redesign (see the "Projection Control Rail" mockup this was approved
- *  against). "compute" (cool blue) holds controls that
- *  change what gets calculated (Scenario, simulation settings); "display"
- *  (warm amber) holds controls that only change how already-computed
- *  results are shown (Chart type, Baseline, Confidence Band, Dollars).
- *  The color + one-line `why` do double duty as both visual grouping and
- *  plain-language explanation, so a first-time viewer doesn't need to
- *  already know the app to guess what a control does — a bare label
- *  wasn't enough ("still overwhelming... where/what/
- *  why/how"). */
+/** Tinted zone container that groups controls: "compute" (blue) changes what
+ *  gets calculated, "display" (amber) only changes how results are shown.
+ *  The `why` line explains the zone in plain language. */
 export function ControlZone({
   tone,
   title,
   why,
   children,
 }: {
-  /** "compute" (blue) = decisions that change what gets calculated.
-   *  "display" (amber) = lenses on results already computed. "results"
-   *  (violet) = the Monte Carlo summary bar itself — reuses the same
-   *  violet family the app already colors MC output with elsewhere
-   *  (Sim. Median line, confidence bands in CHART_COLORS), instead of
-   *  reusing "compute" blue, which read as the same zone repeated
-   * . */
+  /** "compute" (blue) = what gets calculated; "display" (amber) = lenses on
+   *  computed results; "results" (violet) = the Monte Carlo summary bar, in
+   *  the violet family used for MC output elsewhere. */
   tone: "compute" | "display" | "results";
   title: string;
   why: string;

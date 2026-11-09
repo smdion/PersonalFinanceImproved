@@ -62,10 +62,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     ...CHART_COLORS,
     ...chartLinePalette(useTheme().resolvedTheme === "dark"),
   };
-  // Check via `state.result` before destructuring — result truthy always
-  // implies engineSettings defined (see use-projection-derived.ts), but that
-  // pairing only survives TS narrowing through the object, not through
-  // pre-destructured locals.
+  // Check `state.result` before destructuring: TS only narrows
+  // engineSettings (defined whenever result is) through the object.
   if (!state.result) return null;
 
   const {
@@ -109,11 +107,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     (y) => y.phase === "decumulation" && y.rmdAmount > 0,
   );
   const rmdStartYear = years[rmdIndex]?.year ?? null;
-  // Guyton-Klinger guardrail events (data already computed and
-  // shown in the table-row tooltip — see projection-table-decum-row.tsx —
-  // just not previously marked on the chart). Pin every triggering year the
-  // same way SS/RMD start ages are pinned, or a guardrail event on an
-  // odd-indexed year would silently vanish from the downsampled chart data.
+  // Guyton-Klinger guardrail event years: pinned like SS/RMD start ages so
+  // an odd-indexed event year doesn't vanish from the downsampled chart data.
   const guardrailIndices = new Set(
     years
       .map((y, i) => ({ y, i }))
@@ -247,36 +242,23 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     if (yearRow.phase === "decumulation") {
       datum._ssStart = yearRow.year === ssStartYear ? 1 : 0;
       datum._rmdStart = yearRow.year === rmdStartYear ? 1 : 0;
-      // All dollar figures below go through deflate() like every other
-      // dollar value this chart renders (balances, MC bands) — previously
-      // raw nominal dollars regardless of the Today's $/Future $ toggle
-      // (the table's own tooltip already
-      // deflates the same underlying fields via `dyr.rmdAmount` etc.,
-      // so the chart and table disagreed on every one of these numbers
-      // in "Today's $" mode).
+      // All dollar figures below go through deflate() like every other value
+      // in this chart, so they match the table tooltip in "Today's $" mode.
       datum._ssIncome = deflate(yearRow.ssIncome, yearRow.year);
-      // Total portfolio withdrawal (all accounts/tax types combined,
-      // already tax-grossed-up per grossUpForTaxes) — the "Income" overlay
-      // series below, alongside SS. Real strategy-computed spending, not a
-      // derived/estimated figure.
+      // Total portfolio withdrawal (all accounts, tax-grossed-up per
+      // grossUpForTaxes): the "Income" overlay series, alongside SS.
       datum._totalWithdrawal = deflate(yearRow.totalWithdrawal, yearRow.year);
       datum._rmdAmount = deflate(yearRow.rmdAmount, yearRow.year);
-      // RMD-forced excess reinvested into brokerage — unlike
-      // `_rmdStart` (which only flags the single year RMDs begin), this can
-      // be nonzero in ANY decumulation year, so it's shown on hover
-      // whenever it happens, not just at the milestone.
+      // RMD-forced excess reinvested into brokerage; unlike `_rmdStart` it can
+      // be nonzero in any decumulation year, so it shows on hover when it occurs.
       datum._rmdExcessAmount = deflate(yearRow.rmdExcessAmount, yearRow.year);
-      // QCD amount — money sent directly to charity, satisfying part
-      // of the RMD without counting as taxable income. Same "invisible
-      // unless surfaced explicitly" issue as the excess line above; QCD
-      // bypasses withdrawal routing entirely, so there's no slot/
-      // withdrawal line item that would show it otherwise.
+      // QCD — sent directly to charity, satisfying part of the RMD without
+      // taxable income. It bypasses withdrawal routing, so no line item
+      // would show it otherwise.
       datum._qcdAmount = deflate(yearRow.qcdAmount, yearRow.year);
-      // Dollars of this year's RMD that could NOT be forced through as
-      // a real taxable distribution — 0 in the overwhelmingly common case.
-      // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
-      // is now possible (Retirement-only capacity can be genuinely
-      // insufficient once Portfolio-parented balances no longer count).
+      // RMD dollars that could NOT be forced out as a taxable distribution;
+      // usually 0. See rmd-enforcement.ts rmdShortfallAmount for when
+      // Retirement-only capacity runs short.
       datum._rmdShortfallAmount = deflate(
         yearRow.rmdShortfallAmount,
         yearRow.year,
@@ -294,17 +276,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         yearRow.penaltyAvoidedShortfall ?? 0,
         yearRow.year,
       );
-      // Guardrail event — the ReferenceLine markers
-      // added a visual "▲ raise" flag on the chart but the hover tooltip
-      // never carried the underlying detail, so hovering that exact year
-      // showed nothing about why it was marked. Threaded through the same
-      // way SS/RMD milestones are.
+      // Guardrail event detail for the tooltip on a marked year.
       datum._strategyAction = yearRow.strategyAction ?? "";
-      // "Why was this account used" hover explanation — see
-      // formatDiscretionaryTierBreakdown's docblock (utils.ts). Stored as
-      // the pre-formatted string (not the raw array) since this datum
-      // object otherwise only carries numbers/flags for Recharts' own
-      // dataKey lookups.
+      // "Why was this account used" hover note (see utils.ts
+      // formatDiscretionaryTierBreakdown), pre-formatted since this datum
+      // otherwise only carries numbers/flags for Recharts' dataKey lookups.
       datum._discretionaryRoutingNote =
         formatDiscretionaryTierBreakdown(
           yearRow.discretionaryTierBreakdown?.map((t) => ({
@@ -334,24 +310,16 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const showSimulation = hasSimulationData && fanBandRange !== "off";
   const { showBars, showIncome } = state;
 
-  // Decumulation-year income overlay (total portfolio withdrawal + Social
-  // Security, secondary axis) — only worth a second axis + legend entry
-  // when there's actually decumulation data with a nonzero figure to show;
-  // an accumulation-only projection (not yet retired) has no such data.
+  // Income overlay (withdrawal + SS, secondary axis) only when there is
+  // nonzero decumulation data; accumulation-only projections have none.
   const hasIncomeData = chartData.some(
     (d) => Number(d._totalWithdrawal) > 0 || Number(d._ssIncome) > 0,
   );
   const showIncomeOverlay = showIncome && hasIncomeData;
 
-  // Per-strategy spending-adjustment event markers,
-  // one per triggering year. Covers every strategy with a real, SPORADIC
-  // action worth flagging — Guyton-Klinger's guardrails, and Vanguard
-  // Dynamic / Constant % / Endowment's clamp events. RMD-Based and
-  // Spending-Decline fire an action every single year (not an event), so
-  // they're deliberately excluded — marking every year would be noise, not
-  // a signal. Styling/wording factored out to utils.ts so the table
-  // tooltip's own guardrail note can't drift
-  // from this chart's markers.
+  // Markers for sporadic strategy adjustments (Guyton-Klinger guardrails;
+  // Vanguard Dynamic / Constant % / Endowment clamps). Every-year actions are
+  // excluded as noise. Styling is shared with the table tooltip via utils.ts.
   const STRATEGY_EVENT_STYLE = buildStrategyEventStyle(engineSettings);
   const strategyEventStyleKeys = Object.keys(STRATEGY_EVENT_STYLE);
   const guardrailEvents = years
@@ -366,15 +334,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       style: STRATEGY_EVENT_STYLE[y.strategyAction as string]!,
     }));
 
-  // Real, material "the plan called for money it couldn't actually
-  // deliver" years — a SEPARATE overlay from
-  // guardrailEvents above, deliberately: a guardrail cut and a genuine
-  // unmet-need shortfall are orthogonal (a GK cut year can ALSO be a
-  // shortfall year), so this can't share guardrailEvents' one-marker-
-  // per-year slot without silently dropping whichever fires second.
-  // unmetNeedMaterial is the engine's own single canonical verdict — see
-  // decumulation-year.ts's docblock for why the raw unmetNeed field alone
-  // isn't reliably floor-filtered.
+  // Years where the plan couldn't deliver the money it called for. Separate
+  // from guardrailEvents since a cut year can also be a shortfall year.
+  // unmetNeedMaterial is the engine's canonical verdict (raw unmetNeed isn't).
   const shortfallEvents = years
     .filter(
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
@@ -407,10 +369,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           )}
         </h5>
       </div>
-      {/* Standalone deterministic shortfall alert — deliberately its own callout, not a badge grafted
-          onto the Lifetime Income Stability MC ring (that ring is a
-          1000-trial aggregate; this is the single deterministic path
-          actually shown in this chart, a different kind of number). */}
+      {/* Deterministic shortfall alert, its own callout: the Lifetime Income
+          Stability ring is a 1000-trial aggregate, while this is the single
+          deterministic path shown in this chart. */}
       {shortfallEvents.length > 0 && (
         <div className="text-micro mb-2 rounded bg-red-50 px-2 py-1 text-red-600">
           ⚠ {shortfallEvents.length} year
@@ -463,13 +424,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   (s, k) => s + (Number(d[k.key]) || 0),
                   0,
                 );
-                // "Was the RMD satisfied" status
-                // for the RMD line(s) below. A shortfall breaks the amber
-                // color family entirely since it's the only state with real
-                // IRS excise-tax consequences. Otherwise show a checkmark
-                // whenever the RMD was actually met — not just the
-                // "eventful" excess/QCD case — since silence alone wasn't a
-                // reliable enough signal of "satisfied".
+                // RMD status for the line(s) below: a shortfall (IRS excise-tax
+                // exposure) shows in red; otherwise a checkmark whenever the
+                // RMD was met.
                 const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
                 const rmdSatisfiedNotably = !rmdShortfall;
                 const eventStyle =
@@ -735,12 +692,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               )}
                             </div>
                           )}
-                        {/* Real IRS exposure — the only RMD-related
-                            state that earns its own extra line, since it's
-                            the only one with actual tax-penalty
-                            consequences. Deliberately breaks the amber
-                            RMD/QCD color family above (red, not amber) to
-                            read as an alarm rather than routine detail. */}
+                        {/* RMD shortfall: real IRS excise-tax exposure, so it
+                            gets its own line in red, breaking the amber
+                            RMD/QCD family to read as an alarm. */}
                         {rmdShortfall && (
                           <div className="text-caption text-red-400/70">
                             Only{" "}
@@ -752,14 +706,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             met · 25% excise tax risk
                           </div>
                         )}
-                        {/* RMD-forced excess — real money forced out
-                            by the RMD floor beyond what the strategy
-                            needed, with no prior UI trace anywhere. Can
-                            recur every year once RMDs start, unlike the
-                            one-time "RMDs begin" milestone above. Wording
-                            (not just the amount) depends on the
-                            household's rmdExcessHandling setting — nothing
-                            was actually reinvested under "spend". */}
+                        {/* RMD-forced excess beyond what the strategy needed;
+                            can recur every RMD year. Wording follows
+                            rmdExcessHandling (nothing is reinvested on "spend"). */}
                         {Number(d._rmdExcessAmount) > 0 && (
                           <div
                             className={`flex justify-between gap-4 ${tipColorClass.amber}/70 text-caption`}
@@ -777,10 +726,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             </span>
                           </div>
                         )}
-                        {/* QCD — money sent directly to charity,
-                            satisfying part of the RMD tax-free. Shown
-                            separately from "RMD" above since it's the
-                            portion that never became taxable income. */}
+                        {/* QCD — sent directly to charity, satisfying part
+                            of the RMD without becoming taxable income. */}
                         {Number(d._qcdAmount) > 0 && (
                           <div
                             className={`flex justify-between gap-4 ${tipColorClass.violet}/70 text-caption`}
@@ -900,15 +847,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 />
               ))}
 
-            {/* Decumulation-year income overlay: total portfolio withdrawal
-                + Social Security, secondary right-hand axis. Two separate
-                lines (not stacked into one "total") — SS and withdrawal are
-                drawn from genuinely different sources (guaranteed income vs.
-                the portfolio itself) and stacking them would imply a single
-                combined figure without a clean name; showing each real,
-                strategy-computed number lets a household see both "what am
-                I living on" and "how much of that is SS" without inventing
-                a third derived quantity. */}
+            {/* Decumulation-year income overlay on the right-hand axis: total
+                portfolio withdrawal and Social Security as two lines, not
+                stacked, since they come from different sources. */}
             {showIncomeOverlay && (
               <>
                 <Line
@@ -988,10 +929,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 />
               )}
 
-            {/* Guyton-Klinger guardrail event markers — a
-                household running Guardrails could previously only see
-                which years triggered a raise/cut via the table-row
-                tooltip; now visible at a glance on the chart too. */}
+            {/* Guyton-Klinger guardrail event markers: the years a raise or
+                cut triggered. */}
             {guardrailEvents.map(
               (ev) =>
                 chartData.some((d) => Number(d.year) === ev.year) && (
@@ -1012,11 +951,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 ),
             )}
 
-            {/* Real, material unmet-need shortfall markers — a SEPARATE
-                overlay from the guardrail-event markers above (see
-                shortfallEvents' docblock); deliberately its own darker red
-                so it reads as a genuine "couldn't fund it" alarm, not
-                another guardrail-style informational marker. */}
+            {/* Material unmet-need shortfall markers, separate from the
+                guardrail markers (see shortfallEvents); darker red so they
+                read as a "couldn't fund it" alarm. */}
             {shortfallEvents.map(
               (ev) =>
                 chartData.some((d) => Number(d.year) === ev.year) && (

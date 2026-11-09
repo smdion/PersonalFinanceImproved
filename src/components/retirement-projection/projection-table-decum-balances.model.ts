@@ -91,12 +91,8 @@ export function totalWithdrawalTooltip(
     : hasSs
       ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yearRow.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
       : undefined;
-  // Full satisfaction status (checkmark/shortfall/
-  // excess wording), not just the bare amount — parity with the
-  // chart tooltip's rmd block (see tooltip-renderer.tsx). Checkmark
-  // shows whenever the RMD was actually met, not just the notable
-  // excess/QCD case — silence isn't a reliable enough signal of
-  // "satisfied" on its own.
+  // Full RMD status (checkmark/shortfall/excess wording), matching the chart
+  // tooltip (tooltip-renderer.tsx); the checkmark shows whenever the RMD was met.
   const rmdShortfallAmount = dyr.rmdShortfallAmount ?? 0;
   const rmdExcessAmount = dyr.rmdExcessAmount ?? 0;
   const rmdSatisfied = rmdShortfallAmount <= 0;
@@ -187,11 +183,8 @@ export function taxTypeBalanceTooltip(
   bucketGrowth: number,
 ) {
   const withdrawalLineItems: TooltipLineItem[] = [];
-  // Per-account items in BOTH household and person-filtered
-  // views — previously the household view fell back to a
-  // per-CATEGORY slot aggregate here, collapsing e.g. two
-  // people's separate 401ks into one line, while the
-  // Balance-by-Account view always broke it out per account.
+  // Per-account items in both household and person-filtered views, so two
+  // people's 401ks stay separate lines, matching Balance-by-Account.
   const multiAccountBucket = bucketAccounts.length > 1;
   if (bucketAccounts.length > 0) {
     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
@@ -239,13 +232,9 @@ export function taxTypeBalanceTooltip(
       color: "emerald",
     });
   }
-  // Same RMD-excess / QCD visibility as the
-  // contribution-view tooltips (the
-  // BALANCE tooltip needs to explain its own number too,
-  // not just the contribution/withdrawal column). afterTax
-  // is where reinvested excess actually lands (or would
-  // have, under "spend"); preTax is where QCD money left
-  // from.
+  // RMD-excess / QCD lines so the balance tooltip explains its own number:
+  // afterTax is where reinvested excess lands (or would, under "spend");
+  // preTax is where QCD money left from.
   const bucketRmdExcess = yearRow.rmdExcessAmount ?? 0;
   const bucketRmdMode = engineSettings?.rmdExcessHandling;
   if (isAfterTaxType(bucket) && bucketRmdExcess > 0.01) {

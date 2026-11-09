@@ -1,18 +1,9 @@
 "use client";
 
 /**
- * ProjectionLoader — handles two distinct UI states:
- *
- *  1. Action state (showActionState=true): autoload is off and no data exists.
- *     Renders a full-width card at the CHART position explaining the user
- *     needs to run the simulation manually.
- *
- *  2. Slim progress strip: engine is done but MC / Coast FIRE is still
- *     running. Renders a single-line strip between the chart and table so
- *     real content is fully visible with just a status indicator.
- *
- *  Engine loading state is NOT handled here — the chart, hero, and toolbar
- *  each show their own in-place skeleton so the layout never shifts.
+ * Action-state card at the chart position (autoload off, no data) or a slim
+ * progress strip while MC / Coast FIRE runs. Engine loading is not handled
+ * here: chart, hero and toolbar each show their own in-place skeleton.
  */
 
 import { SettingsLink } from "@/components/ui/settings-link";
