@@ -1,10 +1,6 @@
 /**
- * RMD-Based Spending — Morningstar Method 2.
- *
- * Withdraw based on the IRS Required Minimum Distribution factor
- * for the retiree's age, scaled by a multiplier. Pre-RMD-age falls
- * back to fixed-real spending.
- * SWR: 5.4% (40/60 portfolio, 90% success, 30 years).
+ * RMD-Based Spending (Morningstar Method 2): the IRS RMD factor for the age times a multiplier;
+ * fixed-real spending before RMD age. SWR 5.4% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
 import { getRmdFactor } from "../../config/rmd-tables";
@@ -24,10 +20,9 @@ export function applyRmdSpending(
   // Use primary person's age for RMD factor lookup (not household average)
   const factor = getRmdFactor(primaryPersonAge ?? age);
 
-  // Pre-RMD age: fall back to inflation-adjusted budget spending.
-  // The orchestrator skips inflation for usesPostRetirementRaise=false strategies,
-  // so we apply one year of CPI growth to maintain real purchasing power.
-  // (Only one year because projectedExpenses carries forward prior years' output.)
+  // Pre-RMD age: inflation-adjusted budget spending. The orchestrator skips
+  // inflation for this strategy and projectedExpenses carries last year's
+  // output, so apply one year of CPI here.
   if (factor === null) {
     const yearCount = input.crossYearState.decumulationYearCount;
     const inflated =

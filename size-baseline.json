@@ -300,7 +300,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 117,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
     "src/lib/pure/engine/rmd-enforcement.ts": 431,
-    "src/lib/pure/engine/roth-conversion.ts": 535,
+    "src/lib/pure/engine/roth-conversion.ts": 464,
     "src/lib/pure/engine/tax-estimation.ts": 503,
     "src/lib/pure/engine/types/accumulation.ts": 163,
     "src/lib/pure/engine/types/contribution-spec.ts": 96,
@@ -966,7 +966,7 @@
       "enforceOwnerRmds": 152
     },
     "src/lib/pure/engine/roth-conversion.ts": {
-      "performRothConversion": 382
+      "performRothConversion": 361
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
       "rankWithdrawalTiers": 262

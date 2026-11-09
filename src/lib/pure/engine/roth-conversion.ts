@@ -1,10 +1,6 @@
 /**
- * Roth conversions: moves Traditional → Roth to fill remaining bracket room.
- * Tax on the conversion is paid from brokerage (after-tax).
- *
- * Runs after withdrawal routing and RMD enforcement, before growth. The
- * conversion feeds MAGI, which the IRMAA and ACA cliff checks
- * (irmaa-check.ts, aca-check.ts) then read.
+ * Roth conversions fill remaining bracket room, tax paid from brokerage. Runs after routing and
+ * RMD enforcement, before growth; the conversion feeds the MAGI the IRMAA and ACA checks read.
  */
 import type { AccountCategory } from "../../config/account-types";
 import type {
@@ -43,10 +39,8 @@ export interface RothConversionInput {
   enableRothConversions: boolean | undefined;
   taxBrackets: WithholdingBracket[] | null | undefined;
   taxMultiplier?: number;
-  /** Filing status's standard deduction — Pub 15-T Worksheet 1A residual
-   *  threaded into `incomeCapForMarginalRate`/`estimateEffectiveTaxRate`
-   *  so bracket-filling room and conversion tax cost are computed against
-   *  the correct base. Undefined keeps the prior (overstating) behavior. */
+  /** Standard deduction (Pub 15-T Worksheet 1A residual) for bracket room and conversion tax;
+   *  undefined omits it, overstating income. */
   standardDeduction?: number;
   rothConversionTarget: number | undefined;
   rothBracketTarget: number | undefined;
@@ -56,26 +50,13 @@ export interface RothConversionInput {
   taxableSS: number;
   /** Brokerage capital gains portion (for MAGI computation). */
   brokerageGainsPortion: number;
-  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
-   *  ordinary income, so it belongs in this year's real taxable income
-   *  like any other (`actualTaxableIncome`'s
-   *  own docblock, tax-estimation.ts, names
-   *  "totalTraditionalWithdrawal + taxableSS alone" as the EXACT bug this
-   *  field exists to prevent — this function's yearTaxableIncome/
-   *  magiWithoutConversion below were doing precisely that, understating
-   *  real income and overstating both the conversion room and the
-   *  IRMAA-cliff headroom for any year with a real Roth growth draw). */
+  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth): ordinary income, counted
+   *  in this year's taxable income and MAGI before sizing the conversion. */
   rothTaxableGrowth: number;
-  /** Cap conversions to stay below next IRMAA cliff (#38). */
+  /** Cap conversions to stay below next IRMAA cliff. */
   irmaaAwareRothConversions?: boolean;
-  /**
-   * IRMAA brackets grown to the vintage that actually applies here —
-   * NOT the same growth as `checkIrmaa`'s `irmaaBrackets` (irmaa-check.ts). This
-   * cap compares a year-N MAGI against the threshold that will apply
-   * TWO YEARS LATER (IRMAA's own 2-year lookback: year-N income sets
-   * year-(N+2)'s premium), so the caller must grow this table to year
-   * N+2's vintage, not year N's — see `decumulation-year.ts`'s
-   * `grownIrmaaBracketsForCap`. */
+  /** IRMAA brackets grown to year N+2's vintage (year-N MAGI sets year N+2's premium), unlike
+   *  `checkIrmaa`'s; see `decumulation-year.ts` `grownIrmaaBracketsForCap`. */
   irmaaBrackets: Record<string, IrmaaBracket[]>;
   filingStatus?: ReturnFilingStatus | null;
   /** Current balances (mutated in place). */
@@ -85,63 +66,32 @@ export interface RothConversionInput {
   brokerageBasisRatio?: number;
   /** Per-account balances (mutated in place). */
   accountBalance: AccountBalances;
-  /** Portfolio-parented ("non-retirement") exclusion for this year —
-   *  when supplied, both the conversion SOURCE amount and the tax-payment
-   *  capacity gate are capped to Retirement-only money (this half needs
-   *  only the pre-aggregated exclusion record, not the raw account list).
-   *  When ALSO supplied alongside `indAccounts`/`indBalance`/`indKey`, the
-   *  per-account debit is additionally applied directly to
-   *  Retirement-parented accounts' `indBalance` instead of being left to
-   *  `reconcileIndividualToAggregate`'s parentCategory-blind proportional
-   *  redistribution. `decumulation-year.ts`'s real call site always
-   *  computes and passes all four together (or none), gated on the same
-   *  `hasIndividualAccounts` check — omitting all four ⇒ byte-identical to
-   *  the earlier aggregate-only behavior, since there's no Portfolio/Retirement
-   *  distinction possible without per-account data anyway. */
+  /** Portfolio-parented exclusion: caps the conversion source and tax-payment capacity to
+   *  Retirement money. With `indAccounts`/`indBalance`/`indKey` too, the debit goes straight to
+   *  Retirement-parented accounts. The caller passes all four or none. */
   nonRetirement?: NonRetirementExclusion;
-  /** Individual accounts, current per-account balances, and the engine's
-   *  key function — same triple every other individual-tracking-aware
-   *  module in this engine takes. Only used when `nonRetirement` is also
-   *  supplied. */
+  /** Individual accounts, per-account balances and the key function; used only with
+   *  `nonRetirement`. */
   indAccounts?: IndividualAccountInput[];
   indBalance?: Map<string, number>;
   indKey?: IndKeyFn;
-  /** This year's combined household RMD-smoothing minimum (sum of
-   *  every person's own target — see `rmd-smoothing.ts`'s
-   *  `computeRmdSmoothingTargets`), 0/undefined when smoothing is off or
-   *  has nothing to convert this year. When present and positive, this
-   *  function proceeds even if `enableRothConversions` is off (smoothing
-   *  is a self-contained toggle), and the effective conversion target
-   *  rate may be ELEVATED (never lowered) up to
-   *  `rmdSmoothingMaxBracketTarget` if the household's own
-   *  `rothBracketTarget`/`rothConversionTarget` doesn't provide enough
-   *  room. `rothConversionTarget === 0` (an explicit "never convert"
-   *  opt-out) still wins regardless. */
+  /** This year's household RMD-smoothing minimum (`computeRmdSmoothingTargets`). When positive it
+   *  runs even with `enableRothConversions` off and may raise the target rate up to
+   *  `rmdSmoothingMaxBracketTarget`; `rothConversionTarget === 0` still wins. */
   rmdSmoothingTarget?: number;
-  /** Ceiling on how far smoothing may elevate the effective target
-   *  rate — see `rmdSmoothingTarget`'s docblock. Always resolved by the
-   *  caller (never undefined when `rmdSmoothingTarget` is supplied) —
-   *  `ResolvedDecumulationConfig.rmdSmoothingMaxBracketTarget` is never
-   *  itself undefined. */
+  /** Ceiling smoothing may raise the target rate to; always resolved when `rmdSmoothingTarget`
+   *  is supplied. */
   rmdSmoothingMaxBracketTarget?: number;
 }
 
 interface RothConversionResult {
   rothConversionAmount: number;
   rothConversionTaxCost: number;
-  /** Portion of `rmdSmoothingTarget` that did NOT end up converted
-   *  this year (0 in the common case) — a real, expected shortfall when
-   *  even the elevated ceiling, IRMAA-cliff cap, or available balance
-   *  isn't enough to hit the target, not silently dropped. Only ever
-   *  set when `rmdSmoothingTarget` was supplied and positive. */
+  /** Part of a positive `rmdSmoothingTarget` not converted this year (ceiling, IRMAA cap or
+   *  balance ran out). Set only when a target was supplied. */
   rmdSmoothingShortfall?: number;
-  /** True when this year's Roth conversion was reduced (or eliminated) to
-   *  keep MAGI below the next IRMAA threshold — the `irmaaAwareRothConversions`
-   *  clamp actually bit. Undefined/absent when it never applied. Surfaced so
-   *  the Tax Optimization page and advisor report can say "N years had
-   *  conversions capped for IRMAA" instead of the cap being invisible.
-   *  Records a decision the engine already made — zero numeric
-   *  effect. */
+  /** True when the `irmaaAwareRothConversions` clamp reduced this year's conversion; absent
+   *  otherwise. Reporting only, no numeric effect. */
   rothConversionIrmaaCapped?: boolean;
 }
 
@@ -180,14 +130,9 @@ export function performRothConversion(
   // the tax-payment capacity gate and the later per-account debit loop can
   // use it without duplicating the search.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
-  // Smoothing is a self-contained reason to proceed -- it must not
-  // require the household to separately flip the unrelated
-  // enableRothConversions toggle (same "own complete toggle" pattern
-  // rmdExcessHandling/qcdMaximize already use). `zero()` below carries
-  // rmdSmoothingShortfall on every early-return path when smoothing was
-  // active, so a shortfall is never silently dropped just because some
-  // OTHER gate (no tax brackets, no Traditional balance, an explicit
-  // opt-out) stopped the conversion before smoothing's own logic ran.
+  // Smoothing is its own reason to proceed (no enableRothConversions
+  // needed); `zero()` carries rmdSmoothingShortfall on every early return
+  // so a shortfall is never dropped by another gate.
   const smoothingActive = (rmdSmoothingTarget ?? 0) > 0;
   // Set at the IRMAA-cliff clamp below; `zero()` carries it on every
   // early-return after that point (a conversion clamped to exactly $0 of
@@ -209,10 +154,7 @@ export function performRothConversion(
     return zero();
   }
 
-  // Override can disable conversions with target=0 -- an EXPLICIT
-  // household opt-out, stronger and more deliberate than the default-off
-  // enableRothConversions toggle. Smoothing must not silently override
-  // this even when active.
+  // target=0 is an explicit household opt-out; smoothing never overrides it.
   const configTarget = input.rothConversionTarget;
   if (configTarget === 0) {
     return zero();
@@ -341,10 +283,8 @@ export function performRothConversion(
     Math.max(0, taxWithConversion - taxWithout),
   );
 
-  // Pay tax from brokerage (after-tax) if available, otherwise skip --
-  // Retirement-only capacity when exclusion data is available (a hard
-  // "don't even start the conversion" gate, matching this whole feature's
-  // hard-exclusion philosophy, not a soft preference).
+  // Pay tax from brokerage, else skip: with exclusion data, only
+  // Retirement-parented money counts (a hard gate).
   const retirementOnlyAfterTax =
     nonRetirement && overflowCat
       ? roundToCents(balances.afterTax - nonRetirement.total[overflowCat])
@@ -372,13 +312,9 @@ export function performRothConversion(
     );
   }
 
-  // Update per-account balances: distribute proportionally across Traditional
-  // accounts, each category weighted by its Retirement-only balance
-  // (`balance.traditional - nonRetirement.trad[cat]`), not the blended one: a
-  // Portfolio-parented account would otherwise inflate a category's share
-  // of the capped `conversion`, and the aggregate mutation below (full-
-  // category-sized by design, both trackers move together) would disagree
-  // with what the individual debit can place in Retirement-only accounts.
+  // Spread across Traditional accounts weighted by Retirement-only balance
+  // (`balance.traditional - nonRetirement.trad[cat]`), so each category's
+  // share fits what its Retirement-parented accounts can be debited.
   const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
   for (const cat of getAllCategories()) {
     const balance = accountBalance[cat];
@@ -427,14 +363,9 @@ export function performRothConversion(
     }
   }
 
-  // With the category weight above already Retirement-only-scoped,
-  // each category's captured `categoryShare` is guaranteed <= what
-  // Retirement-parented accounts in it actually hold — so debiting them
-  // directly here, instead of leaving it to
-  // reconcileIndividualToAggregate's parentCategory-blind proportional
-  // redistribution, keeps indBalance and accountBalance in agreement rather than
-  // letting the reconcile pass silently pull the difference from a
-  // Portfolio-parented account.
+  // Each `categoryShare` fits its Retirement-parented accounts, so debit them
+  // directly; reconcile would otherwise spread the difference by balance and
+  // could pull it from a Portfolio-parented account.
   if (hasIndTracking) {
     for (const [cat, amount] of categoryShare) {
       if (amount <= 0) continue;
@@ -482,11 +413,9 @@ export function performRothConversion(
           roundToCents(Math.min(currentBasis, currentBalance)),
         );
       }
-      // Same direct-debit approach as the Traditional→Roth move above
-      // — the aggregate mutation stays full-category-sized (unchanged), but
-      // when individual tracking is available, distribute the ACTUAL tax
-      // payment across Retirement-parented accounts in this category only,
-      // proportional to their own balance.
+      // As above: the aggregate moves full-category-sized; with individual
+      // tracking, the tax comes from this category's Retirement-parented
+      // accounts by balance.
       if (hasIndTracking) {
         const catAccounts = indAccounts.filter(
           (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),

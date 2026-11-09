@@ -1,11 +1,6 @@
 /**
- * Spending strategy — common interface and dispatcher.
- *
- * Every spending strategy implements SpendingStrategyInput → SpendingStrategyResult.
- * The dispatcher maps strategy keys to engine functions. Adding a new strategy =
- * one engine file + one case in the dispatcher.
- *
- * Cross-year state is orchestrator-owned and passed in each year.
+ * Spending strategy interface (SpendingStrategyInput → SpendingStrategyResult) and dispatcher.
+ * A new strategy is one engine file plus one dispatcher case; the orchestrator owns cross-year state.
  */
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { applyForgoInflation } from "./forgo-inflation";
@@ -71,10 +66,8 @@ export interface SpendingCrossYearState {
   balanceHistory: number[];
   /** Count of decumulation years elapsed (for spending decline). */
   decumulationYearCount: number;
-  /** The Social Security Guyton-Klinger's anchor reflects, in today's
-   *  dollars (it rescales when a benefit starts or stops; held through
-   *  years the portfolio pays nothing). Null before the first decumulation
-   *  year. */
+  /** Social Security in today's dollars that Guyton-Klinger's anchor reflects (rescaled when a
+   *  benefit starts or stops). Null before the first decumulation year. */
   priorYearSsIncome: number | null;
 }
 
@@ -82,12 +75,9 @@ export interface SpendingStrategyResult {
   /** This year's amount — spending, or the portfolio withdrawal (see
    *  `amountKind`). */
   projectedExpenses: number;
-  /** What the amount is this year: what the household spends (Social
-   *  Security pays part of it — the default), or what leaves the portfolio
-   *  (the published portfolio-sized methods). A strategy can switch from
-   *  year to year (RMD Spending before the RMD age follows the budget).
-   *  The household's `ssInAmount` switch can still treat a
-   *  portfolio_withdrawal amount as spending. */
+  /** Whether the amount is household spending (SS pays part; default) or the portfolio draw.
+   *  May switch by year; the household's `ssInAmount` can still treat a portfolio_withdrawal
+   *  amount as spending. */
   amountKind?: "spending" | "portfolio_withdrawal";
   /** Action label (e.g. 'increase', 'decrease', 'floor_applied'). */
   action: string | null;

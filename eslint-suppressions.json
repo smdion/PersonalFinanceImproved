@@ -5893,46 +5893,22 @@
       "count": 5
     }
   },
-  "src/lib/pure/engine/rmd-smoothing.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 10
-    }
-  },
   "src/lib/pure/engine/rmd-spending.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/lib/pure/engine/roth-conversion.ts": {
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 16
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/engine/social-security-income.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
   "src/lib/pure/engine/spending-decline.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/lib/pure/engine/spending-strategy.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/lib/pure/engine/tax-estimation.ts": {
