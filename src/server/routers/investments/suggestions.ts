@@ -1,9 +1,7 @@
 /**
- * Suggested Performance and Roth-basis figures from SimpleFIN transactions
- * (portfolioProcedure — built from transaction-level detail). Read-only:
- * the Performance and basis forms prefill from these and the household
- * saves through the usual mutations, which record what was counted (see
- * server/services/sync/fill-ledger.ts).
+ * Suggested Performance and Roth-basis figures from SimpleFIN transactions (portfolioProcedure).
+ * Read-only: forms prefill from these and save through the usual mutations, which record
+ * what was counted (server/services/sync/fill-ledger.ts).
  */
 import { z } from "zod/v4";
 import { and, eq } from "drizzle-orm";
@@ -64,9 +62,9 @@ export const investmentSuggestionsRouter = createTRPCRouter({
     const { feeds, subs, snapshotDate, lastTransactionDay } = context;
     const today = utcDayOf(ctx.scope.asOf);
     const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
-    // Placing contributions uses this year's paycheck setup at a flat rate;
-    // across a year end or a long gap that's no longer a fair estimate, so
-    // the change is then just divided by size.
+    // Placing contributions uses this year's paycheck setup at a flat rate,
+    // which isn't fair across a year end or a long gap; then the change is
+    // just divided by size.
     const snapshotTooOld =
       snapshotDate !== null &&
       (snapshotDate.slice(0, 4) !== today.slice(0, 4) ||
@@ -92,8 +90,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
       subs,
       feeds.map((f) => ({ ...f, balanceDate: f.balanceDay })),
       (performanceAccountId) => {
-        // A feed that used to send transactions but now sends only a
-        // balance counts as balance-only here.
+        // A feed that now sends only a balance counts as balance-only here,
+        // even if it sent transactions before.
         const whole = feeds.filter(
           (f) => f.performanceAccountId === performanceAccountId && !f.subKey,
         );
@@ -158,10 +156,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
   ),
 
   /**
-   * The year's Roth basis rows with Roth contributions and conversions no
-   * saved fill has counted yet. Basis is cumulative, so these add onto the
-   * stored figures; money out of a Roth account reduces them (contributions
-   * first, then conversions).
+   * The year's Roth basis rows plus Roth contributions and conversions no saved fill
+   * counted yet (added onto the cumulative basis); money out reduces contributions first.
    */
   listBasisSuggestions: portfolioProcedure
     .input(z.object({ year: z.number().int() }))

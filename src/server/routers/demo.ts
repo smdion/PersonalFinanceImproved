@@ -29,11 +29,9 @@ export const demoRouter = createTRPCRouter({
     };
   }),
 
-  /** Activate a demo profile — creates schema, seeds data, returns success.
-   *  Uses protectedProcedure (not a domain procedure) intentionally: writes
-   *  go to an isolated per-user demo schema, never to shared application
-   *  data, and must remain callable in DEMO_ONLY mode. See RULES.md
-   *  § Permission & Security Gates rule 3 exception. */
+  /** Activate a demo profile: create its schema and seed it. protectedProcedure on purpose:
+   *  writes go to an isolated per-user demo schema and must work in DEMO_ONLY mode
+   *  (RULES.md § Permission & Security Gates rule 3 exception). */
   activateProfile: protectedProcedure
     .input(z.object({ slug: demoSlugSchema }))
     .mutation(async ({ ctx, input }) => {
@@ -66,11 +64,9 @@ export const demoRouter = createTRPCRouter({
       return { ok: true, slug: input.slug, schemaName };
     }),
 
-  /** Deactivate demo mode — clear the HttpOnly cookie server-side.
-   *  Uses protectedProcedure (not a domain procedure) intentionally: this
-   *  mutates session/cookie state, not application data, and must remain
-   *  callable in DEMO_ONLY mode where the demoOnlyGuard exempts demo.*
-   *  paths. See RULES.md § Permission & Security Gates rule 3 exception. */
+  /** Deactivate demo mode by clearing the HttpOnly cookie. protectedProcedure on purpose:
+   *  it changes cookie state, not app data, and must work in DEMO_ONLY mode
+   *  (RULES.md § Permission & Security Gates rule 3 exception). */
   deactivateDemo: protectedProcedure.mutation(async () => {
     const cookieStore = await cookies();
     cookieStore.set("demo_active_profile", "", {

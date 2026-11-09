@@ -6393,12 +6393,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 5
     }
@@ -6410,14 +6404,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 10
-    },
     "ratchet/no-abbreviation": {
       "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
     }
   },
   "src/server/routers/data-browser.ts": {
@@ -6425,26 +6413,8 @@
       "count": 2
     }
   },
-  "src/server/routers/demo.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/routers/historical.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/routers/investments/account-insights.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
   "src/server/routers/investments/comparison.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-clock-read": {
@@ -6458,40 +6428,11 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-clock-read": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 7
-    }
-  },
-  "src/server/routers/investments/holding-periods.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/investments/suggestions.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 2
-    }
-  },
-  "src/server/routers/investments/tax-inputs.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/routers/milestones.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/routers/networth/comparison.ts": {
@@ -6517,23 +6458,12 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-clock-read": {
       "count": 1
     }
   },
-  "src/server/routers/networth/snapshot-accounts.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 5
-    }
-  },
   "src/server/routers/networth/snapshots.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
@@ -6545,12 +6475,6 @@
       "count": 3
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
@@ -6565,17 +6489,6 @@
   "src/server/routers/performance/year-records.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/server/routers/projection/_shared.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {

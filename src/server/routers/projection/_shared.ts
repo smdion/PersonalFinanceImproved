@@ -1,10 +1,6 @@
 /**
- * Shared infrastructure for the projection router family.
- *
- * Every sibling file in this directory (monte-carlo, scenarios, strategy,
- * stress-test, presets) imports its Zod schemas and helper builders from
- * here. This keeps shared pipeline code in exactly one place and removes
- * the duplicate-schema risk of spreading them across the sibling files.
+ * Shared Zod schemas and helper builders for the projection router family
+ * (monte-carlo, scenarios, strategy, stress-test, presets).
  */
 
 import { z } from "zod/v4";
@@ -36,18 +32,9 @@ import {
 import type { Db } from "@/lib/db";
 
 /**
- * Baseline "current" SS claiming age for the strategy optimizer's
- * ssStartAge lever. `baseEngineInput.ssStartAge` is the household-scalar
- * `retirement_settings.ss_start_age`, which can be STALE for a
- * multi-person household — "SS Start Age" is written ONLY to
- * `retirement_profile_people` (see build-engine-payload.ts's own comment
- * on this exact staleness). Sourcing the lever's baseline from the stale
- * scalar can clamp the lever out of range entirely, or offer "delay from
- * 68" for a household really claiming at 62. Use the earliest of the real
- * per-person start ages instead, for multi-person households — the
- * household's actual earliest actionable claiming age. Single-person
- * households have no separate per-person source to drift from the
- * scalar, so it's already correct there.
+ * Baseline SS claiming age for the optimizer's ssStartAge lever: the earliest per-person
+ * start age, since the household scalar `retirement_settings.ss_start_age` can be stale
+ * for multi-person households (see build-engine-payload.ts); single-person uses the scalar.
  */
 export function resolveSsStartAgeBaseline(
   perPersonSettings: ReadonlyArray<{ ssStartAge: number }> | undefined,
@@ -58,12 +45,9 @@ export function resolveSsStartAgeBaseline(
     : baseEngineInputSsStartAge;
 }
 
-// Shared Zod schemas for accumulation/decumulation overrides ("Changes by
-// year") — used by every projection procedure's input. OMITTED means the
-// household's saved rows (resolveProjectionOverrides): every surface — the
-// dashboard, the Retirement page, strategy comparison, stress tests — gets
-// the same baseline without each client loading them, and only an editor
-// with unsaved changes sends its own.
+// Accumulation/decumulation override schemas ("Changes by year") for every
+// projection input. Omitted = the household's saved rows (resolveProjectionOverrides);
+// only an editor with unsaved changes sends its own.
 const accumulationOverrideArraySchema = z.array(
   z.object({
     year: z.number().int(),

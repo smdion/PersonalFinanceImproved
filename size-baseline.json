@@ -355,18 +355,18 @@
     "src/server/data/snapshots.ts": 105,
     "src/server/routers/assets.ts": 438,
     "src/server/routers/budget/index.ts": 21,
-    "src/server/routers/contribution-profiles.ts": 787,
-    "src/server/routers/demo.ts": 83,
-    "src/server/routers/milestones.ts": 53,
+    "src/server/routers/contribution-profiles.ts": 735,
+    "src/server/routers/demo.ts": 79,
+    "src/server/routers/milestones.ts": 50,
     "src/server/routers/networth/comparison.ts": 245,
     "src/server/routers/networth/index.ts": 19,
-    "src/server/routers/networth/portfolio-snapshots.ts": 336,
-    "src/server/routers/networth/snapshots.ts": 306,
-    "src/server/routers/networth/summary.ts": 269,
+    "src/server/routers/networth/portfolio-snapshots.ts": 328,
+    "src/server/routers/networth/snapshots.ts": 303,
+    "src/server/routers/networth/summary.ts": 267,
     "src/server/routers/performance/finalize-year.ts": 36,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
-    "src/server/routers/projection/_shared.ts": 227,
+    "src/server/routers/projection/_shared.ts": 211,
     "src/server/routers/projection/coast-fire.ts": 427,
     "src/server/routers/projection/monte-carlo.ts": 517,
     "src/server/routers/projection/relocation.ts": 648,
@@ -1011,19 +1011,19 @@
       "assetsRouter.computeSummary.query()": 171
     },
     "src/server/routers/contribution-profiles.ts": {
-      "contributionProfileRouter.getById.query()": 181
+      "contributionProfileRouter.getById.query()": 174
     },
     "src/server/routers/networth/comparison.ts": {
       "comparisonProcedures.computeComparison.query()": 215
     },
     "src/server/routers/networth/portfolio-snapshots.ts": {
-      "portfolioSnapshotProcedures.create.mutation()": 265
+      "portfolioSnapshotProcedures.create.mutation()": 257
     },
     "src/server/routers/networth/snapshots.ts": {
-      "snapshotProcedures.listSnapshots.query()": 216
+      "snapshotProcedures.listSnapshots.query()": 213
     },
     "src/server/routers/networth/summary.ts": {
-      "summaryProcedures.computeSummary.query()": 245
+      "summaryProcedures.computeSummary.query()": 243
     },
     "src/server/routers/projection/coast-fire.ts": {
       "coastFireRouter.computeCoastFireMC.query()": 236

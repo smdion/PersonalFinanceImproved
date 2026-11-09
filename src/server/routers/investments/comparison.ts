@@ -54,10 +54,8 @@ import type { Db } from "@/lib/db";
 const MATCHED_MIX_LABEL = "Your mix, in index funds";
 
 /**
- * Your own fund weights (holding history) priced with an index fund per
- * class, through the same simulateIndex as every benchmark. Only years
- * whose months are fully covered from the start of the year; null with no
- * holding history at all.
+ * Your own fund weights priced with one index fund per class via simulateIndex, for years
+ * fully covered from January; null with no holding history.
  */
 async function matchedMixBenchmark(
   db: Db,

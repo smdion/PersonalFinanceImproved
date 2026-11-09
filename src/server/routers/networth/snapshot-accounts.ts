@@ -28,13 +28,9 @@ const snapshotAccountInput = z.object({
 
 export const snapshotAccountProcedures = {
   /**
-   * Update a single portfolio account row. Metadata edits (owner /
-   * active / label / taxType) apply to any snapshot. An `amount` edit is
-   * only allowed on the **most recent** snapshot — it re-derives that
-   * year's performance ending balances + annual rollups and re-pushes
-   * ("resync") the corrected balances to the budget API. Older snapshots
-   * feed cumulative history + finalized years; their balances are fixed
-   * by delete-and-recreate, not edited here.
+   * Update one portfolio account row. Metadata edits apply to any snapshot; an `amount`
+   * edit only to the latest, re-deriving that year's ending balances + rollups. Older
+   * balances are fixed by delete-and-recreate.
    */
   updateAccount: portfolioProcedure
     .input(
@@ -99,11 +95,9 @@ export const snapshotAccountProcedures = {
         });
       }
 
-      // Write the balance (+ any metadata in the same call), then
-      // re-derive ending balances + annual rollups from the snapshot's
-      // full, post-edit row set — one shared code path with `create`.
-      // A finalized year's Performance figures don't follow (they're
-      // settled there); the snapshot itself can still be corrected.
+      // Write the balance (+ metadata), then re-derive ending balances + rollups
+      // from the full row set, as `create` does. A finalized year's Performance
+      // figures stay settled.
       const performance = await ctx.db.transaction(async (tx) => {
         await tx
           .update(schema.portfolioAccounts)
@@ -122,13 +116,9 @@ export const snapshotAccountProcedures = {
       });
       invalidateYearEndCache();
 
-      // NOTE: the budget-API resync is NOT run here. A single balance
-      // fix is rarely alone — running a full resync (list + delete +
-      // re-post per mapped account) on every edit would be slow, rate-
-      // limited, and non-atomic mid-sequence. The client batches: it
-      // marks the snapshot dirty and fires ONE `sync.resyncPortfolioPush`
-      // when the user finishes (collapses the row / navigates away), with
-      // a persistent "not synced" banner as the backstop.
+      // No budget-API resync here (slow, rate-limited, non-atomic per edit): the
+      // client marks the snapshot dirty and fires one `sync.resyncPortfolioPush`
+      // when the user finishes, with a "not synced" banner as the backstop.
       return { amountEdited: true as const, performance };
     }),
 
@@ -136,12 +126,9 @@ export const snapshotAccountProcedures = {
   createAccount: portfolioProcedure
     .input(snapshotAccountInput)
     .mutation(async ({ ctx, input }) => {
-      // Defensive invariant, not a reachable UI path today: the only
-      // shipped caller (AddSubAccountForm) never sends a
-      // performanceAccountId. Kept so a closed account can't get a new
-      // balance row added out-of-band with no explanation, matching the
-      // "zero, don't silently omit" rule create() enforces for carried-
-      // forward rows — an explicit add should fail loudly instead.
+      // Defensive: AddSubAccountForm never sends a performanceAccountId, but a
+      // closed account must not get a new balance row out-of-band; an explicit add
+      // fails loudly.
       const [snap] = await ctx.db
         .select()
         .from(schema.portfolioSnapshots)
@@ -171,10 +158,8 @@ export const snapshotAccountProcedures = {
           .from(schema.performanceAccounts)
           .where(eq(schema.performanceAccounts.id, input.performanceAccountId))
           .limit(1);
-        // Defensive invariant, not a reachable UI path today: the only
-        // shipped caller (AddSubAccountForm) never sends a
-        // performanceAccountId. A closed account can't get a new balance
-        // row added out-of-band — an explicit add fails loudly instead.
+        // Defensive (AddSubAccountForm sends no performanceAccountId): a closed
+        // account can't get a new balance row; an explicit add fails loudly.
         if (master && !master.isActive) {
           throw new TRPCError({
             code: "BAD_REQUEST",

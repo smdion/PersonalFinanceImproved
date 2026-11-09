@@ -1,8 +1,6 @@
 /**
- * Fund facts on the Benchmarks page: what each holding is worth today, what
- * it holds, what it costs, and the household's own answers where SEC has
- * none (confirm or reject a stand-in, enter facts, link asset classes).
- * portfolioProcedure throughout — holdings, values and allocation.
+ * Benchmarks-page fund facts (portfolioProcedure): each holding's value, contents and cost,
+ * plus the household's answers where SEC has none (stand-ins, entered facts, asset classes).
  */
 import { z } from "zod/v4";
 import { and, eq, isNull, ne } from "drizzle-orm";

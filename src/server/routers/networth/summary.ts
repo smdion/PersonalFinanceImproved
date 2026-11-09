@@ -97,10 +97,8 @@ export const summaryProcedures = {
 
       // Current-state values from app_settings (editable, not tied to year-end snapshots)
       const setting = parseAppSettings(settings);
-      // Resolved once and threaded into getEffectiveCash/
-      // getEffectiveCreditCardDebt below instead of each independently
-      // re-querying it (previously 3 separate getActiveBudgetApi calls in
-      // this one procedure).
+      // Resolved once and passed to getEffectiveCash/getEffectiveCreditCardDebt
+      // below instead of each querying it.
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [

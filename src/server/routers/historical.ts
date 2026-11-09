@@ -32,12 +32,9 @@ export const historicalRouter = createTRPCRouter({
         null,
       );
 
-      // Every past year is a recorded fact, directly — historical_salaries
-      // is the single source (see its schema-pg.ts comment). The in-progress
-      // (current) year auto-fills from the active Salary Profile's complete
-      // entry for each person's current job UNTIL it's recorded, at which
-      // point the recorded fact wins (same "recorded fact beats live
-      // estimate" rule as everywhere else in the app).
+      // Past years come only from historical_salaries. The current year fills
+      // from the active Salary Profile's entry for each person's current job
+      // until it is recorded; a recorded fact beats the live estimate.
       const salaryByYear = new Map<number, Map<string, number>>();
       const salaryDetailsByYear = new Map<
         number,
@@ -163,17 +160,9 @@ export const historicalRouter = createTRPCRouter({
     }),
 
   /**
-   * One control per (person, year) — upsert so the caller never has to know
-   * whether a row already exists for that year. Editing just `salary` or
-   * just `bonus` (the Year-End History table's two separate columns) leaves
-   * the other field at whatever it already was.
-   *
-   * When there's no existing row to preserve a value from, the untouched
-   * field falls back to the SAME live estimate the current-year auto-fill
-   * in `computeSummary` shows (active job's compensation under the active
-   * Salary Profile) for the current year, or 0 for a past year with no
-   * prior record — never a bare 0 for the current year, which would
-   * silently zero out whichever field the user wasn't editing.
+   * Upsert one (person, year); editing `salary` or `bonus` keeps the other. With no row,
+   * the other field takes `computeSummary`'s live estimate for the current year (not 0,
+   * which would zero it), or 0 for a past year.
    */
   upsertSalary: adminProcedure
     .input(

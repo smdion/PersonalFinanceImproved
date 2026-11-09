@@ -1,8 +1,6 @@
 /**
- * What SimpleFIN knows about each tracked account, for the Portfolio
- * page's account cards (portfolioProcedure — holdings and deposits are
- * transaction-level detail): live balance and link status, what it holds,
- * and whether deposits match the paycheck setup.
+ * What SimpleFIN knows about each tracked account for the Portfolio cards (portfolioProcedure:
+ * transaction-level detail): live balance, link status, holdings, deposits vs paycheck setup.
  */
 import { changeSinceSnapshot } from "@/lib/pure/accounts/current-balances";
 import { loadCurrentBalances } from "@/server/services/investments/current-balances";
@@ -112,10 +110,9 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
   }),
 
   /**
-   * How the household's linked accounts moved each day since the latest
-   * snapshot, as a change from it — the Portfolio chart's live line and the
-   * Net Worth page's "today" estimate add it to the snapshot's own total.
-   * Only accounts whose live balance covers the whole account count.
+   * Each day's change of the linked accounts since the latest snapshot (only accounts whose
+   * live balance covers the whole account), added to the snapshot total by the Portfolio
+   * chart's live line and Net Worth's "today" estimate.
    */
   getLiveSinceSnapshot: portfolioProcedure.query(async ({ ctx }) => {
     const { feeds, subs, snapshotDate, unplaced } = await loadFeedContext(

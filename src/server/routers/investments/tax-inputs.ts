@@ -1,9 +1,7 @@
 /**
- * The investment side of the Roth IRA MAGI estimate (portfolioProcedure —
- * built from transactions and account balances): taxable investment income
- * for the year, each person's pre-tax IRA balance (pro-rata), and what the
- * estimate can't see. Fetch and map only — the rules are in lib/pure
- * (investment-income.ts, roth-ira.ts).
+ * Investment side of the Roth IRA MAGI estimate (portfolioProcedure): the year's taxable
+ * investment income, each person's pre-tax IRA balance (pro-rata), and what it can't see.
+ * Fetch and map only; rules are in lib/pure (investment-income.ts, roth-ira.ts).
  */
 import { z } from "zod/v4";
 import { min } from "drizzle-orm";
