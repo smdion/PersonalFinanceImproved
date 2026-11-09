@@ -133,6 +133,7 @@ export const debtsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
+  /** Delete a debt and the budget-API mappings that point at it. */
   delete: adminProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {

@@ -107,7 +107,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ---------------------- | -------- | -------------------- | ---------- | ----------------------------------------------------------------- |
 | `debts.computeSummary` | query    | `protectedProcedure` | `debts.ts` | Other liabilities and its parts — the same figure net worth uses. |
 | `debts.create`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
-| `debts.delete`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
+| `debts.delete`         | mutation | `adminProcedure`     | `debts.ts` | Delete a debt and the budget-API mappings that point at it.       |
 | `debts.list`           | query    | `protectedProcedure` | `debts.ts` | Every debt (open first), with its payoff estimate.                |
 | `debts.markPaidOff`    | mutation | `adminProcedure`     | `debts.ts` | Paid off on `date`, keeping its last balance.                     |
 | `debts.update`         | mutation | `adminProcedure`     | `debts.ts` |                                                                   |
@@ -124,9 +124,9 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure                   | Kind     | Auth                 | Source          | Description                                                                                                                                                                                             |
 | --------------------------- | -------- | -------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `historical.computeSummary` | query    | `protectedProcedure` | `historical.ts` |                                                                                                                                                                                                         |
+| `historical.computeSummary` | query    | `protectedProcedure` | `historical.ts` | Year-end history with each year's assets, notes and per-person salaries; the current year's salaries come from the active Salary Profile until they are recorded.                                       |
 | `historical.update`         | mutation | `adminProcedure`     | `historical.ts` | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                  |
-| `historical.upsertNote`     | mutation | `adminProcedure`     | `historical.ts` |                                                                                                                                                                                                         |
+| `historical.upsertNote`     | mutation | `adminProcedure`     | `historical.ts` | Save the note on one year's field; a blank note deletes it.                                                                                                                                             |
 | `historical.upsertSalary`   | mutation | `adminProcedure`     | `historical.ts` | Upsert one (person, year); editing `salary` or `bonus` keeps the other. With no row, the other field takes `computeSummary`'s live estimate for the current year (not 0, which would zero it), or 0 for |
 
 ## `investments`
@@ -171,21 +171,21 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `mortgage`
 
-| Procedure                                 | Kind     | Auth                 | Source        |
-| ----------------------------------------- | -------- | -------------------- | ------------- |
-| `mortgage.computeActiveSummary`           | query    | `protectedProcedure` | `mortgage.ts` |
-| `mortgage.mortgageExtraPayments.create`   | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageExtraPayments.delete`   | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageExtraPayments.list`     | query    | `protectedProcedure` | `mortgage.ts` |
-| `mortgage.mortgageExtraPayments.update`   | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageLoans.create`           | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageLoans.delete`           | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageLoans.list`             | query    | `protectedProcedure` | `mortgage.ts` |
-| `mortgage.mortgageLoans.update`           | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageWhatIfScenarios.create` | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageWhatIfScenarios.delete` | mutation | `adminProcedure`     | `mortgage.ts` |
-| `mortgage.mortgageWhatIfScenarios.list`   | query    | `protectedProcedure` | `mortgage.ts` |
-| `mortgage.mortgageWhatIfScenarios.update` | mutation | `adminProcedure`     | `mortgage.ts` |
+| Procedure                                 | Kind     | Auth                 | Source        | Description                                                                                              |
+| ----------------------------------------- | -------- | -------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
+| `mortgage.computeActiveSummary`           | query    | `protectedProcedure` | `mortgage.ts` | Every loan's amortization with its extra payments, each what-if's outcome, and the active loan's result. |
+| `mortgage.mortgageExtraPayments.create`   | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageExtraPayments.delete`   | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageExtraPayments.list`     | query    | `protectedProcedure` | `mortgage.ts` | Every extra mortgage payment, planned or made, by payment date.                                          |
+| `mortgage.mortgageExtraPayments.update`   | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageLoans.create`           | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageLoans.delete`           | mutation | `adminProcedure`     | `mortgage.ts` | Delete a loan and the budget-API mappings that point at it.                                              |
+| `mortgage.mortgageLoans.list`             | query    | `protectedProcedure` | `mortgage.ts` | Every mortgage loan, by id.                                                                              |
+| `mortgage.mortgageLoans.update`           | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageWhatIfScenarios.create` | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageWhatIfScenarios.delete` | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
+| `mortgage.mortgageWhatIfScenarios.list`   | query    | `protectedProcedure` | `mortgage.ts` | Every mortgage what-if (extra principal, a one-time payment or a refinance), in sort order.              |
+| `mortgage.mortgageWhatIfScenarios.update` | mutation | `adminProcedure`     | `mortgage.ts` |                                                                                                          |
 
 ## `networth`
 
