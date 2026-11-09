@@ -11,7 +11,12 @@ import {
   getAccountTypeConfig,
   getDisplayConfig,
 } from "@/lib/config/account-types";
-import { itemTaxType, matchFracOf, proRateMonths, specFrac } from "./utils";
+import {
+  itemTaxType,
+  matchFracOf,
+  proRateMonths,
+  specFrac,
+} from "./projection-columns";
 import { safeDivide } from "@/lib/utils/math";
 import { taxTypeLabel } from "@/lib/utils/colors";
 

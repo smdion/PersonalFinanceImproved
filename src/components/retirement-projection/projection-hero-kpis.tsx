@@ -10,7 +10,7 @@ import {
 } from "@/lib/pure/retirement/nest-egg-display";
 import { dominantFailureReason } from "@/lib/pure/retirement/plan-outcome";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
-import { rowTotal } from "./utils";
+import { rowTotal } from "./parent-category-filter";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import { KpiCard } from "./kpi-card";

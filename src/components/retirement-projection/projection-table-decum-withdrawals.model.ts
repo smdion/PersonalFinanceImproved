@@ -8,15 +8,14 @@ import type {
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionState } from "./projection-table-types";
 import type { TipColor } from "./types";
+import { catDisplayLabel, formatDiscretionaryTierBreakdown } from "./utils";
 import {
-  bucketSlotMap,
-  catDisplayLabel,
-  formatDiscretionaryTierBreakdown,
-  itemTaxType,
   lumpSumTotal,
   lumpSumsForBucket,
   lumpSumsForCategory,
-} from "./utils";
+} from "./lump-sums";
+import { itemTaxType } from "./projection-columns";
+import { bucketSlotMap } from "./bucket-slots";
 import {
   categoriesWithTaxPreference,
   getAccountTypeConfig,

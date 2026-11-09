@@ -20,13 +20,13 @@ import {
 } from "@/lib/utils/colors";
 import type { ProjectionState } from "./projection-table-types";
 import type { TooltipLineItem } from "./types";
+import { catDisplayLabel } from "./utils";
 import {
-  catDisplayLabel,
-  itemTaxType,
   lumpSumTotal,
   lumpSumsForBucket,
   lumpSumsForCategory,
-} from "./utils";
+} from "./lump-sums";
+import { itemTaxType } from "./projection-columns";
 import { formatCurrency } from "@/lib/utils/format";
 import { ownerAccountLabel } from "./account-notes";
 

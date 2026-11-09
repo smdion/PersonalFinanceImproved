@@ -1934,6 +1934,17 @@
       "count": 1
     }
   },
+  "src/components/retirement-projection/bucket-slots.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 4
+    },
+    "ratchet/no-abbreviation": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
+    }
+  },
   "src/components/retirement-projection/coast-fire-card.tsx": {
     "ratchet/no-abbreviation": {
       "count": 8
@@ -2087,6 +2098,17 @@
       "count": 1
     }
   },
+  "src/components/retirement-projection/parent-category-filter.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-abbreviation": {
+      "count": 8
+    }
+  },
   "src/components/retirement-projection/pill-btn.tsx": {
     "ratchet/no-raw-button": {
       "count": 1
@@ -2176,6 +2198,14 @@
     },
     "ratchet/no-abbreviation": {
       "count": 2
+    }
+  },
+  "src/components/retirement-projection/projection-columns.ts": {
+    "@typescript-eslint/consistent-type-assertions": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/components/retirement-projection/projection-hero-kpis.tsx": {
@@ -2402,20 +2432,11 @@
     }
   },
   "src/components/retirement-projection/utils.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 13
+      "count": 2
     },
     "ratchet/no-config-reach-through": {
       "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 9
     }
   },
   "src/components/retirement-projection/withdrawal-comparison.tsx": {

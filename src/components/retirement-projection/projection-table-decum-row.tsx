@@ -29,18 +29,17 @@ import {
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
+import { rowTotal } from "./parent-category-filter";
+import { lumpSumTotal } from "./lump-sums";
 import {
   itemTaxType,
   colKeyParts,
   colBalance,
   colWithdrawal,
   colEngineTaxType,
-  slotBucketWithdrawal,
-  iaBelongsToBucket,
   percentOf,
-  lumpSumTotal,
-  rowTotal,
-} from "./utils";
+} from "./projection-columns";
+import { slotBucketWithdrawal, iaBelongsToBucket } from "./bucket-slots";
 import type { ProjectionState } from "./projection-table-types";
 import {
   renderSimulationCell,

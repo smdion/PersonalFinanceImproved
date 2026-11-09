@@ -94,7 +94,7 @@
       "count": 8
     }
   },
-  "src/components/retirement-projection/utils.ts": {
+  "src/components/retirement-projection/projection-columns.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

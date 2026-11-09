@@ -33,11 +33,9 @@ import type {
   AccountBreakdown,
 } from "./use-projection-state.types";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
-import {
-  ROTH_CONVERSION_BRACKET_PRESETS,
-  _singleBucketCategories,
-  filterYearByParentCategory,
-} from "./utils";
+import { ROTH_CONVERSION_BRACKET_PRESETS } from "./utils";
+import { filterYearByParentCategory } from "./parent-category-filter";
+import { _singleBucketCategories } from "./bucket-slots";
 
 export function useProjectionDerived(
   form: ProjectionFormState,

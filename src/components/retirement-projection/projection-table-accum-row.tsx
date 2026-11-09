@@ -27,27 +27,29 @@ import {
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
+import { catDisplayLabel } from "./utils";
+import { rowTotal } from "./parent-category-filter";
 import {
-  catDisplayLabel,
-  bucketSlotMap,
-  _singleBucketCategories,
   itemTaxType,
   colKeyParts,
   colBalance,
   colEngineTaxType,
-  slotBucketContribution,
   slotsColumnBalanceInflow,
-  slotsBucketBalanceInflow,
-  filterSpecsForBucket,
-  iaBelongsToBucket,
   percentOf,
   proRateMonths,
   specFrac,
   matchFracOf,
   computeColumnChange,
   computeAccountSplits,
-  rowTotal,
-} from "./utils";
+} from "./projection-columns";
+import {
+  bucketSlotMap,
+  _singleBucketCategories,
+  slotBucketContribution,
+  slotsBucketBalanceInflow,
+  filterSpecsForBucket,
+  iaBelongsToBucket,
+} from "./bucket-slots";
 import { safeDivide } from "@/lib/utils/math";
 import type { ProjectionState } from "./projection-table-types";
 import {

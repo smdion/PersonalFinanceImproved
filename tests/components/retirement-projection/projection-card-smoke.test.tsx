@@ -16,7 +16,7 @@ import { UserProvider } from "@/lib/context/user-context";
 import { calculateProjection } from "@/lib/pure/engine";
 import { SK_RETIREMENT_MC_AUTOLOAD } from "@/lib/constants/settings-keys";
 import { formatCurrency } from "@/lib/utils/format";
-import { rowTotal } from "@/components/retirement-projection/utils";
+import { rowTotal } from "@/components/retirement-projection/parent-category-filter";
 import { annAndBo, engineDataFor, people } from "../projection-household";
 import { resetTrpcMock, setQuery } from "../trpc-mock";
 

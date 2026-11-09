@@ -21,7 +21,9 @@ import {
   parseColumnKey,
 } from "@/lib/config/account-types";
 import { TAX_BUCKET_DESCRIPTIONS } from "@/lib/config/display-labels";
-import { catDisplayLabel, _singleBucketCategories, isAccumYear } from "./utils";
+import { catDisplayLabel } from "./utils";
+import { isAccumYear } from "./parent-category-filter";
+import { _singleBucketCategories } from "./bucket-slots";
 import type { ProjectionTableProps } from "./projection-table-types";
 import { type RenderSimulationCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";

@@ -9,14 +9,13 @@ import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-b
 import type { ProjectionState } from "./projection-table-types";
 import type { TooltipLineItem } from "./types";
 import {
-  bucketSlotMap,
   buildStrategyEventStyle,
   catDisplayLabel,
   formatRmdDivisorDetail,
-  itemTaxType,
-  lumpSumsForBucket,
-  slotBucketWithdrawal,
 } from "./utils";
+import { lumpSumsForBucket } from "./lump-sums";
+import { itemTaxType } from "./projection-columns";
+import { bucketSlotMap, slotBucketWithdrawal } from "./bucket-slots";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { isAfterTaxType, isPreTaxType } from "@/lib/config/account-types";
 import { ownerAccountLabel } from "./account-notes";

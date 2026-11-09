@@ -3,13 +3,13 @@
 import type { EngineAccumulationYear } from "@/lib/pure/engine/types";
 import type { ProjectionState } from "./projection-table-types";
 import type { TipColor, TooltipLineItem } from "./types";
-import type { computeAccountSplits } from "./utils";
+import type { computeAccountSplits } from "./projection-columns";
 import {
   contributionTaxTypeTotals,
   gapDrawnItems,
 } from "./projection-table-accum-row.model";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { itemTaxType, percentOf, proRateMonths } from "./utils";
+import { itemTaxType, percentOf, proRateMonths } from "./projection-columns";
 import { shortfallFloor } from "@/lib/pure/engine";
 
 /** The contribution total's tooltip: what went in, what came out, growth and budget. */
