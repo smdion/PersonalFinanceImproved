@@ -26,3 +26,27 @@ vi.mock("@/server/services/simulation/monte-carlo-worker-client", async () => {
     getMonteCarloProgress: () => null,
   };
 });
+
+/** The next/dynamic chunks still loading. A chunk can take longer to load
+ *  than any quiet spell on a busy host, while its skeleton holds the text
+ *  still, so the screens' settle (screen-mount.tsx) waits for these. */
+const loadingChunks = vi.hoisted(() => new Set<Promise<unknown>>());
+vi.mock("next/dynamic", async (importOriginal) => {
+  const dynamic = (await importOriginal<typeof import("next/dynamic")>())
+    .default;
+  const tracked: typeof dynamic = (load, options) =>
+    dynamic(
+      typeof load === "function"
+        ? () => {
+            const chunk = load();
+            const done = () => loadingChunks.delete(chunk);
+            loadingChunks.add(chunk);
+            chunk.then(done, done);
+            return chunk;
+          }
+        : load,
+      options,
+    );
+  return { default: tracked };
+});
+export { loadingChunks };

@@ -26,6 +26,7 @@ import { HOUSEHOLDS } from "./households";
 import { PROCEDURES } from "./procedures";
 import { createTestCaller } from "../routers/setup";
 import { BASELINE_NOW } from "./router-suite";
+import { loadingChunks } from "./mocks";
 import {
   resetTrpcMock,
   setQuery,
@@ -144,9 +145,8 @@ async function callPath(
   return (target as (input?: unknown) => Promise<unknown>)(input);
 }
 
-/** Wait until the page's text stops changing (lazy chunks, effects): the
- *  same for three ticks, then still for STILL_MS more, since a lazy chunk's
- *  module can take longer than three ticks to load on a busy host. */
+/** Wait until every chunk has loaded and the page's text stops changing
+ *  (effects): the same for three ticks, then still for STILL_MS more. */
 const STILL_MS = 100;
 export async function settle(container: HTMLElement): Promise<void> {
   let last = "";
@@ -154,11 +154,15 @@ export async function settle(container: HTMLElement): Promise<void> {
   let since = performance.now();
   for (
     let i = 0;
-    i < 50 && (same < 3 || performance.now() - since < STILL_MS);
+    i < 50 &&
+    (loadingChunks.size > 0 ||
+      same < 3 ||
+      performance.now() - since < STILL_MS);
     i++
   ) {
     await act(async () => {
-      await new Promise((r) => setTimeout(r, same < 3 ? 0 : 20));
+      if (loadingChunks.size > 0) await Promise.allSettled([...loadingChunks]);
+      else await new Promise((r) => setTimeout(r, same < 3 ? 0 : 20));
     });
     const now = container.innerHTML;
     if (now === last) same++;
