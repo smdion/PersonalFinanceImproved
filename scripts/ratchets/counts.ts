@@ -1,7 +1,7 @@
 /**
  * The JSON ratchets: size-baseline.json, the ESLint suppressions files, the
- * calculation-register baseline and the duplicate-code counts, each compared
- * with its base copy.
+ * calculation-register baseline, the duplicate-code counts and the count of
+ * procedures without a doc comment, each compared with its base copy.
  */
 import { members, sumByGroup } from "./moves";
 import { named, type Rise } from "./rise";
@@ -17,6 +17,9 @@ export const SUPPRESSION_FILES = [
 export const REGISTER_FILE = "scripts/calculation-register-baseline.json";
 /** scripts/check-duplicates.ts's totals: jscpd's copied blocks and lines. */
 export const DUPLICATES_FILE = "scripts/ratchets/duplicates.json";
+/** tests/lint/procedure-doc-comments.test.ts's count. */
+export const UNDOCUMENTED_FILE =
+  "scripts/ratchets/undocumented-procedures.json";
 const FILE_LIMIT = 400;
 
 export type SizeBaseline = {
@@ -223,4 +226,23 @@ export function duplicateRises(
         head[key] - base[key],
       ),
     );
+}
+
+export type Undocumented = { procedures: number };
+
+/** The count doesn't rise; a file the base doesn't have yet starts it. */
+export function undocumentedRises(
+  base: Undocumented | undefined,
+  head: Undocumented | undefined,
+): Rise[] {
+  if (!base || !head || head.procedures <= base.procedures) return [];
+  return [
+    named(
+      UNDOCUMENTED_FILE,
+      "procedures",
+      `procedures without a doc comment: ${head.procedures}, ${base.procedures} at the base`,
+      ["procedures"],
+      head.procedures - base.procedures,
+    ),
+  ];
 }
