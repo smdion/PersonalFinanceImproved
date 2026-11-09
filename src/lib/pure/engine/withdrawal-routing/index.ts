@@ -23,10 +23,8 @@ import type { RouteBracketInfo, RouteResult } from "./types";
 import { applyRothBracketOverlay } from "./roth-bracket-overlay";
 
 /**
- * One dispatch to whichever mode config.withdrawalRoutingMode selects. No mode
- * function mutates `balances`, so `routeForMode`'s two-pass eligibility
- * gate (below) works by substituting which `balances`/`config` object this
- * receives, never by editing any of the three mode functions themselves.
+ * One dispatch to the mode config.withdrawalRoutingMode selects. Mode functions
+ * never mutate `balances`; `routeForMode` gates eligibility by what it passes in.
  */
 function dispatchOnce(
   targetWithdrawal: number,
@@ -68,18 +66,9 @@ function dispatchOnce(
       unmetNeed: beyond.unmetNeed,
     };
   }
-  // Surface the same bracket ceiling `routeWithdrawalsBracketFilling` reports
-  // as `traditionalCap` for waterfall + Roth-bracket-overlay households too:
-  // the overlay caps their withdrawals at exactly this figure.
-  // `applyRothBracketOverlay` computes the identical
-  // `computeBracketTraditionalCap(bracketInfo)` bracket_filling uses, AND
-  // resets `withdrawalOrder` to force Traditional-first up to that cap
-  // (see its own docblock) — the report narrative / table tooltip that cite
-  // this figure describe the same real mechanism for waterfall as for
-  // bracket_filling, so this is deliberately NOT mode-gated.
-  // `routeConfig !== config` iff the overlay applied, which `applyRothBracketOverlay`
-  // only does when this figure is finite — reusing that as the "did it apply" signal
-  // instead of re-deriving the same null-check here.
+  // The overlay caps waterfall withdrawals at the same bracket ceiling, so report
+  // it as `traditionalCap` too. `routeConfig !== config` iff the overlay applied,
+  // which happens only when this figure is finite.
   if (routeConfig !== config) {
     result.traditionalCap = computeBracketTraditionalCap(bracketInfo);
   }
@@ -87,35 +76,9 @@ function dispatchOnce(
 }
 
 /**
- * True "last resort" semantics for the per-account penalty-allowance
- * override. Before this, a penalty-allowed
- * account's exposed dollars were never in the "still excluded" pool at all
- * — `subtractExcluded` never removed them, so they were ordinary balance,
- * drawable whenever `withdrawalOrder`/tax-preference ranking happened to
- * reach them, not held back until the household would otherwise be
- * genuinely short.
- *
- * Two dispatches:
- *
- * 1. Against balances with EVERYTHING penalty-exposed excluded — allowed
- *    accounts included (built by treating the FULL `penaltyExposedTrad/
- *    Roth/Total` figures as if they were the "still excluded" ones, reusing
- *    `subtractExcluded` unchanged). If this alone meets the need
- *    (`unmetNeed <= 0`), we're done — the allowed account is NEVER touched,
- *    which is the entire point of this pass. This is the important early return,
- *    not an optimization.
- * 2. Only when dispatch #1 leaves a real shortfall: the residual, against
- *    balances already reduced by dispatch #1's withdrawals
- *    (`applySlotsToBalances`) with JUST the penalty-allowed exposure folded back
- *    in (via the real `exposure` record's genuine "still excluded" fields —
- *    non-allowed exposure and non-retirement money stay excluded even
- *    though the household is short).
- *
- * In the DEFAULT (no penalty allowance) case "penalty-exposed" and
- * "excluded" are the same set, so `routeForMode` dispatches once. Here the
- * two sets genuinely differ (allowed vs. not), so a
- * second pass has real work to do only in the narrow case this function is
- * reached at all.
+ * Penalty-allowed accounts as a true last resort: dispatch #1 excludes all
+ * penalty-exposed money; only a shortfall runs dispatch #2 on the residual, with
+ * just the allowed exposure folded back in (other exclusions still hold).
  */
 function routeWithLastResortAllowance(
   targetWithdrawal: number,
@@ -148,14 +111,9 @@ function routeWithLastResortAllowance(
     return pass1;
   }
 
-  // Replay pass 1's draws onto the ORIGINAL (unexcluded) balances, not
-  // pass1Balances — pass1Balances had the allowed account zeroed out for
-  // dispatch #1's purposes, and building pass 2 on top of that would leave
-  // it zeroed forever, permanently discarding the exact money this
-  // function exists to make reachable as a last resort. subtractExcluded
-  // below is what re-applies the (narrower, real) exclusion for pass 2 —
-  // still holding back genuinely non-allowed exposure and non-retirement
-  // money, but not the allowed account.
+  // Replay pass 1's draws on the unexcluded balances: pass1Balances has the
+  // allowed account zeroed. subtractExcluded then re-applies only the real
+  // exclusion (non-allowed exposure, non-retirement money).
   const pass1ResultBalances = applySlotsToBalances(balances, pass1.slots);
   const pass2Balances = subtractExcluded(
     pass1ResultBalances,
@@ -200,14 +158,9 @@ function routeWithLastResortAllowance(
 }
 
 /**
- * Sum two dispatches' slots per category — dispatch #2 only ever runs
- * against the residual `unmetNeed` after dispatch #1, so a category drawn
- * in both passes had two SEPARATE, non-overlapping withdrawals from it, not
- * two conflicting answers to the same question. Both dispatches share the
- * same `config.withdrawalOrder`, so both slot arrays cover the same
- * categories — a category present in only one array (shouldn't happen, but
- * not assumed) is carried through unchanged. `remainingNeed` takes
- * dispatch #2's value — the true final figure, once both passes have run.
+ * Sums two dispatches' slots per category (dispatch #2 draws only the residual,
+ * so they never overlap); a category in one array only carries through.
+ * `remainingNeed` is dispatch #2's, the final figure.
  */
 function mergeDecumulationSlots(
   pass1: DecumulationSlot[],
@@ -238,31 +191,9 @@ function mergeDecumulationSlots(
 }
 
 /**
- * Route a withdrawal using whichever mode config.withdrawalRoutingMode
- * selects — the single dispatch point both the real decumulation-year
- * execution and withdrawal-solver.ts's estimate call, so a routing-mode-specific
- * rule (like the Roth-bracket overlay) can't be applied in one path and
- * forgotten in the other.
- *
- * `exposure` — when provided,
- * `config.avoidPenalizedWithdrawals` is on, and something is actually
- * penalty-exposed, dispatches against balances with every penalty-exposed
- * dollar subtracted out. `nonRetirement` is the
- * same idea for Portfolio-parented ("not part of the retirement plan")
- * money — always excluded, no config lever, no opt-out. Both sources are
- * subtracted together in ONE dispatch (`subtractExcluded`) whenever either
- * has anything to exclude — there is no second pass for either. A
- * resulting `unmetNeed` is real — `penaltyAvoidedShortfall` and
- * `nonRetirementShortfall` each name how much of it is attributable to
- * their own exclusion (see `RouteResult`'s docblocks) rather than the
- * household being broke; a household can be short for either reason, both,
- * or neither. Falls through to a single unchanged `dispatchOnce` call
- * against the RAW balances whenever NEITHER source has anything to
- * exclude — that fallthrough (not a separately maintained branch) is what
- * keeps a household with nothing penalty-exposed AND nothing
- * Portfolio-parented (every household before that exclusion; every existing test
- * fixture), or a household with `avoidPenalizedWithdrawals: false` and no
- * Portfolio-parented accounts, byte-identical to output before that exclusion.
+ * The single routing entry for the real year and the solver's estimate. Excludes
+ * penalty-exposed money (when avoided) and Portfolio-parented money in one
+ * dispatch; the shortfall fields say how much `unmetNeed` each exclusion caused.
  */
 export function routeForMode(
   targetWithdrawal: number,
@@ -278,15 +209,9 @@ export function routeForMode(
     config.avoidPenalizedWithdrawals;
   const nonRetirementExclusionActive =
     nonRetirement != null && nonRetirement.grandTotal !== 0;
-  // Does this household have penalty-exposed money in a penalty-"allowed"
-  // account — i.e. real exposure that ISN'T in the "still excluded" pool
-  // (which only counts non-allowed exposure)? If so, that money needs true
-  // last-resort treatment: available only if the household is genuinely
-  // short even after every OTHER source (including the still-excluded
-  // exposure) is exhausted — see routeWithLastResortAllowance's docblock.
-  // This subsumes penaltyExclusionActive's single-pass path whenever it's
-  // true (dispatch #1 there also fully excludes the still-excluded pool),
-  // so this branch takes priority.
+  // Penalty-exposed money in an allowed account (outside the still-excluded pool)
+  // is a last resort. That path also excludes the still-excluded pool, so it
+  // takes priority over the single-pass exclusion.
   const hasLastResortAllowance =
     exposure != null &&
     config.avoidPenalizedWithdrawals &&
@@ -323,10 +248,8 @@ export function routeForMode(
     bracketInfo,
   );
   if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
-  // Cap each against its own STILL-excluded/grand total, not a
-  // blended figure — an allowed account's exposed dollars were never
-  // excluded from this dispatch, and a real shortfall must never be
-  // attributed to either source beyond what it actually excluded.
+  // Cap each at what its own exclusion removed (still-excluded or grand total),
+  // never a blended figure.
   const penaltyAvoidedShortfall = penaltyExclusionActive
     ? roundToCents(
         Math.min(result.unmetNeed, exposure.totalPenaltyExposedStillExcluded),

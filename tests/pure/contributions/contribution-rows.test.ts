@@ -1,18 +1,18 @@
 /**
  * A payroll fixed_monthly / fixed_annual account taken from the bonus check
  * needs the job's real pay-period count to know its per-paycheck amount.
- * resolveContribPeriods used to hand back 0 for those methods, so the
+ * resolveContributionPeriods used to hand back 0 for those methods, so the
  * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
  */
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
-  contribRowAmounts,
-  resolveContribPeriods,
-  type ContribRow,
+  contributionRowAmounts,
+  resolveContributionPeriods,
+  type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 
-const hsa = (method: string, value: number): ContribRow => ({
+const hsa = (method: string, value: number): ContributionRow => ({
   id: 1,
   personId: 1,
   jobId: 1,
@@ -42,17 +42,17 @@ const pay = [
 describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () => {
   it("resolves the job's real pay periods for every method", () => {
     expect(
-      resolveContribPeriods("fixed_monthly", { payPeriod: "biweekly" })
+      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
         .periodsPerYear,
     ).toBe(26);
     expect(
-      resolveContribPeriods("fixed_monthly", { payPeriod: "biweekly" })
+      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
         .incomplete,
     ).toBe(false);
   });
 
   it("a $100/month HSA gives a finite annual: 12 months plus one paycheck's share", () => {
-    const { annualById } = contribRowAmounts(
+    const { annualById } = contributionRowAmounts(
       [hsa("fixed_monthly", 100)],
       jobs,
       pay,
@@ -63,7 +63,7 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
   });
 
   it("a fixed-annual account likewise takes one paycheck's share from the bonus", () => {
-    const { annualById } = contribRowAmounts(
+    const { annualById } = contributionRowAmounts(
       [hsa("fixed_annual", 1200)],
       jobs,
       pay,

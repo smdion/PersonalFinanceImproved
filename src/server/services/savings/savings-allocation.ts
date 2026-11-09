@@ -1,16 +1,7 @@
 /**
- * The only path that resolves a savings goal's effective
- * allocationPercent/monthlyContribution for a given budget profile. Every
- * active (goal, profile) pair has a mandatory row in
- * savings_goal_profile_allocations — funding is entirely per-profile, no
- * shared default a profile falls back to (goal *identity* stays on
- * savingsGoals and IS shared; only funding is per-profile — see that
- * table's comment in schema-pg.ts). A missing row (shouldn't happen once a
- * pair is seeded at goal/profile creation) resolves to $0/no-percent rather
- * than throwing, since a genuinely defensive fallback beats a 500 here.
- *
- * recalculateAllocation/lockInAllocationPercent always write through
- * upsertGoalProfileAllocation.
+ * The only resolver of a savings goal's allocationPercent/monthlyContribution per budget
+ * profile: one savings_goal_profile_allocations row per active (goal, profile), no shared
+ * default; a missing row resolves to $0/no-percent. Writes go via upsertGoalProfileAllocation.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -104,10 +95,8 @@ export async function upsertGoalProfileAllocation(
   }
 }
 
-/** Set every active goal's funding to $0/no-percent for one profile — the
- *  "reset all to zero" bulk action. One statement per goal inside a
- *  transaction (caller passes a tx db handle) rather than delete+reseed,
- *  since every pair must keep an explicit row. */
+/** Set every active goal's funding to $0/no-percent for one profile, one
+ *  statement per goal (caller passes a tx), since every pair keeps a row. */
 export async function resetProfileAllocationsToZero(
   db: DbOrTx,
   goalIds: number[],

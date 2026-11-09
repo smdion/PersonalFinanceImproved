@@ -38,7 +38,7 @@ async function plannedRetirements(db: Db) {
  * The first year of withdrawals under the active retirement profile, as the
  * engine counts it (planRetirementYear). Null when nobody has a planned age.
  */
-export async function householdRetirementYear(db: Db): Promise<number | null> {
+export async function householdRetirementYear(db: Db, asOf: Date) {
   const [planned, jobs] = await Promise.all([
     plannedRetirements(db),
     db.select().from(schema.jobs),
@@ -46,6 +46,6 @@ export async function householdRetirementYear(db: Db): Promise<number | null> {
   if (planned.length === 0) return null;
   return planRetirementYear(
     planned,
-    projectionJobs(jobs, new Date()).map((j) => j.personId),
+    projectionJobs(jobs, asOf).map((j) => j.personId),
   );
 }

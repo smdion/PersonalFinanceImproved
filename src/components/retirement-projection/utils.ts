@@ -55,40 +55,9 @@ export const ROTH_CONVERSION_BRACKET_PRESETS = [
   "0.35",
 ];
 
-// Centralized tooltip accent-color lookup — every
-// projection tooltip color, chart or table, single-select or hand-rolled
-// JSX, resolves through here.
-//
-// Corrected twice in the same pass. First pass (wrong): treated "hard to
-// read depending on theme" as a missing-theme-override problem and swapped
-// every broken shade for one of globals.css's `--c-<color>-<shade>`
-// PAGE-theme-remapped overrides. Second pass (this one): these tooltips
-// (both this chart's own hand-rolled Recharts tooltip AND the table's
-// shared `Tooltip` UI primitive, see ui/tooltip.tsx's TOOLTIP_SURFACE_
-// CLASSES) render on a surface that's deliberately dark REGARDLESS of the
-// page's own light/dark setting (bg-slate-900 / dark:bg-slate-700 — both
-// dark, neither theme-adaptive). Routing tooltip TEXT through the
-// PAGE-theme system was solving the wrong layer: the container doesn't
-// track page theme, so text that does track it can end up chosen for the
-// wrong (light-page-assuming) background regardless of which shade number
-// gets picked. Every value below is therefore a STATIC shade -- one with
-// NO `--c-*` override in globals.css, so it resolves to Tailwind's plain
-// default and stays the same fixed, dark-surface-legible color no matter
-// what the page's own theme is set to (the exact "readable on a dark
-// background" role Tailwind's own 300-400 tier exists for). `red` is the
-// one exception: every red-* shade IS remapped (no static option exists in
-// this app), so red-400 is used deliberately -- its own light-page-mode
-// value is still light/saturated enough to read on a dark surface, unlike
-// the darker 600-800 tier (chosen for text-on-white, not text-on-dark).
-//
-// This is the OPPOSITE selection rule from ordinary page content (badges,
-// status text, borders), which correctly SHOULD use the `--c-*` system so
-// it tracks the page's own theme. Don't "fix" these shades again by
-// routing them through `--c-*` overrides — that regresses back to the
-// first, wrong pass. If a NEW tooltip surface is added that IS
-// theme-adaptive (like a page-background card, not a hover tooltip), it
-// needs its OWN color choices via the normal `--c-*`-remapped classes,
-// not this map.
+// Tooltip accent colors for every projection tooltip. Tooltip surfaces are always dark,
+// so these are STATIC shades with no `--c-*` override in globals.css (red-400 is remapped
+// but still reads on dark). Theme-adaptive surfaces use `--c-*` classes, not this map.
 export const tipColorClass: Record<TipColor, string> = {
   green: "text-green-400",
   blue: "text-blue-400",
@@ -114,7 +83,7 @@ export const bucketSlotMap: Record<
   string,
   {
     /** Which slot field holds the contribution for this bucket? */
-    contribField: "traditionalContrib" | "rothContrib" | "employeeContrib";
+    contributionField: "traditionalContrib" | "rothContrib" | "employeeContrib";
     /** Which slot field holds the withdrawal for this bucket? */
     withdrawalField: "traditionalWithdrawal" | "rothWithdrawal" | "withdrawal";
     /** Only match slots whose category is this value (null = all categories). */
@@ -128,7 +97,7 @@ export const bucketSlotMap: Record<
   }
 > = {
   preTax: {
-    contribField: "traditionalContrib",
+    contributionField: "traditionalContrib",
     withdrawalField: "traditionalWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
@@ -140,7 +109,7 @@ export const bucketSlotMap: Record<
     matchIsAssociated: false,
   },
   taxFree: {
-    contribField: "rothContrib",
+    contributionField: "rothContrib",
     withdrawalField: "rothWithdrawal",
     categoryFilter: null,
     specTreatments: new Set(
@@ -157,7 +126,7 @@ export const bucketSlotMap: Record<
       .map((cat) => [
         ACCOUNT_TYPE_CONFIG[cat].taxBucketKey,
         {
-          contribField: "employeeContrib" as const,
+          contributionField: "employeeContrib" as const,
           withdrawalField: "withdrawal" as const,
           categoryFilter: cat,
           specTreatments: null,
@@ -182,7 +151,7 @@ export const _singleBucketCategories = new Set<string>(
 /** What a projection-card row shows as its balance: the row's tax buckets,
  *  which a parent-filtered row (filterYearByParentCategory) scopes to that
  *  view. Not a retirement answer — those read `retirementBalance`. */
-export function rowTotal(yr: {
+export function rowTotal(yearRow: {
   balanceByTaxType: {
     preTax: number;
     taxFree: number;
@@ -190,28 +159,22 @@ export function rowTotal(yr: {
     afterTax: number;
   };
 }): number {
-  const b = yr.balanceByTaxType;
+  const b = yearRow.balanceByTaxType;
   return roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
 }
 
-/** A year narrowed to one parent category's accounts: balances,
- *  contributions and withdrawals are that view's. The engine's
- *  retirementBalance / allAccountsBalance are left as the engine reported
- *  them (they describe the plan, not the view). */
+/** A year narrowed to one parent category's accounts. The engine's
+ *  retirementBalance / allAccountsBalance stay as reported (they describe the
+ *  plan, not the view). */
 export function filterYearByParentCategory(
-  yr: EngineYearProjection,
+  yearRow: EngineYearProjection,
   parentCategory: string,
 ): EngineYearProjection {
-  // No individual-account data to filter by at all (MC "Simple" tax mode —
-  // see monte-carlo.ts's Simple-mode block — has no per-account/parent-
-  // category structure left once it collapses to one fictional bucket).
-  // Filtering by parent category is meaningless here; returning `yr`
-  // unchanged is the honest degradation, not zeroing every balance/
-  // withdrawal field below to match an empty account list (Rate-Seeded
-  // showed $0 balances everywhere because this function was doing exactly
-  // that).
-  if (yr.individualAccountBalances.length === 0) return yr;
-  const filtered = yr.individualAccountBalances.filter(
+  // No individual-account data (MC "Simple" tax mode collapses to one
+  // fictional bucket): filtering is meaningless, so return the year unchanged
+  // rather than zeroing every balance.
+  if (yearRow.individualAccountBalances.length === 0) return yearRow;
+  const filtered = yearRow.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
   );
   const byTax = { ...emptyTaxBucketMap(), afterTaxBasis: 0 };
@@ -233,14 +196,14 @@ export function filterYearByParentCategory(
   }
   // The engine tracks brokerage basis per account; an older result without
   // it falls back to a proportional estimate.
-  const basisAccts = filtered.filter((ia) => tracksCostBasis(ia.category));
-  byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
-    ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
+  const basisAccounts = filtered.filter((ia) => tracksCostBasis(ia.category));
+  byTax.afterTaxBasis = basisAccounts.every((ia) => ia.costBasis != null)
+    ? roundToCents(sumBy(basisAccounts, (ia) => ia.costBasis!))
     : roundToCents(
-        yr.balanceByTaxType.afterTaxBasis *
-          safeDivide(byTax.afterTax, yr.balanceByTaxType.afterTax),
+        yearRow.balanceByTaxType.afterTaxBasis *
+          safeDivide(byTax.afterTax, yearRow.balanceByTaxType.afterTax),
       );
-  const byAcct = { ...yr.balanceByAccount };
+  const byAccount = { ...yearRow.balanceByAccount };
   for (const cat of getAllCategories()) {
     const catIabs = filtered.filter((ia) => ia.category === cat);
     const cfg = getAccountTypeConfig(cat);
@@ -251,45 +214,42 @@ export function filterYearByParentCategory(
       const roth = catIabs
         .filter((ia) => isTaxFreeBucket(ia.taxType))
         .reduce((s, ia) => s + ia.balance, 0);
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "roth_traditional" as const,
         traditional: trad,
         roth,
       };
     } else if (cfg.balanceStructure === "basis_tracking") {
-      const bal = catIabs.reduce((s, ia) => s + ia.balance, 0);
-      const origCatBal = getTotalBalance(yr.balanceByAccount[cat]);
-      const ratio = safeDivide(bal, origCatBal);
+      const balance = catIabs.reduce((s, ia) => s + ia.balance, 0);
+      const origCatBalance = getTotalBalance(yearRow.balanceByAccount[cat]);
+      const ratio = safeDivide(balance, origCatBalance);
       const origCatBasis =
-        yr.balanceByAccount[cat].structure === "basis_tracking"
-          ? yr.balanceByAccount[cat].basis
+        yearRow.balanceByAccount[cat].structure === "basis_tracking"
+          ? yearRow.balanceByAccount[cat].basis
           : 0;
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "basis_tracking" as const,
-        balance: bal,
+        balance: balance,
         basis: roundToCents(origCatBasis * ratio),
       };
     } else {
-      byAcct[cat] = {
+      byAccount[cat] = {
         structure: "single_bucket" as const,
         balance: catIabs.reduce((s, ia) => s + ia.balance, 0),
       };
     }
   }
-  if (yr.phase !== "decumulation") {
-    // Contributions rescoped to the same accounts as the balances: the
-    // engine routes per category (a household-wide brokerage slot holds a
-    // Portfolio account's money too), so each slot and total is rebuilt from
-    // what the kept accounts actually received. Routing flags (caps,
-    // remaining space, overflow amounts) stay household-wide — they describe
-    // a real global constraint, as for withdrawals below.
+  if (yearRow.phase !== "decumulation") {
+    // Contributions rebuilt from what the kept accounts received (the engine
+    // routes per category). Routing flags (caps, remaining space, overflow)
+    // stay household-wide, as for withdrawals below.
     const sum = (
       rows: typeof filtered,
       pick: (ia: (typeof filtered)[number]) => number,
     ) => roundToCents(rows.reduce((t, ia) => t + pick(ia), 0));
     const accumSlots =
-      "slots" in yr
-        ? yr.slots.map((slot) => {
+      "slots" in yearRow
+        ? yearRow.slots.map((slot) => {
             const catIabs = filtered.filter(
               (ia) => ia.category === slot.category,
             );
@@ -309,10 +269,10 @@ export function filterYearByParentCategory(
           })
         : undefined;
     return {
-      ...yr,
+      ...yearRow,
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
-      balanceByAccount: byAcct,
+      balanceByAccount: byAccount,
       ...(accumSlots
         ? {
             slots: accumSlots,
@@ -331,19 +291,10 @@ export function filterYearByParentCategory(
     };
   }
 
-  // Rescope withdrawals to the same account subset as the balances above —
-  // otherwise a filtered "After-Tax: $32k" balance sits next to an
-  // unfiltered "Brokerage: -$30k" withdrawal that was mostly drawn from a
-  // Portfolio-parented account this page never shows, making it look like
-  // the account is being overdrawn. `slots` has no per-account structure
-  // in the engine (it's a per-category routing decision), so this sums the
-  // withdrawal each filtered *account* actually recorded rather than
-  // re-deriving what routing would have decided for a smaller pool — the
-  // routing-decision flags below (cappedByAccount/cappedByTaxType/
-  // remainingNeed) are left as the true household-wide values since they
-  // reflect a real global constraint (bracket-filling, account limits) that
-  // doesn't change based on this page's display-only account grouping.
-  const filteredSlots = yr.slots.map((slot) => {
+  // Withdrawals rescoped to the balances' account subset by summing what each
+  // kept account recorded. Routing flags (cappedByAccount/cappedByTaxType/
+  // remainingNeed) stay household-wide: they reflect a real global constraint.
+  const filteredSlots = yearRow.slots.map((slot) => {
     const catIabs = filtered.filter((ia) => ia.category === slot.category);
     const cfg = getAccountTypeConfig(slot.category);
     let withdrawal: number;
@@ -396,41 +347,26 @@ export function filterYearByParentCategory(
     filteredSlots.reduce((s, sl) => s + sl.rothWithdrawal, 0),
   );
 
-  // Rescope targetWithdrawal/taxCost by the SAME filtered/unfiltered ratio
-  // as the slots above, instead of leaving them at their household-wide
-  // values. Leaving targetWithdrawal
-  // household-wide while totalWithdrawal is Retirement-scoped meant a
-  // FULLY-funded plan could still compare as "underfunded" — the amber
-  // withdrawal-cell coloring, the tooltip's "Eff. rate = tax / withdrawal"
-  // claim, and a literal false SHORTFALL string in diag mode all read off
-  // that same mismatch. taxCost is prorated the same way, matching the
-  // proration this function already applies to basis/gains above —
-  // effectiveTaxRate (taxCost/totalWithdrawal) is invariant under a
-  // shared scale factor, so it stays correct with no separate change.
-  // projectedExpenses/rmdAmount/qcdAmount/rmdExcessAmount are
-  // DELIBERATELY left household-wide: RMD is a real IRS obligation on the
-  // full Traditional balance regardless of account grouping (same
-  // rationale rmd-smoothing.ts's docblock gives for never scoping the
-  // balance an RMD is measured against), and projectedExpenses is the
-  // household's real stated spending need, independent of which accounts
-  // this display-only filter happens to be scoped to.
+  // targetWithdrawal/taxCost scale by the same ratio as the slots, so a fully
+  // funded scoped plan never reads as underfunded (effectiveTaxRate is
+  // unchanged). Expenses and RMD/QCD figures stay household-wide obligations.
   const targetRatio = canonicalSafeDivide(
     totalWithdrawal,
-    yr.totalWithdrawal,
+    yearRow.totalWithdrawal,
     1,
   );
-  const targetWithdrawal = roundToCents(yr.targetWithdrawal * targetRatio);
+  const targetWithdrawal = roundToCents(yearRow.targetWithdrawal * targetRatio);
   // Only the withdrawal's tax scales; tax on Social Security is the
   // household's, whichever accounts this view shows.
   const taxCost = roundToCents(
-    (yr.taxCost - yr.ssTaxCost) * targetRatio + yr.ssTaxCost,
+    (yearRow.taxCost - yearRow.ssTaxCost) * targetRatio + yearRow.ssTaxCost,
   );
 
   return {
-    ...yr,
+    ...yearRow,
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
-    balanceByAccount: byAcct,
+    balanceByAccount: byAccount,
     slots: filteredSlots,
     totalWithdrawal,
     totalTraditionalWithdrawal,
@@ -445,9 +381,9 @@ export function filterYearByParentCategory(
 // ---------------------------------------------------------------------------
 
 export function isAccumYear(
-  yr: EngineYearProjection,
-): yr is EngineAccumulationYear {
-  return yr.phase === "accumulation";
+  yearRow: EngineYearProjection,
+): yearRow is EngineAccumulationYear {
+  return yearRow.phase === "accumulation";
 }
 
 export function itemTaxType(
@@ -490,11 +426,11 @@ export function colBalance(
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
-  const bal = ba[category as AccountCategory];
-  if (!bal) return 0;
-  if (isRothColumn(treatment)) return getRothBalance(bal);
-  if (isTraditionalColumn(treatment)) return getTraditionalBalance(bal);
-  return getTotalBalance(bal);
+  const balance = ba[category as AccountCategory];
+  if (!balance) return 0;
+  if (isRothColumn(treatment)) return getRothBalance(balance);
+  if (isTraditionalColumn(treatment)) return getTraditionalBalance(balance);
+  return getTotalBalance(balance);
 }
 
 /** Safe division — 0 when the divisor is 0 (`safeDivide` in `@/lib/utils/math`). */
@@ -554,7 +490,7 @@ export function slotBucketWithdrawal(
 }
 
 /** Get contribution amount for a tax bucket from a single slot. */
-export function slotBucketContrib(
+export function slotBucketContribution(
   slot: {
     category: string;
     traditionalContrib: number;
@@ -569,7 +505,7 @@ export function slotBucketContrib(
   // preTax/taxFree don't apply to single-bucket categories (they have their own tax bucket)
   if (!map.categoryFilter && _singleBucketCategories.has(slot.category))
     return 0;
-  return slot[map.contribField as keyof typeof slot] as number;
+  return slot[map.contributionField as keyof typeof slot] as number;
 }
 
 /** Total balance inflow (employee + match) for a specific account column — mirrors engine balance routing. */
@@ -593,7 +529,7 @@ export function slotsBucketBalanceInflow(
 ): number {
   let total = 0;
   for (const slot of slots) {
-    const emp = slotBucketContrib(slot, bucket);
+    const emp = slotBucketContribution(slot, bucket);
     if (emp <= 0 && slot.employerMatch <= 0) continue;
     const map = bucketSlotMap[bucket];
     if (!map) continue;
@@ -603,7 +539,7 @@ export function slotsBucketBalanceInflow(
         total += slot.employeeContrib + slot.employerMatch;
     } else if (!_singleBucketCategories.has(slot.category)) {
       // roth_traditional: preTax gets traditionalContrib + ALL match; taxFree gets rothContrib only
-      if (map.contribField === "traditionalContrib") {
+      if (map.contributionField === "traditionalContrib") {
         total += slot.traditionalContrib + slot.employerMatch;
       } else {
         total += slot.rothContrib;
@@ -643,11 +579,8 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-// Moved to lib/pure/advice/report/withdrawal-strategy-narrative.ts so
-// the retirement advisor report can reuse them without a pure module
-// importing this component-layer file — re-exported here so the existing
-// tooltip call sites (projection-table-decum-row.tsx) don't need to change
-// their import path.
+// Re-exported from lib/pure so the advisor report and the tooltip call sites
+// share one implementation.
 export {
   formatDiscretionaryTierBreakdown,
   formatRmdDivisorDetail,
@@ -668,9 +601,7 @@ export function specFrac({
 }: SpecFracInput): number {
   return specTotal > 0
     ? baseAnnual / specTotal
-    : specCount > 0
-      ? 1 / specCount
-      : 1;
+    : canonicalSafeDivide(1, specCount, 1);
 }
 
 export function matchFracOf({
@@ -682,26 +613,26 @@ export function matchFracOf({
 
 export function computeColumnChange({
   deflate,
-  bal,
+  balance,
   year,
   prev,
-  splitContrib,
+  splitContribution,
   splitGrowth,
 }: ColumnChangeInput) {
-  const deflatedBal = deflate(bal, year);
-  const deflatedPrev = prev ? deflate(prev.bal, prev.year) : 0;
-  const displayContrib = deflate(splitContrib, year);
+  const deflatedBalance = deflate(balance, year);
+  const deflatedPrev = prev ? deflate(prev.balance, prev.year) : 0;
+  const displayContribution = deflate(splitContribution, year);
   const displayGrowth = deflate(splitGrowth, year);
   const displayChange = prev
-    ? deflatedBal - deflatedPrev
-    : displayContrib + displayGrowth;
+    ? deflatedBalance - deflatedPrev
+    : displayContribution + displayGrowth;
   return {
     displayChange,
-    displayContrib,
+    displayContribution,
     displayGrowth,
-    boyBal: prev
+    boyBalance: prev
       ? deflatedPrev
-      : deflate(bal - splitContrib - splitGrowth, year),
+      : deflate(balance - splitContribution - splitGrowth, year),
   };
 }
 
@@ -718,27 +649,27 @@ export function computeAccountSplits(
     contribution: number;
     growth: number;
   }[] = [];
-  let splitContrib = 0;
+  let splitContribution = 0;
   let splitGrowth = 0;
   for (const ia of accounts) {
     const key = `${ia.category}::${ia.name}::${ia.taxType}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const contrib = Math.max(0, ia.contribution + ia.employerMatch);
-    if (ia.balance > 0 || contrib > 1 || Math.abs(ia.growth) > 1) {
+    const contribution = Math.max(0, ia.contribution + ia.employerMatch);
+    if (ia.balance > 0 || contribution > 1 || Math.abs(ia.growth) > 1) {
       splits.push({
         name: ia.name,
         category: ia.category,
         taxType: ia.taxType,
         balance: ia.balance,
-        contribution: contrib,
+        contribution: contribution,
         growth: ia.growth,
       });
-      splitContrib += contrib;
+      splitContribution += contribution;
       splitGrowth += ia.growth;
     }
   }
-  return { splits, splitContrib, splitGrowth };
+  return { splits, splitContribution, splitGrowth };
 }
 
 // ---------------------------------------------------------------------------
@@ -781,9 +712,7 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Guardrail/strategy event styling, shared by the Balance chart's
-// ReferenceLine markers and the table's "Total Withdrawals" tooltip so the
-// two never drift on color or wording.
+// Guardrail/strategy event styling, shared by chart markers and table tooltip.
 // ---------------------------------------------------------------------------
 
 type StrategyEventStyle = {
@@ -793,9 +722,8 @@ type StrategyEventStyle = {
 };
 
 /** Per-strategy spending-adjustment event styling, keyed by
- *  `EngineDecumulationYear.strategyAction`. Percent context (raise/cut/
- *  ceiling/floor %) comes straight from the household's own settings —
- *  the actual % applied that year, not a guess. */
+ *  `EngineDecumulationYear.strategyAction`. Percent context comes from the
+ *  household's own settings (the % actually applied that year). */
 export function buildStrategyEventStyle(
   engineSettings:
     | {
@@ -813,10 +741,10 @@ export function buildStrategyEventStyle(
   const pct = (v: unknown) => (v != null ? formatPercent(Number(v), 0) : null);
   const gkIncreasePct = pct(engineSettings?.gkIncreasePct);
   const gkDecreasePct = pct(engineSettings?.gkDecreasePct);
-  const vdCeilingPct = pct(engineSettings?.vdCeilingPercent);
-  const vdFloorPct = pct(engineSettings?.vdFloorPercent);
-  const cpFloorPct = pct(engineSettings?.cpFloorPercent);
-  const enFloorPct = pct(engineSettings?.enFloorPercent);
+  const vdCeilingPercent = pct(engineSettings?.vdCeilingPercent);
+  const vdFloorPercent = pct(engineSettings?.vdFloorPercent);
+  const cpFloorPercent = pct(engineSettings?.cpFloorPercent);
+  const enFloorPercent = pct(engineSettings?.enFloorPercent);
   const activeStrategy = engineSettings?.withdrawalStrategy;
 
   return {
@@ -834,12 +762,12 @@ export function buildStrategyEventStyle(
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label: "⏸ no raise",
       tooltipText:
-        "Prosperity rule — inflation raise skipped after a loss year",
+        "Withdrawal rule — inflation raise skipped after a loss year",
     },
     ceiling_applied: {
       color: CHART_COLORS.guardrailIncreaseMarker,
-      label: vdCeilingPct ? `▲ capped @${vdCeilingPct}` : "▲ capped",
-      tooltipText: `Year-over-year ceiling reached${vdCeilingPct ? ` (max +${vdCeilingPct}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
+      label: vdCeilingPercent ? `▲ capped @${vdCeilingPercent}` : "▲ capped",
+      tooltipText: `Year-over-year ceiling reached${vdCeilingPercent ? ` (max +${vdCeilingPercent}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
     },
     vpw_cap: {
       color: CHART_COLORS.guardrailIncreaseMarker,
@@ -850,19 +778,19 @@ export function buildStrategyEventStyle(
     floor_applied: {
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label:
-        activeStrategy === "vanguard_dynamic" && vdFloorPct
-          ? `▼ floor @${vdFloorPct}`
+        activeStrategy === "vanguard_dynamic" && vdFloorPercent
+          ? `▼ floor @${vdFloorPercent}`
           : "▼ floor",
       tooltipText:
         activeStrategy === "vanguard_dynamic"
-          ? `Year-over-year floor reached${vdFloorPct ? ` (max -${vdFloorPct}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
+          ? `Year-over-year floor reached${vdFloorPercent ? ` (max -${vdFloorPercent}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
           : `Nominal floor reached${
               activeStrategy === "endowment"
-                ? enFloorPct
-                  ? ` (${enFloorPct} of your initial withdrawal)`
+                ? enFloorPercent
+                  ? ` (${enFloorPercent} of your initial withdrawal)`
                   : ""
-                : cpFloorPct
-                  ? ` (${cpFloorPct} of your initial withdrawal)`
+                : cpFloorPercent
+                  ? ` (${cpFloorPercent} of your initial withdrawal)`
                   : ""
             } — spending held at the floor instead of following your balance down further`,
     },

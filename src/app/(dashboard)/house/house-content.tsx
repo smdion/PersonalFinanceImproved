@@ -155,7 +155,6 @@ export function HouseContent() {
         subtitle="Home value, mortgage summary, property taxes, and improvements"
       />
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           title={
@@ -193,7 +192,9 @@ export function HouseContent() {
           {feedAsOf && (
             <p
               className={`text-caption mt-1 ${
-                loanFeedIsStale(feedAsOf) ? "text-amber-600" : "text-muted"
+                loanFeedIsStale(feedAsOf, new Date())
+                  ? "text-amber-600"
+                  : "text-muted"
               }`}
             >
               As of {formatDate(feedAsOf)}
@@ -222,7 +223,6 @@ export function HouseContent() {
         </Card>
       </div>
 
-      {/* Mortgage Summary */}
       {loanResult && activeLoan && (
         <Card
           title={
@@ -338,6 +338,7 @@ export function HouseContent() {
         {addingTax && loanId && (
           <div className="mb-2 flex items-center gap-2 border-b py-2">
             <input
+              aria-label="Year"
               type="number"
               value={taxYear}
               onChange={(e) => setTaxYear(e.target.value)}
@@ -345,6 +346,7 @@ export function HouseContent() {
               placeholder="Year"
             />
             <input
+              aria-label="Assessed Value"
               type="number"
               value={taxAssessed}
               onChange={(e) => setTaxAssessed(e.target.value)}
@@ -352,6 +354,7 @@ export function HouseContent() {
               className="border-strong bg-surface-primary w-28 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
             />
             <input
+              aria-label="Tax Amount"
               type="number"
               value={taxAmount}
               onChange={(e) => setTaxAmount(e.target.value)}
@@ -360,6 +363,7 @@ export function HouseContent() {
               autoFocus
             />
             <input
+              aria-label="Note"
               type="text"
               value={taxNote}
               onChange={(e) => setTaxNote(e.target.value)}
@@ -414,6 +418,7 @@ export function HouseContent() {
                     <td className="py-1.5 font-medium">{pt.year}</td>
                     <td className="py-1.5 text-right">
                       <input
+                        aria-label="Assessed Value"
                         type="number"
                         value={taxDraft.assessed ?? ""}
                         onChange={(e) =>
@@ -425,6 +430,7 @@ export function HouseContent() {
                     </td>
                     <td className="py-1.5 text-right">
                       <input
+                        aria-label="Tax Amount"
                         type="number"
                         value={taxDraft.amount ?? ""}
                         onChange={(e) => setTaxDraft("amount", e.target.value)}
@@ -435,6 +441,7 @@ export function HouseContent() {
                     <td className="py-1.5" />
                     <td className="py-1.5">
                       <input
+                        aria-label="Note"
                         type="text"
                         value={taxDraft.note ?? ""}
                         onChange={(e) => setTaxDraft("note", e.target.value)}
@@ -582,6 +589,7 @@ export function HouseContent() {
         {addingHI && (
           <div className="mb-2 flex items-center gap-2 border-b py-2">
             <input
+              aria-label="Year"
               type="number"
               value={newHIYear}
               onChange={(e) => setNewHIYear(e.target.value)}
@@ -589,6 +597,7 @@ export function HouseContent() {
               placeholder="Year"
             />
             <input
+              aria-label="Description"
               type="text"
               value={newHIDesc}
               onChange={(e) => setNewHIDesc(e.target.value)}
@@ -597,6 +606,7 @@ export function HouseContent() {
               autoFocus
             />
             <input
+              aria-label="Cost"
               type="number"
               value={newHICost}
               onChange={(e) => setNewHICost(e.target.value)}

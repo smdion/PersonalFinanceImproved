@@ -1,21 +1,9 @@
 "use client";
 
 /**
- * Settings tab for managing the age-based expected annual return rate
- * table used by projection calculators, with inline rate editing and row
- * add/delete.
- *
- * The engine reads this as a SPARSE breakpoint table, not one rate per
- * age: `resolveReturnRateForAge` (growth-application.ts) looks up the
- * exact age, and falls back to the closest configured age at or below it
- * — so a row at age 60 with 5% applies to every age from 60 up until the
- * next configured breakpoint. The old UI just listed (age, rate) pairs
- * with no indication of that — it read like "repeat the same number for
- * every age," not a glide path. This shows each row as the age RANGE it
- * actually covers (computed from the next breakpoint), plus a proportional
- * bar visualizing the whole glide path at a glance. Same underlying CRUD
- * as before — add/edit-rate/delete a breakpoint — nothing about what can
- * be configured changed, only how it reads.
+ * Settings tab for the age-based return rate table. The engine treats rows as sparse breakpoints
+ * (`resolveReturnRateForAge` uses the closest age at or below), so each row shows the age range
+ * it covers, plus a glide-path bar.
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -30,10 +18,8 @@ import { returnRateAtAge } from "@/lib/pure/simulation/return-rate-breakpoints";
  *  breakpoint's rate just keeps applying past this. */
 const DISPLAY_AGE_CAP = 100;
 
-/** Blue saturation scales with the rate so higher-return segments read as
- *  "bolder" on the glide-path bar — purely a display aid, not a new color
- *  semantic (this isn't a status/severity color, so STATUS_COLORS doesn't
- *  apply here). */
+/** Blue saturation scales with the rate on the glide-path bar; a display aid, not a status
+ *  color. */
 function barColorForRate(rate: number, minRate: number, maxRate: number) {
   if (maxRate === minRate) return "bg-blue-500";
   const t = (rate - minRate) / (maxRate - minRate);
@@ -200,15 +186,15 @@ export function ReturnRatesSettings() {
             <div className="flex h-8 w-full">
               {ranges.map((r) => {
                 const span = (r.endAge ?? DISPLAY_AGE_CAP) - r.age + 1;
-                const widthPct = (span / barSpan) * 100;
+                const widthPercent = (span / barSpan) * 100;
                 return (
                   <div
                     key={r.id}
                     className={`text-caption flex items-center justify-center font-medium text-white ${barColorForRate(r.rate, minRate, maxRate)}`}
-                    style={{ width: `${widthPct}%` }}
+                    style={{ width: `${widthPercent}%` }}
                     title={`Age ${r.age}${r.endAge ? `–${r.endAge}` : "+"}: ${formatPercent(r.rate, 1)}`}
                   >
-                    {widthPct > 8 ? formatPercent(r.rate, 1) : ""}
+                    {widthPercent > 8 ? formatPercent(r.rate, 1) : ""}
                   </div>
                 );
               })}

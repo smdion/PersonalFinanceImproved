@@ -19,10 +19,8 @@ vi.mock("@/lib/hooks/use-local-storage", () => ({
 }));
 
 import { AllTransactionsTab } from "@/components/savings/transactions/tab";
-import type {
-  GoalProjection,
-  PlannedTransaction,
-} from "@/components/savings/types";
+import type { GoalProjection } from "@/components/savings/types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 import { holdMutation, mutationCalls, resetTrpcMock } from "./trpc-mock";
 import { pressKey } from "./keyboard";
 

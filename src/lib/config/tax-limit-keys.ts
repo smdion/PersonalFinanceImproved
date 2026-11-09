@@ -1,21 +1,11 @@
-/**
- * Every yearly figure in `contribution_limits` Ledgr knows: its name, where
- * Settings → Reference Data shows it, how it's displayed, and how much it
- * may move from one year to the next (the tax-data file's CI check).
- *
- * Account-type limits (401k / IRA / HSA) come from ACCOUNT_TYPE_CONFIG's
- * `irsLimitKeys` — the account config owns them; this file only adds their
- * kind. Everything else is listed here. A key the tax-data file ships must
- * be here (tests/config/tax-data-file.test.ts); a key a household has that
- * isn't here shows as not used by Ledgr.
- */
+/** Every yearly `contribution_limits` figure Ledgr knows: name, Reference Data placement,
+ *  display and allowed yearly move. Account-type limits come from ACCOUNT_TYPE_CONFIG's
+ *  `irsLimitKeys`; a household key not listed shows as not used by Ledgr. */
 import { ACCOUNT_TYPE_CONFIG } from "./account-types";
 
-/** How a figure changes year to year — what the CI bounds check allows.
- *  `indexed`: inflation-adjusted dollars (−2%…+15% a year).
- *  `rate`: a tax rate set by law (unchanged unless an exception is cited).
- *  `statutory`: a fixed dollar amount or year set by law (unchanged unless
- *  an exception is cited). */
+/** How a figure may change year to year (CI bounds): `indexed` inflation-adjusted dollars
+ *  (−2%…+15%); `rate` / `statutory` a rate or fixed amount/year set by law, unchanged unless
+ *  an exception is cited. */
 type TaxLimitKind = "indexed" | "rate" | "statutory";
 export type TaxLimitFormat = "currency" | "percent" | "year";
 
@@ -295,10 +285,17 @@ const OTHER_KEYS: TaxLimitKey[] = [
   },
 ];
 
+const ACCOUNT_KEYS = accountKeys();
+
 export const TAX_LIMIT_KEYS: readonly TaxLimitKey[] = [
-  ...accountKeys(),
+  ...ACCOUNT_KEYS,
   ...OTHER_KEYS,
 ];
+
+/** The limits the account config's `irsLimitKeys` name. */
+export const ACCOUNT_LIMIT_KEYS: ReadonlySet<string> = new Set(
+  ACCOUNT_KEYS.map((k) => k.key),
+);
 
 const BY_KEY = new Map(TAX_LIMIT_KEYS.map((k) => [k.key, k]));
 

@@ -23,7 +23,7 @@ async function checkTaxData(): Promise<Response> {
   try {
     if (await taxDataSyncOffReason(db))
       return NextResponse.json({ skipped: true, reason: "Turned off" });
-    if (!(await taxDataCheckDue(db)))
+    if (!(await taxDataCheckDue(db, new Date())))
       return NextResponse.json({ skipped: true, reason: "Checked this week" });
     const result = await checkForTaxDataUpdate(db);
     return NextResponse.json({ ok: true, ...result });

@@ -18,30 +18,10 @@ export interface RawGoal {
   apiCategoryId?: string | null;
   apiCategoryName?: string | null;
   isApiSyncEnabled?: boolean | null;
-  /** The linked category's real current-month `budgeted` amount, resolved
-   *  server-side from the same month-scoped cache snapshot `current`
-   *  comes from — `null` when not API-linked or no fresh sync data for
-   *  this month. Feeds `projectGoalBalances`' month-0 math; see
-   *  `ProjectionGoalInput.currentMonthBudgeted`'s own docblock. */
+  /** The linked category's current-month `budgeted` amount, from the same cache snapshot as
+   *  `current`; `null` when not API-linked or no fresh sync data this month. Feeds
+   *  `projectGoalBalances`' month-0 math. */
   currentMonthBudgeted?: number | null;
-}
-
-/** Canonical planned-transaction row shape — was independently redeclared
- *  across ~7 files. One redeclaration (fund-details-tab.tsx) was
- *  missing isRecurring/recurrenceMonths/transferPairId, a real display gap
- *  now closed by importing this instead. */
-export interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-  source?: string;
-  /** Occurrence months ("YYYY-MM") already settled for this row. */
-  settledOccurrences?: string[];
 }
 
 export interface PlannedTxForm {

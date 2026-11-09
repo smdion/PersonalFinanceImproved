@@ -1,12 +1,7 @@
 /**
- * Cross-version backup transformers.
- *
- * When a backup file was exported from an older schema version, the
- * transformer reshapes the JSON data so it matches the current schema.
- * Transformers are pure functions — no DB, no side effects.
- *
- * To add support for a new old version: add its tag to KNOWN_SCHEMA_VERSIONS
- * and, if needed, write a new transformer or extend the existing one.
+ * Cross-version backup transformers: pure functions reshaping an older backup's JSON to the
+ * current schema. Supporting another old version means adding its tag to
+ * KNOWN_SCHEMA_VERSIONS and, if its shape differs, a transform.
  */
 
 import { log } from "@/lib/logger";
@@ -15,6 +10,7 @@ import { renameDisplayNameActive } from "./v0102-display-name-custom";
 import { dropDeadHoldingLinkAndSettings } from "./v0102-dead-data";
 import { convertBackupInOrder } from "./migration-converters";
 import pgJournal from "../../../drizzle/meta/_journal.json";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The tags since the v0.9.0 squash, in journal order (both dialects share them). */
 const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
@@ -24,18 +20,9 @@ const CURRENT_LINE_TAGS = pgJournal.entries.map((e) => e.tag);
 // ---------------------------------------------------------------------------
 
 /**
- * Every v0.8-line incremental journal tag (post the v0.8.0 squash), in both
- * dialects. Same single-source rule as `V07_SCHEMA_TAGS`: consumed by both
- * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
- * break restore by being added to one list and not the other.
- *
- * Entries that add — new tables, or nullable/defaulted columns on existing
- * ones — need nothing: a backup naming one is already current-shape (minus
- * tables that restore empty and columns that safely default on insert) and
- * routes through the same idempotent v0.7 → current transform as the v8
- * baseline. An entry that DROPS a column (0009) needs an explicit strip of
- * that column in transformV07xToCurrent, or importing a backup taken while
- * it existed fails validateColumns.
+ * Every v0.8-line journal tag in both dialects, shared by `KNOWN_SCHEMA_VERSIONS` and
+ * `schemaEra()`. Additive entries need nothing (the v0.7 → current transform covers them); one
+ * that drops a column needs a strip in transformV07xToCurrent, or validateColumns fails.
  */
 const V08_SCHEMA_TAGS = [
   "0001_nappy_blade", // PG: retirement_settings.withdrawal_routing_mode
@@ -44,9 +31,8 @@ const V08_SCHEMA_TAGS = [
   "0002_complete_jackpot", // SQLite counterpart of 0002
   "0003_past_rhodey", // PG: retirement_profile_people.social_security_pia
   "0003_shallow_patch", // SQLite counterpart of 0003
-  // 0004–0011 below were pre-release v0.8.5 builds, squashed into
-  // 0004_v085_investments before release; only installs that ran those
-  // builds (and their backups) carry these tags.
+  // 0004–0011 are pre-release v0.8.5 builds' tags (squashed into 0004_v085_investments);
+  // only those builds' backups carry them.
   "0004_simple_rogue", // PG: v0.8.5 investments foundation (securities, holding_observations, investment_transactions, investment_transaction_rules, simplefin_account_balances, sync_request_log)
   "0004_glorious_tigra", // SQLite counterpart of 0004
   "0005_light_prima", // PG: simplefin_accounts.last_balance_date
@@ -67,16 +53,13 @@ const V08_SCHEMA_TAGS = [
   "0005_v086_schema_cleanup", // PG + SQLite: savings_goals parent key (PG) + index, old roth_basis names, filing_status type — no data shape change
   "0006_v088_holding_periods", // PG + SQLite: holding_periods + holding_period_weights (new tables — older backups restore them empty)
   "0008_v088_paycheck_earnings", // PG + SQLite: paycheck_earnings (other pay / taxable benefits; amounts in salary-profile entries' optional otherEarnings — older backups restore the table empty)
-  "0007_v088_drop_account_holdings", // PG + SQLite: drop legacy account_holdings (replaced by holding_periods) — no longer in VERSION_TABLES, so an older backup's rows are skipped on restore
+  "0007_v088_drop_account_holdings", // PG + SQLite: drop legacy account_holdings (replaced by holding_periods) — not in VERSION_TABLES, so an older backup's rows are skipped on restore
   "0009_v0810_profile_sets", // PG + SQLite: Plan salaries → Salary Profiles, bonus destinations → entries, bonus switches → per-account fromBonus, unique Plan names; scenarios.overrides/is_baseline and budget column profile ids dropped (transformV0810ProfileSets)
   "0010_v0810_holding_period_parts", // PG + SQLite: holding_periods.sub_key (the part of an account whose feeds are linked per part; null = whole account) — nullable, older backups restore as whole-account periods
   "0011_v0811_rmd_excess_target", // PG + SQLite: retirement_settings.rmd_excess_target_performance_account_id (nullable FK, SET NULL) — older backups restore as "spread across Retirement brokerages"
   "0012_v0814_perf_annotations", // PG + SQLite: account_performance.note (nullable), estimated_fields ([]), accepted_checks ({}) — older backups restore with no notes, estimates or accepted gaps
-  // The v0.9 line continues this list (one ordered list — indexOf-based
-  // checks like predatesAssetClassBuckets compare positions in it).
-  // 0013–0016 are the four v0.9.0 migrations as numbered before the v0.9.0
-  // squash renumbered them 0001–0004: only dev databases (and their
-  // backups) carry these tags.
+  // The v0.9 line continues this one ordered list (indexOf checks compare positions). 0013–0016
+  // are v0.9.0's four migrations as dev builds numbered them; only dev backups carry them.
   "0013_v090_tax_data_origin",
   "0014_v090_tax_data_updates",
   "0015_v090_utility_feed",
@@ -136,12 +119,9 @@ function rebuildAssetClassBuckets(
 }
 
 /**
- * Fields only pre-release v0.8.5 builds had, dropped from a backup taken on
- * one — the same as the squashed migration does to a live database: a
- * transaction kind set by hand goes back to the built-in rules, and the
- * per-deposit split, override source and single-bucket link go. (Their
- * investment_transaction_rules table is simply never restored.) Runs after
- * rebuildAssetClassBuckets, which reads composition_bucket.
+ * Drops fields only pre-release v0.8.5 builds had, as the squashed migration does: a hand-set
+ * transaction kind reverts to the rules; the split, override source and bucket link go. Runs
+ * after rebuildAssetClassBuckets, which reads composition_bucket.
  */
 function dropPreReleaseV085Fields(tables: TableData): void {
   for (const row of (tables["investment_transactions"] ?? []) as Record<
@@ -160,11 +140,9 @@ function dropPreReleaseV085Fields(tables: TableData): void {
 }
 
 /**
- * A backup from before 0006: Constant Percentage, Endowment, Vanguard
- * Dynamic and RMD Spending keep Social Security coming out of the
- * strategy's amount — what migration 0006 sets on a live database, so a
- * restored profile projects as it did. A backup that has the columns
- * keeps its own values (null included); VPW's stays absent = null.
+ * A backup from before 0006: Constant Percentage, Endowment, Vanguard Dynamic and RMD Spending
+ * keep Social Security inside the strategy's amount, as 0006 sets live. A backup with the
+ * columns keeps its values (null included); VPW's stays null.
  */
 function transformV095SsInAmount(tables: TableData): void {
   for (const column of [
@@ -177,10 +155,8 @@ function transformV095SsInAmount(tables: TableData): void {
 }
 
 /**
- * A backup from before v0.8.10: the same conversion migration 0009 runs on a
- * live database (convertV0810ProfileSets), then the columns 0009 drops are
- * dropped from the rows. Idempotent — a backup already in the new shape
- * passes through unchanged.
+ * A backup from before v0.8.10: convertV0810ProfileSets (as migration 0009 runs live), then the
+ * columns 0009 drops are removed. A backup already in the new shape passes through unchanged.
  */
 function transformV0810ProfileSets(tables: TableData): void {
   const rows = tables as Record<string, Record<string, unknown>[]>;
@@ -206,13 +182,9 @@ function transformV0810ProfileSets(tables: TableData): void {
 }
 
 /**
- * Every v0.7-line journal tag, in both dialects. Declared ONCE and consumed
- * by both `KNOWN_SCHEMA_VERSIONS` (which decides whether a backup is
- * importable at all) and `schemaEra()` (which decides which transform runs).
- *
- * Tags 0007–0024 are hand-named and identical in both journals, so they
- * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
- * dialect, so both spellings are listed.
+ * Every v0.7-line journal tag, shared by `KNOWN_SCHEMA_VERSIONS` (importable?) and `schemaEra()`
+ * (which transform). 0007–0024 are identical in both journals; 0002–0006 and 0025–0031 are
+ * drizzle-generated per dialect, so both spellings are listed.
  */
 const V07_SCHEMA_TAGS = [
   "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
@@ -333,10 +305,8 @@ export const KNOWN_SCHEMA_VERSIONS = [
   // v0.7.x series — squashed v7 baseline + every incremental migration,
   // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
   ...V07_SCHEMA_TAGS,
-  // v0.8.0 — pure migration squash, zero schema change vs the v0.7.11 tip.
-  // A backup exported at v0.8.0 carries this single baseline tag; it is
-  // already current-shape, so schemaEra() routes it through the same
-  // (idempotent) v0.7 → current transform.
+  // v0.8.0 squash baseline: no schema change from the v0.7.11 tip, so schemaEra() routes it
+  // through the same idempotent v0.7 → current transform.
   "0000_v8_initial_schema",
   // v0.8.x incremental migrations, post-squash — same single-list rule as
   // V07_SCHEMA_TAGS above (shared with schemaEra()).
@@ -419,12 +389,8 @@ function renameValue(
 // Schema version ordering (for "at least version X" checks)
 // ---------------------------------------------------------------------------
 
-/**
- * v0.1.x PG tags in canonical order — used for cumulative "at least version
- * X" checks. Spelled out explicitly (not a positional slice of
- * KNOWN_SCHEMA_VERSIONS) so appending an entry to that list can never
- * silently shift this ordering.
- */
+/** v0.1.x PG tags in order, for "at least version X" checks; listed explicitly so appending
+ *  to KNOWN_SCHEMA_VERSIONS never shifts them. */
 const PG_TAGS = [
   "0000_initial_schema",
   "0001_drop_pg_enums",
@@ -450,12 +416,8 @@ function versionIndex(tag: string): number {
 // Schema era classification
 // ---------------------------------------------------------------------------
 
-/** Returns the broad era for a schema version tag. Exported for the
- *  journal-drift guard (backup-transforms.test.ts) — a journal tag that
- *  falls through to the "v0.1" default runs the entire v0.1 → current
- *  rename ladder against a backup that is already current-shape, silently
- *  (the passes are idempotent today), so the test asserts no journal tag
- *  ever hits that default. */
+/** The broad era of a schema version tag. Exported for backup-transforms.test.ts, which checks
+ *  no journal tag falls to the "v0.1" default (that would run the whole rename ladder). */
 export function schemaEra(
   tag: string,
 ): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" | "v0.7" {
@@ -464,15 +426,12 @@ export function schemaEra(
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
 
-  // v0.7_final (pre-upgrade backup tag) and the v0.8.0 squash baseline are
-  // both already current-shape (the v0.8.0 squash changed no schema), so
-  // they route through the same v0.7 → current transform, which is
-  // idempotent for a backup that is already current.
+  // v0.7_final and the v0.8.0 squash baseline are already current-shape, so they take the
+  // idempotent v0.7 → current transform.
   if (tag === "v0.7_final") return "v0.7";
   if (tag === "0000_v8_initial_schema") return "v0.7";
-  // v0.8.x incremental tags — additive-only, so already current-shape; same
-  // idempotent v0.7 → current route as the v8 baseline. Shared list with
-  // KNOWN_SCHEMA_VERSIONS so the two can't drift.
+  // v0.8.x incremental tags are additive, so already current-shape: same route as the v8
+  // baseline, from the list KNOWN_SCHEMA_VERSIONS also uses.
   if ((V08_SCHEMA_TAGS as readonly string[]).includes(tag)) return "v0.7";
 
   // v0.7.x tags (squashed v7 baseline + every incremental migration).
@@ -539,29 +498,19 @@ export function schemaEra(
 // ---------------------------------------------------------------------------
 
 /**
- * Transform a v0.1.x backup to match the v0.2.0 schema.
- *
- * Changes applied (cumulative, based on which version the backup came from):
- *
- * 1. 0002+ rename: "Retirement" → "401k/IRA" in annual_performance.category
- * 2. 0003+ add: `rollovers` column on account_performance and annual_performance
- * 3. 0005+ add: `contribution_profile_id` on retirement_salary_overrides
- * 4. 0006+ add: `created_by`/`updated_by` on retirement override tables
- * 5. 0007+ add: `filing_status` on retirement_settings
- * 6. 0008+ add: `prior_year_contrib_amount`/`prior_year_contrib_year` on contribution_accounts
- * 7. Always: rename `api_sync_enabled` → `is_api_sync_enabled` (savings_goals)
- * 8. Always: rename `lt_brokerage_enabled` → `is_lt_brokerage_enabled` (retirement_scenarios)
+ * v0.1.x → v0.2.0, cumulative by source tag: 0002+ renames "Retirement" → "401k/IRA", 0003–0008
+ * add their columns where missing, and api_sync_enabled / lt_brokerage_enabled get `is_` names.
  */
 function transformV01xToV020(
   tables: TableData,
   sourceVersion: string,
 ): TableData {
-  const idx = versionIndex(sourceVersion);
+  const index = versionIndex(sourceVersion);
 
   // --- Cumulative transforms (only apply if backup is older than the change) ---
 
   // 0002: Rename "Retirement" → "401k/IRA" in annual_performance
-  if (idx < versionIndex("0002_rename_retirement_category")) {
+  if (index < versionIndex("0002_rename_retirement_category")) {
     renameValue(
       tables,
       "annual_performance",
@@ -572,13 +521,13 @@ function transformV01xToV020(
   }
 
   // 0003: Add rollovers column
-  if (idx < versionIndex("0003_add_rollovers_column")) {
+  if (index < versionIndex("0003_add_rollovers_column")) {
     addColumnDefault(tables, "account_performance", "rollovers", "0");
     addColumnDefault(tables, "annual_performance", "rollovers", "0");
   }
 
   // 0005: Add contribution_profile_id FK
-  if (idx < versionIndex("0005_cold_random")) {
+  if (index < versionIndex("0005_cold_random")) {
     addColumnDefault(
       tables,
       "retirement_salary_overrides",
@@ -588,7 +537,7 @@ function transformV01xToV020(
   }
 
   // 0006: Add audit columns to override tables
-  if (idx < versionIndex("0006_goofy_rawhide_kid")) {
+  if (index < versionIndex("0006_goofy_rawhide_kid")) {
     addColumnDefault(tables, "retirement_budget_overrides", "created_by", null);
     addColumnDefault(tables, "retirement_budget_overrides", "updated_by", null);
     addColumnDefault(tables, "retirement_salary_overrides", "created_by", null);
@@ -596,12 +545,12 @@ function transformV01xToV020(
   }
 
   // 0007: Add filing_status to retirement_settings
-  if (idx < versionIndex("0007_melted_swordsman")) {
+  if (index < versionIndex("0007_melted_swordsman")) {
     addColumnDefault(tables, "retirement_settings", "filing_status", null);
   }
 
   // 0008: Add prior-year contribution columns
-  if (idx < versionIndex("0008_prior_year_contrib")) {
+  if (index < versionIndex("0008_prior_year_contrib")) {
     addColumnDefault(
       tables,
       "contribution_accounts",
@@ -638,18 +587,8 @@ function transformV01xToV020(
 // ---------------------------------------------------------------------------
 
 /**
- * Transform a v0.2.x or v0.3.x backup to match the v0.4.0 (current) schema.
- *
- * v0.3.x added these on top of v0.2.0:
- *  - `retirement_behavior` on performance_accounts (default "stops_at_owner_retirement")
- *  - `contribution_scaling` on performance_accounts (default "scales_with_salary")
- *  - `cost_basis` on performance_accounts (default "0")
- *  - `projection_overrides` table (new)
- *  - `mc_user_presets` table (new)
- *
- * A v0.2.x backup is missing all five. A v0.3.x backup may have some or all
- * depending on which patch it came from. We use addColumnDefault which is
- * idempotent (only adds if the column is missing).
+ * v0.2.x / v0.3.x → v0.4.0: adds what v0.3.x added (three performance_accounts columns with
+ * defaults, projection_overrides, mc_user_presets) where missing; a v0.3.x backup may have some.
  */
 function transformV02xV03xToV040(tables: TableData): TableData {
   // performance_accounts columns added in v0.3.x
@@ -709,15 +648,8 @@ function transformV02xV03xToV040(tables: TableData): TableData {
 // The v0.5.x → v0.6.0 transformer
 // ---------------------------------------------------------------------------
 
-/**
- * Transform a v0.5.x backup to match the v0.6.0 schema.
- *
- * The data shape is unchanged between v0.5 and v0.6 — this squash release
- * only consolidates migrations and adds `pending_rollovers` to the versioned
- * backup set. v0.5 backups did not include `pending_rollovers` (it was
- * accidentally omitted from VERSION_TABLE_NAMES), so restoring a v0.5 backup
- * simply starts that table empty, which is safe.
- */
+/** v0.5.x → v0.6.0: same data shape; a v0.5 backup has no `pending_rollovers`, which
+ *  restores empty. */
 function transformV05xToV060(tables: TableData): TableData {
   if (!tables["pending_rollovers"]) {
     tables["pending_rollovers"] = [];
@@ -737,17 +669,9 @@ function transformV05xToV060(tables: TableData): TableData {
 // ---------------------------------------------------------------------------
 
 /**
- * Transform a v0.6.x backup to match the current schema.
- *
- * Backfills everything added across the v0.6 line so older v0.6 backups (down
- * to the v0.6.0 baseline) import cleanly:
- *  - v0.6.2 (0001_melodic_thaddeus_ross): `account_holdings` + `pending_rollovers`
- *    tables, `source` column on the two savings tables.
- *  - v0.6.5 (0002_blue_moon_knight): `utility_service` + `utility_reading` tables.
- *
- * All helpers are idempotent (only add what's missing), so this also handles
- * `v0.6_final` (a fully-current v0.6.8 backup tagged during the v0.7.0 squash)
- * as a pure pass-through — every table it needs is already present.
+ * v0.6.x → current: adds v0.6.2's `account_holdings`, `pending_rollovers` and savings `source`
+ * columns and v0.6.5's utility tables where missing. Idempotent, so `v0.6_final` (a current
+ * v0.6.8 backup) passes through.
  */
 function transformV06xToCurrent(tables: TableData): TableData {
   // Tables added in v0.6.2
@@ -780,42 +704,17 @@ function transformV06xToCurrent(tables: TableData): TableData {
 // ---------------------------------------------------------------------------
 
 /**
- * Transform a v0.7.x backup to match the current schema.
- *
- * The v0.7.0 baseline (`0000_v7_initial_schema`) predates
- * `savings_planned_tx_settlements` (added in v0.7.1, `0001_parched_karma` /
- * `0001_fresh_masque`) — restoring one simply starts that table empty, which
- * is safe (it only ever holds settlement records, never a source of truth
- * for money already accounted for elsewhere).
- *
- * It also predates `0008_kill_live_sentinel`, which dropped
- * `contribution_profiles.is_default` and replaced
- * `salary_profiles.salary_overrides` (sparse personId → number) with
- * `salary_profiles.salaries` (personId → {mode:"job"} | {mode:"fixed",
- * salary}). Both are reshaped here with the SAME rule the migration uses, so
- * an old snapshot restores with identical semantics rather than being
- * rejected: a person who had a number was explicitly pinned (fixed),
- * everyone else follows their job.
- *
- * Every step is idempotent, so a backup already at the current shape is a
- * pure pass-through.
+ * v0.7.x → current, idempotent. A pre-v0.7.1 backup gets an empty savings_planned_tx_settlements;
+ * a pre-0008 one loses `is_default` and gets `salaries` from `salary_overrides` by the
+ * migration's rule (a stored number → fixed, otherwise follow the job).
  */
 function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["savings_planned_tx_settlements"]) {
     tables["savings_planned_tx_settlements"] = [];
   }
 
-  // 0032: Retirement Profiles, step A (expand) + the backfill migration
-  // 0032_curved_silhouette.sql itself performs in the same file. This
-  // function used to stop at step A — empty
-  // tables, null profile_id — leaving a restored pre-0032 backup in the
-  // migration's INTERMEDIATE state instead of where a live upgrade
-  // actually lands. Real households upgrading get a real "Current Plan"
-  // profile via the migration's own backfill; restoring an old backup
-  // AFTER upgrading truncated that profile back to nothing with no way to
-  // recreate one in-app — retirementProfiles.duplicate is the only
-  // creation path and needs an existing profile to clone FROM. Mirrors
-  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.
+  // 0032: Retirement Profiles, expand plus the migration's 5-step backfill in JS, so a restored
+  // pre-0032 backup gets a first profile (the app only creates one by duplicating another).
   if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
   if (!tables["retirement_profile_people"]) {
     tables["retirement_profile_people"] = [];
@@ -839,27 +738,25 @@ function transformV07xToCurrent(tables: TableData): TableData {
       string,
       unknown
     >[];
-    // Step 1+2: one "Current Plan" profile, only when settings exist and
+    // Step 1+2: one "Current Retirement" profile, only when settings exist and
     // no profile does yet (idempotent — a backup already at the current
     // shape, or one with no retirement data at all, is a pure pass-through).
     if (settingsRows.length > 0 && profileRows.length === 0) {
       const profileId = 1;
       profileRows.push({
         id: profileId,
-        name: "Current Plan",
+        name: "Current Retirement",
         description:
           "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
-        created_at: new Date().toISOString(),
+        created_at: writeStamp().toISOString(),
       });
       for (const row of settingsRows) {
         if (row["profile_id"] == null) row["profile_id"] = profileId;
       }
 
-      // Step 3: one retirement_profile_people row per person, completeness
-      // invariant. "prim" = the settings row belonging to whichever person
-      // has a settings row AND ranks highest by is_primary_user, then id —
-      // matching getPrimaryPerson()'s own rule, not necessarily the actual
-      // primary person if they have no settings row of their own.
+      // Step 3: a retirement_profile_people row per person. "prim" = the settings row whose
+      // person ranks highest by is_primary_user then id (getPrimaryPerson's rule), among those
+      // with one.
       const peopleRows = (tables["people"] ?? []) as Record<string, unknown>[];
       const settingsByPerson = new Map(
         settingsRows.map((r) => [String(r["person_id"]), r]),
@@ -921,10 +818,8 @@ function transformV07xToCurrent(tables: TableData): TableData {
         }
       }
 
-      // Step 5: the global active-profile pointer — without it,
-      // useEffectiveProfileId has nothing to resolve to for a household
-      // with no active Plan, and build-engine-payload returns null
-      // (blank Retirement page) even though a real profile now exists.
+      // Step 5: the global active-profile pointer; without it a household with no active
+      // Plan resolves no profile (blank Retirement page).
       const appSettingsRows = (tables["app_settings"] ?? []) as Record<
         string,
         unknown
@@ -934,12 +829,8 @@ function transformV07xToCurrent(tables: TableData): TableData {
           (r) => r["key"] === "active_retirement_profile_id",
         )
       ) {
-        // Carry a synthetic id so the appended row is column-compatible
-        // with the table's existing rows. The restore paths build their
-        // INSERT column list from the row set and NULL-fill any key a row
-        // is missing — app_settings.id is a NOT NULL serial PK, so an
-        // id-less row here would abort the whole restore. Sequences are
-        // reset (setval) after restore, so a synthetic max+1 is safe.
+        // A synthetic max+1 id: restore NULL-fills missing keys and app_settings.id is a
+        // NOT NULL PK; sequences are reset after restore, so it's safe.
         const maxId = appSettingsRows.reduce(
           (m, r) => Math.max(m, Number(r["id"]) || 0),
           0,
@@ -959,8 +850,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
   // "this Plan sets profile 1" for every Plan that ever existed.
   addColumnDefault(tables, "scenarios", "retirement_profile_id", null);
 
-  // 0008: contribution_profiles.is_default no longer exists — the row it
-  // flagged survives as an ordinary profile, so the flag is simply dropped.
+  // 0008: drop contribution_profiles.is_default (its row stays an ordinary profile).
   for (const row of tables["contribution_profiles"] ?? []) {
     delete (row as Record<string, unknown>).is_default;
   }
@@ -986,23 +876,14 @@ function transformV07xToCurrent(tables: TableData): TableData {
     row.salaries = salaries;
   }
 
-  // 0038: fpl_by_household + tax_params tables, and
-  // retirement_profiles.tax_params_year. A pre-0038 backup has none of
-  // these. The two new tables restore empty — the tax-params resolver
-  // falls back to the value tables' own MAX(tax_year) when tax_params is
-  // empty, i.e. exactly the earlier behaviour. The new column is nullable
-  // (NULL = track latest), so every restored profile keeps its numbers.
+  // 0038: fpl_by_household and tax_params restore empty (the resolver then uses the value
+  // tables' MAX(tax_year)); retirement_profiles.tax_params_year is NULL (track latest).
   if (!tables["fpl_by_household"]) tables["fpl_by_household"] = [];
   if (!tables["tax_params"]) tables["tax_params"] = [];
   addColumnDefault(tables, "retirement_profiles", "tax_params_year", null);
 
-  // v0.8.x 0003: retirement_profile_people.social_security_pia. Additive
-  // nullable column with no reader yet (Social Security claiming-age
-  // optimizer, schema-only so far) — NULL means "not opted into PIA-based
-  // optimization," never "row missing." unionColumns already omits the key
-  // for any pre-0003 backup, so this line is provably a no-op; written
-  // anyway to match the 0038 precedent immediately above, for the next
-  // person auditing this file.
+  // v0.8.x 0003: retirement_profile_people.social_security_pia, nullable (NULL = not opted
+  // into PIA-based optimization). A no-op for pre-0003 backups, kept to match 0038 above.
   addColumnDefault(
     tables,
     "retirement_profile_people",
@@ -1023,13 +904,8 @@ type TransformResult = {
   sourceVersion: string;
 };
 
-/**
- * Transform a backup's table data to match the current schema version.
- *
- * - If the backup matches the current version, returns as-is.
- * - If the backup is from a known older version, transforms and returns.
- * - If the backup is from an unknown version, throws an error.
- */
+/** Transform a backup's tables to the current schema: as-is when current, transformed when
+ *  from a known older version, an error when unknown. */
 export function transformBackupToCurrentSchema(
   tables: TableData,
   schemaVersion: string,
@@ -1061,12 +937,8 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  // CUMULATIVE ladder — a backup N eras behind must run EVERY transform
-  // between its era and current, oldest first, not just the one keyed to
-  // its own era. Each transform is idempotent (fills only missing
-  // tables/columns, guards backfills on empty), so an over-conservative
-  // era guess degrades to extra no-op passes rather than a truncated
-  // restore (one transform alone would leave a v0.6 backup without v0.7 tables).
+  // Cumulative: a backup N eras behind runs every transform from its era on, oldest first.
+  // Each is idempotent, so a too-early era guess only adds no-op passes.
   const ERA_ORDER = ["v0.1", "v0.2", "v0.3", "v0.5", "v0.6", "v0.7"] as const;
   const rank = (e: string) =>
     ERA_ORDER.indexOf(e as (typeof ERA_ORDER)[number]);

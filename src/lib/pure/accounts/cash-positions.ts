@@ -1,23 +1,12 @@
 /**
- * Uninvested cash, per account — judged once here; the cash-drag and HSA
- * cash recommendations map the results.
- *
- * An account's cash = its holdings' cash (each fund's composition) plus
- * money outside any reported position (uninvestedCash, from the feed's
- * same-day balance). Only accounts that report holdings are judged: a feed
- * that reports none can't be told apart from an all-cash account.
- *
- * Cash drag compares an account's share in the current glide path's cash
- * class with its target, using the rebalancing band (one band rule) and the
- * same minimum move. No current glide path → nothing (the simulation's
- * glide path isn't a holding target). HSA accounts are judged on a cash
- * buffer instead: the household setting, else the year's HDHP minimum
- * deductible for the owner's coverage (unknown coverage → nothing).
+ * Uninvested cash per account (holdings' cash plus money outside any position), judged for
+ * cash drag against the current glide path's cash target, or for HSAs against a cash buffer.
+ * Only accounts that report holdings are judged.
  */
 import {
-  isHsaCategory,
-  isIraCategory,
   isPreTaxType,
+  isRothIncomeLimited,
+  paysMedical,
 } from "@/lib/config/account-types";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import { HDHP_MIN_DEDUCTIBLE_KEY } from "@/lib/config/tax-params";
@@ -75,14 +64,14 @@ export function judgeCashDrag(args: {
   const buckets = new Set(cls.buckets);
   const out: CashFinding[] = [];
   for (const a of args.accounts) {
-    if (a.accountType !== null && isHsaCategory(a.accountType)) continue;
+    if (a.accountType !== null && paysMedical(a.accountType)) continue;
     // A whole-account link has no tax type; while a backdoor is the plan,
     // treat an IRA of unknown type like a traditional one (its cash may be
     // the contribution waiting to convert).
     if (
       args.excludeTraditionalIra &&
       a.accountType !== null &&
-      isIraCategory(a.accountType) &&
+      isRothIncomeLimited(a.accountType) &&
       (a.taxType === null || isPreTaxType(a.taxType))
     )
       continue;
@@ -137,10 +126,8 @@ export function resolveHsaCashBuffer(
   );
 }
 
-/** The current glide path's cash class for judgeCashDrag, from the
- *  holdings overview: the class the `cash` bucket counts toward and its
- *  target. null unless the target comes from the household's current glide
- *  path (the simulation's glide path isn't a holding target). */
+/** The current glide path's cash class and target for judgeCashDrag; null unless the
+ *  target comes from the household's current glide path. */
 export function currentCashClass(overview: {
   targetSource: string;
   allocation: {
@@ -174,7 +161,7 @@ export function judgeHsaCash(args: {
   const cash = new Set<CompositionBucket>(["cash"]);
   const out: (CashFinding & { buffer: number })[] = [];
   for (const a of args.accounts) {
-    if (a.accountType === null || !isHsaCategory(a.accountType)) continue;
+    if (a.accountType === null || !paysMedical(a.accountType)) continue;
     const buffer = resolveHsaCashBuffer(
       args.bufferSetting,
       args.defaultBuffers,

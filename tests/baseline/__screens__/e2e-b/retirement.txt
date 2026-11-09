@@ -1,7 +1,7 @@
 Retirement Projection
 Budget scenario: Standard
 Projection
-Plan Health
+Projection Health
 AssumptionsCurrent Retirement
 View only — unlock to edit
 Jordan60Riley60Through?95Inflation3.00%StrategyVariable Percentage (VPW)Bracket Ceiling?12%
@@ -55,7 +55,7 @@ Clear Cache
 View Assumptions →
 Compute— what gets run
 Scenario?
-Active Plan
+Baseline
 Coast FIRE (2026 (Jordan, 42))
 Coast FIRE (Today)
 Coast FIRE (Custom)

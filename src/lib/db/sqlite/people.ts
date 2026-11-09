@@ -34,12 +34,9 @@ export const jobs = sqliteTable(
     title: text("title"),
     startDate: text("start_date").notNull(),
     endDate: text("end_date"),
-    /** A permanent, auto-provisioned peg for Salary Profiles to pin what-if
-     *  scenarios against (e.g. "moving to Chicago in 5 years") — never a
-     *  real job. Always has endDate: null (it never "ends") but must be
-     *  excluded everywhere "active job" means "this person's real job" —
-     *  see findActiveJob/filterActiveJobs in lib/pure/household/profiles.ts, the
-     *  single source of truth for that exclusion. */
+    /** A permanent placeholder job that Salary Profiles use for what-if scenarios, never a real
+     *  one: endDate is always null, but "active job" lookups skip it (findActiveJob /
+     *  filterActiveJobs in lib/pure/household/profiles.ts). */
     isSpeculative: integer("is_speculative", { mode: "boolean" })
       .notNull()
       .default(false),

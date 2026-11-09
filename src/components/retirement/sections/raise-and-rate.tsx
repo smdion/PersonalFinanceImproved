@@ -1,18 +1,7 @@
 /**
- * Post-Retirement Raise + Withdrawal Rate side-by-side row.
- *
- * Each input is dimmed to 40% opacity AND made read-only when the active
- * withdrawal strategy doesn't use it (the strategy registry's
- * `usesPostRetirementRaise` / `usesWithdrawalRate` flags) — editing a value
- * the active strategy ignores used to still work silently (the wrapper
- * dimmed but `isEditable` stayed unconditional, so the field looked like a
- * live input, accepted edits, and did nothing).
- * The Withdrawal Rate label and help text also flip between "Withdrawal
- * Rate" / "Initial Withdrawal Rate" depending on the strategy's
- * `incomeSource`.
- *
- * The `decToWhole` helper lives in `./helpers` and is shared across the
- * retirement sections that need it (not duplicated locally).
+ * Post-Retirement Raise + Withdrawal Rate row. Each input is dimmed and read-only when the active
+ * strategy ignores it (`usesPostRetirementRaise`/`usesWithdrawalRate`); the rate label reads
+ * "Initial Withdrawal Rate" or "Withdrawal Rate" depending on the strategy's `incomeSource`.
  */
 "use client";
 
@@ -21,7 +10,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, IsEditable } from "./types";
-import { decToWhole } from "./helpers";
+import { decimalToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
@@ -41,11 +30,17 @@ export function RaiseAndRateSection({
       <div className={!meta.usesPostRetirementRaise ? "opacity-40" : ""}>
         <span className="text-muted">
           Post-Retirement Raise
-          <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Set apart from the Inflation rate; in the Simulation it moves with each trial's inflation, keeping your gap between the two." />
+          <HelpTip
+            text={
+              meta.usesPostRetirementRaise
+                ? "Your annual 'raise' in retirement. The base is your Retirement budget — this rate grows it each year, like a cost-of-living adjustment. Set apart from the Inflation rate; in the Simulation it moves with each trial's inflation, keeping your gap between the two."
+                : `Not used by ${meta.label}: its spending ${meta.usesWithdrawalRate ? "grows with inflation less its decline rate" : "is sized from your balance"}.`
+            }
+          />
         </span>
         <div className="font-medium">
           <InlineEdit
-            value={decToWhole(
+            value={decimalToWhole(
               settings.postRetirementInflation ?? settings.annualInflation,
             )}
             onSave={(v) =>
@@ -69,14 +64,14 @@ export function RaiseAndRateSection({
               !meta.usesWithdrawalRate
                 ? `Not used by ${meta.label} — this strategy computes spending from its own formula (${meta.incomeSource === "formula" ? "IRS factors" : "base percentage of portfolio"}).`
                 : meta.incomeSource === "rate"
-                  ? `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`
-                  : "Your withdrawal rate applied to the projected retirement balance. Determines the annual withdrawal amount, which grows by the Post-Retirement Raise rate each year."
+                  ? `Not used by ${meta.label}: it sets its own starting rate from your Retirement budget (less Social Security, over the balance) and defends it. Used only by the Initial Rate scenario and the FI target.`
+                  : `Not used by ${meta.label}: your Retirement budget sets year 1. Used only by the Initial Rate scenario and the FI target.`
             }
           />
         </span>
         <div className="font-medium">
           <InlineEdit
-            value={decToWhole(settings.withdrawalRate)}
+            value={decimalToWhole(settings.withdrawalRate)}
             onSave={(v) => handleSettingPercentUpdate("withdrawalRate", v)}
             formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}

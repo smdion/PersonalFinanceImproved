@@ -29,7 +29,9 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 /** The year's contribution totals and the overflow to brokerage. */
 export function yearContributionTotals(
   slots: AccumulationSlot[],
-  useRealContribs: ReturnType<typeof yearZeroBasis>["useRealContribs"],
+  useRealContributions: ReturnType<
+    typeof yearZeroBasis
+  >["useRealContributions"],
   contributionSpecs: ProjectionLoopState["contributionSpecs"],
   specOverflow: number,
   state: ProjectionLoopState,
@@ -49,19 +51,19 @@ export function yearContributionTotals(
   // year 0 (its brokerage is intentional), the specs' cap spillover, or the
   // blended rate's brokerage less the base year's intentional amount.
   let overflowToBrokerage: number;
-  if (useRealContribs) {
+  if (useRealContributions) {
     overflowToBrokerage = 0;
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     overflowToBrokerage = specOverflow < OVERFLOW_TOLERANCE ? 0 : specOverflow;
   } else {
-    const brokerageContrib =
+    const brokerageContribution =
       slots.find((s) => isOverflowTarget(s.category))?.employeeContrib ?? 0;
     // Base year brokerage is intentional; scale proportionally with salary
     // (no specs here, so nothing says whose it is: the household's pay).
     const baseIntentional = state.activeBaseYearContributions?.brokerage ?? 0;
     const salaryScale = safeDivide(projectedSalary, currentSalary, 1);
     const intentional = roundToCents(baseIntentional * salaryScale);
-    const raw = Math.max(0, roundToCents(brokerageContrib - intentional));
+    const raw = Math.max(0, roundToCents(brokerageContribution - intentional));
     overflowToBrokerage = raw < OVERFLOW_TOLERANCE ? 0 : raw;
   }
   const totalTaxAdvSpace = roundToCents(
@@ -91,14 +93,14 @@ export function yearContributionTotals(
 export function creditYearContributions(
   slots: AccumulationSlot[],
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   yearIndex: number,
   brokerageContributionRamp: ProjectionContext["input"]["brokerageContributionRamp"],
   contribution: ContributionState,
   OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   brokBasis: ProjectionLoopState["brokBasis"],
   config: ReturnType<typeof resolveAccumulationConfig>,
   ctx: ProjectionContext,
@@ -112,23 +114,23 @@ export function creditYearContributions(
       balances.preTax += slot.traditionalContrib + slot.employerMatch;
       balances.taxFree += slot.rothContrib;
       addTraditional(
-        acctBal[slot.category],
+        accountBalance[slot.category],
         slot.traditionalContrib + slot.employerMatch,
       );
-      addRoth(acctBal[slot.category], slot.rothContrib);
+      addRoth(accountBalance[slot.category], slot.rothContrib);
     } else if (bs === "single_bucket") {
       balances.hsa += slot.employeeContrib + slot.employerMatch;
       addBalance(
-        acctBal[slot.category],
+        accountBalance[slot.category],
         slot.employeeContrib + slot.employerMatch,
       );
     } else {
       // basis_tracking (brokerage) -- track both balance and cost basis
-      const brokerageContrib = slot.employeeContrib + slot.employerMatch;
-      balances.afterTax += brokerageContrib;
-      balances.afterTaxBasis += brokerageContrib;
-      addBalance(acctBal[slot.category], brokerageContrib);
-      addBasis(acctBal[slot.category], brokerageContrib);
+      const brokerageContribution = slot.employeeContrib + slot.employerMatch;
+      balances.afterTax += brokerageContribution;
+      balances.afterTaxBasis += brokerageContribution;
+      addBalance(accountBalance[slot.category], brokerageContribution);
+      addBasis(accountBalance[slot.category], brokerageContribution);
     }
   }
 
@@ -143,13 +145,13 @@ export function creditYearContributions(
   if (rampAmount > 0) {
     balances.afterTax += rampAmount;
     balances.afterTaxBasis += rampAmount;
-    addBalance(acctBal[OVERFLOW_CATEGORY], rampAmount);
-    addBasis(acctBal[OVERFLOW_CATEGORY], rampAmount);
+    addBalance(accountBalance[OVERFLOW_CATEGORY], rampAmount);
+    addBasis(accountBalance[OVERFLOW_CATEGORY], rampAmount);
   }
 
   // Apply lump sums (one-time injections, NOT subject to IRS limits)
   // Lump sums are cash in: new basis in the brokerage account they land in.
-  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+  followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
     applyLumpSums(config.lumpSums, ctx, state),
   );
 
@@ -160,9 +162,9 @@ export function creditYearContributions(
 export function distributeYearContributions(
   hasIndividualAccounts: boolean,
   contributionSpecs: ProjectionLoopState["contributionSpecs"],
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   brokBasis: ProjectionLoopState["brokBasis"],
   slots: AccumulationSlot[],
   indParentCat: ProjectionContext["indParentCat"],
@@ -179,43 +181,48 @@ export function distributeYearContributions(
   activeEmployerMatchByParentCat: ProjectionLoopState["activeEmployerMatchByParentCat"],
   indBasis: ProjectionLoopState["indBasis"],
 ) {
-  let indContribs = new Map<string, number>();
+  let indContributions = new Map<string, number>();
   let indMatch = new Map<string, number>();
   let indIntentional = new Map<string, number>();
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
   if (hasIndividualAccounts && contributionSpecs) {
     // Contributions, match, overflow and the ramp are cash in: new basis.
-    const distResult = followInflows(indAccts, indKey, indBal, brokBasis, () =>
-      distributeContributions({
-        slots,
-        contributionSpecs,
-        indAccts,
-        indKey,
-        indBal,
-        indParentCat,
-        specToAccount,
-        accountsWithSpecs,
-        projectedSalary,
-        currentSalary,
-        personPay,
-        limitGrowthRate,
-        yearIndex,
-        proRate,
-        overflowToBrokerage,
-        rampAmount,
-        employerMatchByParentCat: activeEmployerMatchByParentCat,
-      }),
+    const distResult = followInflows(
+      indAccounts,
+      indKey,
+      indBalance,
+      brokBasis,
+      () =>
+        distributeContributions({
+          slots,
+          contributionSpecs,
+          indAccounts,
+          indKey,
+          indBalance,
+          indParentCat,
+          specToAccount,
+          accountsWithSpecs,
+          projectedSalary,
+          currentSalary,
+          personPay,
+          limitGrowthRate,
+          yearIndex,
+          proRate,
+          overflowToBrokerage,
+          rampAmount,
+          employerMatchByParentCat: activeEmployerMatchByParentCat,
+        }),
     );
-    indContribs = distResult.indContribs;
+    indContributions = distResult.indContributions;
     indMatch = distResult.indMatch;
     indIntentional = distResult.indIntentional;
     indOverflow = distResult.indOverflow;
     indRamp = distResult.indRamp;
     // Tracked Roth basis grows by this year's contribution, which excludes
     // employer match (roth-basis-tracking.ts's docblock says why).
-    accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
+    accrueIndividualBasis(indAccounts, indKey, indBasis, indContributions);
   }
 
-  return { indContribs, indMatch, indIntentional, indOverflow, indRamp };
+  return { indContributions, indMatch, indIntentional, indOverflow, indRamp };
 }

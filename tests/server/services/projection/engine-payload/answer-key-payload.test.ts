@@ -35,7 +35,7 @@ import { buildEnginePayload } from "@/server/services/projection/engine-payload/
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
-import { SK_RETIREMENT_DEC_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
+import { SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
 import { xfail } from "../../../../fixtures/answer-key";
 import {
   createTestCaller,
@@ -60,6 +60,7 @@ const SPEC_TO_ACCOUNT = `v0.11 Engine "matchAccountForContribution matches by ow
 async function projectFromPayload(appDb: Db, contributionProfileId: number) {
   const data = await fetchRetirementData(appDb, { contributionProfileId });
   const payload = (await buildEnginePayload(appDb, data, {
+    asOf: new Date(),
     contributionProfileId,
   }))!;
   return calculateProjection({
@@ -231,7 +232,7 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
     // Trace #2: the Retirement budget is set to an amount, 90,000 (the
     // Retirement page's setting, `retirement_dec_expense_override`). The
     // Tax Optimization tabs, Tax Buckets "At Retirement", Brokerage, the
-    // Social Security explorer, Plan Health and Relocation build the
+    // Social Security explorer, Projection Health and Relocation build the
     // payload without forwarding it. Decided: one server-side resolver, so
     // each gets `decumulationAnnualExpenses` 90,000. Today the payload
     // falls back to the Budget, 120,000: 30,000 a year more spending in
@@ -244,13 +245,19 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
           .where(
             eq(
               sqliteSchema.appSettings.key,
-              SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+              SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
             ),
           )
           .run();
-        seedAppSetting(db, SK_RETIREMENT_DEC_EXPENSE_OVERRIDE, "90000");
+        seedAppSetting(
+          db,
+          SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
+          "90000",
+        );
         const data = await fetchRetirementData(appDb, {});
-        const payload = await buildEnginePayload(appDb, data, {});
+        const payload = await buildEnginePayload(appDb, data, {
+          asOf: new Date(),
+        });
         return sent(payload!.baseEngineInput);
       },
       expected: {
@@ -274,6 +281,7 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
       run: async () => {
         const data = await fetchRetirementData(appDb, {});
         const payload = await buildEnginePayload(appDb, data, {
+          asOf: new Date(),
           decumulationBudgetProfileId: budgetProfileId,
           decumulationBudgetColumn: 0,
         });

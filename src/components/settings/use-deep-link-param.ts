@@ -7,13 +7,9 @@ import { useClearParams } from "@/lib/hooks/use-focus";
 const NONE: readonly string[] = [];
 
 /**
- * A persisted tab/section choice that a link can open directly
- * (`/settings?tab=integrations&section=simplefin`).
- *
- * A valid `?param=` value wins for display only — following a link never
- * writes the persisted setting (a viewer without settings permission would
- * otherwise get a failed save). Choosing a tab/section clears the param from
- * the URL and saves the choice as usual.
+ * A persisted tab/section choice a link can open (`?tab=integrations&section=simplefin`). A valid
+ * param wins for display only and is never saved (viewers may lack permission); choosing a
+ * tab/section clears the param and saves as usual.
  */
 export function useDeepLinkParam<T extends string>(
   param: string,

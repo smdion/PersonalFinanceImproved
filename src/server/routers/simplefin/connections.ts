@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { and, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure, syncProcedure } from "../../trpc";
 import {
   BudgetApiError,
   nothingChanged,
@@ -38,7 +38,7 @@ import { TRPCError } from "@trpc/server";
 
 export const connectionsProcedures = {
   /** Claim a one-time setup token and store the resulting access URL. */
-  saveToken: syncProcedure
+  saveToken: adminProcedure
     .input(z.object({ setupToken: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       let accessUrl: string;
@@ -61,7 +61,7 @@ export const connectionsProcedures = {
     }),
 
   /** Test the stored connection without writing a snapshot. */
-  testConnection: syncProcedure.mutation(
+  testConnection: adminProcedure.mutation(
     async ({
       ctx,
     }): Promise<
@@ -75,27 +75,27 @@ export const connectionsProcedures = {
       const conn = await getSimplefinConnection(ctx.db);
       if (!conn) {
         return {
-          success: false as const,
+          ok: false as const,
           error: "No SimpleFIN connection configured",
         };
       }
       try {
         const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
         // A test counts against the daily quota like a sync.
-        await stopAtSimplefinQuota(ctx.db);
+        await stopAtSimplefinQuota(ctx.db, ctx.scope.asOf);
         const { accounts, providerErrors } = await getAccounts(accessUrl, {
           onRequest: simplefinRequestRecorder(ctx.db),
         });
-        await upsertSimplefinAccounts(ctx.db, accounts);
+        await upsertSimplefinAccounts(ctx.db, accounts, ctx.scope.asOf);
         return {
-          success: true as const,
+          ok: true as const,
           accountCount: accounts.length,
           providerErrors,
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
         return {
-          success: false as const,
+          ok: false as const,
           error: userMessageFor(e) ?? msg.slice(0, 200),
         };
       }
@@ -124,7 +124,10 @@ export const connectionsProcedures = {
       }
     }
     try {
-      return { ok: true as const, ...(await runSimplefinSync(ctx.db)) };
+      return {
+        ok: true as const,
+        ...(await runSimplefinSync(ctx.db, ctx.scope.asOf)),
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       throw new TRPCError({
@@ -136,7 +139,7 @@ export const connectionsProcedures = {
   }),
 
   /** Remove the stored connection (history in simplefin_balance_snapshots is preserved). */
-  removeConnection: syncProcedure.mutation(async ({ ctx }) => {
+  removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeSimplefinConnection(ctx.db);
     return { ok: true as const };
   }),
@@ -199,7 +202,7 @@ export const connectionsProcedures = {
           })
           .from(t)
           .where(isNull(t.voidedAt)),
-        countSimplefinRequestsLastDay(ctx.db),
+        countSimplefinRequestsLastDay(ctx.db, ctx.scope.asOf),
         ctx.db
           .select({
             orgName: schema.simplefinAccounts.orgName,

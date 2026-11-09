@@ -1,19 +1,7 @@
 /**
- * Which Retirement Profile is active, resolved server-side.
- *
- * Retirement is the fourth profile axis alongside budget / contribution /
- * salary. On the client those resolve through `useEffectiveProfileId`
- * (Plan's choice → local selection → global active); server-side reads get
- * handed an id or fall back to the global active one, which is what this
- * does.
- *
- * ONE resolver, used by every read site (build-engine-payload, snapshot,
- * the retirement router), so "which assumptions am I reading" can't diverge
- * between the projection, the net-worth history, and the readiness analysis.
- *
- * Each profile is a complete world — there is no baseline profile and no
- * merging. This returns exactly one id, and the caller reads that profile's
- * rows and nothing else.
+ * Which Retirement Profile is active, server-side: the one resolver every read
+ * site uses (engine payload, snapshot, retirement router). Returns one id; the
+ * caller reads only that profile's rows (no baseline, no merging).
  */
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -26,13 +14,9 @@ function toProfileId(raw: unknown): number | null {
 }
 
 /**
- * Resolve the active profile id from already-loaded rows — the hot path, so
- * callers that already selected these tables don't issue extra queries.
- *
- * Falls back to the lowest-id profile when the setting is missing or points
- * at a deleted row. That fallback matters: without it a household whose
- * setting went stale resolves to no profile, and `buildEnginePayload`
- * returns null, which blanks the retirement page rather than degrading.
+ * The active profile id from already-loaded rows. Falls back to the lowest-id
+ * profile when the setting is missing or stale; with no profile,
+ * `buildEnginePayload` returns null and the retirement page blanks.
  */
 export function resolveRetirementProfileIdFrom(
   appSettings: { key: string; value: unknown }[],
@@ -60,23 +44,9 @@ export function retirementProfileIsFallback(
 }
 
 /**
- * Pick the one settings row that represents a profile's household assumptions.
- *
- * During the EXPAND phase `retirement_settings` is still one row per person,
- * and step A pointed every one of them at the same profile — so filtering by
- * `profileId` alone matches several rows, and the underlying SELECT has no
- * ORDER BY, so `.find()` would pick an arbitrary one.
- *
- * That is not academic. Household-grain columns are duplicated onto every
- * person's row and are free to DISAGREE, because only the primary person's
- * copy was ever read — a real household here had `withdrawal_rate` 0.0325 vs
- * 0.04 and `rmd_excess_handling` reinvest vs spend across its two rows.
- * Picking the wrong one silently moves every number in the projection
- * (caught by the golden gate, which is the whole reason it exists).
- *
- * So: prefer the primary person's row, exactly as the pre-migration code did.
- * Once the contract step collapses this to one row per profile, THAT row must
- * be built from the primary person's values for the same reason.
+ * The settings row holding a profile's household assumptions. `retirement_settings`
+ * has one row per person per profile and their household columns can disagree, so
+ * prefer the primary person's row (the one read as the household's).
  */
 export function pickProfileSettingsRow<
   T extends { profileId: number | null; personId: number },

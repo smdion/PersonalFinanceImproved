@@ -4,7 +4,7 @@ import {
   entryMatchFigure,
   matchFigureForForm,
 } from "@/lib/pure/contributions/match-display";
-import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import { resolveContributionFieldDisplayState } from "@/lib/pure/household/profiles";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
   DeductionForm,
@@ -67,7 +67,7 @@ export function renderInlineAccountRows({
   const { sharedMatchSource: editSharedMatchSource } = groupSharedMatchAccounts(
     profile.accountDetails,
   );
-  return profile.accountDetails.map((ad, rowIdx) => {
+  return profile.accountDetails.map((ad, rowIndex) => {
     const sharedFrom = editSharedMatchSource.get(ad.id);
     const af = accountActiveFields(ad.id);
     const storedMethod =
@@ -92,11 +92,12 @@ export function renderInlineAccountRows({
     const storedName =
       af.displayNameCustom !== undefined ? String(af.displayNameCustom) : "";
     // No resolved value: the live match isn't in effect, so isn't shown.
-    const { hasValue: contribHasValue } = resolveContribFieldDisplayState(af);
+    const { hasValue: contributionHasValue } =
+      resolveContributionFieldDisplayState(af);
     const ownMatch = entryMatchFigure(effectiveMatchType, af);
     const storedMatch =
       ownMatch ??
-      (contribHasValue
+      (contributionHasValue
         ? matchFigureForForm(
             ad.liveMatchType,
             ad.liveMatchValue,
@@ -106,7 +107,7 @@ export function renderInlineAccountRows({
     const storedCap =
       af.employerMaxMatchPct !== undefined
         ? String(Number(af.employerMaxMatchPct) * 100)
-        : contribHasValue && ad.liveMaxMatchPct != null
+        : contributionHasValue && ad.liveMaxMatchPct != null
           ? String(Number(ad.liveMaxMatchPct) * 100)
           : "";
     const row = {
@@ -131,7 +132,7 @@ export function renderInlineAccountRows({
         key={ad.id}
         aria-busy={isSaving}
         className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-          rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+          rowIndex % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
       >
         {ACCOUNT_FIELDS.map(({ key }) => {
@@ -232,7 +233,7 @@ export function InlineDeductions({
             </tr>
           </thead>
           <tbody>
-            {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+            {deductionRows.map((d: DeductionRow, rowIndex: number) => {
               const df = deductionActiveFields(d.id);
               const storedAmount =
                 df.amountPerPeriod !== undefined
@@ -250,7 +251,7 @@ export function InlineDeductions({
                   key={d.id}
                   aria-busy={isSaving}
                   className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                    rowIdx % 2 === 1
+                    rowIndex % 2 === 1
                       ? "bg-surface-sunken/60"
                       : "bg-surface-primary"
                   } ${isSaving ? "pointer-events-none opacity-60" : ""}`}

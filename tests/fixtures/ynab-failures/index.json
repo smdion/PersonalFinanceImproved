@@ -1,0 +1,40 @@
+{
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "fixtures": [
+    {
+      "file": "rate-limited-then-answered.json",
+      "pairs": 2,
+      "description": "A read YNAB rate-limits once (429, no Retry-After: YNAB documents none), then answers: GET /categories twice."
+    },
+    {
+      "file": "rate-limited-every-try.json",
+      "pairs": 3,
+      "description": "A read YNAB rate-limits on every try: GET /accounts three times, 429 each time."
+    },
+    {
+      "file": "post-rate-limited-then-created.json",
+      "pairs": 2,
+      "description": "A transaction POST YNAB rate-limits (rejected before it runs), then creates: POST /transactions twice."
+    },
+    {
+      "file": "post-unavailable.json",
+      "pairs": 1,
+      "description": "A transaction POST answered 503: it may have run, so it is not sent again."
+    },
+    {
+      "file": "server-knowledge-reset.json",
+      "pairs": 2,
+      "description": "Two full transaction reads around a server_knowledge reset (a budget restored in YNAB): the second answer's server_knowledge (7) is below the first's (1204) and holds only what the restored budget has."
+    },
+    {
+      "file": "deleted-category.json",
+      "pairs": 2,
+      "description": "Writes to a category deleted in YNAB: the category read and the month's budgeted PATCH answer 404 resource_not_found."
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import { mappingWithTypedIds } from "@/lib/pure/sync/account-mapping";
 import type { DbOrTx } from "@/lib/db";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 
 /** The kind of Ledgr row a mapping can point at. */
 export type MappedRow =
@@ -62,8 +63,13 @@ export async function dropContributionActiveFields(
     .from(schema.contributionProfiles);
   const key = String(id);
   for (const p of profiles) {
-    const byEntity = p.contributionActiveFields[entityType];
-    if (!byEntity || !(key in byEntity)) continue;
+    // Read through the shared reader (a hand-edited null root has no
+    // entries); the write keeps the stored root's other keys.
+    const byEntity = readContributionActiveFields(
+      p.contributionActiveFields,
+      p.id,
+    )[entityType];
+    if (!(key in byEntity)) continue;
     const { [key]: _drop, ...rest } = byEntity;
     await db
       .update(schema.contributionProfiles)

@@ -1,20 +1,6 @@
 /**
- * Server-side tRPC caller for prefetching data in Server Components.
- *
- * Usage in a server component (layout or page wrapper):
- *
- *   import { prefetchForPage } from '@/server/trpc-server';
- *
- *   export default async function Page() {
- *     const dehydratedState = await prefetchForPage(async (helpers) => {
- *       await helpers.networth.computeSummary.prefetch().catch(() => undefined);
- *     });
- *     return (
- *       <HydrationBoundary state={dehydratedState}>
- *         <ClientPage />
- *       </HydrationBoundary>
- *     );
- *   }
+ * Server-side tRPC caller for prefetching in Server Components: a page passes
+ * `await prefetchForPage(async (helpers) => ...)` to its `<HydrationBoundary state>`.
  */
 import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 import { createServerSideHelpers } from "@trpc/react-query/server";
@@ -42,24 +28,21 @@ async function createServerHelpers() {
 type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>["helpers"];
 
 /**
- * The no-input queries the dashboard shell loads on every page — the
- * sidebar's data indicator (useDataSourceStatuses), the header's profile
- * pickers (scenario-bar), saved settings (usePersistedSetting). Only the
- * layout loads them (prefetchForShell), above the shell and the page.
- * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell
- * actually loads.
+ * The no-input queries the dashboard shell loads on every page (data indicator, profile pickers,
+ * saved settings), prefetched only by the layout (prefetchForShell).
+ * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell loads.
  */
 function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
   return [
     h.settings.appSettings.list.prefetch(),
     h.settings.getDataFreshness.prefetch(),
-    h.settings.taxData.status.prefetch(),
+    h.settings.taxData.getStatus.prefetch(),
     h.settings.scenarios.list.prefetch(),
     h.sync.getActiveBudgetApiLink.prefetch(),
     h.sync.getSyncStatus.prefetch(),
     h.simplefin.getStatus.prefetch(),
     h.sec.getStatus.prefetch(),
-    h.investments.getHealth.prefetch(),
+    h.investments.computeHealth.prefetch(),
     h.contributionProfile.list.prefetch(),
     h.contributionProfile.compareData.prefetch(),
     h.salaryProfile.list.prefetch(),
@@ -69,16 +52,9 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
 }
 
 /**
- * Run a page's server prefetch and return the dehydrated cache for its
- * HydrationBoundary, or undefined so the client fetches for itself.
- *
- * Returns undefined without prefetching when privacy mode is on: prefetched
- * data would be rendered on the server, where the privacy flag is never set
- * (see setPrivacyMode), so real amounts would reach the first HTML before
- * the browser masks them. Skipping it costs a loading state on first paint.
- * The shell's queries come from the layout (prefetchForShell), not here.
- *
- * Prefetch failures never block rendering — any error also yields undefined.
+ * Run a page's server prefetch and return the dehydrated cache for its HydrationBoundary, or
+ * undefined (client fetches) on any error or in privacy mode, where server-rendered data would put
+ * real amounts in the first HTML. The shell's queries come from prefetchForShell, not here.
  */
 export async function prefetchForPage(
   prefetch: (helpers: ServerHelpers) => Promise<unknown>,

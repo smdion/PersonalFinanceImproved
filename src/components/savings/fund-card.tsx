@@ -5,13 +5,11 @@ import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import dynamic from "next/dynamic";
 import { Popover } from "@/components/ui/popover";
-import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 
-// Code-split the per-fund Recharts mini chart. All
-// FundCard instances on the page share a single chunk, so the recharts
-// payload is fetched once when the savings page hydrates instead of being
-// inlined in the page bundle. ssr:false because Recharts isn't SSR-friendly.
+// Code-split Recharts mini chart: every FundCard shares one chunk fetched on
+// hydrate. ssr:false because Recharts isn't SSR-friendly.
 const FundMiniChart = dynamic(
   () => import("./fund-mini-chart").then((m) => ({ default: m.FundMiniChart })),
   {
@@ -38,13 +36,8 @@ import {
   SubGoalProgressAndMove,
 } from "./fund-card-sub-goals";
 import { FundApiSyncPanel, FundSummaryRow } from "./fund-card-summary";
-import {
-  GoalProjection,
-  PlannedTxForm,
-  NewFundForm,
-  RawGoal,
-  PlannedTransaction,
-} from "./types";
+import { GoalProjection, PlannedTxForm, NewFundForm, RawGoal } from "./types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 interface EfundResult {
   neededAfterRepay: number;
@@ -329,9 +322,9 @@ export function FundCard({
     rawGoal.isEmergencyFund && efundResult
       ? Math.min(efundResult.progress, 1)
       : Math.min(safeDivide(savingsGoal.current, savingsGoal.target, 0)!, 1);
-  const progressPct = (progress * 100).toFixed(0);
+  const progressPercent = (progress * 100).toFixed(0);
 
-  const serviceLabel = (apiServiceName ?? "API").toUpperCase();
+  const serviceLabel = budgetApiServiceLabel(apiServiceName);
 
   /* ── Menu dropdown (shared by compact row) ── */
   const menuDropdown = canEdit !== false && !rawGoal.isEmergencyFund && (
@@ -411,7 +404,7 @@ export function FundCard({
               savingsGoal={savingsGoal}
               rawGoal={rawGoal}
               progress={progress}
-              progressPct={progressPct}
+              progressPercent={progressPercent}
               efundResult={efundResult}
               canEdit={canEdit}
               onGoalUpdate={onGoalUpdate}
@@ -485,10 +478,10 @@ export function FundCard({
               <div className="space-y-2">
                 {childGoals.map((child) => {
                   const childTarget = parseFloat(child.targetAmount ?? "0");
-                  const childGoalCalc = savingsGoals.find(
+                  const childGoalCalculation = savingsGoals.find(
                     (g) => g.goalId === child.id,
                   );
-                  const childCurrent = childGoalCalc?.current ?? 0;
+                  const childCurrent = childGoalCalculation?.current ?? 0;
                   const childProgress = Math.min(
                     safeDivide(childCurrent, childTarget, 0)!,
                     1,

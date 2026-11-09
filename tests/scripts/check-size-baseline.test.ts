@@ -10,6 +10,7 @@ import {
   check,
   moved,
   recorded,
+  splitReading,
   type Baseline,
 } from "../../scripts/check-size-baseline";
 
@@ -538,6 +539,189 @@ describe("--record --from: a plain split's import lines (owner Q13)", () => {
     expect(go(205)).toEqual([]);
     expect(go(206)).toEqual([
       `${OLD}: the parts and what is left total 506 lines, entry 500 and +5 for the import lines it adds — split it; never raise the baseline`,
+    ]);
+  });
+});
+
+describe("--record --from: what check-commit proves around a cut, and the ratchet's reading", () => {
+  const ROW = "src/components/row.tsx";
+  const PARTS = "src/components/row-parts.tsx";
+  const tree = (files: Record<string, string>) => (f: string) => files[f];
+  const was = [
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <td>{yr.a}</td>",
+    "      <td>{yr.b}</td>",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  const now = [
+    'import { Cells } from "./row-parts";',
+    "",
+    "export function Row({ yr }: Props) {",
+    "  return (",
+    "    <tr>",
+    "      <Cells yr={yr} />",
+    "    </tr>",
+    "  );",
+    "}",
+  ].join("\n");
+  /** The part: a header, then Cells with its props type and doc comment. */
+  const parts = (doc = ["/** A year's two cells. */"]) =>
+    [
+      '"use client";',
+      "",
+      "/** The row's cells. */",
+      "",
+      'import type { Year } from "./year";',
+      "",
+      ...doc,
+      "type CellsProps = { yr: Year };",
+      "",
+      "export function Cells({ yr }: CellsProps) {",
+      "  return (",
+      "    <>",
+      "      <td>{yr.a}</td>",
+      "      <td>{yr.b}</td>",
+      "    </>",
+      "  );",
+      "}",
+    ].join("\n");
+  const read = (part: string, joined = true) => {
+    const files = { [ROW]: now, [PARTS]: part };
+    const carry = bodyCarry(ROW, [PARTS], tree(files), tree({ [ROW]: was }));
+    return {
+      carry,
+      split: splitReading(
+        ROW,
+        [PARTS],
+        tree(files),
+        tree({ [ROW]: was }),
+        carry,
+        () => joined,
+      ),
+    };
+  };
+  const lines = (text: string) => text.split("\n").length;
+
+  it("counts the props type, the blank line before it and the doc comments", () => {
+    const { split } = read(parts());
+    // Props type 1 and the blank line above its doc comment 1; the part's
+    // header 1 and Cells' doc comment 1.
+    expect(split).toMatchObject({ layout: 2, docs: 2 });
+    expect(split.imports).toEqual({ [ROW]: 1, [PARTS]: 1 });
+  });
+
+  it("doesn't count a doc comment past RULES' three lines", () => {
+    const long = ["/**", " * a", " * b", " * c", " * d", " */"];
+    expect(read(parts(long)).split.docs).toBe(1);
+  });
+
+  it("records the part with them, and refuses one line more", () => {
+    const part = parts();
+    const { carry, split } = read(part);
+    const measured: Baseline = {
+      files: { [ROW]: lines(now), [PARTS]: lines(part) },
+      functions: {},
+    };
+    // The entry the two files fit exactly, with the cut's lines and these.
+    const entry =
+      lines(now) + lines(part) - carry.total - split.layout - split.docs;
+    const go = (n: number, reading?: typeof split) =>
+      recorded(
+        { files: { [ROW]: n }, functions: {} },
+        measured,
+        [PARTS],
+        ROW,
+        carry,
+        reading,
+      ).problems;
+    expect(go(entry, split)).toEqual([]);
+    expect(go(entry - 1, split)).toHaveLength(1);
+    // Without the reading, the props type, blank line and comments refuse it.
+    expect(go(entry)).toHaveLength(1);
+  });
+
+  it("refuses a part over 400, or with a function entry, the ratchet doesn't join", () => {
+    const { carry, split } = read(parts(), false);
+    const big: Baseline = {
+      files: { [ROW]: 9, [PARTS]: 420 },
+      functions: {},
+    };
+    expect(
+      recorded(
+        { files: { [ROW]: 900 }, functions: {} },
+        big,
+        [PARTS],
+        ROW,
+        carry,
+        split,
+      ).problems,
+    ).toEqual([
+      `${PARTS}: 420 lines, not joined to ${ROW} (under half its lines left it), so the per-commit ratchet reads it as a new file — split it; never raise the baseline`,
+    ]);
+    const small: Baseline = {
+      files: { [ROW]: 9, [PARTS]: 300 },
+      functions: { [PARTS]: { Cells: 160 } },
+    };
+    expect(
+      recorded(
+        { files: { [ROW]: 900 }, functions: { [ROW]: { Row: 170 } } },
+        small,
+        [PARTS],
+        ROW,
+        carry,
+        split,
+      ).problems[0],
+    ).toContain("not joined");
+    // Joined, or under 400 with no entry, it is recorded.
+    expect(
+      recorded(
+        { files: { [ROW]: 900 }, functions: {} },
+        big,
+        [PARTS],
+        ROW,
+        carry,
+        { ...split, joined: () => true },
+      ).problems,
+    ).toEqual([]);
+  });
+
+  it("refuses what the ratchet reads as a rise: a cut's doc comment, a plain split's extra line", () => {
+    const { carry, split } = read(parts());
+    // Cut: the part over 400 and what is left pass the entry by 1.
+    const cut = recorded(
+      { files: { [ROW]: 420 }, functions: {} },
+      { files: { [ROW]: 9, [PARTS]: 412 }, functions: {} },
+      [PARTS],
+      ROW,
+      carry,
+      split,
+    ).problems;
+    expect(cut).toHaveLength(1);
+    expect(cut[0]).toContain("a cut's rise may hold no doc comment (2 lines)");
+    // Plain split: a rise of exactly the import lines passes, one more doesn't.
+    const OLD = "src/a.ts";
+    const PART = "src/a-part.ts";
+    const plain = (partLines: number) =>
+      recorded(
+        { files: { [OLD]: 500 }, functions: {} },
+        { files: { [OLD]: 100, [PART]: partLines }, functions: {} },
+        [PART],
+        OLD,
+        { renames: {}, wrapper: {}, total: 10 },
+        {
+          layout: 0,
+          docs: 0,
+          imports: { [OLD]: 1, [PART]: 2 },
+          joined: () => true,
+        },
+      ).problems;
+    expect(plain(403)).toEqual([]);
+    expect(plain(404)).toEqual([
+      `${OLD}, ${PART}: 504 lines, entry 500: the per-commit ratchet reads +4, and a split's rise is exactly the 3 import lines these files add — split it; never raise the baseline`,
     ]);
   });
 });

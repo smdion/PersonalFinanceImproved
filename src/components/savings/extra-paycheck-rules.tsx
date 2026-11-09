@@ -5,9 +5,9 @@ import type {
   ExtraPaycheckRoutingData,
   ExtraPaycheckRule,
 } from "@/lib/db/schema-pg";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import {
   fmt,
-  projectedNetPay,
   SimpleGrowthEditor,
   type YearlyGrowth,
 } from "./extra-paycheck-growth";
@@ -16,14 +16,14 @@ export function RuleFormActions({
   saveForm,
   formValid,
   saveMutation,
-  editingIdx,
+  editingIndex,
   cancelEdit,
   cancelAdd,
 }: {
   saveForm: () => void;
   formValid: unknown;
   saveMutation: { isPending: boolean; error: { message: string } | null };
-  editingIdx: number | null;
+  editingIndex: number | null;
   cancelEdit: () => void;
   cancelAdd: () => void;
 }) {
@@ -46,7 +46,7 @@ export function RuleFormActions({
         <Button
           variant="ghost"
           size="sm"
-          onClick={editingIdx !== null ? cancelEdit : cancelAdd}
+          onClick={editingIndex !== null ? cancelEdit : cancelAdd}
         >
           Cancel
         </Button>
@@ -60,17 +60,17 @@ export function RuleFormActions({
 }
 
 export function RuleFormFields({
-  editingIdx,
+  editingIndex,
   addForm,
   setFormField,
   setSplitGoal,
   goals,
-  setSplitPct,
+  setSplitPercent,
   removeSplit,
   addSplit,
   splitTotal,
 }: {
-  editingIdx: number | null;
+  editingIndex: number | null;
   addForm: {
     from: string;
     to: string;
@@ -79,7 +79,7 @@ export function RuleFormFields({
   setFormField: (key: "from" | "to", val: string) => void;
   setSplitGoal: (si: number, goalId: number) => void;
   goals: { id: number; name: string }[];
-  setSplitPct: (si: number, pct: string) => void;
+  setSplitPercent: (si: number, pct: string) => void;
   removeSplit: (si: number) => void;
   addSplit: () => void;
   splitTotal: number;
@@ -87,7 +87,7 @@ export function RuleFormFields({
   return (
     <>
       <p className="text-primary text-xs font-medium">
-        {editingIdx !== null ? "Edit rule" : "New rule"}
+        {editingIndex !== null ? "Edit rule" : "New rule"}
       </p>
 
       <div className="grid grid-cols-2 gap-3">
@@ -138,7 +138,7 @@ export function RuleFormFields({
               max={100}
               step={1}
               value={sp.pct}
-              onChange={(e) => setSplitPct(si, e.target.value)}
+              onChange={(e) => setSplitPercent(si, e.target.value)}
               className="border-default bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
             <span className="text-caption text-muted">%</span>
@@ -188,8 +188,8 @@ export function RuleTable({
   baseYearDisplay: number;
   yearlyGrowth: YearlyGrowth;
   goals: { id: number; name: string }[];
-  openEdit: (idx: number) => void;
-  deleteRule: (idx: number) => void;
+  openEdit: (index: number) => void;
+  deleteRule: (index: number) => void;
 }) {
   return (
     <>
@@ -206,7 +206,7 @@ export function RuleTable({
             </tr>
           </thead>
           <tbody>
-            {rules.map((rule, idx) => {
+            {rules.map((rule, index) => {
               const ruleYear = parseInt(rule.from.slice(0, 4));
               const netPerCheck = projectedNetPay(
                 baseNetPayDisplay,
@@ -239,13 +239,13 @@ export function RuleTable({
                   </td>
                   <td className="py-1 text-right">
                     <button
-                      onClick={() => openEdit(idx)}
+                      onClick={() => openEdit(index)}
                       className="mr-2 text-xs text-blue-600 hover:text-blue-700"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => deleteRule(idx)}
+                      onClick={() => deleteRule(index)}
                       className="text-faint text-xs transition-colors hover:text-red-600"
                     >
                       ×

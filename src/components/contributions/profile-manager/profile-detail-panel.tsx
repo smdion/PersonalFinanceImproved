@@ -49,11 +49,9 @@ export function ProfileDetailPanel({ profileId }: { profileId: number }) {
         </table>
       </div>
 
-      {/* Deductions section — paycheck_deductions carries no amount of its
-          own any more (Stage B): amountPerPeriod resolves entirely through
-          this profile's deductions active-fields, the same "no base value,
-          absent = incomplete" rule contributionAccounts already uses (see
-          deductionActiveFieldsSchema / applyDeductionActiveFields). */}
+      {/* Deductions: amountPerPeriod resolves entirely through this profile's
+          deductions active-fields (absent = incomplete); see
+          applyDeductionActiveFields. */}
       {deductionRows && deductionRows.length > 0 && (
         <div className="mt-5">
           <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
@@ -74,7 +72,7 @@ export function ProfileDetailPanel({ profileId }: { profileId: number }) {
               </tr>
             </thead>
             <tbody>
-              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+              {deductionRows.map((d: DeductionRow, rowIndex: number) => {
                 const activeFieldsRoot = (profile.contributionActiveFields ?? // Stored jsonb, typed by $type only: kept guarded.
                   {}) as ActiveFieldsRoot;
                 const af = activeFieldsRoot.deductions?.[String(d.id)] as
@@ -88,7 +86,7 @@ export function ProfileDetailPanel({ profileId }: { profileId: number }) {
                   <tr
                     key={d.id}
                     className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                      rowIdx % 2 === 1
+                      rowIndex % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
                     }`}

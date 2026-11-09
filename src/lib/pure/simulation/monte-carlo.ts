@@ -1,14 +1,7 @@
 /**
- * Monte Carlo Retirement Simulation
- *
- * Pure calculator — no DB, no tRPC, no React.
- *
- * Wraps calculateProjection() × N trials with randomized return rates,
- * then aggregates results into percentile bands for fan chart visualization.
- *
- * Each trial generates a different sequence of annual returns by sampling from
- * correlated log-normal distributions based on asset class parameters and a
- * glide path that shifts allocations over time.
+ * Retirement Simulation: calculateProjection() × N trials, each with its own sequence of returns
+ * drawn from correlated log-normal asset-class distributions along a glide path, aggregated into
+ * percentile bands for the fan chart.
  */
 import {
   choleskyDecomposition,
@@ -25,7 +18,10 @@ import {
 } from "./trial-summary";
 import { runTrials } from "./trial-run";
 import { sumBy, safeDivide } from "../../utils/math";
-import { MC_RETURN_CLAMP_MIN, MC_RETURN_CLAMP_MAX } from "../../constants";
+import {
+  SIMULATION_RETURN_CLAMP_MIN,
+  SIMULATION_RETURN_CLAMP_MAX,
+} from "../../constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../../config/withdrawal-strategies";
 
@@ -58,11 +54,9 @@ export const SIMULATION_NOT_CONFIGURED_MESSAGE: Record<
 export const GLIDE_PATH_WEIGHT_TOLERANCE = 0.001;
 
 /**
- * The one check for whether a Simulation can run, or null when it can.
- * `preset` is the run's preset (`found` false: a named preset the
- * database lacks — never run Custom's mix under its name); null when the
- * caller has none. Only active classes (`assetClasses`) count toward a
- * glide-path age's weights.
+ * The one check for whether a Simulation can run (null when it can). `preset.found` false is a
+ * named preset the database lacks (never run Custom's mix under its name); null means no preset.
+ * Only active `assetClasses` count toward a glide-path age's weights.
  */
 export function simulationNotConfigured(
   preset: { found: boolean } | null,
@@ -99,24 +93,9 @@ export class SimulationNotConfiguredError extends Error {
 // ---------------------------------------------------------------------------
 
 /**
- * Run a Monte Carlo simulation over the projection engine.
- *
- * For each trial:
- * 1. Generate a random return rate sequence (correlated log-normal per asset class)
- * 2. Optionally randomize inflation around the household's own rates
- * 3. Call calculateProjection() with those return rates
- * 4. Record end balance and depletion age
- *
- * Then aggregate all trials into percentile bands.
- *
- * `onProgress`, if given, is called periodically (not every trial — every
- * ~2% of numTrials, to keep the overhead of the callback itself negligible
- * against the loop it's instrumenting) with the trial count completed so
- * far. It's a plain in-process callback — callers running this off-thread
- * (see `src/workers/monte-carlo-worker.ts`) wire their OWN callback that
- * posts a worker message; never pass a caller-supplied function through
- * `postMessage` itself, since a function reference can't survive
- * structured clone.
+ * Runs the Simulation: per trial, correlated log-normal returns (and optionally inflation around
+ * the household's rates) through calculateProjection(), then percentile bands. `onProgress` runs
+ * every ~2% of trials, in-process; a worker wraps it in its own postMessage callback.
  */
 export function calculateMonteCarlo(
   input: MonteCarloInput,
@@ -143,9 +122,9 @@ export function calculateMonteCarlo(
     numYears,
     balancesByYear,
     balancesTodayByYear,
-    numDecYears,
-    stratRatiosByDecYear,
-    budgetRatiosByDecYear,
+    numDecumulationYears,
+    stratRatiosByDecumulationYear,
+    budgetRatiosByDecumulationYear,
     terminalBalances,
     terminalBalancesToday,
     hadPenaltyAvoidedShortfall,
@@ -189,9 +168,9 @@ export function calculateMonteCarlo(
   );
   const { spendingStabilityBands } = stabilityBands(
     engineInput,
-    numDecYears,
-    stratRatiosByDecYear,
-    budgetRatiosByDecYear,
+    numDecumulationYears,
+    stratRatiosByDecumulationYear,
+    budgetRatiosByDecumulationYear,
   );
   // Success rate: % of trials the plan judge passes (assessPlan).
   const successCount = trialSucceeded.filter(Boolean).length;
@@ -277,8 +256,8 @@ function trialSetup(input: MonteCarloInput, warnings: string[]) {
     inflationRisk,
   } = input;
   const seed = input.seed;
-  const clampMin = input.returnClampMin ?? MC_RETURN_CLAMP_MIN;
-  const clampMax = input.returnClampMax ?? MC_RETURN_CLAMP_MAX;
+  const clampMin = input.returnClampMin ?? SIMULATION_RETURN_CLAMP_MIN;
+  const clampMax = input.returnClampMax ?? SIMULATION_RETURN_CLAMP_MAX;
 
   // Strategy config — determines whether stability baseline uses post-retirement
   // raise (from engine's projectedExpenses) or MC inflation (computed baseline).

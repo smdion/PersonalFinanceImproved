@@ -6,14 +6,14 @@ import { toast } from "@/lib/hooks/use-toast";
 import { maskAmountsInText } from "@/lib/utils/format";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
-import { McSimulationBar } from "./mc-simulation-bar";
+import { SimulationBar } from "./mc-simulation-bar";
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {
   const {
     result,
     projectionMode,
-    mcLoading,
+    simulationLoading,
     mcQuery,
     setShowAssumptions,
     rerunAllMc,
@@ -30,15 +30,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
 
   if (projectionMode !== "monteCarlo") return null;
 
-  // Refreshes both cache-backed simulations shown on this page together —
-  // the baseline MC bar here and the Coast FIRE hero card both read from
-  // the persistent projection cache, so a "re-run" should mean "give me
-  // fresh randomness for both," not just one of the two. `isRerunning`
-  // lives in the shared state hook (not local to this component) so the
-  // top-of-page "recalculating" banner and the chart/table skeleton in
-  // index.tsx can also react to it — a manual re-run previously showed
-  // neither, since it bypasses the query hooks' own isFetching entirely
-  // (see rerunAllMc's docblock in use-projection-queries.ts).
+  // Re-runs both cache-backed simulations (baseline MC bar and Coast FIRE hero)
+  // with fresh randomness. `isRerunning` lives in the shared state hook so the
+  // page banner and skeletons react too (see rerunAllMc).
   const handleRerun = rerunAllMc;
 
   const handleClearCache = () => {
@@ -54,15 +48,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     clearProjectionCacheMutation.mutate(undefined, {
       onSuccess: (data) => {
         toast(`Cleared ${data.cleared} cached row(s).`, "success");
-        // Wiping the SERVER-side projection_cache table alone doesn't touch
-        // this browser tab's own client-side query cache -- without this,
-        // "Clear Cache" clears the wrong side: the server would compute
-        // fresh on its NEXT request, but nothing tells this tab to actually
-        // make that next request, so the table keeps showing whatever
-        // computeProjection response it already has in memory. Found while
-        // debugging a live household where a Bracket Ceiling
-        // change genuinely persisted and genuinely changed the engine's
-        // output, but "Clear Cache" alone never made the page reflect it.
+        // Clearing the server-side projection_cache doesn't touch this tab's
+        // client query cache; invalidate so the page refetches and shows
+        // fresh results.
         void utils.projection.invalidate();
       },
       onError: (err) => {
@@ -79,12 +67,12 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
           Simulation failed: {mcQuery.error.message}
         </div>
       )}
-      {notConfigured && !mcLoading && (
+      {notConfigured && !simulationLoading && (
         <div className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-600">
           {SIMULATION_NOT_CONFIGURED_MESSAGE[notConfigured]}
         </div>
       )}
-      {mcQuery.data?.result && !mcLoading && (
+      {mcQuery.data?.result && !simulationLoading && (
         <>
           {/* MC warnings */}
           {mcQuery.data.result.warnings.length > 0 && (
@@ -95,7 +83,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
             </div>
           )}
           {/* MC compact summary bar */}
-          <McSimulationBar
+          <SimulationBar
             si={mcQuery.data.simulationInputs}
             mcr={mcQuery.data.result}
             result={result}
@@ -109,7 +97,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
           />
         </>
       )}
-      {!mcQuery.data?.result && !mcLoading && !mcQuery.error && (
+      {!mcQuery.data?.result && !simulationLoading && !mcQuery.error && (
         <div className="text-muted py-4 text-sm">
           No simulation data available. Ensure asset classes and glide path are
           configured.

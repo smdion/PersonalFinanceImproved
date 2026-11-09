@@ -6,7 +6,6 @@ import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,12 +15,14 @@ import {
   accountTextColor,
 } from "@/lib/utils/colors";
 import {
-  ContribPeriodToggle,
-  getContribMultiplier,
+  ContributionPeriodToggle,
+  getContributionMultiplier,
   getPeriodSuffix,
-  type ContribPeriod,
+  householdPeriodsPerYear,
+  type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
@@ -39,6 +40,7 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { renderJointAccount } from "./contribution-snapshot-joint";
 
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
@@ -47,33 +49,33 @@ export function ContributionSnapshot() {
     null,
   );
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const contribInput = {
+  const contributionInput = {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
     ...salaryProfileInput,
   };
-  const { data, isLoading, error } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
-  const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
+  const { data } = summary;
+  const [contributionPeriod, setContributionPeriod] =
+    useState<ContributionPeriod>("annual");
+  const highIncome = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
-      highIncomeThreshold,
+      highIncome.threshold,
     ),
   );
 
-  if (error || highIncomeError)
+  if (queryPending([summary, highIncome]) || highIncome.threshold === undefined)
     return (
-      <p className="text-sm text-red-500">
-        Failed to load contribution snapshot
-      </p>
-    );
-  if (isLoading || highIncomeThreshold === undefined)
-    return (
-      <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
+      <QueryBoundary
+        query={[summary, highIncome]}
+        what="the contribution snapshot"
+        fallback={
+          <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
+        }
+      />
     );
   if (!data?.people.length) return null;
 
@@ -92,12 +94,13 @@ export function ContributionSnapshot() {
     if (!allTypes.includes(jat.accountType)) allTypes.push(jat.accountType);
   }
 
-  // Use average periodsPerYear for household totals
-  const avgPeriodsPerYear =
-    activePeople.length > 0
-      ? sumBy(activePeople, (p) => p.periodsPerYear!) / activePeople.length
-      : 26;
-  const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
+  const avgPeriodsPerYear = householdPeriodsPerYear(
+    activePeople.map((p) => p.periodsPerYear!),
+  );
+  const householdMult = getContributionMultiplier(
+    contributionPeriod,
+    avgPeriodsPerYear,
+  );
 
   // Household totals: the same calculation as every savings rate
   // (householdSavings), with and without the match.
@@ -142,7 +145,7 @@ export function ContributionSnapshot() {
     },
   ];
 
-  const periodSuffix = getPeriodSuffix(contribPeriod);
+  const periodSuffix = getPeriodSuffix(contributionPeriod);
 
   return (
     <div className="mt-10 border-t-2 pt-8">
@@ -153,9 +156,9 @@ export function ContributionSnapshot() {
             Household Contribution Snapshot
           </h2>
         </div>
-        <ContribPeriodToggle
-          value={contribPeriod}
-          onChange={setContribPeriod}
+        <ContributionPeriodToggle
+          value={contributionPeriod}
+          onChange={setContributionPeriod}
         />
       </div>
 
@@ -210,6 +213,10 @@ export function ContributionSnapshot() {
             ? getAccountTypeConfig(categoryKey as AccountCategory)
                 .matchCountsTowardLimit
             : false;
+          const cfg = hasLimit
+            ? getAccountTypeConfig(categoryKey as AccountCategory)
+            : null;
+          const famKey = cfg?.irsLimitKeys?.coverageVariant;
 
           return (
             <div
@@ -224,144 +231,36 @@ export function ContributionSnapshot() {
                       (Joint)
                     </span>
                   )}
-                  {(() => {
-                    const cfg = hasLimit
-                      ? getAccountTypeConfig(categoryKey as AccountCategory)
-                      : null;
-                    const famKey = cfg?.irsLimitKeys?.coverageVariant;
-                    return famKey &&
-                      activePeople.some(
-                        (p) =>
-                          p.accountTypes.find((a) => a.accountType === type)
-                            ?.limit === data.limits[famKey],
-                      ) ? (
-                      <span className="text-faint ml-1 text-xs font-normal">
-                        (Family)
-                      </span>
-                    ) : null;
-                  })()}
+                  {famKey &&
+                  activePeople.some(
+                    (p) =>
+                      p.accountTypes.find((a) => a.accountType === type)
+                        ?.limit === data.limits[famKey],
+                  ) ? (
+                    <span className="text-faint ml-1 text-xs font-normal">
+                      (Family)
+                    </span>
+                  ) : null}
                 </h3>
               </div>
 
               {/* Joint accounts: show once without per-person breakdown */}
               {isJoint &&
-                (() => {
-                  // Use joint account data from household-level response
-                  const jat = jointAccountTypes.find(
-                    (a) => a.accountType === type,
-                  );
-                  if (!jat) return null;
-                  const totalEmployee = jat.employeeContrib * householdMult;
-                  const totalMatch = jat.employerMatch * householdMult;
-                  return (
-                    <div className="mb-3">
-                      <div className="flex items-baseline justify-between text-sm">
-                        <span className="font-medium">
-                          {formatCurrency(totalEmployee)}
-                          {periodSuffix}
-                        </span>
-                        {totalMatch > 0 && (
-                          <span className="text-muted text-sm">
-                            +{formatCurrency(totalMatch)}{" "}
-                            <span className="text-faint text-xs">
-                              {employerMatchLabel}
-                            </span>
-                          </span>
-                        )}
-                      </div>
-                      {/* Bar for joint accounts */}
-                      {hasDiscountBar &&
-                      jat.employerMatch > 0 &&
-                      jat.employeeContrib > 0 ? (
-                        <div className="mt-1.5">
-                          <div className="bg-surface-strong relative h-2 w-full rounded-full">
-                            <div
-                              className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
-                              style={{
-                                width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                              }}
-                              title={`Your cost: ${formatCurrency(totalEmployee)}${periodSuffix}`}
-                            />
-                            <div
-                              className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full transition-all`}
-                              style={{
-                                left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                                width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                              }}
-                              title={`${employerMatchLabel}: ${formatCurrency(totalMatch)}${periodSuffix}`}
-                            />
-                          </div>
-                          <div className="text-caption mt-0.5 flex justify-between">
-                            <span className={accountTextColor(categoryKey)}>
-                              Total value:{" "}
-                              {formatCurrency(
-                                (jat.employeeContrib + jat.employerMatch) *
-                                  householdMult,
-                              )}
-                              {periodSuffix}
-                            </span>
-                            <span
-                              className={`${accountTextColor(categoryKey)} font-medium`}
-                            >
-                              +
-                              {formatPercent(
-                                jat.employerMatch / jat.employeeContrib,
-                              )}{" "}
-                              {employerMatchLabel}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-1.5">
-                          <div className="bg-surface-strong relative h-2 w-full rounded-full">
-                            {jat.employerMatch > 0 ? (
-                              <>
-                                <div
-                                  className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
-                                  style={{
-                                    width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                                  }}
-                                  title={`You: ${formatCurrency(totalEmployee)}${periodSuffix}`}
-                                />
-                                <div
-                                  className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full`}
-                                  style={{
-                                    left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                                    width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
-                                  }}
-                                  title={`${employerMatchLabel}: ${formatCurrency(totalMatch)}${periodSuffix}`}
-                                />
-                              </>
-                            ) : (
-                              <div
-                                className={`${accountColor(categoryKey)} h-2 rounded-full`}
-                                style={{ width: "100%" }}
-                                title={`${formatCurrency(totalEmployee)}${periodSuffix}`}
-                              />
-                            )}
-                          </div>
-                          <div className="text-caption mt-0.5 flex justify-between">
-                            <span className="text-faint">No IRS limit</span>
-                            {jat.employerMatch > 0 && (
-                              <span
-                                className={`${accountTextColor(categoryKey)} font-medium`}
-                              >
-                                +{formatCurrency(totalMatch)}
-                                {periodSuffix} {employerMatchLabel}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                renderJointAccount(
+                  categoryKey,
+                  employerMatchLabel,
+                  hasDiscountBar,
+                  householdMult,
+                  jointAccountTypes,
+                  periodSuffix,
+                  type,
+                )}
 
               {!isJoint &&
                 activePeople.map((p) => {
                   const at = p.accountTypes.find((a) => a.accountType === type);
-                  const mult = getContribMultiplier(
-                    contribPeriod,
+                  const mult = getContributionMultiplier(
+                    contributionPeriod,
                     p.periodsPerYear!,
                   );
                   if (!at) {
@@ -398,7 +297,7 @@ export function ContributionSnapshot() {
                   }
 
                   // Compute match percentage of the limit for the funding bar
-                  const matchPctOfLimit =
+                  const matchPercentOfLimit =
                     hasLimit &&
                     at.limit > 0 &&
                     at.views[viewMode].employerMatch > 0
@@ -454,7 +353,7 @@ export function ContributionSnapshot() {
                         <div className="mt-1.5">
                           <FundingBar
                             pct={at.views[viewMode].fundingPct}
-                            matchPct={matchPctOfLimit}
+                            matchPercent={matchPercentOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={categoryKey}
                           />
@@ -486,9 +385,8 @@ export function ContributionSnapshot() {
                               </span>
                             )}
                           </div>
-                          {/* What to fix — the configured contribution is
-                              over the limit (figures show the capped
-                              amount), or the account needs an owner or an
+                          {/* What to fix: contribution over the limit (figures
+                              show the capped amount), or a missing owner or
                               HSA coverage type. */}
                           {at.capMessages.map((m) => (
                             <p

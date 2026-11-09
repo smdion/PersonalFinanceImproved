@@ -15,14 +15,14 @@ export function HistoricalLoans({
   historicalLoans: LoanSummary[];
   loanHistory: LoanHistoryEntry[];
   showHistSchedule: number | null;
-  onToggleHistSchedule: (idx: number | null) => void;
+  onToggleHistSchedule: (index: number | null) => void;
 }) {
   return (
     <div className="mb-6">
       <h2 className="text-secondary mb-3 text-lg font-semibold">
         Historical Loans
       </h2>
-      {historicalLoans.map((loan, idx) => {
+      {historicalLoans.map((loan, index) => {
         const histEntry = loanHistory.find((h) => h.loanId === loan.loanId);
         const isRefinanced = loan.wasRefinanced ?? !!histEntry?.refinancedInto;
         return (
@@ -101,14 +101,16 @@ export function HistoricalLoans({
               </div>
               <button
                 onClick={() =>
-                  onToggleHistSchedule(showHistSchedule === idx ? null : idx)
+                  onToggleHistSchedule(
+                    showHistSchedule === index ? null : index,
+                  )
                 }
                 className="text-sm text-blue-600 underline hover:text-blue-800"
               >
-                {showHistSchedule === idx ? "Hide" : "Show"} amortization
+                {showHistSchedule === index ? "Hide" : "Show"} amortization
                 schedule
               </button>
-              {showHistSchedule === idx && (
+              {showHistSchedule === index && (
                 <AmortizationTable schedule={loan.amortizationSchedule} />
               )}
             </Card>

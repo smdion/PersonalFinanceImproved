@@ -16,6 +16,7 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
+import { renderEfundNeeded } from "./savings-goals-card-efund";
 
 function SavingsGoalsCardImpl() {
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
@@ -82,8 +83,8 @@ function SavingsGoalsCardImpl() {
       isEmergencyFund?: boolean;
       currentMonthBudgeted?: number | null;
     };
-    const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
-    if (!calcGoal) continue;
+    const calculatedGoal = savings.goals.find((g) => g.goalId === rg.id);
+    if (!calculatedGoal) continue;
 
     // E-fund status uses effectiveNeeded (after repay minus pending reimb) to
     // stay consistent with the e-fund section above and the savings page detail.
@@ -96,9 +97,9 @@ function SavingsGoalsCardImpl() {
       continue;
     }
 
-    const current = calcGoal.current;
+    const current = calculatedGoal.current;
     // Data-driven: fixed goals use their target, ongoing goals have no fixed target to reach
-    const target = rg.targetMode === "fixed" ? calcGoal.target : 0;
+    const target = rg.targetMode === "fixed" ? calculatedGoal.target : 0;
 
     // All future transactions for this fund (deposits + withdrawals).
     // Date-truncated "today" cutoff (not time-of-day-sensitive), matching
@@ -116,12 +117,9 @@ function SavingsGoalsCardImpl() {
       .filter((t: { amount: number }) => t.amount < 0)
       .reduce((s: number, t: { amount: number }) => s + Math.abs(t.amount), 0);
 
-    // If there are planned expenses, project month-by-month via the shared
-    // walk (applies to both fixed and ongoing) instead of a hand-rolled
-    // simulation — this also means recurring planned transactions are now
-    // correctly expanded here (previously only their base occurrence was
-    // considered), and API-linked goals get the same "don't double-count
-    // this month's contribution" guard the Savings page already applies.
+    // With planned expenses, project month-by-month via the shared walk: it expands
+    // recurring planned transactions and applies the Savings page's guard against
+    // double-counting this month's contribution for API-linked goals.
     if (totalPlannedExpenses > 0) {
       const lastTx = goalTxs[goalTxs.length - 1] as
         { transactionDate: string; amount: number } | undefined;
@@ -137,7 +135,7 @@ function SavingsGoalsCardImpl() {
         {
           id: rg.id,
           current,
-          monthlyAllocation: calcGoal.monthlyAllocation,
+          monthlyAllocation: calculatedGoal.monthlyAllocation,
           currentMonthBudgeted: rg.currentMonthBudgeted,
         },
         {
@@ -202,7 +200,7 @@ function SavingsGoalsCardImpl() {
           kind: "shortfall",
           needed: target - current,
         });
-      } else if (calcGoal.monthlyAllocation > 0) {
+      } else if (calculatedGoal.monthlyAllocation > 0) {
         goalStatusMap.set(rg.id, {
           kind: "accumulating",
           needed: target - current,
@@ -230,8 +228,8 @@ function SavingsGoalsCardImpl() {
               reselect
               value={efundTierIndex}
               onChange={setEfundBudgetColumn}
-              options={budgetTierLabels.map((label: string, idx: number) => ({
-                value: idx,
+              options={budgetTierLabels.map((label: string, index: number) => ({
+                value: index,
                 label,
               }))}
             />
@@ -290,19 +288,7 @@ function SavingsGoalsCardImpl() {
             )}
             <div className="flex justify-between font-medium">
               <span className="text-muted">Needed</span>
-              {(() => {
-                const needed = efund.neededAfterRepay;
-                const funded = needed <= 0.005;
-                return (
-                  <span className={funded ? "text-green-600" : "text-red-600"}>
-                    {funded
-                      ? needed < -0.005
-                        ? `${formatCurrency(Math.abs(needed))} surplus`
-                        : "Funded"
-                      : formatCurrency(needed)}
-                  </span>
-                );
-              })()}
+              {renderEfundNeeded(efund)}
             </div>
           </div>
         </div>

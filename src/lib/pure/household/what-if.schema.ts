@@ -8,18 +8,9 @@ import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
 const MAX_SANDBOX_PEOPLE = 10;
 
 /**
- * The What-If tab's hand-edited salary/bonus entries — the same
- * `SalaryEntryMap` shape a Salary Profile's `salaries` column holds, so the
- * sandbox needs no new input shape and no new schema.
- *
- * Applied server-side by `applySandboxSalaryEntries` as the highest
- * precedence tier (above the Salary Profile). Every field is optional and PRESENCE IS
- * THE PIN SIGNAL, exactly as on a profile row.
- *
- * Size-capped because, unlike a profile row, this arrives directly from the
- * client on every keystroke-debounced query: a household is realistically
- * 1-2 people, so 10 is generous while keeping the record from being an
- * unbounded user-controlled map.
+ * What-If salary/bonus entries (`SalaryEntryMap` shape), applied over the Salary
+ * Profile by `applySandboxSalaryEntries`; a present field overrides. Size-capped:
+ * it comes straight from the client on each debounced query.
  */
 export const zSandboxSalaryEntries = z
   .record(
@@ -37,13 +28,9 @@ export const zSandboxSalaryEntries = z
   .optional();
 
 /**
- * The What-If tab's hand-edited budget item amounts, keyed by
- * (itemId, colIndex).
- *
- * Consumed by `budget.computeActiveSummary` (to recompute totals under the
- * sandbox's edits without a second client-side computation of the app's most
- * important number) and by `budget.duplicateProfile` (to bake the same edits
- * into a saved copy, in the copy's own transaction).
+ * What-If budget item amounts by (itemId, colIndex), read by
+ * `budget.computeActiveSummary` (server-side totals) and `budget.duplicateProfile`
+ * (baked into the saved copy).
  */
 export const zItemAmountActiveFields = z
   .array(
@@ -56,13 +43,9 @@ export const zItemAmountActiveFields = z
   .optional();
 
 /**
- * `itemAmountActiveFields` → a `"itemId:colIndex"` → amount lookup.
- *
- * The active value is ONE MORE LAYER on top of the existing amount
- * resolution chain, never a replacement for it: callers must consult this
- * map first and fall back to whatever they resolve today (contribution-linked
- * amount, then the raw stored amount). Skipping the chain for an item with
- * an active value is the exact bug class this feature exists to avoid.
+ * `itemAmountActiveFields` → `"itemId:colIndex"` → amount. A layer over the amount
+ * chain: callers check this first, then fall back to the contribution-linked
+ * amount, then the stored amount.
  */
 export function toItemAmountActiveMap(
   activeFields:
@@ -79,10 +62,8 @@ export function toItemAmountActiveMap(
 const MAX_SANDBOX_DEDUCTIONS = 20;
 
 /**
- * The What-If tab's hand-edited amount for an EXISTING paycheck deduction
- * (identified by its real `paycheck_deductions.id`). One more layer on top
- * of the stored `amountPerPeriod`, applied before `calculatePaycheck` runs
- * — never a second computation of net pay.
+ * What-If amount for an existing paycheck deduction (by its real id), layered on
+ * `amountPerPeriod` before `calculatePaycheck` runs.
  */
 export const zSandboxDeductionEdits = z
   .array(
@@ -95,12 +76,9 @@ export const zSandboxDeductionEdits = z
   .optional();
 
 /**
- * The What-If tab's hand-added HYPOTHETICAL deductions — no `paycheck_
- * deductions` row exists for these (e.g. "what if I added a $200/mo life
- * insurance premium"), so they're keyed by `personId` instead of a real id
- * and appended to that person's deduction list for the duration of the
- * request only. Tax treatment as a real row's: `isPretax` and `ficaExempt`
- * (a Section 125 deduction is both; FICA-exempt requires pre-tax).
+ * What-If hypothetical deductions (no row), keyed by `personId` and appended for
+ * the request only. `isPretax`/`ficaExempt` as on a real row (a Section 125
+ * deduction is both; FICA-exempt requires pre-tax).
  */
 export const zSandboxDeductionAdditions = z
   .array(
@@ -121,39 +99,27 @@ export const zSandboxDeductionAdditions = z
   .optional();
 
 /** Guardrail on the sandbox contribution active fields below. */
-const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
+const MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS = 30;
 
 /**
- * The What-If tab's hand-edited amount for an EXISTING contribution
- * account, keyed by the real `contribution_accounts.id`. Reuses the SAME
- * generic active-field-merge mechanism a Contribution Profile's own
- * `contributionActiveFields.contributionAccounts` already goes through
- * (`applyContribActiveFields`) — this is one more layer applied AFTER the
- * picked profile's own active fields, not a parallel mechanism. Stored as a
- * string to match `contribution_accounts.contribution_value`'s own column
- * type — every downstream reader already parses that field with
- * `toNumber`, so a mismatched type here would only matter if something
- * read it raw, which nothing does.
+ * What-If amount for an existing contribution account (by real id), merged by
+ * `applyContribActiveFields` after the profile's own fields. A string, like the
+ * `contribution_value` column.
  */
 export const zSandboxContribActiveFields = z
   .record(z.string(), z.object({ contributionValue: z.string() }))
-  .refine((v) => Object.keys(v).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS, {
-    message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
-  })
+  .refine(
+    (v) => Object.keys(v).length <= MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS,
+    {
+      message: `At most ${MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS} accounts may be edited at once`,
+    },
+  )
   .optional();
 
 /**
- * The What-If tab's hand-added HYPOTHETICAL contribution accounts — no
- * `contribution_accounts` row exists yet, keyed by `personId` and appended
- * to that person's account list for the duration of the request only.
- * Deliberately minimal (account type, method, value) — the same fields
- * `contributionAccountInput` (settings/contribution-accounts.ts) actually requires,
- * everything else (institution, label, employer match, sub-accounts) takes
- * that mutation's own defaults, same as a freshly-created real account
- * would have before anyone edits it further. `employerMatchType` defaults
- * to "none" here rather than being exposed — keeping the quick-add form
- * genuinely quick; a real employer match is set up on the real Contribution
- * Profiles page.
+ * What-If hypothetical contribution accounts (no row), keyed by `personId` for the
+ * request only. Just the fields `contributionAccountInput` requires; the rest take
+ * its defaults, with no employer match.
  */
 export const zSandboxContribAdditions = z
   .array(
@@ -164,5 +130,5 @@ export const zSandboxContribAdditions = z
       contributionValue: z.string(),
     }),
   )
-  .max(MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS)
+  .max(MAX_SANDBOX_CONTRIBUTION_ACTIVE_FIELDS)
   .optional();

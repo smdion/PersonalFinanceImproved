@@ -3,6 +3,8 @@
 // goes down (`npx eslint <files> --prune-suppressions` after a cleanup).
 // One rule id per pattern, so a file can't trade one pattern for another.
 
+import { readFileSync } from "node:fs";
+
 const TEXT_FIELD =
   /(?:reason|label|message|note|description|warning|text|name|title|explanation|summary|detail)s?$/i;
 const STRING_TRANSFORMS = new Set(["toLowerCase", "toUpperCase", "trim"]);
@@ -18,6 +20,8 @@ const HELPER_FIELDS = [
   "nonMedicalPenaltyRate",
   "displayGroup",
   "payrollFicaExempt",
+  // Read through getDisplayConfig(type, subType) (owner Q10b).
+  "displayLabel",
 ].join("|");
 
 /** Fields whose value is a member of a closed set (account categories,
@@ -30,6 +34,61 @@ const CLOSED_SET_FIELDS = [
   "taxTreatment",
   "filingStatus",
 ].join("|");
+
+/** Abbreviations a name may not use (CONTRIBUTING § Variable naming; owner
+ *  Q7, v0.10.5): one list, read by the rule and the carve-out generator. */
+export const ABBREVIATIONS = [
+  ...["pct", "amt", "acct", "yr", "idx", "mo"],
+  ...["contrib", "bal", "mc", "dec", "wd", "infl"],
+  ...["alloc", "calc", "proj", "sal", "est", "ann"],
+];
+
+/** Stored, schema and response keys that keep their abbreviation; generated
+ *  by scripts/gen-abbreviation-carve-outs.ts and checked by its test. */
+const ABBREVIATION_CARVE_OUTS = new Set(
+  JSON.parse(
+    readFileSync(
+      new URL("./scripts/abbreviation-carve-outs.json", import.meta.url),
+      "utf8",
+    ),
+  ),
+);
+
+/** The lowercase words of a camelCase, PascalCase or snake_case name. */
+export function nameSegments(name) {
+  return name
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/(\d+)/g, " $1 ")
+    .split(/[\s_$]+/)
+    .filter(Boolean)
+    .map((s) => s.toLowerCase());
+}
+
+/** The first abbreviation `name` uses (a plural counts), if any. */
+export function abbreviationIn(name) {
+  return nameSegments(name).find((s) =>
+    ABBREVIATIONS.some((a) => s === a || s === `${a}s`),
+  );
+}
+
+/** Words the UI doesn't say: "Simulation", not "MC"; a profile is
+ *  "active", never pinned, overridden or customized. */
+const RETIRED_UI_WORD =
+  /\bMC\b|\b(?:pin(?:s|ned|ning)?|overrid(?:e|es|den|ing)|customi[sz](?:e|ed|es|ing|ation|ations))\b/i;
+const RETIRED_UI_WORD_CASED = /\bMC\b/;
+/** Attributes that never reach the screen. */
+const HIDDEN_ATTRIBUTE =
+  /^(?:className|key|id|href|src|htmlFor|name|type|role|value|data-.*|on[A-Z].*)$/;
+
+/** The retired word in `text`, if any: "MC" in capitals only. */
+function retiredUiWord(text) {
+  const match = RETIRED_UI_WORD.exec(text);
+  if (!match) return undefined;
+  if (match[0].toLowerCase() === "mc")
+    return RETIRED_UI_WORD_CASED.exec(text)?.[0];
+  return match[0];
+}
 
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
@@ -71,9 +130,15 @@ const isOverlayClasses = (text) =>
   CLASS_TOKENS.test(text) && INSET_TOKEN.test(text);
 
 // Past tense about the code, "the fix", drift claims, citations of versions,
-// findings, scratch docs and file:line. RULES review rule 1.
+// findings, design-doc ids, scratch docs and file:line. RULES review rule 1.
+// "used to" counts only with a subject pronoun or "be"/"have"/"still"/"also":
+// "the rate used to project spending" states a purpose, not history.
 const HISTORY_PHRASE =
-  /\bthe fix\b|\bused to\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\.scratch\/|\b[\w-]+\.tsx?:\d+\b|\bv\d+\.\d+\.\d+\b/i;
+  /\bthe fix\b|\b(?:this|that|it|which|what|each|null|code|as)\s+used to\b|\bused to (?:be|have|also|still|do|just|only|not)\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\bdesign (?:doc|decision)\b|\bdecision (?:#\d|[A-Z]\d)|\b[A-Z]+(?:-[A-Z]+)*-PLAN\.md\b|\.scratch\/|\b[\w-]+\.tsx?:\d+\b/i;
+const VERSION_CITATION = /\bv\d+\.\d+\.\d+\b/i;
+// The backup ladder and the migration converters are keyed by release.
+const RELEASE_KEYED_FILE =
+  /src\/lib\/db\/(?:backup-transforms|v0810-profile-sets|migration-converters)\.ts$/;
 const MAX_COMMENT_LINES = 3;
 
 /** Text lines of a comment, without the delimiter-only lines of a block. */
@@ -197,6 +262,67 @@ const jsxAttr = (opening, name) =>
     (a) => a.type === "JSXAttribute" && a.name.name === name,
   );
 
+// --- Fallbacks (docs/FALLBACKS.md) -----------------------------------------
+
+/** The expression under TS-only wrappers (`x!`, `x as T`). */
+function unwrapTs(node) {
+  let n = node;
+  while (n.type === "TSNonNullExpression" || n.type === "TSAsExpression")
+    n = n.expression;
+  return n.type === "ChainExpression" ? n.expression : n;
+}
+
+/** `m.get(k)`: a sparse Map read, no entry meaning none (owner FQ1, N6). A
+ *  computed record read (`rec[k] ?? 0`) is counted. */
+function isMapGet(node) {
+  const n = unwrapTs(node);
+  return (
+    n.type === "CallExpression" &&
+    n.callee.type === "MemberExpression" &&
+    !n.callee.computed &&
+    n.callee.property.name === "get"
+  );
+}
+
+/** `x = (x ?? 0) + v`: the seed of a running total. */
+function isAccumulatorSeed(node, sourceCode) {
+  const sum = node.parent;
+  if (sum?.type !== "BinaryExpression" || !/^[+-]$/.test(sum.operator))
+    return false;
+  const assign = sum.parent;
+  return (
+    assign?.type === "AssignmentExpression" &&
+    sourceCode.getText(assign.left) === sourceCode.getText(node.left)
+  );
+}
+
+/** A return with a value directly in `block`, not in a nested function. */
+function returnsValue(block) {
+  let found = false;
+  const visit = (node) => {
+    if (found || !node || typeof node.type !== "string") return;
+    if (/Function/.test(node.type) || node.type === "ClassBody") return;
+    if (node.type === "ReturnStatement" && node.argument) {
+      found = true;
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      if (key === "parent") continue;
+      const child = node[key];
+      if (Array.isArray(child)) child.forEach(visit);
+      else if (child && typeof child.type === "string") visit(child);
+    }
+  };
+  visit(block);
+  return found;
+}
+
+// The finders' escape hatch (RULES § Data-Driven Architecture, owner Q10c).
+const VIOLATION_OK = /lint-violation-ok(:[ \t]*\S)?/g;
+
+const FALLBACK_MESSAGE =
+  "Unregistered fallback. Register its pattern in docs/FALLBACKS.md, or make the absent state real (RULES review rule 4).";
+
 const customRules = {
   "no-unlabeled-control": {
     meta: {
@@ -264,13 +390,44 @@ const customRules = {
     create(context) {
       return {
         Program() {
+          const releaseKeyed = RELEASE_KEYED_FILE.test(
+            context.filename.replaceAll("\\", "/"),
+          );
           for (const comment of context.sourceCode.getAllComments()) {
-            const match = HISTORY_PHRASE.exec(comment.value);
+            const match =
+              HISTORY_PHRASE.exec(comment.value) ??
+              (releaseKeyed ? null : VERSION_CITATION.exec(comment.value));
             if (match)
               context.report({
                 loc: comment.loc,
                 message: `History in a comment ("${match[0]}"). State what is true now; history goes in the commit.`,
               });
+          }
+        },
+      };
+    },
+  },
+  "no-lint-violation-ok": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Each lint-violation-ok escape is counted." },
+      schema: [],
+    },
+    create(context) {
+      const sourceCode = context.sourceCode;
+      return {
+        Program() {
+          for (const comment of sourceCode.getAllComments()) {
+            const start = comment.range[0] + 2;
+            for (const match of comment.value.matchAll(VIOLATION_OK)) {
+              const at = sourceCode.getLocFromIndex(start + match.index);
+              context.report({
+                loc: { start: at, end: { ...at, column: at.column + 17 } },
+                message: match[1]
+                  ? "`lint-violation-ok` silences a violations finder. Each one is counted; a new one needs a Ratchet-raise with its reason."
+                  : "`lint-violation-ok` with no reason. Write `// lint-violation-ok: <reason>` on one line.",
+              });
+            }
           }
         },
       };
@@ -335,6 +492,108 @@ const customRules = {
       };
     },
   },
+  "no-abbreviation": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Names are full words, not abbreviations." },
+      schema: [],
+    },
+    create(context) {
+      // A class name is declared in two scopes; it's one name.
+      const seen = new Set();
+      const check = (id) => {
+        if (id?.type !== "Identifier" || seen.has(id)) return;
+        seen.add(id);
+        if (ABBREVIATION_CARVE_OUTS.has(id.name)) return;
+        const word = abbreviationIn(id.name);
+        if (word)
+          context.report({
+            node: id,
+            message: `'${id.name}' abbreviates ('${word}'). Use the full word (CONTRIBUTING § Variable naming).`,
+          });
+      };
+      const declared = (node) => {
+        for (const variable of context.sourceCode.getDeclaredVariables(node))
+          for (const def of variable.defs)
+            if (def.node === node) check(def.name);
+      };
+      const key = (node) => {
+        if (!node.computed) check(node.key);
+      };
+      return {
+        VariableDeclarator: declared,
+        FunctionDeclaration: declared,
+        FunctionExpression: declared,
+        ArrowFunctionExpression: declared,
+        ClassDeclaration: declared,
+        CatchClause: declared,
+        ImportDefaultSpecifier: declared,
+        ImportNamespaceSpecifier: declared,
+        ImportSpecifier(node) {
+          // Only a local alias is named here; the imported name is its module's.
+          if (node.imported.name !== node.local.name) check(node.local);
+        },
+        "TSTypeAliasDeclaration, TSInterfaceDeclaration, TSEnumDeclaration"(
+          node,
+        ) {
+          check(node.id);
+        },
+        TSEnumMember: (node) => check(node.id),
+        "ObjectExpression > Property"(node) {
+          if (!node.shorthand) key(node);
+        },
+        "PropertyDefinition, MethodDefinition, TSPropertySignature, TSMethodSignature":
+          key,
+      };
+    },
+  },
+  "no-retired-ui-word": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "The UI uses the product's words." },
+      schema: [],
+    },
+    create(context) {
+      const report = (node, text) => {
+        const word = retiredUiWord(text);
+        if (word)
+          context.report({
+            node,
+            message: `"${word}" on screen. Say "Simulation" for MC, and "active" for a profile, never pin, override or customize.`,
+          });
+      };
+      const stringOf = (node) => {
+        if (node?.type === "Literal" && typeof node.value === "string")
+          return node.value;
+        if (node?.type === "TemplateLiteral")
+          return node.quasis.map((q) => q.value.cooked ?? "").join(" ");
+        return undefined;
+      };
+      return {
+        JSXText: (node) => report(node, node.value),
+        JSXAttribute(node) {
+          const name =
+            node.name.type === "JSXNamespacedName"
+              ? node.name.name.name
+              : node.name.name;
+          if (HIDDEN_ATTRIBUTE.test(name)) return;
+          const value =
+            node.value?.type === "JSXExpressionContainer"
+              ? node.value.expression
+              : node.value;
+          const text = stringOf(value);
+          if (text !== undefined) report(node.value, text);
+        },
+        "JSXExpressionContainer > Literal, JSXExpressionContainer > TemplateLiteral"(
+          node,
+        ) {
+          if (node.parent.parent.type === "JSXAttribute") return;
+          const text = stringOf(node);
+          if (text !== undefined) report(node, text);
+        },
+      };
+    },
+  },
   "no-guarded-division": {
     meta: {
       type: "suggestion",
@@ -375,7 +634,7 @@ export const ratchetPlugin = {
     "no-config-reach-through": selectorRule(
       "An account-type field with its own helper is read through the helper.",
       `MemberExpression[property.name=/^(${HELPER_FIELDS})$/]:matches([object.callee.name='getAccountTypeConfig'], [object.object.name='ACCOUNT_TYPE_CONFIG'])`,
-      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, …), not the config entry.",
+      "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, getDisplayConfig(…).displayLabel, …), not the config entry.",
     ),
     "no-string-closed-set-field": selectorRule(
       "A field holding a closed set's value is typed by the set, not string.",
@@ -407,6 +666,66 @@ export const ratchetPlugin = {
       "JSXOpeningElement[name.name='input']",
       "Raw <input>. Use FormInput from @/components/forms or a primitive in @/components/ui.",
     ),
+    "no-clock-read": selectorRule(
+      "Server and library code takes today's date from the request scope.",
+      [
+        "NewExpression[callee.name='Date'][arguments.length=0]",
+        "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+      ].join(", "),
+      "Clock read in server or library code. Take the date from ctx.scope (or a passed-in asOf), so one request reads one date (RULES § Time Resolution).",
+    ),
+    "no-identity-predicate-import": selectorRule(
+      "Code branches on an account type's behavior fields, not its identity.",
+      "ImportSpecifier[imported.name=/^is(Hsa|Ira)Category$/]",
+      "isHsaCategory/isIraCategory outside Tax Buckets. Read the account type's behavior field in lib/config/account-types.ts (RULES § Data-Driven Architecture rule 10).",
+    ),
+    "no-unregistered-fallback": {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description:
+            "A new fallback is registered in docs/FALLBACKS.md (owner FQ10).",
+        },
+        schema: [
+          {
+            type: "object",
+            properties: { zeroDefaults: { type: "boolean" } },
+            additionalProperties: false,
+          },
+        ],
+      },
+      create(context) {
+        const zeroDefaults = context.options[0]?.zeroDefaults === true;
+        const sourceCode = context.sourceCode;
+        const report = (node, what) =>
+          context.report({ node, message: `${what}: ${FALLBACK_MESSAGE}` });
+        return {
+          LogicalExpression(node) {
+            if (!zeroDefaults || !/^(\?\?|\|\|)$/.test(node.operator)) return;
+            if (node.right.type !== "Literal" || node.right.value !== 0) return;
+            if (isMapGet(node.left) || isAccumulatorSeed(node, sourceCode))
+              return;
+            report(node, `\`${node.operator} 0\` in money code`);
+          },
+          CatchClause(node) {
+            if (returnsValue(node.body)) report(node, "catch returns a value");
+          },
+          "CallExpression[callee.property.name='catch']"(node) {
+            const handler = node.arguments[0];
+            if (!handler || !/Function/.test(handler.type)) return;
+            const body = handler.body;
+            const valued =
+              body.type === "BlockStatement"
+                ? returnsValue(body)
+                : body.type !== "UnaryExpression" || body.operator !== "void";
+            if (valued) report(node, ".catch returns a value");
+          },
+          "CallExpression[callee.name=/^readMaybe[A-Z]/]"(node) {
+            report(node, "plaintext-or-encrypted reader");
+          },
+        };
+      },
+    },
     "no-text-includes": {
       meta: {
         type: "suggestion",
@@ -479,7 +798,59 @@ export const ratchetConfig = [
       "ratchet/max-comment-lines": "error",
       "ratchet/no-stacked-docblock": "error",
       "ratchet/no-guarded-division": "error",
+      "ratchet/no-abbreviation": "error",
+      "ratchet/no-identity-predicate-import": "error",
     },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    rules: { "ratchet/no-retired-ui-word": "error" },
+  },
+  {
+    // Tax Buckets still branches on the predicates until v0.11.
+    files: [
+      "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx",
+      "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts",
+      "src/lib/pure/accounts/tax-bucket-analysis.ts",
+      "src/lib/pure/accounts/tax-bucket-projection.ts",
+    ],
+    rules: { "ratchet/no-identity-predicate-import": "off" },
+  },
+  {
+    // The request scope's own clock is server/trpc.ts, write stamps read
+    // lib/utils/clock.ts, and client hooks read the browser's today.
+    files: ["src/server/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+    ignores: [
+      "src/server/trpc.ts",
+      "src/lib/utils/clock.ts",
+      "src/lib/hooks/**",
+    ],
+    rules: { "ratchet/no-clock-read": "error" },
+  },
+  {
+    // Fallbacks (owner FQ10): a value-returning catch and a
+    // plaintext-or-encrypted reader anywhere; `?? 0` / `|| 0` in money paths.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: { "ratchet/no-unregistered-fallback": "error" },
+  },
+  {
+    files: [
+      "src/lib/pure/**/*.{ts,tsx}",
+      "src/server/services/**/*.{ts,tsx}",
+      "src/server/data/**/*.{ts,tsx}",
+      "src/server/routers/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "ratchet/no-unregistered-fallback": ["error", { zeroDefaults: true }],
+    },
+  },
+  {
+    // Owner Q10c: every escape the finders honor, wherever they read. The
+    // finders' own file names the marker rather than using it.
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "scripts/**/*.ts"],
+    ignores: ["tests/lint/violations.test.ts"],
+    plugins: { ratchet: ratchetPlugin },
+    rules: { "ratchet/no-lint-violation-ok": "error" },
   },
   {
     // The helpers themselves.

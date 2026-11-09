@@ -1,9 +1,6 @@
-/**
- * How a paycheck deduction is taxed, named the way a pay stub groups it.
- * Each preset is the pair of flags the calculator reads: `isPretax`
- * (reduces federal income-tax wages) and `ficaExempt` (reduces Social
- * Security + Medicare wages). Data, not code: another preset is one entry.
- */
+/** How a paycheck deduction is taxed, named the way a pay stub groups it: `isPretax`
+ *  (reduces federal income-tax wages) and `ficaExempt` (reduces Social Security + Medicare
+ *  wages). */
 type DeductionPreset = {
   key: string;
   /** Short label for the pay-stub row. */
@@ -19,7 +16,7 @@ export const DEDUCTION_PRESETS: readonly DeductionPreset[] = [
     key: "section125",
     short: "Before-tax (Section 125)",
     label:
-      "Before-tax — health, dental, vision, payroll HSA (Section 125: no income tax or FICA)",
+      "Before-tax — health, dental, vision (Section 125: no income tax or FICA)",
     isPretax: true,
     ficaExempt: true,
   },

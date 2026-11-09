@@ -1,39 +1,7 @@
 /**
- * Gate for the retirement advisor report: is there a Monte Carlo result
- * that genuinely reflects the household's CURRENT inputs, for the
- * currently-selected scenario, computed under Advanced tax mode?
- *
- * "Does `mcResult` exist" is NOT a safe proxy for this — verified against
- * the actual query behavior in use-projection-queries.ts:
- *  - `mcPrefetchQuery`/`coastFireMcQuery`/`rateSeededMcQuery` all use
- *    `placeholderData: (prev) => prev` — a stale result from a PREVIOUS
- *    input survives across changes and reads as "present."
- *  - `coastFireProbeResult` is a bare `useState`, never cleared on input
- *    change at all.
- *  - `mcPrefetchQuery` hardcodes preset/trial-count regardless of the
- *    household's actual selection — falling back to it would print risk
- *    numbers computed under different assumptions than the report's own
- *    assumptions section states.
- *  - The debounce window is an unguarded hole: edit a setting and print
- *    immediately, `debouncedInput` hasn't caught up yet, nothing looks
- *    "fetching" — the report would print the pre-edit plan.
- *
- * `mcQuery` itself (the ONLY source this checks — no prefetch fallback,
- * ever) uses `placeholderData: undefined`, so it genuinely has no data
- * for a changed input until that input's own fetch resolves — the
- * fetching/data-presence checks below are sufficient for it without a
- * separate placeholder flag.
- *
- * Scoped to `scenarioView === "baseline"` only (see aca-irmaa-narrative.ts) —
- * Coast FIRE/Rate-Seeded scenarios
- * source both their MC result AND their deterministic projection from a
- * different place (`activeAltMcResult`), and the report's assumptions
- * section always echoes the BASELINE engine settings regardless of
- * scenario. Combining "Coast FIRE numbers" with "baseline assumptions
- * text" would misrepresent the plan, so those scenarios aren't offered
- * the advisor report in this pass — same reasoning covers
- * `coastFireProbeResult`, which additionally has no freshness signal at
- * all to check.
+ * Advisor report gate: a simulation result from `mcQuery` alone (no placeholder or prefetch
+ * fallback) for the current inputs, baseline scenario and Advanced tax mode; other scenarios
+ * pair different results with baseline assumption text, so they're not offered.
  */
 
 export type ReportGateFailure =
@@ -44,8 +12,8 @@ export type ReportGateFailure =
   | "mc-not-fresh";
 
 export interface ReportGateInput {
-  scenarioView: string;
-  mcTaxMode: "simple" | "advanced";
+  projectionView: string;
+  simulationTaxMode: "simple" | "advanced";
   /** Deep-equal-able live query input (`ProjectionQueries.sharedInput`). */
   sharedInput: unknown;
   /** Deep-equal-able debounced query input (`ProjectionQueries.debouncedInput`) —
@@ -71,7 +39,7 @@ interface ReportGateResult {
   failure?: ReportGateFailure;
 }
 
-/** Deep-equal via JSON — matches the existing `mcPrefetchRunId`/
+/** Deep-equal via JSON — matches the existing `simulationPrefetchRunId`/
  *  `rateSeededMcRunId` convention in use-projection-queries.ts, which
  *  already serializes these same plain-object query inputs the same way. */
 function deepEqual(a: unknown, b: unknown): boolean {
@@ -79,10 +47,10 @@ function deepEqual(a: unknown, b: unknown): boolean {
 }
 
 export function checkReportGate(input: ReportGateInput): ReportGateResult {
-  if (input.scenarioView !== "baseline") {
+  if (input.projectionView !== "baseline") {
     return { ok: false, failure: "not-baseline-scenario" };
   }
-  if (input.mcTaxMode === "simple") {
+  if (input.simulationTaxMode === "simple") {
     return { ok: false, failure: "simple-tax-mode" };
   }
   if (!deepEqual(input.sharedInput, input.debouncedInput)) {
@@ -101,15 +69,12 @@ export function checkReportGate(input: ReportGateInput): ReportGateResult {
   return { ok: true };
 }
 
-/** User-facing copy per failure reason — kept alongside the predicate so
- *  the two can't drift. "Run the simulation first," not "Run Monte Carlo
- *  simulation first" (tests/lint/violations.test.ts bans the product name
- *  in user-facing text; see this module's coverage in that test's
- *  filterExt list). */
+/** User-facing copy per failure reason. Says "simulation", never the product name
+ *  (tests/lint/violations.test.ts). */
 export function reportGateFailureMessage(failure: ReportGateFailure): string {
   switch (failure) {
     case "not-baseline-scenario":
-      return "The full report is only available for your baseline plan — switch back from the current scenario view to generate it.";
+      return "The full report is only available for the Baseline scenario — switch back from the current scenario view to generate it.";
     case "simple-tax-mode":
       return "The full report's risk analysis needs Advanced tax mode. Switch to Advanced, then try again.";
     case "inputs-unsettled":
@@ -117,6 +82,6 @@ export function reportGateFailureMessage(failure: ReportGateFailure): string {
     case "engine-not-fresh":
       return "Your projection is still updating — try again in a moment.";
     case "mc-not-fresh":
-      return "Run the simulation first, so the report's risk analysis reflects your current plan.";
+      return "Run the simulation first, so the report's risk analysis reflects your current projection.";
   }
 }

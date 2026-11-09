@@ -167,6 +167,7 @@ function UtilityCard({
       {adding && (
         <div className="mt-2 mb-2 flex flex-wrap items-center gap-2 border-b py-2">
           <input
+            aria-label="Year"
             type="number"
             value={newYear}
             onChange={(e) => setNewYear(e.target.value)}
@@ -185,6 +186,7 @@ function UtilityCard({
             ))}
           </select>
           <input
+            aria-label="Cost"
             type="number"
             value={newCost}
             onChange={(e) => setNewCost(e.target.value)}
@@ -192,6 +194,7 @@ function UtilityCard({
             className="border-strong bg-surface-primary w-24 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <input
+            aria-label={`Usage (${unit})`}
             type="number"
             value={newUsage}
             onChange={(e) => setNewUsage(e.target.value)}
@@ -199,6 +202,7 @@ function UtilityCard({
             className="border-strong bg-surface-primary w-28 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <input
+            aria-label="Note"
             type="text"
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
@@ -285,6 +289,7 @@ function UtilityCard({
                           </td>
                           <td className="py-1.5 text-right">
                             <input
+                              aria-label="Cost"
                               type="number"
                               value={editCost}
                               onChange={(e) => setEditCost(e.target.value)}
@@ -294,6 +299,7 @@ function UtilityCard({
                           </td>
                           <td className="py-1.5 text-right">
                             <input
+                              aria-label="Usage"
                               type="number"
                               value={editUsage}
                               onChange={(e) => setEditUsage(e.target.value)}
@@ -304,6 +310,7 @@ function UtilityCard({
                           <td className="py-1.5" />
                           <td className="py-1.5">
                             <input
+                              aria-label="Note"
                               type="text"
                               value={editNote}
                               onChange={(e) => setEditNote(e.target.value)}

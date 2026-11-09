@@ -38,15 +38,15 @@ import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
-import { getAge, localDateStr } from "@/lib/utils/date";
+import { getAge } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
-/** Each past year whose Performance rows are all finalized: the
- *  household's own contributions (every account, employer money out), its
- *  recorded investment gain, and whether contributions are still estimated.
- *  What the 60/40 and Always Be Buying rules compare year to year. */
+/** Each past year whose Performance rows are all finalized: the household's own
+ *  contributions (employer money out), recorded investment gain, and whether contributions
+ *  are still estimated, for the 60/40 and Always Be Buying rules. */
 function finalizedYears(
   perfRows: readonly {
     year: number;
@@ -70,7 +70,7 @@ function finalizedYears(
       estimated: false,
       finalized: true,
     };
-    const est = parseEstimatedFields(r.estimatedFields);
+    const estimate = parseEstimatedFields(r.estimatedFields);
     years.set(r.year, {
       employee:
         y.employee +
@@ -79,8 +79,8 @@ function finalizedYears(
       gain: y.gain + toNumber(r.yearlyGainLoss),
       estimated:
         y.estimated ||
-        est.includes("employeeContrib") ||
-        est.includes("employerContributions"),
+        estimate.includes("employeeContrib") ||
+        estimate.includes("employerContributions"),
       finalized: y.finalized && r.isFinalized,
     });
   }
@@ -161,10 +161,10 @@ function salaryByYear(
 /** Year-end history mapped for the Milestones engine, plus the household's
  *  own goals and checklist. */
 export async function loadMilestoneInputs(
-  db: Db,
+  { db, scope }: { db: Db; scope: RequestScope },
   input: z.infer<typeof zYearEndTargeting>,
 ) {
-  const asOfDate = new Date();
+  const asOfDate = scope.asOf;
   const [
     history,
     settingRows,
@@ -192,7 +192,7 @@ export async function loadMilestoneInputs(
       ),
     db.select().from(schema.debts),
     db.select().from(schema.people),
-    getEffectiveOtherLiabilities(db),
+    getEffectiveOtherLiabilities(db, { asOf: asOfDate }),
     db.select().from(schema.historicalSalaries),
     db
       .select({
@@ -223,7 +223,7 @@ export async function loadMilestoneInputs(
   // Each debt judged at its owner's age today, by birthday (a joint
   // debt: the household's average age, as every other milestone uses —
   // 0, the most lenient band, only when there are no people at all).
-  const today = localDateStr(asOfDate);
+  const today = calendarDateOf(asOfDate);
   const householdAge = current?.averageAge ?? 0;
   const ageOf = (personId: number | null) => {
     const p = people.find((x) => x.id === personId);
@@ -236,7 +236,7 @@ export async function loadMilestoneInputs(
     const balance = now.balance;
     const rate = toNumberOrNull(d.interestRate);
     const open = isOpenDebt(d, today);
-    const est = debtPayoffEstimate(
+    const estimate = debtPayoffEstimate(
       {
         balance,
         interestRate: rate,
@@ -252,9 +252,11 @@ export async function loadMilestoneInputs(
       rate,
       ownerAge: ageOf(d.ownerPersonId),
       open,
-      payoffYear: est.payoffMonth ? Number(est.payoffMonth.slice(0, 4)) : null,
-      never: est.never,
-      stale: open && est.stale,
+      payoffYear: estimate.payoffMonth
+        ? Number(estimate.payoffMonth.slice(0, 4))
+        : null,
+      never: estimate.never,
+      stale: open && estimate.stale,
       paidOffYear: d.paidOffDate ? Number(d.paidOffDate.slice(0, 4)) : null,
     };
   });
@@ -327,7 +329,7 @@ export async function activeMilestoneInput(ctx: {
     goals,
     line,
   ] = await Promise.all([
-    loadMilestoneInputs(ctx.db, undefined),
+    loadMilestoneInputs(ctx, undefined),
     computeContributionSummary(ctx, profileIds),
     computeSavingsSummary(
       ctx,
@@ -336,10 +338,12 @@ export async function activeMilestoneInput(ctx: {
         : undefined,
     ),
     computeMortgageActiveSummary(ctx),
-    portfolio ? orNull("holdings", loadHoldingsOverview(ctx.db)) : null,
+    portfolio
+      ? orNull("holdings", loadHoldingsOverview(ctx.db, ctx.scope.asOf))
+      : null,
     portfolio ? orNull("buyingMonths", loadBuyingMonths(ctx)) : null,
     orNull("brokerageGoals", listBrokerageGoals(ctx)),
-    householdHighIncomeLine(ctx.db),
+    householdHighIncomeLine(ctx.db, ctx.scope.asOf),
   ]);
   const efund = savings.efund;
   return buildMilestoneInput({

@@ -114,12 +114,12 @@ export function buildMortgageInputs(
 
 /** Total mortgage balance across all loans at `asOfDate`. A live balance
  *  (api_balance) applies only to the current period from its own date on;
- *  `currentDate` is today unless a caller's clock is pinned. */
+ *  `currentDate` is the request's date (asOfDate's, unless asked another). */
 export function computeMortgageBalance(
   mortgageLoans: MortgageLoanRow[],
   extraPayments: MortgageExtraPaymentRow[],
-  asOfDate: Date = new Date(),
-  currentDate: Date = new Date(),
+  asOfDate: Date,
+  currentDate: Date = asOfDate,
 ): number {
   const { loanInputs, extras } = buildMortgageInputs(
     mortgageLoans,

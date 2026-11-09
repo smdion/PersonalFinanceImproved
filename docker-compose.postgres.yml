@@ -23,6 +23,10 @@ services:
       # See docker-compose.yml / .env.example — set to your household's
       # local timezone. Defaults to UTC (pre-existing behavior).
       - TZ=${TZ:-UTC}
+    # The migrator's pre-upgrade backups land here; without it they go to
+    # the /tmp tmpfs and are lost when the container stops.
+    volumes:
+      - ledgr_data:/app/data
     read_only: true
     tmpfs:
       - /tmp
@@ -74,3 +78,4 @@ services:
 
 volumes:
   pgdata:
+  ledgr_data:

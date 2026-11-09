@@ -100,22 +100,13 @@ export const syncConnectionsRouter = createTRPCRouter({
               ...(input.externalUrl ? { externalUrl: input.externalUrl } : {}),
             };
 
-      // Encrypt at rest with AES-256-GCM (per RULES.md § Permission &
-      // Security Gates). The factory's
-      // readMaybeEncrypted() handles both encrypted-envelope and legacy
-      // plaintext rows on read, so this write transparently upgrades any
-      // legacy plaintext row.
+      // Encrypt at rest with AES-256-GCM (RULES.md § Permission & Security Gates);
+      // readMaybeEncrypted() reads both envelopes and legacy plaintext rows.
       const encryptedConfig = encryptJson(config);
 
-      // Single atomic upsert — onConflictDoUpdate is already transactional in
-      // Postgres (the INSERT … ON CONFLICT DO UPDATE runs as one statement).
-      // No explicit transaction wrapper needed.
-      //
-      // The two casts on this insert are intentional: Drizzle's column type
-      // is the YnabConfig|ActualConfig union, but the JSONB column accepts
-      // any JSON-serializable shape. The encrypted envelope from
-      // encryptJson() is stored as-is and readMaybeEncrypted() in
-      // factory.ts handles the read side.
+      // onConflictDoUpdate is one atomic statement, so no transaction is needed. The
+      // casts below are intentional: the JSONB column stores the encrypted envelope
+      // as-is despite its YnabConfig|ActualConfig type; readMaybeEncrypted() decodes it.
       // eslint-disable-next-line no-restricted-syntax -- see block comment above
       const storedConfig = encryptedConfig as unknown as
         YnabConfig | ActualConfig;
@@ -130,12 +121,8 @@ export const syncConnectionsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Update just the Actual connection's External URL — the browser-facing
-   *  address for the nav link (see ActualConfig's docblock). Deliberately
-   *  separate from saveConnection: that mutation requires retyping every
-   *  credential field (apiKey isn't ever sent back to the client to
-   *  prefill), which would make editing only this one, non-secret field
-   *  unnecessarily require re-entering the API key. */
+  /** Update just the Actual connection's External URL (the browser-facing nav link),
+   *  without saveConnection's requirement to retype every credential. */
   updateActualExternalUrl: adminProcedure
     .input(
       z.object({ externalUrl: z.string().url().optional().or(z.literal("")) }),
@@ -174,14 +161,14 @@ export const syncConnectionsRouter = createTRPCRouter({
       > => {
         try {
           return {
-            success: true as const,
+            ok: true as const,
             budgets: await listYnabBudgets(input.accessToken),
           };
         } catch (e) {
           // The token isn't saved yet, so an auth failure means this token.
           const auth = e instanceof BudgetApiError && e.code === "auth";
           return {
-            success: false as const,
+            ok: false as const,
             error: auth
               ? "YNAB didn't accept this access token — check it and try again."
               : (userMessageFor(e) ??
@@ -199,7 +186,7 @@ export const syncConnectionsRouter = createTRPCRouter({
         const client = await getClientForService(ctx.db, input.service);
         if (!client) {
           return {
-            success: false,
+            ok: false,
             error: `No ${input.service} connection configured`,
           };
         }
@@ -208,11 +195,11 @@ export const syncConnectionsRouter = createTRPCRouter({
           // Actual's budget name is local, so the budget is asked first.
           await client.testConnection();
           const budgetName = await client.getBudgetName();
-          return { success: true, budgetName };
+          return { ok: true, budgetName };
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Unknown error";
           return {
-            success: false,
+            ok: false,
             error: userMessageFor(e) ?? msg.slice(0, 200),
           };
         }

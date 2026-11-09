@@ -1,19 +1,9 @@
 "use client";
 
 /**
- * Budget-category-matching section of the integrations preview panel.
- *
- * Owns the local UI state for this section: the expanded/collapsed toggle,
- * manual budget overrides (budgetItemId -> apiCategoryId), and the
- * "link API cat to existing Ledgr item" select state.
- *
- * Cross-section coupling note: the "API categories not in Ledgr" block lets
- * the user link an unmatched API category to either a Ledgr budget item OR
- * a sinking-fund goal. Linking to a savings goal fires the savings
- * `linkGoalToApi` mutation, so we accept `onLinkSavings` as a callback prop
- * (implemented by the parent with `savingsMutations.linkSavings`). This
- * keeps the coupling explicit and typed rather than making the budget
- * section reach into `savingsMutations` directly.
+ * Budget-category-matching section of the integrations preview panel: expand state, manual
+ * overrides (budgetItemId -> apiCategoryId) and link selects. Linking an API category to a
+ * sinking-fund goal goes through the parent's `onLinkSavings` callback.
  */
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
@@ -43,11 +33,8 @@ type Props = {
     name: string;
   }) => Promise<void>;
   /**
-   * Number of savings-section overrides the user has queued up. The
-   * "Apply all suggested matches" button counter displays
-   *   budget.summary.suggested + savings.summary.suggested + budget overrides + savings overrides
-   * to match the pre-split behavior exactly. The button itself still
-   * applies only budget links (same as before the split).
+   * Queued savings-section overrides, counted in the "Apply all suggested matches" button's total
+   * (both sections' suggestions + overrides), though the button applies only budget links.
    */
   savingsOverrideCount: number;
 };
@@ -174,7 +161,7 @@ export function BudgetSection({
   };
 
   // Unlinked Ledgr items for the "link to existing" dropdown — orphaned
-  // items (a stale id that no longer resolves) need exactly the same
+  // items (a stale id that resolves to nothing) need exactly the same
   // re-link treatment as never-linked items.
   const unlinkedLedgrItems = budget.matches
     .filter((m) => m.status === "unmatched" || m.status === "orphaned")

@@ -20,7 +20,7 @@ import {
 } from "@/lib/utils/colors";
 import {
   getAccountTypeConfig,
-  isHsaCategory,
+  nonMedicalPenaltyRate,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
@@ -34,7 +34,7 @@ import {
 } from "./contribution-accounts-sub-account";
 import {
   ContributionRow,
-  AddContribForm,
+  AddContributionForm,
 } from "./contribution-accounts-contrib-row";
 import {
   AccountLiveSection,
@@ -61,11 +61,11 @@ export function AccountCard({
   isExpanded,
   onToggleExpand,
   onPerfUpdate,
-  onContribUpdate,
+  onContributionUpdate,
   onDelete,
   activeAccounts: _activeAccounts,
-  onLinkContrib: _onLinkContrib,
-  onCreateContrib,
+  onLinkContribution: _onLinkContribution,
+  onCreateContribution,
   onSubAccountUpdate,
   onCreateSubAccount,
 }: {
@@ -110,11 +110,17 @@ export function AccountCard({
   isExpanded: boolean;
   onToggleExpand: () => void;
   onPerfUpdate?: (updates: Record<string, unknown>) => void;
-  onContribUpdate?: (c: ContribRow, updates: Record<string, unknown>) => void;
+  onContributionUpdate?: (
+    c: ContribRow,
+    updates: Record<string, unknown>,
+  ) => void;
   onDelete?: () => void;
   activeAccounts: { id: number; institution: string; accountLabel: string }[];
-  onLinkContrib?: (contribId: number, perfAccountId: number | null) => void;
-  onCreateContrib?: (data: Record<string, unknown>) => void;
+  onLinkContribution?: (
+    contribId: number,
+    perfAccountId: number | null,
+  ) => void;
+  onCreateContribution?: (data: Record<string, unknown>) => void;
   onSubAccountUpdate?: (
     id: number,
     updates: {
@@ -135,29 +141,27 @@ export function AccountCard({
     ownerPersonId?: number | null;
   }) => void;
 }) {
-  const [showAddContrib, setShowAddContrib] = useState(false);
+  const [showAddContribution, setShowAddContribution] = useState(false);
   const [showAddSubAccount, setShowAddSubAccount] = useState(false);
-  const [showInactiveContribs, setShowInactiveContribs] = useState(false);
+  const [showInactiveContributions, setShowInactiveContributions] =
+    useState(false);
   const [showDanger, setShowDanger] = useState(false);
   const [openSection, setOpenSection] = useState<
     "live" | "subs" | "contribs" | "settings" | null
   >(insight && insight.status !== "none" ? "live" : "settings");
 
   // Account type from the master record (no resolution needed)
-  const acctType = pa.accountType as AccountCategory | null;
-  const cfg = acctType ? getAccountTypeConfig(acctType) : null;
-  const borderColor = acctType ? accountBorderColor(acctType) : "";
-  const bgLight = acctType ? accountMatchColor(acctType) : "";
+  const accountType = pa.accountType as AccountCategory | null;
+  const cfg = accountType ? getAccountTypeConfig(accountType) : null;
+  const borderColor = accountType ? accountBorderColor(accountType) : "";
+  const bgLight = accountType ? accountMatchColor(accountType) : "";
 
-  const activeContribs = contributions.filter((c) => c.isActive);
-  const inactiveContribs = contributions.filter((c) => !c.isActive);
-  // At most one active contribution per account holds real employer match
-  // config (computeGroupedEmployerMatch enforces this) — its match applies
-  // to the whole account, combining every active split's contribution
-  // before capping, not just its own. A sibling split with no config of its
-  // own still earns a real, proportional share of that match; ContributionRow
-  // uses this to say so instead of showing nothing.
-  const matchConfigContrib = activeContribs.find(
+  const activeContributions = contributions.filter((c) => c.isActive);
+  const inactiveContributions = contributions.filter((c) => !c.isActive);
+  // At most one active contribution per account holds match config; its match
+  // applies to all active splits combined before capping, so a sibling without
+  // config still earns a proportional share (ContributionRow says so).
+  const matchConfigContribution = activeContributions.find(
     (c) => c.employerMatchType && c.employerMatchType !== "none", // stored text: "" = no match
   );
   const activeSubs = portfolioSubs.filter((s) => s.isActive);
@@ -177,7 +181,7 @@ export function AccountCard({
       >
         {/* Color indicator */}
         <div
-          className={`h-8 w-1.5 rounded-full ${acctType ? accountColor(acctType) : "bg-surface-strong"} flex-shrink-0`}
+          className={`h-8 w-1.5 rounded-full ${accountType ? accountColor(accountType) : "bg-surface-strong"} flex-shrink-0`}
         />
         {/* Name */}
         <div className="min-w-0 flex-1">
@@ -214,8 +218,8 @@ export function AccountCard({
         </div>
         {/* Contrib count */}
         <div className="text-caption text-faint w-16 text-center">
-          {activeContribs.length > 0
-            ? `${activeContribs.length} contrib${activeContribs.length > 1 ? "s" : ""}`
+          {activeContributions.length > 0
+            ? `${activeContributions.length} contrib${activeContributions.length > 1 ? "s" : ""}`
             : ""}{" "}
         </div>{" "}
         {/* Expand indicator */}{" "}
@@ -420,9 +424,8 @@ export function AccountCard({
                           onChange={async (e) => {
                             const checked = e.target.checked;
                             const rate = formatPercent(
-                              isHsaCategory(pa.accountType)
-                                ? HSA_NON_MEDICAL_PENALTY_RATE
-                                : EARLY_WITHDRAWAL_PENALTY_RATE,
+                              nonMedicalPenaltyRate(pa.accountType) ??
+                                EARLY_WITHDRAWAL_PENALTY_RATE,
                               0,
                             );
                             if (
@@ -545,7 +548,7 @@ export function AccountCard({
               className="text-caption text-muted hover:bg-surface-elevated/50 flex w-full items-center justify-between px-4 py-2 font-semibold tracking-wider uppercase"
             >
               {" "}
-              <span> Contributions ({activeContribs.length})</span>
+              <span> Contributions ({activeContributions.length})</span>
               <span
                 className={`transition-transform ${openSection === "contribs" ? "rotate-90" : ""}`}
               >
@@ -554,9 +557,9 @@ export function AccountCard({
             </button>
             {openSection === "contribs" && (
               <div className="px-4 pb-3">
-                {activeContribs.length > 0 && (
+                {activeContributions.length > 0 && (
                   <div className="space-y-2">
-                    {activeContribs.map((c) => (
+                    {activeContributions.map((c) => (
                       <ContributionRow
                         key={c.id}
                         contrib={c}
@@ -570,34 +573,34 @@ export function AccountCard({
                         sharedMatchFrom={
                           (!c.employerMatchType || // stored text: "" = no match
                             c.employerMatchType === "none") &&
-                          matchConfigContrib &&
-                          matchConfigContrib.id !== c.id
-                            ? matchConfigContrib
+                          matchConfigContribution &&
+                          matchConfigContribution.id !== c.id
+                            ? matchConfigContribution
                             : undefined
                         }
                         onUpdate={
-                          onContribUpdate
-                            ? (updates) => onContribUpdate(c, updates)
+                          onContributionUpdate
+                            ? (updates) => onContributionUpdate(c, updates)
                             : undefined
                         }
                       />
                     ))}
                   </div>
                 )}
-                {inactiveContribs.length > 0 && (
+                {inactiveContributions.length > 0 && (
                   <div className="mt-2">
                     <button
                       onClick={() =>
-                        setShowInactiveContribs(!showInactiveContribs)
+                        setShowInactiveContributions(!showInactiveContributions)
                       }
                       className="text-caption text-faint hover:text-secondary"
                     >
-                      {showInactiveContribs ? "Hide" : "Show"}{" "}
-                      {inactiveContribs.length} not funding a target
+                      {showInactiveContributions ? "Hide" : "Show"}{" "}
+                      {inactiveContributions.length} not funding a target
                     </button>
-                    {showInactiveContribs && (
+                    {showInactiveContributions && (
                       <div className="mt-2 space-y-2">
-                        {inactiveContribs.map((c) => (
+                        {inactiveContributions.map((c) => (
                           <ContributionRow
                             key={c.id}
                             contrib={c}
@@ -609,8 +612,8 @@ export function AccountCard({
                               activeProfileFields[String(c.id)] ?? null
                             }
                             onUpdate={
-                              onContribUpdate
-                                ? (updates) => onContribUpdate(c, updates)
+                              onContributionUpdate
+                                ? (updates) => onContributionUpdate(c, updates)
                                 : undefined
                             }
                           />
@@ -619,24 +622,24 @@ export function AccountCard({
                     )}
                   </div>
                 )}
-                {activeContribs.length === 0 &&
-                  inactiveContribs.length === 0 &&
-                  !showAddContrib && (
+                {activeContributions.length === 0 &&
+                  inactiveContributions.length === 0 &&
+                  !showAddContribution && (
                     <p className="text-faint py-1 text-xs">
                       No contributions linked yet.
                     </p>
                   )}
-                {onCreateContrib && (
+                {onCreateContribution && (
                   <div className="pt-2">
-                    {!showAddContrib ? (
+                    {!showAddContribution ? (
                       <button
-                        onClick={() => setShowAddContrib(true)}
+                        onClick={() => setShowAddContribution(true)}
                         className="text-xs text-blue-500 hover:text-blue-700"
                       >
                         + Add Contribution
                       </button>
                     ) : (
-                      <AddContribForm
+                      <AddContributionForm
                         accountType={pa.accountType}
                         parentCategory={pa.parentCategory}
                         performanceAccountId={pa.id}
@@ -644,10 +647,10 @@ export function AccountCard({
                         people={people}
                         jobs={jobs}
                         onSave={(data) => {
-                          onCreateContrib(data);
-                          setShowAddContrib(false);
+                          onCreateContribution(data);
+                          setShowAddContribution(false);
                         }}
-                        onCancel={() => setShowAddContrib(false)}
+                        onCancel={() => setShowAddContribution(false)}
                       />
                     )}
                   </div>

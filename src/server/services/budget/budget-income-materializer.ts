@@ -1,60 +1,23 @@
 /**
- * Budget-income materializer.
- *
- * Reads each job's `extraPaycheckRouting` field from its entry in the
- * globally-active Salary Profile and writes the resulting dollar amounts
- * into `budget_income_adjustments` with `source = 'rule'`, over the months
- * `extra-paycheck-months.ts` walks (the same 10 years as Savings mode).
- *
- * Complement of extra-paycheck-materializer.ts: that one covers jobs whose
- * routing is in Savings mode (real `rules`, `enabled` not false); this one
- * covers jobs in Budget mode (`isExtraPaycheckBudgetMode` — no rules, or
- * `enabled: false`). The two filters are mutually
- * exclusive per job, so together they cover every job exactly once under
- * its current mode. Budget mode has no split/goal concept, so this writes
- * ONE row per (job, month) rather than fanning out per split.
- *
- * Call after: job create/update/delete, explicit rule/override save — at
- * every call site that also calls materializeExtraPaycheckSavings.
+ * Writes Budget-mode extra-paycheck routing (active Salary Profile) into
+ * `budget_income_adjustments` as `source = 'rule'`, one row per (job, month); the
+ * complement of extra-paycheck-materializer.ts. Call wherever that one is called.
  */
 
 import { eq, gte, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { YearlyGrowthEntry } from "@/lib/db/schema-pg";
 import { currentMonthKey } from "@/lib/utils/date-keys";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import { loadExtraPaycheckJobs } from "./extra-paycheck-months";
 import type { Db } from "@/lib/db";
 
-/**
- * Project a base net-pay-per-check forward to a target year, applying stored
- * growth entries. Mirrors extra-paycheck-materializer.ts's identical helper
- * exactly (kept as a separate copy rather than a shared import — same
- * reasoning as that file's own docblock: each materializer's rounding
- * behavior must not drift if one is edited independently).
- */
-function projectedNetPay(
-  base: number,
-  targetYear: number,
-  baseYear: number,
-  yearlyGrowth: Record<string, YearlyGrowthEntry>,
-): number {
-  let pay = base;
-  for (let y = baseYear + 1; y <= targetYear; y++) {
-    const e = yearlyGrowth[String(y)];
-    if (!e || e.value === 0) continue;
-    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
-  }
-  return pay;
-}
-
-// Serializes concurrent materializer calls within the same Node.js process.
-// Same delete→insert race concern as extra-paycheck-materializer.ts — kept
-// as an independent lock so a slow Budget-mode cycle never blocks (or is
-// blocked by) the Savings-mode materializer's own lock.
+// Serializes this materializer's delete→insert within the process; separate
+// from extra-paycheck-materializer.ts's lock so neither blocks the other.
 let materializerLock: Promise<void> = Promise.resolve();
 
 export async function materializeBudgetIncomeAdjustments(
   db: Db,
+  asOf: Date,
 ): Promise<void> {
   const prev = materializerLock;
   let unlock!: () => void;
@@ -64,15 +27,13 @@ export async function materializeBudgetIncomeAdjustments(
   await prev;
 
   try {
-    await _materialize(db);
+    await _materialize(db, asOf);
   } finally {
     unlock();
   }
 }
 
-async function _materialize(db: Db): Promise<void> {
-  const now = new Date();
-
+async function _materialize(db: Db, now: Date): Promise<void> {
   const jobsInBudgetMode = await loadExtraPaycheckJobs(db, now, "budget");
 
   type Row = { jobId: number; monthDate: string; amount: string };
@@ -106,11 +67,8 @@ async function _materialize(db: Db): Promise<void> {
     }
   }
 
-  // Delete-and-reinsert of 'rule' rows dated this month or later, same
-  // semantics as the Savings materializer. Nothing else FK-references
-  // budget_income_adjustments rows (no settlement/history table analogous
-  // to savings_planned_tx_settlements exists for this table), so a plain
-  // delete-all-future+reinsert is safe — no id-preservation concern.
+  // Delete-and-reinsert 'rule' rows from this month on; nothing FK-references
+  // budget_income_adjustments, so row ids needn't be preserved.
   const currentMonthStart = currentMonthKey(now);
   await db.transaction(async (tx) => {
     await tx

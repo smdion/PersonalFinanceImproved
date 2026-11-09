@@ -84,10 +84,8 @@ export function performanceAnnualRows(
     annualRows.map((r) => annualKey(r.year, r.category)),
   );
 
-  // Resolve parentCategory from master performance_accounts table.
-  // account_performance.parent_category is a legacy field that may not match
-  // the canonical parentCategory on the master record (e.g. HSA/ESPP accounts
-  // store "HSA"/"Brokerage" but master says "Retirement").
+  // parentCategory comes from the master performance_accounts row:
+  // account_performance.parent_category can disagree with it.
   for (const a of accounts) {
     a.parentCategory = resolveMaster(a, perfLookups).parentCategory;
   }
@@ -122,7 +120,7 @@ export function performanceAnnualRows(
   // For each year with account data, synthesize missing annual rows and recompute current-year rows
   for (const year of Array.from(allAccountYears)) {
     const yearAccounts = accounts.filter((a) => a.year === year);
-    const isCurrentYr = year === currentYear;
+    const isCurrentYear = year === currentYear;
 
     // Check if an annual row for this year exists at all (for isFinalized/isCurrentYear flags)
     const existingRow = annualRows.find((r) => r.year === year);
@@ -163,7 +161,7 @@ export function performanceAnnualRows(
           lifetimeGains: 0,
           lifetimeContributions: 0,
           lifetimeMatch: 0,
-          isCurrentYear: isCurrentYr,
+          isCurrentYear: isCurrentYear,
           isFinalized: existingRow?.isFinalized ?? false,
         });
         existingAnnual.add(key);
@@ -253,9 +251,9 @@ export function performanceAnnualRows(
           fees: ps.fees,
           rollovers: ps.rollovers,
           lifetimeGains: ps.lifetimeGains,
-          lifetimeContributions: ps.lifetimeContribs,
+          lifetimeContributions: ps.lifetimeContributions,
           lifetimeMatch: ps.lifetimeMatch,
-          isCurrentYear: isCurrentYr,
+          isCurrentYear: isCurrentYear,
           isFinalized: existingRow?.isFinalized ?? false,
         });
       }
@@ -288,7 +286,7 @@ export function performanceAnnualRows(
           ps.rollovers,
         );
         row.lifetimeGains = ps.lifetimeGains;
-        row.lifetimeContributions = ps.lifetimeContribs;
+        row.lifetimeContributions = ps.lifetimeContributions;
         row.lifetimeMatch = ps.lifetimeMatch;
       }
     }
@@ -320,22 +318,22 @@ export function performanceAnnualRows(
       .sort((a, b) => a.year - b.year);
 
     let runningGains = 0,
-      runningContribs = 0,
+      runningContributions = 0,
       runningMatch = 0;
 
     for (const row of catRows) {
       if (row.isFinalized && !noStoredLifetime.has(row)) {
         // Trust stored lifetime values, use as new running baseline
         runningGains = row.lifetimeGains;
-        runningContribs = row.lifetimeContributions;
+        runningContributions = row.lifetimeContributions;
         runningMatch = row.lifetimeMatch;
       } else {
         // Accumulate from previous baseline
         runningGains += row.yearlyGainLoss;
-        runningContribs += row.totalContributions;
+        runningContributions += row.totalContributions;
         runningMatch += row.employerContributions;
         row.lifetimeGains = runningGains;
-        row.lifetimeContributions = runningContribs;
+        row.lifetimeContributions = runningContributions;
         row.lifetimeMatch = runningMatch;
       }
     }
@@ -372,15 +370,9 @@ export function addRetirementRollup(
   }
   const retYears = Array.from(retYearsSet).sort((a, b) => a - b);
 
-  // Retirement is always a computed rollup, never a stored per-category
-  // row a user finalizes directly (unlike Portfolio, which legitimately
-  // copies stored data when exactly one category exists for a year) — so
-  // any pre-existing "Retirement" row here (e.g. a stray historical
-  // import) must not be allowed to silently shadow the fresh one pushed
-  // below. Array.find() elsewhere always returns the FIRST match for a
-  // given year, so leaving a stale row in place — even with a correct
-  // endingBalance — would keep serving its stale isCurrentYear/isFinalized
-  // flags forever, invisibly, since nothing else here ever inspects it.
+  // Retirement is always a computed rollup, so drop any stored "Retirement" row:
+  // readers take the first match per year, and a stored one would shadow the
+  // fresh row pushed below.
   for (let i = annualRows.length - 1; i >= 0; i--) {
     if (annualRows[i]!.category === PERF_CATEGORY_RETIREMENT)
       annualRows.splice(i, 1);
@@ -394,10 +386,10 @@ export function addRetirementRollup(
     { gains: number; contribs: number; match: number }
   >();
   let brokLtGains = 0,
-    brokLtContribs = 0,
+    brokLtContributions = 0,
     brokLtMatch = 0;
   for (const year of retYears) {
-    const isCurrentYr = year === currentYear;
+    const isCurrentYear = year === currentYear;
     const existingRow = annualRows.find((r) => r.year === year);
 
     // Sum from annual rows for fully-Retirement categories
@@ -407,13 +399,13 @@ export function addRetirementRollup(
     const annualSums = sumAnnualRows(catAnnualRows);
 
     // Add Retirement-parentCategory brokerage accounts
-    const retBrokAccts = retBrokerageByYear.get(String(year)) ?? [];
-    const brokSums = sumAccounts(retBrokAccts);
+    const retBrokAccounts = retBrokerageByYear.get(String(year)) ?? [];
+    const brokSums = sumAccounts(retBrokAccounts);
 
-    const beginBal = annualSums.beginBal + brokSums.beginBal;
+    const beginBalance = annualSums.beginBal + brokSums.beginBal;
     const contribs = annualSums.contribs + brokSums.contribs;
     const gainLoss = annualSums.gainLoss + brokSums.gainLoss;
-    const endBal = annualSums.endBal + brokSums.endBal;
+    const endBalance = annualSums.endBal + brokSums.endBal;
     const employer = annualSums.employer + brokSums.employer;
     const distributions = annualSums.distributions + brokSums.distributions;
     const fees = annualSums.fees + brokSums.fees;
@@ -426,23 +418,24 @@ export function addRetirementRollup(
         match: r.lifetimeMatch,
       });
     brokLtGains += brokSums.gainLoss;
-    brokLtContribs += brokSums.contribs;
+    brokLtContributions += brokSums.contribs;
     brokLtMatch += brokSums.employer;
     const carried = [...catLifetime.values()];
     const retLtGains = brokLtGains + sumBy(carried, (c) => c.gains);
-    const retLtContribs = brokLtContribs + sumBy(carried, (c) => c.contribs);
+    const retLtContributions =
+      brokLtContributions + sumBy(carried, (c) => c.contribs);
     const retLtMatch = brokLtMatch + sumBy(carried, (c) => c.match);
 
     annualRows.push({
       id: -1,
       year,
       category: "Retirement",
-      beginningBalance: beginBal,
+      beginningBalance: beginBalance,
       totalContributions: contribs,
       yearlyGainLoss: gainLoss,
-      endingBalance: endBal,
+      endingBalance: endBalance,
       annualReturnPct: computeReturn(
-        beginBal,
+        beginBalance,
         contribs,
         gainLoss,
         distributions,
@@ -454,9 +447,9 @@ export function addRetirementRollup(
       fees,
       rollovers: rolloverSum,
       lifetimeGains: retLtGains,
-      lifetimeContributions: retLtContribs,
+      lifetimeContributions: retLtContributions,
       lifetimeMatch: retLtMatch,
-      isCurrentYear: isCurrentYr,
+      isCurrentYear: isCurrentYear,
       isFinalized: existingRow?.isFinalized ?? false,
     });
   }

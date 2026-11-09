@@ -37,7 +37,7 @@ import {
   NoteableValue,
   ReadOnlyLineItemCell,
   PerfDetailCell,
-  PerfEndBalCell,
+  PerfEndBalanceCell,
   EditableCell,
   EditableRateCell,
   changeColor,
@@ -552,14 +552,14 @@ function HistoricalTable({
               </>
             )}
             {showSalary &&
-              peopleNames.map((name, idx) => (
-                <ColHeader key={`salary-${name}`} border={idx === 0}>
+              peopleNames.map((name, index) => (
+                <ColHeader key={`salary-${name}`} border={index === 0}>
                   {name}
                 </ColHeader>
               ))}
             {showSalary &&
-              peopleNames.map((name, idx) => (
-                <ColHeader key={`bonus-${name}`} border={idx === 0}>
+              peopleNames.map((name, index) => (
+                <ColHeader key={`bonus-${name}`} border={index === 0}>
                   {name}
                 </ColHeader>
               ))}
@@ -569,7 +569,7 @@ function HistoricalTable({
           {rows.map((row, i) => {
             const prev = rows[i + 1];
             const dollarChange = prev ? row.netWorth - prev.netWorth : null;
-            const pctChange =
+            const percentChange =
               prev && prev.netWorth !== 0
                 ? (row.netWorth - prev.netWorth) / Math.abs(prev.netWorth)
                 : null;
@@ -635,10 +635,10 @@ function HistoricalTable({
                         : "\u2014"}
                     </td>
                     <td
-                      className={`px-1.5 py-1.5 text-right ${changeColor(pctChange)}`}
+                      className={`px-1.5 py-1.5 text-right ${changeColor(percentChange)}`}
                     >
-                      {pctChange !== null
-                        ? `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)}`
+                      {percentChange !== null
+                        ? `${percentChange >= 0 ? "+" : ""}${formatPercent(percentChange, 1)}`
                         : "\u2014"}
                     </td>
                   </>
@@ -671,7 +671,7 @@ function HistoricalTable({
                     {row.isCurrent &&
                     row.perfLastUpdated &&
                     row.snapshotDate ? (
-                      <PerfEndBalCell
+                      <PerfEndBalanceCell
                         value={row.perfEndingBalance}
                         perfLastUpdated={row.perfLastUpdated}
                         snapshotDate={row.snapshotDate}
@@ -760,8 +760,8 @@ function HistoricalTable({
                     />
                     <ReadOnlyLineItemCell
                       value={row.otherAssets}
-                      items={row.otherAssetItems.map((i, idx) => ({
-                        id: idx,
+                      items={row.otherAssetItems.map((i, index) => ({
+                        id: index,
                         year: row.year,
                         description: i.name,
                         cost: i.value,
@@ -873,13 +873,10 @@ function HistoricalTable({
                     />
                   </>
                 )}
-                {/* Salary — Historical is the source of truth: editing here
-                    writes a direct historical_salaries row for that
-                    person/year. The in-progress (current) year stays
-                    read-only/auto-computed (same isCurrent gate every other
-                    field here uses). */}
+                {/* Salary: editing writes a historical_salaries row for that
+                    person/year; the current year stays read-only (isCurrent). */}
                 {showSalary &&
-                  peopleNames.map((name, idx) => {
+                  peopleNames.map((name, index) => {
                     const personId = personIdByName[name];
                     return (
                       <EditableCell
@@ -894,7 +891,7 @@ function HistoricalTable({
                           onSaveSalary(personId, year, fields.salary);
                         }}
                         isSaving={isSaving}
-                        border={idx === 0}
+                        border={index === 0}
                         notes={notes}
                         onUpsertNote={onUpsertNote}
                       />
@@ -904,7 +901,7 @@ function HistoricalTable({
                     row's bonus field. The current year auto-fills from the
                     active Salary Profile until a real bonus is recorded. */}
                 {showSalary &&
-                  peopleNames.map((name, idx) => {
+                  peopleNames.map((name, index) => {
                     const personId = personIdByName[name];
                     return (
                       <EditableCell
@@ -919,7 +916,7 @@ function HistoricalTable({
                           onSaveBonus(personId, year, fields.bonus);
                         }}
                         isSaving={isSaving}
-                        border={idx === 0}
+                        border={index === 0}
                         notes={notes}
                         onUpsertNote={onUpsertNote}
                       />

@@ -1,14 +1,7 @@
 /**
- * Salary lookup and compensation helpers.
- *
- * A job carries no salary/bonus of its own. There are exactly two sources
- * of truth for what someone earns:
- *   - `historical_salaries` — a direct, per-person-per-year fact (past
- *     years), edited on the Historical page. See routers/historical.ts.
- *   - The active Salary Profile's entry for a job — a COMPLETE,
- *     all-or-nothing number for the live/current picture (see SalaryEntry,
- *     lib/db/salary-entry-defaults.ts). No partial/pinned state, no fallback to
- *     "the job's live value" — a job has none.
+ * Salary lookup and compensation helpers. A job has no pay of its own: past years
+ * come from `historical_salaries`, the current picture from the active Salary
+ * Profile's complete entry for the job (SalaryEntry).
  */
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { roundToCents } from "@/lib/utils/math";
@@ -16,15 +9,11 @@ import { toNumber } from "@/lib/utils/numbers";
 import type { BonusTerms } from "@/lib/pure/paycheck/paycheck.types";
 
 // ---------------------------------------------------------------------------
-// What-If sandbox tier — independent of Salary Profiles.
-// Both are ephemeral, request-scoped layers on top of whatever a Salary
-// Profile resolves to; neither is persisted salary "truth."
+// What-If sandbox tier: a request-scoped layer over the Salary Profile, never saved.
 // ---------------------------------------------------------------------------
 
-/** A What-If sandbox salary/bonus tweak — genuinely
- *  partial (e.g. "just try a different salary"), unlike a Salary Profile's
- *  own entries. Presence per field is the signal here; absence falls
- *  through to whatever the tier below already resolved. */
+/** A partial What-If salary/bonus tweak, unlike a Salary Profile entry: each
+ *  absent field falls through to what the Salary Profile resolved. */
 export type SalaryOverrideEntry = {
   salary?: number;
   bonusPercent?: number;
@@ -48,10 +37,8 @@ export function applyActiveSalary(
 }
 
 /**
- * Merge a What-If sandbox entry's bonus-term overrides onto
- * a Salary Profile's resolved terms — the override tier can adjust
- * bonusPercent/bonusMultiplier/monthsInBonusYear independently of salary,
- * same per-field precedence as applyActiveSalary for the salary field.
+ * Merges a What-If entry's bonus terms onto a Salary Profile's resolved terms,
+ * per field and independent of salary, like applyActiveSalary.
  */
 export function applyActiveBonusTerms(
   entry: SalaryOverrideEntry | undefined,
@@ -125,17 +112,9 @@ export type SalaryEntryMap = Record<string, SalaryEntry>;
 export type SalaryProfileActiveMap = Map<number, SalaryEntry>;
 
 /**
- * THE definition of what one job earns under a Salary Profile: the
- * profile's own complete entry for that job, or nothing at all ($0, no
- * bonus) if the profile doesn't mention it — never a fallback to a job
- * column or a dated ledger, because neither exists any more.
- *
- * `bonus`/`totalComp` are always the pure FORMULA figures — every caller
- * that grows compensation forward (retirement projections, contribution
- * math) relies on that being untouched by a current-year pin. `bonusOverride`
- * is returned alongside, unapplied, for the one caller (the live Paycheck
- * display) that chooses to use it in place of the formula bonus for the
- * current year specifically.
+ * What one job earns under a Salary Profile: its entry, or $0 if absent.
+ * `bonus`/`totalComp` are formula figures (projections grow them); `bonusOverride`
+ * comes back unapplied for this-year displays.
  */
 export function resolveCompensation(
   salaryProfileActiveMap: SalaryProfileActiveMap,
@@ -172,22 +151,16 @@ export function resolveCompensation(
     bonus,
     totalComp: entry.salary + bonus,
     terms,
-    // `?? null`, not a bare passthrough: entries written before this field
-    // existed have the key absent entirely (`undefined`), not `null`. Both
-    // mean the exact same thing — "no pin" — so normalize here rather than
-    // treating an absent key as "somehow already a real override value."
+    // A stored entry may lack the key (`undefined`); like `null`, that means no
+    // override.
     bonusOverride: entry.bonusOverride ?? null,
   };
 }
 
 /**
- * Resolve one person's income for a specific year using the same
- * "recorded fact beats live estimate" fallback chain as historical.ts's
- * computeSummary/upsertSalary: a historical_salaries row wins if recorded;
- * otherwise, for the current year only, fall back to the active Salary
- * Profile's complete entry for the person's active job. `recorded` is
- * false only when neither source has anything — callers (e.g.
- * routers/performance's finalizeYear) use that to avoid persisting a false $0.
+ * One person's income for a year: their historical_salaries row, else (current
+ * year only) the active Salary Profile entry for their active job. `recorded` is
+ * false when neither exists, so callers don't persist a false $0.
  */
 export function resolvePersonYearIncome(
   year: number,
@@ -216,12 +189,11 @@ export function resolvePersonYearIncome(
  * builds the map from an already-fetched row without issuing a query.
  */
 export function applySalaryProfileRow(
-  profile: { salaries: SalaryEntryMap | null } | null | undefined,
+  profile: { salaries: SalaryEntryMap } | null | undefined,
 ): SalaryProfileActiveMap {
   const map: SalaryProfileActiveMap = new Map();
   if (!profile) return map;
-  const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
-  for (const [jobIdKey, entry] of Object.entries(salaries)) {
+  for (const [jobIdKey, entry] of Object.entries(profile.salaries)) {
     map.set(Number(jobIdKey), entry);
   }
   return map;
@@ -245,15 +217,9 @@ type JobWithSalaryFields<J> = J & {
 };
 
 /**
- * Merge each job with the non-comp fields (pay schedule, W-4 elections,
- * bonus pay date, extra-paycheck routing, other earnings) from its entry in an
- * already-resolved Salary Profile active map. These fields moved off the
- * `jobs` table entirely in Stage B (plus this session's extraPaycheckRouting
- * move) — a job's only source for them is its Salary Profile entry, same
- * as `salary`/`bonusPercent`/etc. already work via resolveCompensation. A
- * job absent from the map (or the map itself empty) gets every field
- * `undefined` — a real "incomplete" signal downstream callers must check
- * for, never silently substituted with a guessed default.
+ * Merges each job with its Salary Profile entry's non-comp fields (pay schedule,
+ * W-4, bonus date, extra-paycheck routing, other earnings). A job missing from the
+ * map gets them `undefined`: an "incomplete" signal, never a guessed default.
  */
 export function mergeSalaryProfileJobFields<J extends { id: number }>(
   jobs: J[],
@@ -279,14 +245,9 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
 }
 
 /**
- * A job's pay as contributions see it, the way the paycheck does: the base
- * salary (regular paychecks — percent-of-pay amounts and the employer match
- * are figured on it) and the bonus (what each account takes from the bonus
- * check is its own election — bonusCheckContribution). Pass the pinned `bonusOverride` for THIS YEAR's figures
- * (paycheck, contribution summary, this year's contribution lines); leave it
- * out for anything that grows forward (projection) — see
- * SalaryEntry.bonusOverride. Contribution amounts are then
- * annualContributionWithBonus (lib/pure/contributions/contribution-rows.ts).
+ * A job's pay as contributions see it: base salary (percent-of-pay and match) and
+ * bonus (each account's own bonusCheckContribution). Pass `bonusOverride` for
+ * this year's figures; omit it for anything projected forward.
  */
 export function contributionPay(
   baseSalary: number,
@@ -330,20 +291,17 @@ export function computeBonusGross(
 ): number {
   const pct = toNumber(bonusPercent);
   if (pct <= 0) return 0;
-  // A stored 0 is a real "no bonus this cycle" value, not "unset" — only
-  // null (genuinely no multiplier on record) defaults to 1×. `toNumber`
-  // can't distinguish the two (both collapse to 0), so check before
-  // converting.
+  // A stored 0 means no bonus; only null defaults to 1×. `toNumber` maps both
+  // to 0, so check first.
   const mult = bonusMultiplier === null ? 1 : toNumber(bonusMultiplier);
   const months = monthsInBonusYear ?? 12;
   return roundToCents(salary * pct * mult * (months / 12));
 }
 
 /**
- * This year's pay for a person's job: the Salary Profile's compensation with
- * the What-If sandbox's salary and bonus terms on top, the pinned bonus when
- * there is one. One derivation for the paycheck, the contribution summary
- * and the IRS-limit cap pass. `totalComp` = salary + this year's bonus.
+ * This year's pay for a job: Salary Profile compensation plus What-If terms, and
+ * the set bonus when there is one. Shared by the paycheck, contribution summary
+ * and IRS-limit cap. `totalComp` = salary + this year's bonus.
  */
 export function thisYearJobPay(
   job: { id: number; personId: number },

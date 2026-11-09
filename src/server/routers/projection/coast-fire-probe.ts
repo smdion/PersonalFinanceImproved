@@ -1,15 +1,7 @@
 /**
- * Coast FIRE — Custom Age probe.
- *
- * `computeCoastFireMC`/`findCoastFireAge` only ever answer "what's the
- * earliest passing age" (binary search) or "does today work" (the
- * search's own `stopNowResult`). This endpoint answers a third question:
- * "what happens if I stop at age N specifically," for any N the household
- * picks. Split into its own file (not a param bolted onto
- * `computeCoastFireMC`) because the result shape is genuinely different —
- * see `CoastFireProbeResult`'s docblock — and because `coast-fire.ts` is
- * already at 521 lines, over CONTRIBUTING.md § Composed Router Convention's ~500-line
- * guideline.
+ * Coast FIRE Custom Age probe: "what happens if I stop at age N" for any N, where
+ * `computeCoastFireMC` answers only the earliest passing age or "today". Its own file:
+ * the result shape differs (see `CoastFireProbeResult`).
  */
 import {
   planEndAge as planEndAgeOf,
@@ -30,20 +22,15 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
-import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
+import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  resolveProjectionOverrides,
 } from "./_shared";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { prepareEngineInput } from "./engine-input";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
@@ -51,14 +38,11 @@ import {
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
+import { writeStamp } from "@/lib/utils/clock";
 
 /**
- * Deliberately NOT `CoastFireMcResult` (computeCoastFireMC's shape).
- * `status`/`coastFireAge`/`warning`/`probesRun`/`stopNow*` are all
- * binary-search concepts a single probe doesn't have an answer for —
- * most importantly, `status: "found"` cannot represent a FAILING probe,
- * and the single most valuable answer this endpoint gives is "no, that
- * age doesn't work." `passes` carries that instead, as a plain boolean.
+ * Not `CoastFireSimulationResult`: its binary-search fields have no meaning for one probe,
+ * and `status: "found"` can't express a failing age. `passes` carries that answer.
  */
 type CoastFireProbeResult = {
   probeAge: number;
@@ -73,16 +57,9 @@ type CoastFireProbeResult = {
 
 export const coastFireProbeRouter = createTRPCRouter({
   /**
-   * Coast FIRE — Custom Age probe
-   *
-   * Runs a single Monte Carlo simulation with contributions (and employer
-   * match) zeroed from `probeAge` onward, answering "what happens if I
-   * stop at this specific age" for any age the household picks — not just
-   * the binary search's earliest-passing-age or "today." Reuses the same
-   * `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s
-   * binary search already uses; no new simulation logic. Returns
-   * `CoastFireProbeResult`, deliberately NOT `computeCoastFireMC`'s
-   * `CoastFireMcResult` shape — see that type's own docblock for why.
+   * One Simulation run with contributions and employer match zeroed from `probeAge` on,
+   * via `buildCoastFireProfileSwitches` (computeCoastFireMC's probe mechanism).
+   * Returns `CoastFireProbeResult`.
    */
   computeCoastFireProbe: protectedProcedure
     .use(expensiveRateLimitMiddleware)
@@ -93,10 +70,8 @@ export const coastFireProbeRouter = createTRPCRouter({
         decumulationOverrides: decumulationOverrideSchema,
         selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
-        /** The age to probe. Validated server-side below against the
-         *  RESOLVED engine input's own currentAge/retirementAge — client
-         *  bounds aren't trustworthy, and buildCoastFireProfileSwitches
-         *  has no guard of its own against an out-of-range age. */
+        /** The age to probe; validated below against the resolved engine input's
+         *  currentAge/retirementAge (buildCoastFireProfileSwitches has no guard). */
         probeAge: z.number().int(),
         /** Progress-polling key — see `getMonteCarloProgress`'s docblock. */
         runId: z.string().optional(),
@@ -104,31 +79,17 @@ export const coastFireProbeRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Coast FIRE's Simulation runs on the default preset.
-      const [{ payload }, mc] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+      const [{ payload }, simulation] = await Promise.all([
+        prepareProjectionRun(ctx, {
           selection: input.selection,
           snapshotId: input.snapshotId,
         }),
-        buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
-
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
       // Server-side range check against the RESOLVED engine input, not
       // just the client's own bounds — same domain findCoastFireAge's
@@ -143,15 +104,15 @@ export const coastFireProbeRouter = createTRPCRouter({
         });
       }
 
-      if (mc.notConfigured || !mc.preset)
+      if (simulation.notConfigured || !simulation.preset)
         return {
           result: null,
           computedAt: null,
-          notConfigured: mc.notConfigured ?? ("no_presets" as const),
+          notConfigured: simulation.notConfigured ?? ("no_presets" as const),
         };
 
-      const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
-      const { returnClampMin, returnClampMax } = mc.preset;
+      const { mcAssetClasses, mcCorrelations, mcGlidePath } = simulation;
+      const { returnClampMin, returnClampMax } = simulation.preset;
       // VPW sizes by the stock share of the glide path the trials use.
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcStockShareByAge =
@@ -161,17 +122,12 @@ export const coastFireProbeRouter = createTRPCRouter({
           engineInput.currentAge,
           planEndAgeOf(engineInput),
         ) ?? undefined;
-      const inflationRisk = mc.effectiveInflationRisk;
+      const inflationRisk = simulation.effectiveInflationRisk;
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
 
-      // Own hashEngineInput `kind` -- "coastFireProbe", never
-      // "coastFireMc". hashEngineInput hashes this DERIVED payload, not
-      // the raw tRPC input, so reusing computeCoastFireMC's "coastFireMc"
-      // kind here would let a probe's writeProjectionCache silently
-      // overwrite the real binary-search result under the same cache row.
-      // The kind union exists precisely so differently-shaped results can't
-      // collide like that.
+      // Own hashEngineInput kind: the hash covers the derived payload, so sharing
+      // "coastFireMc" would let a probe overwrite the binary-search result's cache row.
       const inputHash = hashEngineInput("coastFireProbe", {
         engineInput,
         mcAssetClasses,
@@ -219,15 +175,15 @@ export const coastFireProbeRouter = createTRPCRouter({
       const result: CoastFireProbeResult = {
         probeAge: input.probeAge,
         successRate: mcResult.successRate,
-        passes: mcResult.successRate >= MC_CONFIDENCE_THRESHOLD,
+        passes: mcResult.successRate >= SIMULATION_CONFIDENCE_THRESHOLD,
         spendingStabilityRate: mcResult.spendingStabilityRate,
         penaltyAvoidedShortfallRate: mcResult.penaltyAvoidedShortfallRate,
         medianPenaltyAvoidedShortfallPV:
           mcResult.medianPenaltyAvoidedShortfallPV,
-        confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
+        confidenceThreshold: SIMULATION_CONFIDENCE_THRESHOLD,
         mcResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
-      return { result, computedAt: new Date().toISOString() };
+      return { result, computedAt: writeStamp().toISOString() };
     }),
 });

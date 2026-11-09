@@ -23,7 +23,7 @@ vi.mock("@/components/retirement-projection/withdrawal-comparison", () => ({
 
 vi.mock("@/components/retirement/plan-health", () => ({
   PlanHealthCard: () => (
-    <div data-testid="plan-health">Plan Health Content</div>
+    <div data-testid="plan-health">Projection Health Content</div>
   ),
 }));
 
@@ -107,7 +107,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-contrib-profile", () => ({
-  useActiveContribProfile: () => [null, vi.fn()],
+  useActiveContributionProfile: () => [null, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
   useActiveSalaryProfile: () => [null, vi.fn()],
@@ -224,7 +224,7 @@ describe("RetirementContent smoke", () => {
       screen.getByRole("button", { name: "Strategy Comparison" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Plan Health" }),
+      screen.getByRole("button", { name: "Projection Health" }),
     ).toBeInTheDocument();
   });
 
@@ -235,20 +235,20 @@ describe("RetirementContent smoke", () => {
     // Default tab shows projection card
     expect(screen.getByTestId("projection-card")).toBeInTheDocument();
 
-    // Switch to Plan Health tab
-    fireEvent.click(screen.getByRole("button", { name: "Plan Health" }));
+    // Switch to Projection Health tab
+    fireEvent.click(screen.getByRole("button", { name: "Projection Health" }));
     expect(screen.getByTestId("plan-health")).toBeInTheDocument();
     expect(screen.queryByTestId("projection-card")).toBeNull();
   });
 
-  it("shows the shared disclaimer under the projection; Plan Health's card has its own", async () => {
+  it("shows the shared disclaimer under the projection; Projection Health's card has its own", async () => {
     const { RetirementContent } =
       await import("@/app/(dashboard)/retirement/retirement-content");
     render(<RetirementContent />);
     const disclaimer =
       "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.";
     expect(screen.getByText(disclaimer)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Plan Health" }));
+    fireEvent.click(screen.getByRole("button", { name: "Projection Health" }));
     // The stubbed card stands in for the real one, which renders it.
     expect(screen.queryByText(disclaimer)).toBeNull();
   });

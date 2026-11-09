@@ -372,3 +372,38 @@ describe("applyGuytonKlinger — the withdrawal rate is what the portfolio pays"
     expect(r.guardrailTriggered).toBe("decrease");
   });
 });
+
+describe("applyGuytonKlinger — a rate exactly on a rail moves nothing", () => {
+  // GK06 p7-8: capital preservation cuts when the rate is "more than 20
+  // percent above" the initial rate, prosperity raises when it is more
+  // than 20% below; on the rail neither fires (answer key C15). With an
+  // initial rate of 6.25% the rails are 5% and 7.5%, and 50,000 or 75,000
+  // of 1,000,000 lands on them with no float noise, so the comparisons
+  // are tested as written (November's g01 and g02 mutants made them
+  // inclusive). A rail with float noise is C16's expected failure (G3).
+  const onRail = (spending: number) =>
+    applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: spending,
+        initialWithdrawalRate: 0.0625,
+        priorYearReturn: 0.05,
+      }),
+    );
+
+  it("5% against 6.25% × 0.8: no raise", () => {
+    const r = onRail(50000);
+    expect(r.guardrailTriggered).toBeNull();
+    expect(r.projectedExpenses).toBe(50000);
+  });
+
+  it("7.5% against 6.25% × 1.2: no cut", () => {
+    const r = onRail(75000);
+    expect(r.guardrailTriggered).toBeNull();
+    expect(r.projectedExpenses).toBe(75000);
+  });
+
+  it("a cent past either rail moves spending", () => {
+    expect(onRail(49999.99).guardrailTriggered).toBe("increase");
+    expect(onRail(75000.01).guardrailTriggered).toBe("decrease");
+  });
+});

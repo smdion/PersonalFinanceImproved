@@ -1,10 +1,6 @@
-/** "Why this account, why this order" narrative helpers for the retirement
- *  advisor report and, via re-export from components/retirement-projection/utils.ts,
- *  the existing table/chart tooltips — moved here (not duplicated) so both
- *  callers can never drift (RULES.md single-computation-path). Pure
- *  formatters: callers pass already-deflated (real/nominal per the page's
- *  dollar-mode toggle) amounts, same convention as every other
- *  tooltip-string builder these were extracted from. */
+/** "Why this account, why this order" helpers shared by the advisor report and the table
+ *  tooltips (re-exported from components/retirement-projection/utils.ts). Callers pass
+ *  amounts already in the page's dollar mode. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type { WithdrawalSourceKind } from "@/lib/pure/engine";
@@ -21,19 +17,9 @@ const TIER_SOURCE_LABEL: Record<WithdrawalSourceKind, string> = {
   hsa: "HSA",
 };
 
-/** Explains WHAT KIND of rate a tier's `costRate` is and WHY, not just the
- *  number — a household may ask "why is Roth cheaper
- *  than Brokerage" and the honest answer is tier-dependent (Roth BASIS is
- *  always free — already-taxed principal; Roth GROWTH is taxed at your
- *  ordinary rate; Brokerage's own 0%-capital-gains room is free, but real
- *  gains beyond it are taxed at your capital-gains rate, +3.8% once you
- *  cross the Medicare surtax threshold) — a plain "0%"/"X% marginal tax"
- *  figure doesn't say which case applies. `source` alone can't distinguish
- *  Roth basis from Roth growth (see this account's own eligibility note
- *  for that, e.g. "Rule of 55 met" for growth access) — for a $0-cost Roth
- *  entry this stays deliberately non-committal between the two truthful
- *  possibilities rather than guessing.
- */
+/** What kind of rate a tier's `costRate` is (Roth basis free; growth and brokerage gains
+ *  at the household's rates, +3.8% over the surtax line). `source` can't tell Roth basis
+ *  from growth, so a $0-cost Roth entry names both possibilities. */
 function describeTierRate(
   source: WithdrawalSourceKind,
   costRate: number,
@@ -43,9 +29,9 @@ function describeTierRate(
     if (source === "roth") {
       return "cheapest available — already-taxed Roth contributions are always tax-free, or this is Roth growth taxed at your current 0% bracket";
     }
-    // `source` is WithdrawalTier's cost-ranking source kind, not an
-    // AccountCategory — coincidentally overlapping strings, different
-    // domain, no account-types.ts predicate applies. lint-violation-ok
+    // lint-violation-ok: `source` is WithdrawalTier's cost-ranking kind, not
+    // an AccountCategory; the strings overlap, so no account-types.ts
+    // predicate applies.
     if (source === "brokerage") {
       return "cheapest available — inside your 0% capital-gains bracket, so these gains aren't taxed";
     }
@@ -68,11 +54,8 @@ function describeTierRate(
 }
 
 /**
- * Human-readable "why was this account used" explanation for a year's
- * discretionary (beyond-Traditional-bracket-cap) withdrawal routing. Reads
- * directly off `EngineDecumulationYear.discretionaryTierBreakdown`
- * (`RouteResult.tierBreakdown`, withdrawal-routing/types.ts) rather than
- * re-deriving the reasoning from dollar amounts.
+ * "Why was this account used" for a year's discretionary withdrawals, read straight off
+ * `discretionaryTierBreakdown` rather than re-derived from amounts.
  */
 export function formatDiscretionaryTierBreakdown(
   breakdown:
@@ -98,16 +81,11 @@ export function formatDiscretionaryTierBreakdown(
 }
 
 /**
- * "Why is my RMD this amount" — formats the IRS Uniform Lifetime Table
- * divisor × prior-year-end balance breakdown, per person when available
- * (`EngineDecumulationYear.rmdByPerson`), falling back to the household-
- * level `rmdDivisor`/`priorYearEndTradBalance` pair (single-person
- * households / no per-person RMD tracking). Reads the divisor/balance
- * fields the engine already computed rather than re-deriving them — see
- * `rmdByPerson`'s docblock (engine-projection.ts).
+ * "Why is my RMD this amount": Uniform Lifetime divisor × prior year-end balance, per person
+ * from `rmdByPerson` when present, else the household `rmdDivisor`/`priorYearEndTradBalance`.
  */
 export function formatRmdDivisorDetail(
-  yr: {
+  yearRow: {
     rmdByPerson?: {
       personName: string;
       divisor?: number;
@@ -119,7 +97,7 @@ export function formatRmdDivisorDetail(
   deflate: (v: number, year: number) => number,
   year: number,
 ): string | undefined {
-  const perPerson = yr.rmdByPerson?.filter(
+  const perPerson = yearRow.rmdByPerson?.filter(
     (p) => p.divisor != null && p.priorYearEndTradBalance != null,
   );
   if (perPerson && perPerson.length > 0) {
@@ -130,24 +108,15 @@ export function formatRmdDivisorDetail(
       )
       .join(" · ");
   }
-  if (yr.rmdDivisor != null && yr.priorYearEndTradBalance != null) {
-    return `Balance ${formatCurrency(deflate(yr.priorYearEndTradBalance, year))} ÷ ${yr.rmdDivisor.toFixed(1)} (IRS Uniform Lifetime Table)`;
+  if (yearRow.rmdDivisor != null && yearRow.priorYearEndTradBalance != null) {
+    return `Balance ${formatCurrency(deflate(yearRow.priorYearEndTradBalance, year))} ÷ ${yearRow.rmdDivisor.toFixed(1)} (IRS Uniform Lifetime Table)`;
   }
   return undefined;
 }
 
 /**
- * Withdrawal-strategy section for the advisor report: a short narrative
- * paragraph plus a handful of the most informative per-year "why this
- * account" highlights (RMD divisor detail, discretionary-tier reasoning),
- * built from the same two formatters above so this can never disagree
- * with what the interactive table's tooltips already say.
- *
- * `decumulationYears` should be the household's real decumulation years
- * in order; this picks a small representative sample (first RMD year,
- * first discretionary-withdrawal year with real detail, and up to 3 more
- * spread across retirement) rather than every year — the full year-by-year
- * table is a separate report section.
+ * Advisor report withdrawal strategy: a short paragraph plus sample years (first RMD, first
+ * detailed discretionary year, up to 3 more), built from the tooltip formatters above.
  */
 export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
@@ -174,10 +143,8 @@ export function buildWithdrawalStrategyNarrative(
   );
   if (firstDiscretionaryYear) {
     const fdy = firstDiscretionaryYear;
-    // Deflated — describeDiscretionaryCapacityMath's
-    // new capacity figures sit right next to this breakdown in one
-    // sentence, so both need the same dollar mode or "you had $X of room"
-    // and "$Y came from Roth" silently mix real/nominal dollars.
+    // Deflated: describeDiscretionaryCapacityMath's figures share this sentence,
+    // so both must be in the same dollar mode.
     const deflatedBreakdown = fdy.discretionaryTierBreakdown?.map((t) => ({
       ...t,
       amount: deflate(t.amount, fdy.year),
@@ -216,17 +183,9 @@ export function buildWithdrawalStrategyNarrative(
     (y) => (y.discretionaryTierBreakdown?.length ?? 0) > 0,
   );
 
-  // "Why THIS bracket, not a lower or higher one":
-  // the prior version of this narrative (and the matching table tooltip)
-  // said "fills your target tax bracket" without ever naming the actual
-  // rate. Reads the target off the resolved config's `rothBracketTarget`
-  // (the same field the table tooltip already cites), then hands it to
-  // the SHARED describeBracketTargetChoice (bracket-target-narrative.ts)
-  // — the same function the table tooltip calls — so the report and the
-  // tooltip can never disagree about why this rate was chosen. Folds in
-  // the optimizer's real numeric comparison when available, falling back
-  // to the qualitative-only version otherwise (query still loading,
-  // Waterfall mode, or fewer than 2 comparable candidates).
+  // Names the target rate (`rothBracketTarget`) and why, via the shared
+  // describeBracketTargetChoice the table tooltip also calls; numeric when the
+  // optimizer result exists, qualitative otherwise.
   const bracketTargetYear = decumulationYears.find(
     (y) => y.config.rothBracketTarget != null,
   );
@@ -238,15 +197,8 @@ export function buildWithdrawalStrategyNarrative(
           bracketTarget,
           bracketTargetYear?.bracketTraditionalCap != null
             ? {
-                // Deflated to today's dollars:
-                // every other figure in this narrative goes through
-                // `deflate` (see the discretionary-tier detail above), but
-                // these three were passed raw/nominal. bracketTargetYear
-                // is typically 15-25 years into decumulation and these
-                // figures are grown by bracket-growth.ts, so the report
-                // was printing a nominal bracket-ceiling dollar amount
-                // next to today's-dollar figures everywhere else in the
-                // same document.
+                // Deflated to today's dollars like every other figure here
+                // (these are grown by bracket-growth.ts).
                 bracketTraditionalCap: deflate(
                   bracketTargetYear.bracketTraditionalCap,
                   bracketTargetYear.year,
@@ -255,11 +207,8 @@ export function buildWithdrawalStrategyNarrative(
                   bracketTargetYear.taxableSS,
                   bracketTargetYear.year,
                 ),
-                // The GROWN per-year deduction (`bracket-growth.ts`), not
-                // the ungrown plan-level echo:
-                // pairing a grown bracketTraditionalCap with an ungrown
-                // deduction in the same sentence was internally
-                // inconsistent for any year beyond the tax data's vintage.
+                // The grown per-year deduction, matching the grown
+                // bracketTraditionalCap (not the ungrown plan-level echo).
                 standardDeduction:
                   bracketTargetYear.standardDeduction != null
                     ? deflate(

@@ -144,7 +144,9 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
       // own answer (the router should be a thin pass-through, not doing
       // any of its own transformation on the result).
       const data = await fetchRetirementData(rawDb, {});
-      const payload = await buildEnginePayload(rawDb, data, {});
+      const payload = await buildEnginePayload(rawDb, data, {
+        asOf: new Date(),
+      });
       if (!payload) throw new Error("expected a payload for seeded data");
       const { settings, distributionTaxRates, baseEngineInput } = payload;
       const engineInput = {

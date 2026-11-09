@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import {
@@ -44,7 +44,7 @@ export function PaycheckContent() {
   const canEditProfiles = hasPermission(user, "contributionProfile");
   const { viewMode: mode } = useScenario();
   // A link to contribution elections opens the section (focus-topics).
-  const [contribExpanded, setContribExpanded] = useFocusReveal(
+  const [contributionExpanded, setContributionExpanded] = useFocusReveal(
     "contributionElections",
   );
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
@@ -53,13 +53,11 @@ export function PaycheckContent() {
   const taxYearOverride = taxYearSetting ?? undefined;
   const setTaxYearOverride = (year: number | undefined) =>
     setTaxYearSetting(year ?? null);
-  const [contribProfileId] = useActiveContribProfile();
+  const [contributionProfileId] = useActiveContributionProfile();
   const utils = trpc.useUtils();
 
-  /** Same shared lock as the Budget page's four profile tabs and the
-   *  standalone Savings page — Salary/Contribution profile editing here is
-   *  the same underlying data, just from a different page, so locking it
-   *  anywhere locks it everywhere. */
+  /** Shared profile lock (Budget page tabs, Savings page): the same profile
+   *  data, so locking it anywhere locks it everywhere. */
   const [profileLocked, toggleProfileLock] = useEditLock(
     EDIT_LOCK_KEYS.profileEditLocked,
   );
@@ -67,11 +65,11 @@ export function PaycheckContent() {
   // This page shows and edits the active profiles — switch them in the
   // header. (Each profile is its own world; there is no "viewing another
   // one" here, so what you edit is always what the rest of the app uses.)
-  const displayContribId = contribProfileId;
+  const displayContributionId = contributionProfileId;
 
   const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
-    { id: displayContribId! },
-    { enabled: displayContribId != null },
+    { id: displayContributionId! },
+    { enabled: displayContributionId != null },
   );
   const activeProfile = viewingProfileQuery.data;
 
@@ -93,16 +91,9 @@ export function PaycheckContent() {
       onSuccess: invalidateProfileWrite,
     });
 
-  // Helper: patch one or more fields on one entry in the active profile's
-  // active fields. The multi-field form exists for entity kinds whose write
-  // schema requires certain fields to be set together (or none) — a caller
-  // editing an independent field can keep passing a single field/value pair.
-  // A field whose value is `undefined` is unset (removed) rather than
-  // written. There is no more "jobs" entity kind here: that active-fields
-  // bucket (payPeriod/payWeek/anchorPayDate, W-4, bonus timing/flags) was
-  // retired in the Stage B migration — those fields now live on the
-  // Salary Profile entry instead (see patchSalaryEntry above), and
-  // the bonus flags became each account's own `fromBonus`.
+  // Patch fields on one entry in the active profile's active fields. Pass an
+  // object when the schema requires fields set together; `undefined` unsets a
+  // field. Pay schedule, W-4 and bonus terms live on the Salary Profile entry.
   function updateProfileActiveField(
     entityType: "contributionAccounts" | "deductions",
     entityId: number,
@@ -158,7 +149,7 @@ export function PaycheckContent() {
   const editTarget = (kind: PaycheckFieldKind) =>
     resolvePaycheckEditTarget(kind, editContext);
   const salaryEditsProfile = editTarget("salary").target === "salaryProfile";
-  const contribEditsProfile =
+  const contributionEditsProfile =
     editTarget("contribution").target === "contributionProfile";
   const lineEditable = editTarget("line").target === "setup";
   const setupEditable = editTarget("setup").target === "setup";
@@ -174,12 +165,9 @@ export function PaycheckContent() {
   });
 
   /**
-   * Save field edits to this job's entry in the displayed Salary Profile —
-   * a field-level patch on the server (salaryProfile.patchEntry), so two
-   * quick edits, or another tab, can't overwrite each other with a stale
-   * copy. Entries are complete/all-or-nothing: the first edit to a job
-   * with no entry yet sends `defaults` (that job's currently-resolved
-   * values) with it, so the entry it creates is complete.
+   * Field-level patch of this job's entry in the displayed Salary Profile
+   * (salaryProfile.patchEntry). Entries are all-or-nothing, so the first edit
+   * sends `defaults` (the job's resolved values) to create a complete entry.
    */
   function patchSalaryEntry(
     jobId: number,
@@ -198,11 +186,11 @@ export function PaycheckContent() {
   // One shared derivation for the whole page — the same hook the Budget
   // page's What-If tab uses.
   const personViews = usePaycheckPersonViews({
-    contributionProfileId: displayContribId,
+    contributionProfileId: displayContributionId,
     salaryProfileId: displaySalaryId,
     taxYearOverride,
   });
-  const { views, rawData, sharedContribGroupOrder } = personViews;
+  const { views, rawData, sharedContributionGroupOrder } = personViews;
   // People with no job now and one that hasn't started (no paycheck yet).
   const upcomingJobs = (rawData?.people ?? []).flatMap((d) =>
     "upcomingJob" in d && d.upcomingJob
@@ -210,17 +198,15 @@ export function PaycheckContent() {
       : [],
   );
 
-  // Get available tax years for the toggle. Sourced from contribution_limits
-  // alone, matching resolveTaxParams' candidateYears() — that's the only
-  // table `requireLimit()` reads, so it's the only one that can make a year
-  // safely selectable. Including tax_brackets here would let an admin's
-  // early bracket-only seed for a future year surface a picker option that
-  // then throws when selected.
-  const { data: contribLimitsAll } =
+  // Tax years from contribution_limits only, like resolveTaxParams'
+  // candidateYears(): `requireLimit()` reads only that table, so a
+  // bracket-only year would throw when selected.
+  const { data: contributionLimitsAll } =
     trpc.settings.contributionLimits.list.useQuery();
   const availableYears = (() => {
     const yrs = new Set<number>();
-    if (contribLimitsAll) for (const l of contribLimitsAll) yrs.add(l.taxYear);
+    if (contributionLimitsAll)
+      for (const l of contributionLimitsAll) yrs.add(l.taxYear);
     return Array.from(yrs).sort((a, b) => b - a);
   })();
   const currentYear = new Date().getFullYear();
@@ -241,24 +227,27 @@ export function PaycheckContent() {
   const deleteDeduction = trpc.settings.deductions.delete.useMutation({
     onSuccess: () => utils.paycheck.invalidate(),
   });
-  const updateContrib = trpc.settings.contributionAccounts.update.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
-  const createContrib = trpc.settings.contributionAccounts.create.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
-  const deleteContrib = trpc.settings.contributionAccounts.delete.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-    },
-  });
+  const updateContribution =
+    trpc.settings.contributionAccounts.update.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
+  const createContribution =
+    trpc.settings.contributionAccounts.create.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
+  const deleteContribution =
+    trpc.settings.contributionAccounts.delete.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
 
   if (queryPending(personViews)) {
     return (
@@ -364,7 +353,7 @@ export function PaycheckContent() {
               // A job has no salary of its own — every edit lands in the
               // active Salary Profile (see editTarget).
               salaryReadOnly={!salaryEditsProfile}
-              contribValueReadOnly={!contribEditsProfile}
+              contribValueReadOnly={!contributionEditsProfile}
               lineReadOnly={!lineEditable}
               setupReadOnly={!setupEditable}
               // Only while editing — locked, the padlock already says "View
@@ -390,11 +379,13 @@ export function PaycheckContent() {
               alignedPostTax={d.alignedPostTax}
               coverageNote={d.coverageNote}
               coverageNoteGroup={d.coverageNoteGroup}
-              otherJointContribs={d.otherJointContribs}
-              contribExpanded={contribExpanded}
-              onToggleContrib={() => setContribExpanded(!contribExpanded)}
+              otherJointContribs={d.otherJointContributions}
+              contribExpanded={contributionExpanded}
+              onToggleContrib={() =>
+                setContributionExpanded(!contributionExpanded)
+              }
               scrollToContribs={d === views[0]}
-              sharedGroupOrder={sharedContribGroupOrder}
+              sharedGroupOrder={sharedContributionGroupOrder}
               interaction={
                 profileLocked
                   ? { kind: "readonly" }
@@ -403,13 +394,9 @@ export function PaycheckContent() {
                       handlers: {
                         onUpdateJob: (field: string, value: string) => {
                           const job = d.job!;
-                          // A job has no salary, bonus, pay-schedule, or W-4
-                          // terms of its own any more — every edit to any of
-                          // those lands in the displayed Salary Profile as
-                          // part of that job's complete entry (see
-                          // resolveCompensation and SalaryEntry). Untouched
-                          // fields default to this job's currently-resolved
-                          // values.
+                          // Salary, bonus, pay schedule and W-4 edits land in
+                          // the displayed Salary Profile's entry for this job
+                          // (see SalaryEntry); untouched fields keep resolved values.
                           const salaryProfileEntryDefaults: SalaryEntry = {
                             salary: d.salary,
                             ...d.resolvedBonusTerms,
@@ -471,13 +458,9 @@ export function PaycheckContent() {
                           field: string,
                           value: string,
                         ) => {
-                          // amountPerPeriod is the only deduction field a
-                          // Contribution Profile can set — it goes through the
-                          // same profile writer contribution accounts use.
-                          // Structural fields (deductionName/isPretax/
-                          // ficaExempt) are never profile-settable and write
-                          // the database.
-                          // A preset sets both tax flags at once.
+                          // amountPerPeriod goes through the profile writer;
+                          // structural fields (name/isPretax/ficaExempt) write
+                          // the database. A preset sets both tax flags at once.
                           if (field === "taxTreatment") {
                             if (!lineEditable) return;
                             const preset = DEDUCTION_PRESETS.find(
@@ -556,7 +539,7 @@ export function PaycheckContent() {
                             (cc) => cc.id === id,
                           );
                           if (!raw) return;
-                          updateContrib.mutate({
+                          updateContribution.mutate({
                             id: raw.id,
                             personId: raw.personId,
                             accountType: raw.accountType,
@@ -584,7 +567,7 @@ export function PaycheckContent() {
                         onToggleAutoMax: (
                           id: number,
                           value: boolean,
-                          targetContribValue?: number,
+                          targetContributionValue?: number,
                         ) => {
                           const raw = (d.rawContribs as RawContrib[]).find(
                             (cc) => cc.id === id,
@@ -592,27 +575,20 @@ export function PaycheckContent() {
                           if (!raw) return;
                           // autoMaximize is a profile field — read-only
                           // without a profile edit in play (editTarget).
-                          if (contribEditsProfile) {
-                            // Set autoMaximize (and, when turning it on with a
-                            // known target, the resolved contributionValue) via
-                            // the field-level patch — the server merges onto the
-                            // freshest profile row. An entry can carry just
-                            // autoMaximize with no value; contributionValue/Method
-                            // are only required together (see
-                            // contribAccountActiveFieldsSchema), not whenever an
-                            // entry exists. `raw` only appears here if this account
-                            // already resolves under this profile, so a stored
-                            // method already survives the merge — raw's method is
-                            // just the fallback for the rare bare entry.
+                          if (contributionEditsProfile) {
+                            // Field-level patch of autoMaximize (plus the
+                            // resolved contributionValue when turning it on);
+                            // value/method are only required together.
                             updateProfileActiveField(
                               "contributionAccounts",
                               id,
                               {
                                 autoMaximize: value,
-                                ...(value && targetContribValue != null
+                                ...(value && targetContributionValue != null
                                   ? {
-                                      contributionValue:
-                                        String(targetContribValue),
+                                      contributionValue: String(
+                                        targetContributionValue,
+                                      ),
                                       contributionMethod:
                                         raw.contributionMethod,
                                     }
@@ -625,7 +601,7 @@ export function PaycheckContent() {
                         onDeleteContrib: !setupEditable
                           ? undefined
                           : (id: number) => {
-                              deleteContrib.mutate({ id });
+                              deleteContribution.mutate({ id });
                             },
                         onCreateContrib: !setupEditable
                           ? undefined
@@ -635,9 +611,9 @@ export function PaycheckContent() {
                               // that row instead of creating a duplicate.
                               const { id, ...rest } = data;
                               if (id != null) {
-                                updateContrib.mutate({ id, ...rest });
+                                updateContribution.mutate({ id, ...rest });
                               } else {
-                                createContrib.mutate(rest);
+                                createContribution.mutate(rest);
                               }
                             },
                         onUpdateInstitution: !setupEditable
@@ -650,7 +626,7 @@ export function PaycheckContent() {
                                 (cc) => cc.id === id,
                               );
                               if (!raw) return;
-                              updateContrib.mutate({
+                              updateContribution.mutate({
                                 id: raw.id,
                                 personId: raw.personId,
                                 accountType: raw.accountType,

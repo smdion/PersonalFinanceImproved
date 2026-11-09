@@ -7,6 +7,10 @@
 
 import { log } from "@/lib/logger";
 import { reportError } from "@/lib/error-reporting";
+import {
+  recordJobResult,
+  type JobOutcome,
+} from "@/server/services/scheduled-job-results";
 
 let versionInterval: ReturnType<typeof setInterval> | undefined;
 let simplefinInterval: ReturnType<typeof setInterval> | undefined;
@@ -46,13 +50,8 @@ export function registerNodeHandlers() {
     versionInterval = setInterval(runAutoVersionCheck, 60 * 60 * 1000);
   }, 30_000);
 
-  // SimpleFIN's own developer docs ask clients to pick a random minute
-  // rather than polling on the hour ("we get more traffic at the top of
-  // the hour"). A random 0-55min startup jitter (not persisted — doesn't
-  // need to be stable across restarts, just spread across processes)
-  // decouples the daily sync's effective fire time from container boot
-  // time, on top of the hourly check itself already skipping once today's
-  // real sync has happened (see hasSyncedToday in lib/simplefin/sync.ts).
+  // SimpleFIN asks clients not to poll on the hour: a random 0-55 min startup
+  // jitter spreads the daily sync (hasSyncedToday skips repeats).
   const simplefinJitterMs = Math.floor(Math.random() * 55 * 60 * 1000);
   setTimeout(() => {
     runSimplefinDailyCheck();
@@ -82,7 +81,17 @@ function getBaseUrl(): string {
   return `http://localhost:${port}`;
 }
 
+/** A run whose request threw: the server didn't answer, or not with JSON.
+ *  The error itself goes to the log, never into the result. */
+const FAILED_REQUEST: JobOutcome = { ok: false, message: "Request failed" };
+
+/** A run the route answered with neither ok nor skipped. */
+function unexpectedResponse(status: number): JobOutcome {
+  return { ok: false, message: `Unexpected response (HTTP ${status})` };
+}
+
 async function runStartupTasks() {
+  const startedAt = new Date();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) return;
@@ -94,8 +103,17 @@ async function runStartupTasks() {
 
     if (body.ok) {
       log("info", "startup_tasks_completed", body);
+      recordJobResult("startup_tasks", startedAt, {
+        ok: true,
+        message: "Startup tasks ran",
+      });
     } else {
       log("warn", "startup_tasks_failed", { body });
+      recordJobResult(
+        "startup_tasks",
+        startedAt,
+        unexpectedResponse(res.status),
+      );
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -103,10 +121,12 @@ async function runStartupTasks() {
     } else {
       log("error", "startup_tasks_failed", { error: String(err) });
     }
+    recordJobResult("startup_tasks", startedAt, FAILED_REQUEST);
   }
 }
 
 async function runAutoVersionCheck() {
+  const startedAt = new Date();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -121,10 +141,19 @@ async function runAutoVersionCheck() {
 
     if (body.ok) {
       log("info", "auto_version_created", { version: body.version });
+      recordJobResult("version_snapshot", startedAt, {
+        ok: true,
+        message: "Version snapshot saved",
+      });
     } else if (body.skipped) {
       // Normal — already created today or schedule doesn't match
     } else {
       log("warn", "auto_version_unexpected", { body });
+      recordJobResult(
+        "version_snapshot",
+        startedAt,
+        unexpectedResponse(res.status),
+      );
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -132,10 +161,12 @@ async function runAutoVersionCheck() {
     } else {
       log("error", "auto_version_failed", { error: String(err) });
     }
+    recordJobResult("version_snapshot", startedAt, FAILED_REQUEST);
   }
 }
 
 async function runSimplefinDailyCheck() {
+  const startedAt = new Date();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -154,10 +185,19 @@ async function runSimplefinDailyCheck() {
       log("info", "simplefin_daily_synced", {
         accountCount: body.accountCount,
       });
+      recordJobResult("simplefin_sync", startedAt, {
+        ok: true,
+        message: "SimpleFIN synced",
+      });
     } else if (body.skipped) {
       // Normal — no connection configured, or already synced today
     } else {
       log("warn", "simplefin_daily_unexpected", { body });
+      recordJobResult(
+        "simplefin_sync",
+        startedAt,
+        unexpectedResponse(res.status),
+      );
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -165,10 +205,12 @@ async function runSimplefinDailyCheck() {
     } else {
       log("error", "simplefin_daily_failed", { error: String(err) });
     }
+    recordJobResult("simplefin_sync", startedAt, FAILED_REQUEST);
   }
 }
 
 async function runSecWeeklyCheck() {
+  const startedAt = new Date();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) return;
@@ -182,16 +224,23 @@ async function runSecWeeklyCheck() {
         updated: body.updated,
         stoppedBySec: body.stoppedBySec,
       });
+      recordJobResult("sec_refresh", startedAt, {
+        ok: true,
+        message: "SEC fund facts refreshed",
+      });
     } else if (!body.skipped) {
       log("warn", "sec_weekly_unexpected", { status: res.status });
+      recordJobResult("sec_refresh", startedAt, unexpectedResponse(res.status));
     }
   } catch (err) {
     if (err instanceof Error) reportError(err, { context: "sec_weekly_check" });
     else log("error", "sec_weekly_failed", { error: String(err) });
+    recordJobResult("sec_refresh", startedAt, FAILED_REQUEST);
   }
 }
 
 async function runTaxDataWeeklyCheck() {
+  const startedAt = new Date();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) return;
@@ -204,12 +253,22 @@ async function runTaxDataWeeklyCheck() {
         result: body.result,
         dataVersion: body.dataVersion,
       });
+      recordJobResult("tax_data_check", startedAt, {
+        ok: true,
+        message: "Tax data checked",
+      });
     } else if (!body.skipped) {
       log("warn", "tax_data_weekly_unexpected", { status: res.status });
+      recordJobResult(
+        "tax_data_check",
+        startedAt,
+        unexpectedResponse(res.status),
+      );
     }
   } catch (err) {
     if (err instanceof Error)
       reportError(err, { context: "tax_data_weekly_check" });
     else log("error", "tax_data_weekly_failed", { error: String(err) });
+    recordJobResult("tax_data_check", startedAt, FAILED_REQUEST);
   }
 }

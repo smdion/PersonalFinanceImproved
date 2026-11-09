@@ -23,7 +23,7 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: () => true,
 }));
 vi.mock("@/lib/hooks/use-active-contrib-profile", () => ({
-  useActiveContribProfile: () => [null, vi.fn()],
+  useActiveContributionProfile: () => [null, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
   useActiveSalaryProfile: () => [null, vi.fn()],

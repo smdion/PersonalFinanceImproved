@@ -146,10 +146,8 @@ export function TaxBucketKpis({
 }: TaxBucketKpisProps) {
   return (
     <>
-      {/* Hero KPIs — same card language as the Retirement page's hero row.
-          Rendered only once there are real entries to show — for "at
-          retirement" that means the projection actually resolved, so a
-          zeroed placeholder KPI never appears while it's loading. */}
+      {/* Hero KPIs (Retirement page card style), shown only once entries exist
+          so "at retirement" never shows zeroed KPIs while loading. */}
       {activeEntries !== null && (
         <FocusTarget
           topic="earlyAccess"

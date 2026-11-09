@@ -30,39 +30,47 @@ export function zeroBalance(category: AccountCategory): AccountBalance {
 // THE CONFIG — one entry per account category
 // ---------------------------------------------------------------------------
 
+/** The 401k and 403b's shared fields; each entry keeps what differs. */
+const EMPLOYER_PLAN_FIELDS = {
+  supportsRothSplit: true,
+  balanceStructure: "roth_traditional",
+  withdrawalTaxType: "income",
+  taxBucketKey: "preTax",
+  supportedTaxTreatments: ["pre_tax", "tax_free"],
+  rothOrderingRules: "pro_rata",
+  earlyAccessRule: "employer_plan",
+  qcdEligible: false,
+  nonMedicalPenaltyRate: null,
+  tripleTaxAdvantaged: false,
+  paysMedicalExpenses: false,
+  rothIncomeLimited: false,
+  fundChoiceOpen: false,
+  hasIrsLimit: true,
+  irsLimitGroup: "401k", // 403b shares the 401k limit
+  irsLimitKeys: {
+    base: "401k_employee_limit",
+    catchup: "401k_catchup_limit",
+    superCatchup: "401k_super_catchup_limit",
+    totalAdditions: "401k_total_additions_limit",
+  },
+  matchCountsTowardLimit: false,
+  limitBoundedByCompensation: false,
+  isHouseholdLimit: false,
+  fooStep: null,
+  catchupAge: 50,
+  superCatchupAgeRange: [60, 63],
+  isOverflowTarget: false,
+  fixedContribScalesWithSalary: false,
+  generateOverflowWarnings: true,
+} as const;
+
 export const ACCOUNT_TYPE_CONFIG = {
   "401k": {
     displayLabel: "401k",
     description:
       "Employer-sponsored retirement plan with pre-tax and Roth options",
     keywords: ["401k", "401(k)"],
-    supportsRothSplit: true,
-    balanceStructure: "roth_traditional",
-    withdrawalTaxType: "income",
-    taxBucketKey: "preTax",
-    supportedTaxTreatments: ["pre_tax", "tax_free"],
-    rothOrderingRules: "pro_rata",
-    earlyAccessRule: "employer_plan",
-    qcdEligible: false,
-    nonMedicalPenaltyRate: null,
-    tripleTaxAdvantaged: false,
-    hasIrsLimit: true,
-    irsLimitGroup: "401k",
-    irsLimitKeys: {
-      base: "401k_employee_limit",
-      catchup: "401k_catchup_limit",
-      superCatchup: "401k_super_catchup_limit",
-      totalAdditions: "401k_total_additions_limit",
-    },
-    matchCountsTowardLimit: false,
-    limitBoundedByCompensation: false,
-    isHouseholdLimit: false,
-    fooStep: null,
-    catchupAge: 50,
-    superCatchupAgeRange: [60, 63],
-    isOverflowTarget: false,
-    fixedContribScalesWithSalary: false,
-    generateOverflowWarnings: true,
+    ...EMPLOYER_PLAN_FIELDS,
     defaultWithdrawalSplit: 0.35,
     decumulationRank: 1,
     isPayrollDeductible: true,
@@ -92,33 +100,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     displayLabel: "403b",
     description: "Non-profit/government employer retirement plan",
     keywords: ["403b", "403(b)"],
-    supportsRothSplit: true,
-    balanceStructure: "roth_traditional",
-    withdrawalTaxType: "income",
-    taxBucketKey: "preTax",
-    supportedTaxTreatments: ["pre_tax", "tax_free"],
-    rothOrderingRules: "pro_rata",
-    earlyAccessRule: "employer_plan",
-    qcdEligible: false,
-    nonMedicalPenaltyRate: null,
-    tripleTaxAdvantaged: false,
-    hasIrsLimit: true,
-    irsLimitGroup: "401k", // shares limit with 401k
-    irsLimitKeys: {
-      base: "401k_employee_limit",
-      catchup: "401k_catchup_limit",
-      superCatchup: "401k_super_catchup_limit",
-      totalAdditions: "401k_total_additions_limit",
-    },
-    matchCountsTowardLimit: false,
-    limitBoundedByCompensation: false,
-    isHouseholdLimit: false,
-    fooStep: null,
-    catchupAge: 50,
-    superCatchupAgeRange: [60, 63],
-    isOverflowTarget: false,
-    fixedContribScalesWithSalary: false,
-    generateOverflowWarnings: true,
+    ...EMPLOYER_PLAN_FIELDS,
     defaultWithdrawalSplit: 0,
     decumulationRank: 2,
     isPayrollDeductible: true,
@@ -158,6 +140,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
+    rothIncomeLimited: true,
+    fundChoiceOpen: true,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -211,6 +196,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
     tripleTaxAdvantaged: true,
+    paysMedicalExpenses: true,
+    rothIncomeLimited: false,
+    fundChoiceOpen: false,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -272,6 +260,9 @@ export const ACCOUNT_TYPE_CONFIG = {
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
     tripleTaxAdvantaged: false,
+    paysMedicalExpenses: false,
+    rothIncomeLimited: false,
+    fundChoiceOpen: true,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -353,7 +344,7 @@ const KEYWORD_ALIASES: Record<string, string> = {
 
 /** An account type or budget subcategory's canonical contribution category
  *  key, or null if it matches none. */
-export function normalizeContribKey(name: string): string | null {
+export function normalizeContributionKey(name: string): string | null {
   const lower = name.toLowerCase();
   // Check extra aliases first (these don't have full config entries)
   for (const [kw, cat] of Object.entries(KEYWORD_ALIASES)) {
@@ -409,7 +400,7 @@ export function getDisplayConfig(
 /** True if this account's (type + subtype) employer_contributions are an ESPP
  *  purchase-price discount, not cash, so its cash-basis figure means something.
  *  Per account, never by category: Brokerage also has cash sub-types. */
-export function isDiscountBasisEmployerContrib(
+export function isDiscountBasisEmployerContribution(
   accountType: string,
   subType?: string | null,
 ): boolean {
@@ -515,9 +506,7 @@ export function isOverflowTarget(category: AccountCategory): boolean {
   return ACCOUNT_TYPE_CONFIG[category].isOverflowTarget;
 }
 
-/**
- * Get the limit group for a category (for shared IRS limits like 401k/403b).
- */
+/** Get the limit group for a category (for shared IRS limits like 401k/403b). */
 export function getLimitGroup(category: string): string | null {
   return CONFIG_BY_TEXT[category]?.irsLimitGroup ?? null;
 }
@@ -552,7 +541,7 @@ export function isIraCategory(category: string): boolean {
 /** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
  *  early-access rule. False for a category not in the config. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
-  return CONFIG_BY_TEXT[category]?.earlyAccessRule === "employer_plan";
+  return hasEarlyAccessRule(category, "employer_plan");
 }
 
 /** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
@@ -560,9 +549,14 @@ export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
   return ACCOUNT_TYPE_CONFIG[category].earlyAccessRule;
 }
 
-/** A QCD can come from this category (`qcdEligible`). */
-export function isQcdEligible(category: AccountCategory): boolean {
-  return ACCOUNT_TYPE_CONFIG[category].qcdEligible;
+/** Withdrawals follow this early-access rule; false for an unknown category. */
+export function hasEarlyAccessRule(category: string, rule: EarlyAccessRule) {
+  return CONFIG_BY_TEXT[category]?.earlyAccessRule === rule;
+}
+
+/** A QCD can come from this category (`qcdEligible`); unknown: false. */
+export function isQcdEligible(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.qcdEligible === true;
 }
 
 /** Funded before every other tax-advantaged type (`tripleTaxAdvantaged`). */
@@ -571,10 +565,23 @@ export function isTripleTaxAdvantaged(category: AccountCategory): boolean {
 }
 
 /** The non-medical withdrawal penalty rate, or null where there is none. */
-export function nonMedicalPenaltyRate(
-  category: AccountCategory,
-): number | null {
-  return ACCOUNT_TYPE_CONFIG[category].nonMedicalPenaltyRate;
+export function nonMedicalPenaltyRate(category: string): number | null {
+  return CONFIG_BY_TEXT[category]?.nonMedicalPenaltyRate ?? null;
+}
+
+/** `paysMedicalExpenses`; false for a category not in the config. */
+export function paysMedical(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.paysMedicalExpenses === true;
+}
+
+/** `rothIncomeLimited`; false for a category not in the config. */
+export function isRothIncomeLimited(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.rothIncomeLimited === true;
+}
+
+/** `fundChoiceOpen`; false for a category not in the config. */
+export function hasOpenFundChoice(category: string): boolean {
+  return CONFIG_BY_TEXT[category]?.fundChoiceOpen === true;
 }
 
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
@@ -585,16 +592,12 @@ export function parentCategoryEnum(): typeof PARENT_CATEGORY_VALUES {
   return PARENT_CATEGORY_VALUES;
 }
 
-/**
- * Get the parent category for classification.
- */
+/** Get the parent category for classification. */
 export function getParentCategory(category: AccountCategory): ParentCategory {
   return ACCOUNT_TYPE_CONFIG[category].parentCategory;
 }
 
-/**
- * Get the display group for paycheck/contribution views.
- */
+/** Get the display group for paycheck/contribution views. */
 export function getDisplayGroup(category: AccountCategory): DisplayGroup {
   return ACCOUNT_TYPE_CONFIG[category].displayGroup;
 }
@@ -624,13 +627,9 @@ export function isRetirementMoney(
   return isRetirementParent(parentCategory || "Retirement");
 }
 
-/**
- * Whether an account counts toward the "Retirement" performance rollup: a
- * fully-retirement performance category (401k/IRA, HSA, whatever its
- * parentCategory), or a Brokerage account tagged parentCategory "Retirement"
- * (Brokerage spans both goals). The performance router's rollup and the
- * page's selection matching share this one rule.
- */
+/** Whether an account counts toward the "Retirement" performance rollup: a fully-retirement
+ *  category (401k/IRA, HSA, whatever its parentCategory), or Brokerage tagged "Retirement".
+ *  Shared by the performance router's rollup and the page's selection matching. */
 export function isInRetirementPerformanceRollup(
   accountType: string | null,
   parentCategory: string | undefined,
@@ -647,10 +646,9 @@ export function isPortfolioParent(parentCategory: string | undefined): boolean {
   return parentCategory === "Portfolio";
 }
 
-/** Performance categories that report a distinct Distributions row (in addition
- *  to Contributions and Gains/Losses) — e.g. HSA, which supports tax-free
- *  qualified medical withdrawals during accumulation. Single source of truth
- *  for the year-over-year spreadsheet table's Distributions row. */
+/** Performance categories with their own Distributions row in the year-over-year table
+ *  (besides Contributions and Gains/Losses), e.g. HSA's tax-free medical withdrawals
+ *  during accumulation. */
 const PERF_CATEGORIES_WITH_DISTRIBUTIONS: readonly string[] = [
   PERF_CATEGORY_HSA,
 ];
@@ -707,15 +705,6 @@ export function isTaxableCategory(category: string | null): boolean {
   return isAfterTaxType(ACCOUNT_TYPE_CONFIG[category].taxBucketKey);
 }
 
-/** Whether contributions to a category come out of the paycheck (config
- *  `isPayrollDeductible`). Unknown categories: false. */
-export function isPayrollDeductibleCategory(category: string): boolean {
-  return (
-    isKnownCategory(category) &&
-    ACCOUNT_TYPE_CONFIG[category].isPayrollDeductible
-  );
-}
-
 /** Whether a category's payroll contributions skip FICA (config
  *  `payrollFicaExempt`, §125 — HSA). Unknown categories: false. */
 export function isPayrollFicaExemptCategory(category: string): boolean {
@@ -747,9 +736,7 @@ export function getDefaultTaxTreatment(category: AccountCategory): string {
 // UI helpers — replace scattered label maps and column key builders
 // ---------------------------------------------------------------------------
 
-/**
- * Get the column segments for all engine categories.
- */
+/** Get the column segments for all engine categories. */
 export function getAccountSegments(): AccountSegment<AccountCategory>[] {
   const segments: AccountSegment<AccountCategory>[] = [];
   for (const cat of getEngineCategories()) {
@@ -801,9 +788,7 @@ export function parseColumnKey(
   return null;
 }
 
-/**
- * Get the display label for a column key.
- */
+/** Get the display label for a column key. */
 export function getColumnLabel(key: string): string {
   const parsed = parseColumnKey(key);
   if (!parsed) return key;
@@ -813,16 +798,12 @@ export function getColumnLabel(key: string): string {
   return cfg.displayLabel;
 }
 
-/**
- * Get the default accumulation order (engine categories only).
- */
+/** Get the default accumulation order (engine categories only). */
 export function getDefaultAccumulationOrder(): AccountCategory[] {
   return getEngineCategories();
 }
 
-/**
- * Get the default decumulation order.
- */
+/** Get the default decumulation order. */
 export function getDefaultDecumulationOrder(): AccountCategory[] {
   return getEngineCategories().sort(
     (a, b) =>
@@ -846,9 +827,7 @@ export function defaultDecumulationConfig(): {
   };
 }
 
-/**
- * Build an empty record keyed by all engine categories with a factory.
- */
+/** Build an empty record keyed by all engine categories with a factory. */
 export function buildCategoryRecord<T>(
   factory: () => T,
 ): Record<AccountCategory, T> {

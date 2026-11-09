@@ -1,12 +1,6 @@
 /**
- * Zod validation schemas for all JSONB columns in the database.
- *
- * These schemas enforce structure before insert/update so that arbitrary
- * data never reaches the JSONB columns.  Each schema mirrors the
- * TypeScript type declared in schema.ts for the same column.
- *
- * Usage: import the schema you need and call `.parse(data)` (throws) or
- * `.safeParse(data)` before writing to the database.
+ * Zod schemas for every JSONB column, each mirroring the column's TypeScript type in schema.ts;
+ * parse with them before writing so arbitrary data never reaches a JSONB column.
  */
 
 import { z } from "zod/v4";
@@ -72,12 +66,9 @@ export const ltcgBracketEntrySchema = z.object({
 const nonDecreasing = (xs: number[]) =>
   xs.every((x, i) => i === 0 || x >= xs[i - 1]!);
 
-/** ltcg_brackets.brackets — ordered list of LTCG bracket entries. Each
- *  threshold is that bracket's ceiling, so the shape the tax helpers rely
- *  on is enforced here: only the last threshold is null (the open top —
- *  gains above a numeric last ceiling would go untaxed), thresholds
- *  never go down, rates are 0–100% and never go down. Equal thresholds
- *  are allowed (Settings' empty placeholder starts at 0 / 0 / top). */
+/** ltcg_brackets.brackets: each threshold is that bracket's ceiling. Only the last threshold
+ *  is null (the open top); thresholds and rates (0–100%) never go down. Equal thresholds are
+ *  allowed (Settings' empty placeholder is 0 / 0 / top). */
 export const ltcgBracketsSchema = z
   .array(ltcgBracketEntrySchema)
   .min(1)
@@ -125,12 +116,8 @@ export const irmaaBracketsSchema = z
 
 // ── fpl_by_household ────────────────────────────────────────────
 
-/**
- * fpl_by_household.amounts — Federal Poverty Level dollar figure by
- * household size, ALL 8 keys required (not a partial z.record).
- * getAcaSubsidyCliff (aca-tables.ts) throws on a missing size, so a
- * partial table is rejected at WRITE time instead.
- */
+/** fpl_by_household.amounts: FPL dollars by household size, all 8 keys required since
+ *  getAcaSubsidyCliff throws on a missing size. */
 export const fplByHouseholdAmountsSchema = z.object({
   "1": z.number(),
   "2": z.number(),
@@ -231,14 +218,8 @@ const yearlyGrowthEntrySchema = z.object({
   value: z.number(),
 });
 
-/**
- * A Salary Profile entry's `extraPaycheckRouting` field — see
- * ExtraPaycheckRoutingData in schema-pg.ts for the full field-by-field
- * rationale (this schema mirrors that type exactly). Moved here from
- * `jobs.extra_paycheck_routing` because it's a comp-layer decision about how
- * this job's pay gets treated, not a job identity fact.
- * `.strict()` for the same reason as salaryEntrySchema itself.
- */
+/** A Salary Profile entry's `extraPaycheckRouting`, mirroring ExtraPaycheckRoutingData in
+ *  schema-pg.ts; `.strict()` like salaryEntrySchema. */
 export const extraPaycheckRoutingSchema = z
   .object({
     rules: z.array(extraPaycheckRuleSchema),
@@ -255,29 +236,9 @@ export const extraPaycheckRoutingSchema = z
 // ── salary_profiles ─────────────────────────────────────────────
 
 /**
- * salary_profiles.salaries — jobId → salary entry.
- *
- * A job either has a COMPLETE entry (every required field, a real
- * self-contained set of numbers/elections for this profile) or no key at
- * all (this profile says nothing about that job, which resolves to
- * $0/no bonus/incomplete — never a fallback to some other value). There is
- * no partial-pin state and no "live" concept: a profile is its own complete
- * world, not a set of overrides on a shared baseline. If you want different
- * numbers, use a different profile.
- *
- * `.strict()`: an old client's stale shape is rejected, not stored and
- * ignored. So a new required field ships with its default in
- * BLANK_SALARY_ENTRY (tests/db/salary-entry-defaults.test.ts checks it).
- *
- * Bonus terms, pay schedule, W-4 elections, and extra-paycheck routing all
- * live HERE, not split across `jobs` columns or a Contribution Profile:
- * "what is my bonus," "when do I get paid," "what withholding elections
- * apply," and "where does my extra paycheck go" are all the same category
- * of fact as "what is my salary" — this collapses income, withholding/
- * schedule elections, and comp-routing decisions into one axis (see
- * DESIGN.md's Salary Profile layer section for the accepted tradeoff). A
- * Contribution Profile still owns the *deductions* (paycheck_deductions
- * amounts), a distinct fact from the job's W-4/pay schedule elections.
+ * salary_profiles.salaries: jobId → a complete entry (salary, bonus, pay schedule, W-4, extra-
+ * paycheck routing) or no key (the job resolves to $0, never a fallback). `.strict()` rejects a
+ * stale shape, so a new required field ships with its BLANK_SALARY_ENTRY default.
  */
 export const salaryEntrySchema = z
   .object({
@@ -327,13 +288,8 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 // ── contribution_profiles ───────────────────────────────────────
 
 /**
- * Base shape, all fields optional — used directly (without the refine
- * below) to validate a single-field PATCH, where a caller legitimately
- * sends just `{ isActive: false }` without touching contributionValue/
- * contributionMethod. The paired-or-neither invariant only makes sense
- * once applied to the full, merged entry: setAccountActiveFields and
- * setDeductionActiveFields (contribution-profiles.ts) validate the merged
- * entry against `contribAccountActiveFieldsSchema` (below) before saving.
+ * All fields optional, used alone to validate a single-field PATCH; the merged entry is then
+ * checked against `contribAccountActiveFieldsSchema` (paired-or-neither) before saving.
  */
 export const contribAccountActiveFieldsPatchSchema = z
   .object({
@@ -358,19 +314,9 @@ export const contribAccountActiveFieldsPatchSchema = z
   .strict();
 
 /**
- * Detailed contribution account active-field set (write-path). An entry
- * existing at all does NOT by itself mean this profile has a value —
- * an entry can legitimately exist to set only `isActive`/`displayNameCustom`/
- * a match field. `contributionValue`/`contributionMethod` are the only
- * pair required TOGETHER (both or neither, enforced below) whenever either
- * is present, because the account row itself carries no value to fall back
- * to (see applyContribActiveFields — there is no base-value fallback). An
- * account with no `contributionValue` set in the current profile has no
- * resolvable contribution at all, which is the "incomplete profile" state
- * surfaced by getIncompleteContribAccountIds. Every other field here stays
- * genuinely optional — those describe account behavior a profile MAY
- * customize, not "the" value. These are the leaves of the EntityFieldMap
- * contribution_profiles.contribution_active_fields (schema-pg.ts).
+ * A profile's contribution-account active fields (write path). `contributionValue` and
+ * `contributionMethod` come together or not at all; with neither, the account has no
+ * contribution (getIncompleteContribAccountIds), as the row has no fallback. Others optional.
  */
 export const contribAccountActiveFieldsSchema =
   contribAccountActiveFieldsPatchSchema.refine(
@@ -385,15 +331,8 @@ export const contribAccountActiveFieldsSchema =
   );
 
 /**
- * Contribution-profile deduction active-field set. Deductions (STD/LTD/
- * Dental/Medical/Vision, etc.) have NO base `amountPerPeriod` of their own —
- * Stage B dropped that column — so this is the ONLY source for one, same
- * no-base-value contract as a contribution account's contributionValue (see
- * applyDeductionActiveFields/applyContribActiveFields). `deductionName`/
- * `isPretax`/`ficaExempt`/job assignment stay structural/raw-only on
- * `paycheck_deductions` itself, mirroring the accountType/taxTreatment
- * (structural) vs contributionValue/contributionMethod (profile-driven)
- * boundary contribution accounts already draw.
+ * A profile's deduction active fields: the only source of a deduction's `amountPerPeriod` (no
+ * base value, like contributionValue). Name, tax flags and job stay on paycheck_deductions.
  */
 export const deductionActiveFieldsSchema = z
   .object({
@@ -402,24 +341,9 @@ export const deductionActiveFieldsSchema = z
   .strict();
 
 /**
- * contribution_profiles.contribution_active_fields — typed active-field
- * structure.
- *
- * Two different merge semantics live under this one column, by bucket —
- * both NO base value, exclude-if-absent (see applyContribActiveFields /
- * applyDeductionActiveFields):
- *  - contributionAccounts: an account absent (or with no contributionValue
- *    set) here has no resolvable contribution at all (the "incomplete
- *    profile" state).
- *  - deductions: a deduction absent (or with no amountPerPeriod set) here
- *    has no resolvable amount at all, same rule.
- *
- * There is no `jobs` bucket any more — a Contribution Profile no longer
- * touches jobs at all. Pay schedule, W-4 elections, bonus pay date/flags,
- * and employerName-override all either moved to the Salary Profile entry
- * (the first three) or lost their profile-override path entirely
- * (employerName — accepted feature reduction, see DESIGN.md's Salary
- * Profile layer section).
+ * contribution_profiles.contribution_active_fields, with no base value: an account without
+ * contributionValue, or a deduction without amountPerPeriod, resolves to nothing (the
+ * "incomplete profile" state). Job fields live on the Salary Profile, not here.
  */
 export const contributionActiveFieldsSchema = z
   .object({

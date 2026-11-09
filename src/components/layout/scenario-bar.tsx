@@ -5,10 +5,10 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
@@ -46,10 +46,8 @@ const VIEW_MODES = [
 ] as const;
 
 /**
- * The header: one "Profiles" button (plus the Plan in use, when the active
- * profiles match one; the active profile of each kind in its tooltip) that
- * opens a panel to change them (each picker changes the active profile for the whole household;
- * applying a Plan changes all four), plus the view mode, which changes
+ * The header: a "Profiles" button (plus the matching Plan, if any) opening a panel that changes
+ * the household's active profiles (a Plan changes all four), plus the view mode, which changes
  * every page's numbers and so stays one click away.
  */
 export function ScenarioBar() {
@@ -57,7 +55,10 @@ export function ScenarioBar() {
   const user = useUser();
   const canManagePlans = hasPermission(user, "scenario");
   const canChangeBudget = hasPermission(user, "budget");
-  const canChangeContribOrSalary = hasPermission(user, "contributionProfile");
+  const canChangeContributionOrSalary = hasPermission(
+    user,
+    "contributionProfile",
+  );
   const canChangeRetirement = isAdmin(user);
 
   const { plans, activeIds, planInUse, lastAppliedPlan, sameAsActive, apply } =
@@ -105,20 +106,19 @@ export function ScenarioBar() {
 
   // Profile lists
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  const { data: contribCompareData } =
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
+  const { data: contributionCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  const [, setActiveContribId] = useActiveContribProfile();
+  const [, setActiveContributionId] = useActiveContributionProfile();
   const [, setActiveSalaryId] = useActiveSalaryProfile();
   const [, setActiveRetirementId] = useActiveRetirementProfile();
 
-  // Every query that resolves "the active budget profile" server-side takes
-  // no budget-profile id as an argument, so React Query can't know those
-  // results are stale after a swap here — same invalidation set the
-  // profile managers use.
+  // Queries resolving the active budget profile server-side don't take its id,
+  // so React Query can't see a swap; invalidate the profile managers' set.
   const activateBudget = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => {
       utils.budget.invalidate();
@@ -131,16 +131,16 @@ export function ScenarioBar() {
 
   // Warn before a swap silently drops an account's active value, as the
   // contribution profile manager's Activate does.
-  const handleActivateContrib = async (id: number) => {
-    const outgoing = contribCompareData?.profiles.find(
+  const handleActivateContribution = async (id: number) => {
+    const outgoing = contributionCompareData?.profiles.find(
       (p) => p.id === activeIds.contribution,
     );
-    const incoming = contribCompareData?.profiles.find((p) => p.id === id);
-    if (contribCompareData && outgoing) {
-      const lines = diffContribProfileSwap(
+    const incoming = contributionCompareData?.profiles.find((p) => p.id === id);
+    if (contributionCompareData && outgoing) {
+      const lines = diffContributionProfileSwap(
         outgoing.accountActiveFields,
         incoming?.accountActiveFields ?? {},
-        contribCompareData.accounts,
+        contributionCompareData.accounts,
       );
       if (lines.length > 0) {
         const ok = await confirmWithDiff(
@@ -150,7 +150,7 @@ export function ScenarioBar() {
         if (!ok) return;
       }
     }
-    setActiveContribId(id);
+    setActiveContributionId(id);
   };
 
   const confirmApplyPlan = useConfirmApplyPlan();
@@ -203,13 +203,13 @@ export function ScenarioBar() {
       kind: "salary",
       profiles: salaryProfiles,
       onChange: (id) => setActiveSalaryId(id),
-      canChange: canChangeContribOrSalary,
+      canChange: canChangeContributionOrSalary,
     },
     {
       kind: "contribution",
-      profiles: contribProfiles,
-      onChange: (id) => void handleActivateContrib(id),
-      canChange: canChangeContribOrSalary,
+      profiles: contributionProfiles,
+      onChange: (id) => void handleActivateContribution(id),
+      canChange: canChangeContributionOrSalary,
     },
     {
       kind: "budget",

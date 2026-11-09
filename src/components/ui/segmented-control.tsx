@@ -51,6 +51,13 @@ const LOOKS = {
     on: "bg-surface-primary text-primary font-medium shadow-sm",
     off: "text-muted hover:text-secondary",
   },
+  /** The Contributions page's period. */
+  pill: {
+    group: "bg-surface-elevated flex gap-1 rounded-full p-0.5",
+    option: "rounded-full px-3 py-1 text-xs transition-colors",
+    on: "bg-blue-600 text-white",
+    off: "text-muted hover:text-primary",
+  },
   /** Performance's account categories. */
   "tray-lg": {
     group: "bg-surface-elevated flex gap-1 rounded-lg p-1",

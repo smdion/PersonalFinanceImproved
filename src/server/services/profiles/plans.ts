@@ -1,12 +1,7 @@
 /**
- * Plans — a named set of profiles, one of each kind.
- *
- * Each profile is its own world and only the active one counts. A Plan holds
- * no values of its own: applying it makes its profiles the active ones, the
- * same write each kind's own "make active" does. Which Plan is in use is
- * derived (the Plan whose profiles equal the active ones), never stored as a
- * second source of truth; the last applied Plan is remembered only so the
- * header can offer "Update ‹Plan›" after a profile is changed.
+ * Plans: a named set of profiles, one per kind, with no values of its own. Applying one makes its
+ * profiles active; the Plan in use is derived, never stored (the last applied is remembered only
+ * so the header can offer "Update ‹Plan›").
  */
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -105,11 +100,9 @@ async function readActiveProfileIds(db: Db): Promise<PlanProfileIds> {
 }
 
 /**
- * Make a Plan's profiles the active ones, in one transaction. Only kinds
- * that would actually change are written — and only those need the same
- * permission as changing them by hand (a kind already active, or a slot an
- * older Plan left empty, is left alone). Checked before anything is
- * written, so a refusal never half-applies a Plan.
+ * Make a Plan's profiles active in one transaction. Only kinds that would change are written and
+ * permission-checked (an empty slot is left alone), all before any write, so a refusal never
+ * half-applies a Plan.
  */
 export async function applyPlan(
   db: Db,

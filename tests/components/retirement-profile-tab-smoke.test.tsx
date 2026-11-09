@@ -41,7 +41,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-contrib-profile", () => ({
-  useActiveContribProfile: () => [null, vi.fn()],
+  useActiveContributionProfile: () => [null, vi.fn()],
 }));
 vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
   useActiveSalaryProfile: () => [null, vi.fn()],
@@ -130,7 +130,9 @@ describe("RetirementProfileTab smoke", () => {
       await import("@/components/retirement/retirement-profile-tab");
     render(<RetirementProfileTab />);
     expect(screen.getByText("Projection Assumptions")).toBeInTheDocument();
-    expect(screen.getByText("Decumulation Plan")).toBeInTheDocument();
+    expect(
+      screen.getByText("Retirement budget and strategy"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Plan Assumptions")).toBeInTheDocument();
     expect(screen.getByText("Taxes in Retirement")).toBeInTheDocument();
   });

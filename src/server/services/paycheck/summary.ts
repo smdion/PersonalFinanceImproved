@@ -10,13 +10,14 @@ import {
 } from "@/lib/pure/household/what-if.schema";
 import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
@@ -34,7 +35,7 @@ import { loadAndApplyContribProfile } from "@/server/services/contributions/prof
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";
-import { buildContribAccounts } from "@/server/services/contributions/paycheck-accounts";
+import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
@@ -63,7 +64,7 @@ import { householdTotals } from "@/server/services/paycheck/household-totals";
 import {
   checkPaychecks,
   yearEarnings,
-} from "@/server/services/paycheck/person-paycheck";
+} from "@/lib/pure/paycheck/person-paycheck";
 
 export const zPaycheckSummaryInput = z
   .object({
@@ -117,12 +118,9 @@ export async function computePaycheckSummary(
     ctx.db.select().from(schema.paycheckEarnings),
   ]);
 
-  // One resolver, same as the retirement engine — but "null" on a
-  // missing year (not "throw"/"nearest"): the paycheck year selector
-  // lets a user pick a year with no seeded tables, and the contract is
-  // "show empty, never another year's figures" (a person entry still
-  // renders, with paycheck/tax null). `taxYearOverride` undefined =>
-  // newest enacted year.
+  // Same resolver as the retirement engine, but "null" on a missing year: the
+  // year selector can pick a year with no seeded tables, which shows empty, never
+  // another year's figures. `taxYearOverride` undefined => newest enacted year.
   const resolvedTax = resolveTaxParams(
     {
       vintage: allTaxParams,
@@ -146,11 +144,9 @@ export async function computePaycheckSummary(
   const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
   const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
 
-  // Salary and contribution overrides are two independent axes.
-  // Precedence for salary: the What-If sandbox (highest) > Salary
-  // Profile. The Contribution Profile contributes no
-  // salary at all — only account/job field overrides. No explicit
-  // salaryProfileId falls back to the globally-active profile.
+  // Salaries: the What-If sandbox first, then the Salary Profile (no
+  // salaryProfileId = the active one). The Contribution Profile sets no salary,
+  // only account/job fields.
   const effectiveSalaryMap = applySandboxSalaryEntries(
     input?.sandboxSalaryEntries,
     new Map(),
@@ -167,24 +163,21 @@ export async function computePaycheckSummary(
     salaryProfileActiveMap,
     allDeductions,
   );
-  // getIncompleteContribAccountIds's signal (a real account with no
-  // active value under this profile — see applyContribActiveFields,
-  // which silently excludes it above) had no UI home anywhere before
-  // this — surfaced per-person below so a card never just shows a
-  // quietly-shrunk total.
+  // Accounts with no active value under this profile (applyContribActiveFields
+  // excludes them) are surfaced per person, so a card never shows a quietly
+  // shrunk total.
   const contribProfileRow = await fetchContributionProfile(
     ctx.db,
     input?.contributionProfileId,
   );
-  const accountActiveFields =
-    (
-      contribProfileRow?.contributionActiveFields as
-        | { contributionAccounts?: Record<string, Record<string, unknown>> }
-        | undefined
-    )?.contributionAccounts ?? {};
-  // The What-If tab's sandbox edits are the highest-precedence tier,
-  // applied AFTER the picked profile's own overrides — same merge
-  // function, one more layer, never a second resolution path.
+  const accountActiveFields = contribProfileRow
+    ? readContributionActiveFields(
+        contribProfileRow.contributionActiveFields,
+        contribProfileRow.id,
+      ).contributionAccounts
+    : {};
+  // The What-If tab's sandbox edits apply last, through the same merge
+  // function: one more layer, never a second resolution path.
   const sandboxed = applyContribActiveFields(
     profileResult.contribs,
     input?.sandboxContribActiveFields ?? {},
@@ -199,13 +192,13 @@ export async function computePaycheckSummary(
     sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
   }
   const effectiveJobs = profileResult.jobs;
-
   const asOfDate = ctx.scope.asOf;
   // The IRS-limit cap pass: every figure below reads the capped value.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
     limitsRecord,
+    asOfDate,
     taxYear,
     salaryProfileActiveMap,
   );
@@ -218,10 +211,8 @@ export async function computePaycheckSummary(
   );
 
   /**
-   * One job's paycheck inputs, the same for the job a person has now
-   * and one that ended this year: its W-4 brackets, salary and bonus
-   * terms from the Salary Profile, its deductions, other pay and
-   * contributions. `sandbox`: apply the What-If (the current job only).
+   * One job's paycheck inputs (W-4, Salary Profile salary/bonus, deductions, other pay,
+   * contributions), current or ended this year. `sandbox`: apply the What-If (current job only).
    * Null when the job's Salary Profile entry is incomplete.
    */
   const jobPaycheckSetup = (
@@ -281,10 +272,9 @@ export async function computePaycheckSummary(
           ),
         );
       }
-    // The current job: its active contributions plus the person's own.
-    // An ended job: every contribution it carried (it can't tell when
-    // one was switched off), never the person's own — those belong to
-    // the current job's year.
+    // The current job: its active contributions plus the person's own. An ended
+    // job: every contribution it carried (it can't tell when one was switched
+    // off), never the person's own.
     const jobContribs = effectiveContribs.filter(
       (c) => c.jobId === job.id && (opts.sandbox ? c.isActive : true),
     );
@@ -339,14 +329,9 @@ export async function computePaycheckSummary(
   };
 
   /**
-   * A person's jobs that ended this tax year, each for the checks it
-   * paid up to its end (its own Salary Profile entry; none of the
-   * What-If). Counted whether or not they have a job now — someone laid
-   * off or retired mid-year still earned this year. `endedWithheld` is
-   * what those checks withheld (federal + FICA, regular checks only, as
-   * withheldThroughPeriod). A current job whose last day is later this
-   * year isn't one of them (`currentJobId`): it's counted as the
-   * current job, up to its last day.
+   * A person's jobs that ended this tax year (with or without a job now), each paid to its end
+   * from its own Salary Profile entry, no What-If. `endedWithheld`: their federal + FICA withheld.
+   * `currentJobId` is excluded: the current job is counted as current, up to its last day.
    */
   const endedJobYears = (
     person: (typeof people)[number],
@@ -429,10 +414,8 @@ export async function computePaycheckSummary(
 
   const results = await Promise.all(
     people.map(async (person) => {
-      // Personal (jobless) contributions belong on this person's card
-      // whether or not they currently have an active job — computed
-      // before the early returns below so neither branch loses the
-      // signal.
+      // Personal (jobless) contributions belong on this card with or without a
+      // current job, so this runs before the early returns below.
       const incompleteAccountIds = getIncompleteContribAccountIds(
         allContribs.filter(
           (c) =>
@@ -463,7 +446,7 @@ export async function computePaycheckSummary(
             (j) =>
               j.personId === person.id &&
               !j.isSpeculative &&
-              String(j.startDate).slice(0, 10) > localDateStr(asOfDate),
+              String(j.startDate).slice(0, 10) > calendarDateOf(asOfDate),
           )
           .sort((a, b) =>
             String(a.startDate).localeCompare(String(b.startDate)),
@@ -554,23 +537,16 @@ export async function computePaycheckSummary(
         person,
         job: jobForClient,
         salary,
-        /** Set when this person's year starts with the current job:
-         *  pay before `startDate` isn't counted (no earlier job in
-         *  Ledgr, or — missingEndedJob — one whose Salary Profile entry
-         *  is incomplete). */
+        /** Set when this person's year starts with the current job: pay before
+         *  `startDate` isn't counted (no earlier job, or missingEndedJob). */
         yearPayNote,
         /** Employers of jobs ending this tax year whose bonus has no
          *  date — left out of this year's income (it may be paid
          *  after the last day). */
         bonusNotCounted,
-        /** The bonus terms actually in effect (the active Salary
-         *  Profile's resolved terms, with the What-If sandbox's own
-         *  edits layered on top — never a job fallback, jobs carry no
-         *  bonus terms of their own any more) — as numbers, for clients
-         *  (e.g. the What-If tab's editor) that need to pre-fill from
-         *  the resolved value rather than `job`'s raw, profile-unaware
-         *  fields. Mirrors what `salary` already does for the salary
-         *  axis. */
+        /** Bonus terms in effect (the active Salary Profile's, with the What-If's
+         *  edits on top), as numbers, for clients that pre-fill from the resolved
+         *  value rather than `job`'s profile-unaware fields. */
         resolvedBonusTerms: {
           bonusPercent: toNumber(bonusTerms.bonusPercent),
           bonusMultiplier:
@@ -604,10 +580,9 @@ export async function computePaycheckSummary(
               ] ?? 0,
           })),
         rawContribs,
-        /** The year's Social Security / Medicare rates, wage base and
-         *  Additional Medicare withholding threshold — what
-         *  "Check against your pay stub" works back from (tax data,
-         *  never hard-coded). */
+        /** The year's Social Security / Medicare rates, wage base and Additional
+         *  Medicare threshold, from tax data: what "Check against your pay stub"
+         *  works back from. */
         ficaRates: {
           socialSecurity: taxBracketInput.socialSecurityRate,
           medicare: taxBracketInput.medicareRate,

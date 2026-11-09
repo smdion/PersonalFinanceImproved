@@ -1,21 +1,8 @@
 "use client";
 
 /**
- * useCloneProfile — shared "Clone to new" behavior for the three Budget-page
- * profile types (budget/salary/contribution). Each profile type has its own
- * tRPC duplicate procedure and its own row markup (the list-item components
- * aren't actually shared — different prop shapes), but the clone *behavior*
- * (name-prompt -> call duplicate mutation -> toast -> disable while pending)
- * is identical across all three, so only that half is centralized here.
- *
- *   const { clone, isPending } = useCloneProfile(
- *     trpc.salaryProfile.duplicate.useMutation({
- *       onSuccess: () => utils.salaryProfile.invalidate(),
- *     }),
- *   );
- *   <button onClick={() => clone(profile.id, profile.name)} disabled={isPending}>
- *     Clone to new
- *   </button>
+ * Shared "Clone to new" behavior (name prompt → duplicate mutation → toast,
+ * disabled while pending) for budget/salary/contribution profiles.
  */
 
 import { promptText } from "@/components/ui/confirm-dialog";

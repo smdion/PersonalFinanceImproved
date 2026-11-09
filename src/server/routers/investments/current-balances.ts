@@ -8,7 +8,7 @@ export const investmentCurrentBalancesRouter = createTRPCRouter({
   /** Totals, each account's figure and move, each feed's dates and the
    *  daily moves — no holdings or transactions. */
   getCurrentBalances: protectedProcedure.query(async ({ ctx }) => {
-    const r = await loadCurrentBalances(ctx.db);
+    const r = await loadCurrentBalances(ctx.db, ctx.scope.asOf);
     const moveOf = new Map(
       r.entryMoves.map((e) => [e.key, e.moves[0]?.move ?? null]),
     );

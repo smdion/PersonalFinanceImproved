@@ -1,20 +1,6 @@
 /**
- * Contribution Calculator
- *
- * Summarizes all investment/savings contribution accounts and computes savings rates by group.
- *
- * Key design: grouping is DATA-DRIVEN, not hardcoded. Each account has a `group` field
- * (e.g. "retirement", "portfolio", "education") set by the user in account settings. The
- * calculator dynamically aggregates by whatever groups exist. This means:
- *   - Adding a new group (like "education") requires zero code changes
- *   - The UI renders whatever groups come back in `groupRates`
- *   - Group rates include employer match (e.g. 401k match counts toward retirement rate)
- *
- * Example groups:
- *   - "retirement" = 401k + IRA + employer matches → retirement savings rate (e.g. 21.89%)
- *   - "portfolio"  = retirement + HSA + brokerage   → total portfolio savings rate (e.g. 29.59%)
- *
- * Each rate = (employee contributions + employer matches for that group) ÷ annual salary.
+ * Contribution summary and savings rates per user-defined `group` (data-driven, no fixed
+ * list): rate = (employee contributions + employer match in the group) ÷ annual salary.
  */
 import type {
   ContributionInput,

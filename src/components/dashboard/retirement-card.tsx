@@ -51,20 +51,20 @@ function RetirementCardImpl() {
     engineInput,
     { staleTime: 60_000, enabled: ready },
   );
-  // Peek-only reads of the persistent projection cache — never trigger a
-  // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
-  // just surface whatever the Retirement page's last real run already
-  // computed, if the inputs still match. Null result = nothing cached yet.
-  const { data: mcPeek } = trpc.projection.peekMonteCarloSummary.useQuery(
-    engineInput,
-    // Always re-read: a run made on the Retirement page should show here
-    // as soon as the dashboard is opened again.
-    { staleTime: 0, enabled: ready },
-  );
-  const { data: coastFireMcPeek } = trpc.projection.computeCoastFireMC.useQuery(
-    { ...engineInput, peekOnly: true },
-    { staleTime: 0, enabled: ready },
-  );
+  // Peek-only reads of the projection cache: never start a simulation run (slow,
+  // rate-limited); show the last run if inputs still match. Null = nothing cached.
+  const { data: simulationSummary } =
+    trpc.projection.peekMonteCarloSummary.useQuery(
+      engineInput,
+      // Always re-read: a run made on the Retirement page should show here
+      // as soon as the dashboard is opened again.
+      { staleTime: 0, enabled: ready },
+    );
+  const { data: coastFireSimulationSummary } =
+    trpc.projection.computeCoastFireMC.useQuery(
+      { ...engineInput, peekOnly: true },
+      { staleTime: 0, enabled: ready },
+    );
   if (queryPending([projection, gate]))
     return <CardQueryBoundary title="Retirement" query={[projection, gate]} />;
   if (data && "notConfigured" in data)
@@ -92,9 +92,9 @@ function RetirementCardImpl() {
 
   const {
     settings,
-    result,
+    retirementResult,
     retPortfolio,
-    retAge,
+    retirementAge,
     endAge,
     currentAge,
     yearOf,
@@ -104,13 +104,13 @@ function RetirementCardImpl() {
     employerContributions,
     outcome,
     yearsToRet,
-    sustainableWd,
+    sustainableWithdrawal,
     nestEggAge,
     nestEggDisplay,
     totalWithMatch,
     retirementBudget,
     taxAdvSpace,
-  } = retirementCardFigures(data, mcPeek);
+  } = retirementCardFigures(data, simulationSummary);
 
   return (
     <Card title="Retirement" href="/retirement">
@@ -124,9 +124,9 @@ function RetirementCardImpl() {
           <div className="mt-3 space-y-1 text-sm">
             <PlanTimeRows
               yearsToRet={yearsToRet}
-              result={result}
+              result={retirementResult}
               yearOf={yearOf}
-              retAge={retAge}
+              retirementAge={retirementAge}
               portfolioTotal={portfolioTotal}
             />
             <RetirementAccountsBreakdown
@@ -142,17 +142,22 @@ function RetirementCardImpl() {
             <TaxRoomRow taxAdvSpace={taxAdvSpace} />
             <div className="border-subtle my-1 border-t" />
             <RetirementBudgetRow retirementBudget={retirementBudget} />
-            {sustainableWd > 0 && renderWithdrawalRow(settings, sustainableWd)}
+            {sustainableWithdrawal > 0 &&
+              renderWithdrawalRow(settings, sustainableWithdrawal)}
             {coastFireData?.result &&
-              renderCoastFireRow(coastFireMcPeek, ageLabel, coastFireData)}
-            <SimulatedSuccessRow mcPeek={mcPeek} />
-            {renderLastRunRow(mcPeek, coastFireMcPeek)}
+              renderCoastFireRow(
+                coastFireSimulationSummary,
+                ageLabel,
+                coastFireData,
+              )}
+            <SimulatedSuccessRow simulationSummary={simulationSummary} />
+            {renderLastRunRow(simulationSummary, coastFireSimulationSummary)}
             <DurationRow endAge={endAge} outcome={outcome} />
           </div>
         </div>
         <div className="md:border-subtle md:border-l md:pl-8">
           <RetirementBenchmarks
-            data={{ ...data, result }}
+            data={{ ...data, result: retirementResult }}
             currentAge={currentAge}
             retirementSavings={portfolioTotal}
             checkpoint={{

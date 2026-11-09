@@ -49,7 +49,7 @@ export function RealizedVsAssumedCard() {
           {rows.length === 1 ? "" : "s"}): your investments returned{" "}
         </span>
         <span className="font-semibold">{pct(realizedAnnual)}</span>
-        <span className="text-muted"> a year; the plan assumes </span>
+        <span className="text-muted"> a year; the projection assumes </span>
         <span className="font-semibold">{pct(assumedAnnual)}</span>
         <span className="text-muted"> for those ages — </span>
         <span

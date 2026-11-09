@@ -19,6 +19,7 @@ export type BudgetTargeting = {
 
 export async function getAnnualExpensesFromBudget(
   db: Db,
+  asOf: Date,
   targeting?: BudgetTargeting,
 ): Promise<number> {
   const settings = await db.select().from(schema.appSettings);
@@ -36,18 +37,16 @@ export async function getAnnualExpensesFromBudget(
     db,
     targeting?.budgetProfileId,
   );
-
   if (!profile) return 0;
-
   const items = await db
     .select()
     .from(schema.budgetItems)
     .where(eq(schema.budgetItems.profileId, profile.id));
 
   const resolvedItems = await resolveLinkedBudgetItemAmounts(
-    db,
+    { db, scope: { asOf } },
     items,
-    (profile.columnLabels as string[] | null)?.length ?? 0,
+    profile.columnLabels.length,
     await resolveProfileSelection({ db }),
   );
 

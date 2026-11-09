@@ -62,7 +62,7 @@ export function startingAccounts(
       settings.rmdExcessTargetPerformanceAccountId ?? null,
     reinvest: settings.rmdExcessHandling !== "spend",
     entries: Object.entries(accountBreakdownByCategory).flatMap(
-      ([category, accts]) => accts.map((a) => ({ ...a, category })),
+      ([category, accounts]) => accounts.map((a) => ({ ...a, category })),
     ),
     perfAccounts,
   });
@@ -72,8 +72,8 @@ export function startingAccounts(
     ...new Set(
       findMissingCostBasis(
         Object.entries(accountBreakdownByCategory).flatMap(
-          ([category, accts]) =>
-            accts
+          ([category, accounts]) =>
+            accounts
               .filter((a) => a.costBasis != null)
               .map((a) => ({
                 category,

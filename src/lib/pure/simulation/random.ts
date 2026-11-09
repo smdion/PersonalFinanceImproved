@@ -59,12 +59,8 @@ export function sampleNormalMeanStd(
 // ---------------------------------------------------------------------------
 
 /**
- * Convert an arithmetic mean/stdDev return pair into log-space parameters
- * for a log-normal distribution: ln(1 + R) ~ Normal(m, s²), where
- *   s² = ln(1 + σ²/(1+μ)²),  m = ln(1 + μ) - s²/2
- * This ensures the arithmetic mean E[1+R] = 1+μ. Shared by geometricMean
- * and sampleCorrelatedReturns — previously each re-derived this
- * parameterization independently.
+ * Arithmetic mean/stdDev to log-normal parameters, ln(1 + R) ~ Normal(m, s²) with
+ * s² = ln(1 + σ²/(1+μ)²) and m = ln(1 + μ) - s²/2, so E[1+R] = 1+μ.
  */
 function logNormalParams(
   meanReturn: number,
@@ -78,15 +74,8 @@ function logNormalParams(
 }
 
 /**
- * Compute the geometric mean (median compounding rate) for a log-normal return distribution.
- *
- * Given arithmetic mean μ and volatility σ, the geometric mean is:
- *   geo = (1+μ) · exp(-s²/2) - 1
- *   where s² = ln(1 + σ²/(1+μ)²)
- *
- * This is the rate at which a portfolio deterministically compounds to match
- * the median outcome of the stochastic simulation. Always lower than the
- * arithmetic mean by the "volatility drag" factor.
+ * Geometric mean (median compounding rate) of a log-normal return: (1+μ)·exp(-s²/2) - 1, the
+ * deterministic rate matching the simulation's median; below μ by the volatility drag.
  */
 export function geometricMean(meanReturn: number, stdDev: number): number {
   const { m } = logNormalParams(meanReturn, stdDev);
@@ -125,13 +114,8 @@ export function classWeightedVolatility(
 // ---------------------------------------------------------------------------
 
 /**
- * Cholesky decomposition of a symmetric positive-definite matrix.
- * Returns lower triangular matrix L such that A = L × L^T.
- *
- * Used to generate correlated normal samples from independent ones.
- *
- * @param matrix - Correlation matrix (n×n, symmetric positive-definite)
- * @returns Lower triangular matrix L
+ * Cholesky decomposition of a symmetric positive-definite (correlation) matrix: lower triangular
+ * L with A = L × L^T, used to correlate independent normal samples.
  */
 export function choleskyDecomposition(matrix: number[][]): number[][] {
   const n = matrix.length;
@@ -173,12 +157,8 @@ export type GlidePathEntry = {
 };
 
 /**
- * Sample correlated returns for multiple asset classes using Cholesky decomposition.
- *
- * @param rng - Seeded PRNG
- * @param assetClasses - Asset class parameters (mean, stdDev)
- * @param choleskyL - Pre-computed Cholesky lower triangular matrix
- * @returns Array of returns, one per asset class (same order as assetClasses)
+ * Correlated returns for the asset classes (via the precomputed Cholesky `choleskyL`), one per
+ * class in `assetClasses` order.
  */
 export function sampleCorrelatedReturns(
   rng: PRNG,
@@ -216,15 +196,8 @@ export function sampleCorrelatedReturns(
 }
 
 /**
- * Get blended portfolio return for a given age using glide path allocations.
- *
- * Interpolates allocations between defined glide path ages.
- *
- * @param assetReturns - Per-asset-class returns (same order as assetClasses)
- * @param assetClasses - Asset class definitions (for name lookup)
- * @param glidePath - Glide path entries sorted by age
- * @param age - Current age
- * @returns Blended portfolio return for this year
+ * Blended portfolio return at `age`: per-class `assetReturns` weighted by the glide path's
+ * allocations, interpolated between its ages (entries sorted by age).
  */
 export function blendReturns(
   assetReturns: number[],
@@ -248,8 +221,8 @@ export function blendReturns(
 }
 
 /** One year's portfolio return at an age: correlated asset-class draws
- *  blended by that age's glide path. The Simulation's yearly draw, and what
- *  the expected-range check samples, so the two can't drift apart. */
+ *  blended by that age's glide path. Both the Simulation's yearly draw and
+ *  the expected-range check sample through this. */
 export function sampleBlendedReturn(
   rng: PRNG,
   assetClasses: AssetClassParams[],
@@ -266,10 +239,8 @@ export function sampleBlendedReturn(
 }
 
 /**
- * What one year's blended return is drawn from at an age: its mean and
- * standard deviation, exactly (the covariance of the correlated log-normal
- * draws sampleCorrelatedReturns makes, weighted by the glide path). Null
- * with nothing to blend.
+ * The exact mean and standard deviation of one year's blended return at an age (the covariance of
+ * sampleCorrelatedReturns's draws weighted by the glide path). Null with nothing to blend.
  */
 export function blendedReturnStats(
   assetClasses: AssetClassParams[],
@@ -362,11 +333,11 @@ export function buildCorrelationMatrix(
     Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
   );
 
-  const idToIdx = new Map(assetClasses.map((ac, i) => [ac.id, i]));
+  const idToIndex = new Map(assetClasses.map((ac, i) => [ac.id, i]));
 
   for (const c of correlations) {
-    const i = idToIdx.get(c.classAId);
-    const j = idToIdx.get(c.classBId);
+    const i = idToIndex.get(c.classAId);
+    const j = idToIndex.get(c.classBId);
     if (i !== undefined && j !== undefined) {
       matrix[i]![j] = c.correlation;
       matrix[j]![i] = c.correlation; // symmetric

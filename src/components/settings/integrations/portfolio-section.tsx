@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * Portfolio → tracking-account-mappings section of the integrations
- * preview panel. Lets the user wire up Ledgr performance/asset/mortgage/debt
- * accounts to the budget API's tracking accounts, plus toggle sync
- * direction per mapping and create assets from unmapped remote accounts.
- *
- * Owns its own local state for the "Add new mapping" builder row
- * (local/remote/direction selects).
+ * Integrations preview section mapping Ledgr performance/asset/mortgage/debt accounts to the budget
+ * API's tracking accounts: per-mapping sync direction, an "Add new mapping" row, and creating
+ * assets from unmapped remote accounts.
  */
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
@@ -99,10 +95,8 @@ export function PortfolioSection({ service, portfolio }: Props) {
         {portfolio.existingMappings.length > 0 && (
           <div className="space-y-0.5">
             {portfolio.existingMappings.map((m, i) => {
-              // Cash/Credit Card map to on-budget accounts, which live in
-              // allAccounts, not trackingAccounts (off-budget only) — fall
-              // back to allAccounts so these rows show a real name instead
-              // of a truncated remote id.
+              // Cash/Credit Card map to on-budget accounts, found only in
+              // allAccounts, so fall back to it for a real name.
               const tracking =
                 portfolio.trackingAccounts.find(
                   (a) => a.id === m.remoteAccountId,
@@ -131,11 +125,8 @@ export function PortfolioSection({ service, portfolio }: Props) {
                   <span className="text-muted flex-1 truncate">
                     {tracking?.name ?? m.remoteAccountId.slice(0, 12) + "..."}
                   </span>
-                  {/* Cash/Credit Card/debts are pull-only — Ledgr has no single
-                   * "Cash total" value to push TO one specific remote
-                   * account — and portfolio accounts push-only (a pull would
-                   * double-count them as an asset), so the toggle is fixed
-                   * rather than cyclable into a state the target refuses. */}
+                  {/* Fixed when only one direction is allowed: Cash/Credit Card/debts pull
+                   * only, portfolio accounts push only (a pull would double-count them). */}
                   {allowedDirectionsForMapping(m).length === 1 ? (
                     <Badge
                       color={
@@ -237,6 +228,7 @@ export function PortfolioSection({ service, portfolio }: Props) {
               Ledgr Account
             </label>
             <select
+              aria-label="Ledgr Account"
               value={newPortfolioLocal}
               onChange={(e) => setNewPortfolioLocal(e.target.value)}
               className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
@@ -250,6 +242,9 @@ export function PortfolioSection({ service, portfolio }: Props) {
               {newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"}
             </label>
             <select
+              aria-label={
+                newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"
+              }
               value={newPortfolioRemote}
               onChange={(e) => setNewPortfolioRemote(e.target.value)}
               className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
@@ -274,6 +269,7 @@ export function PortfolioSection({ service, portfolio }: Props) {
               </div>
             ) : (
               <select
+                aria-label="Dir"
                 value={newPortfolioDirection}
                 onChange={(e) =>
                   setNewPortfolioDirection(
@@ -292,14 +288,14 @@ export function PortfolioSection({ service, portfolio }: Props) {
             onClick={() => {
               if (!newPortfolioLocal || !newPortfolioRemote) return;
               // Value format: "localId|localName"
-              const pipeIdx = newPortfolioLocal.indexOf("|");
+              const pipeIndex = newPortfolioLocal.indexOf("|");
               const localId =
-                pipeIdx >= 0
-                  ? newPortfolioLocal.slice(0, pipeIdx)
+                pipeIndex >= 0
+                  ? newPortfolioLocal.slice(0, pipeIndex)
                   : newPortfolioLocal;
               const localName =
-                pipeIdx >= 0
-                  ? newPortfolioLocal.slice(pipeIdx + 1)
+                pipeIndex >= 0
+                  ? newPortfolioLocal.slice(pipeIndex + 1)
                   : newPortfolioLocal;
               const updated = [
                 ...portfolio.existingMappings,

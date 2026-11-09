@@ -1,6 +1,6 @@
 /**
  * The shared disclaimer on the pages without a test of their own here:
- * Milestones, Plan Health and the printed report (Recommendations, the
+ * Milestones, Projection Health and the printed report (Recommendations, the
  * Checkup, Retirement and the claiming-age explorer assert it in theirs).
  * Each page's children are stubbed: only the disclaimer is under test.
  */
@@ -64,7 +64,7 @@ describe("the shared disclaimer", () => {
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();
   });
 
-  it("Plan Health shows it", async () => {
+  it("Projection Health shows it", async () => {
     const { PlanHealthCard } =
       await import("@/components/retirement/plan-health");
     render(<PlanHealthCard retirementHorizonYears={30} />);

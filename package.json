@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "engines": {
@@ -20,14 +20,12 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db-migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx .scratch/seed/seed.ts",
-    "validate": "tsx .scratch/seed/validate.ts",
+    "seed": "tsx src/server/services/demo/dev-seed.ts",
     "test:coverage": "vitest run --coverage --project='!benchmarks'",
     "test:benchmarks": "vitest run --project=benchmarks",
+    "test:tz": "LEDGR_TEST_TZ=America/Chicago vitest run --project='!benchmarks' tests/utils/date.test.ts tests/utils/date-keys.test.ts tests/pure/household/age.test.ts tests/pure/household/household-timeline.test.ts tests/pure/accounts/balance-dates.test.ts tests/pure/net-worth tests/pure/paycheck tests/config/pay-periods.test.ts tests/pure/sync/feed-data-date.test.ts tests/server/services/net-worth/year-end-history.test.ts",
     "test:stress": "FAST_CHECK_NUM_RUNS=200 vitest run tests/pure/engine/engine-invariants.test.ts tests/benchmarks/monte-carlo-properties.test.ts",
     "test:e2e": "playwright test",
-    "compare": "tsx .scratch/compare/compare-xlsx-to-live.ts",
-    "seed:safe": "pnpm validate && pnpm seed && pnpm validate",
     "engine-hash": "tsx scripts/engine-hash.ts",
     "check:engine-hash": "tsx scripts/engine-hash.ts --check",
     "docs:verify": "tsx scripts/verify-docs.ts && tsx scripts/calculations-tested.ts && pnpm docs:verify-api",
@@ -54,6 +52,7 @@
     "check:tax-params": "tsx scripts/check-tax-params.ts",
     "check:calculation-register": "tsx scripts/check-calculation-register.ts",
     "check:ratchets": "tsx scripts/check-ratchets.ts",
+    "check:duplicates": "tsx scripts/check-duplicates.ts",
     "tax-data:keygen": "tsx scripts/tax-data-keygen.ts",
     "tax-data:publish": "tsx scripts/tax-data-publish.ts",
     "tax-data:check": "tsx scripts/tax-data-check.ts",
@@ -61,6 +60,7 @@
     "tax-data:schema": "tsx scripts/tax-data-schema.ts",
     "backup:export": "tsx scripts/export-backup.ts",
     "backup:import": "tsx scripts/import-backup.ts",
+    "encryption:rotate": "tsx scripts/rotate-encryption-key.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -104,6 +104,7 @@
     "fast-check": "^4.10.2",
     "happy-dom": "21.0.4",
     "husky": "^9.1.7",
+    "jscpd": "5.4.2",
     "knip": "5.62.0",
     "lint-staged": "^17.6.0",
     "postcss": "^8",

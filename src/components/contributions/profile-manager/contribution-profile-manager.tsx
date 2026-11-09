@@ -2,10 +2,10 @@
 
 import React from "react";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { ContributionProfileCompare } from "@/components/budget/contribution-profile-compare";
 import {
-  AddContribAccountPanel,
+  AddContributionAccountPanel,
   ProfileDetailSlot,
   ProfileList,
   ProfileManagerTabs,
@@ -24,8 +24,8 @@ export function ContributionProfileManager({
 }) {
   const {
     planNamesUsing,
-    activeContribId,
-    setActiveContribId,
+    activeContributionId,
+    setActiveContributionId,
     profiles,
     isLoading,
     compareData,
@@ -37,8 +37,8 @@ export function ContributionProfileManager({
     addingAccount,
     setAddingAccount,
     invalidateProfileDeps,
-    createContribAccount,
-    updateContribAccount,
+    createContributionAccount,
+    updateContributionAccount,
     deleteMutation,
     renameMutation,
     cloneProfile,
@@ -69,7 +69,7 @@ export function ContributionProfileManager({
     );
     const incoming = compareData?.profiles.find((p) => p.id === id);
     if (compareData && outgoing) {
-      const lines = diffContribProfileSwap(
+      const lines = diffContributionProfileSwap(
         outgoing.accountActiveFields,
         incoming?.accountActiveFields ?? {},
         compareData.accounts,
@@ -82,7 +82,7 @@ export function ContributionProfileManager({
         if (!ok) return;
       }
     }
-    setActiveContribId(id);
+    setActiveContributionId(id);
   };
 
   return (
@@ -97,11 +97,11 @@ export function ContributionProfileManager({
         setAddingAccount={setAddingAccount}
       />
 
-      <AddContribAccountPanel
+      <AddContributionAccountPanel
         addingAccount={addingAccount}
         setAddingAccount={setAddingAccount}
-        updateContribAccount={updateContribAccount}
-        createContribAccount={createContribAccount}
+        updateContributionAccount={updateContributionAccount}
+        createContributionAccount={createContributionAccount}
       />
 
       {viewMode === "compare" && <ContributionProfileCompare />}
@@ -127,7 +127,7 @@ export function ContributionProfileManager({
               profiles={profiles}
               creatingNew={creatingNew}
               effectiveSelectedId={effectiveSelectedId}
-              activeContribId={activeContribId}
+              activeContributionId={activeContributionId}
               renameMutation={renameMutation}
               handleActivate={handleActivate}
               canDeleteAny={canDeleteAny}

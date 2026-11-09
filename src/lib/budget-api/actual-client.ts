@@ -1,8 +1,6 @@
-// Actual Budget HTTP API client implementing BudgetAPIClient.
-// Uses jhonderson/actual-http-api wrapper.
-// Base URL: {serverUrl}/v1/budgets/{budgetSyncId}
-// Auth: x-api-key header
-// Amounts: integer cents (÷100 for dollars)
+// Actual Budget client (BudgetAPIClient) over the jhonderson/actual-http-api wrapper.
+// Base URL: {serverUrl}/v1/budgets/{budgetSyncId}; auth: x-api-key header.
+// Amounts: integer cents (÷100 for dollars).
 
 import type {
   BudgetAPIClient,
@@ -103,10 +101,9 @@ function mapMonth(m: ActualMonth): BudgetMonth {
   return {
     month: m.month,
     income: fromCents(m.totalIncome),
-    // Real totalBudgeted comes back negative (an outflow-from-ready-to-
-    // assign figure) while every per-category `budgeted` is positive —
-    // Math.abs so this summary matches that same "positive = allocated"
-    // convention instead of surprising a caller expecting YNAB's sign.
+    // totalBudgeted comes back negative (an outflow from ready-to-assign)
+    // while per-category `budgeted` is positive; Math.abs keeps this
+    // summary on the same "positive = allocated" convention as YNAB.
     budgeted: Math.abs(fromCents(m.totalBudgeted)),
     activity: fromCents(m.totalSpent),
     toBeBudgeted: m.toBudget === null ? null : fromCents(m.toBudget),
@@ -193,10 +190,8 @@ function mapTransaction(
 // -- Client --
 
 /** The `until_date` every transaction list sends: the last day Actual's
- *  YYYYMMDD dates can hold. The wrapper's lists end at its own today unless
- *  told otherwise, which would leave every later-dated transaction (a
- *  future-dated snapshot adjustment among them) out of sync, the snapshot
- *  scan and the read-back. */
+ *  YYYYMMDD dates can hold. Otherwise the wrapper's lists end at its own
+ *  today and drop later-dated transactions (e.g. snapshot adjustments). */
 const ACTUAL_LIST_UNTIL = "9999-12-31";
 
 /** At most this many requests to the wrapper at once: it reloads the
@@ -235,26 +230,9 @@ function toActualMonthId(month: string): string {
   return month.slice(0, 7);
 }
 
-/**
- * actual-http-api reloads the budget on every request through one shared,
- * unlocked @actual-app/api client. Once the budget is loaded, concurrent
- * requests are fine; the FIRST load after the wrapper starts is not — it
- * runs any schema migrations (after every Actual upgrade) and logs in, and
- * concurrent requests close the database under each other ("No budget file
- * is open", "The database connection is not open", "startServices called
- * while services are already running"). Every retry then repeats the race,
- * so a sync never recovers — confirmed live on the 26.8.1 → 26.10.0 bump:
- * one request loaded fine, the fan-out did not.
- *
- * So per wrapper: while it is cold, the first request runs alone and the
- * rest wait for it. If that load fails, the waiters fail with the same
- * error instead of piling on. A load failure on a warm wrapper (it was
- * restarted under us) marks it cold; a request that's harmless to repeat —
- * or any the wrapper says never ran ("No budget file is open") — is retried
- * once through the same single-request path. A POST that timed out or hit a
- * server error isn't: it may have been applied, and the next sync picks it
- * up.
- */
+/** A cold wrapper's first budget load (migrations + login) breaks under
+ *  concurrent requests, so per wrapper the first request runs alone and the
+ *  rest wait; a load failure on a warm wrapper marks it cold again. */
 type WrapperGate = { warm: boolean; pending: Promise<void> | null };
 const wrapperGates = new Map<string, WrapperGate>();
 
@@ -294,10 +272,9 @@ function isBudgetLoadFailure(err: unknown): boolean {
   return isBudgetNotOpen(err);
 }
 
-/** Safe to send again after a failure: one that's harmless to repeat (the
- *  shared rule, isResendable), or one the wrapper says never ran. A POST
- *  that timed out or hit a server error may have been applied — sending it
- *  again could add a transaction twice. */
+/** Safe to send again after a failure: harmless to repeat (isResendable)
+ *  or the wrapper says it never ran. A POST that timed out or hit a server
+ *  error may have been applied, so resending could add it twice. */
 function safeToResend(err: unknown, init?: RequestInit): boolean {
   return (
     isBudgetNotOpen(err) ||
@@ -422,32 +399,32 @@ export class ActualClient implements BudgetAPIClient {
     // wrapper struggles under concurrency). Still failing, the sync stops: a
     // missing balance would be written as $0 over the good cache.
     const failed: BudgetAccount[] = [];
-    await inBatches(accounts, WRAPPER_BATCH_SIZE, async (acct) => {
+    await inBatches(accounts, WRAPPER_BATCH_SIZE, async (account) => {
       try {
         // Same endpoint/shape as getAccountBalance below.
-        const balance = await this.getAccountBalance(acct.id);
-        acct.balance = balance;
-        acct.clearedBalance = balance;
+        const balance = await this.getAccountBalance(account.id);
+        account.balance = balance;
+        account.clearedBalance = balance;
       } catch (err) {
         if (!isTransientError(err)) throw err;
-        failed.push(acct);
+        failed.push(account);
       }
     });
     const unavailable: string[] = [];
     let lastError: BudgetApiError | undefined;
-    for (const acct of failed) {
+    for (const account of failed) {
       try {
-        const balance = await this.getAccountBalance(acct.id);
-        acct.balance = balance;
-        acct.clearedBalance = balance;
+        const balance = await this.getAccountBalance(account.id);
+        account.balance = balance;
+        account.clearedBalance = balance;
       } catch (err) {
         if (!isTransientError(err)) throw err;
         lastError = err as BudgetApiError;
         log("warn", "actual_client.balance_fetch_failed", {
-          accountId: acct.id,
+          accountId: account.id,
           error: lastError.message,
         });
-        unavailable.push(acct.name);
+        unavailable.push(account.name);
       }
     }
     // Keeps the failure's code, so a caller can tell a timeout from a 5xx.
@@ -459,19 +436,15 @@ export class ActualClient implements BudgetAPIClient {
     return accounts;
   }
 
-  /**
-   * The wrapper's `GET /accounts/:id/balance` returns the balance as the
-   * bare `data` value (`res.json({ data: balance || 0 })` — verified
-   * against actual-http-api's literal route source, 26.8.1), NOT nested
-   * under `data.balance`. Reading `res.data.balance` (the old code here)
-   * silently produced NaN on every call — pushSnapshotToBudgetApi's
-   * delta-vs-live-balance math was broken for every Actual household. */
+  /** The wrapper's `GET /accounts/:id/balance` returns the balance as the
+   *  bare `data` value (`res.json({ data: balance || 0 })`), not nested
+   *  under `data.balance`. */
   async getAccountBalance(
     accountId: string,
     asOfDate?: string,
   ): Promise<number> {
     // cutoff_date is inclusive and read as a local date by the wrapper, so
-    // the wrapper's time zone no longer moves the figure; without it the
+    // the wrapper's time zone doesn't move the figure; without it the
     // balance is "up to the wrapper's today".
     const res = await this.request(
       `/accounts/${accountId}/balance${asOfDate ? `?cutoff_date=${asOfDate}` : ""}`,
@@ -485,8 +458,7 @@ export class ActualClient implements BudgetAPIClient {
   /** `/categorygroups` and `/categories` carry names only; each category's
    *  numbers come from the current month, merged in by id. A category the
    *  month doesn't list yet (just created) has 0 for each. */
-  async getCategories(): Promise<BudgetCategoryGroup[]> {
-    const now = new Date();
+  async getCategories(now: Date): Promise<BudgetCategoryGroup[]> {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const [groupsRes, catsRes, monthDetail] = await Promise.all([
       this.request("/categorygroups", actualSchemas.categoryGroups),
@@ -494,11 +466,9 @@ export class ActualClient implements BudgetAPIClient {
       this.getMonthDetail(currentMonth),
     ]);
 
-    // monthDetail.categories already carries this month's real numbers AND
-    // the note-goal overlay (getMonthDetail applies both) — reuse it
-    // instead of a second raw /months/:id fetch plus a second
-    // overlayNoteGoals pass over every category (previously fetched the
-    // month and ran the per-category note overlay twice).
+    // monthDetail.categories already carries this month's numbers and the
+    // note-goal overlay (getMonthDetail applies both), so the month is
+    // fetched and overlaid once.
     const currentByCatId = new Map(
       monthDetail.categories.map((c) => [c.id, c]),
     );
@@ -522,14 +492,9 @@ export class ActualClient implements BudgetAPIClient {
     });
   }
 
-  /** `GET /months` (no month id) does NOT return `ActualMonth` objects —
-   * re-verified LIVE against the deployed wrapper: it's a bare array of
-   * month-id strings (`["2020-01", ..., "2027-07"]`), each of which needs
-   * its own `GET /months/:id` call to get real data (only that endpoint
-   * returns income/budgeted/spent — see mapMonth's docblock). The old code
-   * here treated each string as an `ActualMonth` object, reading every
-   * field off a string primitive — always NaN/undefined, though this
-   * method currently has no live caller in the app so it never surfaced. */
+  /** `GET /months` returns bare month-id strings (`"2020-01"`), not
+   *  `ActualMonth` objects; only `GET /months/:id` carries
+   *  income/budgeted/spent, so each month in range is fetched on its own. */
   async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
     const res = await this.request("/months", actualSchemas.monthIds);
     const inRange = res.data.filter((id) => id >= start && id <= end);
@@ -592,11 +557,8 @@ export class ActualClient implements BudgetAPIClient {
     }
   }
 
-  /** The wrapper's `PATCH /months/:month/categories/:id` requires
-   * `req.body.category` (a non-empty object — `isEmpty(req.body.category)`
-   * throws otherwise), not a flat top-level body. Verified against the
-   * route's literal source, 26.8.1. The old flat `{budgeted}` body made
-   * every budgeted-amount push to Actual fail. */
+  /** The wrapper's `PATCH /months/:month/categories/:id` requires the body
+   *  nested under a non-empty `category` object, not a flat body. */
   async updateCategoryBudgeted(
     month: string,
     categoryId: string,
@@ -658,41 +620,40 @@ export class ActualClient implements BudgetAPIClient {
     const payeeNameById = payeeNames(payees.data, accounts.data);
     const allTx: BudgetTransaction[] = [];
 
-    for (const acct of accounts.data) {
-      if (acct.closed) continue;
+    for (const account of accounts.data) {
+      if (account.closed) continue;
       try {
         const res = await this.request(
-          `/accounts/${acct.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+          `/accounts/${account.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
           actualSchemas.transactions,
         );
         allTx.push(
           ...res.data.map((t) =>
             mapTransaction(t, {
-              accountName: acct.name,
+              accountName: account.name,
               categories: categoryNames,
               payees: payeeNameById,
             }),
           ),
         );
       } catch (err) {
-        // Only a 404 (the account no longer exists) may be skipped. Any
-        // other failure (auth, timeout, network) stops the sync: a dropped
-        // account would be cached as a complete transaction list. The sync's
-        // network phase throwing changes nothing locally.
+        // Only a 404 (the account is gone) may be skipped. Any other failure
+        // stops the sync, which changes nothing locally: a dropped account
+        // would be cached as a complete transaction list.
         if (err instanceof BudgetApiError && err.status === 404) continue;
         log("warn", "actual_client.transactions_fetch_failed", {
-          accountId: acct.id,
+          accountId: account.id,
           error: err instanceof Error ? err.message : String(err),
         });
         const reason = err instanceof Error ? err.message : String(err);
         if (err instanceof BudgetApiError) {
           throw retold(
             err,
-            `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+            `Actual didn't return transactions for ${account.name} — nothing was synced: ${reason}`,
           );
         }
         throw new Error(
-          `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+          `Actual didn't return transactions for ${account.name} — nothing was synced: ${reason}`,
         );
       }
     }
@@ -703,24 +664,9 @@ export class ActualClient implements BudgetAPIClient {
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
     const importedId = actualImportedId(tx);
 
-    // The wrapper's `POST /accounts/:id/transactions` request body must be
-    // nested under a `transaction` key (verified against the route's
-    // literal source, and reconfirmed live: an un-nested body 400s). Its
-    // response, however, does NOT return the created transaction's id —
-    // this was re-checked LIVE against the deployed image (both with and
-    // without `imported_id` set) and it always replies `{"message":"ok"}`,
-    // contradicting what actual-http-api's own budget.js source appeared
-    // to promise (`addTransaction` resolving to `transactionIds[0]`) for
-    // whatever reason (version drift between the pinned source read and
-    // the deployed `:latest` build, a code path this wrapper's `addTransaction`
-    // doesn't actually take, etc.) — don't trust that source reading over
-    // this live-confirmed behavior again without re-verifying live.
-    //
-    // So: look the transaction back up by its own deterministic
-    // `imported_id` immediately after creating it — the only way this
-    // client gets a real id back, which `deleteTransaction`,
-    // `pushSnapshotToBudgetApi`'s in-run rollback, and any future caller
-    // that needs the id all depend on.
+    // The body must be nested under `transaction` (a flat body 400s). The
+    // response is only `{"message":"ok"}` with no id, so the transaction is
+    // looked back up by its deterministic `imported_id` to get its real id.
     await this.request(
       `/accounts/${tx.accountId}/transactions`,
       actualSchemas.written,
@@ -790,10 +736,8 @@ export class ActualClient implements BudgetAPIClient {
     return res.data.map((t) => mapTransaction(t, NO_NAMES));
   }
 
-  /** Same request-body nesting fix as `createTransaction` — the wrapper's
-   * `PATCH /transactions/:id` requires `req.body.transaction` (a non-empty
-   * object; validated via the same `validateTransactionBody`), not a flat
-   * top-level body. Verified against the route's literal source, 26.8.1. */
+  /** The wrapper's `PATCH /transactions/:id` requires the body nested under
+   *  a non-empty `transaction` object, as `createTransaction` does. */
   async updateTransaction(
     txId: string,
     tx: Partial<NewBudgetTransaction>,

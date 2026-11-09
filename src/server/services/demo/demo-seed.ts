@@ -14,7 +14,11 @@ import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
-export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
+export async function seedProfile(
+  db: typeof appDb,
+  profile: DemoProfile,
+  seededOn: Date,
+) {
   // 1. People
   const personRows = await db
     .insert(schema.people)
@@ -28,19 +32,14 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const personIdByName = new Map(personRows.map((r) => [r.name, r.id]));
 
-  // For parity with real usage — every person gets the same auto-provisioned
-  // speculative-job peg settings.people.create gives real people.
+  // Every person gets the speculative-job peg real people get.
   await db
     .insert(schema.jobs)
-    .values(personRows.map((p) => speculativeJobValues(p.id)));
+    .values(personRows.map((p) => speculativeJobValues(p.id, seededOn)));
 
-  // 2. Jobs — a job carries no salary/bonus/payroll terms of its own;
-  // insert the (now purely structural) job row, then collect a COMPLETE
-  // Salary Profile entry (all 17 fields — salary, bonus terms, the
-  // payroll-config fields that used to live on the job row, and
-  // extraPaycheckRouting) to give it in
-  // a demo Salary Profile below — a profile entry is all-or-nothing, never
-  // a partial pin (mirrors the "Demo Contribution" profile pattern).
+  // 2. Jobs: insert the structural job row, then collect a complete Salary
+  // Profile entry (all 17 fields) for the demo Salary Profile below; a
+  // profile entry is all-or-nothing, never partial.
   const salaryPinsByJobId: Record<string, SalaryEntry> = {};
   const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {
@@ -167,12 +166,10 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const _perfIdByLabel = new Map(perfRows.map((r) => [r.accountLabel, r.id]));
 
-  // 8. Contribution accounts — accounts carry no value of their own, so
-  // every demo account needs an explicit Contribution Profile active-field
-  // entry or it would render as $0/incomplete. Insert the accounts first
-  // (capturing their real ids), then seed one demo Contribution Profile
-  // whose active fields cover all of them, and make it the active profile.
-  const contribActiveFieldsByAccountId: Record<
+  // 8. Contribution accounts carry no value of their own: insert them, then
+  // seed a demo Contribution Profile whose active fields cover every one (or
+  // it renders $0/incomplete), and make it the active profile.
+  const contributionActiveFieldsByAccountId: Record<
     string,
     { contributionValue: string; contributionMethod: string }
   > = {};
@@ -202,26 +199,26 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       })
       .returning({ id: schema.contributionAccounts.id });
     if (created) {
-      contribActiveFieldsByAccountId[String(created.id)] = {
+      contributionActiveFieldsByAccountId[String(created.id)] = {
         contributionValue: ca.contributionValue,
         contributionMethod: ca.contributionMethod,
       };
     }
   }
-  if (Object.keys(contribActiveFieldsByAccountId).length > 0) {
-    const [demoContribProfile] = await db
+  if (Object.keys(contributionActiveFieldsByAccountId).length > 0) {
+    const [demoContributionProfile] = await db
       .insert(schema.contributionProfiles)
       .values({
         name: "Demo Contribution",
         contributionActiveFields: {
-          contributionAccounts: contribActiveFieldsByAccountId,
+          contributionAccounts: contributionActiveFieldsByAccountId,
         },
       })
       .returning({ id: schema.contributionProfiles.id });
-    if (demoContribProfile) {
+    if (demoContributionProfile) {
       await db.insert(schema.appSettings).values({
         key: SK_ACTIVE_CONTRIB_PROFILE_ID,
-        value: demoContribProfile.id,
+        value: demoContributionProfile.id,
       });
     }
   }
@@ -361,7 +358,6 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 15. Account performance (per-account yearly breakdown)
-  // Build a lookup from accountLabel → perfAccount.id for FK linking
   // These three guard the DEMO_PROFILES fixture's own consistency — a
   // malformed constant is a dev bug, not a user error. Left as plain Error.
   for (const ap of profile.accountPerformance) {
@@ -412,10 +408,8 @@ export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 17. Property taxes
-  // Build loan name → id map
   const loanIdByName = new Map<string, number>();
   for (const _ml of profile.mortgageLoans) {
-    // Re-query to get IDs (loans were inserted above without RETURNING)
     const rows = await db
       .select({ id: schema.mortgageLoans.id, name: schema.mortgageLoans.name })
       .from(schema.mortgageLoans);

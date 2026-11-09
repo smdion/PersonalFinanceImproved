@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The Simulation preset the Retirement page uses — shared by the Simulation
- * and the strategy comparison. Admins save it to the household's settings;
- * anyone else keeps it for this visit (a viewer can't write settings, and
- * switching a view must still work for them).
+ * The Retirement page's Simulation preset. Admins save it to the household's
+ * settings; anyone else keeps it for this visit (viewers can't write settings).
  */
 import { useCallback, useSyncExternalStore } from "react";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";

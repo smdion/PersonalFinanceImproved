@@ -1,12 +1,6 @@
 /**
- * Pure helper functions shared by the budget page.
- *
- * These reshape the paycheck data (one copy per budget column — see
- * use-budget-derived-data.ts) into the payroll + non-payroll breakdowns the
- * budget summary table and contribution matching rely on. The hand-rolled
- * local casts are intentional: narrowing against `@/server/*` types would
- * violate the `no-restricted-imports` rule at eslint.config.mjs lines
- * 44-64.
+ * Pure budget-page helpers that reshape paycheck data into payroll/non-payroll
+ * breakdowns. Local casts stand in for `@/server/*` types (no-restricted-imports).
  */
 
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
@@ -119,13 +113,10 @@ export function buildPayrollBreakdown(
   };
 }
 
-export function buildNonPayrollContribs(
+export function buildNonPayrollContributions(
   paycheckData: unknown,
-  // Contribution accounts already linked to a budget item (via
-  // RawItem.contributionAccountId) — excluded here so a linked account's
-  // real dollars can't ALSO get name-matched onto some other unlinked
-  // budget item and double-count. See portfolio label fix upstream for
-  // the sibling case of the same "one account, two identities" pattern.
+  // Accounts already linked to a budget item, excluded so their dollars aren't
+  // also name-matched onto another item.
   linkedAccountIds: Set<number> = new Set(),
 ): Map<string, number> {
   if (!paycheckData || !Array.isArray(paycheckData)) return new Map();
@@ -147,13 +138,8 @@ export function buildNonPayrollContribs(
   for (const d of data) {
     if (!d.paycheck || !d.job) continue;
     for (const c of d.rawContribs ?? []) {
-      // The canonical payroll-vs-net-level signal is isPayrollDeducted,
-      // falling back to jobId presence only when unset (same resolution
-      // used in src/lib/pure/paycheck/bonus.ts and
-      // src/lib/pure/contributions/contribution-rows.ts) — jobId alone just means "tied
-      // to this employer," not "deducted from that employer's paycheck." A
-      // job-tied account the user explicitly funds from take-home (box
-      // unchecked) must still land in this non-payroll pool.
+      // Payroll vs take-home uses isPaidThroughPayroll (isPayrollDeducted, else
+      // jobId). A job-tied account funded from take-home stays in this pool.
       if (isPaidThroughPayroll(c)) continue;
       if (linkedAccountIds.has(c.id)) continue;
       const val = computeValue(c) || 0;
@@ -194,9 +180,8 @@ export function computeTotalSinking(
 }
 
 /**
- * Take-home pay minus budgeted expenses minus sinking-fund commitments —
- * what's left over each month with nowhere assigned. Shared by the Savings
- * row breakdown and the summary bar's headline figure so they can't drift.
+ * Take-home minus budgeted expenses minus sinking funds: the unassigned monthly
+ * leftover. Shared by the Savings row and the summary bar headline.
  */
 export function computeUnallocated(
   netMonthly: number,

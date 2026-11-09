@@ -1,32 +1,13 @@
 /**
- * Social Security claiming-age sweep — router endpoint.
- *
- * Modeled directly on `withdrawal-bracket-optimizer.ts`/`coast-fire.ts`
- * (same `fetchRetirementData`/`buildEnginePayload` input shape,
- * `protectedProcedure.query`, no server-side cache). Split into its own
- * file rather than added to `retirement.ts` for the same CONTRIBUTING.md § Composed Router Convention
- * Composed Router size reason.
- *
- * `pia` is caller-supplied (a real what-if axis the client already has
- * from `perPersonSettings`) — `birthYear` is NOT, despite an earlier
- * version accepting it from the client too: birthYear is authoritative DB
- * data (`perPersonSettings[].birthYear`), and accepting a client-supplied
- * copy would create two independent sources of truth for FRA that could
- * silently disagree with what `build-engine-payload.ts` actually used for
- * this household's real projection. Resolved server-side from
- * `payload.perPersonSettings` by `personId` instead, which also lets this
- * endpoint validate `personId` against the real household (a stale/wrong
- * id is a `BAD_REQUEST`, not a silent no-op or a 500).
+ * Social Security claiming-age sweep. `pia` comes from the caller (a what-if
+ * axis); the birth year is the projection's own, found by `personId` in
+ * `perPersonSettings` (an unknown id is a BAD_REQUEST).
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-  ProjectionInput,
-} from "@/lib/pure/engine/types";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import {
   buildSocialSecurityEntries,
@@ -35,36 +16,16 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const socialSecurityRouter = createTRPCRouter({
   /**
-   * Claiming-age sweep for one person: runs the household's real
-   * projection at each candidate claiming age (default 62-70) and ranks
-   * by final net worth, excluding any candidate that depletes the
-   * portfolio. See `sweepClaimingAges` for the full algorithm — this
-   * endpoint only resolves the household's real `ProjectionInput` and
-   * passes the caller's `pia` through.
-   *
-   * `decumulationDefaults` follows the same optional-with-DB-fallback
-   * pattern every other projection endpoint uses (see
-   * `decumulationDefaultsInputSchema`'s own docblock) — a caller that
-   * omits it gets the household's own persisted withdrawal settings.
-   * `selection` carries the page's profile and budget picks: Social
-   * Security data lives per Retirement Profile, and depletion excludes a
-   * candidate age, so the picks can change which age is recommended.
-   *
-   * NOTE for step 7 (UI): for a household that has NOT opted into PIA for
-   * this person, every candidate this sweep returns still replaces their
-   * real flat `socialSecurityMonthly` benefit with a PIA-derived one
-   * (`sweepClaimingAges` unconditionally overrides the scalar SS fields
-   * per candidate) — the UI must not present these candidates as directly
-   * comparable to the household's actual on-screen projection unless
-   * they've opted in.
+   * Claiming-age sweep for one person on the household's real projection (`sweepClaimingAges`).
+   * Omitted `decumulationDefaults` = persisted settings; `selection` = the page's picks. Every
+   * candidate uses a PIA-derived benefit, so it isn't comparable for a non-PIA household.
    */
   sweepSocialSecurityClaimingAges: protectedProcedure
     .input(
@@ -80,7 +41,7 @@ export const socialSecurityRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { payload } = await prepareProjectionRun(ctx.db, {
+      const { payload } = await prepareProjectionRun(ctx, {
         selection: input.selection,
         snapshotId: input.snapshotId,
       });
@@ -98,34 +59,12 @@ export const socialSecurityRouter = createTRPCRouter({
         });
       }
 
-      const {
-        settings,
-        distributionTaxRates,
-        baseEngineInput,
-        perPersonSettings,
-      } = payload;
-      const engineInput = {
-        ...baseEngineInput,
-        decumulationDefaults: buildDecumulationDefaults(
-          settings,
-          input.decumulationDefaults,
-          distributionTaxRates,
-        ),
-        // Omitted "Changes by year" = the household's saved rows.
-        ...((await resolveProjectionOverrides(ctx.db, input)) as {
-          accumulationOverrides: AccumulationOverride[];
-          decumulationOverrides: DecumulationOverride[];
-        }),
-      };
+      const { perPersonSettings } = payload;
+      const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
-      // Multi-person households need every candidate's FULL entries array
-      // rebuilt through the shared helper, not just this person's own
-      // entry patched in place — a spouse's spousal top-up depends on this
-      // person's claiming age (and, symmetrically, this person's own
-      // amount can depend on the spouse's stored data). The single-person
-      // path stays on `sweepClaimingAges`'s default scalar-override
-      // builder, which is already correct (no spousal math is possible
-      // with one person).
+      // Multi-person: rebuild every candidate's FULL entries array via the shared helper,
+      // since spousal top-ups depend on this person's claiming age. Single-person uses
+      // `sweepClaimingAges`'s default scalar-override builder.
       const buildCandidateInput =
         perPersonSettings.length > 1
           ? (claimingAge: number): ProjectionInput => {

@@ -1,14 +1,6 @@
-// Store what SimpleFIN only keeps for ~90 days: per-account balances,
-// holdings and transactions. Called from runSimplefinSync (the one sync path
-// shared by the daily cron and "Sync Now") after the balance snapshot.
-//
-// Only investment accounts are stored — accounts linked to a tracked
-// (performance) account, or reporting invested holdings. Checking and
-// credit-card data in the same response is never written.
-//
-// Transactions are stored as sent; their kind is computed on read. HSA card
-// spending is the one exception: the merchant name is health data, so it is
-// replaced by "Medical withdrawal" here and the kind is locked.
+// Stores the investment-account balances, holdings and transactions SimpleFIN only
+// keeps ~90 days; other accounts are never written. HSA card spending is stored
+// as "Medical withdrawal" with its kind locked (merchant names are health data).
 import "server-only";
 import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -22,9 +14,10 @@ import { planReconcile } from "@/lib/pure/sync/simplefin-reconcile";
 import { classifySimplefinTransaction } from "@/lib/pure/sync/simplefin-transactions";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/investments/market-calendar";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { paysMedical } from "@/lib/config/account-types";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 export const REDACTED_MEDICAL_DESCRIPTION = "Medical withdrawal";
 /** Look back this far before the requested window when loading stored rows (pending matching). */
@@ -229,6 +222,7 @@ async function ingestTransactions(
   accountHasError: boolean,
   summary: IngestSummary,
   label: string,
+  now: Date,
 ): Promise<void> {
   const redacted = new Set<string>();
   const incoming = account.transactions.map((t) => {
@@ -297,8 +291,6 @@ async function ingestTransactions(
     windowStart,
     accountHasError,
   });
-
-  const now = new Date();
   for (const t of plan.inserts) {
     const lock = redacted.has(t.externalId);
     await db
@@ -354,7 +346,7 @@ function redactsCardSpending(
   linked: boolean,
   accountType: string | undefined,
 ): boolean {
-  return !linked || (accountType !== undefined && isHsaCategory(accountType));
+  return !linked || (accountType !== undefined && paysMedical(accountType));
 }
 
 /** Whether a stored SimpleFIN account's card spending is redacted (see {@link redactsCardSpending}). */
@@ -394,7 +386,7 @@ async function lockAsMedicalWithdrawal(
     .set({
       description: REDACTED_MEDICAL_DESCRIPTION,
       kindOverride: "withdrawal",
-      updatedAt: new Date(),
+      updatedAt: writeStamp(),
     })
     .where(inArray(schema.investmentTransactions.id, [...transactionIds]));
 }
@@ -450,7 +442,7 @@ export async function ingestInvestmentData(
     /** "YYYY-MM-DD" — the start-date requested from SimpleFIN. */
     windowStart: string;
     accountIdsWithErrors: ReadonlySet<string>;
-    now?: Date;
+    now: Date;
   },
 ): Promise<IngestSummary> {
   const summary: IngestSummary = {
@@ -505,9 +497,7 @@ export async function ingestInvestmentData(
         });
     }
 
-    const asOf = valuationDateFor(
-      account.balanceDate ?? args.now ?? new Date(),
-    );
+    const asOf = valuationDateFor(account.balanceDate ?? args.now);
     await ingestHoldings(db, reg.id, account, asOf, label, summary);
 
     const redactCardSpending = redactsCardSpending(
@@ -525,6 +515,7 @@ export async function ingestInvestmentData(
       args.accountIdsWithErrors.has(account.id),
       summary,
       label,
+      args.now,
     );
   }
   return summary;

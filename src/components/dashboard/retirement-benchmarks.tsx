@@ -186,7 +186,7 @@ function Growth({
       <span className="text-muted text-sm">
         Growth
         <HelpTip
-          text="What $1 invested today could be worth at retirement at your plan's average return — the longer it grows, the more compounding does."
+          text="What $1 invested today could be worth at retirement at your projection's average return — the longer it grows, the more compounding does."
           learnMoreHref="/retirement/accumulation-methodology"
         />
       </span>

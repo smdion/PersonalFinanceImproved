@@ -4,14 +4,9 @@ import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-st
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { useEffect, useRef } from "react";
 
-/** Yearly Income Stability chart — shows withdrawal as % of baseline over
- *  time, one year at a time (the per-year counterpart to the Lifetime
- *  Income Stability KPI ring, which instead measures whether that ratio
- *  ever breached the floor across the WHOLE retirement horizon).
- *  Bar chart matching the Balance chart visual pattern.
- *  "strategy" view: bars show ratio vs that year's own guardrail target.
- *  "budget" view: bars show ratio vs retirement budget.
- *  MC fan bands + median line overlay when available. */
+/** Yearly Income Stability bar chart: withdrawal as % of baseline per year
+ *  ("strategy" view vs the year's guardrail target, "budget" view vs the
+ *  retirement budget), with MC fan bands + median overlay when available. */
 import {
   formatCurrency,
   formatPercent,
@@ -53,21 +48,16 @@ export function SpendingStabilityChart({
   const {
     result,
     engineSettings,
-    mcStabilityBands,
+    simulationStabilityBands,
     fanBandRange,
     deflate,
     showStabilityBars,
     setShowStabilityBars,
     agesInYear,
   } = state;
-  // Smart DEFAULT (hidden for GK/Forgo/etc. — flat/uneventful without real
-  // volatility), applied ONCE via the shared showStabilityBars toggle (the
-  // same BASELINE On/Off pill the Balance chart uses, contextually
-  // rewired in index.tsx's toolbar) — never a permanent hide, and never
-  // re-applied after the user's own first interaction, so it can't fight
-  // a manual toggle back on (a separate
-  // "Show anyway" link was confusing because the real BASELINE toggle
-  // appeared to do nothing on this chart).
+  // Smart default: bars hidden for strategies that don't react to volatility,
+  // applied ONCE via the shared showStabilityBars toggle (the BASELINE pill)
+  // and never after the user's first interaction, so it can't fight them.
   const reactsToVolatility =
     STRATEGY_CONFIG_BY_STORED_KEY[engineSettings?.withdrawalStrategy ?? "fixed"]
       ?.reactsToVolatility ?? false;
@@ -83,11 +73,11 @@ export function SpendingStabilityChart({
   if (!result) return null;
 
   const years = result.projectionByYear;
-  const decYears = years.filter(
+  const decumulationYears = years.filter(
     (y): y is EngineDecumulationYear => y.phase === "decumulation",
   );
 
-  if (decYears.length === 0) {
+  if (decumulationYears.length === 0) {
     return (
       <div className="bg-surface-sunken rounded-lg p-3">
         <h5 className="text-muted mb-2 text-xs font-medium uppercase">
@@ -101,7 +91,7 @@ export function SpendingStabilityChart({
     );
   }
 
-  const year1Withdrawal = decYears[0]!.totalWithdrawal;
+  const year1Withdrawal = decumulationYears[0]!.totalWithdrawal;
   const inflationRate = parseFloat(engineSettings.annualInflation);
 
   const isStrategy = view === "strategy";
@@ -116,15 +106,14 @@ export function SpendingStabilityChart({
     STRATEGY_CONFIG_BY_STORED_KEY[activeStrategy]?.usesPostRetirementRaise ??
     true;
 
-  const hasMcData = !!mcStabilityBands;
-  const mcBandMap = isStrategy
-    ? mcStabilityBands?.stratRatio
-    : mcStabilityBands?.budgetRatio;
-  const showMc = hasMcData && !!mcBandMap && fanBandRange !== "off";
-  // reactsToVolatility computed earlier (before the early returns, for the
-  // smart-default effect). Bars now read the shared showStabilityBars
-  // toggle directly -- no re-gating here, so the BASELINE pill is the one
-  // real control (see index.tsx's toolbar / use-projection-form-state.ts).
+  const hasSimulationData = !!simulationStabilityBands;
+  const simulationBandMap = isStrategy
+    ? simulationStabilityBands?.stratRatio
+    : simulationStabilityBands?.budgetRatio;
+  const showSimulation =
+    hasSimulationData && !!simulationBandMap && fanBandRange !== "off";
+  // Bars read the shared showStabilityBars toggle directly, so the BASELINE
+  // pill is the one real control (see use-projection-form-state.ts).
   const showBars = showStabilityBars;
 
   // Fan band range — same selector as Balance chart
@@ -135,52 +124,42 @@ export function SpendingStabilityChart({
         ? { lo: "p10" as const, hi: "p90" as const }
         : { lo: "p25" as const, hi: "p75" as const };
 
-  const chartData = decYears
-    .filter((_, i) => i % 2 === 0 || i === decYears.length - 1)
-    .map((yr) => {
-      const decIdx = yr.age - decYears[0]!.age;
-      const inflationFactor = Math.pow(1 + inflationRate, decIdx);
+  const chartData = decumulationYears
+    .filter((_, i) => i % 2 === 0 || i === decumulationYears.length - 1)
+    .map((yearRow) => {
+      const decumulationIndex = yearRow.age - decumulationYears[0]!.age;
+      const inflationFactor = Math.pow(1 + inflationRate, decumulationIndex);
 
       const baseline = isStrategy
         ? usesPostRetirementRaise
-          ? yr.targetWithdrawal
+          ? yearRow.targetWithdrawal
           : year1Withdrawal * inflationFactor
-        : yr.budgetOnlyExpenses;
-      // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
-      // Social Security fully covers year-1 spending): 0%, not a misleading
-      // 100% that would hide real spending variability in later years.
-      // Ratio itself is deflate-agnostic (numerator/denominator are the
-      // same year's nominal dollars, so any deflation factor cancels) —
-      // only the DISPLAY dollar figures below need `deflate` applied, same
-      // as every sibling chart (projection-chart.tsx, hero KPIs, MC
-      // results) already does, so this chart stops silently showing
-      // nominal/future dollars while the rest of the page respects the
-      // Today's $ / Future $ toggle.
-      // Budget view: what the strategy has the household spend against the
-      // budget (the Simulation's budget band measures the same); strategy
-      // view: the withdrawal against the strategy's own baseline.
-      const measured = isStrategy ? yr.totalWithdrawal : strategySpending(yr);
+        : yearRow.budgetOnlyExpenses;
+      // Budget view: strategy spending vs budget; strategy view: withdrawal vs
+      // the strategy's own baseline. Zero baseline → 0% (as in monte-carlo.ts).
+      // The ratio is deflate-agnostic; only display dollars need `deflate`.
+      const measured = isStrategy
+        ? yearRow.totalWithdrawal
+        : strategySpending(yearRow);
       const ratio = safeDivide(measured, baseline, 0);
 
-      const band = mcBandMap?.get(yr.age);
+      const band = simulationBandMap?.get(yearRow.age);
 
       // MC band data — match Balance chart's stacked area pattern
       const pct = (v: number) => Math.round(v * 1000) / 10;
       const datum: Record<string, number | undefined> = {
-        age: yr.age,
-        year: yr.year,
+        age: yearRow.age,
+        year: yearRow.year,
         ratio: pct(ratio),
-        withdrawal: Math.round(deflate(measured, yr.year)),
-        baseline: Math.round(deflate(baseline, yr.year)),
+        withdrawal: Math.round(deflate(measured, yearRow.year)),
+        baseline: Math.round(deflate(baseline, yearRow.year)),
       };
 
       if (band) {
         datum.mc_p50 = pct(band.p50);
-        // % of sims that breached the 75% floor THIS year — visible even
-        // when percentiles are degenerate (e.g. only 8% of trials breach,
-        // so p25/p50/p75 all stay flat at 100% and hide it). This is what
-        // actually answers the KPI warning's "see which years" question —
-        // an earlier version of this chart didn't deliver on that promise.
+        // % of sims that breached the 75% floor THIS year, visible even when
+        // percentiles stay flat at 100%; answers the KPI warning's "see which
+        // years".
         datum.mc_breach = pct(band.breachRate ?? 0);
 
         // Always include all band keys (0 for unused) so Recharts
@@ -217,15 +196,15 @@ export function SpendingStabilityChart({
     });
 
   // Year-1 baseline for left axis dollar conversion (100% = this amount) —
-  // deflated at decYears[0]'s year so this label matches the Today's $ /
+  // deflated at decumulationYears[0]'s year so this label matches the Today's $ /
   // Future $ toggle like the rest of the chart, not raw nominal dollars.
   const year1Baseline = deflate(
     isStrategy
       ? usesPostRetirementRaise
-        ? decYears[0]!.targetWithdrawal
+        ? decumulationYears[0]!.targetWithdrawal
         : year1Withdrawal
-      : decYears[0]!.budgetOnlyExpenses,
-    decYears[0]!.year,
+      : decumulationYears[0]!.budgetOnlyExpenses,
+    decumulationYears[0]!.year,
   );
 
   return (
@@ -241,16 +220,14 @@ export function SpendingStabilityChart({
             {isStrategy
               ? usesPostRetirementRaise
                 ? "the strategy's own year-by-year target"
-                : "year-1 plan"
+                : "year-1 amount"
               : "retirement budget"}{" "}
             (inflation-adjusted)
           </span>
         </h5>
       </div>
-      {/* Always-visible explainer, not buried in a HelpTip — the flat-vs-
-          drifting contrast between these two views reads as a bug at a
-          glance without it. See PLAN-... UI/UX consultation for why this
-          stays two separate views instead of one overlaid chart. */}
+      {/* Always-visible explainer: without it, the flat-vs-drifting contrast
+          between the two views reads as a bug at a glance. */}
       <div className="text-micro text-faint mb-2">
         {isStrategy
           ? "Strategy bars stay near 100% by design — they compare spending to the strategy's own year-by-year target. They only dip when something (an RMD, a shortfall) forces spending away from that target."
@@ -267,7 +244,7 @@ export function SpendingStabilityChart({
             above to see them anyway.
           </>
         )}
-        {showMc && (
+        {showSimulation && (
           <>
             {" "}
             The orange <strong>Breached floor</strong> line is the % of
@@ -355,7 +332,7 @@ export function SpendingStabilityChart({
                     <span>{formatCurrency(d.withdrawal ?? 0)}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted">Plan ({baselineLabel}):</span>
+                    <span className="text-muted">Base ({baselineLabel}):</span>
                     <span className="text-faint">
                       {formatCurrency(d.baseline ?? 0)}
                     </span>
@@ -428,7 +405,7 @@ export function SpendingStabilityChart({
           />
 
           {/* MC fan bands — always render all 6 layers (unused ones have height 0) */}
-          {showMc && (
+          {showSimulation && (
             <>
               <Area
                 yAxisId="left"
@@ -445,7 +422,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_5_10"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandOuter}
+                fill={CHART_COLORS.simulationBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -456,7 +433,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_10_25"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandInner}
+                fill={CHART_COLORS.simulationBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -468,7 +445,7 @@ export function SpendingStabilityChart({
                 dataKey="mc_25_75"
                 stackId="mc"
                 name="Confidence band"
-                fill={CHART_COLORS.mcBandMiddle}
+                fill={CHART_COLORS.simulationBandMiddle}
                 fillOpacity={0.2}
                 stroke="none"
                 isAnimationActive={false}
@@ -478,7 +455,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_75_90"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandInner}
+                fill={CHART_COLORS.simulationBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -489,7 +466,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_90_95"
                 stackId="mc"
-                fill={CHART_COLORS.mcBandOuter}
+                fill={CHART_COLORS.simulationBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -513,13 +490,13 @@ export function SpendingStabilityChart({
           )}
 
           {/* MC median line — same as Balance chart */}
-          {showMc && (
+          {showSimulation && (
             <Line
               yAxisId="left"
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"
-              stroke={c.mcMedian}
+              stroke={c.simulationMedian}
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}
@@ -527,12 +504,10 @@ export function SpendingStabilityChart({
             />
           )}
 
-          {/* % of sims that breached the floor THIS year — independent of
-              the confidence-band width, so a real but rare/concentrated
-              deviation shows up even when p5-p95 (or narrower) leaves the
-              band itself looking flat. Right axis (0-100%, shares the
-              hidden forcing line's scale). */}
-          {showMc && (
+          {/* % of sims that breached the floor THIS year, independent of band
+              width so rare deviations show even when the band looks flat.
+              Right axis (0-100%, shared with the hidden forcing line). */}
+          {showSimulation && (
             <Line
               yAxisId="right"
               type="monotone"

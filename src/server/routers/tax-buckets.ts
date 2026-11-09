@@ -1,12 +1,6 @@
 /**
- * Tax Buckets analysis router — real current-state tax-bucket breakdown,
- * Rule of 55 / Roth-basis-driven early-access flags, and the manual-entry
- * mutations (Roth basis, separation date) it depends on.
- *
- * "Accessible now" reflects real, already-happened separation only — never
- * a hypothetical future retirement date. There is no target-retirement-age
- * input here; a planned future retirement isn't evidence Rule of 55 already
- * applies today.
+ * Tax Buckets: current tax-bucket breakdown, Rule of 55 / Roth-basis early-access flags
+ * (from real past separation only, never a planned date), and their manual-entry mutations.
  */
 import { z } from "zod/v4";
 import { isCalendarDate } from "@/lib/utils/date";
@@ -23,20 +17,16 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-bucket-analysis";
-import {
-  buildCurrentRothBasisMap,
-  selectCurrentRothBasisRow,
-} from "@/lib/pure/accounts/roth-basis-rollover";
-import type { AccountCategory } from "@/lib/config/account-types";
+import { selectCurrentRothBasisRow } from "@/lib/pure/accounts/roth-basis-rollover";
+import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
+import { writeStamp } from "@/lib/utils/clock";
 
-/** Stamp basis_last_updated in app_settings — mirrors stampPerformanceUpdated
- *  (services/performance/last-updated.ts). Called on every real basis write
- *  (single or batch) so the sidebar Data Freshness display and the
- *  Performance page subtitle stay current automatically. */
+/** Stamp basis_last_updated in app_settings on every basis write, keeping the sidebar
+ *  Data Freshness and Performance subtitle current (like stampPerformanceUpdated). */
 async function stampBasisUpdated(db: DbOrTx) {
-  const now = new Date().toISOString();
+  const now = writeStamp().toISOString();
   await upsertSetting(db, "basis_last_updated", now);
 }
 
@@ -44,37 +34,27 @@ export const taxBucketsRouter = createTRPCRouter({
   /** Real current-state tax-bucket breakdown from the latest snapshot, with
    *  Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account. */
   computeBreakdown: protectedProcedure.query(async ({ ctx }) => {
-    const [people, perfAccounts, snapshotData, rothBasisRows, contribLinks] =
-      await Promise.all([
-        ctx.db.select().from(schema.people),
-        ctx.db.select().from(schema.performanceAccounts),
-        getLatestSnapshot(ctx.db),
-        ctx.db.select().from(schema.accountBasis),
-        ctx.db
-          .select({
-            performanceAccountId:
-              schema.contributionAccounts.performanceAccountId,
-            jobId: schema.contributionAccounts.jobId,
-          })
-          .from(schema.contributionAccounts),
-      ]);
+    const [
+      people,
+      perfAccounts,
+      snapshotData,
+      rothBasisRows,
+      contributionLinks,
+    ] = await Promise.all([
+      ctx.db.select().from(schema.people),
+      ctx.db.select().from(schema.performanceAccounts),
+      getLatestSnapshot(ctx.db),
+      ctx.db.select().from(schema.accountBasis),
+      ctx.db
+        .select({
+          performanceAccountId:
+            schema.contributionAccounts.performanceAccountId,
+          jobId: schema.contributionAccounts.jobId,
+        })
+        .from(schema.contributionAccounts),
+    ]);
 
     const jobs = await ctx.db.select().from(schema.jobs);
-    const jobsById = new Map(jobs.map((j) => [j.id, j]));
-
-    const jobLinks = contribLinks
-      .filter(
-        (c): c is { performanceAccountId: number; jobId: number } =>
-          c.performanceAccountId != null && c.jobId != null,
-      )
-      .map((c) => {
-        const job = jobsById.get(c.jobId);
-        return {
-          performanceAccountId: c.performanceAccountId,
-          endDate: job?.endDate ? new Date(job.endDate) : null,
-          isSpeculative: job?.isSpeculative ?? false,
-        };
-      });
 
     const breakdown = computeTaxBucketBreakdown(
       snapshotData,
@@ -87,52 +67,13 @@ export const taxBucketsRouter = createTRPCRouter({
       })),
     );
 
-    // Select the "current" row per (account, owner) pair from the full
-    // year-scoped history — the latest non-finalized row, or the latest
-    // finalized one if no successor was ever seeded. Never a single
-    // global latest year: different pairs can have different histories.
-    const currentRothBasisRows = Array.from(
-      buildCurrentRothBasisMap(
-        rothBasisRows.map((r) => ({
-          id: r.id,
-          performanceAccountId: r.performanceAccountId,
-          ownerPersonId: r.ownerPersonId,
-          year: r.year,
-          contributionBasis: toNumber(r.contributionBasis),
-          conversionBasis: toNumber(r.conversionBasis),
-          latestConversionYear: r.latestConversionYear,
-          isFinalized: r.isFinalized,
-        })),
-      ).values(),
-    );
-    const rothBasisById = new Map(rothBasisRows.map((r) => [r.id, r]));
-
     const analysis = computeTaxBucketAnalysis({
       breakdown,
-      performanceAccounts: perfAccounts.map((p) => ({
-        id: p.id,
-        accountType: p.accountType as AccountCategory,
-        ownerPersonId: p.ownerPersonId,
-        isActive: p.isActive,
-        separationDate: p.separationDate ? new Date(p.separationDate) : null,
-        costBasis: toNumber(p.costBasis),
-        accountLabel: p.accountLabel,
-        displayName: p.displayName,
-        institution: p.institution,
-      })),
-      jobLinks,
-      rothBasisRows: currentRothBasisRows.map((r) => {
-        const raw = rothBasisById.get(r.id)!;
-        return {
-          performanceAccountId: r.performanceAccountId,
-          ownerPersonId: r.ownerPersonId,
-          year: r.year,
-          contributionBasis: r.contributionBasis,
-          conversionBasis: r.conversionBasis,
-          latestConversionYear: r.latestConversionYear,
-          isSeeded: raw.isSeeded,
-          updatedAt: new Date(raw.updatedAt),
-        };
+      ...earlyAccessInputs({
+        jobs,
+        jobLinkRows: contributionLinks,
+        accountBasisRows: rothBasisRows,
+        perfAccounts,
       }),
       people: people.map((p) => ({
         id: p.id,
@@ -153,15 +94,9 @@ export const taxBucketsRouter = createTRPCRouter({
     };
   }),
 
-  /** Upsert Roth contribution/conversion basis for one (account, owner)
-   *  pair. Without an explicit `year`, targets that pair's current row
-   *  (the same selection computeBreakdown uses) — no year-boundary awareness
-   *  needed from the caller. An explicit `year` lets the caller
-   *  deliberately correct an older, already-finalized year (no hard
-   *  reject — matches how updateAccount already edits finalized
-   *  accountPerformance rows elsewhere in this app; there is no
-   *  unfinalizeYear escape hatch, so a hard reject would make a typo
-   *  permanently uncorrectable). Editing a row always clears isSeeded. */
+  /** Upsert Roth basis for one (account, owner). Without `year`, targets the pair's current
+   *  row (as computeBreakdown selects it); an explicit `year` may correct a finalized year
+   *  (no unfinalize exists). Editing a row always clears isSeeded. */
   updateRothBasis: performanceProcedure
     .input(
       z.object({
@@ -214,7 +149,7 @@ export const taxBucketsRouter = createTRPCRouter({
           conversionBasis: input.conversionBasis,
           latestConversionYear: input.latestConversionYear,
           isSeeded: false,
-          updatedAt: new Date(),
+          updatedAt: writeStamp(),
           notes: input.notes ?? null,
         })
         .onConflictDoUpdate({
@@ -228,7 +163,7 @@ export const taxBucketsRouter = createTRPCRouter({
             conversionBasis: input.conversionBasis,
             latestConversionYear: input.latestConversionYear,
             isSeeded: false,
-            updatedAt: new Date(),
+            updatedAt: writeStamp(),
             notes: input.notes ?? null,
           },
         });
@@ -236,10 +171,8 @@ export const taxBucketsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Update every (account, owner) Roth basis entry in one screen/save,
-   *  mirroring performance.batchUpdateAccounts — each entry targets its
-   *  own already-known current year (from computeBreakdown's rothBasisMeta),
-   *  so no per-row year resolution is needed here. */
+  /** Update every (account, owner) Roth basis entry in one save; each entry targets its
+   *  known current year (computeBreakdown's rothBasisMeta). */
   batchUpdateRothBasis: performanceProcedure
     .input(
       z.object({
@@ -272,7 +205,7 @@ export const taxBucketsRouter = createTRPCRouter({
               conversionBasis: e.conversionBasis,
               latestConversionYear: e.latestConversionYear,
               isSeeded: false,
-              updatedAt: new Date(),
+              updatedAt: writeStamp(),
             })
             .onConflictDoUpdate({
               target: [
@@ -285,13 +218,13 @@ export const taxBucketsRouter = createTRPCRouter({
                 conversionBasis: e.conversionBasis,
                 latestConversionYear: e.latestConversionYear,
                 isSeeded: false,
-                updatedAt: new Date(),
+                updatedAt: writeStamp(),
               },
             });
         }
         await stampBasisUpdated(tx);
         if (input.simplefinFill)
-          await recordFill(tx, "basis", input.simplefinFill);
+          await recordFill(tx, "basis", input.simplefinFill, ctx.scope.asOf);
       });
       return { ok: true };
     }),

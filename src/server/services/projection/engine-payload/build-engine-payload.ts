@@ -1,14 +1,7 @@
 /**
- * Retirement-scoped engine payload builder.
- *
- * `fetchRetirementData` (load.ts) loads every DB table the projection engine
- * needs. `buildEnginePayload` turns that raw data into `baseEngineInput` plus all
- * the computed intermediate values retirement routers expose to the UI.
- *
- * This module is **retirement-scoped** — it reads retirement settings, computes
- * per-person retirement ages, filing status, IRMAA/ACA, and the engine's starting
- * balances. Callers (projection router endpoints) consume the result and add
- * their own accumulation/decumulation overrides and decumulation defaults.
+ * Retirement-scoped engine payload: turns `fetchRetirementData` (load.ts) into `baseEngineInput`
+ * plus the computed values the retirement routers expose. Callers add their own
+ * accumulation/decumulation overrides and decumulation defaults.
  */
 import { calendarYear } from "@/lib/utils/date";
 import { loadExpenseEndings } from "./expense-endings";
@@ -78,16 +71,14 @@ import {
 import type { Db } from "@/lib/db";
 
 /**
- * Build the shared engine payload from raw DB data.
- *
- * Returns all computed intermediate values plus a "base" engine input object
- * (without accumulationOverrides, decumulationOverrides, or decumulationDefaults —
- * those differ between callers).
+ * Build the shared engine payload from raw DB data: computed values plus a base engine input
+ * without the per-caller accumulation/decumulation overrides and decumulation defaults.
  */
 export async function buildEnginePayload(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
   opts: {
+    asOf: Date;
     contributionProfileId?: number;
     salaryProfileId?: number;
     accumulationBudgetProfileId?: number;
@@ -96,13 +87,9 @@ export async function buildEnginePayload(
     decumulationBudgetProfileId?: number;
     decumulationBudgetColumn?: number;
     decumulationExpenseOverride?: number;
-    /** View a non-active retirement profile without making it the
-     *  household's globally-active one — same "view without activating"
-     *  contract contributionProfileId/salaryProfileId already have here.
-     *  Retirement Profiles phase 4 (the assumptions band). Ignored (falls
-     *  back to the active-profile resolution) if it doesn't name a real
-     *  profile — a stale id from a deleted profile must never silently
-     *  compute against nothing. */
+    /** View a non-active retirement profile without making it active, like
+     *  contributionProfileId/salaryProfileId. An id that names no profile is
+     *  ignored (the active-profile resolution applies). */
     retirementProfileId?: number;
     /** What-if: everyone retires this many years later (negative: sooner).
      *  Applied before the timeline, so every window built from it moves
@@ -145,21 +132,16 @@ export async function buildEnginePayload(
   const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
 
-  // Household assumptions now come from the ACTIVE PROFILE's row, not from
-  // whichever person happens to be primary. Same values today (step A's
-  // backfill pointed every existing row at "Current Plan"), but it's what
-  // makes profiles swappable — and it removes the trap where a household
-  // field edited against a non-primary person wrote successfully and was
-  // then never read.
+  // Household assumptions come from the active profile's row, not from
+  // whichever person is primary, so profiles are swappable.
   const activeProfileId =
     opts.retirementProfileId != null &&
     retProfiles.some((p) => p.id === opts.retirementProfileId)
       ? opts.retirementProfileId
       : resolveRetirementProfileIdFrom(allAppSettings, retProfiles);
-  // pickProfileSettingsRow prefers the PRIMARY person's row within the
-  // profile — see its docblock. During the expand phase every person's row
-  // shares the profile id, and those rows can legitimately disagree on
-  // household columns, so an arbitrary match moves real numbers.
+  // pickProfileSettingsRow prefers the PRIMARY person's row in the profile:
+  // every person's row shares the profile id and their household columns can
+  // disagree, so an arbitrary match moves real numbers.
   const settings = pickProfileSettingsRow(
     retSettings,
     activeProfileId,
@@ -175,6 +157,7 @@ export async function buildEnginePayload(
     appSettings: allAppSettings,
     profileStatus,
     people,
+    asOf: opts.asOf,
     salaryProfileActiveMap,
   });
   const filingStatus = retirementFilingStatus(
@@ -189,6 +172,7 @@ export async function buildEnginePayload(
     irmaaBracketData,
     fplByHouseholdData,
     bracketData,
+    missingLimitsWarning,
   } = resolveTaxYear(
     filingStatus,
     retProfiles,
@@ -201,11 +185,9 @@ export async function buildEnginePayload(
     allFplByHousehold,
   );
 
-  // Per-person retirement settings (for per-person age display + editing),
-  // from the active profile's own rows: settingsFor.
-  //
-  // A person with no `retirement_settings` row inherits `primaryRaiseRate`,
-  // here and in profile switches' salary-override growth alike.
+  // Per-person retirement settings from the active profile's rows. A person
+  // with no `retirement_settings` row inherits `primaryRaiseRate`, here and in
+  // profile switches' salary-override growth alike.
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
   const activeProfileRows: ActiveProfileRows = {
     activeProfileId,
@@ -221,13 +203,11 @@ export async function buildEnginePayload(
     activeProfileRows,
     opts,
   );
-
-  // The plan's "as of" date: a selected historical snapshot's date, else today.
+  // The plan's "as of": a selected historical snapshot's date, else opts.asOf.
   const asOfDate = data.snapshotData?.snapshot.snapshotDate
     ? new Date(data.snapshotData.snapshot.snapshotDate)
-    : new Date();
+    : opts.asOf;
   const currentYear = asOfDate.getFullYear();
-
   const { budgetProfileSummaries } = await budgetSummaries(
     allBudgetProfiles,
     allBudgetItems,
@@ -253,13 +233,8 @@ export async function buildEnginePayload(
       return w ? [[j.personId, w] as const] : [];
     }),
   );
-  // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
-  // Post-process to compute totalComp. A Salary Profile entry is now a complete, all-or-nothing
-  // number (see resolveCompensation's docblock) — there is no more
-  // "resolved actual vs full-formula" distinction to adjust for (job_bonus_
-  // overrides is gone), so currentYearBonusAdjustment is always empty; kept
-  // in the payload shape as a no-op rather than removed, since the engine
-  // still reads it defensively.
+  // Each job's totalComp. A Salary Profile entry is complete, so
+  // currentYearBonusAdjustment stays empty in the payload shape the engine reads.
   const currentYearBonusAdjustmentByPerson = new Map<number, number>();
   const jobSalaries = activeJobs.map((job) => {
     const comp = resolveCompensation(salaryProfileActiveMap, job.id);
@@ -282,10 +257,9 @@ export async function buildEnginePayload(
       totalCompFullFormula: totalComp,
     };
   });
-  // combinedSalary = base salaries — the payroll basis percent-of-pay
-  // contributions and the match are figured on (bonus checks: contributionPay)
-  // totalCompensation = always includes bonus (resolved/pinned, not full-formula)
-  // — used for display and "as of now" rate calculations.
+  // combinedSalary = base salaries, the payroll basis for percent-of-pay
+  // contributions and the match (bonus checks: contributionPay).
+  // totalCompensation includes the resolved bonus, for display and current rates.
   const totalCompensation = sumBy(jobSalaries, (js) => js.totalComp);
   // The engine's compounding baseline — full-formula bonus, see
   // currentYearBonusAdjustmentByPerson's docblock above.
@@ -332,12 +306,9 @@ export async function buildEnginePayload(
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
       ? toNumber(String(rampRaw).replace(/"/g, ""))
       : 0;
-  // Settable in Settings → Reference Data → Return Rates; falls back to the
-  // constant when unset. This is the single read point, so bound it here
-  // rather than special-casing the generic appSettings.upsert: a NaN/garbage
-  // value (empty string, bad manual edit) or an out-of-range one (an admin
-  // writing `5` via the data browser) would otherwise compound through
-  // Math.pow(1 + rate, year) and silently wreck every projection.
+  // Settable in Settings → Reference Data → Return Rates, else the constant.
+  // Bounded here, the single read point: a NaN or out-of-range value would
+  // compound through Math.pow(1 + rate, year) and wreck every projection.
   const limitGrowthRaw = settingsMap.get(SK_IRS_LIMIT_GROWTH_RATE);
   const limitGrowthParsed = toNumber(String(limitGrowthRaw));
   let irsLimitGrowthRate = IRS_LIMIT_GROWTH_RATE;
@@ -392,10 +363,8 @@ export async function buildEnginePayload(
   const soleEarnerId =
     earnerIds.length === 1 ? earnerIds[0]! : primaryPerson.id;
 
-  // Separate salary overrides: profile-switch overrides vs plain salary
-  // overrides. A row is a profile switch if it references EITHER axis — the
-  // Contribution Profile and the Salary Profile are independent pins, so a
-  // row may carry one, the other, or both.
+  // Profile-switch overrides vs plain salary overrides: a row is a switch if it
+  // references EITHER axis (Contribution or Salary Profile, independently).
   const plainSalaryOverrides = salaryOverrideRows.filter(
     (o) => !o.contributionProfileId && !o.salaryProfileId,
   );
@@ -419,10 +388,9 @@ export async function buildEnginePayload(
     value: toNumber(o.overrideSalary),
   }));
 
-  const { switchProfileMap, switchSalaryProfileMap } = await loadSwitchProfiles(
-    db,
-    profileSwitchOverrides,
-  );
+  const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
+    await loadSwitchProfiles(db, profileSwitchOverrides);
+  inputWarnings.push(...switchWarnings, ...missingLimitsWarning);
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows
@@ -560,9 +528,8 @@ export async function buildEnginePayload(
       lastAccumulationYear,
     });
   // The active profile, capped at each later year's ages until the first
-  // Contribution Profile switch: a year whose ages cap it differently
-  // (catch-up room from 50, the larger one at 60–63, the smaller again
-  // from 64) switches to it capped then.
+  // Contribution Profile switch: a year whose ages cap it differently (catch-up
+  // from 50, 60–63, 64) switches to it capped then.
   const firstContribSwitchYear = Math.min(
     ...profileSwitchOverrides
       .filter(
@@ -630,10 +597,9 @@ export async function buildEnginePayload(
   const realSplits = splitsOf(contribByCategory);
   const realAccountSplits = realSplits.accountSplits;
 
-  // Same rule as a profile switch's rate: a household that contributes but
-  // not to retirement money has a 0% retirement rate (the fallback would
-  // invent 25% of salary wherever the rate path runs — Simple tax mode with
-  // only Portfolio specs); only missing data falls back.
+  // As for a profile switch's rate: contributing, but not to retirement money,
+  // is a 0% retirement rate (the fallback would invent 25% of salary); only
+  // missing data falls back.
   const derivedAccumulationDefaults = {
     contributionRate:
       displayContribRate > 0
@@ -772,24 +738,9 @@ export async function buildEnginePayload(
       ? toNumber(settings.postRetirementInflation)
       : undefined,
     returnRates: relevantReturnRates,
-    // Single-person household: source BOTH the amount (via
-    // personAnnualAmount, above) and the start age from
-    // `perPersonSettings[0]` (retirement_profile_people, falling back to
-    // `settings` when that row has no override — same resolution
-    // perPersonSettings itself already does), not from the `settings`
-    // scalar directly. The two MUST come from the same row: computing the
-    // claiming-age adjustment from one row's ssStartAge while emitting a
-    // different row's ssStartAge as the actual payment-start age would pay
-    // a benefit adjusted for one claiming age starting at a different one.
-    // `retirementProfilePeople.upsertHouseholdFields` is the only writer of
-    // "SS Start Age" (writes ONLY retirement_profile_people, never
-    // retirement_settings), so `retirement_settings.ss_start_age` can be
-    // stale for a household that's edited it — sourcing both fields from
-    // `perPersonSettings[0]` here fixes that for both the PIA and non-PIA
-    // amount, and the same staleness for socialSecurityMonthly too (a
-    // single-person "Monthly Benefit" edit writes only to
-    // retirement_profile_people and could otherwise silently not move the
-    // projection).
+    // Single person: amount (personAnnualAmount, above) and start age both come
+    // from `perPersonSettings[0]`, never the `settings` scalar: one row drives
+    // both, and retirement_profile_people holds the edited values.
     socialSecurityAnnual:
       perPersonSettings.length === 1
         ? buildSocialSecurityEntries([perPersonSettings[0]!], filingStatus)[0]!
@@ -799,33 +750,9 @@ export async function buildEnginePayload(
       perPersonSettings.length === 1
         ? perPersonSettings[0]!.ssStartAge
         : settings.ssStartAge,
-    // `socialSecurityEntries` is NOT just a Social Security income input —
-    // `rmdStartAgeByPerson` (engine/projection-year-handlers/context.ts) is
-    // built EXCLUSIVELY from it, and that map gates per-person RMD
-    // tracking, which OVERRIDES the household RMD calculation
-    // (decumulation-year.ts) once populated. `lib/pure/accounts/account-balances.types.ts`'s own
-    // docblock states the assumption this table's per-person UI relies on:
-    // "socialSecurityEntries/rmdStartAgeByPerson are only populated for
-    // multi-person households." Populating a length-1 entries array for a
-    // single-person household's PIA would silently flip on the per-person
-    // RMD path for single-person households too — it measurably changes
-    // RMD amounts (and net worth) for any single-person household with an
-    // individualAccount whose ownerPersonId is null (joint/unassigned
-    // pre-tax money silently drops out of the per-person RMD base), and
-    // even for a fully-owned single-person household it isn't
-    // byte-identical (per-person balance tracking drifts from the
-    // household balance bucket over a multi-year projection). So: PIA for
-    // a single person routes through the scalar socialSecurityAnnual above
-    // instead, which the engine has always treated as SS-only, no RMD
-    // side effect. Entries stay reserved for households that were ALREADY
-    // multi-person before this feature existed — their RMD behavior is
-    // completely unchanged by this diff (see the length > 1 condition
-    // below, unaffected by PIA either way).
-    // Per-person entries — PIA claiming-age adjustment + MFJ spousal
-    // benefit + "worker has filed" gating all live in the one shared
-    // `buildSocialSecurityEntries` helper (also used by the strategy
-    // optimizer's SS-start-age lever, so the two can't drift). No
-    // start-age shift here — this is the household's real plan.
+    // Entries only for multi-person households: they also feed rmdStartAgeByPerson,
+    // which switches on per-person RMDs, so a single person's SS goes through
+    // socialSecurityAnnual above. No start-age shift: this is the real plan.
     socialSecurityEntries:
       perPersonSettings.length > 1
         ? buildSocialSecurityEntries(perPersonSettings, filingStatus)

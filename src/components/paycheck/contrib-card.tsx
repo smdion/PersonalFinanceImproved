@@ -10,6 +10,7 @@ import {
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { LabelOptions } from "@/components/ui/label-options";
 import { Toggle } from "@/components/ui/toggle";
 import {
   formatCurrency,
@@ -20,36 +21,37 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineAccountType } from "./inline-account-type";
 import { InstitutionPicker } from "./institution-picker";
 import { trpc } from "@/lib/trpc";
-import type { ContribCardProps } from "./types";
+import type { ContributionCardProps } from "./types";
 import {
   categoriesWithIrsLimit,
-  getLimitGroup,
   isOverflowTarget,
   getDisplayConfig,
-  getAccountTypeConfig,
 } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,
+  CONTRIBUTION_METHOD_LABELS_SHORT,
+  EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
 } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { renderAutoMax } from "./contrib-card-auto-max";
 
-export function ContribCard({
+export function ContributionCard({
   contrib: c,
-  onUpdateContrib,
+  onUpdateContribution,
   onToggleAutoMax,
-  onDeleteContrib,
+  onDeleteContribution,
   onUpdateInstitution,
   _methodLabel,
   salary,
   periodsPerYear,
   annualLimit,
-  siblingAnnualContribs = 0,
+  siblingAnnualContributions = 0,
   employerMatchAnnual = 0,
   readOnly,
-  contribValueReadOnly,
-}: ContribCardProps) {
-  const valueEditable = !readOnly && !contribValueReadOnly;
+  contributionValueReadOnly,
+}: ContributionCardProps) {
+  const valueEditable = !readOnly && !contributionValueReadOnly;
   const [editingInstitution, setEditingInstitution] = useState(false);
   const { data: performanceAccounts } =
     trpc.performance.performanceAccounts.list.useQuery(undefined, {
@@ -64,7 +66,7 @@ export function ContribCard({
     c.employerMatchRate,
   );
   const saveMatchFigure = (v: string) =>
-    onUpdateContrib(
+    onUpdateContribution(
       c.id,
       "employerMatchValue",
       matchValueToStore(c.employerMatchType, v),
@@ -72,7 +74,7 @@ export function ContribCard({
 
   return (
     <div className="bg-surface-primary group/card relative rounded-lg border p-3 text-sm shadow-sm">
-      {!readOnly && onDeleteContrib && (
+      {!readOnly && onDeleteContribution && (
         <button
           onClick={async () => {
             if (
@@ -80,7 +82,7 @@ export function ContribCard({
                 `Remove ${accountDisplayName({ accountType: c.accountType })} (${c.taxTreatment}) contribution account?`,
               )
             )
-              onDeleteContrib(c.id);
+              onDeleteContribution(c.id);
           }}
           className="text-caption absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-100 leading-none text-red-500 opacity-0 transition-opacity group-hover/card:opacity-100 hover:bg-red-200"
           title="Delete contribution account"
@@ -98,7 +100,7 @@ export function ContribCard({
             <>
               <InlineAccountType
                 value={c.accountType}
-                onSave={(v) => onUpdateContrib(c.id, "accountType", v)}
+                onSave={(v) => onUpdateContribution(c.id, "accountType", v)}
               />
               {c.ownership === "joint" && (
                 <span className="text-faint text-xs font-medium">(Joint)</span>
@@ -135,7 +137,7 @@ export function ContribCard({
         <div className="flex shrink-0 items-center gap-1">
           <InlineEdit
             value={c.contributionValue}
-            onSave={(v) => onUpdateContrib(c.id, "contributionValue", v)}
+            onSave={(v) => onUpdateContribution(c.id, "contributionValue", v)}
             formatDisplay={(v) => {
               const num = Number(v);
               return c.contributionMethod === "percent_of_salary"
@@ -152,7 +154,7 @@ export function ContribCard({
             disabled={!valueEditable}
             value={c.contributionMethod}
             onChange={(e) =>
-              onUpdateContrib(c.id, "contributionMethod", e.target.value)
+              onUpdateContribution(c.id, "contributionMethod", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary cursor-pointer appearance-none border-none bg-transparent pr-3 focus:outline-none"
             style={{
@@ -163,10 +165,7 @@ export function ContribCard({
             }}
             title="Change contribution method"
           >
-            <option value="percent_of_salary">% of salary</option>
-            <option value="fixed_per_period">$/period</option>
-            <option value="fixed_monthly">$/month</option>
-            <option value="fixed_annual">$/year</option>
+            <LabelOptions labels={CONTRIBUTION_METHOD_LABELS_SHORT} />
           </select>
         </div>
       </div>
@@ -267,7 +266,7 @@ export function ContribCard({
                   <InlineEdit
                     value={c.employerMaxMatchPct}
                     onSave={(v) =>
-                      onUpdateContrib(c.id, "employerMaxMatchPct", v)
+                      onUpdateContribution(c.id, "employerMaxMatchPct", v)
                     }
                     formatDisplay={(v) =>
                       `${formatPercent(Number(v))} of salary`
@@ -286,14 +285,11 @@ export function ContribCard({
             disabled={readOnly}
             value={c.employerMatchType}
             onChange={(e) =>
-              onUpdateContrib(c.id, "employerMatchType", e.target.value)
+              onUpdateContribution(c.id, "employerMatchType", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary ml-1 cursor-pointer border-none bg-transparent focus:outline-none"
           >
-            <option value="none">No match</option>
-            <option value="percent_of_contribution">% of contribution</option>
-            <option value="dollar_match">$ match</option>
-            <option value="fixed_annual">Fixed annual</option>
+            <LabelOptions labels={EMPLOYER_MATCH_LABELS} />
           </select>
         </div>
       )}
@@ -310,7 +306,7 @@ export function ContribCard({
             disabled={readOnly}
             value="none"
             onChange={(e) =>
-              onUpdateContrib(c.id, "employerMatchType", e.target.value)
+              onUpdateContribution(c.id, "employerMatchType", e.target.value)
             }
             className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent focus:outline-none"
           >
@@ -332,7 +328,7 @@ export function ContribCard({
         <div className="mt-1">
           <Toggle
             isChecked={c.fromBonus === true}
-            onChange={(v) => onUpdateContrib(c.id, "fromBonus", String(v))}
+            onChange={(v) => onUpdateContribution(c.id, "fromBonus", String(v))}
             label="Also taken from bonus checks"
             size="xs"
             title="The bonus check takes this contribution too: a percent of pay at its rate of the bonus, a fixed amount once more. The employer match follows."
@@ -348,195 +344,23 @@ export function ContribCard({
           <RothRouteSelect
             value={c.rothRoute}
             disabled={!valueEditable}
-            onChange={(v) => onUpdateContrib(c.id, "rothRoute", v)}
+            onChange={(v) => onUpdateContribution(c.id, "rothRoute", v)}
           />
         </div>
       )}
 
       {categoriesWithIrsLimit().includes(c.accountType as AccountCategory) &&
         onToggleAutoMax &&
-        (() => {
-          const currentValue = Number(c.contributionValue);
-          const irsCategory = categoriesWithIrsLimit().includes(
-            c.accountType as AccountCategory,
-          );
-          const matchCounts =
-            irsCategory &&
-            getAccountTypeConfig(c.accountType as AccountCategory)
-              .matchCountsTowardLimit;
-          const employerToward = matchCounts ? employerMatchAnnual : 0;
-          const remainingLimit =
-            annualLimit && annualLimit > 0
-              ? Math.max(
-                  0,
-                  annualLimit - siblingAnnualContribs - employerToward,
-                )
-              : 0;
-          let automaxPreview: {
-            label: string;
-            current: string;
-            target: string;
-            wouldChange: boolean;
-            siblingNote?: string;
-          } | null = null;
-
-          if (remainingLimit > 0) {
-            const siblingNote =
-              siblingAnnualContribs > 0
-                ? `${formatCurrency(siblingAnnualContribs)}/yr used by other ${(getLimitGroup(c.accountType as AccountCategory) ?? c.accountType).toUpperCase()} account`
-                : undefined;
-
-            if (
-              c.contributionMethod === "percent_of_salary" &&
-              salary &&
-              salary > 0
-            ) {
-              const currentAnnual = salary * (currentValue / 100);
-              const targetPct = Math.floor((remainingLimit / salary) * 100);
-              const targetAnnual = salary * (targetPct / 100);
-              automaxPreview = {
-                label: `${targetPct}% of salary`,
-                current: `${currentValue}% (${formatCurrency(currentAnnual)}/yr)`,
-                target: `${targetPct}% (${formatCurrency(targetAnnual)}/yr)`,
-                wouldChange: targetPct !== currentValue,
-                siblingNote,
-              };
-            } else if (
-              c.contributionMethod === "fixed_per_period" &&
-              periodsPerYear
-            ) {
-              const currentAnnual = currentValue * periodsPerYear;
-              const targetPerPeriod =
-                Math.floor((remainingLimit / periodsPerYear) * 100) / 100;
-              automaxPreview = {
-                label: `${formatCurrency(targetPerPeriod)}/period`,
-                current: `${formatCurrency(currentValue)}/period (${formatCurrency(currentAnnual)}/yr)`,
-                target: `${formatCurrency(targetPerPeriod)}/period (${formatCurrency(targetPerPeriod * periodsPerYear)}/yr)`,
-                wouldChange: Math.abs(targetPerPeriod - currentValue) > 0.01,
-                siblingNote,
-              };
-            } else if (c.contributionMethod === "fixed_monthly") {
-              const currentAnnual = currentValue * 12;
-              const targetMonthly =
-                Math.floor((remainingLimit / 12) * 100) / 100;
-              automaxPreview = {
-                label: `${formatCurrency(targetMonthly)}/month`,
-                current: `${formatCurrency(currentValue)}/month (${formatCurrency(currentAnnual)}/yr)`,
-                target: `${formatCurrency(targetMonthly)}/month (${formatCurrency(targetMonthly * 12)}/yr)`,
-                wouldChange: Math.abs(targetMonthly - currentValue) > 0.01,
-                siblingNote,
-              };
-            } else if (c.contributionMethod === "fixed_annual") {
-              automaxPreview = {
-                label: formatCurrency(remainingLimit),
-                current: `${formatCurrency(currentValue)}/yr`,
-                target: `${formatCurrency(remainingLimit)}/yr`,
-                wouldChange: Math.abs(remainingLimit - currentValue) > 0.01,
-                siblingNote,
-              };
-            }
-          } else if (
-            annualLimit &&
-            annualLimit > 0 &&
-            siblingAnnualContribs >= annualLimit
-          ) {
-            automaxPreview = {
-              label: "$0",
-              current:
-                c.contributionMethod === "percent_of_salary"
-                  ? `${currentValue}%`
-                  : formatCurrency(currentValue),
-              target: "$0 (limit fully used by other account)",
-              wouldChange: currentValue > 0,
-            };
-          }
-
-          return (
-            <div className="border-subtle mt-2 border-t pt-2">
-              <div className="flex items-center gap-2">
-                <Toggle
-                  isChecked={c.autoMaximize}
-                  onChange={(v) => {
-                    let targetValue: number | undefined;
-                    if (v && remainingLimit > 0) {
-                      if (
-                        c.contributionMethod === "percent_of_salary" &&
-                        salary &&
-                        salary > 0
-                      ) {
-                        targetValue = Math.floor(
-                          (remainingLimit / salary) * 100,
-                        );
-                      } else if (
-                        c.contributionMethod === "fixed_per_period" &&
-                        periodsPerYear
-                      ) {
-                        targetValue =
-                          Math.floor((remainingLimit / periodsPerYear) * 100) /
-                          100;
-                      } else if (c.contributionMethod === "fixed_monthly") {
-                        targetValue =
-                          Math.floor((remainingLimit / 12) * 100) / 100;
-                      } else if (c.contributionMethod === "fixed_annual") {
-                        targetValue = remainingLimit;
-                      }
-                    }
-                    onToggleAutoMax(c.id, v, targetValue);
-                  }}
-                  label="Auto-max"
-                  size="xs"
-                  disabled={readOnly}
-                />
-                {automaxPreview && !c.autoMaximize && (
-                  <span className="text-caption text-faint">
-                    &rarr; {automaxPreview.label}
-                  </span>
-                )}
-              </div>
-              {!c.autoMaximize &&
-                automaxPreview &&
-                automaxPreview.wouldChange && (
-                  <div className="text-caption mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted">Current:</span>
-                      <span className="text-secondary">
-                        {automaxPreview.current}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium text-amber-600">
-                        Auto-max:
-                      </span>
-                      <span className="font-medium text-amber-700">
-                        {automaxPreview.target}
-                      </span>
-                    </div>
-                    <p className="text-faint mt-0.5">
-                      IRS limit: {formatCurrency(annualLimit!)}/yr
-                    </p>
-                  </div>
-                )}
-              {!c.autoMaximize &&
-                automaxPreview &&
-                !automaxPreview.wouldChange && (
-                  <p className="text-caption mt-1 text-green-600">
-                    Already at max — no change needed
-                  </p>
-                )}
-              {c.autoMaximize && (
-                <p className="text-caption mt-1 text-green-600">
-                  {c.contributionMethod === "percent_of_salary"
-                    ? `Set to ${formatPercent(currentValue / 100)} of salary (${formatCurrency(salary ? salary * (currentValue / 100) : 0, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
-                    : c.contributionMethod === "fixed_per_period"
-                      ? `Set to ${formatCurrency(currentValue)}/period (${formatCurrency(currentValue * periodsPerYear!, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
-                      : c.contributionMethod === "fixed_monthly"
-                        ? `Set to ${formatCurrency(currentValue)}/month (${formatCurrency(currentValue * 12, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
-                        : `Set to ${formatCurrency(currentValue, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit`}
-                </p>
-              )}
-            </div>
-          );
-        })()}
+        renderAutoMax(
+          annualLimit,
+          c,
+          employerMatchAnnual,
+          onToggleAutoMax,
+          periodsPerYear,
+          readOnly,
+          salary,
+          siblingAnnualContributions,
+        )}
     </div>
   );
 }

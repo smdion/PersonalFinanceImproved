@@ -12,27 +12,9 @@ import { SalaryProfileList } from "./salary-profile-list";
 import { SalaryProfileBar } from "./salary-profile-list";
 
 /**
- * Salary Profiles tab — the "what if I earned X" axis.
- *
- * Deliberately much thinner than ContributionProfileManager: a Salary
- * Profile's whole content is a jobId → entry map, so there's no
- * contribution math to resolve or aggregate. Every profile is an ordinary row
- * — renamable, editable, and deletable so long as it isn't the last one, the
- * active one, or used by a Plan.
- *
- * THERE IS NO LIVE FALLBACK. A job either has a complete entry in a profile
- * or it has none, in which case the profile says nothing about that job and
- * it contributes $0. Adding a job to a profile is an explicit action; every
- * edit after that is a plain edit. If you want a different number, use a
- * different profile.
- *
- * Each job's entry is shown with the Paycheck page's own sections — Pay
- * schedule, Withholding, Bonus, Other pay, Extra paycheck — and saves the
- * same way (salaryEntryEdit → salaryProfile.patchEntry): one salary editor.
- * Selecting a profile shows it read-only; unlocking the padlock makes the
- * same sections editable in place. There is no Save button: the only batch
- * form left is "create new", which has to collect a name before a row
- * exists to write to.
+ * Salary Profiles tab: each profile is a jobId → complete entry map; a job with
+ * no entry contributes $0 (no live fallback). Entries use the Paycheck page's
+ * sections, editable in place when unlocked; only "create new" is a batch form.
  */
 export function SalaryProfileManager({
   canEdit,

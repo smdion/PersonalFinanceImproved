@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Column-level mutations for the budget page: add, remove, rename,
- * update months.
- *
- * All are simple-invalidate; updateColumnMonths additionally invalidates
- * listProfiles because their side effect flows into the profile list
- * sidebar's weighted-annual-total column.
+ * Budget column mutations (add, remove, rename, months). updateColumnMonths
+ * also invalidates listProfiles for the sidebar's weighted annual total.
  */
 
 import { trpc } from "@/lib/trpc";

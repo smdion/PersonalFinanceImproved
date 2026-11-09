@@ -10,12 +10,15 @@ import {
 /** The Contributions page while its summary loads or after it fails. */
 export function ContributionsQueryBoundary({
   query,
+  what,
 }: {
   query: BoundaryQuery;
+  what: string;
 }) {
   return (
     <QueryBoundary
       query={query}
+      what={what}
       frame={(body) => (
         <div>
           <PageHeader

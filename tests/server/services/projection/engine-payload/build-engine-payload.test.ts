@@ -208,6 +208,7 @@ describe("buildEnginePayload — single-person household", () => {
   it("resolves currentAge and retirementAge from settings", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -224,9 +225,11 @@ describe("buildEnginePayload — single-person household", () => {
   it("a retirement-age what-if moves the whole timeline, not just the year", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const base = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
     const later = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
       retirementAgeDelta: 2,
     });
@@ -241,6 +244,7 @@ describe("buildEnginePayload — single-person household", () => {
   it("aggregates starting balances from the latest snapshot", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -251,6 +255,7 @@ describe("buildEnginePayload — single-person household", () => {
   it("builds a contribution spec with the seeded personId", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -326,6 +331,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   it("marks hasMultiplePeople and includes both people in perPersonSettings", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -350,6 +356,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   it("sends both people's birth years for the IRS-limit caps (H10)", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -364,6 +371,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   it("builds one contribution spec per person, each tagged with its own personId", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -376,6 +384,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   it("aggregates starting balances across both people", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
 
@@ -410,7 +419,7 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
 
   it("surfaces the seeded irmaa_brackets rows on distributionTaxRates", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa).toBeDefined();
     // Seed Single tier 1 threshold (CMS 2026).
@@ -446,7 +455,7 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa!.Single?.[0]?.magiThreshold).toBe(999000);
     expect(irmaa!.Single?.[0]?.annualSurcharge).toBe(4321);
@@ -493,7 +502,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
 
   it("NULL pin => resolved year is the newest seeded year (2026)", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
     expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
   });
@@ -509,7 +518,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2025);
     // 2025 MFJ standard deduction is 31500 (OBBBA); 2026 is 32200.
     expect(payload!.distributionTaxRates.standardDeduction).toBe(31500);
@@ -517,7 +526,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
 
   it("each tax table carries its own year (pinned 2025; the seed has every 2025 table)", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const r = payload!.distributionTaxRates;
     expect(r.taxBracketsYear).toBe(2025);
     expect(r.ltcgBracketsYear).toBe(2025);
@@ -567,7 +576,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
     expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
 
@@ -593,9 +602,9 @@ describe("buildEnginePayload — no withholding tables at all", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ctx.db as any).delete(schema.taxBrackets).run();
       const data = await fetchRetirementData(ctx.rawDb, {});
-      await expect(buildEnginePayload(ctx.rawDb, data, {})).rejects.toThrow(
-        /withholding/,
-      );
+      await expect(
+        buildEnginePayload(ctx.rawDb, data, { asOf: new Date() }),
+      ).rejects.toThrow(/withholding/);
     } finally {
       ctx.cleanup();
     }
@@ -693,7 +702,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
 
   it("without PIA set, a single-person household stays on the scalar path (no socialSecurityEntries)", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     expect(payload!.baseEngineInput.socialSecurityEntries).toBeUndefined();
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
@@ -704,7 +713,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     await setPia("4000"); // PIA $4000/mo = $48000/yr at FRA
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     // The load-bearing regression check: entries must NOT be populated for
     // a single-person household just because PIA is set.
@@ -725,7 +734,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     await setPia("");
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
     expect(Number.isNaN(payload!.baseEngineInput.socialSecurityAnnual)).toBe(
@@ -739,7 +748,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     await setPia("0");
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     // Falls back to the flat socialSecurityMonthly (36000), NOT 0.
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
@@ -778,7 +787,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     // The emitted ssStartAge must be 70 (the live, per-person value) —
     // NOT 67 (the stale retirement_settings value) — and the amount must
@@ -856,7 +865,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
 
   it("multi-person households already populated entries before this feature — that's unaffected by PIA either way", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     const entries = payload!.baseEngineInput.socialSecurityEntries;
     expect(entries).toHaveLength(2);
@@ -864,7 +873,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
 
   it("the PIA person gets their own claiming-age-adjusted benefit (spousal doesn't beat it — the other has no PIA)", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     const alex = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personAId,
@@ -877,7 +886,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
 
   it("the non-PIA spouse gets the GREATER of their flat benefit or 50% of the PIA spouse's PIA (MFJ + 2 people)", async () => {
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
 
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
@@ -910,7 +919,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
     )!;
@@ -933,7 +942,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
     )!;
@@ -1019,7 +1028,7 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
       .run();
 
     const data = await fetchRetirementData(appDb, {});
-    const payload = await buildEnginePayload(appDb, data, {});
+    const payload = await buildEnginePayload(appDb, data, { asOf: new Date() });
     const spouse = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === spouseId,
     )!;
@@ -1093,6 +1102,7 @@ describe("buildEnginePayload — job dates bound the years worked", () => {
   it("follows a job that ends later and one not started yet, with their years", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = (await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     }))!;
     const bei = payload.baseEngineInput;
@@ -1164,6 +1174,7 @@ describe("buildEnginePayload — the one earner isn't the primary person", () =>
       .run();
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
       contributionProfileId,
     });
     expect(payload!.hasMultiplePeople).toBe(false);
@@ -1211,6 +1222,6 @@ describe("each retirement profile stands alone", () => {
   it("the planned retirement year never comes from another profile's row", async () => {
     const { householdRetirementYear } =
       await import("@/server/services/profiles/retirement-year");
-    expect(await householdRetirementYear(appDb)).toBeNull();
+    expect(await householdRetirementYear(appDb, new Date())).toBeNull();
   });
 });

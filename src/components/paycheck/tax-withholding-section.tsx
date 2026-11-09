@@ -6,25 +6,12 @@ import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
-import {
-  W4_FILING_STATUS_VALUES,
-  type FilingStatusKey,
-} from "@/lib/config/filing-status";
-
-const W4_BOX_LABELS: Record<FilingStatusKey, string> = {
-  MFJ: "Married jointly",
-  Single: "Single",
-  HOH: "Head of household",
-};
+import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
+import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 
 /**
- * W-4 tax-input controls. Deliberately a separate section from
- * BonusSection, so they're always reachable.
- *
- * These fields live on the Salary Profile entry (see SalaryEntry in
- * lib/db/salary-entry-defaults.ts), the same axis salary and bonus terms are on —
- * so, like BonusSection, they gate on `salaryReadOnly` as well as
- * `readOnly`.
+ * W-4 tax-input controls, separate from BonusSection so they're always reachable. They live on
+ * the Salary Profile entry, so they gate on `salaryReadOnly` as well as `readOnly`.
  */
 export function TaxWithholdingSection({
   job,
@@ -60,7 +47,7 @@ export function TaxWithholdingSection({
           >
             {W4_FILING_STATUS_VALUES.map((s) => (
               <option key={s} value={s}>
-                {W4_BOX_LABELS[s]}
+                {FILING_STATUS_LABELS[s]}
               </option>
             ))}
           </select>

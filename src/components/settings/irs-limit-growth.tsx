@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Settings → Reference Data → IRS Limits: how fast contribution limits are
- * assumed to grow in projected years past the newest tax year entered. A
- * projection assumption, not a published figure, so it sits under the
- * yearly limits rather than in them (one value, not per year).
+ * Settings → Reference Data → IRS Limits: the assumed growth of contribution limits in years past
+ * the newest tax year entered (one projection assumption, not a published per-year figure).
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";

@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
-  isPriorYearContribWindow,
+  isPriorYearContributionWindow,
   ageInYear,
-  localDateStr,
   parseLocalDateOnly,
   localMidnight,
 } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 
 describe("ageInYear", () => {
@@ -23,54 +23,48 @@ describe("ageInYear", () => {
   });
 });
 
-describe("isPriorYearContribWindow", () => {
+describe("isPriorYearContributionWindow", () => {
   it("returns true for January 1", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 0, 1))).toBe(true);
+    expect(isPriorYearContributionWindow(new Date(2026, 0, 1))).toBe(true);
   });
 
   it("returns true for February 15", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 1, 15))).toBe(true);
+    expect(isPriorYearContributionWindow(new Date(2026, 1, 15))).toBe(true);
   });
 
   it("returns true for March 31", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 2, 31))).toBe(true);
+    expect(isPriorYearContributionWindow(new Date(2026, 2, 31))).toBe(true);
   });
 
   it("returns true for April 15 (deadline day)", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 3, 15))).toBe(true);
+    expect(isPriorYearContributionWindow(new Date(2026, 3, 15))).toBe(true);
   });
 
   it("returns false for April 16", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 3, 16))).toBe(false);
+    expect(isPriorYearContributionWindow(new Date(2026, 3, 16))).toBe(false);
   });
 
   it("returns false for May 1", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 4, 1))).toBe(false);
+    expect(isPriorYearContributionWindow(new Date(2026, 4, 1))).toBe(false);
   });
 
   it("returns false for December 31", () => {
-    expect(isPriorYearContribWindow(new Date(2026, 11, 31))).toBe(false);
+    expect(isPriorYearContributionWindow(new Date(2026, 11, 31))).toBe(false);
   });
 });
 
 /**
- * `localDateStr`/`parseLocalDateOnly`/`localMidnight` (2026-09-01, TODO.md
+ * `calendarDateOf`/`parseLocalDateOnly`/`localMidnight` (2026-09-01, TODO.md
  * date-parsing audit) — the shared fix for `new Date().toISOString().slice(0,10)`
  * ("today", UTC) and unguarded `new Date("YYYY-MM-DD")` (parses as UTC
  * midnight), both of which silently shift by a calendar day outside UTC.
  */
-describe("localDateStr", () => {
+describe("calendarDateOf", () => {
   it("formats using LOCAL getters, not UTC — no timezone shift", () => {
     // A local date deliberately chosen with single-digit month/day to also
     // pin the zero-padding.
     const d = new Date(2026, 0, 5, 23, 30); // Jan 5, 2026, 11:30pm local
-    expect(localDateStr(d)).toBe("2026-01-05");
-  });
-
-  it("defaults to the current local date when called with no argument", () => {
-    const now = new Date();
-    const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    expect(localDateStr()).toBe(expected);
+    expect(calendarDateOf(d)).toBe("2026-01-05");
   });
 });
 
@@ -93,12 +87,12 @@ describe("parseLocalDateOnly", () => {
     expect(parseLocalDateOnly(d)).toBe(d);
   });
 
-  it("round-trips through localDateStr for a same-day identity check", () => {
+  it("round-trips through calendarDateOf for a same-day identity check", () => {
     // The bug this whole module exists to prevent: parsing a date-only
-    // string must reproduce the SAME calendar date localDateStr would
+    // string must reproduce the SAME calendar date calendarDateOf would
     // format it back to, regardless of the host's timezone offset from UTC.
-    expect(localDateStr(parseLocalDateOnly("2026-12-31"))).toBe("2026-12-31");
-    expect(localDateStr(parseLocalDateOnly("2026-01-01"))).toBe("2026-01-01");
+    expect(calendarDateOf(parseLocalDateOnly("2026-12-31"))).toBe("2026-12-31");
+    expect(calendarDateOf(parseLocalDateOnly("2026-01-01"))).toBe("2026-01-01");
   });
 });
 

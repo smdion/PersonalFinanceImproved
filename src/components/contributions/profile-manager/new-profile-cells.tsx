@@ -6,10 +6,11 @@ import {
 } from "@/lib/config/display-labels";
 import type {
   AccountDetail,
-  ContribDraft,
+  ContributionDraft,
   MatchDraft,
 } from "./account-row-types";
 import type { AccountFieldKey } from "./account-fields";
+import { LabelOptions } from "@/components/ui/label-options";
 
 /** One account row's values and setters, as each create-form cell reads them. */
 export type NewProfileRowProps = {
@@ -19,9 +20,11 @@ export type NewProfileRowProps = {
   nameValues: Record<string, string>;
   setNameValues: Dispatch<SetStateAction<Record<string, string>>>;
   effectiveMethod: string;
-  setContribValues: Dispatch<SetStateAction<Record<string, ContribDraft>>>;
+  setContributionValues: Dispatch<
+    SetStateAction<Record<string, ContributionDraft>>
+  >;
   isPercent: boolean;
-  contribVal: ContribDraft;
+  contributionVal: ContributionDraft;
   effectiveMatchType: string;
   setMatchValues: Dispatch<SetStateAction<Record<string, MatchDraft>>>;
   hasMatch: boolean;
@@ -111,7 +114,7 @@ function NewProfileNameCell({
 function NewProfileMethodCell({
   isDisabled,
   effectiveMethod,
-  setContribValues,
+  setContributionValues,
   ad,
 }: NewProfileRowProps) {
   return (
@@ -121,7 +124,7 @@ function NewProfileMethodCell({
           aria-label={`Method, ${ad.liveAccountName}`}
           value={effectiveMethod}
           onChange={(e) =>
-            setContribValues((prev) => ({
+            setContributionValues((prev) => ({
               ...prev,
               [String(ad.id)]: {
                 ...prev[String(ad.id)],
@@ -131,11 +134,7 @@ function NewProfileMethodCell({
           }
           className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
         >
-          {Object.entries(CONTRIBUTION_METHOD_LABELS).map(([k, label]) => (
-            <option key={k} value={k}>
-              {label}
-            </option>
-          ))}
+          <LabelOptions labels={CONTRIBUTION_METHOD_LABELS} />
         </select>
       )}
     </td>
@@ -145,8 +144,8 @@ function NewProfileMethodCell({
 function NewProfileValueCell({
   isDisabled,
   isPercent,
-  contribVal,
-  setContribValues,
+  contributionVal,
+  setContributionValues,
   ad,
 }: NewProfileRowProps) {
   return (
@@ -159,9 +158,9 @@ function NewProfileValueCell({
           <input
             aria-label={`Value, ${ad.liveAccountName}`}
             type="number"
-            value={contribVal.value ?? ""}
+            value={contributionVal.value ?? ""}
             onChange={(e) =>
-              setContribValues((prev) => ({
+              setContributionValues((prev) => ({
                 ...prev,
                 [String(ad.id)]: {
                   ...prev[String(ad.id)],
@@ -202,11 +201,7 @@ function NewProfileMatchTypeCell({
         }
         className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
       >
-        {Object.entries(EMPLOYER_MATCH_LABELS).map(([k, label]) => (
-          <option key={k} value={k}>
-            {label}
-          </option>
-        ))}
+        <LabelOptions labels={EMPLOYER_MATCH_LABELS} />
       </select>
     </td>
   );
@@ -269,13 +264,13 @@ function NewProfileCapCell({
           <input
             aria-label={`Match Cap, ${ad.liveAccountName}`}
             type="number"
-            value={mVal.maxMatchPct ?? ""}
+            value={mVal.maxMatchPercent ?? ""}
             onChange={(e) =>
               setMatchValues((prev) => ({
                 ...prev,
                 [String(ad.id)]: {
                   ...prev[String(ad.id)],
-                  maxMatchPct: e.target.value,
+                  maxMatchPercent: e.target.value,
                 },
               }))
             }

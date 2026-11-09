@@ -1,10 +1,6 @@
 /**
- * What the paycheck setup sends to each tracked account in a year, split by
- * who pays and how it's taxed. Used to estimate the split of a deposit a
- * feed reports as one amount (see lib/pure/investments/flow-suggestions.ts).
- *
- * Uses the globally active Contribution and Salary Profiles — the setup
- * every page shows unless the household picks another.
+ * What the active paycheck setup sends to each tracked account in a year, by payer and tax
+ * treatment, to split a feed's single deposit (lib/pure/investments/flow-suggestions.ts).
  */
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
@@ -41,13 +37,13 @@ import {
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import {
   annualContributionWithBonus,
-  resolveContribPeriods,
+  resolveContributionPeriods,
 } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(
   db: Db,
-  asOf: Date = new Date(),
+  asOf: Date,
   /** Tracked account → the day its latest contribution actually arrived (live data). */
   contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
@@ -76,12 +72,7 @@ export async function loadContributionMix(
   // Capped over a person's rows (a limit spans accounts), then the tracked.
   const rows = capForRequest(
     effective,
-    await loadCapHousehold(
-      db,
-      await getAllPeople(db),
-      null,
-      asOf.getFullYear(),
-    ),
+    await loadCapHousehold(db, await getAllPeople(db), null, asOf),
     jobs,
     salaryMap,
     new Map(),
@@ -106,7 +97,7 @@ export async function loadContributionMix(
       ? contributionPay(comp.salary, comp.terms, comp.bonusOverride)
       : { salary: 0, bonusGross: 0 };
     const salary = pay.salary;
-    const { periodsPerYear } = resolveContribPeriods(
+    const { periodsPerYear } = resolveContributionPeriods(
       c.contributionMethod,
       job ? { payPeriod: job.payPeriod ?? undefined } : undefined,
     );

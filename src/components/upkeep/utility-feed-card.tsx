@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * Utilities ▸ costs from the budget: map each utility to the budget
- * category its bills are paid from (and how many months after the service
- * month they're paid), then pull — the preview lists the months it would
- * fill or refresh and the ones it leaves for review because someone else
- * wrote a different cost. Usage stays typed in.
+ * Utilities ▸ costs from the budget: map each utility to its paying budget category and payment
+ * lag, then pull. The preview lists months to fill or refresh and those left for review because
+ * a different cost was entered. Usage stays typed in.
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -37,7 +35,7 @@ export function UtilityFeedCard() {
   const { data: cats } = trpc.utilities.listBudgetApiCategories.useQuery();
   const [reviewing, setReviewing] = useState(false);
   const { data: plan, isFetching } =
-    trpc.utilities.previewBudgetApiFeed.useQuery(undefined, {
+    trpc.utilities.computeBudgetApiFeedPreview.useQuery(undefined, {
       enabled: reviewing,
     });
   const update = trpc.utilities.updateService.useMutation({

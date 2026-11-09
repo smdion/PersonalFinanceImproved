@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Investing findings — uninvested cash (lib/pure/accounts/cash-positions.ts) and
- * per-fund findings (lib/pure/investments/fund-findings.ts), each judged once,
- * from the holdings overview (portfolio permission), the current glide
- * path's cash target, the HSA buffer defaults and setting, and the Roth
- * verdict (a traditional IRA mid-backdoor isn't drag). Fetching only.
+ * Fetches the inputs for the investing findings (uninvested cash, per-fund) and
+ * judges each once. A traditional IRA mid-backdoor isn't counted as cash drag.
  */
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";

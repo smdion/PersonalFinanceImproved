@@ -8,6 +8,7 @@ import type { BudgetApiService } from "./types";
 import type { BudgetAPIClient } from "./interface";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { Db, DbOrTx } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** Read a cached value. Returns null if not found or expired. */
 export async function cacheGet<T>(
@@ -35,7 +36,7 @@ export async function cacheGet<T>(
   if (!row) return null;
 
   if (maxAgeMs) {
-    const age = Date.now() - row.fetchedAt.getTime();
+    const age = writeStamp().getTime() - row.fetchedAt.getTime();
     if (age > maxAgeMs) return null;
   }
 
@@ -61,14 +62,14 @@ export async function cacheSet(
       cacheKey: key,
       data,
       serverKnowledge: serverKnowledge ?? null,
-      fetchedAt: new Date(),
+      fetchedAt: writeStamp(),
     })
     .onConflictDoUpdate({
       target: [schema.budgetApiCache.service, schema.budgetApiCache.cacheKey],
       set: {
         data,
         serverKnowledge: serverKnowledge ?? null,
-        fetchedAt: new Date(),
+        fetchedAt: writeStamp(),
       },
     });
 }
@@ -83,26 +84,17 @@ export async function cacheClear(
     .where(eq(schema.budgetApiCache.service, service));
 }
 
-/**
- * Re-fetch categories + current-month detail and refresh the cache.
- *
- * Push mutations (syncBudgetToApi, savings.pushContributionsToApi) write
- * directly to the remote API but never touched budget_api_cache — every
- * preview/comparison (buildPushPreviewItems, listApiActuals, etc.) reads
- * from that cache, so without this, a push "worked" in YNAB but Ledgr kept
- * showing pre-push diffs until a full manual Sync ran. Call this after a
- * push completes. Intentionally lighter than syncAll's full sync (skips
- * accounts/transactions/drift-detection/savings_monthly recording) since
- * push only ever changes category goal data.
- */
+/** Re-fetch categories + current-month detail into budget_api_cache after a
+ *  push, which writes only to the remote API, so previews read fresh data.
+ *  Lighter than syncAll: a push only changes category goal data. */
 export async function refreshCategoryCache(
-  db: Db,
+  { db, scope }: { db: Db; scope: { asOf: Date } },
   service: BudgetApiService,
   client: BudgetAPIClient,
 ): Promise<void> {
-  const currentMonth = currentMonthKey(new Date());
+  const currentMonth = currentMonthKey(scope.asOf);
   const [categories, monthDetail] = await Promise.all([
-    client.getCategories(),
+    client.getCategories(scope.asOf),
     client.getMonthDetail(currentMonth),
   ]);
   // Together: categories and the month detail are read as one picture.

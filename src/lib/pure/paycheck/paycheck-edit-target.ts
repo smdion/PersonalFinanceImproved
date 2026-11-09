@@ -1,24 +1,7 @@
 /**
- * Where an edit on the Paycheck page saves — one rule, used for both the
- * write and the label that says so (docs/DESIGN.md "Profiles and Plans").
- *
- * - Profile fields save to the active profile of their kind: the Salary
- *   Profile for pay, bonus, schedule, W-4, extra-paycheck routing and other
- *   pay; the Contribution Profile for contribution amounts/methods/auto-max,
- *   whether each is also taken from bonus checks, and deduction amounts.
- * - Lines — a deduction's or other-pay line's name and tax treatment, and
- *   adding one — belong to the job (every profile), and need the same
- *   permission as editing profiles (the server's deductions / earnings
- *   create+update).
- * - Setup — employer, title, contribution accounts and their links, and
- *   removing any row — belongs to the household and is admin-only, as the
- *   server enforces.
- * - Without the permission to edit profiles, profile fields are read-only
- *   and say why — they never fall back to a database write.
- * - While the shared padlock is locked, everything is read-only.
- *
- * Which fields a profile can hold comes from the profile schemas, never a
- * hand-kept list (lib/db/profile-fields.ts).
+ * Where a Paycheck page edit saves, for both the write and its label (docs/DESIGN.md "Profiles
+ * and Plans"): profile fields to the active profile of their kind, lines to the job, setup to the
+ * household (admin). Read-only without profile-edit permission or while the padlock is locked.
  */
 
 export type PaycheckFieldKind =

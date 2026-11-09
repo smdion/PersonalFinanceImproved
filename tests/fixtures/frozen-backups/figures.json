@@ -1,0 +1,172 @@
+{
+  "v0.8.15": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.0": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.1": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.2": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.3": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.4": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.5": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.6": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.7": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "f908bb1455c5a7aa",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "0a8654f9c76a322d"
+  },
+  "v0.9.8": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.9.9": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.9.10": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.10.0": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.10.1": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.10.2": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.10.3": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  },
+  "v0.10.4": {
+    "paycheck.computeSummary": "cf29aaa02dd0b71e",
+    "contribution.computeSummary": "9c9d39b03e6cdf77",
+    "budget.computeActiveSummary": "c48aff219046bf62",
+    "savings.computeSummary": "72e043c0674fbcbf",
+    "networth.computeSummary": "516427f9102d7e16",
+    "performance.computeSummary": "4f8a7d316e3b8f34",
+    "mortgage.computeActiveSummary": "37f791a98945a6c7",
+    "projection.computeProjection": "279078b20704666a"
+  }
+}

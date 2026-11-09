@@ -766,7 +766,7 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Budget profiles</strong> &mdash; Use different budget
-            scenarios for retirement spending assumptions.
+            scenarios for the Retirement budget.
           </li>
         </ul>
       </ProseSection>

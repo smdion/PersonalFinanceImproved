@@ -1,10 +1,6 @@
 /**
- * What-if runs (tax optimization's comparisons, the bracket optimizer's
- * candidates) vary a few fields of the decumulation overrides on top of the
- * household's saved Changes by year. Overrides are sticky-forward per year,
- * so a saved row in a LATER year setting the same field would quietly undo
- * the what-if from that year on. The controlled fields win: they're removed
- * from the saved rows before the what-if rows are added.
+ * What-if runs vary some decumulation override fields over the saved Changes by year. Those
+ * fields are removed from saved rows first, so a later sticky-forward row can't undo them.
  */
 import type { DecumulationOverride } from "@/lib/pure/engine/types";
 

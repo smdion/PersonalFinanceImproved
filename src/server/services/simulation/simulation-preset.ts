@@ -1,34 +1,48 @@
 /**
- * What a Simulation preset means — one definition for every reader: the
- * Simulation, Coast FIRE, the strategy comparison and analyzer, the
- * projection's stock share and the glide-path warning.
- *
- * A named preset (Aggressive, Default, Conservative) sets the returns
- * (its per-class return overrides, else the class's return × its
- * multiplier), the volatility, the glide path, the inflation spread and the
- * return clamps. Custom is the household's own table values, unadjusted,
- * with `glide_path_allocations` as its glide path. A named preset with no
- * glide path of its own falls back to that table.
- *
- * The household's saved asset-class changes (`mc_asset_class_overrides`)
- * apply on top of any preset.
+ * What a Simulation preset means, for every reader. A named preset sets returns, volatility,
+ * glide path (else `glide_path_allocations`), inflation spread and clamps; Custom is the table
+ * values unadjusted. Saved asset-class changes (`mc_asset_class_overrides`) apply on top.
  */
 import { eq } from "drizzle-orm";
-import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
+import { SK_SIMULATION_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
 import type { GlidePathEntry } from "@/lib/pure/simulation/random";
 import {
-  MC_RETURN_CLAMP_MAX,
-  MC_RETURN_CLAMP_MIN,
+  SIMULATION_RETURN_CLAMP_MAX,
+  SIMULATION_RETURN_CLAMP_MIN,
   type SimulationPresetKey,
 } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/simulation/stock-share";
 import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
+import { loadStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 type CustomClampBounds = { returnClampMin: number; returnClampMax: number };
 type AssetClassOverride = { id: number; meanReturn?: number; stdDev?: number };
+
+/** The stored shapes, as `updateClampBounds` and `updateAssetClassOverrides`
+ *  write them. */
+const customClampBounds: z.ZodType<CustomClampBounds> = z.looseObject({
+  returnClampMin: z.number(),
+  returnClampMax: z.number(),
+});
+const assetClassOverrides: z.ZodType<AssetClassOverride[]> = z.array(
+  z.looseObject({
+    id: z.number(),
+    meanReturn: z.number().optional(),
+    stdDev: z.number().optional(),
+  }),
+);
+
+/** The household's saved asset-class changes; `[]` when none. */
+export async function loadSavedAssetOverrides(
+  db: Db,
+): Promise<AssetClassOverride[]> {
+  const key = "mc_asset_class_overrides";
+  return (await loadStoredSetting(db, key, assetClassOverrides)) ?? [];
+}
 
 export type SimulationPreset = {
   key: SimulationPresetKey;
@@ -52,36 +66,35 @@ export async function loadSimulationPreset(
   key: SimulationPresetKey,
 ): Promise<SimulationPreset> {
   const isCustom = key === "custom";
-  const p = schema.mcPresets;
-  const [presetRow, customRows, savedRow, customClamps] = await Promise.all([
-    isCustom
-      ? Promise.resolve(undefined)
-      : db.select().from(p).where(eq(p.key, key)).then(firstRow),
-    db.select().from(schema.glidePathAllocations),
-    db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "mc_asset_class_overrides"))
-      .then((r) => r[0] ?? null),
-    // Custom has no preset row: its bounds are a setting.
-    isCustom
-      ? db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, SK_MC_CUSTOM_CLAMP_BOUNDS))
-          .then((r) => r[0]?.value as CustomClampBounds | undefined)
-      : Promise.resolve(undefined),
-  ]);
+  const p = schema.simulationPresets;
+  const [presetRow, customRows, savedOverrides, customClamps] =
+    await Promise.all([
+      isCustom
+        ? Promise.resolve(undefined)
+        : db.select().from(p).where(eq(p.key, key)).then(firstRow),
+      db.select().from(schema.glidePathAllocations),
+      loadSavedAssetOverrides(db),
+      // Custom has no preset row: its bounds are a setting.
+      isCustom
+        ? loadStoredSetting(
+            db,
+            SK_SIMULATION_CUSTOM_CLAMP_BOUNDS,
+            customClampBounds,
+          )
+        : Promise.resolve(undefined),
+    ]);
   const [presetGlide, presetReturns] = presetRow
     ? await Promise.all([
         db
           .select()
-          .from(schema.mcPresetGlidePaths)
-          .where(eq(schema.mcPresetGlidePaths.presetId, presetRow.id)),
+          .from(schema.simulationPresetGlidePaths)
+          .where(eq(schema.simulationPresetGlidePaths.presetId, presetRow.id)),
         db
           .select()
-          .from(schema.mcPresetReturnOverrides)
-          .where(eq(schema.mcPresetReturnOverrides.presetId, presetRow.id)),
+          .from(schema.simulationPresetReturnOverrides)
+          .where(
+            eq(schema.simulationPresetReturnOverrides.presetId, presetRow.id),
+          ),
       ])
     : [[], []];
   return {
@@ -95,25 +108,23 @@ export async function loadSimulationPreset(
     inflationStdDev: presetRow ? toNumber(presetRow.inflationStdDev) : null,
     returnClampMin: presetRow
       ? toNumber(presetRow.returnClampMin)
-      : (customClamps?.returnClampMin ?? MC_RETURN_CLAMP_MIN),
+      : (customClamps?.returnClampMin ?? SIMULATION_RETURN_CLAMP_MIN),
     returnClampMax: presetRow
       ? toNumber(presetRow.returnClampMax)
-      : (customClamps?.returnClampMax ?? MC_RETURN_CLAMP_MAX),
+      : (customClamps?.returnClampMax ?? SIMULATION_RETURN_CLAMP_MAX),
     glidePath: glidePathFromRows(
       presetGlide.length > 0 ? presetGlide : customRows,
     ),
     returnOverrides: new Map(
       presetReturns.map((r) => [r.assetClassId, toNumber(r.meanReturn)]),
     ),
-    savedAssetOverrides: (savedRow?.value ?? []) as AssetClassOverride[],
+    savedAssetOverrides: savedOverrides,
   };
 }
 
 /**
- * The asset classes under a preset. Precedence: `overrides` (a run's own,
- * then the saved ones) > preset return overrides > preset multiplier >
- * table values. A class missing from a preset's return overrides takes the
- * multiplier (0.5 when the preset's multiplier is zero).
+ * The asset classes under a preset. Precedence: `overrides` (the run's, then saved) > preset
+ * return overrides > preset multiplier (0.5 when it is zero) > table values.
  */
 export function presetAssetClasses<
   T extends { id: number; name: string; meanReturn: number; stdDev: number },

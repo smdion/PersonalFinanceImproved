@@ -22,6 +22,8 @@ import {
   type TaxDataFile,
 } from "./src/lib/db/reference-reconcile-core";
 import { VERSION_TABLE_NAMES } from "./src/lib/db/version-tables";
+import { loadEnvFile } from "./src/lib/db/env-file";
+import { restrictBackupFile, writeBackupFile } from "./src/lib/db/backup-file";
 import {
   MIGRATION_CONVERTERS,
   runConverterPg,
@@ -267,15 +269,13 @@ async function detectSchemaEra(
 /**
  * First directory that actually accepts a write, from an ordered candidate
  * list. The pre-upgrade backup is the safety net before a destructive
- * squash / DROP, so "the directory exists" (the old `fs.existsSync`
- * heuristic) is not enough — on the hardened homelab stack the container
- * rootfs is read-only and `/app/data` is present but not a writable mount,
- * so `writeFileSync` there throws EROFS and the backup silently never
- * happened (R18).
+ * squash / DROP, so "the directory exists" is not enough: in a container
+ * with a read-only rootfs `/app/data` can be present but not a writable
+ * mount, and `writeFileSync` there throws EROFS.
  *
  *  1. `LEDGR_BACKUP_DIR` — point this at a writable volume mount in the
- *     deployment (the fix for a read-only-rootfs container).
- *  2. `/app/data` — the historical location; works when it IS a writable
+ *     deployment (what a read-only-rootfs container needs).
+ *  2. `/app/data` — the default data directory; works when it IS a writable
  *     mount.
  *  3. `/tmp` — last resort that still beats no backup: it survives the
  *     migration run (long enough for an operator to copy the file out),
@@ -399,7 +399,7 @@ async function writePreMigrationBackupPg(
       backupDir,
       `pre-upgrade-backup-${timestamp}.json`,
     );
-    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    writeBackupFile(backupPath, JSON.stringify(backup));
     log("info", "pre_migration_backup_complete", {
       path: backupPath,
       tableCount: Object.keys(tables).length,
@@ -1334,12 +1334,24 @@ async function runPostgres() {
   }
 }
 
+/** A backup written but not made owner-only is still a backup: warn and migrate. */
+function restrictBackupOrWarn(backupPath: string): void {
+  try {
+    restrictBackupFile(backupPath);
+  } catch (err) {
+    log("warn", "pre_migration_backup_mode_not_set", {
+      path: backupPath,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 /**
  * Exact copy of the SQLite database (VACUUM INTO — consistent, includes the
  * migration journal). Restoring = stop Ledgr, put this file in place of the
  * database file, start the previous version.
  */
-function writePreMigrationBackupSqlite(
+export function writePreMigrationBackupSqlite(
   sqlite: InstanceType<typeof import("better-sqlite3")>,
 ): string | null {
   const backupDir = resolveWritableBackupDir();
@@ -1354,6 +1366,7 @@ function writePreMigrationBackupSqlite(
   const backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.db`);
   try {
     sqlite.exec(`VACUUM INTO '${backupPath.replaceAll("'", "''")}'`);
+    restrictBackupOrWarn(backupPath);
     log("info", "pre_migration_backup_complete", { path: backupPath });
     warnIfEphemeral(backupPath);
     prunePreUpgradeBackups(backupDir);
@@ -1914,6 +1927,7 @@ export function runSQLite() {
 }
 
 async function run() {
+  loadEnvFile();
   const dialect = getDialect();
   log("info", "migration_start", { dialect });
 

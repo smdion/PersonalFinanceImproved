@@ -1,44 +1,17 @@
 /**
- * Server-side cache for retirement projection results — the deterministic
- * engine result, Monte Carlo, and Coast FIRE MC. See schema-pg.ts's
- * `projectionCache` doc comment for why this is its own table rather than
- * reusing `budgetApiCache`.
- *
- * Design:
- *  - Cache key = sha256 of a canonicalized JSON form of the EXACT object
- *    passed to the pure calculator (calculateProjection/calculateMonteCarlo),
- *    not the raw tRPC input — the router resolves contributionProfileId/
- *    salaryProfileId/etc. into live DB state (salaries, portfolio,
- *    contribution accounts, IRS limits) that isn't otherwise captured, and
- *    hashing only the tRPC input would silently serve stale cross-device
- *    results after e.g. a salary edit. Canonicalization sorts object keys
- *    (defense in depth — the source objects already have stable insertion
- *    order) and truncates any Date to day granularity (asOfDate is threaded
- *    through per RULES.md's Time Resolution convention and would otherwise
- *    make every request a miss).
- *  - `seed` lives WITH the cached row, not as a separately-persisted
- *    setting: a cache MISS generates a fresh random seed and stores it
- *    alongside the result; a HIT returns the seed that was already used —
- *    honestly reproducible ("this exact run really would produce this
- *    answer"), not a frozen snapshot of randomness masquerading as
- *    determinism. "Re-run simulation" forces a miss (see forceRefresh
- *    param), which mints a new seed.
- *  - `engineVersion` (PROJECTION_CACHE_ENGINE_VERSION below, a hash of the
- *    engine code) is folded into the uniqueness constraint, so a deploy that
- *    changes that code invalidates every existing row.
- *  - Eviction is opportunistic, not cron-driven: every write deletes
- *    expired rows and, if the table is still over the size cap, the
- *    oldest-by-lastReadAt rows — cheap enough to run inline given how
- *    infrequently writes happen relative to reads.
+ * Server-side cache of projection results (deterministic, simulation, Coast FIRE), keyed by a hash
+ * of the exact calculator input (day-granular dates) plus the engine-code hash; a miss stores a
+ * fresh seed with its result. Eviction runs on each write (expired rows, then oldest over the cap).
  */
 
 import { createHash } from "crypto";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { and, eq, lt, asc, sql, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
 import { ENGINE_HASH } from "@/lib/generated/engine-hash";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The version cached rows are read and written under: a hash of the code
  *  the cached projections run (scripts/engine-hash.ts). */
@@ -49,13 +22,10 @@ const MAX_ROWS = 500;
 
 function canonicalize(value: unknown): unknown {
   if (value instanceof Date) {
-    // Day granularity — finer precision doesn't change engine output and
-    // would otherwise make every request a miss (asOfDate is resolved
-    // fresh, to the millisecond, on every request). Local day (not UTC via
-    // `.toISOString()`): the engine reasons about `asOfDate` in local time
-    // everywhere else, so the key must agree or an evening request keys on
-    // tomorrow.
-    return localDateStr(value);
+    // Local day: finer precision would make every request a miss, and the
+    // engine reads `asOfDate` in local time, so a UTC day would key an evening
+    // request on tomorrow.
+    return calendarDateOf(value);
   }
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === "object") {
@@ -110,7 +80,7 @@ export async function readProjectionCache<TResult = unknown>(
       ),
     );
   if (!row) return null;
-  if (row.expiresAt.getTime() < Date.now()) {
+  if (row.expiresAt.getTime() < writeStamp().getTime()) {
     await db
       .delete(schema.projectionCache)
       .where(eq(schema.projectionCache.id, row.id));
@@ -120,7 +90,7 @@ export async function readProjectionCache<TResult = unknown>(
   // Best-effort freshness touch — an eviction/read-order signal, not load-
   // bearing for correctness, so a failure here must never fail the read.
   db.update(schema.projectionCache)
-    .set({ lastReadAt: new Date() })
+    .set({ lastReadAt: writeStamp() })
     .where(eq(schema.projectionCache.id, row.id))
     .catch((err) =>
       log("warn", "projection_cache_touch_failed", { error: String(err) }),
@@ -142,7 +112,7 @@ export async function writeProjectionCache(
   result: unknown,
   seed: number | null,
 ): Promise<void> {
-  const now = new Date();
+  const now = writeStamp();
   const expiresAt = new Date(now.getTime() + TTL_MS);
   await db
     .insert(schema.projectionCache)
@@ -163,12 +133,8 @@ export async function writeProjectionCache(
       set: { seed, result, computedAt: now, expiresAt, lastReadAt: now },
     });
 
-  // Fire-and-forget, same as readProjectionCache's lastReadAt touch below —
-  // eviction is opportunistic housekeeping with no bearing on THIS
-  // request's own correctness, so it must not add its DB round trips to
-  // the response latency of every cache-miss request (exactly the request
-  // that already paid for the expensive computation this cache exists to
-  // avoid repeating).
+  // Fire-and-forget: eviction is housekeeping, so it must not add DB round
+  // trips to a cache-miss response.
   evictProjectionCache(db).catch((err) =>
     log("warn", "projection_cache_evict_failed", { error: String(err) }),
   );
@@ -181,13 +147,9 @@ export function generateSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
-/** Unconditionally wipes every cached deterministic/MC/Coast-FIRE row —
- *  the operational escape hatch for "I need every projection recomputed
- *  right now" without an engine change and a deploy. No `user_id`/household
- *  scoping column exists on this table (single-tenant app), so this
- *  clears the whole table by design — the next request per input simply
- *  recomputes and re-populates it. Returns the row count deleted, for a
- *  confirmation toast. */
+/** Wipes every cached row (no per-user scoping: single-tenant), so every
+ *  projection recomputes without an engine change. Returns the count
+ *  deleted, for a confirmation toast. */
 export async function clearProjectionCache(db: Db): Promise<number> {
   const deleted = await db
     .delete(schema.projectionCache)
@@ -198,7 +160,7 @@ export async function clearProjectionCache(db: Db): Promise<number> {
 async function evictProjectionCache(db: Db): Promise<void> {
   await db
     .delete(schema.projectionCache)
-    .where(lt(schema.projectionCache.expiresAt, new Date()));
+    .where(lt(schema.projectionCache.expiresAt, writeStamp()));
 
   const [countRow] = await db
     .select({ count: sql<number>`count(*)` })

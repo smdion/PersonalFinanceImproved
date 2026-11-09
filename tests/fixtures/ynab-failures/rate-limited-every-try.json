@@ -1,0 +1,50 @@
+{
+  "description": "A read YNAB rate-limits on every try: GET /accounts three times, 429 each time.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/accounts",
+      "requestBody": null,
+      "status": 429,
+      "responseBody": {
+        "error": {
+          "id": "429",
+          "name": "too_many_requests",
+          "detail": "Too many requests"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/accounts",
+      "requestBody": null,
+      "status": 429,
+      "responseBody": {
+        "error": {
+          "id": "429",
+          "name": "too_many_requests",
+          "detail": "Too many requests"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/budgets/budget-1/accounts",
+      "requestBody": null,
+      "status": 429,
+      "responseBody": {
+        "error": {
+          "id": "429",
+          "name": "too_many_requests",
+          "detail": "Too many requests"
+        }
+      }
+    }
+  ]
+}

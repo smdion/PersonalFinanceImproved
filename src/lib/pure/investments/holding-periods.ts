@@ -1,15 +1,7 @@
 /**
- * Dated holding periods — "held these funds, in these shares, from … to …"
- * per tracked account, or per part of an account whose feeds are linked per
- * part (accountSplits: e.g. a joint IRA with one feed per person and tax
- * type). Every other account — a 401(k) whose parts share one feed — has
- * one whole-account history.
- *
- * Observed periods are derived here from daily SimpleFIN holdings on read
- * (never stored — one source of truth): consecutive days holding the same
- * funds collapse into one period. Entered (user) and inferred periods are
- * stored (holding_periods) and validated here. Priority where they
- * overlap: observed → user → inferred.
+ * Dated holding periods per account, or per part where feeds link per part
+ * (accountSplits). Observed periods derive from daily holdings on read; user and
+ * inferred ones are stored. Overlap priority: observed → user → inferred.
  */
 import { HOLDING_PERIODS } from "@/lib/config/benchmarks";
 import { tradingDaysBetween } from "@/lib/pure/investments/market-calendar";
@@ -64,11 +56,9 @@ export const holderKey = (
 ) => `${performanceAccountId}|${subKey ?? ""}`;
 
 /**
- * Holdings per day for each group of positions (ascending) — an account,
- * or one part of it. A group fed by several feeds that report on different
- * days gets, on each day, every feed's most recent holdings within the
- * allowed gap — so a day where only one feed reported isn't read as a
- * change of funds.
+ * Holdings per day (ascending) for each group: each day takes every feed's most
+ * recent holdings within the allowed gap, so one feed reporting alone isn't read
+ * as a change of funds.
  */
 function holdingsByDay<K>(
   positions: readonly DailyPosition[],
@@ -169,16 +159,9 @@ function sameFunds(a: Record<number, number>, b: Record<number, number>) {
 }
 
 /**
- * Observed periods per holder — the account, or each part of an account
- * whose feeds are linked per part (a whole-account feed's subKey is null,
- * so an account with one feed for all its parts has one history). A new
- * period starts when the set of funds changes or the daily data skips more
- * trading days than allowed (shares move with prices every day, so they
- * never split a period). The last period stays open (still held) while it
- * reaches the account's latest feed day, within the same allowed gap (a
- * part's feed a day behind the others isn't closed); a closed or unlinked
- * feed's last period ends on its last day, so it can't mask entered
- * history forever.
+ * Observed periods per holder: a new one starts when the fund set changes or data
+ * skips too many trading days. The last stays open while it reaches the account's
+ * latest feed day (same gap); a closed or unlinked feed's ends on its last day.
  */
 export function deriveObservedPeriods(
   positions: readonly DailyPosition[],
@@ -227,12 +210,9 @@ export function deriveObservedPeriods(
 }
 
 /**
- * Which accounts' history is kept per part: one with a counted feed linked
- * to a part, or with stored part periods while no whole-account feed
- * replaced them (sticky — unlinking or unchecking a part feed doesn't
- * orphan entered history). An account with both part and whole-account
- * feeds is a conflict, shown to the household and never resolved
- * silently. Accounts not in the map keep one whole-account history.
+ * Accounts kept per part: a counted part feed, or stored part periods with no
+ * whole-account feed (so unlinking doesn't orphan history). Part plus whole feeds
+ * is a conflict, shown, never resolved silently. Others keep one history.
  */
 export function accountSplits(
   feeds: readonly { performanceAccountId: number; subKey: string | null }[],
@@ -278,11 +258,9 @@ export function partKeyOf(
 }
 
 /**
- * A stored or observed period no holder takes: its part is gone, or it no
- * longer fits how the account's feeds are linked — including an entered
- * whole-account period on an account now kept per part (a conflict
- * account's whole holder shows only its feed's observed history). Shown to
- * be moved or deleted; never counted.
+ * A period no holder takes (part gone, or not matching how feeds are linked, e.g.
+ * an entered whole-account period on a per-part account). Shown to be moved or
+ * deleted; never counted.
  */
 export function isOrphaned(
   p: {
@@ -302,11 +280,9 @@ export function isOrphaned(
 }
 
 /**
- * The holders an account's history is kept for: the whole account, or each
- * of its parts when it's split (plus the whole account when it's in
- * conflict, so its whole-account feed's history still shows). A stored
- * period with no holder here is orphaned — shown to be moved or deleted,
- * never counted.
+ * Holders an account's history is kept for: the whole account, or each part when
+ * split (plus the whole account in conflict). A stored period with no holder is
+ * orphaned.
  */
 export function historyHolders(
   accountIds: readonly number[],
@@ -334,10 +310,9 @@ export type SnapshotParts = {
 };
 
 /**
- * Each part's share of an account on a day: from the latest snapshot on or
- * before it (before the first snapshot, the earliest one's — older years
- * are approximate). A part not in that snapshot has 0. Empty when there is
- * no snapshot or no money.
+ * Each part's share of an account on a day, from the latest snapshot on or before
+ * it (else the earliest, approximate). A part not in it has 0; empty with no
+ * snapshot or no money.
  */
 export function partSharesOn(
   /** The account's snapshots, ascending by date. */

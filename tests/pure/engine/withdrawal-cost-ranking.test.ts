@@ -562,7 +562,7 @@ describe("deriveBasisRankingInputs", () => {
   });
 
   it("excludes a Portfolio-parented Roth account's basis from the routable total", () => {
-    const indAccts = [
+    const indAccounts = [
       {
         name: "Retirement Roth",
         category: "roth401k",
@@ -585,7 +585,7 @@ describe("deriveBasisRankingInputs", () => {
     const result = deriveBasisRankingInputs({
       balances,
       indBasis,
-      indAccts,
+      indAccounts,
       indKey,
     });
     // Only the Retirement-parented account's basis counts -- the
@@ -594,7 +594,7 @@ describe("deriveBasisRankingInputs", () => {
   });
 
   it("excludes non-Roth accounts from the basis total even when indAccts/indKey are given", () => {
-    const indAccts = [
+    const indAccounts = [
       {
         name: "Traditional 401k",
         category: "trad401k",
@@ -610,7 +610,7 @@ describe("deriveBasisRankingInputs", () => {
     const result = deriveBasisRankingInputs({
       balances,
       indBasis,
-      indAccts,
+      indAccounts,
       indKey,
     });
     expect(result.rothBasisAvailable).toBe(0);

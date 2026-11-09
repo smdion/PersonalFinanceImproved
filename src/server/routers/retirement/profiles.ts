@@ -13,32 +13,14 @@ import * as schema from "@/lib/db/schema";
 import { firstRow } from "@/lib/utils/first-row";
 
 export const profileProcedures = {
-  // retirementScenarios CRUD removed.
-  // It had ZERO UI callers while the table it wrote was read on every engine
-  // build, so it could silently change every projection with no way to see
-  // or undo it. The four distribution tax rates it carried now live on
-  // retirement_settings and are read from there; leaving a writable router
-  // pointed at the now-ignored columns would be a second, invisible answer
-  // to "what drives my projection" — the exact thing this work removes.
-  //
-  // The TABLE survives for now: retirement.ts's relocation comparison still
-  // reads its withdrawal_rate, which is deliberately NOT relocated (see the
-  // schema docblock — retirement_settings.withdrawal_rate already exists and
-  // collapsing the two is a user-visible change needing its own commit).
+  // retirement_scenarios has no write procedures: nothing in the app edits
+  // it, so it can't change a projection unseen. Its selected row is read by
+  // build-engine-payload and the relocation analysis.
 
   /**
-   * Retirement Profiles CRUD (Retirement Profiles step D — "multiple
-   * profiles + the Plan field"). Each profile is a COMPLETE WORLD: no
-   * baseline, no default, no inheritance, no merge at read time — same
-   * contract Salary Profiles already state. `duplicate` is the one creation
-   * path (no bare `create`): retirement_settings has ~40 columns, many
-   * NOT NULL with no sensible blank default, so every new profile starts as
-   * a clone of an existing one, matching the plan's own recommendation that
-   * "duplicate to compare" be the primary action.
-   *
-   * adminProcedure throughout, matching retirementSettings.upsert's existing
-   * gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within
-   * one group is a bug, not a design choice.
+   * Retirement Profiles CRUD; each profile is a complete, independent world. New profiles
+   * come only from `duplicate`: retirement_settings has many NOT NULL columns with no
+   * sensible blank default. adminProcedure throughout, like retirementSettings.upsert.
    */
   retirementProfiles: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
@@ -61,13 +43,9 @@ export const profileProcedures = {
         duplicateProfile(ctx.db, "retirement", input),
       ),
 
-    /** Rename / re-describe a profile, or pin its tax-law year. Household/
-     *  per-person assumptions themselves are edited through
-     *  retirementSettings.upsert, scoped to whichever profile is active —
-     *  not here. taxParamsYear lives on retirement_profiles itself:
-     *  null (default) tracks the latest enacted tax data; a real year pins
-     *  resolveTaxParams's base year so re-opening this profile reproduces
-     *  its numbers instead of re-pricing under whatever year is newest. */
+    /** Rename / re-describe a profile, or set its tax-law year (assumptions are edited
+     *  through retirementSettings.upsert). `taxParamsYear` null tracks the latest enacted
+     *  tax data; a year fixes resolveTaxParams's base year so the profile reproduces. */
     update: adminProcedure
       .input(
         z.object({

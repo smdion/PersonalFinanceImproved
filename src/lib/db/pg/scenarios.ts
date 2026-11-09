@@ -45,9 +45,8 @@ export const scenarios = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description"),
-    /** The Plan's Budget Profile — applying the Plan makes it the active
-     *  one (settings.scenarios.activate). Null only on a Plan made before
-     *  v0.8.9; applying one leaves that kind's active profile alone. */
+    /** The Plan's Budget Profile, made active when the Plan is applied. When null, applying
+     *  the Plan leaves the active budget profile alone. */
     budgetProfileId: integer("budget_profile_id").references(
       () => budgetProfiles.id,
       { onDelete: "set null" },

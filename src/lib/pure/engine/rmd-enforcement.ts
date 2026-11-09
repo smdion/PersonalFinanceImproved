@@ -1,10 +1,6 @@
 /**
- * RMD Enforcement — ensures minimum Traditional withdrawals per IRS rules.
- *
- * After withdrawal routing decides allocations, this module enforces the
- * Required Minimum Distribution. If Traditional withdrawals are below the
- * RMD floor, the shortfall is distributed proportionally across Traditional
- * accounts. Applies to ALL routing modes.
+ * RMD enforcement for every routing mode: when routed Traditional withdrawals fall below the RMD,
+ * the shortfall is spread proportionally across Traditional accounts.
  */
 import type { DecumulationSlot } from "./types/routing";
 import type { AccountCategory } from "../../config/account-types";
@@ -35,18 +31,13 @@ export interface RmdEnforcementInput {
   slots: DecumulationSlot[];
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   /** When provided, overrides the internal RMD calculation. Tests only:
    *  multi-person households go through `enforceOwnerRmds`. */
   overrideRmdRequired?: number;
-  /** Portfolio-parented ("non-retirement") exclusion for this year.
-   *  The RMD REQUIREMENT itself (`rmdRequired`, derived from
-   *  `priorYearEndTradBalance` upstream of this module) stays computed off
-   *  the full blended balance — RMDs are a real IRS obligation on real
-   *  dollars regardless of this app's internal parentCategory tagging, and
-   *  that must NOT change. Only the shortfall's per-category DISTRIBUTION
-   *  CAPACITY (`tradBalByCategory` below) is scoped: a Portfolio-parented
-   *  account can't be forced to cover a Retirement-plan RMD shortfall. */
+  /** Portfolio-parented exclusion for this year. The RMD requirement stays on the full balance;
+   *  only the shortfall's per-category capacity is scoped, so Portfolio accounts never cover a
+   *  Retirement-plan RMD shortfall. */
   nonRetirement?: NonRetirementExclusion;
 }
 
@@ -56,14 +47,8 @@ interface RmdEnforcementResult {
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
   warnings: string[];
-  /** Portion of `rmdAmount` that could NOT be forced through as a real
-   *  taxable distribution (0 in the overwhelmingly common case) — real IRS
-   *  exposure, not a display nicety: the same shortfall this function
-   *  already prices into the `RMD SHORTFALL` warning string's 25% excise
-   *  tax estimate, just also exposed as a number so the UI can show it
-   *  without parsing a warning string. The Portfolio-parented exclusion can
-   *  leave Retirement-only Traditional capacity genuinely insufficient to
-   *  cover a real RMD requirement. */
+  /** Part of `rmdAmount` that couldn't be distributed (real IRS exposure, priced in the
+   *  `RMD SHORTFALL` warning's 25% excise estimate); the Portfolio exclusion can cause it. */
   rmdShortfallAmount: number;
 }
 
@@ -93,7 +78,8 @@ function routedTraditionalDraw(slots: DecumulationSlot[]): number {
  * new ones). Returns updated totals and diagnostic info.
  */
 export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
-  const { age, rmdStartAge, priorYearEndTradBalance, slots, acctBal } = input;
+  const { age, rmdStartAge, priorYearEndTradBalance, slots, accountBalance } =
+    input;
   let { totalTraditionalWithdrawal, totalWithdrawal } = input;
 
   const warnings: string[] = [];
@@ -120,7 +106,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
         const tradCategories = categoriesWithTaxPreference();
         // Compute available capacity per category: balance minus what routing already took
         const tradBalByCategory = tradCategories.map((cat) => {
-          const fullBal = getTraditionalBalance(acctBal[cat]);
+          const fullBal = getTraditionalBalance(accountBalance[cat]);
           const alreadyRouted =
             slots.find((s) => s.category === cat)?.traditionalWithdrawal ?? 0;
           const nonRetirementAmount = input.nonRetirement?.trad[cat] ?? 0;
@@ -224,7 +210,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           warnings.push(
             `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${met.toFixed(0)} available. ` +
               `IRS penalty (25% excise tax) on the $${rmdShortfallAmount.toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
-              `The rest of the balance is held outside the retirement plan, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
+              `The rest of the balance is held as Portfolio money, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
           );
         }
       }
@@ -246,10 +232,8 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
 // ---------------------------------------------------------------------------
 
 /**
- * Whose RMD a Traditional account counts toward. IRAs can't be joint, so an
- * account with no owner is a data gap, not shared money: it counts as the
- * primary person's, never left out of the RMD base. One rule for the RMD
- * base (state.ts, helpers.ts) and the pins below.
+ * Whose RMD a Traditional account counts toward. IRAs can't be joint, so an ownerless account
+ * counts as the primary person's. One rule for the RMD base (state.ts, helpers.ts) and the pins.
  */
 export function rmdOwnerOf(
   ia: Pick<IndividualAccountInput, "ownerPersonId">,
@@ -265,10 +249,10 @@ interface OwnerRmdInput {
   slots: DecumulationSlot[];
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
-  acctBal: AccountBalances;
-  indAccts: IndividualAccountInput[];
+  accountBalance: AccountBalances;
+  indAccounts: IndividualAccountInput[];
   indKey: IndKeyFn;
-  indBal: Map<string, number>;
+  indBalance: Map<string, number>;
   nonRetirement?: NonRetirementExclusion;
 }
 
@@ -289,26 +273,13 @@ interface OwnerRmdResult {
 }
 
 /**
- * Each person's RMD comes out of that person's own Retirement-parented
- * Traditional accounts — never a spouse's. For every person:
- *
- *   ownerDraw + min(qcd, rmd) + shortfall = rmd
- *
- * Each owner's whole remaining RMD is pinned to their accounts by balance
- * (the IRS has each 401(k) meet its own RMD; by balance approximates that,
- * and routing's other draws aren't checked plan by plan). Slots are then
- * reshaped so each carries its pins plus a share of the rest of what
- * routing took, so household Traditional is max(routed, Σ pins): moving a
- * draw onto the right owner adds no income; only a real deficit adds money
- * and overrides routing. What an owner's accounts can't cover stays that
- * owner's shortfall — it never spills to a spouse. Since an RMD is a
- * fraction of the prior year's balance, that only happens when the money
- * is Portfolio-parented.
- *
- * Mutates `slots` in place.
+ * Each person's RMD comes from their own Retirement-parented Traditional accounts, by balance:
+ * ownerDraw + min(qcd, rmd) + shortfall = rmd. Slots are reshaped to max(routed, Σ pins); what an
+ * owner can't cover stays their shortfall, never a spouse's. Mutates `slots`.
  */
 export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
-  const { owners, slots, acctBal, indAccts, indKey, indBal } = input;
+  const { owners, slots, accountBalance, indAccounts, indKey, indBalance } =
+    input;
   const tradCategories = categoriesWithTaxPreference();
   const catRoom = new Map<AccountCategory, number>(
     tradCategories.map((cat) => [
@@ -316,7 +287,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
       Math.max(
         0,
         roundToCents(
-          getTraditionalBalance(acctBal[cat]) -
+          getTraditionalBalance(accountBalance[cat]) -
             (input.nonRetirement?.trad[cat] ?? 0),
         ),
       ),
@@ -329,7 +300,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
 
   for (const { personId, personName, required } of owners) {
     if (required <= 0) continue;
-    const accts = indAccts.filter(
+    const accts = indAccounts.filter(
       (ia) =>
         rmdOwnerOf(ia, input.primaryPersonId) === personId &&
         isPreTaxType(ia.taxType) &&
@@ -341,7 +312,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
         0,
         Math.min(
           roundToCents(
-            (indBal.get(indKey(ia)) ?? 0) - (pins.get(indKey(ia)) ?? 0),
+            (indBalance.get(indKey(ia)) ?? 0) - (pins.get(indKey(ia)) ?? 0),
           ),
           catRoom.get(ia.category) ?? 0,
         ),
@@ -380,7 +351,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
       warnings.push(
         `RMD SHORTFALL: ${personName}'s accounts can pay $${(required - remaining).toFixed(0)} of the $${required.toFixed(0)} Traditional distribution required this year. ` +
           `IRS penalty (25% excise tax) on the $${remaining.toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
-          `The rest of ${personName}'s balance is held outside the retirement plan, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
+          `The rest of ${personName}'s balance is held as Portfolio money, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
       );
     }
   }

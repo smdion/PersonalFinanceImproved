@@ -1,12 +1,6 @@
-/**
- * Links that land on the data — the one table every "take me to this" link
- * reads (DESIGN.md § Links into Pages).
- *
- * A sender says what a link is about (a `Focus`); this table says where that
- * lives and how its page must open to show it. Pages opt in with
- * `useFocusedState` (tabs/views), `useFocusMatch` (reveal a hidden section)
- * and `FocusTarget` (scroll + highlight).
- */
+/** Where each `Focus` lives and how its page opens to show it: the table every "take me to
+ *  this" link reads (DESIGN.md § Links into Pages). Pages opt in with `useFocusedState`,
+ *  `useFocusMatch` (reveal a hidden section) and `FocusTarget` (scroll + highlight). */
 import { settingsHref, type SettingsSectionsByTab } from "./settings-sections";
 
 /** Query params a focus link uses. */

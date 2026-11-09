@@ -39,7 +39,7 @@ export const OVERRIDE_OPTIONS: {
   {
     key: "budget_change",
     label: "Budget Change",
-    description: "Change retirement spending",
+    description: "Change the Retirement budget",
     icon: "🏠",
     phase: "post",
   },

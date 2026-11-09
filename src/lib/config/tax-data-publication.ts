@@ -1,15 +1,6 @@
-/**
- * When each yearly tax table is published, and by when a release should
- * carry it. One list for the CI check (scripts/check-tax-params.ts) and the
- * app's "tax data is behind" notice (lib/pure/tax/data-status.ts).
- *
- * `due` is after the usual release window, so a late year never fails CI
- * before the source exists. A month from July on falls in the year BEFORE
- * the tax year (IRS / CMS publish ahead); an earlier month falls in the
- * tax year itself (HHS publishes the poverty guidelines in January — FPL
- * rows are keyed by the ACA coverage year, which uses the guidelines
- * published the prior calendar year).
- */
+/** When each yearly tax table is published and by when a release must carry it, for CI and the
+ *  "tax data is behind" notice. A `due` month from July on falls in the year before the tax
+ *  year (IRS/CMS publish ahead); an earlier month in the tax year itself (HHS's FPL). */
 import type { ReferenceTable } from "@/lib/db/reference-data";
 
 export type TaxDataSection = {

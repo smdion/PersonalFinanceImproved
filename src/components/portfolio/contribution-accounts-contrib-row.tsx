@@ -21,8 +21,8 @@ import type { ContribRow } from "./contribution-accounts-types";
 import { formatCurrency } from "@/lib/utils/format";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 import {
   formatEmployerMatch,
@@ -33,6 +33,7 @@ import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 import { isRothIraContribution } from "@/lib/pure/contributions/roth-ira";
 import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
 import type { RothIraRoute } from "@/lib/config/enum-values";
+import { LabelOptions } from "@/components/ui/label-options";
 
 export function ContributionRow({
   contrib: c,
@@ -48,18 +49,16 @@ export function ContributionRow({
   people: { id: number; name: string }[];
   jobs: { id: number; employerName: string }[];
   accountTypeOptions: { value: string; label: string }[];
-  /** Name of the globally-active Contribution Profile, or null if none is
-   *  resolvable — this account carries no value of its own; whatever this
-   *  profile has (or doesn't have) for it is the only real answer to
-   *  "why does this row look the way it does." */
+  /** Name of the globally-active Contribution Profile, or null if none
+   *  resolves; the account has no value of its own, so this profile's entry
+   *  explains the row. */
   activeProfileName: string | null;
   /** That profile's raw active-fields entry for this specific account, or
    *  null if it has none. */
   activeProfileFields: Record<string, unknown> | null;
-  /** Set when this row has no match config of its own but a sibling split
-   *  of the same account does — that sibling's match is combined across
-   *  both splits before capping, so this row still earns a real,
-   *  proportional share (see computeGroupedEmployerMatch). */
+  /** Set when a sibling split of the same account holds the match config: its
+   *  match covers both splits combined, so this row still earns a proportional
+   *  share (see computeGroupedEmployerMatch). */
   sharedMatchFrom?: ContribRow;
   onUpdate?: (updates: Record<string, unknown>) => void;
 }) {
@@ -85,14 +84,14 @@ export function ContributionRow({
   const effectiveMatchValue =
     activeMatchFields?.employerMatchValue ?? c.employerMatchValue;
   const effectiveMatchRate = mergedMatchRate(c, activeMatchFields ?? {});
-  const effectiveMaxMatchPct =
+  const effectiveMaxMatchPercent =
     activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
   const isPercentMatch = effectiveMatchType === "percent_of_contribution";
 
   const matchText = formatEmployerMatch(
     effectiveMatchType,
     effectiveMatchValue,
-    effectiveMaxMatchPct,
+    effectiveMaxMatchPercent,
     effectiveMatchRate,
   );
   const sharedMatchText = sharedMatchFrom
@@ -108,8 +107,8 @@ export function ContributionRow({
     : "";
 
   // The account's value in the active profile (accounts carry none).
-  const profileStatus = resolveContribFieldDisplayState(
-    activeProfileFields as ContribAccountActiveFields,
+  const profileStatus = resolveContributionFieldDisplayState(
+    activeProfileFields as ContributionAccountActiveFields,
   );
   const profileStatusValueText =
     profileStatus.methodSuffix === "%"
@@ -325,8 +324,10 @@ export function ContributionRow({
                   <InlineText
                     label="Match Cap %"
                     value={
-                      effectiveMaxMatchPct
-                        ? String(parseFloat(String(effectiveMaxMatchPct)) * 100)
+                      effectiveMaxMatchPercent
+                        ? String(
+                            parseFloat(String(effectiveMaxMatchPercent)) * 100,
+                          )
                         : ""
                     }
                     placeholder="e.g. 7"
@@ -464,7 +465,7 @@ export function ContributionRow({
   );
 }
 
-export function AddContribForm({
+export function AddContributionForm({
   accountType,
   parentCategory,
   performanceAccountId,
@@ -491,7 +492,7 @@ export function AddContribForm({
   );
   const [matchType, setMatchType] = useState("none");
   const [matchValue, setMatchValue] = useState("");
-  const [maxMatchPct, setMaxMatchPct] = useState("");
+  const [maxMatchPercent, setMaxMatchPercent] = useState("");
   const id = useId();
 
   const handleSubmit = () => {
@@ -506,8 +507,8 @@ export function AddContribForm({
       ...(matchType !== "none" && matchValue
         ? { employerMatchValue: matchValueToStore(matchType, matchValue) }
         : {}),
-      ...(matchType === "percent_of_contribution" && maxMatchPct
-        ? { employerMaxMatchPct: String(parseFloat(maxMatchPct) / 100) }
+      ...(matchType === "percent_of_contribution" && maxMatchPercent
+        ? { employerMaxMatchPct: String(parseFloat(maxMatchPercent) / 100) }
         : {}),
       isActive: true,
     });
@@ -571,11 +572,7 @@ export function AddContribForm({
             onChange={(e) => setTaxTreatment(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            {Object.entries(TAX_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
+            <LabelOptions labels={TAX_LABELS} />
           </select>
         </div>
         <div>
@@ -591,11 +588,7 @@ export function AddContribForm({
             onChange={(e) => setMatchType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            {Object.entries(MATCH_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
+            <LabelOptions labels={MATCH_LABELS} />
           </select>
         </div>
         {matchType !== "none" && (
@@ -633,8 +626,8 @@ export function AddContribForm({
                 <input
                   id={`${id}-max-match`}
                   type="number"
-                  value={maxMatchPct}
-                  onChange={(e) => setMaxMatchPct(e.target.value)}
+                  value={maxMatchPercent}
+                  onChange={(e) => setMaxMatchPercent(e.target.value)}
                   placeholder="e.g. 7"
                   className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
                 />

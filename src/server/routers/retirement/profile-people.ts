@@ -24,18 +24,8 @@ export const profilePeopleProcedures = {
         ),
     ),
 
-    // Retirement Profiles phase 4 (the assumptions band). Until this
-    // mutation existed, every per-person editor on the Projection
-    // Assumptions card (Timeline's per-person Retirement Age + Rule of 55,
-    // Social Security's per-person benefit) actually called
-    // `retirementSettings.upsert`, writing `retirement_settings` — the
-    // table `build-engine-payload.ts` stopped reading per-person values
-    // from once those reads were switched to `retirement_profile_people`.
-    // The edits saved, the UI showed the new
-    // number optimistically, and the projection never moved — same failure
-    // shape as the pre-0b5d5fe `end_age` bug, just at this table instead.
-    // This is the real write path now; the affected client call sites are
-    // updated in the same commit as this mutation.
+    // The write path for per-person Retirement Age, Rule of 55 and Social Security
+    // benefit: the engine reads them from `retirement_profile_people`.
     upsertPerson: adminProcedure
       .input(
         z.object({
@@ -44,12 +34,9 @@ export const profilePeopleProcedures = {
           retirementAge: z.number().int().min(18).max(100).optional(),
           endAge: z.number().int().min(30).max(120).optional(),
           socialSecurityMonthly: zDecimal.nullable().optional(),
-          // PIA (Primary Insurance Amount, monthly benefit at Full
-          // Retirement Age) — opt-in direct user input, see
-          // SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. Independent
-          // of socialSecurityMonthly; null means "not opted in," never
-          // falls back to a household-wide default (PIA is inherently
-          // per-person).
+          // PIA (monthly benefit at Full Retirement Age), per person and
+          // opt-in; independent of socialSecurityMonthly. null means "not
+          // opted in", never a household-wide default.
           socialSecurityPia: zDecimal.nullable().optional(),
           ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
           ruleOf55Override: z.boolean().nullable().optional(),
@@ -65,10 +52,8 @@ export const profilePeopleProcedures = {
               eq(schema.retirementProfilePeople.personId, input.personId),
             ),
           );
-        // retirementAge/endAge are NOT NULL — the completeness invariant
-        // (profile duplicate / person create, see retirementProfiles below)
-        // guarantees `existing` here in every real flow, but an insert path
-        // still needs concrete values if it's ever reached cold.
+        // retirementAge/endAge are NOT NULL: the completeness invariant guarantees
+        // `existing` in real flows, but a cold insert still needs concrete values.
         if (
           !existing &&
           (input.retirementAge == null || input.endAge == null)
@@ -110,15 +95,9 @@ export const profilePeopleProcedures = {
               .then(firstRow);
       }),
 
-    // "Plan Through" (end age) and Social Security "Start Age" both render
-    // as ONE household-wide control regardless of person count
-    // (sections/timeline.tsx, sections/social-security.tsx), but the
-    // engine's real per-person read source for both
-    // (`retirement_profile_people`) is per-person storage. Fan whichever
-    // field the caller sends to every person's row in the profile — same
-    // shape as `retirementSettings.upsert`'s endAge fan-out used to be the
-    // fix for, before the read moved to this table out from under it (see
-    // upsertPerson's docblock above).
+    // "Projection Through" (end age) and Social Security "Start Age" are one
+    // household-wide control but stored per person: fan the sent field to every
+    // person's row in the profile.
     upsertHouseholdFields: adminProcedure
       .input(
         z.object({

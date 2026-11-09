@@ -5,7 +5,7 @@
 import { useId } from "react";
 import { ReplacesNote } from "@/components/versions/replaces-note";
 import { DataLossWarning } from "@/components/versions/restore-notices";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalCancel } from "@/components/ui/modal";
 
 type ImportDialogProps = {
   showImportConfirm: boolean;
@@ -46,7 +46,7 @@ export function ImportDialog({
     <Modal
       onClose={cancel}
       label="Import Backup"
-      closeOnEscape={!importLoading}
+      busy={importLoading}
       closeOnBackdrop={false}
       className="bg-surface-primary mx-4 w-full max-w-md rounded-lg p-6 shadow-xl"
     >
@@ -87,13 +87,11 @@ export function ImportDialog({
         >
           {importLoading ? "Importing..." : "Import"}
         </button>
-        <button
-          onClick={cancel}
-          disabled={importLoading}
-          className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
-        >
-          Cancel
-        </button>
+        <ModalCancel>
+          <button className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium">
+            Cancel
+          </button>
+        </ModalCancel>
       </div>
     </Modal>
   );

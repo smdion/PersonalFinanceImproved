@@ -10,9 +10,9 @@ export type AccountDetail = ProfileDetail["accountDetails"][number];
 export type MatchDraft = {
   matchType?: string;
   matchValue?: string;
-  maxMatchPct?: string;
+  maxMatchPercent?: string;
 };
-export type ContribDraft = { method?: string; value?: string };
+export type ContributionDraft = { method?: string; value?: string };
 
 /** One account row's values and callbacks, as each inline-editor cell reads them. */
 export type InlineRowProps = {

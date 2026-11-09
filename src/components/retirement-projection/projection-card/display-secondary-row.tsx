@@ -15,10 +15,10 @@ export function DisplaySecondaryRow({ state }: { state: ProjectionState }) {
     setShowIncome,
     fanBandRange,
     setFanBandRange,
-    mcBandsByYear,
+    simulationBandsByYear,
     hasIndividualAccountData,
   } = state;
-  const hasMc = mcBandsByYear != null;
+  const hasSimulation = simulationBandsByYear != null;
   // The Balance chart's bars come from per-account data, which a
   // Simple-tax-mode scenario doesn't have, so the toggle has nothing to show.
   const baselineUnavailable =
@@ -100,7 +100,7 @@ export function DisplaySecondaryRow({ state }: { state: ProjectionState }) {
           />
         </LabeledPillGroup>
       )}
-      {hasMc && (
+      {hasSimulation && (
         <LabeledPillGroup
           label="Confidence Band"
           helpTip={

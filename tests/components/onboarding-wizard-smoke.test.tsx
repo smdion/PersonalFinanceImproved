@@ -28,7 +28,7 @@ const onComplete = vi.fn();
 beforeEach(() => {
   resetTrpcMock();
   onComplete.mockClear();
-  setQuery("settings.firstRunState", { adminNeeded: true });
+  setQuery("settings.getFirstRunState", { adminNeeded: true });
   // A fresh install has one baseline Salary Profile with no entries.
   setQuery("salaryProfile.list", [{ id: 1, name: "Baseline", salaries: {} }]);
   let nextPersonId = 41;

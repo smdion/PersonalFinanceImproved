@@ -1,17 +1,7 @@
 /**
- * Suggested portfolio snapshot balances from linked SimpleFIN accounts.
- * Pure; suggestions only — the household confirms the snapshot.
- *
- * A sub-account linked on its own takes its feed's balance. A feed linked
- * to the whole tracked account covers that account's other sub-accounts:
- * with one left it's exact; with several (a plan reporting one balance for
- * its Roth, Traditional, match and rollover parts) the change since the
- * last snapshot is placed as an estimate — new contributions go to the part
- * they land in (employee Roth → Roth, pre-tax → Traditional, after-tax →
- * after-tax, employer → the match part of that tax type when the plan
- * tracks one), and the balance is then divided by each part's prior amount
- * plus what was placed into it — so the market's move is shared out by
- * size and no part goes negative.
+ * Suggested snapshot balances from SimpleFIN. A sub-account feed gives its balance;
+ * a whole-account feed covers the other parts, estimated when several: new money
+ * goes to its part, then the balance splits by prior amount plus that money.
  */
 import {
   isAfterTaxType,
@@ -63,11 +53,9 @@ type SnapshotAccountNote = {
 };
 
 /**
- * A linked feed whose money no part of the latest snapshot holds — it
- * would silently go missing from the snapshot. "no_part": the account has
- * no part left for it (e.g. a Traditional IRA that only holds money on its
- * way to Roth, after its part was dropped); "part_gone": it's linked to a
- * part that's no longer in the snapshot.
+ * A linked feed whose money no part of the latest snapshot holds, so it would go
+ * missing. "no_part": the account has no part for it; "part_gone": its linked part
+ * isn't in the snapshot.
  */
 export type UnplacedFeed = {
   feedId: number;
@@ -170,7 +158,7 @@ export function suggestSnapshotAmounts(
     const accountFeeds = feeds.filter(
       (f) => f.performanceAccountId === account,
     );
-    // Sub-account links (a link to a sub-account no longer in the snapshot
+    // Sub-account links (a link to a sub-account missing from the snapshot
     // is left out rather than guessed at).
     const linked: SnapshotFeed[] = [];
     for (const sub of accountSubs) {

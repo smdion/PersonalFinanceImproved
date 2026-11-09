@@ -1,14 +1,8 @@
 /**
- * Suggested cost basis for a taxable account from what its institution
- * reports: shares × average cost per share, summed over current holdings.
- * Pure; a suggestion the household confirms.
- *
- * A holding with no reported average cost but a steady $1 price (a money
- * market or settlement fund) cost what it's worth. Any other holding
- * without a cost leaves the suggestion incomplete — its value is reported
- * so the household can judge.
+ * Suggested cost basis for a taxable account: shares × reported average cost. A $1-priced
+ * holding with no cost counts at value; any other leaves the suggestion incomplete.
  */
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 
 /** Price within this of $1 counts as a stable-value (money market) holding. */
 const STABLE_PRICE_TOLERANCE = 0.005;
@@ -36,7 +30,7 @@ export function suggestCostBasis(holdings: readonly CostHolding[]): {
       continue;
     }
     const value = h.reportedMarketValue ?? 0;
-    const price = h.shares !== 0 ? value / h.shares : 0;
+    const price = safeDivide(value, h.shares, 0);
     if (h.shares > 0 && Math.abs(price - 1) <= STABLE_PRICE_TOLERANCE) {
       suggested += value;
       known++;

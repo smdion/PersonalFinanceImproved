@@ -1,10 +1,6 @@
 /**
- * Auto-backfill performanceAccountId on contribution accounts saved without
- * one: a fuzzy match by person and account type.
- *
- * Runs on startup (via instrumentation.ts). Idempotent — only touches rows
- * where performanceAccountId IS NULL. Only contribution accounts can be
- * saved without a link.
+ * Startup backfill (idempotent): links contribution accounts saved without a
+ * performanceAccountId by a fuzzy match on person and account type.
  */
 
 import { eq, isNull } from "drizzle-orm";
@@ -22,31 +18,33 @@ export async function backfillPerformanceAccountIds(db: Db) {
 
   // ── contribution_accounts ──
   // Fuzzy match by person + type label (same logic as admin.ts backfillPerformanceAccountIds)
-  const nullContribs = await db
+  const nullContributions = await db
     .select()
     .from(schema.contributionAccounts)
     .where(isNull(schema.contributionAccounts.performanceAccountId));
 
-  if (nullContribs.length > 0) {
+  if (nullContributions.length > 0) {
     const people = await db.select().from(schema.people);
     const peopleMap = new Map(people.map((p) => [p.id, p]));
 
-    for (const contrib of nullContribs) {
+    for (const contribution of nullContributions) {
       const person =
-        contrib.personId != null ? peopleMap.get(contrib.personId) : undefined;
+        contribution.personId != null
+          ? peopleMap.get(contribution.personId)
+          : undefined;
       const personName = person?.name.toLowerCase() ?? "";
-      const display = getDisplayConfig(contrib.accountType, contrib.subType);
+      const display = getDisplayConfig(
+        contribution.accountType,
+        contribution.subType,
+      );
       const typeLabel = display.displayLabel.toLowerCase();
 
       const match = perfAccounts.find((pa) => {
         const labelLower = pa.accountLabel.toLowerCase();
         return (
           labelLower.includes(typeLabel) &&
-          (pa.ownerPersonId === contrib.personId ||
-            // Guard against personName being "" (joint contrib / unresolved
-            // person) — String.includes("") is always true, which would
-            // otherwise match this contrib to ANY performance account of
-            // the right type regardless of actual ownership.
+          (pa.ownerPersonId === contribution.personId ||
+            // An empty personName (joint or unresolved) would match any label.
             (personName !== "" && labelLower.includes(personName)))
         );
       });
@@ -55,15 +53,15 @@ export async function backfillPerformanceAccountIds(db: Db) {
         await db
           .update(schema.contributionAccounts)
           .set({ performanceAccountId: match.id })
-          .where(eq(schema.contributionAccounts.id, contrib.id));
+          .where(eq(schema.contributionAccounts.id, contribution.id));
         results.matched++;
       } else {
         results.unmatched++;
         log("warn", "backfill_perf_ids_unmatched", {
           table: "contribution_accounts",
-          id: contrib.id,
-          accountType: contrib.accountType,
-          person: person?.name ?? String(contrib.personId),
+          id: contribution.id,
+          accountType: contribution.accountType,
+          person: person?.name ?? String(contribution.personId),
         });
       }
     }

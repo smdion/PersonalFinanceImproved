@@ -1,14 +1,12 @@
 /**
- * Money put away so far this year per tracked account, live: what
- * Performance records, what SimpleFIN has seen since the last fill (or the
- * paycheck estimate for an account without transactions), and what's on its
- * way (the plan between the latest posted transaction and today). The
- * Contributions page's Actual YTD / Year-End Estimate views and its
- * per-account status read this — one computation, see contribution router.
+ * Money put away so far this year per tracked account, live: Performance, SimpleFIN since the
+ * last fill (or the paycheck estimate), and the plan from the latest posted transaction to today.
+ * Read by the Contributions page's Actual YTD / Year-End Estimate views and per-account status.
  */
 import { and, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { addDays, localDateStr } from "@/lib/utils/date";
+import { addDays } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { roundToCents } from "@/lib/utils/math";
 import {
   checkLatestContribution,
@@ -49,8 +47,9 @@ const dayDate = (day: string) => new Date(`${day}T12:00:00Z`);
 
 export async function loadLiveContributions(
   db: Db,
-  today: string = localDateStr(),
+  asOf: Date,
 ): Promise<LiveContribution[]> {
+  const today = calendarDateOf(asOf);
   const year = Number(today.slice(0, 4));
   const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
   const [rows, pending, names, context, recent] = await Promise.all([
@@ -67,7 +66,7 @@ export async function loadLiveContributions(
           eq(schema.accountPerformance.isActive, true),
         ),
       ),
-    loadPerformanceSuggestions(db, year),
+    loadPerformanceSuggestions(db, year, asOf),
     loadTrackedAccountNames(db),
     loadFeedContext(db),
     loadClassifiedTransactions(db, { since: recentSince }),

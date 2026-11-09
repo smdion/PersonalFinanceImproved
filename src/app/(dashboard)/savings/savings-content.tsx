@@ -28,7 +28,8 @@ import {
 } from "@/lib/pure/savings/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
-import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import { maskAmountsInText } from "@/lib/utils/format";
+import { renderPoolGrowthLine } from "./pool-growth-line";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
@@ -104,12 +105,12 @@ export function SavingsContent() {
     SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Fetch contribution profiles list for subtitle display.
-  const { data: contribProfilesList } =
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
   // ── Shared queries ──
@@ -128,7 +129,7 @@ export function SavingsContent() {
   const [activeSalaryProfileId] = useActiveSalaryProfile();
   // The active ids, sent explicitly (null while loading = none).
   const paySelection = {
-    contribution: activeContribProfileId,
+    contribution: activeContributionProfileId,
     salary: activeSalaryProfileId,
   };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
@@ -141,8 +142,8 @@ export function SavingsContent() {
   // page use, so budget item $ amounts, this page's pool and the payroll
   // breakdown never disagree.
   const paycheckInput = {
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(activeContributionProfileId != null
+      ? { contributionProfileId: activeContributionProfileId }
       : {}),
     ...(activeSalaryProfileId != null
       ? { salaryProfileId: activeSalaryProfileId }
@@ -166,13 +167,12 @@ export function SavingsContent() {
   // other number on this page.
   const activeProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  const recalcMaxMonthlyFunding = maxMonthlyFunding;
 
   // The profiles this preview used, threaded into the recalculate and
   // lock-in mutations so their live pool matches it.
   const recalcIncomeParams = {
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(activeContributionProfileId != null
+      ? { contributionProfileId: activeContributionProfileId }
       : {}),
     ...(activeSalaryProfileId != null
       ? { salaryProfileId: activeSalaryProfileId }
@@ -362,10 +362,8 @@ export function SavingsContent() {
   const goalProjections: GoalProjection[] = parentFundGoals.map((goal) => {
     const raw = goalById.get(goal.goalId);
     const goalId = goal.goalId;
-    // The stored snapshot (goal.monthlyAllocation) is the source of truth
-    // even for percentage-based goals — it only moves when the user
-    // explicitly hits "Recalculate" (recalculateAllocation), not whenever
-    // paycheck/budget data shifts underneath it.
+    // The stored snapshot (goal.monthlyAllocation) is the source of truth even
+    // for percentage goals; it changes only on "Recalculate".
     const baseAllocation = goal.monthlyAllocation;
     const { balances, monthEvents, monthlyAllocations, hasOverride } =
       projectGoalBalances(
@@ -467,24 +465,22 @@ export function SavingsContent() {
     fundCallbacksRef.current?.onGoalUpdateMulti(goalId, fields);
   };
 
+  const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
+  const profileName =
+    activeContributionProfileId != null
+      ? (contributionProfilesList?.find(
+          (p) => p.id === activeContributionProfileId,
+        )?.name ?? null)
+      : null;
+  const pageSubtitle = !budgetLabel
+    ? undefined
+    : profileName
+      ? `Budget: ${budgetLabel} | Profile: ${profileName}`
+      : `Budget: ${budgetLabel} | Profile: Live`;
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Savings"
-        subtitle={(() => {
-          const budgetLabel = budgetData?.columnLabels?.[budgetColumn]; // columnLabels is stored jsonb, typed by $type only: kept guarded.
-          if (!budgetLabel) return undefined;
-          const profileName =
-            activeContribProfileId != null
-              ? (contribProfilesList?.find(
-                  (p) => p.id === activeContribProfileId,
-                )?.name ?? null)
-              : null;
-          return profileName
-            ? `Budget: ${budgetLabel} | Profile: ${profileName}`
-            : `Budget: ${budgetLabel} | Profile: Live`;
-        })()}
-      ></PageHeader>
+      <PageHeader title="Savings" subtitle={pageSubtitle}></PageHeader>
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
@@ -527,14 +523,14 @@ export function SavingsContent() {
         value={masterTab}
         onChange={setMasterTab}
         tabs={[
-          { value: "plan", label: "Plan" },
+          { value: "plan", label: "Goals" },
           { value: "manage", label: "Manage" },
         ]}
       />
 
       {/* ── Plan tab ── */}
       {masterTab === "plan" && (
-        <CardBoundary title="Plan">
+        <CardBoundary title="Goals">
           <section
             {...tabPanelProps("savings-master", "plan")}
             className="bg-surface-primary border-default space-y-4 rounded-lg border p-4 sm:p-5"
@@ -641,7 +637,7 @@ export function SavingsContent() {
                                 onClick={() =>
                                   apiSync.buildLockInAllPreview(
                                     rawGoals,
-                                    recalcMaxMonthlyFunding,
+                                    maxMonthlyFunding,
                                     undefined,
                                     activeProfileId ?? undefined,
                                     recalcIncomeParams,
@@ -661,7 +657,7 @@ export function SavingsContent() {
                                 onClick={() =>
                                   apiSync.buildRecalculateAllPreview(
                                     rawGoals,
-                                    recalcMaxMonthlyFunding,
+                                    maxMonthlyFunding,
                                     undefined,
                                     activeProfileId ?? undefined,
                                     recalcIncomeParams,
@@ -745,61 +741,17 @@ export function SavingsContent() {
                           Derived from raise rates &middot; flat budget assumed
                         </p>
                       </div>
-                      {(() => {
-                        if (maxMonthlyFunding === null)
-                          return (
-                            <p className="text-faint text-xs">
-                              Requires paycheck and budget data.
-                            </p>
-                          );
-                        const endYear = startYear + projectionYears;
-                        const endPool =
-                          derivedPoolByYear.get(endYear) ?? maxMonthlyFunding;
-                        const totalGrowthPct =
-                          maxMonthlyFunding > 0
-                            ? ((endPool - maxMonthlyFunding) /
-                                maxMonthlyFunding) *
-                              100
-                            : 0;
-                        const hasGrowth = Math.abs(totalGrowthPct) >= 0.01;
-                        return (
-                          <p className="text-faint text-xs tabular-nums">
-                            {hasGrowth ? (
-                              <>
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(maxMonthlyFunding)}/mo
-                                </span>
-                                {" → "}
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(endPool)}/mo
-                                </span>
-                                {" by "}
-                                {endYear}
-                                <span className="ml-1 text-green-600">
-                                  (+{totalGrowthPct.toFixed(1)}%)
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-primary font-medium">
-                                  {formatCurrency(maxMonthlyFunding)}/mo
-                                </span>
-                                <span className="text-faint/60 ml-1">
-                                  · set raise rates to project growth
-                                </span>
-                              </>
-                            )}
-                          </p>
-                        );
-                      })()}
+                      {renderPoolGrowthLine(
+                        derivedPoolByYear,
+                        maxMonthlyFunding,
+                        projectionYears,
+                        startYear,
+                      )}
                     </div>
 
-                    {/* Extra paycheck rules — one column per earner. The
-                        Savings/Budget toggle also lives on Profiles → Salary
-                        Profiles (comp-layer decision), but the detailed
-                        mechanics — splits across savings goals, growth
-                        rates, month overrides — are Savings-domain and
-                        belong here, not cluttering the profile screen. */}
+                    {/* Extra paycheck rules, one column per earner. The
+                        Savings/Budget toggle is also on Salary Profiles; the
+                        goal splits, growth and month overrides live here. */}
                     <ExtraPaycheckRulesEditor
                       goals={rawGoals
                         .filter((g) => g.isActive && !g.parentGoalId)

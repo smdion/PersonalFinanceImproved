@@ -84,10 +84,8 @@ export async function loadLinkContext(
     });
   }
 
-  // An account linked to a whole tracked account whose name states one tax
-  // treatment (e.g. a Roth IRA linked to an IRA holding two people's Roth
-  // and traditional money) can be narrowed to that sub-account. Only that
-  // tracked account's own free sub-accounts are considered.
+  // A whole-account link whose name states one tax treatment can be narrowed
+  // to that tracked account's own free sub-account of that treatment.
   const wholeLinked = new Map<number, typeof rows>();
   for (const r of rows) {
     if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;
@@ -119,10 +117,8 @@ export async function loadLinkContext(
       });
     }
   }
-  // A whole-account link whose name states a tax treatment the tracked
-  // account has no part for (e.g. a Traditional IRA that only holds money
-  // on its way to Roth, after its part was dropped from the snapshot): its
-  // money has nowhere to go, so say which part to add.
+  // A whole-account link whose name states a tax treatment the tracked account
+  // has no part for: its money has nowhere to go, so say which part to add.
   const missingParts = new Map<number, string>();
   for (const r of rows) {
     if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;

@@ -25,7 +25,7 @@ import { CurrentGlidePathEditor } from "./current-glide-path-editor";
 import { GlidePathChart, type GlidePathClass } from "./glide-path-chart";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { paysMedical } from "@/lib/config/account-types";
 import { HsaCashBuffer } from "./hsa-cash-buffer";
 import { WhatItCostsCard } from "./what-it-costs-card";
 import { trpc } from "@/lib/trpc";
@@ -370,7 +370,7 @@ function AllocationCard({ data }: { data: Overview }) {
                     ? shared
                       ? `target shared — see ${cls.name}`
                       : undefined
-                    : "no target in your plan"
+                    : "no target in your allocation"
                 }
                 expanded={open === c.bucket}
                 onToggle={
@@ -729,7 +729,7 @@ export function HoldingsSection() {
                     {open && (
                       <div className="pb-2 pl-5.5">
                         {a.accountType !== null &&
-                          isHsaCategory(a.accountType) && (
+                          paysMedical(a.accountType) && (
                             <HsaCashBuffer
                               ownerPersonId={a.ownerPersonId}
                               uninvestedCash={a.uninvestedCash}

@@ -27,25 +27,18 @@ type BudgetItemRowProps = {
   onReorderItem: (id: number, direction: "up" | "down") => void;
   categoryNames: string[];
   currentCategory: string;
-  contribMonthly: number | null;
-  /** Why a LINKED item's contribMonthly is what it is for the column being
+  contributionMonthly: number | null;
+  /** Why a LINKED item's contributionMonthly is what it is for the column being
    *  viewed — "ok" for a normal resolved value. Ignored for unlinked items
-   *  (their contribMonthly is always the fuzzy match, never classified). */
+   *  (their contributionMonthly is always the fuzzy match, never classified). */
   contribStatus?: ContribResolutionStatus;
   canEdit?: boolean;
   apiActual?: { activity: number; balance: number; budgeted: number } | null;
   showApiColumn?: boolean;
   nameColWidth?: number;
   /**
-   * Sandbox mode: amounts are editable via `editMode` alone (not `editMode
-   * && canEdit`), and every OTHER control that reaches a live mutation —
-   * the essential toggle, the API-category link/unlink picker, and the
-   * move/reorder/delete/convert-to-goal action cluster — renders in its
-   * fully inert/hidden form regardless of `editMode`/`canEdit`. This is the
-   * structural-omission pattern used elsewhere in the What-If tab: not
-   * disabled-but-present, actually absent, so nothing here can reach
-   * `budget.linkToApi`/`unlinkFromApi`/`updateCategoryEssential`/etc. even
-   * if a caller passes `canEdit: true` to unlock amount editing.
+   * Sandbox mode: amounts edit via `editMode` alone, and every other control that
+   * reaches a live mutation is omitted outright, even when `canEdit` is true.
    */
   amountsOnly?: boolean;
 };
@@ -65,7 +58,7 @@ export function BudgetItemRow({
   onReorderItem,
   categoryNames,
   currentCategory,
-  contribMonthly,
+  contributionMonthly,
   contribStatus = "ok",
   canEdit = true,
   apiActual,
@@ -124,14 +117,14 @@ export function BudgetItemRow({
           >
             {item.subcategory}
           </span>
-          {contribMonthly !== null &&
+          {contributionMonthly !== null &&
             (item.contributionAccountId == null || contribStatus === "ok" ? (
               <span
                 className="text-caption flex-shrink-0 rounded bg-indigo-50 px-0.5 leading-tight font-semibold text-indigo-600"
                 title={
                   item.contributionAccountId
-                    ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
-                    : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
+                    ? `Linked to paycheck contribution (${formatCurrency(contributionMonthly)}/mo) — editing here updates it everywhere.`
+                    : `Also tracked as paycheck contribution (${formatCurrency(contributionMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
                 }
               >
                 PC
@@ -249,25 +242,17 @@ export function BudgetItemRow({
         // Per-column first (the server's figure for this column);
         // contribAmount is only the selected column's figure and is the
         // back-compat fallback.
-        const amt =
+        const amount =
           item.contribAmounts?.[col] ??
           (item.contribAmount != null
             ? item.contribAmount
             : (item.amounts[col] ?? 0));
-        // The padlock is the ONE thing that gates amount editing here: an
-        // amount is only editable when the tab is unlocked (editMode) AND the
-        // user has write permission. Every other case renders static text.
-        // (Previously the locked-but-editable case rendered an InlineEdit,
-        // which had its own click-to-edit affordance that saved immediately
-        // and so bypassed the padlock entirely.)
-        // In amountsOnly (sandbox) mode, `canEdit` doesn't gate the amount —
-        // every OTHER control on this row is already structurally omitted
-        // above regardless of canEdit, so editMode alone is the right gate:
-        // someone without the `budget` permission can still play in a
-        // sandbox that writes nothing.
+        // Editable only when unlocked (editMode) AND permitted (canEdit); else
+        // static text. Sandbox (amountsOnly) needs editMode only: it writes
+        // nothing, and its other controls are omitted.
         const amountEditable = amountsOnly ? editMode : editMode && canEdit;
         if (!amountEditable) {
-          const n = parseFloat(String(amt));
+          const n = parseFloat(String(amount));
           return (
             <td
               key={col}
@@ -277,7 +262,7 @@ export function BudgetItemRow({
             </td>
           );
         }
-        const draftVal = getDraft(item.id, col, amt);
+        const draftVal = getDraft(item.id, col, amount);
         return (
           <td key={col} className="px-2 py-1 text-right">
             <input

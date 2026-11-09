@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
@@ -41,7 +41,7 @@ export const linksProcedures = {
 
   /** Merge a new copy into the account it duplicates, as the owner
    *  confirmed: no 24-hour wait. */
-  mergeReaddedAccount: syncProcedure
+  mergeReaddedAccount: adminProcedure
     .input(z.object({ copyId: z.number().int(), keepId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.transaction(async (tx) => {
@@ -65,7 +65,7 @@ export const linksProcedures = {
       await redactStoredCardSpending(ctx.db, input.keepId);
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 
@@ -101,7 +101,7 @@ export const linksProcedures = {
    * Link every unlinked SimpleFIN account to its suggested (sub-)account, and
    * narrow whole-account links to their suggested sub-account.
    */
-  acceptLinkSuggestions: syncProcedure
+  acceptLinkSuggestions: adminProcedure
     .input(z.object({ ids: z.array(z.number().int()).optional() }))
     .mutation(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.simplefinAccounts);
@@ -142,15 +142,10 @@ export const linksProcedures = {
     }),
 
   /**
-   * Match (or unmatch) a SimpleFIN account to an existing performance_accounts
-   * row, so listAccounts can show live-vs-snapshot drift. Many-to-one:
-   * multiple SimpleFIN accounts can point at the same performance account
-   * (e.g. historical account splits/merges Ledgr still tracks as a single
-   * account) — listAccounts sums every linked account's balance before
-   * comparing against the snapshot, so this intentionally does NOT unlink
-   * any other account pointed at the same target.
+   * Match (or unmatch) a SimpleFIN account to a performance_accounts row. Many-to-one:
+   * listAccounts sums all linked balances, so other accounts on the same target stay linked.
    */
-  setAccountMapping: syncProcedure
+  setAccountMapping: adminProcedure
     .input(
       z.object({
         id: z.number().int(),
@@ -213,7 +208,7 @@ export const linksProcedures = {
         .returning();
       if (endsLoanLink) {
         await clearLoanBalance(ctx.db, before!.linkedLoanId!);
-        await recomputeTodaySnapshotFromLocal(ctx.db);
+        await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf);
       }
 
       if (!row) {
@@ -253,7 +248,7 @@ export const linksProcedures = {
    * stops being an account: it leaves any tracked-account link and the live
    * total, and it's included, or the link would do nothing.
    */
-  setLoanLink: syncProcedure
+  setLoanLink: adminProcedure
     .input(
       z.object({
         id: z.number().int(),
@@ -311,7 +306,7 @@ export const linksProcedures = {
       await redactStoredCardSpending(ctx.db, feed.id);
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 };

@@ -1,16 +1,22 @@
 /**
- * The JSON ratchets: size-baseline.json, the ESLint suppressions files and
- * the calculation-register baseline, each compared with its base copy.
+ * The JSON ratchets: size-baseline.json, the ESLint suppressions files, the
+ * calculation-register baseline and the duplicate-code counts, each compared
+ * with its base copy.
  */
 import { members, sumByGroup } from "./moves";
 import { named, type Rise } from "./rise";
 
 export const SIZE_FILE = "size-baseline.json";
+/** The axe baseline's keys are pages (`e2e-b/budget`), not paths. */
+export const AXE_FILE = "tests/accessibility/axe-baseline.json";
 export const SUPPRESSION_FILES = [
   "eslint-suppressions.json",
   "eslint-suppressions-typed.json",
+  AXE_FILE,
 ];
 export const REGISTER_FILE = "scripts/calculation-register-baseline.json";
+/** scripts/check-duplicates.ts's totals: jscpd's copied blocks and lines. */
+export const DUPLICATES_FILE = "scripts/ratchets/duplicates.json";
 const FILE_LIMIT = 400;
 
 export type SizeBaseline = {
@@ -94,7 +100,10 @@ export function sizeRises(
 
 export type Suppressions = Record<string, Record<string, { count: number }>>;
 
-/** No rule's count rises in a file, or across the files of a move or split. */
+/**
+ * No rule's count rises in a file, or across the files of a move or split.
+ * The axe baseline's pages are named in a trailer as words, with the rule.
+ */
 export function suppressionRises(
   file: string,
   base: Suppressions,
@@ -119,15 +128,16 @@ export function suppressionRises(
     const files = members(Object.keys(head), group, g).filter(
       (f) => head[f]![rule],
     );
+    const keys = members(Object.keys(base), group, g).concat(files);
     rises.push({
       file,
       id: `${file}\0${rule} in ${files.join(", ")}`,
       text: `${rule} in ${files.join(", ")}: ${count}, ${before} at the base`,
       by: count - before,
-      entry: {
-        paths: members(Object.keys(base), group, g).concat(files),
-        names: [[rule]],
-      },
+      entry:
+        file === AXE_FILE
+          ? { paths: [], names: [[...new Set(keys)], [rule]] }
+          : { paths: keys, names: [[rule]] },
     });
   }
   return rises;
@@ -192,4 +202,25 @@ export function registerRises(base: Register, head: Register): Rise[] {
       });
   }
   return rises;
+}
+
+export type Duplicates = { blocks: number; lines: number };
+
+/** Neither total rises; a file the base doesn't have yet starts the count. */
+export function duplicateRises(
+  base: Duplicates | undefined,
+  head: Duplicates | undefined,
+): Rise[] {
+  if (!base || !head) return [];
+  return (["blocks", "lines"] as const)
+    .filter((key) => head[key] > base[key])
+    .map((key) =>
+      named(
+        DUPLICATES_FILE,
+        key,
+        `copied ${key}: ${head[key]}, ${base[key]} at the base`,
+        [key],
+        head[key] - base[key],
+      ),
+    );
 }

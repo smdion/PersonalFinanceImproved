@@ -52,10 +52,8 @@ export async function getClientForService(
   const conn = connections[0];
   if (!conn) return null;
 
-  // conn.config may be plaintext (legacy v4) or an encrypted envelope (v5+).
-  // readMaybeEncrypted detects the format and decrypts only if necessary,
-  // so existing v4 deployments keep working until the next saveConnection
-  // upgrades the row to encrypted-at-rest.
+  // conn.config may be plaintext or an encrypted envelope; each provider's
+  // createClient reads it with readMaybeEncrypted.
   if (!Object.hasOwn(BUDGET_PROVIDERS, service)) return null;
   return BUDGET_PROVIDERS[service].createClient(conn.config);
 }

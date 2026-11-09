@@ -10,13 +10,10 @@ import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
+import { firstRow } from "@/lib/utils/first-row";
 
-// A job is purely identity/lifecycle now — payPeriod/payWeek/anchorPayDate/
-// w4*/bonus-date/bonus-inclusion-flags/budgetPeriodsPerMonth all moved to
-// the Salary Profile entry's complete 16-field shape (see salaryEntrySchema
-// in json-schemas.ts) and no longer exist as `jobs` columns at all. Salary/
-// bonus amounts were already off this table (see resolveCompensation's
-// docblock in lib/pure/household/compensation.ts).
+// A job is identity/lifecycle only: pay schedule, W-4, bonus and salary fields live in
+// the Salary Profile entry (salaryEntrySchema in json-schemas.ts).
 const jobInput = z
   .object({
     personId: z.number().int(),
@@ -50,9 +47,9 @@ export const jobsProcedures = {
           .insert(schema.jobs)
           .values(jobData)
           .returning()
-          .then((r) => r[0]);
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+          .then(firstRow);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
     update: adminProcedure
@@ -63,9 +60,9 @@ export const jobsProcedures = {
           .set(data)
           .where(eq(schema.jobs.id, id))
           .returning()
-          .then((r) => r[0]);
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+          .then(firstRow);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return result;
       }),
     delete: adminProcedure
@@ -83,8 +80,8 @@ export const jobsProcedures = {
           });
         }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
-        await materializeExtraPaycheckSavings(ctx.db);
-        await materializeBudgetIncomeAdjustments(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
+        await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };
       }),
   }),

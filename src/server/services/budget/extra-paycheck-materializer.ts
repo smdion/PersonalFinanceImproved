@@ -1,52 +1,26 @@
 /**
- * Extra-paycheck materializer.
- *
- * Reads each job's `extraPaycheckRouting` field from its entry in the
- * globally-active Salary Profile (rules + optional overrides) and writes
- * the resulting dollar amounts into `savings_planned_transactions` with
- * `source = 'rule'`, over the months `extra-paycheck-months.ts` walks
- * (120 from the current one).
- *
- * Override priority: if an ExtraPaycheckOverride entry matches the month key,
- * its splits are used instead of the rule's splits.
- *
- * Call after: job create/update/delete, explicit rule/override save.
+ * Writes Savings-mode extra-paycheck routing (active Salary Profile rules; a matching
+ * override's splits win) into `savings_planned_transactions` as `source = 'rule'`.
+ * Call after job create/update/delete and explicit rule/override saves.
  */
 
 import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { ExtraPaycheckRule, YearlyGrowthEntry } from "@/lib/db/schema-pg";
+import type { ExtraPaycheckRule } from "@/lib/db/schema-pg";
 import { currentMonthKey } from "@/lib/utils/date-keys";
+import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import { loadExtraPaycheckJobs } from "./extra-paycheck-months";
 import type { Db } from "@/lib/db";
-
-/**
- * Project a base net-pay-per-check forward to a target year, applying stored
- * growth entries. Each entry modifies the running total (pct = percentage of
- * current total; dollar = flat bump carried forward as the new base).
- * Years with no entry default to 0% growth.
- */
-function projectedNetPay(
-  base: number,
-  targetYear: number,
-  baseYear: number,
-  yearlyGrowth: Record<string, YearlyGrowthEntry>,
-): number {
-  let pay = base;
-  for (let y = baseYear + 1; y <= targetYear; y++) {
-    const e = yearlyGrowth[String(y)];
-    if (!e || e.value === 0) continue;
-    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
-  }
-  return pay;
-}
 
 // Serializes concurrent materializer calls within the same Node.js process.
 // Prevents the delete→insert race when two mutations (e.g. two auto-upgrades)
 // fire simultaneously and each runs a full materialize cycle.
 let materializerLock: Promise<void> = Promise.resolve();
 
-export async function materializeExtraPaycheckSavings(db: Db): Promise<void> {
+export async function materializeExtraPaycheckSavings(
+  db: Db,
+  asOf: Date,
+): Promise<void> {
   const prev = materializerLock;
   let unlock!: () => void;
   materializerLock = new Promise<void>((r) => {
@@ -55,15 +29,13 @@ export async function materializeExtraPaycheckSavings(db: Db): Promise<void> {
   await prev;
 
   try {
-    await _materialize(db);
+    await _materialize(db, asOf);
   } finally {
     unlock();
   }
 }
 
-async function _materialize(db: Db): Promise<void> {
-  const now = new Date();
-
+async function _materialize(db: Db, now: Date): Promise<void> {
   const jobsWithRules = await loadExtraPaycheckJobs(db, now, "savings");
 
   // Load active goal ids
@@ -140,14 +112,8 @@ async function _materialize(db: Db): Promise<void> {
     }
   }
 
-  // Delete rule-sourced rows and insert fresh ones inside a transaction so
-  // the replacement is atomic at the DB level. Only rows dated this month or
-  // later are candidates for deletion — getExtraPaycheckMonthKeys never
-  // regenerates anything earlier, so a blanket delete would destroy history
-  // with no way to recreate it. Rows with settlement history are preserved
-  // regardless of month: deleting and reinserting allocates a new row id,
-  // which would silently orphan (and cascade-delete) their settlement
-  // records the moment the materializer next ran.
+  // Atomically replace rule rows from this month on (earlier months are never regenerated).
+  // Rows with settlement history are kept: a new row id would orphan their settlements.
   const currentMonthStart = currentMonthKey(now);
   await db.transaction(async (tx) => {
     const settledRows = await tx

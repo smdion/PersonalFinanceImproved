@@ -1,9 +1,6 @@
-/**
- * Recommendations — which judged results become a "to do", and where they
- * sit on the Recommendations page. Urgency isn't configured: it comes from
- * the result itself (alert → now, behind → soon). Order within an area
- * follows this list after urgency and dollars.
- */
+/** Which judged results become a "to do" and where they sit on the Recommendations page.
+ *  Urgency comes from the result (alert → now, behind → soon); order within an area follows
+ *  this list after urgency and dollars. */
 import type { BuiltInMilestoneId } from "@/lib/config/milestones";
 
 export type RecommendationArea =
@@ -65,11 +62,9 @@ export const MILESTONE_RECOMMENDATIONS: readonly {
   { id: "lowCost", area: "investing" },
 ];
 
-/** Dated windows for the Roth IRA recommendations (month-day, MM-DD).
- *  For the current tax year both are "now" from `nowFrom` to Dec 31 (the
- *  pro-rata balance is measured on Dec 31). A past tax year's Roth IRA
- *  contribution can still be made until the filing deadline in the next
- *  year — "now" until then, nothing after; its pro-rata date has passed. */
+/** Roth IRA recommendation windows (MM-DD): for the current tax year "now" from `nowFrom` to
+ *  Dec 31 (when the pro-rata balance is measured); a past tax year's contribution is "now"
+ *  until the next year's filing deadline. */
 export const ROTH_RECOMMENDATION_WINDOWS = {
   rothIra: { nowFrom: "10-01" },
   proRata: { nowFrom: "10-01" },
@@ -77,20 +72,16 @@ export const ROTH_RECOMMENDATION_WINDOWS = {
   contributionDeadline: "04-15",
 } as const;
 
-/** Cheaper equivalent fund: a fund counts as one class when one bucket is
- *  at least this share of it (a balanced fund has no single-class twin),
- *  and is flagged when its expense ratio is at least `minExpenseGap` above
- *  the low-cost line (LOW_COST_EXPENSE_RATIO). Suggested only in IRAs and
- *  taxable accounts — workplace and HSA menus are fixed. */
+/** Cheaper equivalent fund: single-class when one bucket is `singleClassMinShare` of it, flagged
+ *  when its expense ratio is `minExpenseGap` or more above LOW_COST_EXPENSE_RATIO. Only in IRAs
+ *  and taxable accounts (workplace and HSA menus are fixed). */
 export const CHEAPER_FUND = {
   singleClassMinShare: 0.9,
   minExpenseGap: 0.001,
 } as const;
 
-/** Cash drag: the least excess cash worth an item. The band and minimum
- *  move are shares of the account, so a near-empty account (an emptied
- *  traditional IRA after a backdoor conversion) is "all cash" and would
- *  otherwise ask the household to invest a few cents. */
+/** Cash drag: the least excess cash worth an item, since the band is a share of the account
+ *  and a near-empty one (e.g. a traditional IRA after a backdoor) would ask for a few cents. */
 export const CASH_DRAG_MIN_EXCESS = 100;
 
 /** Tax-loss harvesting: a taxable position whose market value is at least

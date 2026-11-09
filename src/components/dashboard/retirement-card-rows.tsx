@@ -14,7 +14,7 @@ export function renderWithdrawalRow(
     NonNullable<ReturnType<typeof useDashboardProjection>["data"]>,
     { settings: unknown }
   >["settings"],
-  sustainableWd: number,
+  sustainableWithdrawal: number,
 ) {
   const strategyKey = settings.withdrawalStrategy as string | undefined;
   const strategyLabel = strategyKey
@@ -28,14 +28,14 @@ export function renderWithdrawalRow(
         <HelpTip
           text={
             isDynamic
-              ? `${strategyLabel} strategy — withdrawal varies year-to-year based on portfolio performance. This is a projected starting amount in today's dollars.`
-              : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Simulation on the Retirement page for a realistic range."
+              ? `${strategyLabel} strategy — withdrawal varies year to year. This is your first retirement year's withdrawal in today's dollars: spending less Social Security, plus the tax on the withdrawal.`
+              : "Your first retirement year's withdrawal in today's dollars: spending less Social Security, plus the tax on the withdrawal. Does not account for volatility — see Simulation on the Retirement page for a realistic range."
           }
           learnMoreHref="/retirement/decumulation-methodology"
         />
       </span>
       <span className="text-primary">
-        {formatCurrency(sustainableWd)}/yr
+        {formatCurrency(sustainableWithdrawal)}/yr
         <span className="text-caption text-faint ml-1">
           ({strategyLabel}
           {isDynamic ? ", varies" : ""})
@@ -47,7 +47,7 @@ export function renderWithdrawalRow(
 
 /** The Coast FIRE row: the baseline age, and the simulated one when run. */
 export function renderCoastFireRow(
-  coastFireMcPeek:
+  coastFireSimulationPeek:
     RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
   ageLabel: (age: number) => string,
   coastFireData: Extract<
@@ -55,7 +55,7 @@ export function renderCoastFireRow(
     { result: object }
   >,
 ) {
-  const simResult = coastFireMcPeek?.result;
+  const simResult = coastFireSimulationPeek?.result;
   const simLabel = simResult
     ? simResult.status === "unreachable"
       ? "not reachable"
@@ -68,7 +68,7 @@ export function renderCoastFireRow(
       <span className="text-muted">
         Coast FIRE
         <HelpTip
-          text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
+          text="The earliest age at which you can stop contributing and still fund every retirement year of the projection. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Projection Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
           learnMoreHref={focusHref({ topic: "planHealth" })}
         />
       </span>
@@ -84,7 +84,7 @@ export function renderCoastFireRow(
         <span className="text-caption text-faint ml-1">
           {simLabel
             ? `(simulated: ${simLabel})`
-            : "(baseline; see Plan Health for simulated)"}
+            : "(baseline; see Projection Health for simulated)"}
         </span>
       </FocusLink>
     </div>
@@ -93,11 +93,15 @@ export function renderCoastFireRow(
 
 /** When the last simulation ran, when one has. */
 export function renderLastRunRow(
-  mcPeek: RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
-  coastFireMcPeek:
+  simulationPeek:
+    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+  coastFireSimulationPeek:
     RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
 ) {
-  const lastRunAt = [mcPeek?.computedAt, coastFireMcPeek?.computedAt]
+  const lastRunAt = [
+    simulationPeek?.computedAt,
+    coastFireSimulationPeek?.computedAt,
+  ]
     .filter((v): v is string => !!v)
     .sort()
     .at(-1);

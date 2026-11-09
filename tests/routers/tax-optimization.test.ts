@@ -149,19 +149,90 @@ describe("projection router — projectTaxYears", () => {
     }
   });
 
-  // Bug pin (verdict N8): the golden file
-  // (`__snapshots__/tax-optimization.test.ts.snap`) holds
-  // `acaSubsidyPreserved: false` and the "ACA lost" flag on every row,
-  // though this household has ACA awareness off and nothing was checked.
-  // Changes on purpose with the v0.11 Retirement rules item: ACA reported
-  // "lost" when never checked (answer-key ret/A31,
-  // `tests/pure/advice/report/aca-irmaa-narrative.test.ts`).
-  it("derived TaxYearRow[] shape is stable (golden file)", async () => {
+  // The figures the old 22 KB golden file held that move, by name, and
+  // the ones that don't, once. Bug pin (verdict N8): `acaSubsidyPreserved:
+  // false` and the "ACA lost" flag on every row, though this household has
+  // ACA awareness off and nothing was checked. Changes on purpose with the
+  // v0.11 Retirement rules item: ACA reported "lost" when never checked
+  // (answer-key ret/A31, `tests/pure/advice/report/aca-irmaa-narrative.test.ts`).
+  it("every TaxYearRow's figures, by name", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
       const res = await caller.projection.projectTaxYears({});
-      expect(res.rows).toMatchSnapshot();
+      // Headline figures first.
+      expect(res.rows).toHaveLength(25);
+      expect(res.rows[0]!.federalTax).toBe(154.49);
+      expect(res.rows[0]!.income.rothConversion).toBe(235996.95);
+      expect(res.rows.at(-1)!.cumulativeTax).toBe(62635.689999999995);
+      expect(res.rows.at(-1)!.retirementBalance).toBe(13438063.48);
+      // What holds on every row.
+      for (const r of res.rows) {
+        expect(r).toMatchObject({
+          acaMagiHeadroom: 0,
+          acaSubsidyPreserved: false,
+          irmaaSurcharge: 0,
+          niit: 0,
+          qcdAmount: 0,
+          rmdExcess: 0,
+          rmdShortfall: 0,
+          unmetNeed: 0,
+          income: { requiredMinimumDistribution: 0, rothWithdrawal: 0 },
+          balanceByTaxType: { hsa: 0 },
+        });
+        expect(r.flags).toContain("ACA lost");
+      }
+      // Each year: year, age, federal tax, cumulative tax, Traditional
+      // withdrawal, Roth conversion and its tax, other withdrawal, Social
+      // Security and its taxable part, LTCG rate, Roth balance, retirement
+      // balance, flags.
+      expect(
+        res.rows.map((r) => [
+          r.year,
+          r.age,
+          r.federalTax,
+          r.cumulativeTax,
+          r.income.traditionalWithdrawal,
+          r.income.rothConversion,
+          r.rothConversionTax,
+          r.income.otherWithdrawal,
+          r.income.socialSecurity,
+          r.taxableSocialSecurity,
+          r.ltcgRate,
+          r.balanceByTaxType.taxFree,
+          r.retirementBalance,
+          r.flags,
+        ]),
+      ).toEqual(
+        // prettier-ignore
+        [
+        [2055, 65, 154.49, 27336.16, 81314.6, 235996.95, 27181.67, 0, 0, 0, 0.15, 247796.8, 4355961.76, ["ACA lost", "Roth conversion"]],
+        [2056, 66, 114.03, 55492.399999999994, 83303.15, 243527.74, 28042.21, 0, 0, 0, 0.15, 515890.77, 4456847.22, ["ACA lost", "Roth conversion"]],
+        [2057, 67, 0, 62635.689999999995, 8016.37, 138226.22, 7143.29, 0, 77252.48, 8246.22, 0, 686822.84, 4663771.94, ["ACA lost", "Roth conversion"]],
+        [2058, 68, 0, 62635.689999999995, 0, 0, 0, 7830.51, 79570.06, 7120.85, 0, 721163.98, 4888738.5, ["ACA lost"]],
+        [2059, 69, 0, 62635.689999999995, 0, 0, 0, 7628.42, 81957.16, 8104.55, 0, 757222.18, 5125165.59, ["ACA lost"]],
+        [2060, 70, 0, 62635.689999999995, 0, 0, 0, 7409.35, 84415.87, 9099.09, 0, 795083.29, 5373644.05, ["ACA lost"]],
+        [2061, 71, 0, 62635.689999999995, 0, 0, 0, 7172.5, 86948.35, 10104.88, 0, 834837.45, 5634795.12, ["ACA lost"]],
+        [2062, 72, 0, 62635.689999999995, 0, 0, 0, 6917.07, 89556.8, 11122.3, 0, 876579.32, 5909271.95, ["ACA lost"]],
+        [2063, 73, 0, 62635.689999999995, 0, 0, 0, 6642.22, 92243.5, 12151.79, 0, 920408.29, 6197761.22, ["ACA lost"]],
+        [2064, 74, 0, 62635.689999999995, 0, 0, 0, 6347.05, 95010.81, 13193.71, 0, 966428.7, 6500984.87, ["ACA lost"]],
+        [2065, 75, 0, 62635.689999999995, 0, 0, 0, 6030.68, 97861.13, 14248.47, 0, 1014750.14, 6819701.9, ["ACA lost"]],
+        [2066, 76, 0, 62635.689999999995, 0, 0, 0, 5692.14, 100796.97, 15316.45, 0, 1065487.65, 7154710.25, ["ACA lost"]],
+        [2067, 77, 0, 62635.689999999995, 0, 0, 0, 5330.45, 103820.88, 16398.05, 0, 1118762.03, 7506848.79, ["ACA lost"]],
+        [2068, 78, 0, 62635.689999999995, 0, 0, 0, 4944.62, 106935.5, 17493.67, 0, 1174700.13, 7876999.38, ["ACA lost"]],
+        [2069, 79, 0, 62635.689999999995, 0, 0, 0, 4533.55, 110143.57, 18603.65, 0, 1233435.14, 8266089.13, ["ACA lost"]],
+        [2070, 80, 0, 62635.689999999995, 0, 0, 0, 4096.17, 113447.88, 19728.4, 0, 1295106.9, 8675092.61, ["ACA lost"]],
+        [2071, 81, 0, 62635.689999999995, 0, 0, 0, 3631.34, 116851.31, 20868.3, 0, 1359862.25, 9105034.34, ["ACA lost"]],
+        [2072, 82, 0, 62635.689999999995, 0, 0, 0, 3137.86, 120356.85, 22023.7, 0, 1427855.36, 9556991.3, ["ACA lost"]],
+        [2073, 83, 0, 62635.689999999995, 0, 0, 0, 2614.52, 123967.56, 23194.99, 0, 1499248.13, 10032095.62, ["ACA lost"]],
+        [2074, 84, 0, 62635.689999999995, 0, 0, 0, 2060.05, 127686.58, 24382.54, 0, 1574210.54, 10531537.35, ["ACA lost"]],
+        [2075, 85, 0, 62635.689999999995, 0, 0, 0, 1473.12, 131517.18, 25586.7, 0, 1652921.07, 11056567.44, ["ACA lost"]],
+        [2076, 86, 0, 62635.689999999995, 0, 0, 0, 852.36, 135462.7, 26807.85, 0, 1735567.12, 11608500.83, ["ACA lost"]],
+        [2077, 87, 0, 62635.689999999995, 0, 0, 0, 196.35, 139526.58, 28046.32, 0, 1822345.48, 12188719.71, ["ACA lost"]],
+        [2078, 88, 0, 62635.689999999995, 0, 0, 0, 0, 143712.37, 29677.76, 0, 1913462.75, 12798155.69, ["ACA lost"]],
+        [2079, 89, 0, 62635.689999999995, 0, 0, 0, 0, 148023.75, 31510.09, 0, 2009135.89, 13438063.48, ["ACA lost"]],
+        ],
+      );
     } finally {
       cleanup();
     }
@@ -169,7 +240,7 @@ describe("projection router — projectTaxYears", () => {
 });
 
 describe("projection router — withdrawal routing DB fallback", () => {
-  it("'Your current plan' resolves the household's persisted withdrawal_routing_mode, not a hardcoded default", async () => {
+  it("'Your current settings' resolves the household's persisted withdrawal_routing_mode, not a hardcoded default", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
@@ -190,12 +261,12 @@ describe("projection router — withdrawal routing DB fallback", () => {
       });
       assert(!("notConfigured" in res));
       const currentPlan = res.strategies.find(
-        (s) => s.label === "Your current plan",
+        (s) => s.label === "Your current settings",
       );
       expect(currentPlan?.mode).toBe("waterfall");
       // The resolved order, not just the mode — the client needs this to
       // tell whether a waterfall household matches one of the named
-      // presets (withdrawal-comparison.tsx's "same as your current plan"
+      // presets (withdrawal-comparison.tsx's "same as your current settings"
       // annotation) rather than just sharing a routing mode.
       assert(currentPlan && "withdrawalOrder" in currentPlan);
       expect(Array.isArray(currentPlan.withdrawalOrder)).toBe(true);
@@ -221,13 +292,13 @@ describe("projection router — compareWithdrawalStrategies", () => {
           { label: "Tax-optimized", mode: "bracket_filling" },
         ],
       });
-      // 2 named strategies + the server's own "Your current plan" baseline
+      // 2 named strategies + the server's own "Your current settings" baseline
       // row (the household's real resolved defaults, scored the same way —
       // see compareWithdrawalStrategies's docblock).
       expect(res.strategies).toHaveLength(3);
-      expect(res.strategies.some((s) => s.label === "Your current plan")).toBe(
-        true,
-      );
+      expect(
+        res.strategies.some((s) => s.label === "Your current settings"),
+      ).toBe(true);
       for (const s of res.strategies) {
         expect(s.lifetimeTax).toBeGreaterThanOrEqual(0);
         expect(s).toHaveProperty("terminalByTaxType");

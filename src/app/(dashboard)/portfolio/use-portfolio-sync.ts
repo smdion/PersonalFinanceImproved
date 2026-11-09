@@ -31,12 +31,9 @@ export function usePortfolioSync(
     [budgetApiConnected, markDirtyRaw],
   );
 
-  /** Inline balance fix on the latest snapshot. Saves + recomputes
-   *  immediately; the budget-API push is NOT automatic — the snapshot is
-   *  marked "not synced" and stays that way (amber banner + row badge +
-   *  in-row "Sync to …" button) until the user pushes it explicitly. One
-   *  push covers every pending edit, so fixing several balances is still
-   *  one resync. */
+  /** Inline balance fix on the latest snapshot: saves and recomputes now; the
+   *  budget-API push waits for the user (snapshot marked "not synced"), and
+   *  one push covers every pending edit. */
   const handleBalanceEdit = useCallback(
     async (
       accountId: number,

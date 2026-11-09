@@ -32,10 +32,8 @@ function computeSSWithholding(
 }
 
 /**
- * Federal and FICA withheld on the first `periods` regular checks of the
- * year, from the year schedule — which charges full Social Security until
- * the wage base is reached, unlike the per-check figure (the year's SS
- * spread over every check). Bonus withholding isn't included.
+ * Federal and FICA withheld on the year's first `periods` regular checks, per the year schedule
+ * (full SS until the wage base, unlike the per-check average). Excludes bonus withholding.
  */
 export function withheldThroughPeriod(
   schedule: readonly PeriodBreakdown[],
@@ -77,16 +75,8 @@ export function householdWithheldSoFar(
 }
 
 /**
- * Builds a full-year paycheck schedule showing every pay period's breakdown.
- *
- * The main purpose is to model the Social Security wage base cap transition accurately:
- * early periods pay full SS tax, one period may be partial, and remaining periods pay $0.
- * This lets the UI show exactly when the employee's take-home pay increases mid-year.
- *
- * If bonusMonth is set, the bonus gross is injected into the matching period so the
- * SS wage base cap is hit earlier (or later) depending on bonus timing.
- *
- * Federal withholding and Medicare are constant across all periods (Medicare has no cap).
+ * Full-year schedule of every pay period, modeling the SS wage base cutoff (full, partial, then
+ * $0) with the bonus in its month. Federal withholding is constant per period.
  */
 export function buildYearSchedule(
   input: PaycheckInput,
@@ -232,14 +222,8 @@ export type SalarySegment = {
 };
 
 /**
- * Compute blended annual totals from a salary timeline with mid-year changes.
- *
- * Each segment includes a full PaycheckResult computed at that salary rate (the router
- * handles rebuilding contribution accounts per salary). This function walks periods
- * sequentially, taking per-period values from the correct segment, and tracks cumulative
- * FICA base for correct SS cap transitions across salary changes.
- *
- * Pure function — no DB, no side effects.
+ * Blended annual totals across a salary timeline: walks periods taking each from its segment's
+ * PaycheckResult, carrying cumulative FICA base so the SS cap holds across salary changes.
  */
 export function calculateBlendedAnnual(
   segments: SalarySegment[],

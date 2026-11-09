@@ -27,9 +27,8 @@ export function NetWorthComposition({
     portfolioTotal + cash + (hasHouse ? displayHomeValue : 0) + otherAssets;
   const totalLiab = totalLiabilities;
   const maxBar = Math.max(totalAssets, totalLiab, 1);
-  // Same 4-category palette NetWorthLocationPie renders — same data,
-  // same colors, so a user doesn't see Portfolio as one color in the pie
-  // chart and a different one here (Batch 26 Finding 1).
+  // Same 4-category palette as NetWorthLocationPie, so each category keeps
+  // one color across both views.
   const segments = [
     {
       label: "Portfolio",

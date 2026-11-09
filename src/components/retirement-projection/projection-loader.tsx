@@ -1,18 +1,9 @@
 "use client";
 
 /**
- * ProjectionLoader — handles two distinct UI states:
- *
- *  1. Action state (showActionState=true): autoload is off and no data exists.
- *     Renders a full-width card at the CHART position explaining the user
- *     needs to run the simulation manually.
- *
- *  2. Slim progress strip: engine is done but MC / Coast FIRE is still
- *     running. Renders a single-line strip between the chart and table so
- *     real content is fully visible with just a status indicator.
- *
- *  Engine loading state is NOT handled here — the chart, hero, and toolbar
- *  each show their own in-place skeleton so the layout never shifts.
+ * Action-state card at the chart position (autoload off, no data) or a slim
+ * progress strip while MC / Coast FIRE runs. Engine loading is not handled
+ * here: chart, hero and toolbar each show their own in-place skeleton.
  */
 
 import { SettingsLink } from "@/components/ui/settings-link";
@@ -23,14 +14,14 @@ type Props = {
   /** Phase 1: deterministic engine */
   enginePhase: Phase;
   /** Phase 2: Monte Carlo prefetch */
-  mcPhase: Phase;
+  simulationPhase: Phase;
   /** Phase 2 parallel: Coast FIRE Monte Carlo (non-blocking) */
-  coastFireMcPhase: Phase;
+  coastFireSimulationPhase: Phase;
   /** True when engine autoload is off and no engine data exists yet */
   showActionState: boolean;
   onRunSimulation: () => void;
   onRunMonteCarlo: () => void;
-  onRunCoastFireMc: () => void;
+  onRunCoastFireSimulation: () => void;
 };
 
 // Bar data for the action state background — intentional bell-curve shape.
@@ -63,15 +54,15 @@ const BARS = [
 
 export function ProjectionLoader({
   enginePhase,
-  mcPhase,
-  coastFireMcPhase,
+  simulationPhase,
+  coastFireSimulationPhase,
   showActionState,
   onRunSimulation,
   onRunMonteCarlo,
-  onRunCoastFireMc,
+  onRunCoastFireSimulation,
 }: Props) {
-  const mcLoading = mcPhase === "active";
-  const coastLoading = coastFireMcPhase === "active";
+  const simulationLoading = simulationPhase === "active";
+  const coastLoading = coastFireSimulationPhase === "active";
 
   // ── Action state ───────────────────────────────────────────────────────────
   // Autoload is off — render a full card at the chart position with a prompt.
@@ -113,9 +104,9 @@ export function ProjectionLoader({
               label="Projection engine"
               activeColor="text-blue-600"
             />
-            {mcPhase !== "disabled" ? (
+            {simulationPhase !== "disabled" ? (
               <PhaseChip
-                phase={mcPhase}
+                phase={simulationPhase}
                 label="Simulations"
                 activeColor="text-purple-600"
               />
@@ -127,15 +118,15 @@ export function ProjectionLoader({
                 + Run simulations
               </button>
             )}
-            {coastFireMcPhase !== "disabled" ? (
+            {coastFireSimulationPhase !== "disabled" ? (
               <PhaseChip
-                phase={coastFireMcPhase}
+                phase={coastFireSimulationPhase}
                 label="Coast FIRE simulations"
                 activeColor="text-amber-700"
               />
             ) : (
               <button
-                onClick={onRunCoastFireMc}
+                onClick={onRunCoastFireSimulation}
                 className="text-xs font-medium text-amber-400 hover:text-amber-300"
               >
                 + Run Coast FIRE simulations
@@ -150,7 +141,7 @@ export function ProjectionLoader({
 
   // ── Slim progress strip ────────────────────────────────────────────────────
   // Engine is done; show a lightweight strip while MC / Coast FIRE runs.
-  if (mcLoading || coastLoading) {
+  if (simulationLoading || coastLoading) {
     return (
       <div className="border-subtle bg-surface-primary flex items-center justify-between gap-4 rounded-lg border px-4 py-2.5">
         <div className="flex items-center gap-4">
@@ -159,16 +150,16 @@ export function ProjectionLoader({
             label="Projection engine"
             activeColor="text-blue-600"
           />
-          {mcPhase !== "disabled" ? (
+          {simulationPhase !== "disabled" ? (
             <PhaseChip
-              phase={mcPhase}
+              phase={simulationPhase}
               label="Simulations"
               activeColor="text-purple-600"
             />
           ) : null}
-          {coastFireMcPhase !== "disabled" ? (
+          {coastFireSimulationPhase !== "disabled" ? (
             <PhaseChip
-              phase={coastFireMcPhase}
+              phase={coastFireSimulationPhase}
               label="Coast FIRE simulations"
               activeColor="text-amber-700"
             />

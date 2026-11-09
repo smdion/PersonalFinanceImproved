@@ -20,6 +20,8 @@ const CI_ONLY: Record<string, string> = {
   "Docker build smoke test": "needs Docker; runs in CI only",
   "Compose install boots on an empty volume": "needs Docker; runs in CI only",
   "Upload first-run E2E results (screenshots, traces)": "CI artifact",
+  "Benchmark failures, timeouts apart":
+    "summarizes a failed benchmark run's own report; not a check",
 };
 
 /** Each named CI step and the shell commands of its `run:`. */

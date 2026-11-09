@@ -1,79 +1,25 @@
 // How the engine routes money across accounts: modes, tax splits, slots.
-//
-// The engine manages how money flows into accounts (accumulation) and out of
-// accounts (decumulation) across the full projection timeline.
-//
-// CORE CONCEPTS:
-//
-// 1. ACCOUNT CATEGORIES — The 4 account types money can flow into/out of:
-//    • 401k  — employer-sponsored retirement (IRS limit applies)
-//    • HSA   — health savings account (IRS limit applies, always pre-tax)
-//    • IRA   — individual retirement account (IRS limit applies)
-//    • Brokerage — taxable investment account (no IRS limit, catch-all)
-//
-// 2. TAX TREATMENT — How contributions are taxed:
-//    • Traditional — pre-tax now, taxed on withdrawal
-//    • Roth        — after-tax now, tax-free withdrawal
-//    • HSA is always pre-tax; Brokerage is always after-tax.
-//    • 401k and IRA can be split between Traditional and Roth.
-//
-// 3. ROUTING MODES — Two ways to distribute contributions across accounts:
-//    • Waterfall  — fill accounts in priority order up to their limits
-//    • Percentage — split contributions by percentage across accounts
-//
-// 4. CAPS — Two layers of caps limit contributions:
-//    • IRS limits    — hard legal limits per account type (grow ~2%/year)
-//    • Artificial caps — user-defined limits below IRS limits
-//      - Per-account: "cap my 401k at $15k this year"
-//      - Per-tax-type: "cap all Roth contributions at $20k"
-//      The more restrictive cap always wins. When a cap is hit, excess
-//      flows to the next account (waterfall) or redistributes (percentage).
-//
-// 5. OVERFLOW — When an account can't absorb more money:
-//    • Waterfall mode: excess flows to the next account in priority order
-//    • Percentage mode: excess redistributes proportionally to remaining
-//      accounts, then to brokerage as the final catch-all
-//    The UI highlights every year where overflow/redistribution occurs.
+// Categories are 401k, HSA, IRA and brokerage (the uncapped catch-all); caps
+// are IRS limits plus tighter user caps, and the more restrictive one wins.
 
 import type { AccountCategory } from "@/lib/config/account-types";
 
 /**
- * How contributions are distributed across account categories.
- *
- * **Waterfall mode** (default): Contributions fill the highest-priority account
- * first, up to its limit (IRS or artificial cap), then overflow to the next.
- * Best when you want to maximize tax-advantaged space before using brokerage.
- *
- * **Percentage mode**: Contributions are split across accounts by a fixed %.
- * If a percentage allocation exceeds an account's limit, the excess
- * redistributes proportionally to the remaining accounts.
- * Best when you want explicit control over how much goes where.
+ * How contributions are distributed. Waterfall (default) fills accounts in priority
+ * order up to their cap; percentage splits by fixed %, and any share over an
+ * account's cap redistributes proportionally to the rest.
  */
 export type RoutingMode = "waterfall" | "percentage" | "bracket_filling";
 
 /**
- * Tax treatment types for contribution/distribution routing.
- *
- * Only applies to 401k and IRA — the two account types that offer a choice.
- * HSA is always pre-tax (similar to traditional but with unique tax benefits).
- * Brokerage is always after-tax (no special tax treatment on contributions).
+ * Tax treatment for routing. Only 401k and IRA offer the choice; HSA is always
+ * pre-tax and brokerage always after-tax.
  */
 export type RoutingTaxType = "traditional" | "roth";
 
 /**
- * Per-account Roth fraction (0–1) for accounts that support tax treatment choice.
- *
- * - Value of 0 = 100% Traditional (all contributions are pre-tax)
- * - Value of 1 = 100% Roth (all contributions are after-tax, grow tax-free)
- * - Value of 0.7 = 70% Roth / 30% Traditional
- *
- * Only 401k and IRA have configurable splits:
- * - HSA is always pre-tax (not configurable here)
- * - Brokerage is always after-tax (not configurable here)
- *
- * Example: { '401k': 0.7, ira: 1.0 }
- *   → 401k gets 70% Roth / 30% Traditional
- *   → IRA gets 100% Roth
+ * Per-account Roth fraction, 0 (all Traditional) to 1 (all Roth); 0.7 = 70% Roth.
+ * Only 401k and IRA have configurable splits.
  */
 export type TaxSplitConfig = Partial<Record<AccountCategory, number>>;
 
@@ -107,7 +53,7 @@ export type AccumulationSlot = {
   /** Amount that couldn't fit here and was sent to the next account. */
   overflowAmount: number;
   /** Part of `employeeContrib` from Portfolio-parented specs — savings
-   *  outside the retirement plan, so the retirement contribution-rate
+   *  outside retirement accounts, so the retirement contribution-rate
    *  ceiling never scales it. Spec routing only. */
   portfolioContrib?: number;
 };

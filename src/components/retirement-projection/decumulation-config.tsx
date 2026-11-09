@@ -53,21 +53,15 @@ type DecumulationConfigProps = {
   setShowDecumConfig: (v: boolean) => void;
   withdrawalRoutingMode: RoutingModeLiteral;
   setWithdrawalRoutingMode: (v: RoutingModeLiteral) => void;
-  /** Whether the user has actually clicked a mode button this session —
-   *  see use-projection-form-state.ts's docblock. Gates which mode this
-   *  panel DISPLAYS (the toggle highlight, the sub-control shown, the
-   *  "customizing your plan" note) — NOT what gets sent to the engine
-   *  (that's use-projection-queries.ts's job, independently). Untouched,
-   *  `withdrawalRoutingMode` itself is a meaningless initial literal (see
-   *  that hook) — this component must derive its own display value from
-   *  `persistedWithdrawalRoutingMode` instead of trusting it directly. */
+  /** Whether the user clicked a mode button this session. Gates only what this panel
+   *  displays, not what's sent (use-projection-queries.ts); untouched, display derives
+   *  from `persistedWithdrawalRoutingMode`, since `withdrawalRoutingMode` is a seed literal. */
   withdrawalRoutingModeTouched: boolean;
   withdrawalOrder: AccountCategory[];
   setWithdrawalOrder: (v: AccountCategory[]) => void;
-  /** Whether the user has reordered accounts this session. Same
-   *  display-vs-send split as `withdrawalRoutingModeTouched`: until it flips,
-   *  this panel shows `persistedWithdrawalOrder` (the real saved default),
-   *  not the local `withdrawalOrder` initial literal. */
+  /** Whether the user reordered accounts this session; until then this panel
+   *  shows `persistedWithdrawalOrder`, not the local `withdrawalOrder` seed
+   *  (display only, like `withdrawalRoutingModeTouched`). */
   withdrawalOrderTouched: boolean;
   /** The household's PERSISTED withdrawal-order default
    *  (`retirement_settings.withdrawal_order`), or null/undefined when never
@@ -92,21 +86,12 @@ type DecumulationConfigProps = {
   >;
   /** Active spending strategy key (from retirement settings). */
   activeSpendingStrategy?: string;
-  /** Household default from retirement settings, displayed
-   *  read-only here (edited on the settings page, not this per-session
-   *  routing-override panel) so it's visible right next to bracket_filling's
-   *  other routing controls. */
+  /** Household default from retirement settings, shown read-only here (edited
+   *  on the settings page) beside bracket_filling's other routing controls. */
   discretionaryWithdrawalOrder?: string | null;
-  /** The household's PERSISTED routing-mode default
-   *  (`retirement_settings.withdrawal_routing_mode`) — same "edited on the
-   *  settings page" pattern as `discretionaryWithdrawalOrder` above, but
-   *  NOT purely read-only text here: this component derives `displayedMode`
-   *  from it (falling back to `withdrawalRoutingMode` only once
-   *  `withdrawalRoutingModeTouched`), so an untouched session shows the
-   *  real plan default — not a hardcoded literal — in the toggle
-   *  highlight, the sub-control shown, and the summary text. What's SENT
-   *  to the engine stays independently gated on `touched` in
-   *  use-projection-queries.ts; this prop only affects what's displayed. */
+  /** The persisted `retirement_settings.withdrawal_routing_mode`; `displayedMode` uses it until
+   *  `withdrawalRoutingModeTouched`, so an untouched session shows the real plan default.
+   *  Display only: what's sent is gated in use-projection-queries.ts. */
   persistedWithdrawalRoutingMode?: string | null;
   enableAcaAwareness?: boolean;
   enableIrmaaAwareness?: boolean;
@@ -155,16 +140,9 @@ export function DecumulationConfig({
     persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
       ? (persistedWithdrawalRoutingMode as RoutingModeLiteral)
       : DEFAULT_WITHDRAWAL_ROUTING_MODE;
-  // What this panel actually SHOWS — the real plan default until the user
-  // clicks a mode button this session, then their choice.
-  // `withdrawalRoutingMode` itself is a meaningless initial literal when
-  // untouched (see use-projection-form-state.ts), so rendering the
-  // toggle/sub-controls straight off it would show a household on a
-  // non-default mode the WRONG editor — e.g. hide the Withdrawal Order
-  // editor from someone actually running Waterfall. This is
-  // display-only; what's SENT to the engine is still gated on `touched`
-  // in use-projection-queries.ts, independently, so cache identity is
-  // untouched by this.
+  // What this panel shows: the plan default until the user clicks a mode this session, then
+  // their choice (the untouched `withdrawalRoutingMode` is a seed literal and could show the
+  // wrong editor). Display only; what's sent is gated on `touched` in use-projection-queries.ts.
   const displayedMode: RoutingModeLiteral = withdrawalRoutingModeTouched
     ? withdrawalRoutingMode
     : persistedMode;
@@ -174,11 +152,8 @@ export function DecumulationConfig({
     withdrawalRoutingModeTouched && displayedMode !== persistedMode;
 
   // Same display-vs-send split as `displayedMode`: until the user edits the
-  // order/splits this session, show the household's real persisted default
-  // (not the local config-default seed), so an untouched Waterfall
-  // household doesn't see "401k → 403b → …" when the engine is actually
-  // running their saved "brokerage first" order. What's SENT stays gated on
-  // the *Touched flags in use-projection-queries.ts, independently.
+  // order/splits this session, show the persisted default, not the local
+  // config-default seed.
   const displayedOrder: AccountCategory[] = withdrawalOrderTouched
     ? withdrawalOrder
     : ((persistedWithdrawalOrder as AccountCategory[] | null | undefined) ??
@@ -222,7 +197,7 @@ export function DecumulationConfig({
               ? `Withdrawal Routing — ${personFilterName}`
               : "Withdrawal Routing"}
           </h4>
-          <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Decumulation Plan above." />
+          <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Retirement budget and strategy above." />
           {!showDecumConfig && (
             <span className="text-caption text-faint">
               {modeLabel} · {orderSummary}
@@ -250,7 +225,7 @@ export function DecumulationConfig({
             ? " determines HOW MUCH to withdraw. This section determines FROM WHICH accounts."
             : strategyCfg?.incomeSource === "rate"
               ? " adjusts HOW MUCH to withdraw each year. This section determines FROM WHICH accounts."
-              : " sets HOW MUCH to withdraw from your budget. This section determines FROM WHICH accounts."}
+              : " spends your Retirement budget. This section determines FROM WHICH accounts pay for it."}
         </div>
       )}
 
@@ -283,7 +258,7 @@ export function DecumulationConfig({
           </div>
           {persistedModeLabel != null && (
             <p className="text-caption text-faint">
-              Your plan&rsquo;s saved default is{" "}
+              Your saved default is{" "}
               <span className="font-medium">{persistedModeLabel}</span> (Taxes
               in Retirement).
               {isOverridingPlanDefault
@@ -305,17 +280,16 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only changes your plan for this session — save it
-                  in Taxes in Retirement to make it your default.
+                  This order only changes your projection for this session —
+                  save it in Taxes in Retirement to make it your default.
                 </p>
               )}
             </div>
           )}
 
-          {/* Traditional account order (bracket_filling) — Phase 1 fills
-              Traditional up to the bracket cap from
-              401k/403b/IRA in THIS order before anything else; previously
-              hardcoded, now user-editable like the other two modes. */}
+          {/* Traditional account order (bracket_filling): Phase 1 fills
+              Traditional up to the bracket cap from 401k/403b/IRA in this
+              user-editable order before anything else. */}
           {displayedMode === "bracket_filling" && (
             <div className="bg-surface-sunken rounded-lg p-3">
               <SectionHeader
@@ -329,8 +303,8 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only changes your plan for this session — save it
-                  in Taxes in Retirement to make it your default.
+                  This order only changes your projection for this session —
+                  save it in Taxes in Retirement to make it your default.
                 </p>
               )}
               <div className="mt-3 border-t pt-3">
@@ -383,11 +357,9 @@ export function DecumulationConfig({
                       value={Math.round((displayedSplits[cat] ?? 0) * 100)} // Persisted splits are stored jsonb: a partial record is legal.
                       onChange={(e) => {
                         const v = parseFloat(e.target.value) / 100;
-                        // Seed the first edit from what's DISPLAYED (the
-                        // persisted default until touched), not the local
-                        // config-default literal — otherwise editing one
-                        // field silently discards the household's saved
-                        // splits for every other account.
+                        // Seed the first edit from the displayed (persisted)
+                        // splits, not the config-default literal, so one edit
+                        // keeps the saved splits for every other account.
                         const base = withdrawalSplitsTouched
                           ? withdrawalSplits
                           : displayedSplits;
@@ -404,8 +376,8 @@ export function DecumulationConfig({
               {renderSplitsTotalWarning(displayedSplits)}
               {withdrawalSplitsTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  These splits only change your plan for this session — save
-                  them in Taxes in Retirement to make them your default.
+                  These splits only change your projection for this session —
+                  save them in Taxes in Retirement to make them your default.
                 </p>
               )}
             </div>

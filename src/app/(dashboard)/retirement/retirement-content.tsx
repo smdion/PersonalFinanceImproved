@@ -46,7 +46,7 @@ export function RetirementContent() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  // Links to Plan Health or a projection year open their tab.
+  // Links to Projection Health or a projection year open their tab.
   const [pageTab, setPageTab] = useFocusedState("retirementTab", "projection");
   const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   // Retirement Profile axis (the assumptions band) — the active profile;
@@ -64,17 +64,16 @@ export function RetirementContent() {
       activeProfileId: activeRetirementId,
     },
   );
-  // The plan's projection input — the one builder the dashboard uses too
-  // (usePlanEngineInput), so both read the same cached runs. The editors
-  // for the retirement-budget settings live on the Budget page's Retirement
+  // Projection input from usePlanEngineInput, shared with the dashboard so both
+  // read the same cached runs. Retirement-budget editors live on the Retirement
   // Profile tab; the snapshot picker below writes its setting.
   const plan = usePlanEngineInput();
   const {
-    contributionProfileId: effectiveContribProfileId,
+    contributionProfileId: effectiveContributionProfileId,
     salaryProfileId: effectiveSalaryProfileId,
     snapshotId,
   } = plan.ids;
-  const decBudget = plan.input.selection.decumulationBudget;
+  const decumulationBudget = plan.input.selection.decumulationBudget;
   const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
@@ -211,7 +210,7 @@ export function RetirementContent() {
               : "text-muted hover:text-secondary"
           }`}
         >
-          Plan Health
+          Projection Health
         </button>
       </div>
 
@@ -220,6 +219,7 @@ export function RetirementContent() {
         <div className="mb-3 flex items-center gap-2 print:hidden">
           <label className="text-muted text-xs">Portfolio Snapshot:</label>
           <select
+            aria-label="Portfolio Snapshot"
             className="bg-surface-elevated text-primary rounded border px-2 py-1 text-xs"
             value={snapshotId ?? ""}
             onChange={(e) =>
@@ -251,7 +251,7 @@ export function RetirementContent() {
       )}
 
       {pageTab === "planHealth" ? (
-        /* Plan Health tab — diagnostic callouts derived from plan state.
+        /* Projection Health tab — diagnostic callouts derived from plan state.
            Consumes data.planHealth which the projection router builds
            from contribution accounts and the active glide path. */
         <PlanHealthCard
@@ -316,11 +316,13 @@ export function RetirementContent() {
             <ProjectionCard
               people={peopleLookup}
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
-              decumulationBudgetProfileId={decBudget?.profileId}
-              decumulationBudgetColumn={decBudget?.column}
-              decumulationExpenseOverride={decBudget?.annualExpenses}
+              decumulationBudgetProfileId={decumulationBudget?.profileId}
+              decumulationBudgetColumn={decumulationBudget?.column}
+              decumulationExpenseOverride={decumulationBudget?.annualExpenses}
               parentCategoryFilter="Retirement"
-              contributionProfileId={effectiveContribProfileId ?? undefined}
+              contributionProfileId={
+                effectiveContributionProfileId ?? undefined
+              }
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
               retirementProfileId={effectiveRetirementProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}
@@ -336,7 +338,7 @@ export function RetirementContent() {
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}
-      {/* Plan Health's card carries its own. */}
+      {/* Projection Health's card carries its own. */}
       {pageTab !== "planHealth" && <Disclaimer className="mt-3" />}
     </div>
   );

@@ -1,11 +1,7 @@
 /**
- * Holding history per tracked account (portfolioProcedure — fund names and
- * shares of each account): observed periods derived from daily holdings,
- * plus periods the household enters for the years before them (or for an
- * account with no feed). An account whose feeds are linked per part (a
- * joint IRA, one feed per person and tax type) keeps one history per part;
- * every other account one for the whole account. Rules live in
- * lib/pure/investments/holding-periods.ts.
+ * Holding history per tracked account (portfolioProcedure): observed periods from daily
+ * holdings plus entered ones, kept per part when an account's feeds are linked per part.
+ * Rules live in lib/pure/investments/holding-periods.ts.
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -32,6 +28,7 @@ import {
   loadObservedPeriods,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",
@@ -94,10 +91,8 @@ async function loadHolders(
 
 export const investmentHoldingPeriodsRouter = createTRPCRouter({
   /**
-   * Periods (observed + entered) per holder — the account, or each part of
-   * an account kept per part — and the funds they name. A stored period
-   * with no holder (its part is gone, or it no longer fits how the
-   * account's feeds are linked) is marked orphaned: shown, never counted.
+   * Periods (observed + entered) per holder (the account, or each part) and their funds.
+   * A stored period with no current holder is marked orphaned: shown, never counted.
    */
   listHoldingPeriods: portfolioProcedure.query(async ({ ctx }) => {
     const [observed, entered] = await Promise.all([
@@ -222,7 +217,7 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
           endDate: input.end,
           basis: "user" as const,
           notes: input.notes,
-          updatedAt: new Date(),
+          updatedAt: writeStamp(),
         };
         let id = input.id;
         if (id === null) {
@@ -332,16 +327,17 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
         .select({ id: s.id })
         .from(s)
         .where(eq(s.ticker, T));
-      await syncSecurityFacts(ctx.db, { securityIds: [row!.id] }).catch(
-        (e: unknown) => {
-          // Its facts are unchecked, so the next refresh fetches them.
-          throw new WriteStopped(
-            `Added ${T}, then fetching its facts failed`,
-            "Added the fund; its facts will be fetched on the next refresh.",
-            e,
-          );
-        },
-      );
+      await syncSecurityFacts(ctx.db, {
+        securityIds: [row!.id],
+        now: ctx.scope.asOf,
+      }).catch((e: unknown) => {
+        // Its facts are unchecked, so the next refresh fetches them.
+        throw new WriteStopped(
+          `Added ${T}, then fetching its facts failed`,
+          "Added the fund; its facts will be fetched on the next refresh.",
+          e,
+        );
+      });
       return { id: row!.id };
     }),
 

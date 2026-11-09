@@ -1,14 +1,6 @@
 /**
- * Dashboard server page.
- *
- * Server-side prefetches the most expensive dashboard queries so the
- * cards hydrate with data immediately on first paint instead of
- * waterfalling through useQuery on the client. The DashboardContent
- * client component consumes the same queries via tRPC hooks — they
- * read prefetched data from the React Query cache.
- *
- * Prefetch failures don't block the page render — the cards fall
- * back to client-side fetching.
+ * Dashboard server page: prefetches the most expensive card queries into the
+ * React Query cache. Prefetch failures fall back to client fetching.
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
@@ -17,13 +9,11 @@ import { DashboardContent } from "./dashboard-content";
 
 export default async function DashboardPage() {
   const dehydratedState = await prefetchForPage(async (helpers) => {
-    // Prefetch the queries the dashboard cards consume. Each Promise.all
-    // member is independent — one failure doesn't block the others.
-    // We prefetch the high-traffic networth + onboarding queries; other
-    // cards still client-fetch (incremental rollout).
+    // Independent prefetches (one failure doesn't block the others); other
+    // cards fetch on the client.
     await Promise.all([
       helpers.networth.computeSummary.prefetch().catch(() => undefined),
-      helpers.settings.isOnboardingComplete.prefetch().catch(() => undefined),
+      helpers.settings.getOnboardingStatus.prefetch().catch(() => undefined),
     ]);
   });
 

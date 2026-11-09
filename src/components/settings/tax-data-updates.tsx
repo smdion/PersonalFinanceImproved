@@ -21,12 +21,12 @@ function showValue(v: number | null, format: string): string {
 /** A waiting community update: what it changes, Approve / Dismiss. */
 function CommunityUpdate({ admin }: { admin: boolean }) {
   const utils = trpc.useUtils();
-  const { data: sync } = trpc.settings.taxDataSync.status.useQuery();
+  const { data: sync } = trpc.settings.taxDataSync.getStatus.useQuery();
   const [open, setOpen] = useState(false);
-  const { data: preview, error } = trpc.settings.taxDataSync.preview.useQuery(
-    undefined,
-    { enabled: open && !!sync?.pending },
-  );
+  const { data: preview, error } =
+    trpc.settings.taxDataSync.computePreview.useQuery(undefined, {
+      enabled: open && !!sync?.pending,
+    });
   const done = () => {
     utils.settings.invalidate();
     utils.projection.invalidate();
@@ -206,10 +206,10 @@ function HowItWorks() {
 
 export function TaxDataUpdates({ admin }: { admin: boolean }) {
   const utils = trpc.useUtils();
-  const { data } = trpc.settings.taxData.status.useQuery();
-  const { data: sync } = trpc.settings.taxDataSync.status.useQuery();
+  const { data } = trpc.settings.taxData.getStatus.useQuery();
+  const { data: sync } = trpc.settings.taxDataSync.getStatus.useQuery();
   const confirm = trpc.settings.taxData.confirm.useMutation({
-    onSuccess: () => utils.settings.taxData.status.invalidate(),
+    onSuccess: () => utils.settings.taxData.getStatus.invalidate(),
   });
   const [showCarried, setShowCarried] = useState(false);
 

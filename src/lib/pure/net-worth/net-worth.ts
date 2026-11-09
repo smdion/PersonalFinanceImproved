@@ -1,32 +1,7 @@
 /**
- * Net Worth Calculator
- *
- * Computes total net worth in two views and two financial health benchmarks:
- *
- * **Net Worth Views:**
- *   - **NW+** (optimistic): Uses current estimated market value for home
- *   - **NW-** (conservative): Uses purchase price + cumulative improvements for home
- *   Both views share the same portfolio, cash, other assets, and liabilities.
- *
- * **Benchmarks:**
- *
- * 1. **Wealth Score** (savings efficiency):
- *    Wealth Score = Net Worth / Lifetime Earnings
- *    - Measures what fraction of cumulative earnings you've retained
- *    - Displayed as a percentage (e.g. 56% = kept 56% of everything earned)
- *
- * 2. **AAW Score** (Money Guy Show "Wealth Accumulator" formula):
- *    Expected Net Worth = (Average Age × Effective Income) / (10 + max(0, 40 - Age))
- *    - Uses average age across all household members
- *    - Uses gross pretax income (optionally 3-year averaged) — see wealthFormulaIncome
- *    - >= 2.0 = PAW (Prodigious), <= 0.5 = UAW (Under), AAW (Average) between
- *
- * 3. **FI Progress** (Financial Independence progress):
- *    FI Target = Annual Expenses ÷ Withdrawal Rate
- *    - Withdrawal rate is a decimal (e.g. 0.04 for the 4% rule)
- *    - FI Progress = Net Worth ÷ FI Target (1.0 = financially independent)
- *
- * All division operations use safeDivide() to handle zero-income or zero-target edge cases.
+ * Net worth with the home at market value (NW+) or cost + improvements (NW-), plus
+ * Wealth Score (NW ÷ lifetime earnings), AAW (Money Guy's expected NW; ≥2 PAW,
+ * ≤0.5 UAW) and FI Progress (NW ÷ expenses/withdrawal rate).
  */
 import type { NetWorthInput, NetWorthResult } from "./net-worth.types";
 import { safeDivide } from "../../utils/math";
@@ -36,11 +11,9 @@ import {
 } from "../../constants";
 
 /**
- * The income the wealth formula (and lifetime earnings) counts for a year:
- * gross pretax income, as The Millionaire Next Door and The Money Guy Show
- * define it. AGI is used only where gross income wasn't recorded — AGI is
- * net of pre-tax 401k/HSA deferrals, so using it would shrink the expected
- * net worth for exactly the households that save the most.
+ * A year's income for the wealth formula and lifetime earnings: gross pretax, as
+ * the formula defines it. AGI only when gross wasn't recorded (AGI nets out
+ * pre-tax deferrals, shrinking the target for the biggest savers).
  */
 export function wealthFormulaIncome(row: {
   grossIncome: number;

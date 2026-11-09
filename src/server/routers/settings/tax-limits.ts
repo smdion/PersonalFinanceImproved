@@ -28,9 +28,10 @@ import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax/data-status";
 import { pendingUpdate } from "./tax-data-sync";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
+import { writeStamp } from "@/lib/utils/clock";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 
@@ -65,12 +66,9 @@ const keyText = (vals: unknown[]) =>
     .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
     .join("|");
 
-/** What Ledgr ships here: every row of the shipped file and of a newer
- *  approved community update (both are applied, so neither's rows may be
- *  deleted), and each IRS limit's value by `"year|type"` — the community
- *  file's where it has one, with the documents it cites (a link each,
- *  from the year's `sources`). Rebuilt only when the approved version
- *  changes. */
+/** What Ledgr ships: the rows of the shipped file and any newer approved community update
+ *  (neither deletable), and each IRS limit by `"year|type"` with its cited sources.
+ *  Rebuilt only when the approved version changes. */
 type Citation = { name: string; url: string | null };
 type Shipped = {
   keys: Set<string>;
@@ -168,7 +166,7 @@ function editProvenance(
   const changed =
     !before || !sameReferenceValue(before[spec.value], next, spec.json);
   return {
-    confirmedAt: new Date(),
+    confirmedAt: writeStamp(),
     ...(changed && { origin: "user" as const }),
   };
 }
@@ -188,15 +186,13 @@ async function refuseShippedDelete(
     });
 }
 
-/** `carried`: a "+Year" copy or an empty placeholder — carried forward
- *  until the real figure ships (a release replaces it) rather than the
- *  household's own. A carried row confirmed unchanged stays carried: it
- *  only becomes the household's when its value is actually changed. */
+/** `carried`: a "+Year" copy or empty placeholder held until the real figure ships.
+ *  Confirming keeps it carried; only changing its value makes it the household's. */
 const carriedInput = { carried: z.boolean().optional() };
 const createProvenance = (carried: boolean | undefined) =>
   carried
     ? { origin: "carried" as const }
-    : { origin: "user" as const, confirmedAt: new Date() };
+    : { origin: "user" as const, confirmedAt: writeStamp() };
 
 const contributionLimitInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
@@ -259,10 +255,10 @@ export const taxLimitsProcedures = {
   /** Is the tax data current, and what was carried forward? */
   taxData: createTRPCRouter({
     /** The documents each year's shipped tables cite, linked. */
-    sectionSources: protectedProcedure.query(
+    listSectionSources: protectedProcedure.query(
       async ({ ctx }) => (await shippedData(ctx.db)).sectionCitations,
     ),
-    status: protectedProcedure.query(async ({ ctx }) => {
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
       const yearsByTable: Partial<Record<YearlyTable, number[]>> = {};
       const carried: CarriedFigure[] = [];
       const carriedRows: {
@@ -296,7 +292,7 @@ export const taxLimitsProcedures = {
             });
           }
       }
-      const base = taxDataStatus({ yearsByTable, carried });
+      const base = taxDataStatus({ yearsByTable, carried }, ctx.scope.asOf);
       // A community update waiting for review needs attention too.
       const pending = await pendingUpdate(ctx.db);
       const status = pending
@@ -313,7 +309,7 @@ export const taxLimitsProcedures = {
         sections: status.sections.map(({ upcoming, ...s }) => ({
           ...s,
           upcoming: upcoming
-            ? { year: upcoming.year, due: localDateStr(upcoming.due) }
+            ? { year: upcoming.year, due: calendarDateOf(upcoming.due) }
             : null,
         })),
         carriedRows,
@@ -365,14 +361,14 @@ export const taxLimitsProcedures = {
       }),
 
     /** The household checked a carried figure: it stays carried (the real
-     *  figure replaces it when it ships), but no longer needs attention. */
+     *  figure replaces it when it ships), but needs no more attention. */
     confirm: adminProcedure
       .input(z.object({ table: yearlyTableSchema, id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
         const table = YEARLY_TABLES[input.table];
         await ctx.db
           .update(table)
-          .set({ confirmedAt: new Date() } as never)
+          .set({ confirmedAt: writeStamp() } as never)
           .where(eq(table.id, input.id));
       }),
   }),

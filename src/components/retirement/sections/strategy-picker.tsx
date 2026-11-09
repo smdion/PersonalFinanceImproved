@@ -1,7 +1,7 @@
 /**
- * The withdrawal strategy pickers: the Decumulation Plan's (with the chosen
- * strategy's description) and the assumptions band's chip. A stored key that
- * names no current strategy shows nothing selected and a note naming it.
+ * The withdrawal strategy pickers: the Retirement budget and strategy
+ * section's and the assumptions band's chip. A stored key naming no
+ * current strategy shows nothing selected and a note naming it.
  */
 "use client";
 
@@ -65,7 +65,7 @@ export function StrategyPickerSection({
       <div className="col-span-2">
         <span className="text-muted">
           Strategy
-          <HelpTip text="How annual spending is determined during retirement. Fixed Real: perfectly predictable income that never changes based on market performance. Dynamic strategies (all others) automatically adjust spending when your portfolio rises or falls — this protects against depletion (higher success rates) but means your income varies year to year. The more a strategy self-corrects, the higher its success rate but the less stable your income. See Full Methodology for detailed guidance on when to use each strategy." />
+          <HelpTip text="How annual spending is determined during retirement. Fixed Real: perfectly predictable income that never changes based on market performance. The others decide each year by their own rule — some adjust after market moves, Spending Decline steps down on a schedule — which protects against depletion (higher success rates) but means your income varies year to year. Every strategy is measured against your Retirement budget. The more a strategy self-corrects, the higher its success rate but the less stable your income. See Full Methodology for detailed guidance on when to use each strategy." />
         </span>
         <div className="font-medium">
           <select

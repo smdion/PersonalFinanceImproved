@@ -153,10 +153,8 @@ export const navStructure: NavEntry[] = [
   },
 ];
 
-// Flat list of every nav href, for longest-prefix active matching: the most
-// specific nav href wins, while parent items still light up on their un-navved
-// subpaths (e.g. /retirement/methodology → /retirement). Also keeps any future
-// nested nav items (one href a prefix of another) from both highlighting.
+// Every nav href, for longest-prefix active matching: the most specific href wins,
+// while parents still light up on un-navved subpaths (/retirement/methodology).
 const allNavHrefs: string[] = navStructure.flatMap((entry) =>
   isGroup(entry) ? entry.items.map((i) => i.href) : [entry.href],
 );
@@ -292,11 +290,9 @@ function CollapsibleNavGroup({
   );
 }
 
-/** Standalone link to the active budget API's own web app, below the System
- *  group. Hidden entirely when no service is active, or when Actual is
- *  active but has no External URL saved (its `serverUrl` is often a
- *  private/internal address a browser can't open directly — see
- *  ActualConfig's docblock). */
+/** Link to the active budget API's web app, below the System group. Hidden when
+ *  no service is active, or Actual has no External URL (its `serverUrl` is
+ *  often internal and not browser-reachable). */
 function BudgetApiLink({
   collapsed,
   showLabels,

@@ -13,11 +13,9 @@ import { sumBy } from "@/lib/utils/math";
 
 // --- Sub-components ---
 
-/** Cost basis for Portfolio-category brokerage accounts — the accounts Tax
- *  Buckets deliberately excludes (its scope is Retirement-category holdings
- *  only), so this is their one home for basis editing. Reuses
- *  performance.updateCostBasis, the same mutation the Performance page's
- *  inline account-table editor calls. */
+/** Cost basis editor for Portfolio-category brokerage accounts (Tax Buckets
+ *  covers Retirement-category holdings only). Calls
+ *  performance.updateCostBasis, like the Performance page's editor. */
 export function CostBasisEditor({
   accounts,
   canEdit,
@@ -55,6 +53,7 @@ export function CostBasisEditor({
           {canEdit ? (
             <div className="flex items-center gap-2">
               <input
+                aria-label={`${accountDisplayName(a)} cost basis`}
                 type="number"
                 className="border-subtle bg-surface w-32 rounded border px-2 py-1 text-right text-sm"
                 value={values[a.id] ?? ""}
@@ -81,23 +80,23 @@ export function CostBasisEditor({
 }
 
 export function FundingSources({
-  directContrib,
+  directContribution,
   overflow,
   ramp,
   canEdit,
   onRampChange,
 }: {
-  directContrib: number;
+  directContribution: number;
   overflow: number;
   ramp: number;
   canEdit: boolean;
   onRampChange: (value: number) => void;
 }) {
-  const total = directContrib + overflow + ramp;
+  const total = directContribution + overflow + ramp;
   const rows = [
     {
       label: "Direct contributions",
-      amount: directContrib,
+      amount: directContribution,
       help: "Employee + employer contributions to Portfolio-category accounts",
     },
     // Contributions over the IRS limits go to retirement accounts; they
@@ -135,6 +134,7 @@ export function FundingSources({
           <span className="flex items-center gap-1">
             <span className="text-faint">$</span>
             <input
+              aria-label="Annual increase"
               type="number"
               min={0}
               step={10}

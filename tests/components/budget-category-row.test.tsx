@@ -7,7 +7,7 @@
  * the canonical keyword "brokerage". R Brokerage is linked
  * (contributionAccountId set) with its own real amount ($0/mo, inactive);
  * LT Brokerage is linked separately with $950/mo. Before this fix, the "PC"
- * badge for BOTH items was driven by matchContrib(item.subcategory) alone —
+ * badge for BOTH items was driven by matchContribution(item.subcategory) alone —
  * a fuzzy, name-keyed lookup blind to which account is actually linked to
  * which item — so R Brokerage's badge/tooltip showed LT Brokerage's $950,
  * confidently claiming "editing here updates it everywhere" for a number
@@ -54,7 +54,7 @@ function renderRow(
           categoryNames={["Investments"]}
           addingItemToCategory={null}
           onSetAddingItemToCategory={noop}
-          matchContrib={matchContrib}
+          matchContribution={matchContrib}
           activeColumn={0}
         />
       </tbody>
@@ -156,7 +156,7 @@ describe("BudgetCategoryRow — linked items use their own amount, not the fuzzy
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={matchContrib}
+            matchContribution={matchContrib}
             activeColumn={2}
           />
         </tbody>
@@ -200,7 +200,7 @@ describe("BudgetCategoryRow — contribStatus badge for linked items", () => {
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={() => null}
+            matchContribution={() => null}
             activeColumn={activeColumn}
           />
         </tbody>
@@ -289,7 +289,7 @@ describe("BudgetCategoryRow — contribStatus badge for linked items", () => {
             categoryNames={["Investments"]}
             addingItemToCategory={null}
             onSetAddingItemToCategory={noop}
-            matchContrib={() => null}
+            matchContribution={() => null}
             activeColumn={1}
           />
         </tbody>

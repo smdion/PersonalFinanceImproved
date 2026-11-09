@@ -6,11 +6,10 @@ import * as trpcMock from "./trpc-mock";
 vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
 }));
-const user = { role: "viewer", permissions: ["sync"] as string[] };
+const user = { role: "admin", permissions: [] as string[] };
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => user,
-  hasPermission: (u: typeof user, p: string) =>
-    u.role === "admin" || u.permissions.includes(p),
+  isAdmin: (u: typeof user) => u.role === "admin",
 }));
 const confirmWithDiff = vi.fn(
   async (_message: string, _lines: string[], _label?: string) => true,
@@ -27,7 +26,8 @@ const copy = { id: 5040, accountName: "Example 401(k) Plan (1111)" };
 describe("ReaddedMergePrompt", () => {
   beforeEach(() => {
     trpcMock.resetTrpcMock();
-    user.permissions = ["sync"];
+    user.role = "admin";
+    user.permissions = [];
     confirmWithDiff.mockClear();
     trpcMock.setQuery("simplefin.listReaddedAccounts", [
       {
@@ -74,8 +74,9 @@ describe("ReaddedMergePrompt", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("shows nothing without the sync permission the merge needs", () => {
-    user.permissions = [];
+  it("shows nothing to a viewer, even one with sync (the merge is admin-only)", () => {
+    user.role = "viewer";
+    user.permissions = ["sync"];
     const { container } = render(<ReaddedMergePrompt account={copy} />);
     expect(container.textContent).toBe("");
   });

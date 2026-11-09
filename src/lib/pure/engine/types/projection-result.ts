@@ -26,19 +26,8 @@ import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 // --- Engine Input ---
 
 /**
- * Full input for the contribution/distribution engine.
- *
- * Full input with granular control over routing, tax splits, caps, and overrides.
- * The engine projects accumulation (pre-retirement) and decumulation
- * (post-retirement) in a single pass.
- *
- * USAGE:
- * 1. Set page-level defaults in accumulationDefaults / decumulationDefaults.
- *    These come from the "Projection Assumptions" card.
- * 2. Add year-specific overrides to accumulationOverrides / decumulationOverrides.
- *    Each override only needs to specify the fields that change.
- * 3. The engine resolves the full config per year (sticky-forward per field)
- *    and routes money accordingly.
+ * Full engine input: page-level defaults plus per-year overrides (only changed fields), resolved
+ * sticky-forward per field each year; accumulation and decumulation project in one pass.
  */
 export type ProjectionInput = {
   /** Notes from building this input (shown with the result's warnings). */
@@ -91,10 +80,8 @@ export type ProjectionInput = {
   salaryGrowthRateByPerson?: Record<number, number>;
   salaryCap: number | null;
   salaryOverrides: RetirementYearOverride[];
-  /** Per-person starting salaries (personId → annual salary).
-   *  When provided, the engine tracks each person's salary independently,
-   *  allowing per-person salary overrides to affect only that person's
-   *  contribution specs. The combined total equals currentSalary. */
+  /** Per-person starting salaries (personId → annual), summing to currentSalary; lets per-person
+   *  salary overrides affect only that person's specs. */
   salaryByPerson?: Record<number, number>;
   /** Per-person salary overrides. Each entry overrides a specific person's
    *  salary for a given year. Takes precedence over salaryOverrides (which
@@ -107,23 +94,13 @@ export type ProjectionInput = {
   /** Per-year budget overrides (monthly budget in dollars). Sticky-forward. */
   budgetOverrides: RetirementYearOverride[];
   /**
-   * Year-0-only adjustment (personId → dollar delta, can be negative) applied
-   * to that person's projected salary for the CURRENT year only — used when
-   * a job's bonus is pinned to a known actual for this calendar year. Unlike
-   * salaryOverrides/perPersonSalaryOverrides, this does NOT persist into
-   * later years' growth: `currentSalary`/`salaryByPerson` already reflect the
-   * full formula-computed bonus (the true compounding baseline), so years 1+
-   * grow correctly without this adjustment. Applied in pre-year-setup.ts to
-   * the year's `effectiveSalary`, never to `state.projectedSalary`.
+   * Year-0-only salary delta per person (pinned actual bonus vs the formula bonus); applied to
+   * that year's `effectiveSalary` only, never compounded into later growth.
    */
   currentYearBonusAdjustment?: Record<number, number>;
   /**
-   * Each working person's years at work, from their job's dates, in whole
-   * years: `start` = the year a job that hasn't started yet begins (null =
-   * already working), `end` = its last year (null = no end). Outside them
-   * the person earns nothing and their contributions (and the match on
-   * them) stop; their salary keeps growing underneath. A year a job starts
-   * or ends in counts as a whole year. Absent = everyone works throughout.
+   * Each person's whole years at work (`start` null = working now, `end` null = no end). Outside
+   * them pay, contributions and match stop while salary keeps growing. Absent = always working.
    */
   workingYearsByPerson?: Record<
     number,
@@ -132,12 +109,8 @@ export type ProjectionInput = {
 
   // --- IRS limits ---
   /**
-   * What the IRS-limit caps (lib/pure/contributions/contribution-caps.ts) run on each
-   * year: the base year's whole limit record (base, catch-up, super
-   * catch-up, coverage variants — the engine grows every key at
-   * limitGrowthRate), the people whose ages at Dec 31 set catch-ups, and
-   * the household's limited accounts (who holds which, HSA coverage) —
-   * what sizes the household's limits when there are no per-account specs.
+   * Inputs for the IRS-limit caps (contribution-caps.ts): the base year's limit record (grown at
+   * limitGrowthRate), people whose Dec 31 ages set catch-ups, and the household's limited accounts.
    */
   irsLimitCaps: {
     /** The household's filing status — married filers share a family HSA
@@ -164,24 +137,14 @@ export type ProjectionInput = {
 
   // --- Per-account contribution specs (from paycheck/contributions page) ---
   /**
-   * Per-account contribution definitions from the DB.  When provided, years 1+
-   * compute contributions per-account instead of using a single blended
-   * `contributionRate × salary` routed via waterfall.
-   *
-   * - `percent_of_salary` accounts scale with projected salary growth
-   * - `fixed_per_period` / `fixed_monthly` accounts scale with IRS limit growth
-   * - Tax-advantaged accounts are capped at projected IRS limits; overflow goes to brokerage
-   * - Brokerage / ESPP accounts have no IRS cap
+   * Per-account contribution specs; years 1+ then compute per account: percent_of_salary follows
+   * salary, fixed ones IRS limit growth; tax-advantaged ones cap at IRS limits, overflow to brokerage.
    */
   contributionSpecs?: ContributionSpec[];
 
   /**
-   * Mid-projection contribution profile switches. When a user selects a
-   * different contribution profile for a future year, the engine swaps in
-   * that profile's full contribution structure (specs, employer match).
-   * Salary overrides from profiles are fed into perPersonSalaryOverrides
-   * by the router — the engine handles them via the existing salary mechanism.
-   * Sorted by year ascending.
+   * Future-year contribution profile switches (specs, employer match), sorted by year. Profile
+   * salary overrides arrive through perPersonSalaryOverrides.
    */
   profileSwitches?: ProfileSwitch[];
 
@@ -214,10 +177,8 @@ export type ProjectionInput = {
    *  phases. Built from portfolio_accounts snapshot. */
   startingAccountBalances: AccountBalances;
 
-  /** Individual account starting balances from portfolio snapshot.
-   *  When provided, the engine tracks each named account separately through
-   *  both phases, routing contributions via spec name matching and applying
-   *  growth per-account. This enables exact per-account tooltips. */
+  /** Starting balances per named account; when given, each is tracked through both phases
+   *  (contributions matched by spec name, growth per account). */
   individualAccounts?: IndividualAccountInput[];
 
   // --- Expenses & return rates ---
@@ -276,7 +237,7 @@ export type ProjectionInput = {
   primaryPersonId?: number;
   /** When true, cap Roth conversions to stay below the next IRMAA cliff (default: true when IRMAA awareness is on). */
   irmaaAwareRothConversions?: boolean;
-  /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
+  /** Enable ACA subsidy awareness (pre-65): report MAGI headroom below the subsidy cliff and warn when a year crosses it; never caps MAGI. */
   enableAcaAwareness?: boolean;
   /** Household size for ACA FPL calculation (default 2). */
   householdSize?: number;
@@ -286,16 +247,8 @@ export type ProjectionInput = {
   perPersonBirthYears?: number[];
   /** Annual expenses for decumulation phase. When set, projectedExpenses resets to this value at retirement age. */
   decumulationAnnualExpenses?: number;
-  /** Rate-Seeded scenario: when
-   *  true, the FIRST decumulation year's spending is seeded from
-   *  `decumulationDefaults.withdrawalRate × portfolio balance` instead of
-   *  from `decumulationAnnualExpenses`/any year-1 budget override —
-   *  ignoring the household's stated budget entirely for the starting
-   *  point. Every subsequent year still runs the SAME active strategy's
-   *  ordinary mechanism (guardrails, decline schedule, etc.) unchanged
-   *  from there — this only changes where year 1 starts, not how the
-   *  strategy evolves afterward. Default false/undefined leaves every
-   *  existing household's projection unchanged. */
+  /** Rate-Seeded: seed the first decumulation year's spending from `withdrawalRate × balance`
+   *  instead of the budget or a year-1 override; later years run the strategy as usual. */
   rateSeededDecumulationYear1?: boolean;
   asOfDate: Date;
 };
@@ -323,11 +276,8 @@ export type EngineAccumulationYear = {
   /** Projected annual expenses (inflated or budget-overridden). */
   projectedExpenses: number;
   hasSalaryOverride: boolean;
-  /** Always false — job_bonus_overrides is gone, so there is no more
-   *  "current-year actual vs formula" distinction to adjust for. Kept in
-   *  the payload shape as a no-op rather than removed, since the engine
-   *  still reads it defensively. Distinct from hasSalaryOverride, which is
-   *  set by retirement_salary_overrides / perPersonSalaryOverrides. */
+  /** True in year 0 when a nonzero `currentYearBonusAdjustment` applied. Distinct from
+   *  hasSalaryOverride (retirement_salary_overrides / perPersonSalaryOverrides). */
   hasBonusAdjustment: boolean;
   hasBudgetOverride: boolean;
   /** Pro-rate fraction for year 0 (e.g. 0.833 = 10 of 12 months remaining). null for full years. */
@@ -369,13 +319,11 @@ export type EngineAccumulationYear = {
   /** Nobody saved this year. Set with `gapDraw`. */
   savingStopped?: boolean;
   /** Retirement money at end of year: every account minus the
-   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  Portfolio-parented ones (savings outside retirement accounts) — what
    *  retirement answers count (depletion, success, nest egg). */
   retirementBalance: number;
-  /** Every account at end of year, Portfolio included — for net-worth
-   *  views only (FI milestones = liquid net worth, benchmarks). In a row
-   *  narrowed to one parent (filterYearByParentCategory) it is that view's
-   *  accounts, which the projection card displays. */
+  /** Every account at end of year, Portfolio included, for net-worth views only. In a row
+   *  narrowed to one parent (filterYearByParentCategory) it is that view's accounts. */
   allAccountsBalance: number;
   /** Balance breakdown by tax bucket. */
   balanceByTaxType: TaxBuckets;
@@ -398,15 +346,9 @@ export type EngineDecumulationYear = {
   year: number;
   age: number;
   phase: "decumulation";
-  /** Projected annual expenses (inflated or budget-overridden). For a
-   *  reactive strategy (Guyton-Klinger, Forgo Inflation After Loss,
-   *  Spending Decline) this is overwritten by that strategy's own
-   *  guardrail-adjusted target every year — use `budgetOnlyExpenses`
-   *  instead when you need the household's actual stated budget,
-   *  untouched by the strategy. For a portfolio-sized strategy with Social
-   *  Security on top (`withdrawalSized`), this is the strategy's GROSS
-   *  withdrawal, not spending — read `spending` for what the household
-   *  spends. */
+  /** Projected annual expenses. Reactive strategies overwrite it with their target (use
+   *  `budgetOnlyExpenses` for the budget); with `withdrawalSized` it is the gross withdrawal
+   *  (use `spending`). */
   projectedExpenses: number;
   /** What the household spends this year: what the withdrawal delivered
    *  after tax and penalty, less RMD money reinvested, plus Social
@@ -415,16 +357,8 @@ export type EngineDecumulationYear = {
   /** The strategy sized the gross portfolio withdrawal and Social Security
    *  comes on top (the household's switch off). */
   withdrawalSized: boolean;
-  /** The TRUE budget trajectory (inflation/raise growth + manual per-year
-   *  overrides only — never a reactive strategy's guardrail adjustment).
-   *  For Fixed (which never dispatches to a reactive strategy) this always
-   *  equals `projectedExpenses`; for Guyton-Klinger/Forgo/Spending-Decline
-   *  it diverges from `projectedExpenses` as soon as the strategy first
-   *  adjusts spending away from budget. This is what "vs Budget" chart/KPI
-   *  comparisons should read — comparing against `projectedExpenses` for
-   *  those strategies silently collapses "vs Budget" into being identical
-   *  to "vs Strategy" (both KPI rings showing the same percentage). See
-   *  ProjectionLoopState.budgetOnlyExpenses. */
+  /** The budget trajectory (growth + per-year overrides, never a strategy's adjustment); "vs
+   *  Budget" comparisons read this. Equals `projectedExpenses` for Fixed. */
   budgetOnlyExpenses: number;
   hasBudgetOverride: boolean;
   /** Brokerage (Portfolio-category) contributions that continue post-retirement. */
@@ -465,24 +399,11 @@ export type EngineDecumulationYear = {
   estTraditionalPortion: number;
   /** Debug: bracket-filling traditional cap (income cap - taxable SS). */
   bracketTraditionalCap?: number;
-  /** This year's standard deduction, grown forward from its DB vintage the
-   *  same way `bracketTraditionalCap` above is (`bracket-growth.ts`'s
-   *  `growAmount`) — NOT the plan-level `engineSettings.standardDeduction`
-   *  echo, which stays at its ungrown base value. Before this field
-   *  existed, the report/tooltip's
-   *  bracket-ceiling-math narrative (`describeBracketCeilingMath`) paired
-   *  a grown `bracketTraditionalCap` with the ungrown plan-level
-   *  deduction in the same sentence — internally inconsistent for any
-   *  year beyond the tax data's own vintage. Callers building that
-   *  narrative should read THIS field, not the settings echo. */
+  /** This year's standard deduction grown from its vintage (`growAmount`), matching
+   *  `bracketTraditionalCap`; read this, not the ungrown `engineSettings.standardDeduction`. */
   standardDeduction?: number;
-  /** How the discretionary need beyond Traditional's bracket-fill target
-   *  was actually sourced this year, in draw order, at each tier's real
-   *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing/types.ts) for
-   *  the full explanation. bracket_filling mode only; undefined/empty for
-   *  waterfall/percentage (they don't rank by cost) or a year with no
-   *  discretionary need. Powers the "why was this account used" UI
-   *  explanation. */
+  /** How the need beyond Traditional's bracket-fill target was sourced, in draw order, at each
+   *  tier's cost (`RouteResult.tierBreakdown`). bracket_filling only; else undefined/empty. */
   discretionaryTierBreakdown?: {
     source: "roth" | "brokerage" | "hsa";
     costRate: number;
@@ -490,77 +411,44 @@ export type EngineDecumulationYear = {
     /** Brokerage: `costRate` includes the 3.8% Medicare surtax. */
     includesNiit?: true;
   }[];
-  /** The two zero-cost discretionary tiers' real capacity this year, BEFORE
-   *  `discretionaryWithdrawalOrder` decides which drains first and before
-   *  either is actually drawn from — unlike `discretionaryTierBreakdown`
-   *  (drawn amounts only), a tier's capacity here is visible even in years
-   *  the draw loop never reached it (e.g. Roth basis alone covered the
-   *  year's need). See `RankedWithdrawalTiers` (withdrawal-cost-ranking.ts)
-   *  for the full explanation (a household couldn't tell why brokerage's
-   *  0%-LTCG room wasn't draining before
-   *  Roth. bracket_filling mode only; undefined for waterfall/percentage. */
+  /** The two zero-cost tiers' capacity this year before ordering or drawing, visible even when
+   *  untouched (`RankedWithdrawalTiers`). bracket_filling only; undefined otherwise. */
   rothBasisCapacity?: number;
   brokerageZeroLtcgCapacity?: number;
-  /** Unmet withdrawal need after routing (target - actual) — a REAL output
-   *  now, not debug-only. Under the
-   *  default `avoidPenalizedWithdrawals: true`, a household whose
-   *  penalty-free money runs out shows a real, positive `unmetNeed` here
-   *  rather than silently drawing penalized money. Populated by all three
-   *  routing modes. */
+  /** Unmet withdrawal need after routing (target − actual), from all three routing modes;
+   *  includes need left unfunded to avoid penalized money. */
   unmetNeed?: number;
-  /** Single canonical "is `unmetNeed` a REAL shortfall" verdict —
-   *  `unmetNeed` alone isn't reliably floor-filtered
-   *  (its `routedUnmetNeed` fallback branch never applies the materiality
-   *  floor, so a rounding-scale residual can read as `unmetNeed > 0`
-   *  without being material). UI alerting (chart marker, table line, KPI
-   *  urgency) must all key off THIS field rather than re-deriving their
-   *  own materiality threshold — see `SHORTFALL_MATERIALITY` (constants.ts)
-   *  for why $50-or-1%-of-need is the bar. */
+  /** The one verdict on whether `unmetNeed` is a material shortfall (`unmetNeed` can carry
+   *  rounding residue); UI alerting keys off this (`SHORTFALL_MATERIALITY`). */
   unmetNeedMaterial?: boolean;
   /** The bar `unmetNeedMaterial` uses: $50 or 1% of the year's need,
    *  whichever is greater. Also what counts as "no money left" for the
    *  plan judge (plan-outcome.ts) — one threshold, set here. */
   shortfallMaterialityFloor?: number;
-  /** Portion of `unmetNeed` attributable specifically to excluding
-   *  penalty-exposed money, not to the household being broke —
-   *  see `RouteResult`'s docblock in `withdrawal-routing/types.ts` for the exact
-   *  contract. A household can be short for both reasons, or either alone;
-   *  this field isolates the penalty-avoidance portion so the two are
-   *  never conflated. */
+  /** Part of `unmetNeed` due to excluding penalty-exposed money rather than lack of money
+   *  (`RouteResult` docblock, withdrawal-routing/types.ts). */
   penaltyAvoidedShortfall?: number;
-  /** Portion of `unmetNeed` attributable specifically to excluding
-   *  Portfolio-parented ("non-retirement") money — see
-   *  `RouteResult`'s docblock in `withdrawal-routing/types.ts` for the exact
-   *  contract. Same isolation principle as `penaltyAvoidedShortfall`: a
-   *  household can be short for this reason, the penalty-avoidance reason,
-   *  both, or neither. */
+  /** Part of `unmetNeed` due to excluding Portfolio-parented money (`RouteResult` docblock);
+   *  independent of `penaltyAvoidedShortfall`. */
   nonRetirementShortfall?: number;
-  /** Early-withdrawal penalty cost actually charged this year —
-   *  0 in the overwhelming default case, since `avoidPenalizedWithdrawals:
-   *  true` already excludes penalty-exposed money from routing. Nonzero
-   *  only when the lever is off and a penalized dollar was actually drawn.
-   *  NOT included in `taxCost` — see `ComputeTaxFromSlotsResult`'s
-   *  docblock in `tax-estimation.ts`. */
+  /** Early-withdrawal penalty charged this year; nonzero only when penalized money was drawn.
+   *  Not in `taxCost` (`ComputeTaxFromSlotsResult`). */
   penaltyCost?: number;
   /** What the withdrawals delivered to spend after tax and penalty
    *  (totalWithdrawal − taxCost − penaltyCost) — compare with
    *  `afterTaxNeed`. */
   deliveredAfterTax?: number;
-  /** Retirement money (HSA aside) still locked by early-withdrawal rules
-   *  this year — penalty-exposed and not opted into a penalized draw
-   *  (the eligibility record's still-excluded total). Undefined without
-   *  per-account tracking. */
+  /** Retirement money (HSA aside) still locked by early-withdrawal rules and not opted into a
+   *  penalized draw. Undefined without per-account tracking. */
   penaltyLockedStillExcluded?: number;
   /** Debug: pre-withdrawal per-account balances (what the router sees). */
   preWithdrawalAcctBal?: AccountBalances;
   /** Retirement money at end of year: every account minus the
-   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  Portfolio-parented ones (savings outside retirement accounts) — what
    *  retirement answers count (depletion, success, nest egg). */
   retirementBalance: number;
-  /** Every account at end of year, Portfolio included — for net-worth
-   *  views only (FI milestones = liquid net worth, benchmarks). In a row
-   *  narrowed to one parent (filterYearByParentCategory) it is that view's
-   *  accounts, which the projection card displays. */
+  /** Every account at end of year, Portfolio included, for net-worth views only. In a row
+   *  narrowed to one parent (filterYearByParentCategory) it is that view's accounts. */
   allAccountsBalance: number;
   /** Balance breakdown by tax bucket. */
   balanceByTaxType: TaxBuckets;
@@ -575,12 +463,8 @@ export type EngineDecumulationYear = {
   // --- RMD fields ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
-  /** Per-person RMD breakdown (populated when per-person RMD tracking is
-   *  active). `divisor`/`priorYearEndTradBalance`/`age` power the "why is
-   *  my RMD this amount" UI explanation (`amount = priorYearEndTradBalance
-   *  / divisor`, the IRS Uniform Lifetime Table divisor for `age`) —
-   *  undefined only in the rare case `getRmdFactor` has no entry for this
-   *  person's age. */
+  /** Per-person RMDs: `amount = priorYearEndTradBalance / divisor` (Uniform Lifetime Table for
+   *  `age`); `divisor` undefined when `getRmdFactor` has no entry for the age. */
   rmdByPerson?: {
     personId: number;
     personName: string;
@@ -596,47 +480,25 @@ export type EngineDecumulationYear = {
    *  moved to fall on the right owner's for their RMD. No change in income.
    *  Absent when nothing moved. */
   rmdReassignedAmount?: number;
-  /** Household-level "why is my RMD this amount" fallback — the IRS
-   *  Uniform Lifetime Table divisor for `age`, when `rmdByPerson` isn't
-   *  populated (single-person households / no per-person RMD tracking).
-   *  `rmdAmount = priorYearEndTradBalance / rmdDivisor`. Prefer
-   *  `rmdByPerson`'s own per-person fields when present. */
+  /** Household-level Uniform Lifetime divisor when `rmdByPerson` isn't populated:
+   *  `rmdAmount = priorYearEndTradBalance / rmdDivisor`. */
   rmdDivisor?: number;
   /** Prior-year-end Traditional balance the household-level RMD divided.
    *  Pairs with `rmdDivisor`. */
   priorYearEndTradBalance?: number;
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
-  /** Dollars of `rmdAmount` that could NOT be forced through as a real
-   *  taxable distribution — 0 in the overwhelmingly common case. Real IRS
-   *  exposure (a 25% excise tax applies to the shortfall), not a display
-   *  nicety: Retirement-only Traditional capacity can be genuinely
-   *  insufficient to cover a real RMD requirement (Portfolio-parented
-   *  balances don't count). See `rmd-enforcement.ts`'s
-   *  `RmdEnforcementResult.rmdShortfallAmount` docblock. */
+  /** Part of `rmdAmount` that couldn't be distributed (25% excise exposure); Portfolio-parented
+   *  balances don't count toward capacity (`RmdEnforcementResult.rmdShortfallAmount`). */
   rmdShortfallAmount: number;
-  /** Dollars of RMD-forced excess (beyond the strategy's stated need +
-   *  tax cost) this year — 0 in the overwhelmingly common case
-   *  (`rmdOverrodeRouting` false, or the RMD didn't exceed need). What
-   *  happened to it depends on the household's `rmdExcessHandling`
-   *  setting (see `ResolvedDecumulationConfig`) — reinvested into
-   *  brokerage (default) or spent; this field is the dollar amount either
-   *  way, not a statement of which. This money is real, forced out of
-   *  Traditional by the RMD floor regardless of what the strategy needed. */
+  /** RMD-forced money beyond stated need + tax; reinvested or spent per `rmdExcessHandling`
+   *  (this is the amount either way). */
   rmdExcessAmount: number;
-  /** Portion of this year's combined household RMD-smoothing target
-   *  (see `rmd-smoothing.ts`) that did NOT end up converted — undefined
-   *  when smoothing is off or had nothing to convert, 0 in the common
-   *  case when smoothing is on and fully achieved. A real, expected
-   *  shortfall (elevated ceiling, IRMAA-cliff cap, or available balance
-   *  still wasn't enough), not silently dropped. See
-   *  `RothConversionResult.rmdSmoothingShortfall` docblock. */
+  /** Part of the household RMD-smoothing target not converted (`rmd-smoothing.ts`); undefined
+   *  when smoothing is off or had nothing to convert. */
   rmdSmoothingShortfall?: number;
-  /** Total Qualified Charitable Distribution amount applied
-   *  this year (0 unless `qcdMaximize` is on and this household has a
-   *  QCD-eligible RMD). Satisfies that much of `rmdAmount` directly,
-   *  excluded from taxable income — see `qcd.ts` for the approximation
-   *  this uses. */
+  /** Total QCD this year (0 unless `qcdMaximize` and an eligible RMD); satisfies that much of
+   *  `rmdAmount` untaxed (approximation in `qcd.ts`). */
   qcdAmount: number;
   /** Per-person QCD breakdown, when nonzero. */
   qcdByPerson?: { personId: number; qcdAmount: number }[];
@@ -651,10 +513,8 @@ export type EngineDecumulationYear = {
   rothConversionAmount: number;
   /** Tax cost of the Roth conversion (paid from portfolio). */
   rothConversionTaxCost: number;
-  /** True when this year's Roth conversion was reduced (or zeroed) to keep
-   *  MAGI below the next IRMAA threshold (`irmaaAwareRothConversions`).
-   *  Undefined when the clamp never applied. Every numeric field is
-   *  unchanged by it. */
+  /** True when the `irmaaAwareRothConversions` clamp reduced this year's conversion; undefined
+   *  otherwise. No numeric field changes. */
   rothConversionIrmaaCapped?: boolean;
   // --- Spending strategy fields ---
   /** Strategy action taken this year (e.g. 'increase', 'decrease', 'skip_inflation', 'floor_applied'). */
@@ -700,12 +560,8 @@ export type ProjectionResult = {
   /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate).
    *  Not what any strategy actually spends — a reference "4%-rule-style" figure. */
   sustainableWithdrawal: number;
-  /** The household's stated retirement need (decumulationAnnualExpenses),
-   *  inflated by CPI to the first decumulation year's nominal dollars —
-   *  same formula pre-year-setup.ts uses to seed year-1 spending, before any
-   *  strategy adjusts it. Null when no retirement budget is set. Used to
-   *  check a strategy's actual spending against the household's real need,
-   *  independent of `sustainableWithdrawal` (see coast-fire.ts). */
+  /** Stated retirement need (decumulationAnnualExpenses) inflated to the first decumulation year,
+   *  before any strategy adjusts it; null without a budget. Checks spending against real need. */
   firstDecumulationYearStatedNeed: number | null;
   /** Per-account depletion tracking: first year each account category hits zero. */
   accountDepletions: {

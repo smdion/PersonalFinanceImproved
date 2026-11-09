@@ -1,26 +1,7 @@
 /**
- * Multi-year withdrawal-policy optimizer — `rothBracketTarget`
- * search.
- *
- * Pure calculator — no DB, no tRPC, no React. Sits *above* the engine, same
- * architectural position as `coast-fire.ts`: never imports engine internals,
- * only calls `calculateProjection()` as a black box and compares results.
- *
- * What this solves: bracket_filling (and Roth conversions/RMD smoothing
- * layered on top of it) all read a single, fixed `rothBracketTarget` for
- * the whole plan. Households rarely pick the genuinely cost-minimizing
- * value for that target themselves — this searches the household's own
- * real marginal bracket rates and recommends whichever one minimizes
- * lifetime tax cost (plus a terminal-value penalty for Traditional money
- * left unconverted at end of plan), while still funding the household's
- * spending need.
- *
- * What this does NOT do: change withdrawal routing itself, add a new
- * `withdrawalRoutingMode`, or touch any engine module. It only constructs
- * candidate `ProjectionInput`s (via `decumulationOverrides`) and scores
- * the results — the exact same trick `findCoastFireAge` already uses to
- * answer "what's the earliest coast age" without becoming part of the
- * engine itself.
+ * Searches the household's own marginal bracket rates for the `rothBracketTarget` minimizing
+ * lifetime tax plus a terminal penalty on unconverted Traditional money, while funding spending.
+ * Calls `calculateProjection()` as a black box via `decumulationOverrides`; no engine changes.
  */
 import { withControlledOverrides } from "@/lib/pure/contributions/controlled-overrides";
 import { calculateProjection } from "../engine";
@@ -30,41 +11,26 @@ import type {
   EngineDecumulationYear,
 } from "../engine/types";
 
-/**
- * v1 ships this as a fixed constant, empirically checked across a wide
- * range in the design doc's round 3 sensitivity pass (any value above
- * ~3% produced the same ranking for the test household — not fragile for
- * the common case). A real v1.1 candidate is deriving this from the
- * household's own projected future bracket instead of a flat guess;
- * deliberately deferred, not attempted here. Named and exported so it's
- * visible, not buried inside the scoring function.
- */
+/** Tax rate assumed on the Traditional balance left at the plan's end: a
+ *  flat guess, not the household's own future bracket. The ranking is
+ *  insensitive to it above about 3%. */
 export const ASSUMED_TERMINAL_RATE = 0.22;
 
 export type BracketOptimizerCandidate = {
   target: number;
   netCost: number;
-  /** Σ (`taxCost` + `rothConversionTaxCost` + `penaltyCost` + `irmaaCost`)
-   *  over the decumulation horizon for this candidate — the tax half of
-   *  `netCost`, exposed so a comparison UI can show the real tradeoff
-   *  (higher ceiling ⇒ more tax now, less Traditional stranded) instead of
-   *  only the blended score. */
+  /** Σ (`taxCost` + `rothConversionTaxCost` + `penaltyCost` + `irmaaCost`) over decumulation:
+   *  the tax half of `netCost`, exposed so a comparison UI can show the real tradeoff. */
   lifetimeTax: number;
   /** Traditional (pre-tax) balance left at end of plan for this candidate —
    *  the quantity the terminal-value penalty in `netCost` is applied to. */
   traditionalEnd: number;
-  /** Ranking signal — floored `unmetNeed` summed over years where
-   *  `unmetNeedMaterial` is true. NOT a sum of `unmetNeed` +
-   *  `penaltyAvoidedShortfall` + `nonRetirementShortfall` — those two are
-   *  documented subsets of `unmetNeed` (`engine-projection.ts`), not
-   *  independent dollars, so summing all three would double/triple-count
-   *  the same shortfall. */
+  /** Ranking signal: floored `unmetNeed` summed over `unmetNeedMaterial` years. Never add
+   *  `penaltyAvoidedShortfall`/`nonRetirementShortfall`: they're subsets of `unmetNeed`. */
   shortfallScore: number;
-  /** `retirementDepletionAge !== null` for this candidate — a hard
-   *  exclusion, never ranked in regardless of its `netCost`. Deliberately
-   *  depletion only, not the plan judge's verdict (assessPlan): a candidate
-   *  with unmet spending is ranked by `shortfallScore`, not excluded, so a
-   *  household where every candidate falls short still gets a ranking. */
+  /** `retirementDepletionAge !== null`: a hard exclusion regardless of `netCost`. Depletion
+   *  only, not assessPlan: unmet spending is ranked by `shortfallScore`, so a household where
+   *  every candidate falls short still gets a ranking. */
   depleted: boolean;
 };
 
@@ -81,11 +47,8 @@ export type BracketOptimizerResult = {
 };
 
 /**
- * Build the candidate rate set: the household's own real marginal bracket
- * rates (from `distributionTaxRates.taxBrackets`, the household's actual
- * W-4/filing-status brackets — never a hardcoded list), plus whatever the
- * household's current `rothBracketTarget` already is, so "stay where you
- * are" is always itself a scored candidate. De-duplicated, ascending.
+ * Candidate rates: the household's own marginal bracket rates (`distributionTaxRates.taxBrackets`)
+ * plus its current `rothBracketTarget`, so staying put is scored too. De-duplicated, ascending.
  */
 function candidateRates(input: ProjectionInput): number[] {
   const brackets = input.decumulationDefaults.distributionTaxRates.taxBrackets;
@@ -106,21 +69,9 @@ function firstDecumulationYear(input: ProjectionInput): number {
 }
 
 /**
- * Build one candidate's `ProjectionInput`: a single `decumulationOverrides`
- * entry at the first decumulation year, sticky-forward (no reset, no later
- * entry) so it applies from retirement through end of plan — round 1's
- * answered question 1, no per-person window truncation.
- *
- * Sets `rothConversionTarget` to the SAME value as `rothBracketTarget`
- * whenever the household has `enableRothConversions` on (round 3/4's
- * resolved "joint policy, not an artificial freeze" design — searching
- * the bracket target without moving the conversion target alongside it
- * would silently evaluate a candidate the household could never actually
- * adopt as configured). Likewise threads `rmdSmoothingMaxBracketTarget`
- * to the same value when `rmdSmoothingEnabled` is on (Phase 1 plumbing,
- * used here for the first time) so a candidate is scored against the
- * ceiling it would really get, not a stale one seeded from a different
- * target.
+ * One candidate's input: a sticky `decumulationOverrides` entry from the first decumulation year,
+ * moving `rothConversionTarget` and `rmdSmoothingMaxBracketTarget` with the bracket target when
+ * those features are on, so each candidate is one the household could really adopt.
  */
 function buildCandidateInput(
   input: ProjectionInput,
@@ -157,14 +108,8 @@ function decumulationYears(
 }
 
 /**
- * Score one candidate: `netCost = lifetimeTax + ASSUMED_TERMINAL_RATE *
- * finalYear.balanceByTaxType.preTax`. `lifetimeTax` sums `taxCost +
- * rothConversionTaxCost + penaltyCost + irmaaCost` over every decumulation
- * year — the terminal-value term is load-bearing, NOT optional: without
- * it the objective is monotone in deferral (always prefers the highest
- * target, since converting nothing is always cheapest THIS year), so
- * dropping it would silently break the search rather than just make it
- * less accurate.
+ * `netCost = lifetimeTax + ASSUMED_TERMINAL_RATE * finalYear.balanceByTaxType.preTax`. The
+ * terminal term is required: without it the objective always prefers the highest target.
  */
 function scoreCandidate(
   target: number,
@@ -184,12 +129,8 @@ function scoreCandidate(
   const traditionalEnd = finalYear?.balanceByTaxType.preTax ?? 0;
   const netCost = lifetimeTax + ASSUMED_TERMINAL_RATE * traditionalEnd;
 
-  // Ranking signal: floored `unmetNeed`, keyed off the canonical
-  // `unmetNeedMaterial` flag (`engine-projection.ts` — "consumers must
-  // key off THIS field rather than re-deriving their own materiality
-  // threshold"). Deliberately NOT unmetNeed + penaltyAvoidedShortfall +
-  // nonRetirementShortfall — see this file's docblock and
-  // BracketOptimizerCandidate.shortfallScore.
+  // Ranking signal: floored `unmetNeed` keyed off the canonical `unmetNeedMaterial` flag (see
+  // BracketOptimizerCandidate.shortfallScore).
   const shortfallScore = decumYears.reduce(
     (sum, y) => sum + (y.unmetNeedMaterial ? (y.unmetNeed ?? 0) : 0),
     0,
@@ -205,35 +146,14 @@ function scoreCandidate(
   };
 }
 
-/**
- * `shortfallScore` isn't bit-identical across candidates even when the
- * underlying shortfall is genuinely target-independent (the design doc's
- * "known limitation" — a withdrawal-solver convergence artifact, not something
- * this feature causes): different `rothBracketTarget` overrides produce
- * slightly different intermediate rounding paths through the same
- * shortfall year, so two candidates that are financially identical on
- * this dimension can differ by a few dollars. A strict `!==` comparison
- * would let that sub-dollar noise, not the six-figure `netCost` spread it
- * sits in front of, decide the recommendation — empirically verified: it
- * did, on the design doc's own round-4 test household, before this
- * tolerance was added. Matches the codebase's existing $50 materiality
- * floor for "is this shortfall real" (`coast-fire.ts`'s `passes()`,
- * `decumulation-year.ts`'s `shortfallMaterialityFloor`) — a
- * `shortfallScore` gap smaller than this is noise, not a differentiator.
- */
+/** Shortfall gap (dollars) below which two candidates tie: the solver's
+ *  rounding moves `shortfallScore` by a few dollars between targets, and a
+ *  strict comparison would let that noise pick the recommendation. */
 const SHORTFALL_TIE_TOLERANCE = 50;
 
 /**
- * Lexicographic rank: `depleted` first (any candidate whose portfolio
- * actually runs out is a hard exclusion, never ranked in on `netCost`
- * alone — depletion isn't the kind of small residual this ranking is
- * meant to tolerate), then `shortfallScore` ascending, then `netCost`
- * ascending.
- *
- * Not a binary pass/fail filter on shortfall: a real household can carry
- * a small shortfall year somewhere across a 30+ year horizon, and a binary
- * gate would return nothing for exactly the households most likely to
- * need this.
+ * Rank: `depleted` first (a hard exclusion), then `shortfallScore` ascending, then `netCost`.
+ * Shortfall ranks rather than filters, so a household with a small shortfall year still gets one.
  */
 function compareCandidates(
   a: BracketOptimizerCandidate,
@@ -246,14 +166,9 @@ function compareCandidates(
 }
 
 /**
- * Search the household's own real marginal bracket rates for the
- * `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-
- * value penalty for Traditional money left unconverted), while still
- * funding spending need through end of plan.
- *
- * Cost: one `calculateProjection` call per candidate rate (typically
- * 3-5 — the household's own bracket count, deduplicated with its current
- * setting), same order of magnitude as `findCoastFireAge`'s binary search.
+ * Searches the household's own marginal bracket rates for the `rothBracketTarget` minimizing
+ * lifetime tax (plus the terminal penalty) while funding spending through end of plan.
+ * One `calculateProjection` per candidate rate (typically 3-5).
  */
 export function optimizeRothBracketTarget(
   input: ProjectionInput,

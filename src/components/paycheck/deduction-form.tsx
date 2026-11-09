@@ -1,14 +1,8 @@
 "use client";
 
 /**
- * Minimal create form for a paycheck deduction — jobId/deductionName/
- * isPretax/ficaExempt are the entire structural row (settings.deductions'
- * deductionInput). No amountPerPeriod field here: that value is always a
- * Contribution Profile's deductions active-field entry, set afterward in
- * the Contribution Profile editor (same no-base-value rule contribution
- * accounts follow — see contrib-account-form.tsx's header comment).
- *
- * Used by the Contribution Profiles tab's "+ Add Deduction".
+ * Minimal create form for a paycheck deduction's structural row (jobId, deductionName, isPretax,
+ * ficaExempt). No amountPerPeriod: that is always a Contribution Profile's active field.
  */
 
 import { useState } from "react";

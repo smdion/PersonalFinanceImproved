@@ -19,20 +19,20 @@ export function ComputeControls({
 }) {
   const {
     projectionMode,
-    scenarioView,
-    setScenarioView,
+    projectionView,
+    setProjectionView,
     coastFireMcQuery,
     coastFireAge: deterministicCoastFireAge,
   } = state;
-  const isMc = projectionMode === "monteCarlo";
+  const isSimulation = projectionMode === "monteCarlo";
   // Availability comes from the deterministic age, which always runs (the
   // simulation's probe starts only once this scenario is picked); the label
   // prefers the simulated age once loaded, and none when already coasting.
-  const coastFireMcData = coastFireMcQuery.data?.result;
+  const coastFireSimulationData = coastFireMcQuery.data?.result;
   const coastFireAge =
-    coastFireMcData?.status === "found"
-      ? coastFireMcData.coastFireAge
-      : coastFireMcData?.status === "already_coast"
+    coastFireSimulationData?.status === "found"
+      ? coastFireSimulationData.coastFireAge
+      : coastFireSimulationData?.status === "already_coast"
         ? null
         : deterministicCoastFireAge;
   const coastFireAvailable = deterministicCoastFireAge != null;
@@ -42,10 +42,10 @@ export function ComputeControls({
         coastFireAvailable={coastFireAvailable}
         state={state}
         coastFireAge={coastFireAge}
-        scenarioView={scenarioView}
-        setScenarioView={setScenarioView}
+        projectionView={projectionView}
+        setProjectionView={setProjectionView}
       />
-      {scenarioView === "coastFireCustom" && (
+      {projectionView === "coastFireCustom" && (
         <CoastFireCustomAge
           state={state}
           result={result}
@@ -54,7 +54,7 @@ export function ComputeControls({
       )}
       <ZoneSecondaryRow>
         <PersonViewPills state={state} people={people} />
-        {isMc && <SimulationSettings state={state} />}
+        {isSimulation && <SimulationSettings state={state} />}
       </ZoneSecondaryRow>
     </ControlZone>
   );

@@ -2,14 +2,14 @@ import type { ComponentType } from "react";
 import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 import { formatCurrency } from "@/lib/utils/format";
 import { formatEmployerMatch } from "@/lib/pure/contributions/match-display";
-import type { ContribAccountActiveFields } from "@/lib/pure/household/profiles";
+import type { ContributionAccountActiveFields } from "@/lib/pure/household/profiles";
 import type { AccountDetail } from "./account-row-types";
 import type { ReadOnlyFieldKey } from "./account-fields";
 
 /** One account row's values, as each read-only cell reads them. */
 export type DetailRowProps = {
   ad: AccountDetail;
-  af: ContribAccountActiveFields;
+  af: ContributionAccountActiveFields;
   isProfileDisabled: boolean;
   hasActiveName: string | boolean;
   activeMethod: string | undefined;

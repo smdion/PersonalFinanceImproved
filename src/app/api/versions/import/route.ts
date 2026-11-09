@@ -20,10 +20,8 @@ const backupDataSchema = z.object({
     z.string().max(100),
     z.array(z.record(z.string().max(200), z.unknown())),
   ),
-  // Optional — absent on backups made before dialect-aware jsonb encoding
-  // existed. Must be preserved through validation (z.object strips unknown
-  // keys by default) so importBackupPg can tell a PG-sourced jsonb string
-  // scalar from an SQLite-sourced already-serialized one.
+  // Optional (older backups lack it); declared so validation keeps it and
+  // importBackupPg can tell PG jsonb strings from SQLite-serialized ones.
   sourceDialect: z.enum(["postgres", "sqlite"]).optional(),
 });
 
@@ -54,10 +52,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Check auth — require session with version permission or admin. Only
-    // `next dev` with ALLOW_DEV_MODE skips it, the same rule as every
-    // request's session (auth-mode.ts); validateEnv() (src/lib/env.ts) also
-    // refuses to boot a production build with ALLOW_DEV_MODE set.
+    // Require a session with version permission or admin. Only `next dev` with
+    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
     const allowDev = devBypass() === "admin";
     const session = await auth();
     if (!allowDev && !session?.user) {

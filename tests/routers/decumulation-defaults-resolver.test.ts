@@ -12,6 +12,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS,
@@ -40,6 +41,7 @@ function makeSettings(overrides: Record<string, unknown> = {}) {
     ...NULL_STRATEGY_PARAMS,
     withdrawalRate: "0.04",
     withdrawalStrategy: "fixed",
+    withdrawalRoutingMode: "bracket_filling",
     ...overrides,
   } as Parameters<typeof buildDecumulationDefaults>[0];
 }
@@ -84,7 +86,13 @@ describe("buildDecumulationDefaults — withdrawalOrder / withdrawalSplits resol
 
   it("lets a client override (touched session) win over the persisted value", () => {
     const persistedOrder = ["brokerage", "401k", "403b", "ira", "hsa"];
-    const clientOrder = ["hsa", "ira", "403b", "401k", "brokerage"];
+    const clientOrder: AccountCategory[] = [
+      "hsa",
+      "ira",
+      "403b",
+      "401k",
+      "brokerage",
+    ];
     const out = buildDecumulationDefaults(
       makeSettings({ withdrawalOrder: persistedOrder }),
       { ...NO_CLIENT, withdrawalOrder: clientOrder },

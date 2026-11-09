@@ -12,9 +12,8 @@ import {
 } from "@/server/data/salaries";
 
 /**
- * Load a Salary Profile and build its job-targeted active-value map — see
- * SalaryProfileActiveMap. Returns an empty map when the id is null/undefined
- * or the profile no longer exists.
+ * Load a Salary Profile's job-targeted active-value map (SalaryProfileActiveMap); empty when the
+ * id is null/undefined or the profile doesn't exist.
  */
 export async function loadAndApplySalaryProfile(
   db: Db,
@@ -25,17 +24,8 @@ export async function loadAndApplySalaryProfile(
 }
 
 /**
- * Same as loadAndApplySalaryProfile, but falls back to the globally-ACTIVE
- * Salary Profile when no explicit id is given — the "viewing a specific
- * profile" callers (Paycheck/Contribution pages) always pass their own
- * resolved id, so this only matters when a caller genuinely has no
- * preference (historical.ts, savings.ts, retirement.ts, services/contributions/
- * live-data.ts's loadLiveContribData all call this with `null` for
- * exactly that reason — call this instead of hand-rolling the app_settings
- * lookup again). services/net-worth/year-end-history.ts's buildYearEndHistory is the one
- * deliberate exception: it already has app_settings batch-fetched as part
- * of a larger Promise.all, so re-deriving the active id from that
- * in-memory array avoids a redundant query on a hot path.
+ * loadAndApplySalaryProfile, falling back to the active Salary Profile when
+ * no id is given: for callers that aren't showing a profile of their own.
  */
 export async function loadEffectiveSalaryProfile(
   db: Db,
@@ -49,22 +39,20 @@ export async function loadEffectiveSalaryProfile(
 }
 
 /**
- * The W-4 filing status of the first of `personIds` (in order) with an
- * non-speculative job held this year (current first, then one that ended
- * this year), from the request's Salary Profile (its
- * What-If included) when given, else the active one — null when none has
- * one. Only a stand-in for the household's filing status: a W-4 status is
- * a withholding choice.
+ * W-4 filing status of the first of `personIds` with a non-speculative job in `asOf`'s year, from
+ * the request's Salary Profile (What-If included) or the active one; null if none. Only a
+ * stand-in for the household's filing status (a W-4 status is a withholding choice).
  */
 export async function w4FilingStatusOf(
   db: Db,
   personIds: readonly number[],
+  asOf: Date,
   salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<W4FilingStatus | null> {
   if (personIds.length === 0) return null;
   // Jobs held this year: current ones, then any that ended this year
   // (latest first) — someone retired mid-year still filed that way.
-  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const yearStart = `${asOf.getFullYear()}-01-01`;
   const jobs = (
     await db
       .select({

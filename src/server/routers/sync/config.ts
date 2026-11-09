@@ -4,9 +4,9 @@ import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
+  adminProcedure,
   createTRPCRouter,
   protectedProcedure,
-  syncProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
@@ -24,10 +24,8 @@ export const syncConfigRouter = createTRPCRouter({
     return getActiveBudgetApi(ctx.db);
   }),
 
-  /** URL for the nav's "open budget API" link — YNAB always links to the
-   *  hosted app; Actual only links once the household has set an External
-   *  URL (its `serverUrl` is often a private/internal address a browser
-   *  outside that network can't reach — see ActualConfig's docblock). */
+  /** URL for the nav's "open budget API" link: YNAB's hosted app; Actual only once an
+   *  External URL is set (its `serverUrl` is often unreachable from a browser). */
   getActiveBudgetApiLink: protectedProcedure.query(async ({ ctx }) => {
     const active = await getActiveBudgetApi(ctx.db);
     if (active === "none") return { service: active, url: null } as const;
@@ -40,7 +38,7 @@ export const syncConfigRouter = createTRPCRouter({
   }),
 
   /** Set the active_budget_api setting */
-  setActiveBudgetApi: syncProcedure
+  setActiveBudgetApi: adminProcedure
     .input(z.object({ value: z.enum(["none", ...BUDGET_API_SERVICE_VALUES]) }))
     .mutation(async ({ ctx, input }) => {
       if (input.value !== "none") {
@@ -59,7 +57,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Set (or clear) which Ledgr budget profile syncs with the budget API. */
-  setLinkedProfile: syncProcedure
+  setLinkedProfile: adminProcedure
     .input(
       z.object({
         service: serviceEnum,
@@ -75,7 +73,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Set which budget column (mode) syncs with the budget API. */
-  setLinkedColumn: syncProcedure
+  setLinkedColumn: adminProcedure
     .input(
       z.object({ service: serviceEnum, columnIndex: z.number().int().min(0) }),
     )
@@ -88,7 +86,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Skip an API category — hide from "not in Ledgr" list */
-  skipCategory: syncProcedure
+  skipCategory: adminProcedure
     .input(z.object({ service: serviceEnum, categoryId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const conn = await getApiConnection(ctx.db, input.service);
@@ -104,7 +102,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Unskip an API category — restore to "not in Ledgr" list */
-  unskipCategory: syncProcedure
+  unskipCategory: adminProcedure
     .input(z.object({ service: serviceEnum, categoryId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const conn = await getApiConnection(ctx.db, input.service);

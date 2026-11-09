@@ -1,13 +1,6 @@
 /**
- * The household's time zone — what "today" and every date-only boundary on
- * the server (year-end snapshots, paycheck and budget materializers,
- * syncs) means. Node re-reads `process.env.TZ` when it changes, so setting
- * it here moves every server-side Date getter at once; no call site needs
- * to know about it.
- *
- * Source of truth: the `household_timezone` app setting (an admin's browser
- * fills it in on first visit). Without one, the container's own TZ
- * (default UTC) applies.
+ * The household's time zone (the `household_timezone` setting, else the container TZ):
+ * sets `process.env.TZ`, so every server-side "today" and date-only boundary follows it.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

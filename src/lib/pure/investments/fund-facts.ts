@@ -1,11 +1,7 @@
 /**
- * Facts in use for each fund, and what they add up to across holdings.
- * Pure.
- *
- * - A household entry wins over SEC; otherwise the latest SEC filing.
- * - Expense ratio and composition are each taken whole from one row —
- *   never mixed across filings.
- * - Facts older than 15 months are flagged stale.
+ * Facts in use for each fund and their totals across holdings. A household entry
+ * beats the latest SEC filing; expense ratio and composition each come whole from
+ * one row; facts older than 15 months are flagged stale.
  */
 import { HALF_CENT } from "@/lib/constants";
 import {
@@ -140,11 +136,9 @@ export function blendedCost(holdings: readonly ValuedHolding[]): {
 const ROLLUP_MIN_SHARE = 0.01;
 
 /**
- * One account's funds added up — mix as shares of the money whose mix is
- * known, plus blended cost — for every account with money in it: the
- * account's line is what shows until its funds are opened. `multiFund`
- * says whether more than one fund matters (cash dust doesn't), so the
- * "all funds" detail isn't repeated for a single fund.
+ * One account's funds added up: mix as shares of the money whose mix is known,
+ * plus blended cost. `multiFund` says whether more than one fund matters (cash
+ * dust doesn't), so a single fund skips the "all funds" detail.
  */
 export function accountRollup(holdings: readonly ValuedHolding[]): {
   mix: Record<CompositionBucket, number> | null;
@@ -174,10 +168,9 @@ export function accountRollup(holdings: readonly ValuedHolding[]): {
 }
 
 /**
- * Value per asset class from value per bucket, through the household's
- * links (bucket → the class it counts toward; several buckets may feed one
- * class). Buckets with value but no link are listed so they can be shown
- * as left out. The one place bucket values become class values.
+ * Value per asset class from value per bucket via the household's bucket → class
+ * links (the one place this happens). Unlinked buckets with value are listed so
+ * they show as left out.
  */
 export function valueByClass(
   buckets: Readonly<Record<CompositionBucket, number>>,
@@ -198,11 +191,9 @@ export function valueByClass(
 }
 
 /**
- * The household's holdings by fund instead of by account: each fund held
- * in several accounts appears once, with its combined shares and value,
- * its share of everything held, and which accounts hold how much. Largest
- * first. `holding` is the fund's first row (name, symbol, facts are the
- * fund's own, so any account's row carries them).
+ * Holdings by fund instead of account, largest first: combined shares and value,
+ * share of everything held, and each account's part. `holding` is the fund's
+ * first row (any row carries the fund's own facts).
  */
 export function combineHoldings<
   H extends { securityId: number; shares: number; value: number },
@@ -277,10 +268,9 @@ export function fundsInBucket<H extends ValuedHolding & { securityId: number }>(
 const FEE_PROJECTION_YEARS = [10, 20, 30] as const;
 
 /**
- * What a fund cost compounds to: today's balance grown at the expected
- * return, with and without the expense ratio taken each year — no new
- * money. `cost` is the growth given up; `share` is that as a share of
- * what the balance would have grown to without it.
+ * A fund's compounded cost: today's balance grown at the expected return with
+ * and without the expense ratio, no new money. `cost` is the growth given up;
+ * `share` is that over the growth without fees.
  */
 export function compoundedFundCost(
   balance: number,

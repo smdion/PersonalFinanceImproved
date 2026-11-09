@@ -5,8 +5,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { occurrenceKey } from "@/lib/pure/savings/savings-projection";
-import type { GoalProjection, PlannedTransaction } from "../types";
+import {
+  occurrenceKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
+import type { GoalProjection } from "../types";
 
 export interface EditForm {
   goalId: number;
@@ -22,18 +25,16 @@ export function balanceAfterCell(
   getBalanceAfter: (goalId: number, dateStr: string) => number | undefined,
   tx: PlannedTransaction,
 ) {
-  // Transfer rows are collapsed to a single leg (deduped by
-  // transferPairId), so a per-fund balance here would reflect
-  // only whichever leg survived. Suppress it to avoid showing
-  // an ambiguous balance for a two-fund movement.
+  // Transfer rows show one leg (deduped by transferPairId), so a
+  // per-fund balance would be ambiguous; suppress it.
   if (isTransfer)
     return (
       <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
         —
       </td>
     );
-  const bal = getBalanceAfter(tx.goalId, tx.transactionDate);
-  if (bal === undefined)
+  const balance = getBalanceAfter(tx.goalId, tx.transactionDate);
+  if (balance === undefined)
     return (
       <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
         —
@@ -42,10 +43,10 @@ export function balanceAfterCell(
   return (
     <td
       className={`px-3 py-2 text-right text-xs font-medium whitespace-nowrap tabular-nums ${
-        bal < 0 ? "text-red-500" : "text-muted"
+        balance < 0 ? "text-red-500" : "text-muted"
       }`}
     >
-      {formatCurrency(bal)}
+      {formatCurrency(balance)}
     </td>
   );
 }
@@ -166,6 +167,7 @@ export function UpcomingAmountCells({
       >
         {isCellActive(tx.id, "amount") && editForm ? (
           <input
+            aria-label="Amount"
             autoFocus
             type="number"
             min="0"
@@ -235,6 +237,7 @@ export function UpcomingDateAndDescriptionCells({
       >
         {isCellActive(tx.id, "transactionDate") && editForm ? (
           <input
+            aria-label="Date"
             autoFocus
             type="date"
             value={editForm.transactionDate}
@@ -262,6 +265,7 @@ export function UpcomingDateAndDescriptionCells({
       >
         {isCellActive(tx.id, "description") && editForm ? (
           <input
+            aria-label="Description"
             autoFocus
             type="text"
             value={editForm.description}
@@ -344,6 +348,7 @@ export function UpcomingFundCell({
               }}
             />
             <select
+              aria-label="Fund"
               autoFocus
               value={editForm.goalId}
               onChange={(e) =>
@@ -563,7 +568,7 @@ export function TransactionsTableHead({
         </th>
         <th
           className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap"
-          title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and month changes (matches the Plan table)"
+          title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and month changes (matches the Goals table)"
         >
           After
         </th>

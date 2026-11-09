@@ -1,8 +1,6 @@
 /**
- * Milestones input builders — pure mappings from what the app already
- * computes (year-end history, projection, contribution and holdings
+ * Pure builders mapping app data (history, projection, contribution and holdings
  * summaries) into the MilestoneInput that evaluateMilestones() judges.
- * Split from milestones.ts; the rules are in the rule-family files beside it.
  */
 import type { RaiseYear } from "@/lib/pure/household/raise-history";
 import type {
@@ -159,20 +157,16 @@ type LimitAccount = {
   employeeContrib: number;
   totalContrib: number;
   /** A year's contributions through payroll, and outside it. */
-  payrollDeductedContrib?: number;
-  nonPayrollContrib?: number;
+  payrollDeductedContrib: number;
+  nonPayrollContrib: number;
   /** HSA coverage behind the limit; null/absent when not set. */
   hsaCoverageType?: string | null;
 };
 
 /**
- * Contributions vs IRS limits, one row per person per limit group (401k and
- * 403b share one limit). A household-wide limit is counted once only when
- * it's shared (`sharesHouseholdLimit`: married, family HSA coverage) — two
- * self-only HSAs are two limits, as the contribution caps hold them.
- * Employee money only, unless the IRS limit itself counts employer money
- * (config `matchCountsTowardLimit`, e.g. HSA). A row is "retirement" when
- * any of its accounts sits in the Retirement parent category.
+ * Contributions vs IRS limits per person per limit group; a household limit counts once only
+ * when shared (`sharesHouseholdLimit`). Employee money only unless `matchCountsTowardLimit`.
+ * "retirement" when any account is Retirement-parented.
  */
 export function milestoneLimits(
   people: readonly {
@@ -202,9 +196,9 @@ export function milestoneLimits(
   );
   // Through payroll or outside it, from where the money goes today.
   const route = (a: LimitAccount): boolean | null =>
-    (a.payrollDeductedContrib ?? 0) > 0
+    a.payrollDeductedContrib > 0
       ? true
-      : (a.nonPayrollContrib ?? 0) > 0
+      : a.nonPayrollContrib > 0
         ? false
         : null;
   const add = (owner: string, a: LimitAccount, checksLeft: number | null) => {
@@ -370,12 +364,8 @@ export function milestoneHoldings(overview: {
 }
 
 /**
- * After-tax ("mega backdoor") room per person in plans with an IRS
- * total-additions limit (config `irsLimitKeys.totalAdditions`): the lesser
- * of that limit and the person's pay, less employee deferrals up to the
- * base limit (catch-up doesn't count) and the employer match. Assumes one
- * employer plan per person (each unrelated employer has its own limit) and
- * no profit-sharing contributions (not modelled).
+ * After-tax ("mega backdoor") room per person under `irsLimitKeys.totalAdditions`: min(limit,
+ * pay) less base deferrals and match. Assumes one employer plan and no profit sharing.
  */
 export function megaBackdoorRoom(
   people: readonly {
@@ -487,7 +477,7 @@ export function buildMilestoneInput(raw: {
     filingStatus?: string;
   } | null;
   highIncomeThreshold: number;
-  /** SimpleFIN deposit months (investments.getBuyingMonths). */
+  /** SimpleFIN deposit months (investments.computeBuyingMonths). */
   buyingMonths?: BuyingMonth[] | null;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;
@@ -525,11 +515,9 @@ export function buildMilestoneInput(raw: {
   const c = raw.contributions;
   const people = c?.people.filter((p) => p.accountTypes.length > 0) ?? [];
   if (c && people.length > 0) {
-    // Money Guy's definitions, fixed — not the per-viewer display switches,
-    // on the full year's plan, the match counted below the high-income
-    // threshold. The 25% rule (step 7) counts Retirement and Portfolio
-    // money alike; step 6's "25% before maxing out" is the Retirement
-    // category alone.
+    // Money Guy's fixed definitions (not display switches), on the full year's plan,
+    // match counted below the high-income line. Step 7's 25% counts Retirement and
+    // Portfolio; step 6's counts Retirement only.
     const highIncome = isHighIncomeHousehold(
       householdTotalCompensation(people),
       raw.highIncomeThreshold,

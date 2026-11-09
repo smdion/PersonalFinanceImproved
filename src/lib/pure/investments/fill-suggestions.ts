@@ -1,9 +1,7 @@
 /**
- * One suggestion per row for the three fills — a new portfolio snapshot,
- * the year's Performance rows, and the year's Roth-basis rows — from what
- * SimpleFIN sent since each row was last filled. Pure: the router loads the
- * rows, feeds, paycheck setup and fill ledger and calls these per row.
- * The flow arithmetic itself lives in flow-suggestions.ts.
+ * Per-row suggestions for the three fills (portfolio snapshot, Performance rows,
+ * Roth-basis rows) from what SimpleFIN sent since each was last filled. Flow
+ * arithmetic lives in flow-suggestions.ts.
  */
 import { roundToCents } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
@@ -87,10 +85,9 @@ export function rowsPerAccount(
 }
 
 /**
- * Contributions since the snapshot into one account's whole-account feeds,
- * split by the paycheck setup — or estimated from it when the feeds send
- * only a balance. Null when there's nothing to place (no setup, no
- * snapshot, or the snapshot is too old for this year's setup to say).
+ * Contributions since the snapshot into an account's whole-account feeds, split
+ * by the paycheck setup (or estimated from it for balance-only feeds). Null with no
+ * setup, no snapshot, or a snapshot too old for this year's setup.
  */
 export function snapshotNewMoney(a: {
   mix: ContributionMix | undefined;

@@ -34,10 +34,10 @@ export function CoastFireNote() {
       : `age ${r.coastFireAge}`;
   const text =
     r.status === "already_coast"
-      ? "Your active plan could stop contributing today and retirement would still work"
+      ? "In your projection, contributions could stop today and retirement would still work"
       : r.status === "found"
-        ? `Your active plan's contributions could stop in ${stopLabel} and retirement would still work`
-        : "Your active plan needs contributions all the way to retirement";
+        ? `In your projection, contributions could stop in ${stopLabel} and retirement would still work`
+        : "Your projection needs contributions all the way to retirement";
   return (
     <p className="text-caption text-muted -mt-2 mb-3">
       {text}, on average returns (the Simulation can be stricter) —{" "}

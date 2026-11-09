@@ -1,16 +1,7 @@
 /**
- * Auto-backfill contribution_accounts.person_id → NULL for joint-ownership
- * rows. Runs on startup (via instrumentation.ts). Idempotent — only
- * touches rows where ownership is "joint" and personId is still set.
- *
- * Rows with no jobId that ANY Contribution Profile sets to "percent_of_salary"
- * are skipped and logged instead of nulled: the salary-resolution fallback in
- * lib/pure/contributions/contribution-rows.ts falls back to job-by-personId, which would
- * silently resolve to salary 0 once personId is cleared. contributionMethod
- * is profile-owned (no account-level value), so every profile's active
- * fields for the row have to be checked, not a single column — different
- * profiles could set different methods for the same account. Those rows
- * need a jobId assigned by the user before the null-out is safe.
+ * Startup backfill (idempotent): nulls contribution_accounts.person_id on joint rows. Skips and
+ * logs a row with no jobId that any profile sets to percent_of_salary: without a personId its
+ * salary would resolve to 0, so the user must assign it a jobId first.
  */
 
 import { and, eq, isNotNull } from "drizzle-orm";

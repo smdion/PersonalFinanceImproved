@@ -1,9 +1,6 @@
 /**
- * Contribution Projection — shared per-spec projection formula.
- *
- * Used by both individual-accounts/contributions.ts (per-account bookkeeping,
- * prorated by year fraction) and contribution-routing.ts (yr1+ category
- * routing, full-year), so the formula exists once.
+ * The per-spec contribution formula, shared by individual-accounts/contributions.ts (prorated)
+ * and contribution-routing.ts (full-year).
  */
 import type { ContributionSpec } from "./types/contribution-spec";
 import { safeDivide } from "../../utils/math";
@@ -28,11 +25,8 @@ interface ProjectSpecAmountParams {
 }
 
 /**
- * Projects a single contribution spec's raw dollar amount for the year.
- * Returns the unrounded value — callers apply `roundToCents` themselves
- * where the original call sites did, and skip it where they didn't (e.g.
- * contribution-routing.ts's Roth-fraction ratio calculation, which needs
- * the raw float).
+ * A contribution spec's raw dollar amount for the year, unrounded: callers round where needed
+ * (contribution-routing.ts's Roth-fraction ratio needs the raw float).
  */
 export function projectSpecAmount(
   spec: Pick<

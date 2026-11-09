@@ -94,7 +94,7 @@ withdrawal-routing/          one year's withdrawal by mode: waterfall, percentag
 
 | Module                   | Strategy                                                 |
 | ------------------------ | -------------------------------------------------------- |
-| `guyton-klinger.ts`      | Guardrails with the prosperity rule                      |
+| `guyton-klinger.ts`      | Guardrails with the withdrawal and prosperity rules      |
 | `vanguard-dynamic.ts`    | Base % with a ceiling and floor on year-over-year change |
 | `constant-percentage.ts` | Fixed % of the current balance, with a floor             |
 | `endowment.ts`           | Fixed % of a rolling average balance, with a floor       |
@@ -127,7 +127,7 @@ withdrawal-routing/          one year's withdrawal by mode: waterfall, percentag
 6. `routeYearDraw` (`year-draws.ts`) — `routeForMode` routes the draw
 7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty)
-9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced
+9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw); when the RMD overrode routing, the reported gross-up factor is recomputed from them
 10. `settleYearDraws` — `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
 11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` re-prices the year's tax after it
 12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material

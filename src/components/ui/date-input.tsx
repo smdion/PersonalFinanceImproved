@@ -3,10 +3,8 @@
 import { useState } from "react";
 
 /**
- * A date field that saves once — on blur or Enter — not on every change.
- * A native date input fires change events while a year is still being
- * typed (0002, 0020, 0202…), and saving each of those would store a wrong
- * date. Escape puts the saved value back.
+ * A date field that saves on blur or Enter, not on every change (a native date input fires while
+ * a year is half-typed: 0002, 0020…). Escape restores the saved value.
  */
 export function DateInput({
   value,

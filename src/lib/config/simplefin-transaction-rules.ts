@@ -1,23 +1,6 @@
-/**
- * How SimpleFIN investment-account transaction rows are classified.
- *
- * Data, not code: a new institution's format is one more rule here. Rules
- * match on the institution (SimpleFIN `org.name`) and the row description —
- * never on account names, which are user/person specific. First match wins,
- * so institution-specific rules come before the generic keyword fallbacks.
- *
- * Known institution formats:
- * - Vanguard brokerage/IRA: only "CASH" rows are money crossing the account
- *   boundary (deposits, conversions, withdrawals). Settlement-fund rows
- *   ("…MONEY MARKET…", "CASH PLUS") are sweeps; fund rows are trades.
- * - Fidelity workplace 401k (NetBenefits): typed lowercase descriptions —
- *   "contribution" (one row per fund per payday), "dividend", "fees",
- *   "realizedGainLoss".
- * - Fidelity HSA (brokerage-style): "DEBIT CARD PURCHASE" = medical spending;
- *   core-account and REINVESTMENT rows stay inside the account.
- * - Voya 401k: rows carry only the fund name — positive = contribution,
- *   debits under 0.1% of the balance = fee (larger negatives are a best guess).
- */
+/** How SimpleFIN investment transaction rows are classified, matched on the institution
+ *  (`org.name`) and row description, never account names. First match wins, so
+ *  institution-specific rules come before the generic keyword fallbacks. */
 import type { InvestmentTransactionKind } from "./enum-values";
 
 export type SimplefinTransactionRule = {
@@ -80,10 +63,8 @@ export const SIMPLEFIN_TRANSACTION_RULES: readonly SimplefinTransactionRule[] =
     },
 
     // ── Fidelity workplace plans (typed descriptions) ──
-    // The feed has been seen sending whole paydays as negative "contribution"
-    // rows that Fidelity's own history shows as normal positive contributions.
-    // A plan contribution is always money in: use the absolute amount, but keep
-    // flagging negative rows so a flipped sign stays visible.
+    // Paydays can arrive as negative "contribution" rows; a contribution is always
+    // money in, so use the absolute amount but keep flagging the flipped sign.
     {
       id: "fidelity-contribution",
       institution: /^Fidelity/i,

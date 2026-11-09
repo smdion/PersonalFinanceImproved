@@ -110,7 +110,7 @@ describe("ComparePlans", () => {
     expect(screen.getByText("Max 401k")).toBeInTheDocument();
     expect(screen.getByText("$60,000")).toBeInTheDocument(); // take-home
     expect(screen.getByText("$12,000")).toBeInTheDocument(); // left over
-    expect(screen.getByText("through the plan")).toBeInTheDocument();
+    expect(screen.getByText("through the projection")).toBeInTheDocument();
   });
   it("the Plan in use runs exactly the dashboard's projection (same cached run)", () => {
     // The earlier test's answers stay registered, as they did before.

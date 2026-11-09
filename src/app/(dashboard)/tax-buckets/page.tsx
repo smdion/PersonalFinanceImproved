@@ -1,18 +1,7 @@
 /**
- * Tax Buckets page — real current-state tax-bucket breakdown, Rule of 55 /
- * Roth-basis-driven early-access analysis. Standalone tool, independent of
- * the Retirement page's own scenario/profile system.
- *
- * Server-side prefetches taxBuckets.computeBreakdown — takes no input, so
- * this prefetch always matches the client's eventual default ("now") view
- * query exactly (no profile-resolution mismatch risk). Previously
- * prefetched `projection.computeProjection` instead, which the client
- * never calls with matching cache-key input —
- * every visit paid for an unused server round-trip while the real data
- * still did a full client-side waterfall. The "At Retirement" view's
- * `projection.computeProjection` call (profile-dependent input) is
- * deliberately NOT prefetched here, same reasoning as
- * contributions/page.tsx: a guessed input wouldn't match either.
+ * Tax Buckets page: current tax-bucket breakdown and early-access analysis.
+ * Prefetches taxBuckets.computeBreakdown (no input); the "At Retirement"
+ * projection depends on client-resolved profiles, so it isn't prefetched.
  */
 import { HydrationBoundary } from "@tanstack/react-query";
 import { prefetchForPage } from "@/server/trpc-server";

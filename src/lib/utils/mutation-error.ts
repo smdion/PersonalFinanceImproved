@@ -1,14 +1,7 @@
 /**
- * friendlyMutationError — turns a failed-mutation error into a single
- * user-facing sentence for the global toast (src/app/providers.tsx's
- * MutationCache.onError), or `null` to suppress the toast entirely.
- *
- * The raw `error.message` on a tRPC client error is only safe to show for
- * a hand-written `BAD_REQUEST` (procedures are expected to phrase those for
- * users). Everything else — Zod input-validation dumps, DB constraint
- * strings, `INTERNAL_SERVER_ERROR` internals — gets mapped to friendly copy
- * by its `data.code`. Zod failures arrive as a structured
- * `data.zodError` because trpc.ts's errorFormatter flattens them.
+ * One user-facing sentence for a failed mutation's global toast, or null to
+ * suppress it. Only a hand-written BAD_REQUEST message is shown raw; everything
+ * else maps by `data.code` (Zod failures arrive flattened in `data.zodError`).
  */
 
 type ZodFlattened = {
@@ -43,19 +36,37 @@ const CODE_COPY: Record<string, string> = {
 
 const GENERIC = "Something went wrong. Please try again.";
 
+/** A thrown value read as a tRPC client error (every field optional). */
+function shapeOf(error: unknown): TrpcClientErrorShape {
+  return (error ?? {}) as TrpcClientErrorShape;
+}
+
+/**
+ * The one failure rule for loads and saves (owner Q18): the sentence the
+ * server wrote for the user when it wrote one, a failed service's
+ * `userMessage` or a hand-written BAD_REQUEST (never a Zod dump); else null.
+ */
+export function serverSentence(error: unknown): string | null {
+  const e = shapeOf(error);
+  if (e.data?.userMessage) return e.data.userMessage;
+  if (e.data?.code === "BAD_REQUEST" && !e.data.zodError && e.message)
+    return e.message;
+  return null;
+}
+
 /**
  * @returns the toast copy, or `null` when the failure shouldn't be toasted
  *   at all (a deliberately-aborted request).
  */
 export function friendlyMutationError(error: unknown): string | null {
-  const e = (error ?? {}) as TrpcClientErrorShape;
+  const e = shapeOf(error);
   const code = e.data?.code;
 
   // Aborted by the user / by TanStack on unmount — not an error to report.
   if (code === "CLIENT_CLOSED_REQUEST") return null;
 
-  // A service failed: the server says what happened and what changed.
-  if (e.data?.userMessage) return e.data.userMessage;
+  const written = serverSentence(error);
+  if (written) return written;
 
   // Zod input-validation failure — surface the first concrete field issue,
   // never the stringified-JSON `message`.
@@ -72,9 +83,6 @@ export function friendlyMutationError(error: unknown): string | null {
 
   if (code && code in CODE_COPY) return CODE_COPY[code]!;
 
-  // Hand-written BAD_REQUEST: the procedure phrased it for the user.
-  if (code === "BAD_REQUEST" && e.message) return e.message;
-
   // No `data.code` at all → the response never reached tRPC's formatter
   // (network drop, aborted fetch, a proxy error page). Don't diagnose the
   // cause — a server outage lands here too.
@@ -90,7 +98,7 @@ export function friendlyMutationError(error: unknown): string | null {
  * failed, else the error's own message (else `fallback`).
  */
 export function errorText(error: unknown, fallback = "Unknown error"): string {
-  const e = (error ?? {}) as TrpcClientErrorShape;
+  const e = shapeOf(error);
   if (e.data?.userMessage) return e.data.userMessage;
   return typeof e.message === "string" ? e.message : fallback;
 }

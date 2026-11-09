@@ -114,9 +114,9 @@ export function TiingoCard() {
 
         {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
-            tone={testConnectionMut.data.success ? "success" : "error"}
+            tone={testConnectionMut.data.ok ? "success" : "error"}
           >
-            {testConnectionMut.data.success
+            {testConnectionMut.data.ok
               ? testConnectionMut.data.historyStart
                 ? `Connected: ${testConnectionMut.data.ticker} history available from ${testConnectionMut.data.historyStart}`
                 : `Connected: Tiingo lists no price history for ${testConnectionMut.data.ticker}`

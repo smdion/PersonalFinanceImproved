@@ -1,5 +1,5 @@
 /** The one disclaimer on every page that gives advice or a projection
- *  (Recommendations, Milestones, the Checkup, Plan Health, Retirement and
+ *  (Recommendations, Milestones, the Checkup, Projection Health, Retirement and
  *  the printed report). */
 export function Disclaimer({ className = "" }: { className?: string }) {
   return (

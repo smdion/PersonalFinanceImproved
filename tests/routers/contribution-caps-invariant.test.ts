@@ -140,6 +140,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       contributionProfileId: profileId,
     });
     const payload = (await buildEnginePayload(t.rawDb, data, {
+      asOf: new Date(),
       contributionProfileId: profileId,
     }))!;
     expect(payload.baseEngineInput.baseYearContributions!["401k"]).toBeCloseTo(
@@ -156,6 +157,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       contributionProfileId: profileId,
     });
     const payload = (await buildEnginePayload(t.rawDb, data, {
+      asOf: new Date(),
       contributionProfileId: profileId,
     }))!;
     // 36,000 configured: 24,500 now; catch-up from 50 (2040), the larger
@@ -329,7 +331,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
           iraId,
           1000, // 12,000 a year against a 7,500 IRA limit
           profileId,
-          assertWithinIrsLimits,
+          (db, check) => assertWithinIrsLimits(db, check, new Date()),
         ),
       ).rejects.toThrow(/over the IRS limit/);
     });
@@ -421,6 +423,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         contributionProfileId: profileId,
       });
       const payload = (await buildEnginePayload(t.rawDb, data, {
+        asOf: new Date(),
         contributionProfileId: profileId,
       }))!;
       expect(
@@ -454,6 +457,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         contributionProfileId: profileId,
       });
       const payload = (await buildEnginePayload(t.rawDb, data, {
+        asOf: new Date(),
         contributionProfileId: profileId,
       }))!;
       const switches = payload.baseEngineInput.profileSwitches!.map((s) => [

@@ -1,9 +1,7 @@
 /**
- * A fund's total-return series from its raw closes: each day's return is
- * (close + distribution) × split ÷ the previous close, chained from the
- * window's first day. Built forward, so a later distribution never changes
- * an earlier day — unlike a provider's back-adjusted close — and only
- * ratios between days mean anything.
+ * A fund's total-return series from raw closes: (close + distribution) × split ÷
+ * previous close, chained forward from the window's first day, so a later
+ * distribution never changes an earlier day. Only ratios between days mean anything.
  */
 import type { DailyClose } from "../accounts/current-balances";
 

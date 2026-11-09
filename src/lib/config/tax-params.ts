@@ -1,36 +1,6 @@
-/**
- * Tax-parameter resolver.
- *
- * ONE function every tax consumer calls the same way — the retirement
- * projection payload builder, the paycheck summary, `savings.ts`, the annual
- * tax-liability path. Previously each of those had its own `WHERE tax_year =
- * X` / `MAX(tax_year)` logic (three-plus independent copies), and the
- * `irmaa_brackets` / FPL data was not consulted at all.
- *
- * Design: this is a THIN resolver. It does not hold figure
- * values. The existing `contribution_limits` / `tax_brackets` /
- * `ltcg_brackets` / `irmaa_brackets` / `fpl_by_household` tables remain the
- * one and only value store, keyed by `tax_year` exactly as today. The
- * `tax_params` table is an optional per-year vintage marker that supplies
- * `version` (a human-legible "Tax data: 2026, rev N") — cache coherence
- * comes from the resolved values themselves, which already land in the
- * engine-input hash.
- *
- * Resolution rule (identical for every caller):
- *   1. `requestedYear` omitted        -> newest year with data.
- *   2. `requestedYear` present, exact  -> that year.
- *   3. `requestedYear` present, missing:
- *        onMissing "nearest" (retirement — a base year then grown forward)
- *          -> newest year <= requestedYear, else the oldest year with data.
- *        onMissing "throw" (paycheck / savings — a user picked a year;
- *          showing a different year's figures is a wrong answer)
- *          -> throw.
- *   4. No reference rows at all       -> throw (genuine misconfiguration).
- *
- * The `tax_params` rows are NOT required for resolution — a DB with none
- * (e.g. an old-backup restore) resolves purely off the value tables' own
- * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
- */
+/** The one tax-parameter resolver every tax consumer calls. Values live only in the per-year
+ *  tables; optional `tax_params` rows just label the `version`. Year: the requested one, else
+ *  newest with data; a missing requested year follows `onMissing`; no rows at all throws. */
 
 import type { HsaCoverageType } from "./enum-values";
 import { FILING_STATUS_ORDER, type ReturnFilingStatus } from "./filing-status";
@@ -93,29 +63,13 @@ export interface TaxParamsRowSets {
 }
 
 interface ResolveTaxParamsOptions {
-  /**
-   * How to handle a `requestedYear` that has no data. Default "nearest".
-   *  - "nearest" (retirement): newest year <= requestedYear, else oldest.
-   *  - "throw"   : reject.
-   *  - "null"    (paycheck): return `null` so the caller can degrade
-   *               gracefully — the paycheck year selector lets a user pick
-   *               a year with no seeded tables, and the contract there is
-   *               "show empty, never another year's figures".
-   */
+  /** A `requestedYear` with no data: "nearest" (default, retirement) = newest year ≤ it, else
+   *  oldest; "throw" rejects; "null" (paycheck) returns null so a picked year with no tables
+   *  shows empty, never another year's figures. */
   onMissing?: "throw" | "nearest" | "null";
-  /**
-   * Resolve withholding / LTCG / IRMAA / FPL **each from its own year**: the
-   * newest year ≤ the resolved limits year that has a complete set for that
-   * section (every required filing status; withholding needs the standard
-   * `w4Checkbox=false` row for each), else the oldest complete year. Only
-   * the retirement projection passes this — it grows each table forward
-   * from its own year. Savings and paycheck record or show ONE year's
-   * figures, so they stay exact-year on purpose.
-   *
-   * A section published ahead of the limits year (FPL coverage-year rows
-   * come out ~10 months before the IRS limits) is ignored until that limits
-   * year exists: stale (last year's grown), never applied a year early.
-   */
+  /** Resolve withholding / LTCG / IRMAA / FPL each from its own newest complete year ≤ the
+   *  limits year (else the oldest complete), for the retirement projection only. A section
+   *  ahead of the limits year is ignored until that year exists. */
   sectionFallback?: boolean;
 }
 
@@ -131,12 +85,8 @@ interface ResolvedTaxParams {
   version: number;
   /** `contribution_limits` for `resolvedYear` as a `limitType -> value` map. */
   limits: Record<string, number>;
-  /**
-   * `tax_brackets` for `resolvedYear`, keyed
-   * `[filingStatus][w4Checkbox]` -> ordered bracket list.
-   * `undefined` when no year has rows (the projection payload then stops
-   * with a message; nothing stands in).
-   */
+  /** `tax_brackets` for `resolvedYear`, keyed `[filingStatus][w4Checkbox]` -> ordered bracket
+   *  list; `undefined` when no year has rows (nothing stands in). */
   withholdingBrackets:
     Record<string, Record<"true" | "false", TaxBracketEntry[]>> | undefined;
   /** `ltcg_brackets` for `resolvedYear`, keyed by filing status. `undefined` when none. */
@@ -159,19 +109,9 @@ function toNum(v: number | string): number {
   return typeof v === "number" ? v : parseFloat(v);
 }
 
-/** Every distinct `tax_year` that has `contribution_limits` rows.
- *  Deliberately NOT the union across all five tables: `contribution_limits`
- *  is the only slice `requireLimit()` callers read (standard deduction,
- *  §63(f) senior deduction, IRS contribution limits, FICA/paycheck
- *  constants) — those throw when their key is missing for the resolved
- *  year. If a year could be selected from, say, `tax_brackets` alone, an
- *  admin seeding next year's withholding brackets early (before
- *  contribution limits are published) would make that year "newest" and
- *  take down every household's projections and the paycheck summary with a
- *  throw, even though the previous year has complete data. The other four
- *  slices (`withholdingBrackets`/`ltcgByStatus`/`irmaaByStatus`/
- *  `fplByHousehold`) resolve per section (`sectionFallback`), so they
- *  don't need to gate year selection. */
+/** Every distinct `tax_year` with `contribution_limits` rows, the slice `requireLimit()` throws
+ *  on, so brackets seeded early can't make a year without limits "newest". The other slices
+ *  resolve per section (`sectionFallback`). */
 function candidateYears(rows: TaxParamsRowSets): number[] {
   return [...new Set(rows.contributionLimits.map((r) => r.taxYear))].sort(
     (a, b) => a - b,
@@ -357,10 +297,8 @@ export function medicareLiabilityKey(filingStatus: string): string {
   return `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`;
 }
 
-/** A pre-tax IRA balance below this share of the person's IRA limit isn't
- *  worth a pro-rata warning: converting a full year's contribution, under
- *  ~1% of it would be taxable (leftover cents, a dividend after a
- *  conversion). */
+/** A pre-tax IRA balance below this share of the person's IRA limit gets no pro-rata
+ *  warning: under ~1% of a full year's conversion would be taxable. */
 export const PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT = 0.01;
 
 /** Married filing separately (and lived together): the Roth IRA phase-out

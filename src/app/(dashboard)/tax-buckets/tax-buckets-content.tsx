@@ -28,20 +28,15 @@ export function TaxBucketsContent() {
   const [showBulkBasis, setShowBulkBasis] = useState(false);
   // A link to early access opens "At Retirement" (lib/config/focus-topics).
   const [view, setView] = useFocusedState("taxBucketsView", "now");
-  // "At Retirement" only — "Now" figures are already today's dollars, so
-  // deflating them would be a no-op at best and confusing at worst.
-  // Mirrors the Retirement page's own "Today's $"/"Future $" toggle
-  // (dollarMode "real"/"nominal") and default.
+  // Used by "At Retirement" only ("Now" is already today's dollars); mirrors
+  // the Retirement page's dollarMode toggle and default.
   const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
 
   const breakdown = trpc.taxBuckets.computeBreakdown.useQuery();
   const { data } = breakdown;
-  // Same Plan-pin → globally-active resolution every other engine-backed
-  // page uses (Retirement page, Monte Carlo, Coast FIRE). Omitting these
-  // does NOT fall back to "whatever's active" — the server has no default
-  // profile to resolve to, so every contribution account silently gets $0
-  // configured value and the whole target contribution overflows to
-  // brokerage.
+  // The projection resolves profiles like every engine-backed page (the
+  // Plan's, else the active ones). The server has no default, so omitting them
+  // gives every contribution account $0 and overflows the target to brokerage.
   const {
     projectionQuery,
     updateRothBasis,

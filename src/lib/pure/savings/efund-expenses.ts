@@ -23,23 +23,9 @@ export function getEssentialExpenses(
 }
 
 /**
- * Resolve which budget tier/column the emergency fund's essential-expenses
- * total should be computed against. Shared by computeSavingsSummary (display) and
- * pushContributionsToApi (push) — they were independently re-deriving this
- * from app_settings with near-identical code, which risked the two drifting
- * apart (e.g. one honoring a future new override, or a fallback change, the
- * other not) — the E-fund target shown on screen must always match what
- * gets pushed to YNAB.
- *
- * Precedence: an explicit override (computeSavingsSummary's budgetTierOverride
- * input, e.g. "preview this tier without saving") > the e-fund's own saved
- * column setting > the shared budget-page active column > 0.
- *
- * `columnCount`, when given, clamps the result to a valid index for the
- * profile actually being read — the saved settings are global and can
- * point past the end of the current profile if it has fewer columns than
- * whichever profile was active when the settings were last saved (e.g. the
- * active profile switches from a 3-column to a 1-column layout).
+ * Budget column the emergency fund's essential expenses are computed against, for display and
+ * push alike: explicit override > the e-fund's saved column > the budget page's active column > 0,
+ * clamped by `columnCount` (global settings can point past the current profile's columns).
  */
 export function resolveEfundTierIndex(
   appSettings: { key: string; value: unknown }[],

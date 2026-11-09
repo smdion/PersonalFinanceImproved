@@ -78,7 +78,7 @@ describe("snapshotRowLabel", () => {
     ).toBe("Avery — Employer Match · Traditional");
     // The form passes "Joint" for a row with no owner.
     expect(snapshotRowLabel(row({ owner: "Joint", taxType: "afterTax" }))).toBe(
-      "Joint — After-Tax",
+      "Joint — After-tax",
     );
   });
 

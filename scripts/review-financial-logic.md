@@ -5,10 +5,10 @@
 
 ---
 
-Validate the financial logic in /workspace/dev/personalfinance.
+Validate the financial logic in this repository.
 
 1. Run the full test suite: `pnpm test` — report any failures
-2. Run the validation script: `pnpm validate` — report any diffs vs spreadsheet
+2. Private checkouts only: if you keep a spreadsheet comparison under `.scratch/` (gitignored, not part of the repo), run it with `pnpm tsx <file>` and report any diffs
 3. Review any recently changed calculator files (git diff against last release tag)
 4. For each changed formula:
    - Verify the math against the documented source (IRS pub, actuary table, etc.)

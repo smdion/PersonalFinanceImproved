@@ -1,7 +1,7 @@
 Retirement Projection
 Budget scenario: Standard
 Projection
-Plan Health
+Projection Health
 AssumptionsCurrent Retirement
 View only — unlock to edit
 Sam48Alex48Through?95Inflation0.00%StrategyEndowmentBracket Ceiling?12%
@@ -55,7 +55,7 @@ Clear Cache
 View Assumptions →
 Compute— what gets run
 Scenario?
-Active Plan
+Baseline
 Coast FIRE (2026 (Sam, 50))
 Coast FIRE (Today)
 Coast FIRE (Custom)
@@ -93,7 +93,7 @@ Off
 90%
 $Balance Projection
 ⚠ 25 years in this deterministic projection couldn't fund the actual spending need — see the marked ages below.
-Traditional Roth HSA After-Tax Withdrawal SS Income Sim. median 50% bandSS StartUnmet Need
+Traditional Roth HSA After-tax Withdrawal SS Income Sim. median 50% bandSS StartUnmet Need
 Contributions
 Account
 Tax Type
@@ -117,7 +117,7 @@ In / Out?
 Traditional?
 Roth?
 HSA?
-After-Tax?
+After-tax?
 Balance?
 Sim. Median?
 Info?
@@ -314,7 +314,7 @@ Full methodology →
 Decumulation Engine?
 Computes annual need (budget × inflation − Social Security from each person's start age), grosses up for taxes, and routes withdrawals via bracket filling (Traditional to bracket cap, then whichever of Roth or Brokerage is cheaper that year, HSA last). Enforces RMDs, optional Roth conversions, 8 dynamic spending strategies (Morningstar), and IRMAA/ACA cliff awareness.
 Full methodology →
-The plan runs out at age 72 (2048)
+The projection runs out at age 72 (2048)
 Why Trust These Numbers??
 Calibrated against the Trinity Study, cFIREsim backtesting, the IRS's published tax tables, and institutional asset data. Backed by thousands of automated tests, including mathematical invariants checked against random inputs.
 Full validation evidence →

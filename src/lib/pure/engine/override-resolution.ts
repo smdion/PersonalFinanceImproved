@@ -1,9 +1,6 @@
 /**
- * Override Resolution — sticky-forward per-field config resolution.
- *
- * Cross-cutting infrastructure: every downstream module receives resolved
- * config from this module, never raw override arrays. The orchestrator calls
- * these once per year, then passes the result through to all modules.
+ * Sticky-forward per-field config resolution. The orchestrator resolves once per year and every
+ * module receives resolved config, never raw override arrays.
  */
 import type {
   AccumulationDefaults,
@@ -26,30 +23,9 @@ import {
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
 
 /**
- * Guarantee `withdrawalOrder` covers every engine category, appending any
- * that are missing. `withdrawalOrder` is validated with no completeness/
- * uniqueness constraint (`_shared.ts`'s zod schema is a bare
- * `z.array(z.enum(...))`) and replaced wholesale on override
- * (`config.withdrawalOrder = [...o.withdrawalOrder]` below) — a partial
- * array reaches the engine intact otherwise, silently stranding real
- * balance in whichever category got left out (waterfall's category loop
- * only ever visits what's listed; so does bracket_filling's Phase 1,
- * see `withdrawal-routing/bracket-filling.ts`'s `phase1Order`).
- *
- * Deliberately scoped to THIS function only, not a universal invariant on
- * `ResolvedDecumulationConfig` itself: `tests/pure/engine/
- * withdrawal-routing.test.ts` constructs partial orders directly
- * (bypassing `resolveDecumulationConfig` entirely) and asserts routing
- * draws ONLY from what's listed — a real, intentional "restrict to these
- * accounts" contract for that construction path, not a bug. Backfilling
- * here protects every config that actually reaches the engine through the
- * real resolution path (the UI's order editor always covers every
- * category in practice) without touching that separate, deliberately
- * partial test contract.
- *
- * Missing categories are appended in `getDefaultDecumulationOrder()`'s
- * relative order — deterministic, and matches what an un-customized
- * household already sees for those same categories.
+ * Appends any engine category missing from `withdrawalOrder` (the schema allows partial arrays,
+ * which would strand balances) in `getDefaultDecumulationOrder()` order. Only on this resolution
+ * path: routing called directly with a partial order still draws only what's listed.
  */
 function ensureCompleteWithdrawalOrder(
   order: AccountCategory[],
@@ -60,12 +36,8 @@ function ensureCompleteWithdrawalOrder(
 }
 
 /**
- * Resolve the accumulation config for a given year by applying sticky-forward
- * overrides on top of the page-level defaults.
- *
- * Each field in AccumulationOverride is independent — setting contributionRate
- * in one override doesn't affect taxSplits from a previous override.
- * A `reset: true` override reverts ALL fields to defaults.
+ * The year's accumulation config: sticky-forward overrides on the defaults, each field
+ * independent; `reset: true` reverts all fields to defaults.
  */
 export function resolveAccumulationConfig(
   year: number,
@@ -259,18 +231,12 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
-    // Field notes: decumulationOverrideArraySchema. Same
-    // optional/sticky-forward pattern as rothConversionTarget just above:
-    // no entry needed in the initial literal or the reset branch (an
-    // omitted optional field is already undefined, which is the correct
-    // "use the plan default" value for rothBracketTarget).
+    // Sticky-forward and optional (decumulationOverrideArraySchema):
+    // undefined means the plan default.
     if (o.rothBracketTarget !== undefined)
       config.rothBracketTarget = o.rothBracketTarget;
-    // rmdSmoothingMaxBracketTarget itself is NOT new (already seeded in
-    // both the initial literal above and the reset branch, always
-    // resolved) — only this sticky-forward apply line is new, letting a
-    // household/search vary it per year instead of it being fixed for
-    // the whole plan.
+    // Seeded in the initial literal and reset branch; this sticky-forward
+    // line lets it vary per year.
     if (o.rmdSmoothingMaxBracketTarget !== undefined)
       config.rmdSmoothingMaxBracketTarget = o.rmdSmoothingMaxBracketTarget;
     if (o.avoidPenalizedWithdrawals !== undefined)

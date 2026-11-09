@@ -1,12 +1,7 @@
 /**
- * Which SimpleFIN accounts count as a live feed for a tracked account.
- * Pure.
- *
- * Linking says which tracked account a SimpleFIN account is; the
- * "included" checkbox says whether it counts at all. An unchecked account
- * stays linked (so re-checking it restores everything) but is ignored by
- * every total, comparison, fill and check — its tracked account then goes
- * by its manual snapshot balance. One rule, used everywhere.
+ * Which SimpleFIN accounts count as a live feed: linked and "included". An unchecked account stays
+ * linked but every total, comparison, fill and check ignores it, so its tracked account goes by its
+ * manual snapshot balance.
  */
 export function countsAsFeed(a: {
   linkedPerformanceAccountId: number | null;
@@ -44,10 +39,7 @@ export function countsInLiveBalance(a: {
  *  and keeps its last real balance (the schedule would move net worth). */
 export const LOAN_FEED_STALE_DAYS = 45;
 
-export function loanFeedIsStale(
-  asOf: Date | string,
-  now: Date = new Date(),
-): boolean {
+export function loanFeedIsStale(asOf: Date | string, now: Date): boolean {
   const ageMs = now.getTime() - new Date(asOf).getTime();
   return ageMs > LOAN_FEED_STALE_DAYS * 86_400_000;
 }
@@ -75,10 +67,8 @@ export function sentTransactions(
 }
 
 /**
- * Whether an account's live balance covers the whole account the way the
- * snapshot does, so the two can be compared: it has feeds, every part of
- * it is linked (or a feed covers the whole account), and no feed's money
- * sits outside a part.
+ * Whether live balance covers the whole account as the snapshot does: it has feeds, every part is
+ * linked (or a feed covers the whole account), and no feed's money sits outside a part.
  */
 export function liveCoversAccount(
   partKeys: readonly string[],
@@ -93,10 +83,8 @@ export function liveCoversAccount(
 }
 
 /**
- * The household's portfolio estimated for each day after a snapshot:
- * the snapshot total plus, for every account whose live balance covers it,
- * that day's live balance minus its snapshot amount. A day counts an
- * account only once all its feeds have a balance on or before that day.
+ * The portfolio estimated for each day after a snapshot: the snapshot total plus, per covered
+ * account, live balance minus snapshot amount, once all its feeds have a balance by that day.
  */
 export function dailyEstimates(
   days: readonly string[],

@@ -14,13 +14,9 @@ export type WithholdingTableRow = {
 };
 
 /**
- * The standard deduction Pub 15-T's withholding tables were built on, read
- * off the tables themselves: the Step 2(c) checkbox table's first taxed
- * threshold is half of it. Usually the same as the tax-return figure in
- * contribution_limits, but not always — OBBBA raised the 2025 return
- * deduction to $31,500 MFJ after the 2025 withholding tables (built on
- * $30,000) were published, and payroll kept withholding on those tables.
- * Null when the year has no checkbox table for this filing status.
+ * The standard deduction Pub 15-T's tables were built on: half the Step 2(c) checkbox table's
+ * first taxed threshold. It can differ from the return's figure (2025: $30,000 vs OBBBA's
+ * $31,500 MFJ). Null when the year has no checkbox table for this filing status.
  */
 function withholdingStandardDeduction(
   bracketRow: WithholdingTableRow,
@@ -36,11 +32,9 @@ function withholdingStandardDeduction(
   return threshold === undefined ? null : threshold * 2;
 }
 
-/** Build TaxBracketInput from DB bracket row + limits. `yearBrackets`
- *  (the same year's rows) lets the W-4 adjustment follow the withholding
- *  tables' own standard deduction — see withholdingStandardDeduction.
- *  Required on purpose: without it the adjustment falls back to the
- *  tax-return deduction, which is wrong for 2025 withholding. */
+/** Build TaxBracketInput from DB bracket row + limits. `yearBrackets` (the same year's rows)
+ *  lets the W-4 adjustment follow the tables' own standard deduction (required: the return's
+ *  deduction is wrong for 2025 withholding). */
 export function buildBracketInput(
   bracketRow: WithholdingTableRow,
   limits: Map<string, number>,
@@ -56,15 +50,8 @@ export function buildBracketInput(
     limits,
     `standard_deduction_${bracketRow.filingStatus.toLowerCase()}`,
   );
-  // Pub 15-T Worksheet 1A line 1g: the tables' standard deduction minus
-  // the standard table's own first non-zero threshold — the threshold alone is only
-  // ONE term of the real offset, not the whole thing. This previously
-  // used `brackets[1].threshold`
-  // alone as the full adjustment, e.g. $19,300 MFJ for 2026 instead of the
-  // real $32,200 - $19,300 = $12,900, under-withholding a $120k MFJ
-  // household by ~$768/yr at the 12% bracket, more at higher brackets.
-  // Mirrors tax-estimation.ts's toOrdinaryBracketIncome, which computes
-  // this same residual correctly — see that function's docblock. 0 for
+  // Pub 15-T Worksheet 1A line 1g: the tables' standard deduction minus the standard table's
+  // first non-zero threshold (as tax-estimation.ts's toOrdinaryBracketIncome). 0 for
   // w4Checkbox=true rows (2(c) tables assume no worksheet adjustment).
   const tableDeduction =
     withholdingStandardDeduction(bracketRow, yearBrackets) ?? standardDeduction;

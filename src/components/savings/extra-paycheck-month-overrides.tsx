@@ -111,7 +111,7 @@ export function MonthOverrideFields({
         </label>
       ) : (
         <p className="text-primary font-medium">
-          Override — {fmt(overrideMonth!)}
+          Editing {fmt(overrideMonth!)}
         </p>
       )}
       <div className="space-y-1">

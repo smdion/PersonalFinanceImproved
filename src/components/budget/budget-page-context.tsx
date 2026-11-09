@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * BudgetPageContext — stable, server-derived values shared across the budget
- * page subtree. Collapses the large prop signatures of BudgetTable and
- * BudgetSummaryBar.
- *
- * Provider: BudgetContent
- * Consumers: BudgetTable, BudgetSummaryBar
+ * BudgetPageContext: stable server-derived values for the budget page subtree.
+ * Provided by BudgetContent; read by BudgetTable and BudgetSummaryBar.
  */
 
 import { createContext, useContext } from "react";

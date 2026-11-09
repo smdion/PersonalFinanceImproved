@@ -1,14 +1,11 @@
 /**
- * derivePortfolioQuickLookStats — pure stats derivation for the Portfolio
- * Quick Look panel. Split out so
- * the component body shrinks and the stats logic is independently testable.
- *
- * Returns null when there are fewer than 2 snapshots (no change to derive).
+ * Pure stats derivation for the Portfolio Quick Look panel. Returns null when there are
+ * fewer than 2 snapshots (no change to derive).
  */
 
 import { MS_PER_DAY } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 export type PortfolioSnapshot = {
   id: number;
@@ -22,7 +19,7 @@ export function derivePortfolioQuickLookStats(
 ): {
   ath: PortfolioSnapshot;
   athDistance: number;
-  athDistancePct: number;
+  athDistancePercent: number;
   isAtAth: boolean;
   biggestGainDollar: {
     date: string;
@@ -36,13 +33,13 @@ export function derivePortfolioQuickLookStats(
     deltaPct: number;
     days: number;
   };
-  biggestGainPct: {
+  biggestGainPercent: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
   };
-  biggestLossPct: {
+  biggestLossPercent: {
     date: string;
     delta: number;
     deltaPct: number;
@@ -60,34 +57,34 @@ export function derivePortfolioQuickLookStats(
     deltaPct: number;
     days: number;
   } | null;
-  sharpestGainPct: {
+  sharpestGainPercent: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
   } | null;
-  sharpestLossPct: {
+  sharpestLossPercent: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
   } | null;
   ytdDelta: number;
-  ytdPct: number;
+  ytdPercent: number;
   weekChange52: number | null;
-  weekChange52Pct: number | null;
+  weekChange52Percent: number | null;
   streak: number;
   streakDir: "gain" | "loss" | null;
   avgDelta: number;
-  avgDeltaPct: number;
+  avgDeltaPercent: number;
   bestMonthDollar: [string, number];
   worstMonthDollar: [string, number];
-  bestMonthPct: [string, number];
-  worstMonthPct: [string, number];
+  bestMonthPercent: [string, number];
+  worstMonthPercent: [string, number];
   volatility: number;
   avgDays: number;
   allTimeGrowth: number;
-  allTimeGrowthPct: number;
+  allTimeGrowthPercent: number;
   totalSnapshots: number;
   firstDate: string;
 } | null {
@@ -100,7 +97,7 @@ export function derivePortfolioQuickLookStats(
   // All-time high
   const ath = sorted.reduce((best, s) => (s.total > best.total ? s : best));
   const athDistance = current.total - ath.total;
-  const athDistancePct = safeDivide(athDistance, ath.total, 0) * 100;
+  const athDistancePercent = safeDivide(athDistance, ath.total, 0) * 100;
 
   // Changes between consecutive snapshots
   const changes = sorted.slice(1).map((s, i) => {
@@ -121,10 +118,10 @@ export function derivePortfolioQuickLookStats(
   const biggestLossDollar = changes.reduce((worst, c) =>
     c.delta < worst.delta ? c : worst,
   );
-  const biggestGainPct = changes.reduce((best, c) =>
+  const biggestGainPercent = changes.reduce((best, c) =>
     c.deltaPct > best.deltaPct ? c : best,
   );
-  const biggestLossPct = changes.reduce((worst, c) =>
+  const biggestLossPercent = changes.reduce((worst, c) =>
     c.deltaPct < worst.deltaPct ? c : worst,
   );
 
@@ -143,13 +140,13 @@ export function derivePortfolioQuickLookStats(
           c.delta / c.days < worst.delta / worst.days ? c : worst,
         )
       : null;
-  const sharpestGainPct =
+  const sharpestGainPercent =
     withRate.length > 0
       ? withRate.reduce((best, c) =>
           c.deltaPct / c.days > best.deltaPct / best.days ? c : best,
         )
       : null;
-  const sharpestLossPct =
+  const sharpestLossPercent =
     withRate.length > 0
       ? withRate.reduce((worst, c) =>
           c.deltaPct / c.days < worst.deltaPct / worst.days ? c : worst,
@@ -161,7 +158,7 @@ export function derivePortfolioQuickLookStats(
   const firstOfYear =
     sorted.find((s) => s.date >= `${currentYear}-01-01`) ?? first;
   const ytdDelta = current.total - firstOfYear.total;
-  const ytdPct =
+  const ytdPercent =
     firstOfYear.total > 0
       ? ((current.total - firstOfYear.total) / firstOfYear.total) * 100
       : 0;
@@ -170,7 +167,7 @@ export function derivePortfolioQuickLookStats(
   const oneYearAgoDate = new Date(now);
   oneYearAgoDate.setFullYear(oneYearAgoDate.getFullYear() - 1);
   // Local day — this is a threshold compared against `s.date` (date-only).
-  const oneYearAgoStr = localDateStr(oneYearAgoDate);
+  const oneYearAgoStr = calendarDateOf(oneYearAgoDate);
   const yearAgoSnap = sorted.reduce<PortfolioSnapshot | null>((best, s) => {
     if (s.date > oneYearAgoStr) return best;
     return !best ||
@@ -182,7 +179,7 @@ export function derivePortfolioQuickLookStats(
       : best;
   }, null);
   const weekChange52 = yearAgoSnap ? current.total - yearAgoSnap.total : null;
-  const weekChange52Pct =
+  const weekChange52Percent =
     yearAgoSnap && yearAgoSnap.total > 0
       ? ((current.total - yearAgoSnap.total) / yearAgoSnap.total) * 100
       : null;
@@ -198,26 +195,26 @@ export function derivePortfolioQuickLookStats(
   }
 
   // Average change per snapshot period
-  const avgDelta =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.delta, 0) / changes.length
-      : 0;
-  const avgDeltaPct =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.deltaPct, 0) / changes.length
-      : 0;
-  const avgDays =
-    changes.length > 0
-      ? changes.reduce((s, c) => s + c.days, 0) / changes.length
-      : 7;
+  const averageOf = (
+    pick: (c: (typeof changes)[number]) => number,
+    empty: number,
+  ) =>
+    safeDivide(
+      changes.reduce((s, c) => s + pick(c), 0),
+      changes.length,
+      empty,
+    );
+  const avgDelta = averageOf((c) => c.delta, 0);
+  const avgDeltaPercent = averageOf((c) => c.deltaPct, 0);
+  const avgDays = averageOf((c) => c.days, 7);
 
   // Best/worst month — separate picks for $ vs %
   const byMonthDollar = new Map<string, number>();
-  const byMonthPct = new Map<string, number>();
+  const byMonthPercent = new Map<string, number>();
   for (const c of changes) {
     const month = c.date.slice(0, 7);
     byMonthDollar.set(month, (byMonthDollar.get(month) ?? 0) + c.delta);
-    byMonthPct.set(month, (byMonthPct.get(month) ?? 0) + c.deltaPct);
+    byMonthPercent.set(month, (byMonthPercent.get(month) ?? 0) + c.deltaPct);
   }
   const monthsDollar = [...byMonthDollar.entries()] as [string, number][];
   const bestMonthDollar = monthsDollar.reduce(
@@ -228,14 +225,14 @@ export function derivePortfolioQuickLookStats(
     (worst, [m, d]) => (d < worst[1] ? [m, d] : worst),
     monthsDollar[0] ?? ["", 0],
   ) as [string, number];
-  const monthsPctArr = [...byMonthPct.entries()] as [string, number][];
-  const bestMonthPct = monthsPctArr.reduce(
+  const monthsPercentArr = [...byMonthPercent.entries()] as [string, number][];
+  const bestMonthPercent = monthsPercentArr.reduce(
     (best, [m, d]) => (d > best[1] ? [m, d] : best),
-    monthsPctArr[0] ?? ["", 0],
+    monthsPercentArr[0] ?? ["", 0],
   ) as [string, number];
-  const worstMonthPct = monthsPctArr.reduce(
+  const worstMonthPercent = monthsPercentArr.reduce(
     (worst, [m, d]) => (d < worst[1] ? [m, d] : worst),
-    monthsPctArr[0] ?? ["", 0],
+    monthsPercentArr[0] ?? ["", 0],
   ) as [string, number];
 
   // Volatility — stdev of per-period % changes
@@ -246,37 +243,37 @@ export function derivePortfolioQuickLookStats(
 
   // All-time growth vs first snapshot
   const allTimeGrowth = current.total - first.total;
-  const allTimeGrowthPct = safeDivide(allTimeGrowth, first.total, 0) * 100;
+  const allTimeGrowthPercent = safeDivide(allTimeGrowth, first.total, 0) * 100;
 
   return {
     ath,
     athDistance,
-    athDistancePct,
+    athDistancePercent,
     isAtAth: Math.abs(athDistance) < 1,
     biggestGainDollar,
     biggestLossDollar,
-    biggestGainPct,
-    biggestLossPct,
+    biggestGainPercent,
+    biggestLossPercent,
     sharpestGainDollar,
     sharpestLossDollar,
-    sharpestGainPct,
-    sharpestLossPct,
+    sharpestGainPercent,
+    sharpestLossPercent,
     ytdDelta,
-    ytdPct,
+    ytdPercent,
     weekChange52,
-    weekChange52Pct,
+    weekChange52Percent,
     streak,
     streakDir,
     avgDelta,
-    avgDeltaPct,
+    avgDeltaPercent,
     bestMonthDollar,
     worstMonthDollar,
-    bestMonthPct,
-    worstMonthPct,
+    bestMonthPercent,
+    worstMonthPercent,
     volatility,
     avgDays,
     allTimeGrowth,
-    allTimeGrowthPct,
+    allTimeGrowthPercent,
     totalSnapshots: sorted.length,
     firstDate: first.date,
   };

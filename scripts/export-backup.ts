@@ -8,7 +8,12 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "node:url";
+import type { ClientBase } from "pg";
+import type BetterSqlite3 from "better-sqlite3";
 import { VERSION_TABLE_NAMES } from "../src/lib/db/version-tables";
+import { writeBackupFile } from "../src/lib/db/backup-file";
+import { loadEnvFile } from "../src/lib/db/env-file";
 
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
@@ -41,6 +46,45 @@ function readSchemaVersion(): string {
 
 // VERSION_TABLE_NAMES imported from src/lib/db/version-tables.ts (canonical registry)
 
+/** A table this schema doesn't have yet exports empty; any other read error fails the export. */
+function tableReadError(tableName: string, err: unknown): Error {
+  const reason = err instanceof Error ? err.message : String(err);
+  return new Error(`Reading table "${tableName}" failed: ${reason}`);
+}
+
+/**
+ * Every versioned table, read in one REPEATABLE READ READ ONLY transaction:
+ * one snapshot, so a write that lands mid-export is in all of the tables or
+ * none of them.
+ */
+export async function readTablesPostgres(
+  client: ClientBase,
+): Promise<Record<string, unknown[]>> {
+  const tables: Record<string, unknown[]> = {};
+  await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  try {
+    for (const tableName of VERSION_TABLE_NAMES) {
+      const { rows: found } = await client.query<{ present: boolean }>(
+        "SELECT to_regclass($1) IS NOT NULL AS present",
+        [`"${tableName}"`],
+      );
+      if (!found[0]?.present) {
+        tables[tableName] = [];
+        continue;
+      }
+      try {
+        const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+        tables[tableName] = rows;
+      } catch (err) {
+        throw tableReadError(tableName, err);
+      }
+    }
+  } finally {
+    await client.query("ROLLBACK");
+  }
+  return tables;
+}
+
 async function exportPostgres(): Promise<Record<string, unknown[]>> {
   const { Pool } = await import("pg");
   const pool = new Pool({
@@ -50,23 +94,41 @@ async function exportPostgres(): Promise<Record<string, unknown[]>> {
         ? { rejectUnauthorized: false }
         : false,
   });
-
-  const tables: Record<string, unknown[]> = {};
   const client = await pool.connect();
   try {
-    for (const tableName of VERSION_TABLE_NAMES) {
-      try {
-        const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
-        tables[tableName] = rows;
-      } catch {
-        tables[tableName] = [];
-      }
-    }
+    return await readTablesPostgres(client);
   } finally {
     client.release();
     await pool.end();
   }
-  return tables;
+}
+
+/**
+ * Every versioned table, read in one transaction: SQLite gives each
+ * statement its own snapshot otherwise, so a write between two tables'
+ * reads would land in one and not the other.
+ */
+export function readTablesSqlite(
+  sqlite: BetterSqlite3.Database,
+): Record<string, unknown[]> {
+  const lookup = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE name = ?");
+  return sqlite.transaction(() => {
+    const tables: Record<string, unknown[]> = {};
+    for (const tableName of VERSION_TABLE_NAMES) {
+      if (lookup.get(tableName) === undefined) {
+        tables[tableName] = [];
+        continue;
+      }
+      try {
+        tables[tableName] = sqlite
+          .prepare(`SELECT * FROM "${tableName}"`)
+          .all();
+      } catch (err) {
+        throw tableReadError(tableName, err);
+      }
+    }
+    return tables;
+  })();
 }
 
 function exportSqlite(): Record<string, unknown[]> {
@@ -77,21 +139,15 @@ function exportSqlite(): Record<string, unknown[]> {
   const dbPath = process.env.SQLITE_PATH ?? "data/ledgr.db";
   const sqlite = new Database(dbPath, { readonly: true });
   sqlite.pragma("journal_mode = WAL");
-
-  const tables: Record<string, unknown[]> = {};
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
-    } catch {
-      tables[tableName] = [];
-    }
+  try {
+    return readTablesSqlite(sqlite);
+  } finally {
+    sqlite.close();
   }
-
-  sqlite.close();
-  return tables;
 }
 
 async function run() {
+  loadEnvFile();
   const args = process.argv.slice(2);
   const outIndex = args.indexOf("--out");
   const outPath = outIndex >= 0 ? args[outIndex + 1] : null;
@@ -119,7 +175,7 @@ async function run() {
   const json = JSON.stringify(backup);
 
   if (outPath) {
-    fs.writeFileSync(outPath, json);
+    writeBackupFile(outPath, json);
     const totalRows = Object.values(tables).reduce(
       (sum, rows) => sum + rows.length,
       0,
@@ -132,7 +188,12 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  console.error("Export failed:", err);
-  process.exit(1);
-});
+// Guarded so the tests can import the readers above without a run. Both
+// paths are real paths, so a run through a symlinked directory still runs.
+const invokedAs = process.argv[1] ? fs.realpathSync(process.argv[1]) : "";
+if (invokedAs === fs.realpathSync(fileURLToPath(import.meta.url))) {
+  run().catch((err) => {
+    console.error("Export failed:", err);
+    process.exit(1);
+  });
+}

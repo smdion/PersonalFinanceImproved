@@ -19,10 +19,8 @@ import {
 import type { RawGoal } from "./types";
 import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 
-/** The caller's already-resolved Contribution/Salary Profile selection —
- *  see computeLiveMaxMonthlyFunding's `income` param docblock (savings.ts)
- *  for why the recalculate/lock-in mutations need this threaded through
- *  explicitly rather than re-resolving it themselves. */
+/** The caller's resolved Contribution/Salary Profile selection, passed to the recalculate/lock-in
+ *  mutations (see computeLiveMaxMonthlyFunding's `income` param). */
 export interface RecalcIncomeParams {
   contributionProfileId?: number;
   salaryProfileId?: number;
@@ -269,10 +267,8 @@ export function ApiSyncSection({
 export function useApiSync() {
   const utils = trpc.useUtils();
 
-  // The main Savings page always operates on the currently active service
-  // (there's no per-service selector here, unlike the Integrations sync
-  // page) — apiBalanceMap/apiBalancesData are already resolved against this
-  // same active service server-side.
+  // This page always uses the active service; apiBalanceMap/apiBalancesData
+  // are resolved against it server-side.
   const { data: activeService } = trpc.sync.getActiveBudgetApi.useQuery();
 
   const unlinkGoalFromApi = trpc.savings.unlinkGoalFromApi.useMutation({
@@ -284,11 +280,8 @@ export function useApiSync() {
       utils.budget.invalidate();
     },
   });
-  // Single instance — also passed down to ApiSyncSection as `pushMutation`
-  // so the toolbar button's pending state and the modal's confirm button
-  // stay in sync. Previously ApiSyncSection created its own second,
-  // independent useMutation() call, so the toolbar button's disabled/label
-  // state never reflected an in-flight push at all.
+  // Single instance, also passed to ApiSyncSection as `pushMutation`, so the
+  // toolbar button and the modal's confirm button share one pending state.
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
     // A push can stop partway; reload so the page shows what was written.
     // The global toast says what happened.
@@ -307,9 +300,8 @@ export function useApiSync() {
         // docblock. YNAB writes the real goal field directly.
         data.service === "actual",
       );
-      // A genuine failure with nothing pushed is a real error, not a
-      // quiet "already up to date" — surface it as one (this previously always showed a success toast, even
-      // when every single push attempt failed server-side).
+      // A failure with nothing pushed is a real error, not a quiet
+      // "already up to date".
       if (data.failed > 0 && data.pushed === 0) {
         toast.error(message);
       } else {
@@ -469,17 +461,17 @@ export function useApiSync() {
       for (const g of rawGoals) {
         if (!g.isActive || g.allocationPercent == null) continue;
         if (goalId !== undefined && g.id !== goalId) continue;
-        const currentPct = parseFloat(g.allocationPercent);
+        const currentPercent = parseFloat(g.allocationPercent);
         const stored = parseFloat(g.monthlyContribution ?? "0") || 0;
-        const newPct =
+        const newPercent =
           maxMonthlyFunding != null && maxMonthlyFunding > 0
             ? (stored / maxMonthlyFunding) * 100
-            : currentPct;
+            : currentPercent;
         items.push({
           name: g.name,
           field: "Allocation %",
-          currentYnab: currentPct,
-          newValue: newPct,
+          currentYnab: currentPercent,
+          newValue: newPercent,
         });
       }
       setPendingLockInGoalId(goalId);
@@ -534,14 +526,9 @@ export function useApiSync() {
     onPushPreview,
     // Callback for FundManagementSection → FundCard → FundOverridesSummary
     onDeleteOverride,
-    // Build push-all preview from current goals. Pushes the STORED
-    // monthlyContribution snapshot (matches what pushContributionsToApi
-    // actually sends — see recalculateAllocation for the only path that's
-    // allowed to move a percentage-based goal's amount). maxMonthlyFunding
-    // is only used here to flag a percentage-based goal as "stale" when its
-    // snapshot no longer matches what a live recalc would produce, so the
-    // user gets a warning in the preview instead of silently pushing an
-    // outdated amount.
+    // Push-all preview of the STORED monthlyContribution (what pushContributionsToApi sends).
+    // maxMonthlyFunding only flags a percentage-based goal as "stale" when its snapshot
+    // differs from a live recalc.
     buildPushAllPreview: (
       rawGoals: RawGoal[],
       apiBalanceMap: Map<

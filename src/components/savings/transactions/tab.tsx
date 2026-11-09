@@ -7,8 +7,11 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import { buildSettledOccurrencesSet } from "@/lib/pure/savings/savings-projection";
-import type { GoalProjection, PlannedTransaction } from "../types";
+import {
+  buildSettledOccurrencesSet,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
+import type { GoalProjection } from "../types";
 import { SettlementSuggestions, TransactionsToolbar } from "./filters";
 import {
   TransactionAmountFields,
@@ -151,10 +154,8 @@ export function AllTransactionsTab({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Age-based nudge — catches what the sync-presence suggestion banner
-  // can't: non-API-linked goals (no real-transaction signal to check
-  // against at all) and rows older than the sync's transaction lookback
-  // window. Pure UI, computed from data already in props — no new query.
+  // Age-based nudge for what the sync-presence suggestions can't see:
+  // non-API-linked goals and rows older than the sync's lookback window.
   const AGE_NUDGE_MONTHS = 2;
   const monthsAgo = (dateStr: string): number => {
     const d = new Date(dateStr + "T00:00:00");
@@ -185,14 +186,11 @@ export function AllTransactionsTab({
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
 
   // "After" balance: use the pre-computed GoalProjection.balances[] which already
-  // includes contributions, recurring expansion, and overrides — matching the Plan table.
+  // includes contributions, recurring expansion, and overrides — matching the Goals table.
   // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
-  // GoalProjection.balances[0] is always the current calendar month — must match
-  // src/app/(dashboard)/savings/savings-content.tsx's monthDates construction exactly (that
-  // file previously skipped the current month once the 1st had passed, which
-  // silently dropped current-month planned transactions from the trajectory —
-  // this index math has to stay in lockstep with it).
+  // GoalProjection.balances[0] is the current calendar month, as built by
+  // savings-content.tsx's monthDates; this index math must match it.
   const projectionStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const getBalanceAfter = (
     goalId: number,
@@ -262,8 +260,8 @@ export function AllTransactionsTab({
 
   const commitEdit = (tx: PlannedTransaction) => {
     if (!editForm) return;
-    const amt = parseFloat(editForm.amount);
-    if (isNaN(amt)) {
+    const amount = parseFloat(editForm.amount);
+    if (isNaN(amount)) {
       // Revert invalid amount and close without saving
       setEditForm({ ...editForm, amount: String(Math.abs(tx.amount)) });
       setActiveCell(null);
@@ -274,7 +272,7 @@ export function AllTransactionsTab({
       goalId: editForm.goalId,
       transactionDate: editForm.transactionDate,
       description: editForm.description,
-      amount: String(tx.amount < 0 ? -Math.abs(amt) : Math.abs(amt)),
+      amount: String(tx.amount < 0 ? -Math.abs(amount) : Math.abs(amount)),
       isRecurring: editForm.isRecurring,
       recurrenceMonths: editForm.isRecurring ? editForm.recurrenceMonths : null,
     });
@@ -296,40 +294,40 @@ export function AllTransactionsTab({
       : 0;
 
   const commitAdd = () => {
-    const amt = parseFloat(addForm.amount);
+    const amount = parseFloat(addForm.amount);
     if (
       !addGoalId ||
       !addForm.description ||
       !addForm.transactionDate ||
-      isNaN(amt)
+      isNaN(amount)
     )
       return;
     createTx.mutate({
       goalId: addGoalId,
       transactionDate: addForm.transactionDate,
       description: addForm.description,
-      amount: String(addForm.isNegative ? -Math.abs(amt) : Math.abs(amt)),
+      amount: String(addForm.isNegative ? -Math.abs(amount) : Math.abs(amount)),
       isRecurring: addForm.isRecurring,
       recurrenceMonths: addForm.isRecurring ? addForm.recurrenceMonths : null,
     });
   };
 
   const commitTransfer = () => {
-    const amt = parseFloat(transferForm.amount);
+    const amount = parseFloat(transferForm.amount);
     if (
       !fromGoalId ||
       !toGoalId ||
       !transferForm.transactionDate ||
       !transferForm.description ||
-      isNaN(amt) ||
-      amt <= 0
+      isNaN(amount) ||
+      amount <= 0
     )
       return;
     createTransfer.mutate({
       fromGoalId,
       toGoalId,
       transactionDate: transferForm.transactionDate,
-      amount: amt,
+      amount: amount,
       description: transferForm.description,
       isRecurring: transferForm.isRecurring,
       recurrenceMonths: transferForm.isRecurring
@@ -470,11 +468,8 @@ export function AllTransactionsTab({
         </div>
       )}
 
-      {/* Settlement suggestions — presence-based hints only; never auto-applied.
-          A real transaction posted in the linked category on/after the planned
-          date means the live balance already reflects it, so the placeholder's
-          forecasting job is done. Dismissing just hides it for this session;
-          it reappears next load until settled or the underlying data changes. */}
+      {/* Settlement hints, never auto-applied: a real transaction in the linked category on/after
+          the planned date is already in the live balance. Dismissing hides it for this session. */}
       <SettlementSuggestions
         canEdit={canEdit}
         suggestions={suggestions}

@@ -1,17 +1,11 @@
 /**
- * Money moving between the household's own accounts — an IRA conversion
- * (Traditional → Roth), a rollover, a transfer between brokerages — shows
- * up as a withdrawal from one linked account and an equal deposit into
- * another. Neither side is money added to or taken out of the household,
- * so both are re-labelled "transfer". Pure; generic over any accounts.
- *
- * Matching: opposite, equal amounts (to the cent) in two different linked
- * accounts within a few days. When several deposits could match one
- * withdrawal (two people converting the same amount), the pair within one
- * owner wins, then within one tracked account, then the closest date.
+ * Money moving between the household's own accounts (conversion, rollover, transfer) re-labelled
+ * "transfer" on both sides: opposite equal amounts in two linked accounts within a few days. Ties
+ * go to the pair within one owner, then one tracked account, then the closest date.
  */
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { isPreTaxType, isTaxFreeBucket } from "@/lib/config/account-types";
+import { MS_PER_DAY } from "@/lib/constants";
 
 export type TransferCandidate = {
   id: number;
@@ -33,7 +27,6 @@ export type TransferMatch = {
 };
 
 const MAX_DAYS = 5;
-const DAY_MS = 86_400_000;
 
 export function matchInternalTransfers(
   rows: readonly TransferCandidate[],
@@ -57,7 +50,7 @@ export function matchInternalTransfers(
       if (o.simplefinAccountId === i.simplefinAccountId) continue;
       if (Math.round((o.amount + i.amount) * 100) !== 0) continue;
       const days =
-        Math.abs(Date.parse(o.posted) - Date.parse(i.posted)) / DAY_MS;
+        Math.abs(Date.parse(o.posted) - Date.parse(i.posted)) / MS_PER_DAY;
       if (days > MAX_DAYS) continue;
       const sameOwner =
         o.ownerPersonId !== null && o.ownerPersonId === i.ownerPersonId;
@@ -87,14 +80,9 @@ export function matchInternalTransfers(
 }
 
 /**
- * Deposits that are probably money the household already recorded as
- * moved in: a deposit into a tracked account whose Performance figures for
- * that year record money rolled in from another tracked account
- * (`recordedMoveIn` names it) — e.g. an emptied ESPP whose proceeds went
- * to a brokerage, entered by hand under Rollovers. A Fill from SimpleFIN
- * leaves these out (counting them as contributions too would count the
- * money twice) and says so. Rows already matched or set by hand are left
- * alone.
+ * Deposits into a tracked account whose Performance year records money rolled in from another
+ * tracked account (`recordedMoveIn`): a SimpleFIN Fill leaves these out so the money isn't counted
+ * twice, and says so. Rows already matched or set by hand are left alone.
  */
 export function recordedMoveDeposits(
   rows: readonly {

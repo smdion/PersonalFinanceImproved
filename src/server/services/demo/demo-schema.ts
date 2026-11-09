@@ -12,7 +12,11 @@ import { applyReferenceData } from "@/lib/db/reference-data";
 import * as schema from "@/lib/db/schema";
 import { pool, type db as appDb } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";
-import { getDemoProfile, type DemoProfileSlug } from "@/lib/demo";
+import {
+  demoSchemaName,
+  getDemoProfile,
+  type DemoProfileSlug,
+} from "@/lib/demo";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 
 /**
@@ -29,10 +33,14 @@ const MAX_DEMO_SCHEMAS = 10;
 /** Builds (or rebuilds) the demo schema for profile `slug`, seeds the
  *  profile into it and returns the schema's name. Refuses a slug that isn't
  *  a profile's before any SQL runs, whatever its caller checked. */
-export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
+export async function buildDemoSchema(
+  slug: DemoProfileSlug,
+  seededOn: Date,
+): Promise<string> {
   const profile = getDemoProfile(slug);
-  if (!profile) throw new Error(`Not a demo profile: ${JSON.stringify(slug)}`);
-  const schemaName = `demo_${slug.replace(/-/g, "_")}`;
+  const schemaName = demoSchemaName(slug);
+  if (!profile || !schemaName)
+    throw new Error(`Not a demo profile: ${JSON.stringify(slug)}`);
   const quotedSchema = quoteIdent(schemaName);
 
   // Enforce max demo schema count to prevent DoS
@@ -111,7 +119,7 @@ export async function buildDemoSchema(slug: DemoProfileSlug): Promise<string> {
     // approved update — never the household's own rows.
     await applyReferenceData(cdb);
 
-    await seedProfile(cdb, profile);
+    await seedProfile(cdb, profile, seededOn);
   } finally {
     // Queries still queued run on the demo schema before the reset.
     await serial.close();

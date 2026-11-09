@@ -27,8 +27,10 @@ const DEFAULT = { threshold: 200_000, basis: "MFJ" } as const;
 
 /** The default line failing to load. */
 function defaultFails() {
-  setQuery("contribution.highIncomeLine", undefined);
-  setQueryState("contribution.highIncomeLine", { error: new Error("down") });
+  setQuery("contribution.computeHighIncomeLine", undefined);
+  setQueryState("contribution.computeHighIncomeLine", {
+    error: new Error("down"),
+  });
 }
 
 beforeEach(() => {
@@ -39,7 +41,7 @@ beforeEach(() => {
 describe("useHighIncomeLine", () => {
   it("waits for the saved setting even when the default has arrived", () => {
     persisted.mockReturnValue([null, vi.fn(), false]);
-    setQuery("contribution.highIncomeLine", DEFAULT);
+    setQuery("contribution.computeHighIncomeLine", DEFAULT);
     const { result } = renderHook(() => useHighIncomeLine());
     expect(result.current.threshold).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -47,7 +49,7 @@ describe("useHighIncomeLine", () => {
   });
 
   it("uses the saved line once loaded, else the default", () => {
-    setQuery("contribution.highIncomeLine", DEFAULT);
+    setQuery("contribution.computeHighIncomeLine", DEFAULT);
     persisted.mockReturnValue([150_000, vi.fn(), true]);
     expect(renderHook(() => useHighIncomeLine()).result.current.threshold).toBe(
       150_000,

@@ -1,11 +1,6 @@
-/** Print-only "behind the scenes" assumptions section for the "fancy"
- *  retirement projection report. Mounted only when
- *  reportMode === "fancy" (see index.tsx). Read-only — plain labeled text,
- *  no InlineEdit, nothing clickable. Sources the same `engineSettings`
- *  object ProjectionCard's own state hook already computes (the settings
- *  echo `projection.computeProjection` returns), so this reads exactly what
- *  drove the numbers above it rather than a second, possibly-stale query.
- */
+/** Print-only, read-only assumptions section of the advisor report. Reads the
+ *  `engineSettings` echo from `projection.computeProjection`, so it shows
+ *  exactly what drove the numbers above it. */
 import { annualRaiseLabel } from "@/lib/pure/household/raise-rates";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -67,19 +62,13 @@ export function ReportAssumptionsSummary({
   irmaaCappedRothYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
-  /** Per-person retirement settings from the engine payload. For a
-   *  single-person household the SS section sources start age / benefit
-   *  from here (matching the live Social Security section and assumptions
-   *  band), since "SS Start Age" and the per-person benefit are written to
-   *  `retirement_profile_people`, not the household `retirement_settings`
-   *  scalar this report otherwise reads. Undefined = fall back to
-   *  `settings`. */
+  /** Per-person retirement settings; a single-person household's SS start
+   *  age / benefit come from here (they live in `retirement_profile_people`).
+   *  Undefined = fall back to `settings`. */
   perPersonSettings?: ReportPerPersonSettings;
-  /** Count of years in this projection where RMD forced more
-   *  out of Traditional than the strategy needed, with the excess
-   *  reinvested into brokerage — a plan-level fact worth disclosing in
-   *  summary even though per-year detail belongs on the live page, not a
-   *  printed report. 0 = don't show the note. */
+  /** Years where RMD forced out more than the strategy needed, the excess
+   *  reinvested into brokerage; disclosed as a plan-level count only.
+   *  0 = don't show the note. */
   rmdExcessYears?: number;
   /** Count of years with a Qualified Charitable Distribution
    *  applied. 0 = don't show the note. */
@@ -167,7 +156,7 @@ export function ReportAssumptionsSummary({
           value={retirementYear != null ? String(retirementYear) : "—"}
         />
         <Row
-          label="Plan through"
+          label="Projection through"
           value={
             retirementYear != null && retirementAge != null && endAge != null
               ? String(retirementYear + endAge - retirementAge)
@@ -193,7 +182,7 @@ export function ReportAssumptionsSummary({
           }
         />
         <Row
-          label="Inflation (post-retirement)"
+          label="Post-retirement raise"
           value={
             postRetirementInflation != null
               ? formatPercent(postRetirementInflation, 1)
@@ -230,7 +219,7 @@ export function ReportAssumptionsSummary({
           }
         />
         <p className="text-faint mt-0.5 text-xs">
-          {strategyLabel} doesn&apos;t spend based on this rate — none of the 8
+          {strategyLabel} doesn&apos;t spend based on this rate — none of the 9
           withdrawal strategies do. It&apos;s a reference figure only (also used
           to size the &ldquo;years to FI&rdquo; estimate elsewhere in the app).
         </p>
@@ -296,7 +285,7 @@ export function ReportAssumptionsSummary({
         <p className="text-faint mt-2 text-xs">
           Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
           projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
-          Distributions exceeding this plan&apos;s stated spending need —
+          Distributions exceeding this projection&apos;s stated spending need —
           {settings.rmdExcessHandling === "spend"
             ? " the excess is treated as spent, not reinvested."
             : " the excess is reinvested into a taxable brokerage account."}{" "}

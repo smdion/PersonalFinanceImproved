@@ -13,27 +13,17 @@ import type { DebtKind } from "@/lib/config/enum-values";
 import type { W4FilingStatus } from "@/lib/config/filing-status";
 
 /**
- * DemoProfile — complete, holistic dataset for a demo persona.
- *
- * Every table that the app reads must be represented. If a profile has a
- * mortgage it MUST also have property taxes, home value, and the right
- * budget items. Data flows (budget -> savings pool -> projections -> net worth)
- * must be internally consistent.
- *
- * Values use plain objects matching the Drizzle insert shapes. IDs are
- * assigned at seed time via RETURNING, so only foreign-key *names* (not
- * numeric IDs) are referenced across tables. The seeder resolves names -> IDs.
+ * A demo persona's complete dataset: every table the app reads, internally
+ * consistent. Cross-table references use names; the seeder resolves them to IDs.
  */
 
 export type DemoProfile = {
   slug: string;
   name: string;
   description: string;
-  /** The chooser card's stats. Income and portfolio size are derived from
-   *  the seeded rows (demoKeyStats); the savings rate is stored because
-   *  the server computes it from database rows — tests/routers/demo-seed-
-   *  stats.test.ts seeds each profile and checks it against the
-   *  Contribution page's figure. */
+  /** The chooser card's stats. Income and portfolio size are derived from the
+   *  seeded rows (demoKeyStats); the savings rate is stored because the server
+   *  computes it from database rows (checked by demo-seed-stats.test.ts). */
   keyStats: {
     savingsRate: string;
   };

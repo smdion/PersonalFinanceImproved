@@ -101,10 +101,8 @@ export function inflateTarget(
 }
 
 /**
- * The year the projection crosses the FI number. The FI number is in today's
- * dollars and the projection is nominal, so the number grows with inflation
- * each year — comparing today's-dollar expenses with a nominal balance would
- * call FI years early.
+ * The year the nominal projection crosses the FI number, which is in today's dollars and so
+ * grows with inflation each year (a flat comparison would call FI early).
  */
 export function projectedFiYear(
   years: readonly MilestoneProjectionYear[],
@@ -235,13 +233,9 @@ export function amountMilestone(
 }
 
 /**
- * A "growth beats a year's figure" milestone (investments save harder than
- * you, money works harder than you). It's about a whole year, so it's
- * judged on what happened: a finalized year's recorded gain against that
- * year's figure. Nothing has happened yet for this year or later ones, so
- * they use the napkin rate — and this year shows as on pace, never
- * reached, until it's finalized. Reached stays reached after a weaker
- * year, like the other achievements.
+ * A "growth beats a year's figure" milestone: finalized years compare their recorded gain;
+ * this year and later use the napkin rate, so this year is at most on pace until finalized.
+ * Reached stays reached after a weaker year.
  */
 export function growthMilestone(
   id: "investmentsSaveHarder" | "moneyWorksHarder",

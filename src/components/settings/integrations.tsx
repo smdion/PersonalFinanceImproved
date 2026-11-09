@@ -34,10 +34,7 @@ import {
 } from "./integrations/connection-card";
 import { SyncBehaviorSettings } from "./integrations/sync-behavior";
 
-/** Credential-form field labels/placeholders per service — the two services'
- *  forms otherwise differ too much (YNAB has a budget-fetch selector, Actual
- *  has three plain fields) to fully unify, but the labels/placeholders
- *  themselves are genuinely parallel data. */
+/** Credential-form field labels/placeholders per service (the forms themselves differ). */
 const SERVICE_CREDENTIAL_FIELDS = {
   ynab: {
     token: { label: "Personal Access Token", placeholder: "Enter YNAB token" },
@@ -89,12 +86,8 @@ function ServiceCard({
   const [actualBudgetSyncId, setActualBudgetSyncId] = useState("");
   const [actualExternalUrl, setActualExternalUrl] = useState("");
 
-  // Quick-edit for the External URL alone, separate from the full
-  // credential-update form's blank draft above — prefilled from the
-  // currently saved value (not a secret, safe to prefill; unlike apiKey
-  // which is never sent back to the client). Reset on open (not via a
-  // useEffect keyed on the query value) so a mid-edit draft never gets
-  // silently clobbered by a background refetch.
+  // External URL quick-edit, prefilled from the saved value (not a secret). Reset on open,
+  // not by an effect on the query, so a background refetch never clobbers a draft.
   const [showEditExternalUrl, setShowEditExternalUrl] = useState(false);
   const [externalUrlEdit, setExternalUrlEdit] = useState("");
   const openEditExternalUrl = () => {
@@ -128,7 +121,7 @@ function ServiceCard({
   });
   const fetchBudgetsMut = trpc.sync.fetchYnabBudgets.useMutation({
     onSuccess: (data) => {
-      if (data.success) {
+      if (data.ok) {
         setYnabBudgets(data.budgets);
         // Auto-select if only one budget
         const first = data.budgets[0];
@@ -246,12 +239,11 @@ function ServiceCard({
                       {fetchBudgetsMut.isPending ? "Loading..." : "Fetch"}
                     </Button>
                   </div>
-                  {fetchBudgetsMut.isSuccess &&
-                    !fetchBudgetsMut.data.success && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {fetchBudgetsMut.data.error}
-                      </p>
-                    )}
+                  {fetchBudgetsMut.isSuccess && !fetchBudgetsMut.data.ok && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fetchBudgetsMut.data.error}
+                    </p>
+                  )}
                 </FormField>
               </>
             ) : (
@@ -364,13 +356,8 @@ function ServiceCard({
                 {setActiveMut.isPending ? "Activating..." : "Activate"}
               </Button>
             )}
-            {/* a connected-but-never-synced
-                service silently had NO Activate button and no explanation
-                why — `getPreview` returns `synced: false` until a sync has
-                completed at least once, so the only way to make this
-                service active was invisible unless you already knew to
-                click "Sync Now" first. This makes the missing precondition
-                explicit instead of a silent gap. */}
+            {/* Activation needs one completed sync (`getPreview` returns
+                `synced: false` until then), so say so instead of no button. */}
             {!isActive && preview && !preview.synced && (
               <span className="text-muted text-xs italic">
                 Sync Now to enable activation
@@ -471,9 +458,9 @@ function ServiceCard({
         {/* Test result */}
         {testConnectionMut.isSuccess && (
           <ConnectionResultMessage
-            tone={testConnectionMut.data.success ? "success" : "error"}
+            tone={testConnectionMut.data.ok ? "success" : "error"}
           >
-            {testConnectionMut.data.success
+            {testConnectionMut.data.ok
               ? `Connected: ${"budgetName" in testConnectionMut.data ? testConnectionMut.data.budgetName : "OK"}`
               : "error" in testConnectionMut.data
                 ? testConnectionMut.data.error
@@ -532,7 +519,7 @@ export function IntegrationsSettings() {
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const { data: taxDataSync } = trpc.settings.taxDataSync.status.useQuery();
+  const { data: taxDataSync } = trpc.settings.taxDataSync.getStatus.useQuery();
   const [section, setSection] = useDeepLinkParam(
     SETTINGS_SECTION_PARAM,
     SECTION_KEYS,
@@ -658,11 +645,8 @@ export function IntegrationsSettings() {
         </nav>
 
         <div>
-          {/* YNAB/Actual/SimpleFin/Tiingo stay mounted at all times — each holds
-              in-progress local state (credential drafts, fetched budget
-              list, test/sync results) that would silently reset if the nav
-              unmounted them on every switch away and back. Only visibility
-              toggles. */}
+          {/* All services stay mounted so local state (credential drafts, budget
+              list, test/sync results) survives switching; only visibility toggles. */}
           {BUDGET_API_SERVICE_VALUES.map((service) => {
             const conn = connection?.[service];
             return (

@@ -4,7 +4,7 @@ import {
 } from "@/lib/db/salary-entry-defaults";
 import { type SetStateAction, type Dispatch } from "react";
 import { trpc } from "@/lib/trpc";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { type PersonDraft, type JobDraft } from "./wizard-state";
 
 /** Saves the household the wizard collected, then completes first run. */
@@ -40,7 +40,7 @@ export function finishSetup(
       // Create all jobs, mapping personIndex to the real person ID. A job
       // carries no salary of its own — each one's annualSalary from the
       // Income step goes into the household's Salary Profile below instead.
-      const today = localDateStr();
+      const today = calendarDateOf(new Date());
       const jobEntries: Record<
         string,
         { salary: number; payPeriod: JobDraft["payPeriod"] }

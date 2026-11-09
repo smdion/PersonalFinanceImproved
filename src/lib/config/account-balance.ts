@@ -1,8 +1,5 @@
-// ---------------------------------------------------------------------------
-// Balance discriminated union accessor/mutator functions
-// ---------------------------------------------------------------------------
-// Works with the AccountBalance discriminated union. All balance reads and
-// writes go through these helpers so the rest of the codebase never
+// Accessors/mutators for the AccountBalance discriminated union. All balance
+// reads and writes go through these helpers so the rest of the codebase never
 // pattern-matches on `structure` directly.
 
 import { assertNever } from "@/lib/utils/assert-never";
@@ -12,29 +9,29 @@ import type { AccountBalance, BalanceStructure } from "./account-types.types";
 // Accessors
 // ---------------------------------------------------------------------------
 
-export function getTraditionalBalance(bal: AccountBalance): number {
-  return bal.structure === "roth_traditional" ? bal.traditional : 0;
+export function getTraditionalBalance(balance: AccountBalance): number {
+  return balance.structure === "roth_traditional" ? balance.traditional : 0;
 }
 
-export function getRothBalance(bal: AccountBalance): number {
-  return bal.structure === "roth_traditional" ? bal.roth : 0;
+export function getRothBalance(balance: AccountBalance): number {
+  return balance.structure === "roth_traditional" ? balance.roth : 0;
 }
 
-export function getTotalBalance(bal: AccountBalance): number {
-  switch (bal.structure) {
+export function getTotalBalance(balance: AccountBalance): number {
+  switch (balance.structure) {
     case "roth_traditional":
-      return bal.traditional + bal.roth;
+      return balance.traditional + balance.roth;
     case "single_bucket":
-      return bal.balance;
+      return balance.balance;
     case "basis_tracking":
-      return bal.balance;
+      return balance.balance;
     default:
-      return assertNever(bal);
+      return assertNever(balance);
   }
 }
 
-export function getBasis(bal: AccountBalance): number {
-  return bal.structure === "basis_tracking" ? bal.basis : 0;
+export function getBasis(balance: AccountBalance): number {
+  return balance.structure === "basis_tracking" ? balance.basis : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,45 +39,45 @@ export function getBasis(bal: AccountBalance): number {
 // ---------------------------------------------------------------------------
 
 /** Add to the traditional sub-balance (roth_traditional only, no-op for others). */
-export function addTraditional(bal: AccountBalance, amount: number): void {
-  if (bal.structure === "roth_traditional") bal.traditional += amount;
+export function addTraditional(balance: AccountBalance, amount: number): void {
+  if (balance.structure === "roth_traditional") balance.traditional += amount;
 }
 
 /** Add to the roth sub-balance (roth_traditional only, no-op for others). */
-export function addRoth(bal: AccountBalance, amount: number): void {
-  if (bal.structure === "roth_traditional") bal.roth += amount;
+export function addRoth(balance: AccountBalance, amount: number): void {
+  if (balance.structure === "roth_traditional") balance.roth += amount;
 }
 
 /** Add to the single balance (single_bucket and basis_tracking). */
-export function addBalance(bal: AccountBalance, amount: number): void {
-  if (bal.structure === "single_bucket") bal.balance += amount;
-  else if (bal.structure === "basis_tracking") bal.balance += amount;
+export function addBalance(balance: AccountBalance, amount: number): void {
+  if (balance.structure === "single_bucket") balance.balance += amount;
+  else if (balance.structure === "basis_tracking") balance.balance += amount;
 }
 
 /** Add to basis tracking (basis_tracking only, no-op for others). */
-export function addBasis(bal: AccountBalance, amount: number): void {
-  if (bal.structure === "basis_tracking") bal.basis += amount;
+export function addBasis(balance: AccountBalance, amount: number): void {
+  if (balance.structure === "basis_tracking") balance.basis += amount;
 }
 
 /** Set the traditional sub-balance. */
-export function setTraditional(bal: AccountBalance, value: number): void {
-  if (bal.structure === "roth_traditional") bal.traditional = value;
+export function setTraditional(balance: AccountBalance, value: number): void {
+  if (balance.structure === "roth_traditional") balance.traditional = value;
 }
 
 /** Set the roth sub-balance. */
-export function setRoth(bal: AccountBalance, value: number): void {
-  if (bal.structure === "roth_traditional") bal.roth = value;
+export function setRoth(balance: AccountBalance, value: number): void {
+  if (balance.structure === "roth_traditional") balance.roth = value;
 }
 
 /** Set the single balance. */
-export function setBalance(bal: AccountBalance, value: number): void {
-  if (bal.structure === "single_bucket") bal.balance = value;
-  else if (bal.structure === "basis_tracking") bal.balance = value;
+export function setBalance(balance: AccountBalance, value: number): void {
+  if (balance.structure === "single_bucket") balance.balance = value;
+  else if (balance.structure === "basis_tracking") balance.balance = value;
 }
 
 /** Set the basis. */
-export function setBasis(bal: AccountBalance, value: number): void {
-  if (bal.structure === "basis_tracking") bal.basis = value;
+export function setBasis(balance: AccountBalance, value: number): void {
+  if (balance.structure === "basis_tracking") balance.basis = value;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,24 +101,24 @@ export function zeroBalanceForStructure(
 }
 
 /** Deep-clone an AccountBalance. */
-export function cloneBalance(bal: AccountBalance): AccountBalance {
-  switch (bal.structure) {
+export function cloneBalance(balance: AccountBalance): AccountBalance {
+  switch (balance.structure) {
     case "roth_traditional":
       return {
         structure: "roth_traditional",
-        traditional: bal.traditional,
-        roth: bal.roth,
+        traditional: balance.traditional,
+        roth: balance.roth,
       };
     case "single_bucket":
-      return { structure: "single_bucket", balance: bal.balance };
+      return { structure: "single_bucket", balance: balance.balance };
     case "basis_tracking":
       return {
         structure: "basis_tracking",
-        balance: bal.balance,
-        basis: bal.basis,
+        balance: balance.balance,
+        basis: balance.basis,
       };
     default:
-      return assertNever(bal);
+      return assertNever(balance);
   }
 }
 
@@ -134,8 +131,8 @@ export function getSegmentBalance<C extends string>(
   balances: Record<C, AccountBalance>,
   segment: { category: C; subKey: string | null },
 ): number {
-  const bal = balances[segment.category];
-  if (segment.subKey === "trad") return getTraditionalBalance(bal);
-  if (segment.subKey === "roth") return getRothBalance(bal);
-  return getTotalBalance(bal);
+  const balance = balances[segment.category];
+  if (segment.subKey === "trad") return getTraditionalBalance(balance);
+  if (segment.subKey === "roth") return getRothBalance(balance);
+  return getTotalBalance(balance);
 }

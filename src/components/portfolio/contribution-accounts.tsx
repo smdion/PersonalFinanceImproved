@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Top-level account and contribution settings panel.
- *
- * Fetches all portfolio data via tRPC and orchestrates CRUD mutations via
- * useContributionAccountsMutations. Renders the collapsible panel with
- * UnlinkedContribsBanner + AccountCard list.
+ * Account and contribution settings panel: fetches portfolio data and runs CRUD via
+ * useContributionAccountsMutations; renders the unlinked-contributions banner and account cards.
  */
 
 import React, { useRef, useState, useMemo } from "react";
@@ -25,10 +22,10 @@ import type { PortfolioSub } from "./contribution-accounts-types";
 import { AccountCard } from "./contribution-accounts-card";
 import { CreateAccountForm } from "./contribution-accounts-create-form";
 import { useContributionAccountsMutations } from "./use-contribution-accounts-mutations";
-import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
+import { UnlinkedContributionsBanner } from "./unlinked-contribs-banner";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import { useScrollToFocus } from "@/components/ui/focus-target";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import type { Holding } from "@/components/investments/fund-holding-row";
 
@@ -44,7 +41,7 @@ export function ContributionAccountsSettings() {
     trpc.networth.portfolioSnapshots.getLatest.useQuery();
   // SimpleFIN detail per account — hidden (no error) without the portfolio
   // permission these need.
-  const { data: insights } = trpc.investments.getAccountInsights.useQuery(
+  const { data: insights } = trpc.investments.computeAccountInsights.useQuery(
     undefined,
     { retry: false },
   );
@@ -65,42 +62,39 @@ export function ContributionAccountsSettings() {
     return m;
   }, [holdingsOverview]);
 
-  // Employer-match/auto-maximize fields on a contribution account are
-  // profile-ownable (see contribAccountActiveFieldsSchema) — when a
-  // Contribution Profile is active, editing them here must write into that
-  // same profile entry the Paycheck/Budget pages write into, not the raw
-  // account row, or an edit made here would be silently shadowed by the
-  // active profile everywhere else in the app.
-  const [rawActiveContribProfileId] = useActiveContribProfile();
-  const { data: contribProfilesList } =
+  // Match/auto-maximize fields are profile-ownable: with a Contribution Profile
+  // active, edits here write into its entry (as Paycheck/Budget do), not the
+  // account row, which the active profile would shadow.
+  const [storedActiveContributionProfileId] = useActiveContributionProfile();
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+  const { profileId: activeContributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfilesList?.map((p) => p.id),
+      validIds: contributionProfilesList?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: rawActiveContribProfileId,
+      activeProfileId: storedActiveContributionProfileId,
     },
   );
-  // Powers each contribution row's "$X in <profile name>" status line —
-  // the account itself carries no value, only the active Contribution
-  // Profile's own entry does (see applyContribActiveFields), and that fact
-  // otherwise lives entirely on the Budget page, two navigations away from
-  // where a user would actually notice a row behaving unexpectedly.
-  const { data: contribCompareData } =
+  // Powers each row's "$X in <profile name>" status line: the account carries
+  // no value, only the active Contribution Profile's entry does.
+  const { data: contributionCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const activeProfileName =
-    contribProfilesList?.find((p) => p.id === activeContribProfileId)?.name ??
-    null;
+    contributionProfilesList?.find((p) => p.id === activeContributionProfileId)
+      ?.name ?? null;
   const activeProfileFields =
-    contribCompareData?.profiles.find((p) => p.id === activeContribProfileId)
-      ?.accountActiveFields ?? {};
+    contributionCompareData?.profiles.find(
+      (p) => p.id === activeContributionProfileId,
+    )?.accountActiveFields ?? {};
   const [showClosed, setShowClosed] = useState(false);
   // Opened (and scrolled to) by links elsewhere — see PortfolioAccountsLink.
   const linked = useFocusMatch("portfolioAccounts") !== null;
   const [expanded, setExpanded] = useFocusReveal("portfolioAccounts");
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
+  const [expandedAccountId, setExpandedAccountId] = useState<number | null>(
+    null,
+  );
   const [creatingAccount, setCreatingAccount] = useState(false);
 
   // ---- Derived data ----
@@ -124,7 +118,7 @@ export function ContributionAccountsSettings() {
   const peopleList = people ?? [];
   const jobsList = jobs ?? [];
 
-  const { contribsByPerfId, unlinkedContribs } = useMemo(() => {
+  const { contributionsByPerfId, unlinkedContributions } = useMemo(() => {
     const map = new Map<number, typeof allContribs>();
     for (const c of allContribs) {
       if (c.performanceAccountId !== null) {
@@ -136,19 +130,20 @@ export function ContributionAccountsSettings() {
     const unlinked = allContribs.filter(
       (c) => c.performanceAccountId === null && c.isActive,
     );
-    return { contribsByPerfId: map, unlinkedContribs: unlinked };
+    return { contributionsByPerfId: map, unlinkedContributions: unlinked };
   }, [allContribs]);
 
   const { balanceByPerfId, portfolioSubsByPerfId } = useMemo(() => {
-    const balMap = new Map<number, number>();
+    const balanceMap = new Map<number, number>();
     const subMap = new Map<number, PortfolioSub[]>();
     if (latestSnap?.accounts) {
       for (const a of latestSnap.accounts) {
         if (a.performanceAccountId) {
           if (a.isActive !== false) {
-            balMap.set(
+            balanceMap.set(
               a.performanceAccountId,
-              (balMap.get(a.performanceAccountId) ?? 0) + parseFloat(a.amount),
+              (balanceMap.get(a.performanceAccountId) ?? 0) +
+                parseFloat(a.amount),
             );
           }
           const subs = subMap.get(a.performanceAccountId) ?? [];
@@ -166,7 +161,7 @@ export function ContributionAccountsSettings() {
         }
       }
     }
-    return { balanceByPerfId: balMap, portfolioSubsByPerfId: subMap };
+    return { balanceByPerfId: balanceMap, portfolioSubsByPerfId: subMap };
   }, [latestSnap]);
 
   // ---- Helpers ----
@@ -192,15 +187,15 @@ export function ContributionAccountsSettings() {
   const {
     createPerfMut,
     deletePerfMut,
-    createContribMut,
+    createContributionMut,
     updatePortfolioAccountMut,
     createPortfolioAccountMut,
     handlePerfUpdate,
     handleContribUpdate,
-    handleLinkContrib,
+    handleLinkContribution,
   } = useContributionAccountsMutations({
     allContribs,
-    activeContribProfileId,
+    activeContributionProfileId,
   });
 
   const hasAccounts = allAccounts.length > 0;
@@ -245,18 +240,18 @@ export function ContributionAccountsSettings() {
         open={expanded}
         onToggle={() => setExpanded(!expanded)}
       >
-        <UnlinkedContribsBanner
-          unlinkedContribs={unlinkedContribs}
+        <UnlinkedContributionsBanner
+          unlinkedContributions={unlinkedContributions}
           activeAccounts={activeAccounts}
-          contribsByPerfId={contribsByPerfId}
+          contributionsByPerfId={contributionsByPerfId}
           personOptions={personOptions}
           jobLabel={jobLabel}
           admin={admin}
-          onContribOwnerChange={(c, update) => {
+          onContributionOwnerChange={(c, update) => {
             const full = allContribs.find((x) => x.id === c.id);
             if (full) handleContribUpdate(full, update);
           }}
-          onLinkContrib={handleLinkContrib}
+          onLinkContribution={handleLinkContribution}
         />
 
         <div>
@@ -317,7 +312,7 @@ export function ContributionAccountsSettings() {
               <AccountCard
                 key={pa.id}
                 account={pa}
-                contributions={contribsByPerfId.get(pa.id) ?? []}
+                contributions={contributionsByPerfId.get(pa.id) ?? []}
                 balance={balanceByPerfId.get(pa.id) ?? null}
                 insight={insightByPerfId.get(pa.id)}
                 holdings={holdingsByPerfId.get(pa.id) ?? []}
@@ -330,14 +325,16 @@ export function ContributionAccountsSettings() {
                 accountTypeOptions={accountTypeOptions}
                 activeProfileName={activeProfileName}
                 activeProfileFields={activeProfileFields}
-                isExpanded={expandedAcctId === pa.id}
+                isExpanded={expandedAccountId === pa.id}
                 onToggleExpand={() =>
-                  setExpandedAcctId(expandedAcctId === pa.id ? null : pa.id)
+                  setExpandedAccountId(
+                    expandedAccountId === pa.id ? null : pa.id,
+                  )
                 }
                 onPerfUpdate={
                   admin ? (updates) => handlePerfUpdate(pa, updates) : undefined
                 }
-                onContribUpdate={admin ? handleContribUpdate : undefined}
+                onContributionUpdate={admin ? handleContribUpdate : undefined}
                 onDelete={
                   admin
                     ? () => {
@@ -352,12 +349,14 @@ export function ContributionAccountsSettings() {
                     : undefined
                 }
                 activeAccounts={activeAccounts}
-                onLinkContrib={admin ? handleLinkContrib : undefined}
-                onCreateContrib={
+                onLinkContribution={admin ? handleLinkContribution : undefined}
+                onCreateContribution={
                   admin
                     ? (data: Record<string, unknown>) =>
-                        createContribMut.mutate(
-                          data as Parameters<typeof createContribMut.mutate>[0],
+                        createContributionMut.mutate(
+                          data as Parameters<
+                            typeof createContributionMut.mutate
+                          >[0],
                         )
                     : undefined
                 }

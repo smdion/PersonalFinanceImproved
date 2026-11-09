@@ -1,12 +1,7 @@
 /**
- * Reconcile one account's SimpleFIN transaction window against what is
- * already stored. Pure — decides inserts, updates and soft-voids; the
- * ingest layer applies them.
- *
- * Stored history can't be re-fetched (SimpleFIN keeps ~90 days), so voiding
- * is deliberately conservative: only when the account responded cleanly,
- * only for rows whose date is fully inside the requested window, and never
- * more than a capped number per run.
+ * Reconciles one account's SimpleFIN transaction window against stored rows: inserts, updates and
+ * soft-voids. SimpleFIN keeps ~90 days, so voids need a clean response, a row dated fully inside
+ * the window, and a per-run cap.
  */
 
 export type IncomingTransaction = {

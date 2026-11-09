@@ -87,7 +87,7 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
       },
       savingsGoals: undefined,
       apiActualsData: null,
-      contribProfileId: null,
+      contributionProfileId: null,
       salaryProfileId: null,
       editMode,
       getDraft: (_id, _col, original) => original,
@@ -117,14 +117,14 @@ describe("useBudgetDerivedData — getCatTotals editMode consistency", () => {
  *
  * THE BUG. contribByCanonicalPerCol aggregated ALL contribution accounts
  * of a given keyword into one pool, including ones already linked to a
- * budget item — so matchContrib("brokerage") returned the SUM of both
+ * budget item — so matchContribution("brokerage") returned the SUM of both
  * accounts ($950), not just the unlinked one, and getCatTotals folded that
  * fuzzy sum into the category total on top of the linked item's own real
  * resolved amount — silently disagreeing with the server-computed total.
  *
  * THE FIX. Accounts already linked to a budget item (rawItems[].
  * contributionAccountId) are excluded from the fuzzy pool entirely, and
- * matchContrib's result never feeds getCatTotals's total at all — it's
+ * matchContribution's result never feeds getCatTotals's total at all — it's
  * badge/tooltip-only display for genuinely unlinked items.
  */
 describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accounts", () => {
@@ -163,7 +163,10 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
 
     // Only account id 3 (the unlinked one, $950) should be in the pool —
     // account id 12 ($0, linked to linkedRBrokerage) is excluded.
-    expect(result.current.matchContrib("LT Brokerage")).toBeCloseTo(950, 2);
+    expect(result.current.matchContribution("LT Brokerage")).toBeCloseTo(
+      950,
+      2,
+    );
   });
 
   it("getCatTotals never includes the fuzzy match — the linked item's own $0 wins, not the pool's $950", () => {
@@ -240,7 +243,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
     });
     const { result } = setup(false, []);
 
-    expect(result.current.matchContrib("Brokerage")).toBeCloseTo(300, 2);
+    expect(result.current.matchContribution("Brokerage")).toBeCloseTo(300, 2);
   });
 
   it("still excludes a job-tied account with no explicit isPayrollDeducted override (falls back to jobId presence)", () => {
@@ -275,6 +278,6 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
     });
     const { result } = setup(false, []);
 
-    expect(result.current.matchContrib("Brokerage")).toBeNull();
+    expect(result.current.matchContribution("Brokerage")).toBeNull();
   });
 });

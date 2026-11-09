@@ -39,6 +39,7 @@ export function TransferDetailFields({
       <div>
         <label className="text-caption text-faint mb-0.5 block">Date</label>
         <input
+          aria-label="Date"
           type="date"
           value={transferForm.transactionDate}
           onChange={(e) =>
@@ -57,6 +58,7 @@ export function TransferDetailFields({
           Description
         </label>
         <input
+          aria-label="Description"
           type="text"
           placeholder="e.g. Move travel funds to home projects"
           value={transferForm.description}
@@ -137,6 +139,7 @@ export function TransferRouteFields({
       <div>
         <label className="text-caption text-faint mb-0.5 block">From</label>
         <select
+          aria-label="From"
           value={fromGoalId}
           onChange={(e) =>
             setTransferForm({
@@ -163,6 +166,7 @@ export function TransferRouteFields({
       <div>
         <label className="text-caption text-faint mb-0.5 block">To</label>
         <select
+          aria-label="To"
           value={toGoalId}
           onChange={(e) =>
             setTransferForm({
@@ -185,6 +189,7 @@ export function TransferRouteFields({
       <div>
         <label className="text-caption text-faint mb-0.5 block">Amount</label>
         <input
+          aria-label="Amount"
           type="number"
           min="0"
           step="0.01"
@@ -222,6 +227,7 @@ export function TransactionDetailFields({
           Description
         </label>
         <input
+          aria-label="Description"
           type="text"
           placeholder="e.g. Car registration"
           value={addForm.description}
@@ -298,6 +304,7 @@ export function TransactionAmountFields({
       <div className="col-span-2 sm:col-span-1">
         <label className="text-caption text-faint mb-0.5 block">Fund</label>
         <select
+          aria-label="Fund"
           value={addGoalId}
           onChange={(e) =>
             setAddForm({
@@ -319,6 +326,7 @@ export function TransactionAmountFields({
       <div>
         <label className="text-caption text-faint mb-0.5 block">Date</label>
         <input
+          aria-label="Date"
           type="date"
           value={addForm.transactionDate}
           onChange={(e) =>
@@ -351,6 +359,7 @@ export function TransactionAmountFields({
             {addForm.isNegative ? "−" : "+"}
           </button>
           <input
+            aria-label="Amount"
             type="number"
             min="0"
             step="0.01"

@@ -87,11 +87,9 @@ export const portfolioSnapshotProcedures = {
             .returning();
           const snap = rows[0]!;
 
-          // Build perfId → parentCategory map so parentCategory syncs from
-          // master, and the set of masters that are still open — computed
-          // once here and reused for BOTH the account insert below and the
-          // ending-balance computation further down, so there is exactly
-          // one resolved view of "this snapshot's accounts," never two.
+          // perfId → parentCategory (synced from the master) and the set of open
+          // masters, resolved once for both the account insert and the ending
+          // balances, so the snapshot has one view of its accounts.
           const perfIds = input.accounts
             .map((a) => a.performanceAccountId)
             .filter((id): id is number => id != null);
@@ -111,10 +109,8 @@ export const portfolioSnapshotProcedures = {
               if (p.isActive) activeMasterIds.add(p.id);
             }
           }
-          // A closed master's account keeps its row but its balance is
-          // zeroed rather than carried forward stale — see
-          // resolveSnapshotAccountAmounts's doc comment for why omitting
-          // the row instead would break period conservation.
+          // A closed master's account keeps its row with a zeroed balance (see
+          // resolveSnapshotAccountAmounts: omitting it breaks period conservation).
           const resolvedAccounts = resolveSnapshotAccountAmounts(
             input.accounts,
             activeMasterIds,
@@ -175,11 +171,9 @@ export const portfolioSnapshotProcedures = {
             );
           }
 
-          // Ending balances + annual rollups for the snapshot's year —
-          // shared with the latest-snapshot balance-edit path so the two
-          // never drift (RULES §Single Computation Path). Same
-          // `resolvedAccounts` used for the insert above, so a closed
-          // account's zeroed balance is reflected consistently.
+          // Ending balances + annual rollups for the snapshot's year, shared with
+          // the latest-snapshot balance edit (RULES §Single Computation Path), from
+          // the same `resolvedAccounts` as the insert.
           await refreshSnapshotYearDerivatives(
             tx,
             input.snapshotDate,
@@ -228,10 +222,8 @@ export const portfolioSnapshotProcedures = {
           if (pullMappings.length > 0) {
             const pullBalanceMap = await getMapForPull(ctx.db, activeForPull);
             if (pullBalanceMap) {
-              // The pulled amounts and the year's derivatives (ending
-              // balances, annual rollups) change together: refreshed
-              // again from the final amounts, in one transaction, so
-              // Performance and Net Worth can't disagree about this save.
+              // Pulled amounts and the year's derivatives are refreshed together in one
+              // transaction, so Performance and Net Worth agree about this save.
               const pulled = await ctx.db.transaction(async (tx) => {
                 const pullSnapshotAccounts = await tx
                   .select()

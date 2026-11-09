@@ -69,7 +69,7 @@ const READS: [string, (caller: Caller) => Promise<unknown>][] = [
   ["assets.computeSummary", (c) => c.assets.computeSummary()],
   ["mortgage.computeActiveSummary", (c) => c.mortgage.computeActiveSummary()],
   ["brokerage.computeSummary", (c) => c.brokerage.computeSummary()],
-  ["debts.summary", (c) => c.debts.summary()],
+  ["debts.computeSummary", (c) => c.debts.computeSummary()],
   [
     "retirement.retirementSettings.list",
     (c) => c.retirement.retirementSettings.list(),
@@ -78,7 +78,7 @@ const READS: [string, (caller: Caller) => Promise<unknown>][] = [
     "investments.getHoldingsOverview",
     (c) => c.investments.getHoldingsOverview(),
   ],
-  ["milestones.firstReached", (c) => c.milestones.firstReached()],
+  ["milestones.getFirstReached", (c) => c.milestones.getFirstReached()],
   ["projection.computeProjection", (c) => c.projection.computeProjection({})],
 ];
 
@@ -197,7 +197,7 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
       const { applyReferenceData } = await import("@/lib/db/reference-data");
       const { seedProfile } = await import("@/server/services/demo/demo-seed");
       await applyReferenceData(db);
-      await seedProfile(db, profile);
+      await seedProfile(db, profile, new Date());
     }, timeout);
 
     it.each(READS)(

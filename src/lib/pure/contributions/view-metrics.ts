@@ -81,14 +81,18 @@ export function computeViewAwareAccountMetrics(input: {
     };
   }
 
-  const projView = buildView(
+  const projectionView = buildView(
     projected.employeeContrib,
     projected.employerMatch,
     false,
   );
 
   if (!ytdActual) {
-    return { projected: projView, blended: projView, ytd: projView };
+    return {
+      projected: projectionView,
+      blended: projectionView,
+      ytd: projectionView,
+    };
   }
 
   const blendedView = buildView(
@@ -102,7 +106,7 @@ export function computeViewAwareAccountMetrics(input: {
     true,
   );
 
-  return { projected: projView, blended: blendedView, ytd: ytdView };
+  return { projected: projectionView, blended: blendedView, ytd: ytdView };
 }
 
 export function computeViewAwareTotals(input: {
@@ -145,7 +149,7 @@ export function computeViewAwareTotals(input: {
     };
   }
 
-  const projView = buildView(projected, totalCompensation);
+  const projectionView = buildView(projected, totalCompensation);
 
   const hasActuals =
     ytdActuals.retirement > 0 ||
@@ -154,7 +158,11 @@ export function computeViewAwareTotals(input: {
     ytdActuals.portfolioMatch > 0;
 
   if (!hasActuals) {
-    return { projected: projView, blended: projView, ytd: projView };
+    return {
+      projected: projectionView,
+      blended: projectionView,
+      ytd: projectionView,
+    };
   }
 
   const blendedView = buildView(blended, blendedComp);
@@ -178,5 +186,5 @@ export function computeViewAwareTotals(input: {
     ytdCompensation > 0 ? ytdCompensation : totalCompensation,
   );
 
-  return { projected: projView, blended: blendedView, ytd: ytdView };
+  return { projected: projectionView, blended: blendedView, ytd: ytdView };
 }

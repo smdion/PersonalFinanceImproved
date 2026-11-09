@@ -26,10 +26,8 @@ export function planProfileIds(plan: {
 }
 
 /**
- * Whether a Plan is the set of profiles in use: it names all four kinds and
- * each is the active one. A Plan saved before Plans had to name every kind
- * (an empty slot) is never "in use" — an empty slot can't stand for a
- * choice, so it mustn't match every active set.
+ * Whether a Plan is the set of profiles in use: it names all four kinds and each
+ * is active. A Plan with an empty slot never matches.
  */
 export function planMatchesActive(
   plan: PlanProfileIds,

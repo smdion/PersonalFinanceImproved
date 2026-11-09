@@ -8,7 +8,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 
 - **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Nine withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Variable Percentage Withdrawal, Guyton-Klinger, RMD Spending) and three withdrawal-routing modes (**Bracket Filling** — Traditional up to a target tax bracket, then the cheapest remaining source each year; **Waterfall** — accounts in a set priority order; **Percentage** — fixed shares). Retirement answers count retirement accounts only — savings tagged Portfolio never prop up the plan. Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
 - **Profiles and Plans** — Salary, Contribution, Budget and Retirement profiles, each its own complete set of assumptions; a **Plan** is a saved set of one of each, applied in one step. A Retirement Profile can keep a specific tax year's tables so an old projection reproduces exactly.
-- **Plan Health** — A card that surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
+- **Projection Health** — A card that surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
 - **Print Full Report** — A purpose-built multi-page document: executive summary, Monte Carlo risk analysis with worst-case framing, a withdrawal-strategy narrative, an ACA/IRMAA watchlist, action items, and a condensed year-by-year table.
 - **Coast FIRE** — Automatic Coast FIRE age plus a custom-age check for any age between now and your planned retirement.
 - **Tax Buckets** — Per-account analysis of how much of each balance is reachable now, split into penalty-free and tax-free portions, with Roth ordering rules and Rule-of-55 eligibility applied.
@@ -37,20 +37,20 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Tax engine** — Federal tax with 2025/2026 brackets verified against IRS Publication 15-T and Rev. Proc. 2025-32, FICA, Additional Medicare Tax, LTCG graduated rates (progressive stacking), NIIT surtax, SECURE 2.0 super catch-up contributions, and Social Security taxation. Contribution limits, tax brackets, LTCG brackets, IRMAA brackets, and Federal Poverty Level figures live in the database with year and filing-status versioning, editable from Settings. A CI freshness check fails the build if the calendar year moves past the latest pinned tax year without a deliberate override.
 - **Credential encryption at rest** — YNAB, Actual Budget, and SimpleFIN tokens are encrypted with AES-256-GCM before being stored. Existing plaintext rows are transparently upgraded on first write.
 - **SSRF protection** — YNAB, SimpleFIN, Tiingo and SEC requests must be `https` to a public host, checked both before sending and at the address connected (RFC1918, loopback, link-local and single-label hosts are refused). The Actual Budget server URL is used as entered, LAN addresses and Docker service names included, so only an admin can save or test a budget connection (YNAB or Actual): it can point Ledgr's requests at a host on its network. Redirects stay on the same host for every service, so credentials never reach another one.
-- **RBAC** — Role-based access control via Authentik OIDC with granular viewer permissions, plus a standalone local-admin table for deployments without an identity provider.
+- **RBAC** — Role-based access control via Authentik OIDC with granular viewer permissions, plus a standalone local-admin table for deployments without an identity provider. Only an admin sets up an integration (YNAB, Actual Budget, SimpleFIN, Tiingo, SEC) and its account links and mappings; a viewer with the `sync` permission can run a sync from the header, push a portfolio snapshot again, and refresh SEC fund facts.
 - **Onboarding wizard & demo mode** — Guided first-run setup with demo profiles to explore before entering real data; a separate read-only `DEMO_ONLY` mode with a profile chooser and no login.
 - **Dark mode & accessibility** — Full dark/light theming with semantic design tokens and a CI-enforced theme audit. WCAG AA-aligned contrast, `prefers-reduced-motion` support, keyboard skip-to-content, focus trapping in dialogs, screen-reader error announcements, and ARIA coverage on inline icons and table semantics.
 - **Versioning & backup** — Automatic database snapshots on startup, plus a backup before each migration. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. An import or restore by a viewer with the `version` permission keeps today's integration credentials and Server URLs, and takes each integration's account links and last sync time from the backup; an admin's carries them whole. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, pagination, and JSON export.
 - **Help & Guide** — A walkthrough of every feature by section, plus an in-app glossary for finance jargon.
-- **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats and integration status.
+- **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats, integration status and each scheduled job's last result.
 
 ## Quick Start
 
 ### Docker Compose (recommended)
 
 ```bash
-git clone <repo-url> && cd ledgr
+git clone https://github.com/smdion/PersonalFinanceImproved.git ledgr && cd ledgr
 
 cp .env.example .env
 # Edit .env: set NEXTAUTH_SECRET, CRON_SECRET and ENCRYPTION_KEY (see below)
@@ -108,18 +108,24 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — authentication
 
-| Variable                | Description                                                                                                                                                                                                                                                                                                           |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                                                                                                                 |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Without it, sign-in is local admin only. Read at runtime: the login page offers Authentik when the running server has it                                                                                                             |
-| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                                                                                              |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                                          |
-| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                                           |
-| `TRUSTED_PROXY_HEADER`  | Which header names the client for rate limits and the sign-in throttle: unset uses X-Real-IP, else the last X-Forwarded-For hop (safe only behind a proxy that overwrites them, like SWAG); `x-real-ip` or `x-forwarded-for` trusts only that one; `none` (no proxy in front) puts every visitor in one shared bucket |
+| Variable                | Description                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                                                                                                                                                                                         |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Without it, sign-in is local admin only. Read at runtime: the login page offers Authentik when the running server has it                                                                                                                                                                                     |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                                                                                                                                                                      |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                                                                                                                  |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                                                                                                                   |
+| `TRUSTED_PROXY_HEADER`  | Which header names the client for rate limits and the sign-in throttle: unset uses X-Real-IP, else the last X-Forwarded-For hop (safe only behind a proxy that overwrites them, like SWAG); `x-real-ip` or `x-forwarded-for` trusts only that one; `none` (no proxy in front) puts every visitor in one shared bucket, so 5 failed sign-ins from anyone lock every visitor out for 15 minutes |
+
+### Optional — alerts
+
+| Variable                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Default        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `LEDGR_ALERT_WEBHOOK_URL` | An `http` or `https` URL that gets a JSON POST (`source`, `job`, `event`, `ok`, `message`, `startedAt`; no figures or secrets) when a scheduled job starts failing (`failed`), every 24 h while it still fails (`still_failing`) and once when it recovers (`recovered`). Any service that takes a JSON webhook works. A user name or password in the URL isn't accepted (nothing is sent): use a URL with a token in its path or query, as ntfy, Gotify and Discord do. The alert state is in memory, so a restart clears it: after a redeploy a job that recovered posts no `recovered`, and one still failing posts `failed` again. Each job's last result is also in `/api/health/detailed` | _(none — off)_ |
 
 ### Integrations
 
-YNAB, Actual Budget, and SimpleFIN credentials are **not** configured via environment variables. Sign in as an admin and set them up in **Settings → Integrations**. Whatever you enter is encrypted at rest with AES-256-GCM using `ENCRYPTION_KEY` before being stored in `api_connections`.
+YNAB, Actual Budget, SimpleFIN and Tiingo credentials and the SEC contact are **not** configured via environment variables. Sign in as an admin and set them up in **Settings → Integrations**; that page and everything on it are admin-only. Whatever you enter is encrypted at rest with AES-256-GCM using `ENCRYPTION_KEY` before being stored in `api_connections`.
 
 ## Architecture
 
@@ -146,7 +152,21 @@ YNAB, Actual Budget, and SimpleFIN credentials are **not** configured via enviro
 └──────────────────────────────────────────────┘
 ```
 
-**Key design decisions:**
+**Layers** (one manifest, `.dependency-cruiser.mjs`; `pnpm check:layers` holds the import directions in CI):
+
+| Layer          | Where                                                         | Holds                                                               |
+| -------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
+| UI             | `src/app/`, `src/components/`, `src/lib/hooks/`               | pages and components; reads through tRPC, never imports server code |
+| Routers        | `src/server/routers/`                                         | parse input, call a service, a read or a pure function, return      |
+| Services       | `src/server/services/`                                        | composition that needs I/O                                          |
+| Data           | `src/server/data/`                                            | shared reads                                                        |
+| Infrastructure | `src/lib/db/`, `src/lib/budget-api/`, `src/lib/simplefin/`, … | database, outside services, crypto                                  |
+| Pure           | `src/lib/pure/<area>/`, engine in `src/lib/pure/engine/`      | every calculation; no I/O                                           |
+| Foundation     | `src/lib/config/`, `src/lib/constants/`, `src/lib/utils/`     | config, constants, small helpers                                    |
+
+**One figure, traced:** the Budget page's take-home pay reads `paycheck.computeSummary` (`src/server/routers/paycheck.ts`), which calls `computePaycheckSummary` (`src/server/services/paycheck/summary.ts`); that loads the active profiles, the people and the year's tax tables (`tax_brackets`, `tax_params`, seeded from `tax-data/us-federal/`) and calls `calculatePaycheck` (`src/lib/pure/paycheck/per-check.ts`), which does the math.
+
+**Key design decisions** (the full list: [docs/DECISIONS.md](docs/DECISIONS.md)):
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
 - **Data-driven design** — Account-type behavior is declared in one config record; adding an account type is one entry, not code changes. Tax tables and limits are data, versioned by year.
@@ -190,6 +210,7 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 | `pnpm format`        | Auto-format with Prettier                                   |
 | `pnpm db:generate`   | Generate a migration from schema changes                    |
 | `pnpm db:migrate`    | Run pending migrations                                      |
+| `pnpm seed [name]`   | Load an invented demo household into an empty dev database  |
 | `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)                     |
 | `pnpm backup:export` | Export all data to JSON (stdout or `--out`)                 |
 | `pnpm backup:import` | Import a JSON backup (supports `--dry-run`)                 |
@@ -230,7 +251,7 @@ docker compose restart ledgr
 - Built-in healthcheck hits `/api/health` every 30 seconds.
 - Memory limit of **1 GB** is set in `docker-compose.yml`.
 - For HTTPS, put a reverse proxy (NGINX, Caddy, Traefik, …) in front and set `NEXTAUTH_URL` to your public URL and `AUTH_TRUST_HOST=true`.
-- **SQLite mode:** the `ledgr_data` volume persists the database file across restarts. **PostgreSQL mode:** data lives in the external instance.
+- **SQLite mode:** the `ledgr_data` volume persists the database file across restarts. **PostgreSQL mode:** data lives in the PostgreSQL instance; the `ledgr_data` volume keeps the migrator's pre-upgrade backups.
 
 ### Schema migrations
 
@@ -245,14 +266,20 @@ Migrations are managed by Drizzle Kit: each release line starts from a squashed 
 
 ## Integrations
 
-All three are configured from **Settings → Integrations** — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN runs alongside either.
+All of these are configured from **Settings → Integrations**, by an admin — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN, Tiingo and SEC EDGAR run alongside either.
 
 - **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions. Two-way: category-goal targets and portfolio snapshots can be pushed back.
-- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Any host you enter is used, LAN addresses and Docker service names (such as `http://actual-http-api:5007`) included; the URL must be `http` or `https` with no user name or password in it. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it).
-- **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
+- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Any host you enter is used, LAN addresses and Docker service names (such as `http://actual-http-api:5007`) included; the URL must be `http` or `https` with no user name or password in it. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it). Set the wrapper's `TZ` to the household's time zone: it reads the end and cutoff dates Ledgr sends with each list and balance read as its own local dates.
+- **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). A SimpleFIN account linked to a mortgage feeds that loan's balance; while it does, budget pulls leave the loan alone. No budget sync.
+- **Tiingo** — An API key for end-of-day index prices, used for the benchmark comparisons. The host is fixed.
+- **SEC EDGAR** — Fund facts (expense ratios and share classes) from public filings. SEC requires a contact in every request, so you enter an email address: it is sent to SEC with each request and identifies you to them. It is stored encrypted and never logged.
 - **Tax data updates** — Optional, off unless you turn it on (onboarding offers it). Once a week Ledgr checks this project's signed tax-data release on GitHub for new tax figures between Ledgr updates — one plain download from `github.com`, nothing about your household sent. A newer file is verified against a key built into Ledgr and checked, then waits in **Settings → Reference Data** for an admin to review and apply; figures you've changed are never touched. `LEDGR_TAX_DATA_SYNC=off` turns it off for the whole server. Behind a proxy, set `NODE_USE_ENV_PROXY=1`.
 
 The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, every response checked against its endpoint's schema before anything is written, duplicate guards on writes (each push's transactions carry an import id, so a push finds what it posted when a response was lost; a POST is resent only after a rate limit), and drift detection after every sync that surfaces broken account mappings in the UI.
+
+## Security
+
+Sign-in runs on `next-auth` **5.0.0-beta.32**, a pre-release of Auth.js v5, pinned exactly so an update never arrives unreviewed. A beta gets fixes on its own schedule, and a security fix reaches Ledgr only when the pin is raised in a release. The plan is to move sign-in to [Better Auth](https://www.better-auth.com/), a stable release line, in a release of its own after v0.11.0; until then the pin stays and its advisories are watched (`pnpm audit` runs in CI). Credential encryption, request-target checks and permissions are under **Features → Platform**.
 
 ## Testing
 

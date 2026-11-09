@@ -86,10 +86,8 @@ export function SnapshotTable({
           {rawSnapshots.map((snap, _i) => {
             const delta = snap.delta;
             const isExpanded = expandedSnapshot === snap.id;
-            // Compare against the globally-latest snapshot date
-            // (from computeSummary) rather than array position —
-            // rawSnapshots[0] is only the latest when sorted by
-            // date, and sortCol can be Total/Change/etc.
+            // Compare with the latest snapshot date from computeSummary, not
+            // array position: sortCol may not be date.
             const isLatest =
               !!snapshotDate && snap.snapshotDate === snapshotDate;
             return (
@@ -222,6 +220,7 @@ export function SnapshotFilters({
             From
           </label>
           <input
+            aria-label="From"
             type="date"
             value={snapshotDateFrom}
             onChange={(e) => {
@@ -236,6 +235,7 @@ export function SnapshotFilters({
             To
           </label>
           <input
+            aria-label="To"
             type="date"
             value={snapshotDateTo}
             onChange={(e) => {

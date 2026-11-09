@@ -418,10 +418,10 @@ describe("PerPhaseBudgetSection smoke", () => {
     settings: baseSettings,
     decumulationBudgetProfileId: null,
     decumulationBudgetColumn: 0,
-    decExpenseOverride: null,
-    setDecExpenseOverride: vi.fn(),
-    setDecBudgetProfileId: vi.fn(),
-    setDecBudgetCol: vi.fn(),
+    decumulationExpenseOverride: null,
+    setDecumulationExpenseOverride: vi.fn(),
+    setDecumulationBudgetProfileId: vi.fn(),
+    setDecumulationBudgetCol: vi.fn(),
     isEditable: true,
   };
 
@@ -460,7 +460,7 @@ describe("PerPhaseBudgetSection smoke", () => {
     render(
       <PerPhaseBudgetSection
         {...baseProps}
-        decExpenseOverride="60000"
+        decumulationExpenseOverride="60000"
         budgetProfileSummaries={[
           {
             id: 1,
@@ -485,9 +485,9 @@ describe("IncomeSection smoke", () => {
     upsertSettings: { mutate: vi.fn() },
     isEditable: true,
     handleSettingPercentUpdate: vi.fn(),
-    contribProfiles: [],
-    contribProfileId: null,
-    setContribProfileId: vi.fn(),
+    contributionProfiles: [],
+    contributionProfileId: null,
+    setContributionProfileId: vi.fn(),
     salaryProfiles: [],
     salaryProfileId: null,
     setSalaryProfileId: vi.fn(),

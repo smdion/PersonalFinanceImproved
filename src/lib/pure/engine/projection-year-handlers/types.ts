@@ -49,7 +49,7 @@ export type BrokerageGoal = {
 export type ProjectionLoopState = {
   // Balance tracking
   balances: TaxBuckets;
-  acctBal: AccountBalances;
+  accountBalance: AccountBalances;
   priorYearEndTradBalance: number;
   /** Per-person prior-year Traditional balance for per-person RMD. */
   priorYearEndTradByPerson: Map<number, number>;
@@ -57,16 +57,8 @@ export type ProjectionLoopState = {
   // Salary/expense tracking
   projectedSalary: number;
   projectedExpenses: number;
-  /** The TRUE, unmutated budget trajectory (inflation/raise growth + manual
-   *  per-year overrides only) -- tracked in parallel with `projectedExpenses`
-   *  because a reactive strategy (Guyton-Klinger, Forgo Inflation After
-   *  Loss, Spending Decline) overwrites `projectedExpenses` in place every
-   *  year with its own guardrail-adjusted target, which for a budget-seeded
-   *  strategy makes `projectedExpenses` identical to that year's own
-   *  `targetWithdrawal` -- collapsing "vs budget" and "vs strategy" into
-   *  the same comparison (both KPI rings showing the identical
-   *  percentage). This field is the strategy-blind
-   *  budget line those two comparisons need to actually differ. */
+  /** The strategy-blind budget line (inflation growth + per-year overrides only); reactive
+   *  strategies overwrite `projectedExpenses` with their target, so "vs budget" needs this. */
   budgetOnlyExpenses: number;
   /** This year's amount as the gross portfolio withdrawal (Social Security
    *  on top) — set when the strategy sized it that way and the household's
@@ -75,7 +67,7 @@ export type ProjectionLoopState = {
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking
-  indBal: Map<string, number>;
+  indBalance: Map<string, number>;
   /** Tracked Roth basis per taxFree-bucket account (see
    *  `@/lib/pure/accounts/roth-basis-tracking`). Present only for accounts
    *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
@@ -103,10 +95,8 @@ export type ProjectionLoopState = {
   rmdNoOwnerWarned: boolean;
 
   // Phase tracking
-  /** Set to true on the first year isAccumulation is false. Prevents the
-   *  decumulation expense reset from firing more than once, and handles the
-   *  case of retiring mid-way through the first year, where the year never
-   *  equals retirementYear on the first decumulation year. */
+  /** True from the first decumulation year so the expense reset fires once (year may never
+   *  equal retirementYear when retiring mid-year). */
   decumulationExpensesSet: boolean;
   /** The first decumulation year's stated need in that year's dollars, set
    *  once with the decumulation budget; null without one. The result's
@@ -150,12 +140,12 @@ export type ProjectionContext = {
   returnRateMap: Map<number, number>;
   brokerageGoalsByYear: Map<number, BrokerageGoal[]>;
   sortedAccOverrides: AccumulationOverride[];
-  sortedDecOverrides: DecumulationOverride[];
+  sortedDecumulationOverrides: DecumulationOverride[];
   sortedProfileSwitches: ProfileSwitch[];
 
   // Individual account setup
   hasIndividualAccounts: boolean;
-  indAccts: IndividualAccountInput[];
+  indAccounts: IndividualAccountInput[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;
   hasPerPersonSalary: boolean;
@@ -191,28 +181,17 @@ export type PreYearSetup = {
   isAccumulation: boolean;
   returnRate: number;
   strategyAction: string | null;
-  /** Start-of-year balance retirement can spend: every account less the
-   *  Portfolio-parented ones (`nonRetirement`), which never fund retirement
-   *  spending. Spending strategies and the Rate-Seeded seed size spending
-   *  from this, never from the all-accounts total. Equals `totalBalance` in
-   *  accumulation years (nothing reads it there). */
+  /** Start-of-year retirement-spendable balance (all accounts less `nonRetirement`); spending
+   *  strategies and the Rate-Seeded seed size from it. Equals `totalBalance` in accumulation. */
   retirementBalance: number;
-  /** Start-of-year balance of every account, Portfolio-parented ones
-   *  included — the physical pool the tax gross-up caps its target at.
-   *  Routing then excludes Portfolio money and records what that leaves
-   *  unmet (`nonRetirementShortfall`), the same way penalty-locked money is
-   *  attributed; capping at the retirement balance would hide that cause. */
+  /** Start-of-year balance of every account, Portfolio included: the tax gross-up's cap. Routing
+   *  then excludes Portfolio money and records the unmet part (`nonRetirementShortfall`). */
   totalBalance: number;
-  /** This decumulation year's Portfolio-parented balances
-   *  (computeNonRetirementExclusion), computed once in pre-year setup and
-   *  threaded to every consumer. Undefined in accumulation years and
-   *  without individual accounts. */
+  /** This decumulation year's Portfolio-parented balances, computed once in pre-year setup.
+   *  Undefined in accumulation and without individual accounts. */
   nonRetirement: NonRetirementExclusion | undefined;
-  /** state.projectedSalary plus this year's bonus adjustment, if any —
-   *  non-persisting (state.projectedSalary itself is never mutated by the
-   *  adjustment, so next year's growth compounds from the true baseline).
-   *  Use this instead of state.projectedSalary for this year's
-   *  contribution/tax/cashflow math. */
+  /** state.projectedSalary plus this year's bonus adjustment (not persisted); use it for this
+   *  year's contribution/tax/cashflow math. */
   effectiveSalary: number;
   /** Per-person equivalent of effectiveSalary, only populated when
    *  hasPerPersonSalary is true. */

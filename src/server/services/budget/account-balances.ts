@@ -12,21 +12,9 @@ import type { Db } from "@/lib/db";
 const BUDGET_CACHE_MAX_AGE_MS = undefined;
 
 /**
- * Sum the CACHED balances of every account manually mapped to a fixed
- * pseudo-account (`localId` "cash" or "creditCard") for the given service —
- * see AccountMapping's docblock (schema-pg.ts). Returns `null` when the
- * service has no such mappings at all, so callers can fall back to their
- * own auto-detection instead of reporting a real $0.
- *
- * Manual mapping exists because Actual's API has no account "type" field
- * at all (the plain `/accounts` endpoint
- * returns only id/name/offbudget/closed, and a raw query against the
- * underlying `accounts` table itself has no `type` column either), so
- * there's no way to auto-detect "this is a checking account" the way
- * YNAB's account type lets `getEffectiveCash` do below. `Math.abs` on each
- * matched balance — a credit card mapping's balance is typically negative
- * (money owed); this returns its magnitude as a debt figure, matching how
- * apply-pull-mapping.ts already treats a mapped mortgage loan balance.
+ * Sum the CACHED balances of accounts mapped to "cash" or "creditCard" for the service (as
+ * magnitudes; a card's debt is positive). `null` when there are no such mappings, so the
+ * caller falls back to its own detection. Actual has no account type, hence manual mapping.
  */
 async function sumMappedAccountBalances(
   db: Db,
@@ -35,7 +23,7 @@ async function sumMappedAccountBalances(
 ): Promise<{
   total: number;
   cacheAgeDays: number;
-  /** Mapped accounts the budget app no longer lists (closed or deleted):
+  /** Mapped accounts the budget app doesn't list (closed or deleted):
    *  counted as nothing, and said so. */
   missing: number;
 } | null> {
@@ -87,28 +75,19 @@ async function sumMappedAccountBalances(
 }
 
 /**
- * Get effective cash balance.
- * When the active service has explicit "Cash" account mappings (see
- * sumMappedAccountBalances), sums those. Otherwise, for a budget API with a
- * real account-type field (YNAB), falls back to auto-detecting on-budget
- * checking/savings/cash accounts from cache. Falls back further to manual
- * `current_cash` from app_settings when no API is active, the cache is
- * stale/empty, or auto-detection finds nothing (e.g. Actual, which has no
- * account-type field to auto-detect from at all).
+ * Effective cash: the active service's "Cash" mappings if any, else YNAB's on-budget
+ * cash-type accounts from cache, else manual `current_cash` from app_settings.
  */
 export async function getEffectiveCash(
   db: Db,
   settings: { key: string; value: unknown }[],
-  /** Pass this when the caller already resolved it (e.g. alongside a
-   *  sibling getEffectiveCreditCardDebt call in the same procedure) —
-   *  avoids re-querying apiConnections/cached balances for a value that
-   *  can't have changed mid-request. Omit to resolve it here as before. */
+  /** Pass when the caller already resolved it, to skip re-querying; omit to resolve here. */
   activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;
   source: BudgetApiService | "manual";
   cacheAgeDays: number | null;
-  /** Mapped cash accounts the budget app no longer lists. */
+  /** Mapped cash accounts the budget app doesn't list. */
   missingAccounts: number;
 }> {
   const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
@@ -163,15 +142,9 @@ export async function getEffectiveCash(
 }
 
 /**
- * Effective credit-card debt from explicit "Credit Card" account mappings
- * (see sumMappedAccountBalances) — additive on top of the household's
- * manual `current_other_liabilities` figure, not a replacement for it,
- * since that setting may legitimately hold other debts too. Unlike
- * getEffectiveCash there's no auto-detection fallback for either service:
- * neither YNAB nor Actual's account list distinguishes a credit card from
- * any other on-budget account well enough to guess safely, so this only
- * ever returns a nonzero figure once the household has mapped at least one
- * account.
+ * Credit-card debt from "Credit Card" mappings, added on top of manual
+ * `current_other_liabilities`. No auto-detection: neither YNAB nor Actual marks a card
+ * reliably, so it's nonzero only once an account is mapped.
  */
 export async function getEffectiveCreditCardDebt(
   db: Db,

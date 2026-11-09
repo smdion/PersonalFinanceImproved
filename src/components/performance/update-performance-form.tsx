@@ -40,7 +40,7 @@ export function UpdatePerformanceForm({
   });
 
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.suggestPerformance.useQuery(
+  const { data: found } = trpc.investments.listPerformanceSuggestions.useQuery(
     { year: currentYear },
     { retry: false },
   );
@@ -58,7 +58,7 @@ export function UpdatePerformanceForm({
   const didInit = useRef(false);
 
   // Build snapshot lookup: performanceAccountId → sum of amounts
-  const snapshotByPerfAcct = useRef(new Map<number, number>());
+  const snapshotByPerfAccount = useRef(new Map<number, number>());
   useEffect(() => {
     if (!latestSnap?.accounts) return;
     const map = new Map<number, number>();
@@ -70,7 +70,7 @@ export function UpdatePerformanceForm({
         );
       }
     }
-    snapshotByPerfAcct.current = map;
+    snapshotByPerfAccount.current = map;
   }, [latestSnap]);
 
   // Initialize form rows from current year account data (once)
@@ -83,9 +83,9 @@ export function UpdatePerformanceForm({
     );
 
     const initial: UpdateFormRow[] = filtered.map((a) => {
-      const snapBal =
+      const snapBalance =
         a.performanceAccountId !== null
-          ? (snapshotByPerfAcct.current.get(a.performanceAccountId) ?? null)
+          ? (snapshotByPerfAccount.current.get(a.performanceAccountId) ?? null)
           : null;
       const employeeContrib = a.totalContributions - a.employerContributions;
       return {
@@ -120,7 +120,7 @@ export function UpdatePerformanceForm({
         gainLossOverride: false,
         note: a.note ?? "",
         estimatedFields: a.estimatedFields ?? [],
-        snapshotEndingBalance: snapBal,
+        snapshotEndingBalance: snapBalance,
         original: {
           beginningBalance: a.beginningBalance,
           employeeContrib,
@@ -188,13 +188,13 @@ export function UpdatePerformanceForm({
    * counted yet. Fields already edited in this form keep the edit.
    */
   const fillFromSimplefin = () => {
-    if (!rows || !suggestions) return;
+    if (!rows || !found) return;
     const byId = new Map(
-      suggestions.accounts.map((a) => [a.accountPerformanceId, a]),
+      found.accounts.map((a) => [a.accountPerformanceId, a]),
     );
     const notes = new Map<number, string>();
     const record = {
-      year: suggestions.year,
+      year: found.year,
       baselines: {} as Record<string, string>,
       counted: {} as Record<string, string>,
       estimatedThrough: {} as Record<string, string>,
@@ -308,7 +308,7 @@ export function UpdatePerformanceForm({
   const handleSave = () => {
     if (!rows) return;
     const accounts = rows.map((r) => {
-      const endBal = getEndingBalance(r);
+      const endBalance = getEndingBalance(r);
       const gainLoss = r.gainLossOverride
         ? parseFloat(r.yearlyGainLoss) || 0
         : getComputedGainLoss(r);
@@ -326,7 +326,7 @@ export function UpdatePerformanceForm({
         distributions: r.distributions,
         rollovers: r.rollovers,
         fees: r.fees,
-        endingBalance: endBal.toFixed(2),
+        endingBalance: endBalance.toFixed(2),
         yearlyGainLoss: gainLoss.toFixed(2),
       };
     });
@@ -363,7 +363,7 @@ export function UpdatePerformanceForm({
 
   return (
     <div className="space-y-4">
-      {suggestions && suggestions.accounts.length > 0 && (
+      {found && found.accounts.length > 0 && (
         <div className="rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
           <div className="flex flex-wrap items-center gap-2">
             <span>

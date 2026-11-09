@@ -1,17 +1,11 @@
 /**
- * Contribution Profile swap-safety diff.
- *
- * A Contribution Profile only marks an account ACTIVE (its own value) when
- * that value genuinely differs from the account's own live row; an account
- * left untouched just uses the account's own value. Swapping which profile
- * is active can therefore silently change — or entirely drop — an active
- * value for any account the outgoing profile touched but the incoming one
- * doesn't. This computes the human-readable diff shown before that swap.
+ * Diff shown before swapping the active Contribution Profile: a profile only stores values
+ * that differ from an account's live row, so a swap can change or drop them.
  */
 
 import { takesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
 
-type ContribFieldSet = {
+type ContributionFieldSet = {
   contributionValue?: string | number | null;
   contributionMethod?: string | null;
   employerMatchType?: string | null;
@@ -34,7 +28,7 @@ export type DiffAccount = {
   /** Paid through payroll — only then does `fromBonus` mean anything
    *  (takesFromBonusCheck). Absent = yes. */
   isPayroll?: boolean;
-  live: ContribFieldSet;
+  live: ContributionFieldSet;
 };
 
 /** Fields that carry financial meaning. displayNameCustom is intentionally
@@ -52,8 +46,8 @@ const COMPARED_FIELDS = [
 ] as const;
 
 function fieldsDiffer(
-  a: ContribFieldSet,
-  b: ContribFieldSet,
+  a: ContributionFieldSet,
+  b: ContributionFieldSet,
   isPayroll: boolean,
 ): boolean {
   return (
@@ -72,7 +66,7 @@ function fieldsDiffer(
   );
 }
 
-function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
+function formatValue(fields: ContributionFieldSet, isPayroll: boolean): string {
   if (fields.isActive === false) return "excluded";
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
@@ -89,14 +83,12 @@ function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
 }
 
 /**
- * One line per account whose effective value would change if `outgoing`
- * were swapped out for `incoming`. Only accounts the outgoing profile
- * actually touches (a non-empty entry in `outgoing`) can produce a line —
- * an account neither profile touches never changes.
+ * One line per account whose effective value changes when `outgoing` is swapped for
+ * `incoming`; only accounts `outgoing` touches can produce one.
  */
-export function diffContribProfileSwap(
-  outgoing: Record<string, ContribFieldSet>,
-  incoming: Record<string, ContribFieldSet>,
+export function diffContributionProfileSwap(
+  outgoing: Record<string, ContributionFieldSet>,
+  incoming: Record<string, ContributionFieldSet>,
   accounts: DiffAccount[],
 ): string[] {
   const lines: string[] = [];

@@ -37,12 +37,11 @@ export function MethodologyContent() {
           What success rate measures
         </h4>
         <p>
-          Success rate is the fraction of trials where your portfolio balance
-          never hit zero before your projection end age. A 90% success rate
-          means 9 out of 10 simulated futures sustained your spending. It does{" "}
-          <em>not</em> guarantee a 90% chance of success in real life — it
-          reflects the model&apos;s assumptions about returns, volatility, and
-          inflation.
+          Success rate is the fraction of trials where every retirement year was
+          funded through your projection end age. A 90% success rate means 9 out
+          of 10 simulated futures sustained your spending. It does <em>not</em>{" "}
+          guarantee a 90% chance of success in real life — it reflects the
+          model&apos;s assumptions about returns, volatility, and inflation.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">
@@ -104,12 +103,12 @@ export function MethodologyContent() {
           This is why simulation matters: a single average return (deterministic
           mode) tells you nothing about sequence risk. By running thousands of
           randomized return sequences, simulation reveals how sensitive your
-          plan is to unlucky timing. Success rates below 85% often indicate that
-          sequence risk could derail your plan if early retirement years
-          coincide with a downturn.
+          projection is to unlucky timing. Success rates below 85% often
+          indicate that sequence risk could derail your retirement if early
+          retirement years coincide with a downturn.
         </p>
         <p>
-          <strong>How our engine models it:</strong> Each MC trial draws
+          <strong>How our engine models it:</strong> Each Simulation trial draws
           independent annual returns from a log-normal distribution. Unlike
           historical sequence tools (which replay ~150 overlapping 30-year
           periods from history), our parametric approach generates millions of
@@ -248,9 +247,9 @@ export function MethodologyContent() {
           a target bracket, then Roth/brokerage), <strong>waterfall</strong>
           (draw from accounts in a fixed priority order), and{" "}
           <strong>percentage</strong> (draw from each account type in fixed
-          proportions). On top of any routing mode, eight spending strategies
-          are available — from <strong>Fixed Real</strong> (inflation-adjusted
-          constant withdrawal at your configured rate) to dynamic methods like{" "}
+          proportions). On top of any routing mode, nine spending strategies are
+          available — from <strong>Fixed Real</strong> (your Retirement budget,
+          raised each year) to dynamic methods like{" "}
           <strong>Guyton-Klinger guardrails</strong>,{" "}
           <strong>Constant Percentage</strong>, <strong>Endowment</strong>, and{" "}
           <strong>Vanguard Dynamic</strong> (based on Morningstar&apos;s 2025
@@ -431,7 +430,7 @@ export function MethodologyContent() {
               <tr>
                 <td className="py-1.5 pr-2">Withdrawal strategy</td>
                 <td className="pr-2 font-medium">
-                  8 strategies (Morningstar) + 3 routing modes
+                  9 strategies (8 Morningstar, VPW) + 3 routing modes
                 </td>
                 <td className="pr-2">Fixed rate</td>
                 <td className="pr-2">Fixed rate</td>
@@ -474,9 +473,9 @@ export function MethodologyContent() {
           Data) are best for quick validation using historical data.{" "}
           <strong>Paid tools</strong> (Boldin, ProjectionLab) offer
           comprehensive planning features but limited simulation transparency.{" "}
-          <strong>This engine</strong> combines parametric MC rigor with full
-          tax-aware modeling and open-source transparency. Use Simple mode for
-          closest comparison with free historical tools.
+          <strong>This engine</strong> combines a parametric Simulation&apos;s
+          rigor with full tax-aware modeling and open-source transparency. Use
+          Simple mode for closest comparison with free historical tools.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">

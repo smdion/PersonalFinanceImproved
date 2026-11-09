@@ -1,23 +1,15 @@
 "use client";
 
 /**
- * Contribution Profile compare view — accounts as rows, profiles as
- * columns, each cell showing that profile's own active value for the
- * account, or "Not set" when the profile has no value for it at all. A
- * standing audit tool, not just a pre-swap warning: lets you sanity-check
- * coverage across every profile at once, not one at a time — "Not set" is
- * a real gap to flag, not a benign fallback, since accounts carry no value
- * of their own (see applyContribActiveFields).
- *
- * `contributionProfile.compareData` is the one data source this and the
- * swap-time diff share. Each cell resolves its display state (value, amber
- * when set, DISABLED badge) with resolveContribFieldDisplayState, per cell.
+ * Contribution Profile compare: accounts × profiles from `compareData`. "Not set"
+ * is a real gap (accounts hold no value of their own); cells use
+ * resolveContributionFieldDisplayState.
  */
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 
 export function ContributionProfileCompare() {
@@ -63,11 +55,13 @@ export function ContributionProfileCompare() {
           </tr>
         </thead>
         <tbody>
-          {data.accounts.map((account, rowIdx) => (
+          {data.accounts.map((account, rowIndex) => (
             <tr
               key={account.id}
               className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+                rowIndex % 2 === 1
+                  ? "bg-surface-sunken/60"
+                  : "bg-surface-primary"
               }`}
             >
               <td className="text-secondary sticky left-0 bg-inherit py-1.5 pr-3 pl-4 whitespace-nowrap">
@@ -98,9 +92,9 @@ export function ContributionProfileCompare() {
               {data.profiles.map((p) => {
                 const activeFields = (p.accountActiveFields[
                   String(account.id)
-                ] ?? null) as ContribAccountActiveFields;
+                ] ?? null) as ContributionAccountActiveFields;
                 const { hasValue, isDisabled, value, methodSuffix } =
-                  resolveContribFieldDisplayState(activeFields);
+                  resolveContributionFieldDisplayState(activeFields);
                 return (
                   <td
                     key={p.id}

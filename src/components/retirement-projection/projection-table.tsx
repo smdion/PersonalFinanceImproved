@@ -23,10 +23,10 @@ import {
 import { TAX_BUCKET_DESCRIPTIONS } from "@/lib/config/display-labels";
 import { catDisplayLabel, _singleBucketCategories, isAccumYear } from "./utils";
 import type { ProjectionTableProps } from "./projection-table-types";
-import { type RenderMcCellOptions } from "./projection-table-mc-cell";
+import { type RenderSimulationCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";
 import { DecumulationRow } from "./projection-table-decum-row";
-import { ContribMethodologySection } from "./projection-table-contrib-methodology";
+import { ContributionMethodologySection } from "./projection-table-contrib-methodology";
 import { TaxSummaryCard } from "./tax-summary-card";
 
 /**
@@ -50,8 +50,8 @@ export function ProjectionTable({
     decumOverrides,
     balanceView,
     setBalanceView,
-    contribView,
-    setContribView,
+    contributionView,
+    setContributionView,
     showAllYears,
     setShowAllYears,
     diagMode,
@@ -59,12 +59,12 @@ export function ProjectionTable({
     personFilterName,
     dbSalaryOverrides,
     dbBudgetOverrides,
-    mcBandsByYear,
-    mcDetByYear,
+    simulationBandsByYear,
+    simulationDetByYear,
     getFilteredYears,
     visibleColumns,
     columnLabel,
-    contribHeaderTooltip,
+    contributionHeaderTooltip,
     balanceHeaderTooltip,
     result,
     deflate,
@@ -83,9 +83,9 @@ export function ProjectionTable({
   );
 
   // Shared MC cell rendering options — passed to row components
-  const mcCellOpts: RenderMcCellOptions = {
-    mcBandsByYear,
-    mcDetByYear,
+  const simulationCellOpts: RenderSimulationCellOptions = {
+    simulationBandsByYear,
+    simulationDetByYear,
     deflate,
     isPersonFiltered,
     parentCategoryFilter,
@@ -104,7 +104,7 @@ export function ProjectionTable({
         <div className="text-caption text-faint mb-1">
           This scenario uses Simple tax mode, which doesn&apos;t track
           individual accounts — the Balance column below is your real total, but
-          a Traditional/Roth/HSA/After-Tax breakdown isn&apos;t available.
+          a Traditional/Roth/HSA/After-tax breakdown isn&apos;t available.
           Switch to Advanced tax mode to see your real account split.
         </div>
       )}
@@ -113,13 +113,13 @@ export function ProjectionTable({
           <div className="mb-2 flex flex-wrap items-center gap-2 print:hidden">
             <LabeledPillGroup label="Contributions">
               <PillBtn
-                active={contribView === "account"}
-                onClick={() => setContribView("account")}
+                active={contributionView === "account"}
+                onClick={() => setContributionView("account")}
                 label="Account"
               />
               <PillBtn
-                active={contribView === "taxType"}
-                onClick={() => setContribView("taxType")}
+                active={contributionView === "taxType"}
+                onClick={() => setContributionView("taxType")}
                 label="Tax Type"
               />
             </LabeledPillGroup>
@@ -150,9 +150,9 @@ export function ProjectionTable({
               aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
               style={{
                 minWidth:
-                  (balanceView === "account" || contribView === "account"
+                  (balanceView === "account" || contributionView === "account"
                     ? 1400
-                    : 1100) + (mcBandsByYear ? 120 : 0),
+                    : 1100) + (simulationBandsByYear ? 120 : 0),
               }}
             >
               <caption className="sr-only">
@@ -173,19 +173,20 @@ export function ProjectionTable({
                   <th
                     colSpan={
                       3 +
-                      (contribView === "account"
+                      (contributionView === "account"
                         ? getAllCategories().filter((c) =>
-                            visibleColumns.contribCats.has(c),
+                            visibleColumns.contributionCats.has(c),
                           ).length
                         : (
                             ["preTax", "taxFree", "hsa", "afterTax"] as const
-                          ).filter((t) => visibleColumns.contribTaxTypes.has(t))
-                            .length)
+                          ).filter((t) =>
+                            visibleColumns.contributionTaxTypes.has(t),
+                          ).length)
                     }
                     className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Contributions{" "}
-                    {contribView === "taxType" ? "(by Tax Type)" : ""}
+                    {contributionView === "taxType" ? "(by Tax Type)" : ""}
                   </th>
                   <th
                     colSpan={
@@ -197,8 +198,9 @@ export function ProjectionTable({
                             .length
                         : getAccountSegments()
                             .map((s) => s.key)
-                            .filter((a) => visibleColumns.balanceAccts.has(a))
-                            .length)
+                            .filter((a) =>
+                              visibleColumns.balanceAccounts.has(a),
+                            ).length)
                     }
                     className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
@@ -209,7 +211,7 @@ export function ProjectionTable({
                         : "(by Tax Type)"
                       : ""}
                   </th>
-                  {mcBandsByYear && (
+                  {simulationBandsByYear && (
                     <th className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase">
                       Simulation
                     </th>
@@ -235,9 +237,9 @@ export function ProjectionTable({
                     Rate
                     <HelpTip text="Contribution rate as % of salary — total employee contributions divided by gross salary" />
                   </th>
-                  {contribView === "account"
+                  {contributionView === "account"
                     ? getAllCategories()
-                        .filter((c) => visibleColumns.contribCats.has(c))
+                        .filter((c) => visibleColumns.contributionCats.has(c))
                         .map((cat) => (
                           <th
                             key={cat}
@@ -246,14 +248,16 @@ export function ProjectionTable({
                             {catDisplayLabel[cat] ?? cat}
                             <HelpTip
                               text={
-                                contribHeaderTooltip[cat] ??
+                                contributionHeaderTooltip[cat] ??
                                 `Contributions to ${catDisplayLabel[cat] ?? cat}`
                               }
                             />
                           </th>
                         ))
                     : (["preTax", "taxFree", "hsa", "afterTax"] as const)
-                        .filter((t) => visibleColumns.contribTaxTypes.has(t))
+                        .filter((t) =>
+                          visibleColumns.contributionTaxTypes.has(t),
+                        )
                         .map((bucket) => (
                           <th
                             key={bucket}
@@ -292,21 +296,22 @@ export function ProjectionTable({
                     <>
                       {getAccountSegments()
                         .map((s) => s.key)
-                        .filter((a) => visibleColumns.balanceAccts.has(a))
-                        .map((acctKey, i) => {
-                          const parsed = parseColumnKey(acctKey);
-                          const catKey = parsed?.category ?? acctKey;
+                        .filter((a) => visibleColumns.balanceAccounts.has(a))
+                        .map((accountKey, i) => {
+                          const parsed = parseColumnKey(accountKey);
+                          const catKey = parsed?.category ?? accountKey;
                           return (
                             <th
-                              key={acctKey}
+                              key={accountKey}
                               className={`px-2 py-1.5 text-right ${accountTextColor(catKey)} font-medium whitespace-nowrap${i === 0 ? "border-subtle border-l" : ""}`}
                             >
-                              {columnLabel[acctKey] ?? getColumnLabel(acctKey)}
+                              {columnLabel[accountKey] ??
+                                getColumnLabel(accountKey)}
                               <HelpTip
                                 text={
-                                  balanceHeaderTooltip.account[acctKey] ??
-                                  columnLabel[acctKey] ??
-                                  getColumnLabel(acctKey)
+                                  balanceHeaderTooltip.account[accountKey] ??
+                                  columnLabel[accountKey] ??
+                                  getColumnLabel(accountKey)
                                 }
                               />
                             </th>
@@ -318,7 +323,7 @@ export function ProjectionTable({
                     Balance
                     <HelpTip text="Total portfolio balance across all accounts and tax types at year end" />
                   </th>
-                  {mcBandsByYear && (
+                  {simulationBandsByYear && (
                     <th className="text-muted border-subtle border-l px-2 py-1.5 text-right font-medium whitespace-nowrap">
                       Sim. Median
                       <HelpTip text="Simulation median (50th percentile) — half of simulated outcomes are above, half below. Hover for p5–p95 range." />
@@ -331,35 +336,35 @@ export function ProjectionTable({
                 </tr>
               </thead>
               <tbody>
-                {getFilteredYears(result.projectionByYear).map((yr) => {
-                  const focused = yr.year === focusedYear;
+                {getFilteredYears(result.projectionByYear).map((yearRow) => {
+                  const focused = yearRow.year === focusedYear;
                   const isPhaseTransition =
-                    yr.phase === "decumulation" &&
+                    yearRow.phase === "decumulation" &&
                     result.projectionByYear.findIndex(
                       (y) => y.phase === "decumulation",
-                    ) === result.projectionByYear.indexOf(yr);
+                    ) === result.projectionByYear.indexOf(yearRow);
                   const hasOverride =
-                    accumOverrides.some((o) => o.year === yr.year) ||
-                    decumOverrides.some((o) => o.year === yr.year);
+                    accumOverrides.some((o) => o.year === yearRow.year) ||
+                    decumOverrides.some((o) => o.year === yearRow.year);
 
                   const accumOverrideNotes = accumOverrides.find(
-                    (o) => o.year === yr.year,
+                    (o) => o.year === yearRow.year,
                   )?.notes;
                   const decumOverrideNotes = decumOverrides.find(
-                    (o) => o.year === yr.year,
+                    (o) => o.year === yearRow.year,
                   )?.notes;
                   const salaryOverrideNotes = dbSalaryOverrides?.find(
-                    (o) => o.projectionYear === yr.year,
+                    (o) => o.projectionYear === yearRow.year,
                   )?.notes;
                   const budgetOverrideNotes = dbBudgetOverrides?.find(
-                    (o) => o.projectionYear === yr.year,
+                    (o) => o.projectionYear === yearRow.year,
                   )?.notes;
 
-                  if (isAccumYear(yr)) {
+                  if (isAccumYear(yearRow)) {
                     return (
                       <AccumulationRow
-                        key={yr.year}
-                        yr={yr}
+                        key={yearRow.year}
+                        yr={yearRow}
                         focused={focused}
                         state={state}
                         parentCategoryFilter={parentCategoryFilter}
@@ -377,15 +382,15 @@ export function ProjectionTable({
                           accumulationExpenseOverride
                         }
                         people={people}
-                        mcCellOpts={mcCellOpts}
+                        simulationCellOpts={simulationCellOpts}
                       />
                     );
                   }
 
                   return (
                     <DecumulationRow
-                      key={yr.year}
-                      yr={yr as EngineDecumulationYear}
+                      key={yearRow.year}
+                      yearRow={yearRow as EngineDecumulationYear}
                       focused={focused}
                       state={state}
                       parentCategoryFilter={parentCategoryFilter}
@@ -398,7 +403,7 @@ export function ProjectionTable({
                       decumulationBudgetColumn={decumulationBudgetColumn}
                       decumulationExpenseOverride={decumulationExpenseOverride}
                       people={people}
-                      mcCellOpts={mcCellOpts}
+                      simulationCellOpts={simulationCellOpts}
                     />
                   );
                 })}
@@ -420,7 +425,7 @@ export function ProjectionTable({
           detail, not report content — the print report's own "Behind the
           Scenes" section covers assumptions instead. */}
       <div className="print:hidden">
-        <ContribMethodologySection state={state} />
+        <ContributionMethodologySection state={state} />
       </div>
     </>
   );

@@ -26,7 +26,7 @@ export function useSimulationAssumptionDrafts(
 
   // Inflation risk edit state
   const [editingInflation, setEditingInflation] = useState(false);
-  const [draftInflStdDev, setDraftInflStdDev] = useState("");
+  const [draftInflationStdDev, setDraftInflationStdDev] = useState("");
 
   // Clamp bounds edit state
   const [editingClamps, setEditingClamps] = useState(false);
@@ -86,11 +86,11 @@ export function useSimulationAssumptionDrafts(
     activeOverrides.push("Asset class return/vol manually adjusted");
   if (inputs.accumulationExpenseOverride != null)
     activeOverrides.push(
-      `Pre-retirement spending set to ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
+      `Budget set to ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
     );
   if (inputs.decumulationExpenseOverride != null)
     activeOverrides.push(
-      `Retirement spending set to ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
+      `Retirement budget set to ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
 
   const presetColors: Record<string, string> = {
@@ -114,8 +114,8 @@ export function useSimulationAssumptionDrafts(
     setDraftGlidePath,
     editingInflation,
     setEditingInflation,
-    draftInflStdDev,
-    setDraftInflStdDev,
+    draftInflationStdDev,
+    setDraftInflationStdDev,
     editingClamps,
     setEditingClamps,
     draftClampMin,

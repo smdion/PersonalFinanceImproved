@@ -58,7 +58,7 @@ test.describe("Sync integration journey (M18)", () => {
         {
           result: {
             data: {
-              success: true,
+              ok: true,
               budgets: [
                 {
                   id: "budget-test-uuid-1",

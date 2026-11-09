@@ -10,11 +10,8 @@ import { firstRow } from "@/lib/utils/first-row";
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
 /**
- * Group a profile's budget items (already sort_order-ordered) into ordered
- * category blocks, preserving both the categories' relative order and each
- * category's internal item order. Mirrors the client-side grouping in
- * useBudgetDerivedData's categoryMap (use-budget-derived-data.ts) — same
- * logic, server-side, used by the reorder mutations below.
+ * Group a profile's sort_order-ordered items into ordered category blocks, keeping both
+ * orders. Server-side mirror of useBudgetDerivedData's categoryMap, for the reorder mutations.
  */
 function groupItemsByCategory(
   items: BudgetItemRow[],
@@ -32,10 +29,8 @@ function groupItemsByCategory(
 }
 
 /**
- * Flatten ordered category blocks back into a single item list and write a
- * clean, gapless 0..N-1 sort_order sequence. Used after every reorder so
- * any pre-existing sort_order gaps/duplicates get cleaned up as a side
- * effect (self-healing) instead of accumulating drift over time.
+ * Flatten category blocks into one list and write a gapless 0..N-1 sort_order,
+ * which also repairs any existing gaps or duplicates.
  */
 async function renumberItems(
   db: DbOrTx,
@@ -144,21 +139,19 @@ export const itemProcedures = {
         .orderBy(asc(schema.budgetItems.sortOrder));
 
       const blocks = groupItemsByCategory(items);
-      const idx = blocks.findIndex((b) => b.category === input.category);
-      if (idx === -1) return { ok: true };
+      const index = blocks.findIndex((b) => b.category === input.category);
+      if (index === -1) return { ok: true };
 
-      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      const swapWith = input.direction === "up" ? index - 1 : index + 1;
       if (swapWith < 0 || swapWith >= blocks.length) return { ok: true };
 
-      [blocks[idx], blocks[swapWith]] = [blocks[swapWith]!, blocks[idx]!];
+      [blocks[index], blocks[swapWith]] = [blocks[swapWith]!, blocks[index]!];
       await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };
     }),
 
-  /** Swap an item's position with an adjacent item within the same
-   *  category. No-ops at the category's first/last item boundary — moving
-   *  an item into a different category is the "Move..." dropdown's job
-   *  (moveItem above), not this. */
+  /** Swap an item with its neighbour in the same category; no-op at the category's
+   *  edge (moving across categories is moveItem's job). */
   reorderItem: budgetProcedure
     .input(
       z.object({
@@ -184,15 +177,15 @@ export const itemProcedures = {
       const block = blocks.find((b) => b.category === target.category);
       if (!block) return { ok: true };
 
-      const idx = block.items.findIndex((i) => i.id === target.id);
-      if (idx === -1) return { ok: true };
+      const index = block.items.findIndex((i) => i.id === target.id);
+      if (index === -1) return { ok: true };
 
-      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      const swapWith = input.direction === "up" ? index - 1 : index + 1;
       if (swapWith < 0 || swapWith >= block.items.length) return { ok: true };
 
-      [block.items[idx], block.items[swapWith]] = [
+      [block.items[index], block.items[swapWith]] = [
         block.items[swapWith]!,
-        block.items[idx]!,
+        block.items[index]!,
       ];
       await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };

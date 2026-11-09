@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Shared toggle switch component — the one control for an on/off setting.
- * Off state: light gray track, white dot flush-left — clearly "off".
- * On state: blue track, white dot flush-right — clearly "on".
- * A label is plain text beside the switch (no pill), so labelled and
- * unlabelled switches look the same everywhere.
+ * The one switch for an on/off setting: gray track with the dot left when off, blue with the dot
+ * right when on. A label is plain text beside it (no pill).
  */
 export function Toggle({
   isChecked,

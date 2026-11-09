@@ -1,14 +1,7 @@
 /**
- * Local-admin sign-in (the Credentials provider's `authorize`), throttled.
- *
- * Attempts are counted per client address and per email on the shared
- * in-memory limiter (src/lib/rate-limit.ts), before the password check, so
- * parallel requests can't slip past the count. A sign-in clears both
- * counts. An address is refused after `perAddress` attempts; an email
- * after `perEmail`, but only from an address that already has a failed or
- * pending attempt, so the admin can still sign in from a clean address.
- * Every lock ends with its window. The throttle and the timing don't
- * depend on whether the email belongs to an admin; no password is logged.
+ * Throttled local-admin sign-in: attempts count per address and per email before the password check
+ * (per-email only from an address with a failed/pending attempt); success clears both.
+ * Throttle and timing don't depend on whether the email is an admin's; no password is logged.
  */
 import "server-only";
 import { eq } from "drizzle-orm";

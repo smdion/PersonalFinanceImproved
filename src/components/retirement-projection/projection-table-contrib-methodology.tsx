@@ -23,11 +23,13 @@ import {
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import type { ProjectionState } from "./projection-table-types";
 
-type ContribMethodologyProps = {
+type ContributionMethodologyProps = {
   state: ProjectionState;
 };
 
-export function ContribMethodologySection({ state }: ContribMethodologyProps) {
+export function ContributionMethodologySection({
+  state,
+}: ContributionMethodologyProps) {
   const {
     showModels,
     setShowModels,
@@ -297,7 +299,7 @@ function renderPlanFailure(result: NonNullable<ProjectionState["result"]>) {
   const outcome = assessPlan(result);
   return outcome.succeeded ? null : (
     <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
-      The plan {describePlanFailure(outcome)} ({outcome.failureYear})
+      The projection {describePlanFailure(outcome)} ({outcome.failureYear})
     </div>
   );
 }

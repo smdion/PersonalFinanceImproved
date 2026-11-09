@@ -26,6 +26,7 @@ import { HOUSEHOLDS } from "./households";
 import { PROCEDURES } from "./procedures";
 import { createTestCaller } from "../routers/setup";
 import { BASELINE_NOW } from "./router-suite";
+import { loadingChunks, suspenseFallbacks } from "./mocks";
 import {
   resetTrpcMock,
   setQuery,
@@ -144,21 +145,54 @@ async function callPath(
   return (target as (input?: unknown) => Promise<unknown>)(input);
 }
 
-/** Wait until the page's text stops changing (lazy chunks, effects): the
- *  same for three ticks, then still for STILL_MS more, since a lazy chunk's
- *  module can take longer than three ticks to load on a busy host. */
+/** The QueryClients the screens' providers made (screenProviders). */
+export const screenQueryClients = new Set<{ isFetching: () => number }>();
+
+/** How long settle waits before failing: far past any page's load. */
+const SETTLE_LIMIT_MS = 20_000;
+
+/** What still keeps the page from settling, or nothing. */
+function stillLoading(): string[] {
+  const fetching = [...screenQueryClients].reduce(
+    (n, c) => n + c.isFetching(),
+    0,
+  );
+  return [
+    loadingChunks.size > 0 && `${loadingChunks.size} chunk(s) loading`,
+    fetching > 0 && `${fetching} query(ies) fetching`,
+    suspenseFallbacks.shown > 0 &&
+      `${suspenseFallbacks.shown} Suspense fallback(s) shown`,
+  ].filter((x): x is string => typeof x === "string");
+}
+
+/** Wait until every chunk has loaded, no query is fetching, no Suspense
+ *  fallback is shown and the page's text stops changing (effects): the
+ *  same for three ticks, then still for STILL_MS more. A page that hasn't
+ *  settled within `limitMs` fails, naming what was still loading: never
+ *  read half-loaded. */
 const STILL_MS = 100;
-export async function settle(container: HTMLElement): Promise<void> {
+export async function settle(
+  container: HTMLElement,
+  limitMs = SETTLE_LIMIT_MS,
+): Promise<void> {
+  const start = performance.now();
   let last = "";
   let same = 0;
-  let since = performance.now();
-  for (
-    let i = 0;
-    i < 50 && (same < 3 || performance.now() - since < STILL_MS);
-    i++
-  ) {
+  let since = start;
+  for (;;) {
+    const loading = stillLoading();
+    const changing = same < 3 || performance.now() - since < STILL_MS;
+    if (loading.length === 0 && !changing) return;
+    if (performance.now() - start > limitMs)
+      throw new Error(
+        `settle: the page didn't settle in ${limitMs} ms (${[
+          ...loading,
+          ...(changing ? ["its text still changing"] : []),
+        ].join(", ")})`,
+      );
     await act(async () => {
-      await new Promise((r) => setTimeout(r, same < 3 ? 0 : 20));
+      if (loadingChunks.size > 0) await Promise.allSettled([...loadingChunks]);
+      else await new Promise((r) => setTimeout(r, same < 3 ? 0 : 20));
     });
     const now = container.innerHTML;
     if (now === last) same++;
@@ -195,6 +229,7 @@ export async function screenProviders(): Promise<
   const { QueryClient, QueryClientProvider } =
     await import("@tanstack/react-query");
   const client = new QueryClient();
+  screenQueryClients.add(client);
   return function Providers({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={client}>

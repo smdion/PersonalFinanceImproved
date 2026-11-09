@@ -19,17 +19,9 @@ type PrivacyContextValue = {
 
 const PrivacyContext = createContext<PrivacyContextValue | null>(null);
 
-/**
- * Privacy mode (hide dollar amounts). `initialPrivacy` comes from the
- * PRIVACY_COOKIE read by the dashboard layout, so the first browser render
- * already agrees with the server render (which skipped prefetch — see
- * prefetchForPage).
- *
- * Toggling does not re-render the formatCurrency call sites by itself (they
- * read a module flag, not this context): DashboardShell keys its content on
- * `privacy`, so the open page remounts. The React Query cache survives, so
- * nothing refetches, but unsaved inline edits on that page are reset.
- */
+/** Privacy mode (hide dollar amounts), initialized from PRIVACY_COOKIE so the first render
+ *  matches the server's. formatCurrency reads a module flag, so toggling remounts the page
+ *  (DashboardShell keys on `privacy`): no refetch, but unsaved inline edits reset. */
 export function PrivacyProvider({
   initialPrivacy,
   children,

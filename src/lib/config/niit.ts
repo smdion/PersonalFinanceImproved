@@ -1,19 +1,6 @@
-// Net Investment Income Tax (NIIT) — IRC §1411
-// AKA the "3.8% surtax" — enacted by the ACA in 2013.
-//
-// Applies to: the LESSER of
-//   (a) net investment income, OR
-//   (b) MAGI exceeding the threshold
-//
-// Thresholds are NOT indexed to inflation (like SS taxation thresholds
-// and Medicare surtax). More filers hit this each year due to bracket creep.
-//
-// Key interactions:
-//   - Roth conversions are NOT net investment income, but they raise MAGI,
-//     which can push (b) above threshold and trigger NIIT on existing investment income.
-//   - Capital gains (LTCG + STCG) ARE net investment income.
-//   - Rental income, dividends, interest ARE net investment income.
-//   - Wages, SS benefits, IRA/401k distributions are NOT net investment income.
+// Net Investment Income Tax (IRC §1411): 3.8% of the LESSER of net investment income (gains,
+// dividends, interest, rent) or MAGI over a non-indexed threshold. Wages, SS and IRA/401k
+// distributions aren't investment income, but Roth conversions raise MAGI.
 
 import {
   filingTable,
@@ -36,17 +23,9 @@ export function niitThresholdFor(status: ReturnFilingStatus): number {
   return filingTable(NIIT_THRESHOLDS, status);
 }
 
-/**
- * Compute Net Investment Income Tax (3.8% surtax).
- *
- * NIIT = 3.8% × min(netInvestmentIncome, max(0, magi - threshold))
- *
- * @param magi Modified Adjusted Gross Income (includes Roth conversions, SS, gains, etc.)
- * @param netInvestmentIncome Investment income subject to NIIT (capital gains, dividends, interest, rental)
- *        In our projection model, this is primarily brokerage gains (LTCG).
- * @param filingStatus Filing status for threshold lookup.
- * @returns NIIT amount (0 if below threshold or no investment income).
- */
+/** NIIT = 3.8% × min(netInvestmentIncome, max(0, magi - threshold)), rounded to cents.
+ *  `magi` includes Roth conversions and gains; `netInvestmentIncome` is mostly brokerage
+ *  gains in projections. */
 export function computeNiit(
   magi: number,
   netInvestmentIncome: number,

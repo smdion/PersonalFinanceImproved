@@ -26,11 +26,8 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * Runs the shared per-year setup: return rate lookup, profile switch,
- * salary projection, expense projection, and spending strategy dispatch.
- *
- * Mutates state for salary, expenses, contribution specs, and profile fields.
- * Returns the computed PreYearSetup values needed by the phase handlers.
+ * Shared per-year setup: return rate, profile switch, salary, expenses and spending strategy.
+ * Mutates state for those fields; returns the PreYearSetup values the phase handlers need.
  */
 export function runPreYearSetup(
   ctx: ProjectionContext,
@@ -48,7 +45,7 @@ export function runPreYearSetup(
     returnRateMap,
     sortedProfileSwitches,
     hasIndividualAccounts,
-    indAccts,
+    indAccounts,
     indKey,
     indParentCat,
     hasPerPersonSalary,
@@ -68,11 +65,9 @@ export function runPreYearSetup(
   // RMD-smoothing forward projection via resolveReturnRateForAge.
   const returnRate = resolveReturnRateForAge(returnRateMap, age);
 
-  // Check for contribution profile switch at this year (sticky-forward).
-  // If multiple switches share the same year, last one wins (sorted ascending).
-  // Note: a switch at year 0 replaces baseYearContributions used by the
-  // useRealContribs path -- the year-0 pro-rated amounts will reflect the
-  // switched profile's base amounts, not actual paycheck data.
+  // Contribution profile switches (sticky-forward; last wins within a year).
+  // A year-0 switch replaces baseYearContributions, so year 0 reflects the
+  // switched profile's amounts, not paycheck data.
   for (const ps of sortedProfileSwitches) {
     if (ps.year > year) break;
     if (ps.year === year) {
@@ -90,7 +85,7 @@ export function runPreYearSetup(
       if (hasIndividualAccounts) {
         const rebuilt = buildSpecToAccountMapping(
           state.contributionSpecs,
-          indAccts,
+          indAccounts,
           indKey,
           indParentCat,
         );
@@ -111,7 +106,7 @@ export function runPreYearSetup(
       const yearOverrides = perPersonSalaryOverrides.get(year);
       const personIds = Array.from(state.projectedSalaryByPerson.keys());
       for (const pid of personIds) {
-        const prevSal = state.projectedSalaryByPerson.get(pid)!;
+        const prevSalary = state.projectedSalaryByPerson.get(pid)!;
         if (yearOverrides?.has(pid)) {
           state.projectedSalaryByPerson.set(
             pid,
@@ -123,10 +118,10 @@ export function runPreYearSetup(
         const personGrowthRate =
           input.salaryGrowthRateByPerson?.[pid] ?? salaryGrowthRate;
         if (yearIndex > 0 && personGrowthRate > 0) {
-          let newSal = prevSal * (1 + personGrowthRate);
+          let newSalary = prevSalary * (1 + personGrowthRate);
           if (input.salaryCap !== null)
-            newSal = Math.min(newSal, input.salaryCap);
-          state.projectedSalaryByPerson.set(pid, newSal);
+            newSalary = Math.min(newSalary, input.salaryCap);
+          state.projectedSalaryByPerson.set(pid, newSalary);
         }
       }
       // Recompute combined salary from per-person totals
@@ -138,10 +133,11 @@ export function runPreYearSetup(
       if (state.contributionSpecs && state.projectedSalary > 0) {
         for (const spec of state.contributionSpecs) {
           if (spec.method === "percent_of_salary" && spec.personId != null) {
-            const personSal =
+            const personSalary =
               state.projectedSalaryByPerson.get(spec.personId) ?? 0;
             spec.salaryFraction =
-              (personSal * (spec.personPayShare ?? 1)) / state.projectedSalary;
+              (personSalary * (spec.personPayShare ?? 1)) /
+              state.projectedSalary;
           }
         }
       }
@@ -164,10 +160,8 @@ export function runPreYearSetup(
     }
   }
 
-  // Year-0-only bonus adjustment (current-year pinned bonus vs. the
-  // full-formula bonus already baked into state.projectedSalary/
-  // projectedSalaryByPerson). Applied to a local effectiveSalary — never to
-  // state itself — so it doesn't compound into future years' growth.
+  // Year-0 bonus adjustment (pinned bonus vs the full-formula one in
+  // projectedSalary), applied to a local copy so it never compounds.
   let effectiveSalary = state.projectedSalary;
   const effectiveSalaryByPerson = new Map(state.projectedSalaryByPerson);
   let hasBonusAdjustment = false;
@@ -185,15 +179,9 @@ export function runPreYearSetup(
     }
   }
 
-  // People not at work this year (ctx.workingYearsByPerson — a job that
-  // hasn't started, one past its last year, or an early retirement): no
-  // salary, and their
-  // contributions stop (the specs this year, zeroed for them). Their
-  // tracked salary keeps growing for when they're at work. Whole years: a
-  // year a job starts or ends in counts in full.
-  // A salary the household set for the person in a year outside their
-  // working years (part-time work after retiring, say) says they're at
-  // work from then — their latest such override, while it's above $0.
+  // People not at work this year (whole years, ctx.workingYearsByPerson) get no salary and no
+  // contributions; tracked salary keeps growing. A salary override above $0 outside their
+  // working years means they're at work from then.
   const workingYears = ctx.workingYearsByPerson;
   const baseYear = input.asOfDate.getFullYear();
   const atWork = (personId: number) => {
@@ -284,18 +272,12 @@ export function runPreYearSetup(
       (w) => w.start === year || w.end === year,
     );
 
-  // Computed before the expenses block: the Rate-Seeded year-1 seed needs
-  // the starting balance at seed time. Retirement money
-  // only: Portfolio-parented accounts never fund retirement spending, so a
-  // balance-sized strategy (Guyton-Klinger, Constant %, Endowment, …) or the
-  // rate seed must not size spending from them.
-  // Computed once per decumulation year and handed to the year handler
-  // (PreYearSetup.nonRetirement), so the spending size, the routing
-  // exclusion and the estimate below all read the same figure. Nothing in
-  // accumulation reads it.
+  // Retirement money only, before the expenses block (the Rate-Seeded seed needs it):
+  // Portfolio-parented accounts never size retirement spending. Computed once per
+  // decumulation year (PreYearSetup.nonRetirement) so every consumer reads the same figure.
   const nonRetirement =
     !isAccumulation && hasIndividualAccounts
-      ? computeNonRetirementExclusion(indAccts, state.indBal, indKey)
+      ? computeNonRetirementExclusion(indAccounts, state.indBalance, indKey)
       : undefined;
   const { allAccountsBalance: totalBalance, retirementBalance } =
     scopedBalances(state.balances, nonRetirement);
@@ -314,10 +296,8 @@ export function runPreYearSetup(
     year,
   );
 
-  // Apply budget override (sticky-forward) or inflate expenses
-  // Use post-retirement raise rate for expense growth after retirement.
-  // Skip inflation entirely for strategies that don't use post-retirement raise
-  // (their spending is computed from portfolio balance, not inflated expenses).
+  // Apply a budget override (sticky-forward) or inflate expenses, using the
+  // post-retirement rate after retirement; balance-sized strategies skip it.
   const strategyUsesRaise =
     WITHDRAWAL_STRATEGY_CONFIG[activeStrategy].usesPostRetirementRaise;
   const effectiveInflation = isAccumulation
@@ -325,13 +305,8 @@ export function runPreYearSetup(
     : inflation.postRate(yearIndex);
   const expenseInflation =
     !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
-  // Rate-Seeded year 1 deliberately ignores a same-year budget override too
-  // -- the scenario exists specifically to answer "what if the budget/
-  // override didn't drive this," so letting an override immediately
-  // clobber the rate seed on the very year it's set would silently make
-  // the scenario a no-op for any household with a year-1 decumulation
-  // override configured. Overrides in LATER
-  // years still apply normally -- only the starting point is affected.
+  // Rate-Seeded year 1 ignores a same-year budget override, or the scenario
+  // would be a no-op whenever one is set; later years' overrides apply.
   const skipOverrideThisYear =
     decumulationExpensesJustSet && input.rateSeededDecumulationYear1 === true;
   if (budgetOverrideMap.has(year) && !skipOverrideThisYear) {
@@ -339,11 +314,8 @@ export function runPreYearSetup(
     state.budgetOnlyExpenses = budgetOverrideMap.get(year)!;
   } else if (yearIndex > 0 && !decumulationExpensesJustSet) {
     state.projectedExpenses = state.projectedExpenses * (1 + expenseInflation);
-    // budgetOnlyExpenses grows on its OWN prior value, never on
-    // projectedExpenses -- by this point in a later year, projectedExpenses
-    // may already carry last year's guardrail adjustment (Spending
-    // Strategy Dispatch below mutates it in place), which must never leak
-    // into the budget-only line.
+    // budgetOnlyExpenses grows on its own prior value, never projectedExpenses,
+    // which may carry last year's guardrail adjustment.
     state.budgetOnlyExpenses =
       state.budgetOnlyExpenses * (1 + expenseInflation);
   }
@@ -445,9 +417,9 @@ export function runPreYearSetup(
   };
 }
 
-/** Whether this year runs as a working year. UD-02 (pending decision D3),
- *  today's behaviour: retiring in year 0 after its start runs it as a
- *  pro-rated working year; any other retirement year runs whole. */
+/** Whether this year runs as a working year (UD-02): retiring in year 0
+ *  after its start runs it as a pro-rated working year; any other
+ *  retirement year runs whole. */
 function yearPhase(
   input: ProjectionContext["input"],
   year: number,

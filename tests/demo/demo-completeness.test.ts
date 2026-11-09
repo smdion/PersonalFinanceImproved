@@ -35,8 +35,8 @@ const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
   ["dashboard: networth.computeSummary", (c) => c.networth.computeSummary()],
   ["assets: assets.computeSummary", (c) => c.assets.computeSummary({})],
   [
-    "benchmarks: investments.getComparison",
-    (c) => c.investments.getComparison({}),
+    "benchmarks: investments.computeComparison",
+    (c) => c.investments.computeComparison({}),
   ],
   [
     "benchmarks: investments.getHoldingsOverview",
@@ -185,7 +185,7 @@ describe.each(Object.values(DEMO_PROFILES).map((p) => [p.slug, p] as const))(
       sqlite.prepare("DELETE FROM sqlite_sequence").run();
       sqlite.pragma("foreign_keys = ON");
       await applyReferenceData(seeded.rawDb);
-      await seedProfile(seeded.rawDb, profile);
+      await seedProfile(seeded.rawDb, profile, new Date());
     }, 120_000);
 
     afterAll(() => seeded?.cleanup());

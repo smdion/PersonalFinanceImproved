@@ -30,31 +30,22 @@ export interface BudgetAPIClient {
   /** List all accounts in the budget */
   getAccounts(): Promise<BudgetAccount[]>;
 
-  /** An account's balance: every transaction dated on or before `asOfDate`
-   *  ("YYYY-MM-DD"), or, omitted, everything up to today. A snapshot push
-   *  passes its own date, so transactions dated after it (or the budget
-   *  app's own clock) don't change the adjustment it posts. */
+  /** An account's balance: transactions dated on or before `asOfDate`
+   *  ("YYYY-MM-DD"), or up to today when omitted. A snapshot push passes its
+   *  own date so later-dated transactions don't change its adjustment. */
   getAccountBalance(accountId: string, asOfDate?: string): Promise<number>;
 
   // -- Categories & Months --
 
-  /** List all category groups with nested categories */
-  getCategories(): Promise<BudgetCategoryGroup[]>;
+  /** Category groups with nested categories; numbers are `asOf`'s month's. */
+  getCategories(asOf: Date): Promise<BudgetCategoryGroup[]>;
 
   /** List monthly summaries for a date range */
   getMonths(start: string, end: string): Promise<BudgetMonth[]>;
 
-  /** Get detailed month with per-category data.
-   *
-   *  `month` is always `YYYY-MM-01` (a full ISO date, first of the month —
-   *  every caller in this codebase computes it this way, matching YNAB's
-   *  own native format, which YNAB's real API requires exactly). NOT every
-   *  underlying service's API actually wants this shape on the wire —
-   *  Actual's wrapper wants the shorter `YYYY-MM` — so each client
-   *  implementation is responsible for converting to whatever its own API
-   *  needs internally (see ActualClient's `toActualMonthId` for why this
-   *  bit the app in practice). Callers should never need to
-   *  know this; always pass `YYYY-MM-01`. */
+  /** Detailed month with per-category data. Callers always pass `month` as
+   *  `YYYY-MM-01`; each client converts to its own wire format (Actual's
+   *  wrapper wants `YYYY-MM`, see ActualClient's `toActualMonthId`). */
   getMonthDetail(month: string): Promise<BudgetMonthDetail>;
 
   /** Update the budgeted amount for a category in a month.

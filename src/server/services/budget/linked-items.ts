@@ -21,36 +21,18 @@ import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
 } from "@/server/services/contributions/profile";
-import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
+import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
 import {
   resolveJoblessPeriodsPerYear,
-  resolveContribPeriods,
+  resolveContributionPeriods,
 } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
 /**
- * Resolve every linked budget item's per-column dollar amounts through the
- * SAME contribution-account resolution `budget.computeActiveSummary` uses,
- * instead of the item's raw `amounts` column (which is intentionally left
- * stale for linked items — see budget.ts router's `updateItemAmount`/
- * `updateItemAmounts`). Any caller that sums `budget_items.amounts` directly
- * for a profile with contribution-linked items (retirement/projection engine
- * inputs, net-worth year-end snapshots) silently undercounts every linked
- * item, since its raw amount is never written past its `0` template value.
- *
- * `profiles` is the (Contribution, Salary) Profile pair the caller already
- * resolved — this function does no resolution of its own, so a linked
- * item's dollar figure can never disagree between the Budget tab and any
- * other consumer. A budget column is a spending level, not a different pay
- * or contribution world, so a linked item's amount is the same in every
- * column.
- *
- * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
- * sandbox's own hand-edited values — the highest-precedence tier, layered
- * on top of the Contribution Profile's resolved values exactly the way `budget.computeActiveSummary` needs them to be
- * for its own linked items, so that endpoint can call this helper directly
- * instead of maintaining its own copy of this resolution.
+ * Per-column amounts for linked budget items via the contribution-account resolution, not
+ * the stale raw `amounts`, under the caller's resolved `profiles` pair (same in every
+ * column). `opts` sandbox values (What-If) layer on top. `scope.asOf` picks limits/jobs.
  */
 export async function resolveLinkedBudgetItemAmounts<
   T extends {
@@ -59,7 +41,7 @@ export async function resolveLinkedBudgetItemAmounts<
     amounts: unknown;
   },
 >(
-  db: Db,
+  { db, scope }: { db: Db; scope: { asOf: Date } },
   items: T[],
   numColumns: number,
   profiles: ProfilePair,
@@ -70,12 +52,12 @@ export async function resolveLinkedBudgetItemAmounts<
 ): Promise<
   (T & { amounts: number[]; contribStatus: ContribResolutionStatus[] | null })[]
 > {
-  const linkedContribIds = new Set(
+  const linkedContributionIds = new Set(
     items
       .filter((i) => i.contributionAccountId != null)
       .map((i) => i.contributionAccountId!),
   );
-  if (linkedContribIds.size === 0) {
+  if (linkedContributionIds.size === 0) {
     return items.map((i) => ({
       ...i,
       amounts: i.amounts as number[],
@@ -87,7 +69,7 @@ export async function resolveLinkedBudgetItemAmounts<
     .select()
     .from(schema.contributionAccounts)
     .where(eq(schema.contributionAccounts.isActive, true));
-  const rawContribIds = new Set(rawContribs.map((c) => c.id));
+  const rawContributionIds = new Set(rawContribs.map((c) => c.id));
   const allJobs = await db.select().from(schema.jobs);
   const effectiveSalaryMap: SalaryActiveMap = applySandboxSalaryEntries(
     opts?.sandboxSalaryEntries,
@@ -96,7 +78,7 @@ export async function resolveLinkedBudgetItemAmounts<
 
   // The active pair, computed once — every column shows the same figure.
   // (`amounts`/`contribStatus` below repeat it per column for the API shape.)
-  const contribMonthlyById = new Map<number, number>();
+  const contributionMonthlyById = new Map<number, number>();
   const incompleteIds = new Set<number>();
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
     db,
@@ -110,24 +92,19 @@ export async function resolveLinkedBudgetItemAmounts<
     salaryProfileActiveMap,
   );
   // The IRS-limit cap pass: these lines show the capped contribution.
-  const activeContribs = capForRequest(
+  const activeContributions = capForRequest(
     applyContribActiveFields(
       profileResult.contribs,
       opts?.sandboxContribActiveFields ?? {},
       true,
     ),
-    await loadCapHousehold(
-      db,
-      await getAllPeople(db),
-      null,
-      new Date().getFullYear(),
-    ),
+    await loadCapHousehold(db, await getAllPeople(db), null, scope.asOf),
     profileResult.jobs,
     salaryProfileActiveMap,
     effectiveSalaryMap,
   );
-  const activeContribIds = new Set(activeContribs.map((c) => c.id));
-  const activeJobs = filterActiveJobs(profileResult.jobs, new Date());
+  const activeContributionIds = new Set(activeContributions.map((c) => c.id));
+  const activeJobs = filterActiveJobs(profileResult.jobs, scope.asOf);
   const {
     periodsPerYear: defaultPeriodsPerYear,
     incomplete: joblessIncomplete,
@@ -144,15 +121,15 @@ export async function resolveLinkedBudgetItemAmounts<
     );
   }
 
-  for (const c of activeContribs) {
-    if (!linkedContribIds.has(c.id)) continue;
+  for (const c of activeContributions) {
+    if (!linkedContributionIds.has(c.id)) continue;
     const val = computeValue(c);
     const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
     let jobPeriodsPerYear: number;
     let incomplete: boolean;
     if (c.jobId) {
       const job = activeJobs.find((j) => j.id === c.jobId);
-      const resolved = resolveContribPeriods(c.contributionMethod, job);
+      const resolved = resolveContributionPeriods(c.contributionMethod, job);
       jobPeriodsPerYear = resolved.periodsPerYear;
       incomplete = resolved.incomplete;
     } else {
@@ -161,7 +138,7 @@ export async function resolveLinkedBudgetItemAmounts<
     }
     if (incomplete) {
       incompleteIds.add(c.id);
-      contribMonthlyById.set(c.id, 0);
+      contributionMonthlyById.set(c.id, 0);
       continue;
     }
     const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
@@ -171,18 +148,18 @@ export async function resolveLinkedBudgetItemAmounts<
       salary,
       jobPeriodsPerYear,
     );
-    contribMonthlyById.set(c.id, annual / 12);
+    contributionMonthlyById.set(c.id, annual / 12);
   }
 
   const statusById = new Map<number, ContribResolutionStatus>();
-  for (const accountId of linkedContribIds) {
+  for (const accountId of linkedContributionIds) {
     statusById.set(
       accountId,
-      classifyContribResolution(
+      classifyContributionResolution(
         accountId,
-        rawContribIds,
+        rawContributionIds,
         profileResult.contribActiveFields,
-        activeContribIds,
+        activeContributionIds,
         incompleteIds,
       ),
     );
@@ -195,7 +172,7 @@ export async function resolveLinkedBudgetItemAmounts<
     const accountId = i.contributionAccountId;
     const amounts = Array.from(
       { length: numColumns },
-      () => contribMonthlyById.get(accountId) ?? 0,
+      () => contributionMonthlyById.get(accountId) ?? 0,
     );
     const contribStatus = Array.from(
       { length: numColumns },

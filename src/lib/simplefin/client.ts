@@ -1,20 +1,6 @@
-// SimpleFIN Bridge client — read-only bank/brokerage balance aggregator.
-// Protocol: https://www.simplefin.org/protocol.html
-//
-// A one-time setup token (base64) decodes to a claim URL. POSTing to that
-// URL returns an Access URL with embedded HTTP Basic Auth credentials
-// (scheme://user:pass@host/...), which is stored and reused for every
-// subsequent /accounts call — no further token exchange needed.
-//
-// Two request shapes: balances-only (the connection test) and full
-// (holdings + transactions, protocol version 2, used by the daily sync).
-// SimpleFIN Bridge allows ~24 requests/day per access URL; the full request
-// is never retried here — the sync layer counts every call and decides.
-//
-// Replay mode (development only): when SIMPLEFIN_REPLAY_DIR is set and
-// NODE_ENV is not "production", getAccounts reads saved responses from that
-// directory instead of calling SimpleFIN, so a dev instance never shares a
-// production connection's daily quota.
+// SimpleFIN Bridge client (https://www.simplefin.org/protocol.html): a setup token
+// claims an Access URL with Basic Auth credentials, reused for every call. The full
+// request is never retried here; dev replay reads SIMPLEFIN_REPLAY_DIR instead.
 
 import { z } from "zod/v4";
 import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";

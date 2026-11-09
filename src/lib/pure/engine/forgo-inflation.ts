@@ -1,9 +1,6 @@
 /**
- * Forgo Inflation After Loss — Morningstar Method 1.
- *
- * If the portfolio had a negative return last year, skip the inflation
- * adjustment for this year. Cumulative real cuts over multiple loss years.
- * SWR: 4.4% (40/60 portfolio, 90% success, 30 years).
+ * Forgo Inflation After Loss (Morningstar Method 1): skip this year's inflation raise after a
+ * negative return. SWR 4.4% (40/60 portfolio, 90% success, 30 years).
  */
 import type {
   SpendingStrategyInput,

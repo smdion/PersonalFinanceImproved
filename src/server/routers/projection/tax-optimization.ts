@@ -1,30 +1,6 @@
 /**
- * Tax Optimization surface — router endpoints.
- *
- * Every procedure here runs the SAME `calculateProjection()` the
- * Retirement page uses, via the SAME `fetchRetirementData` /
- * `buildEnginePayload` helpers — there is no parallel year-by-year tax
- * loop (that is the banned "second computation path", `docs/RULES.md`).
- * `compareWithdrawalStrategies` and `rothConversionWhatIf` run that engine
- * N times with different `decumulationOverrides` and score the results,
- * exactly like `withdrawal-bracket-optimizer.ts` and `coast-fire.ts` do.
- * `projectTaxYears` is a single deterministic run reshaped for the IRMAA
- * callout (the page no longer renders a year-by-year table).
- *
- * Modeled on `withdrawal-bracket-optimizer.ts`: `protectedProcedure.query`,
- * synchronous, cheap, uncached — no `expensiveRateLimitMiddleware`, no
- * server-side projection cache (Coast FIRE precedent). Lives inside
- * `projection/` (not a top-level `routers/tax-optimization.ts`) because it
- * shares `fetchRetirementData` / `buildEnginePayload` / `_shared.ts`
- * schemas verbatim with the rest of this family; client calls are
- * `api.projection.projectTaxYears` etc.
- *
- * Assumptions (retirement age, inflation, withdrawal strategy, Roth
- * settings, …) are NOT inputs here — the Tax Optimization page embeds the
- * Retirement page's `AssumptionsBand`, which saves straight to the active
- * Retirement Profile, so the profile is the single source and the input
- * below only needs to say WHICH profile / budget / snapshot to read. This
- * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
+ * Tax Optimization endpoints: each runs the same `calculateProjection()` as the Retirement
+ * page (no second computation path). Assumptions come from the active Retirement Profile.
  */
 import { withControlledOverrides } from "@/lib/pure/contributions/controlled-overrides";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
@@ -33,7 +9,6 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type {
-  AccumulationOverride,
   DecumulationOverride,
   RoutingMode,
 } from "@/lib/pure/engine/types";
@@ -44,18 +19,14 @@ import { prepareProjectionRun } from "@/server/services/projection/projection-ru
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  buildDecumulationDefaults,
-  resolveProjectionOverrides,
 } from "./_shared";
+import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
- * `RoutingMode` as a Zod enum — the withdrawal-sequencing strategies the
- * comparison procedure accepts. Never `z.string()` (`docs/RULES.md`
- * calls this out specifically as a security concern). The `satisfies`
- * check ties the tuple to the engine's own `RoutingMode` union so a new
- * routing mode can't be added there without this failing to compile.
+ * `RoutingMode` as a Zod enum (never `z.string()`, `docs/RULES.md`); `satisfies`
+ * ties the tuple to the engine's `RoutingMode` union.
  */
 const ROUTING_MODES = [
   "waterfall",
@@ -73,10 +44,8 @@ void _routingModeCovered;
 const zRoutingMode = z.enum(ROUTING_MODES);
 
 /**
- * The read-selection surface every Tax Optimization procedure shares — which
- * profile(s) / budget / snapshot to project. Mirrors `computeProjection`'s
- * input (`scenarios.ts:61-108`); it deliberately carries no assumption
- * values (see the file docblock).
+ * Which profile(s) / budget / snapshot to project, mirroring `computeProjection`'s
+ * input; carries no assumption values.
  */
 const taxOptimizationBaseInput = z.strictObject({
   decumulationDefaults: decumulationDefaultsInputSchema,
@@ -113,43 +82,30 @@ const rothConversionTargetSchema = z.object({
 type TaxOptimizationBaseInput = z.infer<typeof taxOptimizationBaseInput>;
 
 /**
- * fetch → buildEnginePayload → run `calculateProjection` ONCE, with the
- * request's profile/budget selection and any client `decumulationDefaults`
- * / overrides applied. Byte-for-byte the same construction
- * `withdrawal-bracket-optimizer.ts` uses; the strategy-comparison and Roth
- * what-if procedures call this in a loop with an extra override pushed on.
- * Returns `null` when the household has no projectable data yet, and
- * the not-configured reason when no return rate covers its current age.
+ * Runs `calculateProjection` once with the request's selection and overrides applied.
+ * Returns `null` when the household has no projectable data yet, and the
+ * not-configured reason when no return rate covers its current age.
  */
 async function runProjection(
-  db: Parameters<typeof prepareProjectionRun>[0],
+  ctx: Parameters<typeof prepareProjectionRun>[0],
   input: TaxOptimizationBaseInput,
   extraDecumulationOverrides: DecumulationOverride[] = [],
 ) {
-  const { payload } = await prepareProjectionRun(db, {
+  const { payload } = await prepareProjectionRun(ctx, {
     selection: input.selection,
     snapshotId: input.snapshotId,
   });
   if (!payload) return null;
   if (payload.notConfigured) return payload.notConfigured;
 
-  const { settings, distributionTaxRates, baseEngineInput } = payload;
-  // Omitted "Changes by year" = the household's saved rows.
-  const overrides = await resolveProjectionOverrides(db, input);
-
+  const { distributionTaxRates } = payload;
+  const resolved = await prepareEngineInput(ctx.db, payload, input);
   const engineInput = {
-    ...baseEngineInput,
-    decumulationDefaults: buildDecumulationDefaults(
-      settings,
-      input.decumulationDefaults,
-      distributionTaxRates,
-    ),
-    accumulationOverrides:
-      overrides.accumulationOverrides as AccumulationOverride[],
+    ...resolved,
     // The what-if's fields win over the saved rows' (a saved later-year
     // row must not quietly undo the comparison).
     decumulationOverrides: withControlledOverrides(
-      overrides.decumulationOverrides as DecumulationOverride[],
+      resolved.decumulationOverrides,
       extraDecumulationOverrides,
     ),
   };
@@ -173,12 +129,9 @@ function decumulationYears(
   );
 }
 
-/** Lifetime tax = Σ (withdrawal tax + Roth-conversion tax + IRMAA +
- *  early-withdrawal penalty) over the decumulation horizon. Byte-for-byte
- *  `scoreCandidate` in `withdrawal-bracket-optimizer.ts`. NIIT is NOT
- *  added separately — the engine already folds it into `taxCost`
- *  (`decumulation-year.ts` does `taxCost = taxCost + niitAmount`); the
- *  earlier `+ niitAmount` here was double-counting it. */
+/** Lifetime tax = Σ (withdrawal tax + Roth-conversion tax + IRMAA + early-withdrawal
+ *  penalty) over decumulation, as `scoreCandidate` in `withdrawal-bracket-optimizer.ts`.
+ *  NIIT is not added: the engine already folds it into `taxCost`. */
 function lifetimeTax(years: EngineDecumulationYear[]): number {
   return years.reduce(
     (sum, y) =>
@@ -273,16 +226,13 @@ function toTaxYearRow(
 
 export const taxOptimizationRouter = createTRPCRouter({
   /**
-   * Year-by-year tax projection through decumulation — a straight read of
-   * the deterministic engine run (NOT Monte Carlo). One row per
-   * decumulation year with income sources, federal / NIIT / IRMAA tax,
-   * effective rate, balances, a running lifetime-tax total, and the shared
-   * "notable year" flags.
+   * Year-by-year tax projection through decumulation from one deterministic run:
+   * income sources, taxes, effective rate, balances, running lifetime tax and flags.
    */
   projectTaxYears: protectedProcedure
     .input(taxOptimizationBaseInput)
     .query(async ({ ctx, input }) => {
-      const run = await runProjection(ctx.db, input);
+      const run = await runProjection(ctx, input);
       if (!run) return { rows: [] as TaxYearRow[], meta: null };
       if (typeof run === "string")
         return {
@@ -312,12 +262,8 @@ export const taxOptimizationRouter = createTRPCRouter({
     }),
 
   /**
-   * Run the household's projection once per named withdrawal-sequencing
-   * strategy and score each on lifetime tax — the side-by-side comparison
-   * (roadmap #2). Clone-and-score, same pattern as
-   * `optimizeRothBracketTarget`: a baseline run learns the first
-   * decumulation year, then each strategy is one extra
-   * `decumulationOverride` from that year forward.
+   * Scores the household's projection on lifetime tax once per withdrawal strategy;
+   * each strategy is one extra `decumulationOverride` from the first decumulation year.
    */
   compareWithdrawalStrategies: protectedProcedure
     .input(
@@ -326,7 +272,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const baseline = await runProjection(ctx.db, input);
+      const baseline = await runProjection(ctx, input);
       if (!baseline) return { strategies: [], baselineLabel: null };
       if (typeof baseline === "string")
         return {
@@ -341,27 +287,13 @@ export const taxOptimizationRouter = createTRPCRouter({
         return { strategies: [], baselineLabel: null };
       }
 
-      // "Your current plan" — the household's real resolved defaults
-      // (buildDecumulationDefaults: session override, else
-      // retirement_settings.withdrawal_routing_mode, else
-      // "bracket_filling"), scored the identical way as the named
-      // candidates below. `baseline` already computed this projection to
-      // learn `firstDecumYear`; previously its score was thrown away and
-      // the client had no way to tell which (if any) of the three fixed
-      // candidates matched what the plan actually runs — matching by
-      // `mode` string alone breaks the moment a household's real routing
-      // is "waterfall" with a custom order that isn't one of the three
-      // presets. Returning the baseline's own score sidesteps that
-      // entirely: it's never a guess.
+      // "Your current settings": the household's real resolved defaults, scored like the
+      // candidates below, so the client never has to guess which preset matches the plan.
       const baselineFinalYear = baselineDecum[baselineDecum.length - 1];
       const currentPlan = {
-        label: "Your current plan",
+        label: "Your current settings",
         mode: baseline.engineInput.decumulationDefaults.withdrawalRoutingMode,
-        // For waterfall households, `mode` alone can't tell the client
-        // whether this matches one of the three named presets (they each
-        // carry a specific order too) — the resolved order lets the client
-        // check both before annotating a preset row as "same as your
-        // current plan."
+        // Matching a waterfall preset needs the resolved order as well as `mode`.
         withdrawalOrder: baseline.engineInput.decumulationDefaults
           .withdrawalOrder as string[],
         isCurrentPlan: true as const,
@@ -380,7 +312,7 @@ export const taxOptimizationRouter = createTRPCRouter({
             : {}),
         } as DecumulationOverride;
 
-        const out = await runProjection(ctx.db, input, [override]);
+        const out = await runProjection(ctx, input, [override]);
         const run = typeof out === "string" ? null : out;
         const years = run ? decumulationYears(run.result.projectionByYear) : [];
         const finalYear = years[years.length - 1];
@@ -393,10 +325,8 @@ export const taxOptimizationRouter = createTRPCRouter({
         });
       }
 
-      // The cheapest lifetime tax among strategies whose plan holds
-      // (assessPlan; fall back to overall cheapest if none does). Includes
-      // "Your current plan" in the ranking — it's a real, comparably-scored
-      // candidate, not just a reference row.
+      // Cheapest lifetime tax among strategies whose plan holds (else overall cheapest),
+      // with "Your current settings" ranked as a real candidate.
       const allScored = [currentPlan, ...scored];
       const viable = allScored.filter((s) => s.failureYear === null);
       const ranked = (viable.length ? viable : allScored)
@@ -410,17 +340,9 @@ export const taxOptimizationRouter = createTRPCRouter({
     }),
 
   /**
-   * Roth conversion what-if (roadmap #1). Two modes in one procedure:
-   *
-   * - `optimize` → delegates to the already-shipped
-   *   `optimizeRothBracketTarget` (the multi-year clone-and-score search
-   *   over the household's real marginal brackets). Not re-implemented.
-   * - `explicit` → applies the caller's per-year `targetRate` schedule as
-   *   sticky-forward `decumulationOverrides`, runs the engine once, and
-   *   also runs a baseline with conversions switched off, then returns the
-   *   before/after: per-year conversion + tax now, RMD reduction, IRMAA
-   *   delta, and the first year cumulative tax-with-conversions drops
-   *   below cumulative tax-without (`breakEvenYear`).
+   * Roth conversion what-if: `optimize` delegates to `optimizeRothBracketTarget`;
+   * `explicit` applies a per-year `targetRate` schedule and compares it with a
+   * no-conversion baseline (tax now, RMD reduction, IRMAA delta, `breakEvenYear`).
    */
   rothConversionWhatIf: protectedProcedure
     .input(
@@ -433,7 +355,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       ]),
     )
     .query(async ({ ctx, input }) => {
-      const run = await runProjection(ctx.db, input);
+      const run = await runProjection(ctx, input);
       if (!run) return { mode: input.mode, result: null };
       if (typeof run === "string")
         return {
@@ -474,8 +396,8 @@ export const taxOptimizationRouter = createTRPCRouter({
       ];
 
       const [withRun, offRun] = await Promise.all([
-        runProjection(ctx.db, input, withOverrides),
-        runProjection(ctx.db, input, offOverride),
+        runProjection(ctx, input, withOverrides),
+        runProjection(ctx, input, offOverride),
       ]);
       const withYears =
         withRun && typeof withRun !== "string"

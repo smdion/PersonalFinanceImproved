@@ -54,10 +54,10 @@ export function ProfileDetail({
       <table className="w-full border-collapse text-xs">
         <SalaryTableHead />
         <tbody>
-          {profile.salaryDetails.map((sd, rowIdx) => {
+          {profile.salaryDetails.map((sd, rowIndex) => {
             return (
               <React.Fragment key={sd.personId}>
-                <tr className={rowClass(rowIdx)}>
+                <tr className={rowClass(rowIndex)}>
                   <td className="text-secondary py-1.5 pr-3 pl-4 font-medium">
                     {sd.personName}
                   </td>
@@ -84,7 +84,7 @@ export function ProfileDetail({
                   </td>
                 </tr>
                 {sd.hasEntry && (
-                  <tr className={rowClass(rowIdx)}>
+                  <tr className={rowClass(rowIndex)}>
                     <td
                       colSpan={TABLE_COLUMNS}
                       className="bg-surface-sunken/60 px-4 py-3"

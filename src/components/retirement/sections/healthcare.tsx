@@ -88,7 +88,7 @@ export function HealthcareSection({
         <div>
           <span className="text-muted">
             ACA Subsidy (Pre-65)
-            <HelpTip text="ACA health insurance subsidy cliff. Going $1 over 400% FPL costs $15,000-$25,000+ in lost subsidies. Engine warns when MAGI approaches the cliff and prefers Roth/HSA withdrawals." />
+            <HelpTip text="ACA health insurance subsidy cliff. Going $1 over 400% FPL costs $15,000-$25,000+ in lost subsidies. The engine reports how close MAGI is to the cliff and warns when a year crosses it; it never changes a withdrawal or conversion to stay under." />
           </span>
           <div className="font-medium">
             <button

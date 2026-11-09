@@ -146,7 +146,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
   }
 
   it("materializes one row per detected month for a Budget-mode job (no rules)", async () => {
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
     const r = rows();
     expect(r.map((x) => x.monthDate).sort()).toEqual([
       "2026-06-01",
@@ -163,7 +163,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
     });
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
     expect(rows().length).toBe(2);
 
     // Re-enable → Savings mode → budget rows must be cleared.
@@ -173,7 +173,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
     });
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
     expect(rows()).toEqual([]);
   });
 
@@ -183,13 +183,13 @@ describe("materializeBudgetIncomeAdjustments", () => {
       baseNetPayPerCheck: 1000,
       baseYear: 2026,
     });
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
     expect(rows()).toEqual([]);
   });
 
   it("materializes nothing when the routing has no baseNetPayPerCheck snapshot", async () => {
     updateRouting({ rules: [] });
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
     expect(rows()).toEqual([]);
   });
 
@@ -204,7 +204,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
       })
       .run();
 
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
 
     const jan = rows().find((r) => r.monthDate === "2026-01-01");
     expect(jan).toBeDefined();
@@ -219,7 +219,7 @@ describe("materializeBudgetIncomeAdjustments", () => {
       yearlyGrowth: { "2027": { type: "pct", value: 10 } },
     });
 
-    await materializeBudgetIncomeAdjustments(ctx.db as never);
+    await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
 
     const r = rows();
     expect(Number(r.find((x) => x.monthDate === "2026-06-01")!.amount)).toBe(

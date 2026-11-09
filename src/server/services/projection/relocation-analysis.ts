@@ -37,10 +37,7 @@ import {
 import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
-import {
-  resolveRetirementProfileIdFrom,
-  pickProfileSettingsRow,
-} from "@/lib/pure/household/retirement-profile";
+import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import type { Db } from "@/lib/db";
 
 export const zRelocationAnalysisInput = z.object({
@@ -104,11 +101,9 @@ export async function computeRelocationAnalysis(
   const [
     people,
     allJobs,
-    retSettings,
-    retProfiles,
     retScenarios,
     returnRates,
-    allContribsRaw,
+    allContributionsRaw,
     snapshotData,
     allBudgetProfiles,
     allBudgetItems,
@@ -117,11 +112,6 @@ export async function computeRelocationAnalysis(
   ] = await Promise.all([
     getAllPeople(ctx.db),
     ctx.db.select().from(schema.jobs),
-    ctx.db.select().from(schema.retirementSettings),
-    ctx.db
-      .select()
-      .from(schema.retirementProfiles)
-      .orderBy(asc(schema.retirementProfiles.id)),
     ctx.db.select().from(schema.retirementScenarios),
     ctx.db
       .select()
@@ -142,7 +132,7 @@ export async function computeRelocationAnalysis(
   ]);
   // Filter to Retirement-only contributions for the relocation tool.
   const perfCatMap = new Map(perfAccounts.map((p) => [p.id, p.parentCategory]));
-  const allContribs = allContribsRaw.filter(
+  const allContributions = allContributionsRaw.filter(
     (c) =>
       c.performanceAccountId != null &&
       isRetirementParent(perfCatMap.get(c.performanceAccountId)),
@@ -153,25 +143,18 @@ export async function computeRelocationAnalysis(
 
   // Active profile's row, matching build-engine-payload — the readiness
   // analysis must read the same assumptions the projection does.
-  const activeRetProfileId = resolveRetirementProfileIdFrom(
+  const settings = await loadActiveRetirementSettings(
+    ctx.db,
     appSettingsRows,
-    retProfiles,
-  );
-  const settings = pickProfileSettingsRow(
-    retSettings,
-    activeRetProfileId,
     primaryPerson.id,
   );
   if (!settings) return { result: null, budgetInfo: null };
 
   if (allBudgetProfiles.length === 0) return { result: null, budgetInfo: null };
 
-  // Build per-profile column totals — resolved through the same
-  // contribution-account chain computeActiveSummary/build-engine-payload.ts
-  // use (see resolveLinkedBudgetItemAmounts) rather than raw `amounts`,
-  // which is intentionally stale for contribution-linked items. Active
-  // profiles throughout, matching this endpoint's
-  // documented "control arm" salary resolution below.
+  // Per-profile column totals through the contribution-account chain
+  // (resolveLinkedBudgetItemAmounts), not raw `amounts`, which is stale for
+  // contribution-linked items. Active profiles, as the salary control arm below.
   const profileSummaries = await Promise.all(
     allBudgetProfiles.map(async (p) => {
       const items = allBudgetItems.filter((i) => i.profileId === p.id);
@@ -180,14 +163,14 @@ export async function computeRelocationAnalysis(
       const numColumns = labels.length;
       const activeProfiles = await resolveProfileSelection(ctx.scope);
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,
       );
-      const totals = labels.map((_: string, colIdx: number) =>
+      const totals = labels.map((_: string, colIndex: number) =>
         resolvedItems.reduce(
-          (sum: number, item) => sum + (item.amounts[colIdx] ?? 0),
+          (sum: number, item) => sum + (item.amounts[colIndex] ?? 0),
           0,
         ),
       );
@@ -297,19 +280,16 @@ export async function computeRelocationAnalysis(
     };
   });
   // Contributions (live data)
-  const activeContribs = allContribs.filter(
+  const activeContributions = allContributions.filter(
     (c) =>
       activeJobs.some((j) => j.id === c.jobId) ||
       (c.jobId === null && people.some((p) => p.id === c.personId)),
   );
 
-  // Yearly contributions and employer match for one arm — the one
-  // summary path (aggregateContributionsByCategory: bonus checks per
-  // account's fromBonus, the per-account match pay, incomplete
-  // accounts). `contribs` is always resolveProfile's output, never the
-  // raw activeContribs rows, which carry no value of their own. Jobs are
-  // the arm's profile-patched ones, so a profile's pay schedule counts.
-  const computeContribTotals = (
+  // Yearly contributions and match for one arm via the one summary path
+  // (aggregateContributionsByCategory). `contribs` is resolveProfile's output;
+  // jobs are the arm's profile-patched ones, so its pay schedule counts.
+  const computeContributionTotals = (
     contribs: (ContribRowWithActiveFields & CapPassed)[],
     salaries: typeof jobSalaries,
     jobsForPeriods: {
@@ -332,7 +312,10 @@ export async function computeRelocationAnalysis(
       })),
     );
     return {
-      totalContribs: sumBy(Object.values(r.contribByCategory), (c) => c.annual),
+      totalContributions: sumBy(
+        Object.values(r.contribByCategory),
+        (c) => c.annual,
+      ),
       totalEmployerMatch: sumBy(
         Object.values(r.employerMatchByCategory),
         (m) => m,
@@ -341,30 +324,26 @@ export async function computeRelocationAnalysis(
     };
   };
 
-  // Resolve contribution profiles for each scenario. No profile
-  // (or a stale id that no longer exists) resolves against an empty
-  // active-fields map — accounts carry no value of their own anymore,
-  // so this correctly yields zero contributions rather than falling
-  // back to a "live" reading of the raw account rows.
+  // Resolve contribution profiles per scenario. No profile (or a missing id)
+  // resolves against an empty active-fields map: zero contributions, since
+  // accounts carry no value of their own.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
     null,
+    ctx.scope.asOf,
     referenceDate.getFullYear(),
   );
-  const resolveContribProfile = async (profileId: number | null) => {
+  const resolveContributionProfile = async (profileId: number | null) => {
     const profile = profileId
       ? await fetchContributionProfile(ctx.db, profileId)
       : null;
 
-    // Shared resolver (was a near-duplicate re-implementation inline
-    // here). jobSalaries already reflects the globally-active
-    // Salary Profile — this is the control/comparison arm of the
-    // relocation analysis, so it stays un-overridden by any
-    // Plan-specific salary the way it always has.
+    // jobSalaries already reflects the active Salary Profile: this is the
+    // relocation analysis's comparison arm, so no Plan-specific salary applies.
     const resolved = resolveProfile(
       profile ?? { contributionActiveFields: {} },
-      activeContribs,
+      activeContributions,
       activeJobs,
       jobSalaries,
       salaryProfileActiveMap,
@@ -374,23 +353,23 @@ export async function computeRelocationAnalysis(
       0,
     );
 
-    const totals = computeContribTotals(
+    const totals = computeContributionTotals(
       capResolvedProfile(resolved, capHousehold),
       resolved.jobSalaries,
       resolved.activeJobs,
     );
     return {
       combinedSalary: resolvedCombinedSalary,
-      annualContributions: totals.totalContribs,
+      annualContributions: totals.totalContributions,
       employerMatch: totals.totalEmployerMatch,
       incompleteAccountIds: totals.incompleteIds,
     };
   };
 
-  const currentContribData = await resolveContribProfile(
+  const currentContributionData = await resolveContributionProfile(
     input.currentContributionProfileId,
   );
-  const relocContribData = await resolveContribProfile(
+  const relocContributionData = await resolveContributionProfile(
     input.relocationContributionProfileId,
   );
 
@@ -402,7 +381,7 @@ export async function computeRelocationAnalysis(
   );
   const yearRates: number[] = [];
   // When the plan's withdrawals start, as the primary person's age.
-  const plannedYear = await householdRetirementYear(ctx.db);
+  const plannedYear = await householdRetirementYear(ctx.db, ctx.scope.asOf);
   const retirementAge =
     plannedYear !== null
       ? age + plannedYear - referenceDate.getFullYear()
@@ -428,12 +407,12 @@ export async function computeRelocationAnalysis(
     currentAge: age,
     retirementAge,
     currentPortfolio: portfolioTotal,
-    currentAnnualContributions: currentContribData.annualContributions,
-    currentEmployerContributions: currentContribData.employerMatch,
-    currentCombinedSalary: currentContribData.combinedSalary,
-    relocationAnnualContributions: relocContribData.annualContributions,
-    relocationEmployerContributions: relocContribData.employerMatch,
-    relocationCombinedSalary: relocContribData.combinedSalary,
+    currentAnnualContributions: currentContributionData.annualContributions,
+    currentEmployerContributions: currentContributionData.employerMatch,
+    currentCombinedSalary: currentContributionData.combinedSalary,
+    relocationAnnualContributions: relocContributionData.annualContributions,
+    relocationEmployerContributions: relocContributionData.employerMatch,
+    relocationCombinedSalary: relocContributionData.combinedSalary,
     currentSalaryGrowthRate: salaryGrowthRate,
     relocationSalaryGrowthRate: salaryGrowthRate,
     withdrawalRate: selectedScenario
@@ -441,16 +420,9 @@ export async function computeRelocationAnalysis(
       : toNumber(settings.withdrawalRate),
     inflationRate: toNumber(settings.annualInflation),
     nominalReturnRate: avgReturnRate,
-    // Known limitation (deliberately not fixed — see TODO.md): this is
-    // the household `retirement_settings` scalar, NOT the per-person /
-    // PIA-aware resolution `build-engine-payload.ts` uses
-    // (`personAnnualAmount` + `parseAnnualPia`). This proc doesn't even
-    // fetch `retirement_profile_people`. Low impact for a coarse
-    // relocation-vs-stay FI comparison: the same SS figure is applied
-    // to both arms, so it largely cancels in the reported delta. Wiring
-    // the full per-person/PIA resolution here isn't proportionate to
-    // that; revisit if the relocation tool ever surfaces an absolute
-    // (not just comparative) retirement number.
+    // Known limitation: the household scalar, not build-engine-payload's
+    // per-person/PIA resolution; the same figure goes to both arms, so it mostly
+    // cancels in the reported delta.
     socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
     asOfDate: referenceDate,
   });
@@ -465,16 +437,20 @@ export async function computeRelocationAnalysis(
       relocationColumnIndex: input.relocationBudgetColumn,
     },
     currentContribProfile: {
-      annualContributions: roundToCents(currentContribData.annualContributions),
-      employerMatch: roundToCents(currentContribData.employerMatch),
-      combinedSalary: roundToCents(currentContribData.combinedSalary),
-      incompleteAccountIds: currentContribData.incompleteAccountIds,
+      annualContributions: roundToCents(
+        currentContributionData.annualContributions,
+      ),
+      employerMatch: roundToCents(currentContributionData.employerMatch),
+      combinedSalary: roundToCents(currentContributionData.combinedSalary),
+      incompleteAccountIds: currentContributionData.incompleteAccountIds,
     },
     relocationContribProfile: {
-      annualContributions: roundToCents(relocContribData.annualContributions),
-      employerMatch: roundToCents(relocContribData.employerMatch),
-      combinedSalary: roundToCents(relocContribData.combinedSalary),
-      incompleteAccountIds: relocContribData.incompleteAccountIds,
+      annualContributions: roundToCents(
+        relocContributionData.annualContributions,
+      ),
+      employerMatch: roundToCents(relocContributionData.employerMatch),
+      combinedSalary: roundToCents(relocContributionData.combinedSalary),
+      incompleteAccountIds: relocContributionData.incompleteAccountIds,
     },
   };
 }

@@ -1,13 +1,7 @@
 /**
- * A pooled client that runs one query at a time. A drizzle instance bound to
- * one client (demo schemas set search_path on a dedicated connection) serves
- * code written for the pool, which runs independent reads with Promise.all.
- * pg rejects a query sent while another is running on the same client (an
- * error from pg@9), so each query here starts once the previous one settles.
- * Promise-style `query` calls only (what drizzle uses).
- *
- * Parallel `db.transaction` calls on one client still interleave their
- * BEGIN/COMMIT on the one connection, as they would on the bare client.
+ * Wraps a pooled client so its Promise-style queries run one at a time: pg rejects a query sent
+ * while another runs on the same client, and pool-style code (Promise.all) runs on demo-schema
+ * clients. Parallel `db.transaction` calls still interleave BEGIN/COMMIT on the one connection.
  */
 export function serializeQueries<
   T extends { query(...args: never[]): unknown },

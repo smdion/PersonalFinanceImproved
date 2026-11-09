@@ -1,6 +1,6 @@
 /**
- * Onboarding router tests — isOnboardingComplete, completeOnboarding,
- * firstRunState, createLocalAdmin, testOidcConnection.
+ * Onboarding router tests — getOnboardingStatus, completeOnboarding,
+ * getFirstRunState, createLocalAdmin, getOidcStatus.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, afterEach } from "vitest";
@@ -21,14 +21,14 @@ vi.mock("@/lib/auth/password", () => ({
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// isOnboardingComplete
+// getOnboardingStatus
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("settings.isOnboardingComplete", () => {
+describe("settings.getOnboardingStatus", () => {
   it("returns { complete: false } on a fresh database", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.settings.isOnboardingComplete();
+      const result = await caller.settings.getOnboardingStatus();
       expect(result).toEqual({ complete: false });
     } finally {
       cleanup();
@@ -39,7 +39,7 @@ describe("settings.isOnboardingComplete", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       await seedPerson(db, "Test User", "1990-01-01");
-      const result = await caller.settings.isOnboardingComplete();
+      const result = await caller.settings.getOnboardingStatus();
       expect(result).toEqual({ complete: true });
     } finally {
       cleanup();
@@ -50,7 +50,7 @@ describe("settings.isOnboardingComplete", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedAppSetting(db, "onboarding_completed", true);
-      const result = await caller.settings.isOnboardingComplete();
+      const result = await caller.settings.getOnboardingStatus();
       expect(result).toEqual({ complete: true });
     } finally {
       cleanup();
@@ -69,8 +69,8 @@ describe("settings.completeOnboarding", () => {
       const result = await caller.settings.completeOnboarding();
       expect(result).toEqual({ ok: true });
 
-      // Now isOnboardingComplete should return true
-      const check = await caller.settings.isOnboardingComplete();
+      // Now getOnboardingStatus should return true
+      const check = await caller.settings.getOnboardingStatus();
       expect(check.complete).toBe(true);
     } finally {
       cleanup();
@@ -82,7 +82,7 @@ describe("settings.completeOnboarding", () => {
     try {
       await caller.settings.completeOnboarding();
       await caller.settings.completeOnboarding();
-      const check = await caller.settings.isOnboardingComplete();
+      const check = await caller.settings.getOnboardingStatus();
       expect(check.complete).toBe(true);
     } finally {
       cleanup();
@@ -91,14 +91,14 @@ describe("settings.completeOnboarding", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// testOidcConnection
+// getOidcStatus
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("settings.testOidcConnection", () => {
+describe("settings.getOidcStatus", () => {
   it("returns configured: false when env vars are not set", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.settings.testOidcConnection();
+      const result = await caller.settings.getOidcStatus();
       expect(result.configured).toBe(false);
       expect(result.reachable).toBe(false);
       expect(result.issuer).toBeNull();
@@ -109,7 +109,7 @@ describe("settings.testOidcConnection", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// firstRunState (public: /login reads it signed out)
+// getFirstRunState (public: /login reads it signed out)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const firstAdmin = {
@@ -118,11 +118,11 @@ const firstAdmin = {
   password: "SecurePass123!",
 };
 
-describe("settings.firstRunState", () => {
+describe("settings.getFirstRunState", () => {
   it("says an admin is needed on a fresh database, signed out", async () => {
     const { caller, cleanup } = await createTestCaller(null);
     try {
-      expect(await caller.settings.firstRunState()).toEqual({
+      expect(await caller.settings.getFirstRunState()).toEqual({
         adminNeeded: true,
       });
     } finally {
@@ -134,7 +134,7 @@ describe("settings.firstRunState", () => {
     const { caller, cleanup } = await createTestCaller(null);
     try {
       await caller.settings.createLocalAdmin(firstAdmin);
-      expect(await caller.settings.firstRunState()).toEqual({
+      expect(await caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     } finally {
@@ -146,7 +146,7 @@ describe("settings.firstRunState", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       await caller.settings.completeOnboarding();
-      expect(await caller.settings.firstRunState()).toEqual({
+      expect(await caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     } finally {
@@ -158,7 +158,7 @@ describe("settings.firstRunState", () => {
     vi.stubEnv("DEMO_ONLY", "true");
     const { caller, cleanup } = await createTestCaller(null);
     try {
-      expect(await caller.settings.firstRunState()).toEqual({
+      expect(await caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
       await expect(
@@ -174,7 +174,7 @@ describe("settings.firstRunState", () => {
     const { caller, db, cleanup } = await createTestCaller(null);
     try {
       await seedPerson(db, "Test User", "1990-01-01");
-      expect(await caller.settings.firstRunState()).toEqual({
+      expect(await caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     } finally {
@@ -361,10 +361,10 @@ describe("settings.createLocalAdmin", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// testOidcConnection — with env vars set (lines 103-114)
+// getOidcStatus — with env vars set (lines 103-114)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("settings.testOidcConnection — with env vars", () => {
+describe("settings.getOidcStatus — with env vars", () => {
   const originalEnv = { ...process.env };
 
   afterEach(() => {
@@ -379,7 +379,7 @@ describe("settings.testOidcConnection — with env vars", () => {
 
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.settings.testOidcConnection();
+      const result = await caller.settings.getOidcStatus();
       expect(result.configured).toBe(true);
       // fetch will fail since the URL is not reachable
       expect(result.reachable).toBe(false);
@@ -397,7 +397,7 @@ describe("settings.testOidcConnection — with env vars", () => {
 
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.settings.testOidcConnection();
+      const result = await caller.settings.getOidcStatus();
       expect(result.configured).toBe(false);
       expect(result.reachable).toBe(false);
       expect(result.issuer).toBeNull();
@@ -413,7 +413,7 @@ describe("settings.testOidcConnection — with env vars", () => {
 
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.settings.testOidcConnection();
+      const result = await caller.settings.getOidcStatus();
       expect(result.configured).toBe(false);
     } finally {
       cleanup();

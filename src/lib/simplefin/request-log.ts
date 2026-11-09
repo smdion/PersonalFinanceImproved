@@ -1,14 +1,13 @@
-// SimpleFIN request ledger — every outbound call is recorded so Ledgr stays
-// under SimpleFIN Bridge's per-access-URL daily quota (~24 requests/day;
-// going over can disable the token). The cron, "Sync Now" and the
-// connection test all count. Replayed (development) reads are recorded but
-// don't count.
+// Records every outbound SimpleFIN call (cron, Sync Now, connection test) to stay
+// under the ~24/day per-access-URL quota, which can disable the token if exceeded.
+// Replayed (development) reads are recorded but don't count.
 import "server-only";
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { BudgetApiError } from "@/lib/budget-api/errors";
 import { isSimplefinReplayMode } from "./client";
 import type { Db } from "@/lib/db";
+import { MS_PER_DAY } from "@/lib/constants";
 
 const SERVICE = "simplefin";
 /** Hard stop below SimpleFIN Bridge's ~24/day quota, leaving headroom. */
@@ -16,7 +15,6 @@ export const SIMPLEFIN_DAILY_REQUEST_LIMIT = 20;
 /** Minimum gap between manual "Sync Now" requests. */
 export const SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS = 10 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** bad_response: SimpleFIN answered in a shape Ledgr can't read; it counts
  *  against the quota like every real request. */
@@ -60,10 +58,7 @@ export function simplefinRequestRecorder(db: Db) {
 
 /** Before any real request: at Ledgr's daily limit, logs the skip and
  *  throws the pause. Replays never count, so they're never stopped. */
-export async function stopAtSimplefinQuota(
-  db: Db,
-  now: Date = new Date(),
-): Promise<void> {
+export async function stopAtSimplefinQuota(db: Db, now: Date): Promise<void> {
   if (isSimplefinReplayMode()) return;
   const used = await countSimplefinRequestsLastDay(db, now);
   if (used < SIMPLEFIN_DAILY_REQUEST_LIMIT) return;
@@ -79,7 +74,7 @@ export async function stopAtSimplefinQuota(
 /** Real requests (not replays or skips) in the 24 hours before `now`. */
 export async function countSimplefinRequestsLastDay(
   db: Db,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<number> {
   const rows = await db
     .select({ n: sql<number>`count(*)` })
@@ -89,7 +84,7 @@ export async function countSimplefinRequestsLastDay(
         eq(schema.syncRequestLog.service, SERVICE),
         gte(
           schema.syncRequestLog.requestedAt,
-          new Date(now.getTime() - DAY_MS),
+          new Date(now.getTime() - MS_PER_DAY),
         ),
         ne(schema.syncRequestLog.outcome, "replay"),
         ne(schema.syncRequestLog.outcome, "skipped_quota"),
@@ -118,7 +113,7 @@ export async function lastSimplefinRequestAt(db: Db): Promise<Date | null> {
 /** Drop ledger rows older than 30 days. */
 export async function pruneSimplefinRequestLog(
   db: Db,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<void> {
   await db
     .delete(schema.syncRequestLog)

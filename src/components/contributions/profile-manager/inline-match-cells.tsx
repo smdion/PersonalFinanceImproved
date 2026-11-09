@@ -4,6 +4,7 @@ import {
 } from "@/lib/config/display-labels";
 import { matchValueToStore } from "@/lib/pure/contributions/match-display";
 import type { InlineRowProps } from "./account-row-types";
+import { LabelOptions } from "@/components/ui/label-options";
 
 export function InlineMatchTypeCell({
   effectiveMatchType,
@@ -22,11 +23,7 @@ export function InlineMatchTypeCell({
         }
         className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
       >
-        {Object.entries(EMPLOYER_MATCH_LABELS).map(([k, label]) => (
-          <option key={k} value={k}>
-            {label}
-          </option>
-        ))}
+        <LabelOptions labels={EMPLOYER_MATCH_LABELS} />
       </select>
     </td>
   );

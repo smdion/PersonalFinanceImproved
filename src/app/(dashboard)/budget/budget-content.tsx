@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Multi-profile budget management page (client content).
- *
- * Owns: queries, mutations, local UI state, pageCtxValue, and the top-level
- * layout. Hook and component extractions:
- *   useBudgetPageState     — edit mode, drafts, resize, lazy-render
- *   useBudgetDerivedData   — contribs, category map, API actuals, getCatTotals
- *   BudgetDetailPanel      — right-side detail grid content
+ * Multi-profile budget page (client): queries, mutations, page context and
+ * layout. State lives in useBudgetPageState, derived data in useBudgetDerivedData.
  */
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -72,11 +67,8 @@ import { RetirementProfileManager } from "@/components/retirement/retirement-pro
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 
 /**
- * The Budget page and the Profiles page share this body (one set of
- * queries and drafts): `section="budget"` is the budget grid with its
- * Budget-profile sidebar; `section="profiles"` is the Salary,
- * Contributions, Savings and Retirement profile managers plus the What-If
- * sandbox, with the tab in the URL (?tab=).
+ * Shared body of the Budget page (`section="budget"`: grid + sidebar) and the
+ * Profiles page (`section="profiles"`: profile managers + What-If, tab in ?tab=).
  */
 export function BudgetContent({
   section = "budget",
@@ -106,7 +98,7 @@ export function BudgetContent({
     activeProfileId,
   });
 
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
@@ -118,10 +110,10 @@ export function BudgetContent({
   // the summary query and the edit batch so they resolve alike.
   const paySelection = useMemo(
     () => ({
-      contribution: activeContribProfileId,
+      contribution: activeContributionProfileId,
       salary: activeSalaryProfileIdSetting,
     }),
-    [activeContribProfileId, activeSalaryProfileIdSetting],
+    [activeContributionProfileId, activeSalaryProfileIdSetting],
   );
   const summary = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
@@ -131,9 +123,8 @@ export function BudgetContent({
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
     displayProfileId != null ? { profileId: displayProfileId } : undefined,
   );
-  // Resolved per the profile being viewed (funding is entirely per-profile,
-  // same path the Savings page uses) — NOT savings.savingsGoals.list,
-  // which no longer carries funding data at all (goal identity only).
+  // Resolved per the profile being viewed (funding is per-profile, same path
+  // as the Savings page); savings.savingsGoals.list carries goal identity only.
   const { data: resolvedSavingsGoals } =
     trpc.savings.goalProfileAllocations.list.useQuery(
       { profileId: displayProfileId! },
@@ -200,19 +191,13 @@ export function BudgetContent({
   const [pullPreviewItems, setPullPreviewItems] = useState<ReturnType<
     typeof buildPullPreviewItems
   > | null>(null);
-  // Retirement tab's own "view without activating" selection — lifted here
-  // (not owned by RetirementProfileManager or RetirementProfileTab
-  // individually) so both halves of the master-detail layout agree on
-  // which profile is being shown, same lifting pattern the other three
-  // profile types' managers already use for their own list/detail split.
+  // Retirement tab's "view without activating" selection, lifted here so the
+  // list and detail halves agree on the profile shown.
   const [viewingRetirementProfileId, setViewingRetirementProfileId] = useState<
     number | null
   >(null);
-  // Resolved (not raw) — same computation RetirementProfileManager runs
-  // internally for its own row highlighting (same inputs, shared query
-  // cache, so the two can't disagree). RetirementProfileTab needs the
-  // RESOLVED id, not the raw click state (null until something's clicked),
-  // so the two columns always show the same profile.
+  // RetirementProfileTab needs the RESOLVED id (raw click state is null until
+  // a click), computed the same way RetirementProfileManager highlights rows.
   const { data: retirementProfilesForResolve } =
     trpc.retirement.retirementProfiles.list.useQuery();
   const [activeRetirementProfileId] = useActiveRetirementProfile();
@@ -253,7 +238,7 @@ export function BudgetContent({
     columnMonths,
     isWeighted,
     payrollBreakdowns,
-    matchContrib,
+    matchContribution,
     allColumnResults,
     categoryMap,
     categoryNames,
@@ -268,7 +253,7 @@ export function BudgetContent({
     data: summary.data,
     savingsGoals,
     apiActualsData,
-    contribProfileId: activeContribProfileId,
+    contributionProfileId: activeContributionProfileId,
     salaryProfileId: activeSalaryProfileIdSetting,
     editMode,
     getDraft,
@@ -376,7 +361,8 @@ export function BudgetContent({
       }),
     addItemPending: createItem.isPending,
     addItemError: createItem.error,
-    matchContrib: (sub: string, colIdx?: number) => matchContrib(sub, colIdx),
+    matchContribution: (sub: string, colIndex?: number) =>
+      matchContribution(sub, colIndex),
     addingItemToCategory,
     onSetAddingItemToCategory: setAddingItemToCategory,
   };
@@ -417,12 +403,9 @@ export function BudgetContent({
               title="Profiles"
               subtitle="Each profile is its own world — the header picks which one is active, and a Plan saves a set of them. Pick a profile here to edit it; Make active switches it everywhere."
             />
-            {/* Ordered to match the dependency chain: Salary sets gross pay,
-                Contributions (often % of salary) derive take-home, the Budget
-                (its own page) spends it, Savings allocates what's left —
-                see docs/DESIGN.md "Lever Order". Retirement consumes all of
-                these, and What-If previews combinations of them, so they
-                come last. */}
+            {/* Tabs follow the dependency chain (docs/DESIGN.md "Lever Order"):
+                Salary, Contributions, Budget, Savings; Retirement and What-If
+                consume them, so they come last. */}
             <div className="mb-4 flex items-center justify-between border-b">
               <Tabs
                 look="underline-xs"
@@ -481,10 +464,8 @@ export function BudgetContent({
                 isPushing: syncToApi.isPending,
                 onPullFromApi: () =>
                   setPullPreviewItems(buildPullPreviewItems(activeColumn)),
-                // Preview the column syncBudgetToApi will actually push
-                // (the connection's configured linkedColumnIndex), not
-                // necessarily the page's currently-viewed column — a
-                // mismatch here would show one number and push another.
+                // Preview the column syncBudgetToApi pushes (the connection's
+                // linkedColumnIndex), not necessarily the viewed column.
                 onOpenPushPreview: () =>
                   setPushPreviewItems(
                     buildPushPreviewItems(apiLinkedColumnIndex ?? activeColumn),

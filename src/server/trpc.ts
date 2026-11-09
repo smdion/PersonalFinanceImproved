@@ -19,6 +19,7 @@ import { clientAddress } from "@/lib/client-address";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
+import { demoSchemaName } from "@/lib/demo/slugs";
 import {
   notifyMutationSucceeded,
   onMutationSucceeded,
@@ -39,17 +40,9 @@ export type Context = {
   db: typeof db;
   session: Session | null;
   demoSchema: string | null;
-  /** Set ONLY by `internalCaller()` below, for a server-side nested tRPC
-   *  call made on behalf of an already-authenticated request (e.g.
-   *  `peekMonteCarloSummary` calling into the Simulation router for its
-   *  cached run). Skips ONLY the authenticated rate-limit middleware —
-   *  every other middleware (auth check, permission check, demo guards,
-   *  error logging) still runs unchanged, so this is not a second
-   *  computation path, just an exemption from double-charging the calling
-   *  request's own rate-limit budget for work the server does on its
-   *  behalf. `createContext()` takes no arguments and ignores any
-   *  request-supplied input, so this can only ever become `true` via
-   *  `internalCaller()` — never from request-derived data. */
+  /** Set only by `internalCtx()` below, never from request data: a nested
+   *  call for a signed-in request (e.g. `peekMonteCarloSummary`) skips the
+   *  authenticated rate limit; every other middleware still runs. */
   internal?: boolean;
   /** The HTTP request's shared reads (`scope.load`); none in a mutation. */
   reads?: ReadMemo;
@@ -108,9 +101,7 @@ export async function createContext(): Promise<Context> {
   try {
     const cookieStore = await cookies();
     const demoSlug = cookieStore.get("demo_active_profile")?.value;
-    if (demoSlug && /^[a-z0-9-]+$/.test(demoSlug)) {
-      demoSchema = `demo_${demoSlug.replace(/-/g, "_")}`;
-    }
+    if (demoSlug) demoSchema = demoSchemaName(demoSlug);
   } catch {
     // cookies() may throw outside request context (e.g. during build)
   }
@@ -194,29 +185,21 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
 }
 
 // ── Demo schema middleware ──
-// When a demo profile is active, acquire a dedicated connection from the pool,
-// set search_path on it, and use it for all queries in this procedure.
-// This avoids the pool-connection-hop problem where SET search_path on one
-// connection doesn't apply to queries that land on a different connection.
-// Its queries run one at a time (serializeQueries): procedures written for
-// the pool read with Promise.all.
+// A demo profile gets one dedicated connection with search_path set, so no
+// query hops to another; serializeQueries runs Promise.all reads in turn.
 const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   // Demo schemas require PG (uses SET search_path for isolation)
   if (!ctx.demoSchema || !isPostgres()) return next({ ctx });
 
-  // ctx.demoSchema is already validated by the regex in createContext,
+  // ctx.demoSchema is a demo profile's (demoSchemaName in createContext),
   // but double-quote the identifier defensively.
   const quotedSchema = `"${ctx.demoSchema.replace(/"/g, '""')}"`;
   const client = await pool.connect();
   const serial = serializeQueries(client);
   try {
-    // Fail closed: PostgreSQL silently skips a missing schema in
-    // search_path, so a demo schema dropped by an upgrade (or missing a
-    // table added since it was built) would send this request to the real
-    // public tables. Only the demo.* procedures (set up / leave a demo)
-    // run without a complete demo schema — and they never read app data.
-    // A schema built before the latest migration is stale too (its tables
-    // lack new columns), so its stamp must match the current one.
+    // Fail closed: PostgreSQL skips a missing schema in search_path, so a demo
+    // schema that is missing, lacks a table, or has a stale migration stamp is
+    // refused (except demo.* procedures, which never read app data).
     const { rows } = (await client.query(
       `SELECT to_regnamespace($1) IS NOT NULL AND NOT EXISTS (
          SELECT 1 FROM pg_tables p WHERE p.schemaname = 'public'
@@ -266,15 +249,9 @@ const demoOnlyGuard = t.middleware(async ({ ctx, next, type, path }) => {
 // ── Rate-limit helpers ──
 
 const RATE_LIMIT_PUBLIC = { maxRequests: 60, windowMs: 60_000 } as const;
-// Raised from 200: a cold dashboard load alone is ~46 requests (shared
-// layout chrome — data-freshness, scenario-bar — adds ~7 more to every
-// single navigation), and httpBatchLink batches the HTTP request but each
-// procedure in the batch still runs the middleware separately, so batching
-// gives this limiter no headroom back. This limit exists to catch runaway
-// bugs (an infinite refetch loop, a poll that never stops), not to throttle
-// normal browsing on a single-household app — 600 tolerates roughly a
-// dozen cold page loads a minute while still tripping within seconds on an
-// actual loop.
+// Catches runaway bugs (refetch loops), not normal browsing: a cold
+// dashboard load is ~46 procedures and batching doesn't spare the
+// per-procedure middleware, so 600 allows about a dozen cold loads a minute.
 const RATE_LIMIT_AUTHENTICATED = {
   maxRequests: 600,
   windowMs: 60_000,
@@ -315,12 +292,8 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
 });
 
 /**
- * Per-user rate-limit key. DEMO_ONLY collapses every visitor onto the same
- * literal `"demo"` session user id (see `demoOnlySession` above) — keying
- * by that would put every simultaneous demo visitor in ONE shared bucket
- * instead of separate per-visitor ones (and raising the limit would raise
- * a SHARED ceiling for the whole demo instance). Fall back to IP in that
- * case, as the public limiter does. Runs before the auth check: user may be absent.
+ * Per-user rate-limit key. DEMO_ONLY sessions all share the user id "demo", so they key by IP
+ * like the public limiter. Runs before the auth check: user may be absent.
  */
 export async function resolveAuthenticatedRateLimitKey(
   ctx: Context,
@@ -334,10 +307,8 @@ export async function resolveAuthenticatedRateLimitKey(
 }
 
 /**
- * Take one request from the user's authenticated rate-limit budget; false
- * when it's spent. Shared by the procedure middleware and the page prefetch
- * (prefetchForPage charges a page load once, then runs its queries as
- * internal calls).
+ * Take one request from the user's authenticated rate-limit budget; false when spent. Shared by
+ * the procedure middleware and prefetchForPage (one charge per page load).
  */
 export async function takeAuthenticatedRateToken(
   ctx: Context,
@@ -363,7 +334,7 @@ export async function takeAuthenticatedRateToken(
 const authenticatedRateLimitMiddleware = t.middleware(
   async ({ ctx, next, path }) => {
     // Server-side nested call on behalf of an already-authenticated
-    // request (see internalCaller()) — every other middleware still runs,
+    // request (see internalCtx()) — every other middleware still runs,
     // only the throttle is skipped.
     if (ctx.internal) return next({ ctx });
 
@@ -383,12 +354,8 @@ const RATE_LIMIT_EXPENSIVE = { maxRequests: 5, windowMs: 60_000 } as const;
 
 export const expensiveRateLimitMiddleware = t.middleware(
   async ({ ctx, next, path, getRawInput }) => {
-    // peekOnly reads the projection cache and never runs the actual
-    // trials/search (see projection/monte-carlo.ts, coast-fire.ts) — it's a
-    // cheap DB read, not the expensive operation this limiter protects.
-    // Without this exemption, dashboard-tile peeks share the same bucket as
-    // real Retirement-page simulation runs (same path = same rate-limit
-    // key) and can starve them out.
+    // peekOnly only reads the projection cache, so it's exempt; otherwise
+    // dashboard-tile peeks share the simulation bucket and can starve real runs.
     const rawInput = await getRawInput().catch(() => undefined);
     const isPeek =
       !!rawInput &&

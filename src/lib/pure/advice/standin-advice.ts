@@ -1,11 +1,6 @@
 /**
- * Should the household use a suggested stand-in fund for a plan-only fund?
- * Pure. Judged from the stand-in's own SEC filings (its preview): if they
- * explain most of the fund, its mix is a good stand-in; if not (e.g. a
- * fund that holds its investments through master funds the filings don't
- * break down), the plan's fund fact sheet is better. The fee is never the
- * stand-in's — a retail fee isn't the plan's — so the advice always points
- * to the plan's fee disclosure for it.
+ * Whether to use a suggested stand-in for a plan-only fund: yes when its SEC filings explain
+ * most of it, else the plan's fact sheet. Fees always point to the plan's fee disclosure.
  */
 import type { StandInPreview } from "@/lib/config/enum-values";
 

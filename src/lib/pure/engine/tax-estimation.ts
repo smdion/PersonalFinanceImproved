@@ -1,18 +1,6 @@
 /**
- * Tax Estimation — tax bracket estimation, SS taxation, and tax-from-slots.
- *
- * Contains:
- *   - estimateEffectiveTaxRate: W-4 bracket-based effective tax rate
- *   - incomeCapForMarginalRate: bracket threshold lookup for bracket-filling
- *   - computeTaxableSS: IRS provisional income formula (3-tier)
- *   - computeTaxFromSlots: tax cost of a completed withdrawal routing result
- *
- * The SS-convergence gross-up loop is in withdrawal-solver.ts: it calls
- * withdrawal-routing/, which imports incomeCapForMarginalRate from this
- * file, so it can't live here without an import cycle.
- *
- * Used by the orchestrator (via withdrawal-solver.ts) and withdrawal-routing
- * (bracket-filling needs incomeCapForMarginalRate).
+ * Tax estimation: W-4 effective rate, bracket caps for bracket-filling, taxable SS and the tax of
+ * routed slots. The SS gross-up loop lives in withdrawal-solver.ts to avoid an import cycle.
  */
 import type { TaxBuckets } from "../accounts/account-balances.types";
 import type { DecumulationSlot } from "./types/routing";
@@ -41,19 +29,9 @@ export type WithholdingBracket = {
 };
 
 /**
- * Gross ordinary income -> the adjusted-annual-wage figure the Pub 15-T
- * percentage-method table (`WithholdingBracket[]`) is actually denominated
- * in. Worksheet 1A line 1g's real adjustment is `standardDeduction -
- * table's first non-zero threshold` (e.g. $32,200 - $19,300 = $12,900 MFJ
- * for 2026): the threshold alone is only one term of it. `standardDeduction`
- * undefined returns gross unchanged (callers with no standard deduction to
- * thread through, e.g. tests).
- *
- * Deliberately not `toLtcgTaxableIncome`/`toTaxableIncomeBrackets` (tax/):
- * those shift `TaxBracket{min,max,rate}` boundaries for a true progressive
- * walk; this shifts the INCOME, the only safe move against
- * `WithholdingBracket{threshold,baseWithholding,rate}`'s shape (shifting
- * `threshold` alone without recomputing `baseWithholding` would be wrong).
+ * Gross ordinary income → the adjusted wage the Pub 15-T table is denominated in: minus
+ * (standardDeduction − first non-zero threshold), Worksheet 1A line 1g. Shifts income, not
+ * thresholds (baseWithholding depends on them). Undefined `standardDeduction` returns gross.
  */
 function toOrdinaryBracketIncome(
   grossOrdinaryIncome: number,
@@ -67,23 +45,9 @@ function toOrdinaryBracketIncome(
 }
 
 /**
- * Estimate effective federal income tax rate on traditional retirement withdrawals.
- * Uses W-4 withholding brackets. NOTE: these embed only the smaller Pub 15-T
- * Worksheet 1A adjustment in the 0% bracket's ceiling (e.g. $19,300 MFJ for
- * 2026), NOT the full standard deduction ($32,200 MFJ) — verified via
- * tests/config/tax-freshness.test.ts's structural invariants.
- * Pass `standardDeduction` so the bracket lookup subtracts the remaining
- * residual via `toOrdinaryBracketIncome` — omitting it (undefined) keeps
- * the old, overstating-by-the-residual behavior; it's optional only so
- * call sites without a standard deduction handy still compile.
- *
- * @param taxableIncome - Total taxable income (traditional withdrawals + taxable SS)
- * @param brackets - W-4 withholding brackets (from tax_brackets table), sorted by threshold ascending
- * @param taxMultiplier - Scales the computed tax (1.0 = current law, 1.2 = 20% higher, etc.)
- * @param standardDeduction - Filing status's standard deduction, for the Worksheet 1A residual
- * @returns Effective tax rate as decimal (e.g. 0.14 = 14%), against GROSS taxableIncome —
- *   callers multiply this rate back against gross dollars, so the denominator here
- *   stays gross even though the bracket lookup itself runs on the reduced base.
+ * Effective federal rate on taxable income (Traditional + taxable SS) from W-4 brackets, scaled
+ * by `taxMultiplier`. Pass `standardDeduction` to subtract the Worksheet 1A residual the brackets
+ * omit (else overstated). The rate is against GROSS income, as callers multiply it back.
  */
 export function estimateEffectiveTaxRate(
   taxableIncome: number,
@@ -115,11 +79,8 @@ export function estimateEffectiveTaxRate(
 }
 
 /**
- * Find the maximum taxable income that stays within a target marginal rate.
- * Returns the threshold of the first bracket whose rate exceeds the target,
- * converted back to GROSS income space by adding back the Worksheet 1A
- * residual — callers use the return value as a gross withdrawal cap.
- * If no bracket exceeds the target, returns Infinity (no cap needed).
+ * Largest gross income within `targetRate`: the first higher bracket's threshold plus the
+ * Worksheet 1A residual, used as a gross withdrawal cap. Infinity when no bracket exceeds it.
  */
 export function incomeCapForMarginalRate(
   targetRate: number,
@@ -139,15 +100,8 @@ export function incomeCapForMarginalRate(
 }
 
 /** @internal Only tests import it (knip --production).
- * The marginal ordinary rate that applies to a dollar of income sitting
- * JUST ABOVE `targetRate`'s bracket ceiling — i.e. the rate on the next
- * bracket up. Companion to `incomeCapForMarginalRate` (same bracket walk,
- * returns `.rate` instead of `.threshold`) — used by the cost-aware
- * withdrawal ranking to price a non-qualified Roth growth withdrawal, which
- * stacks as ordinary income on top of whatever Phase 1 already filled up to
- * the target bracket cap. Falls back to `targetRate` itself (not a real
- * bracket rate, but the least-wrong value) when no bracket exceeds it.
- */
+ * The rate of the bracket above `targetRate`'s ceiling (prices non-qualified Roth growth stacked
+ * on a filled bracket); `targetRate` itself when no bracket exceeds it. */
 export function marginalRateAboveTarget(
   targetRate: number,
   brackets: WithholdingBracket[],
@@ -159,20 +113,9 @@ export function marginalRateAboveTarget(
 }
 
 /**
- * The marginal ordinary rate for the NEXT dollar earned at `income` — i.e.
- * the rate on the bracket `income` currently sits in. Same bracket walk as
- * `estimateEffectiveTaxRate` (highest threshold <= income), but returns
- * `.rate` for that bracket directly instead of computing a total tax
- * amount (`marginalRateAboveTarget` answers a DIFFERENT question, "what's
- * the rate on the bracket above a given RATE," which can't price a
- * withdrawal stacking on `ordinaryIncomeFloor`'s real DOLLAR income: when
- * Traditional ran out below the bracket-filling target, that floor sits in
- * a LOWER bracket than `targetRate` implies). Returns 0 for `income <= 0`
- * or an empty bracket list, matching `estimateEffectiveTaxRate`'s
- * "nothing taxable" convention. Pass `standardDeduction` for the Worksheet
- * 1A residual — a household whose gross sits between the table's
- * first threshold and the full standard deduction gets 0% here, not the
- * first nonzero bracket's rate.
+ * Marginal ordinary rate for the next dollar at `income` (dollar-based, unlike
+ * `marginalRateAboveTarget`). 0 for income ≤ 0 or no brackets; `standardDeduction` applies the
+ * Worksheet 1A residual, so income under the full deduction gets 0%.
  */
 export function marginalRateAtIncome(
   income: number,
@@ -198,16 +141,8 @@ export function marginalRateAtIncome(
 // ---------------------------------------------------------------------------
 
 /**
- * Compute the taxable portion of Social Security income using the IRS
- * 3-tier provisional income formula.
- *
- * Provisional income = other taxable income + 0.5 × SS income + tax-exempt interest
- *
- * - Below tier 1: 0% taxable
- * - Tier 1 → tier 2: up to 50% taxable
- * - Above tier 2: up to 85% taxable
- *
- * The "tax torpedo" zone between tiers creates effective marginal rates of 40-46%.
+ * Taxable Social Security by the IRS 3-tier provisional income formula (other income + half of
+ * SS + tax-exempt interest): 0% below tier 1, up to 50% to tier 2, up to 85% above.
  */
 export function computeTaxableSS(
   ssIncome: number,
@@ -253,11 +188,9 @@ export function computeTaxableSS(
 }
 
 /**
- * Taxable Social Security for a priced year: provisional income counts
- * every other ordinary and capital-gains income in AGI — Traditional
- * withdrawals, non-qualified Roth growth and realized brokerage gains (IRS
- * Pub 915). One rule for the gross-up's trials and the real year. (A Roth
- * conversion runs after pricing and isn't in it yet — see TODO.)
+ * Taxable SS for a priced year: provisional income counts Traditional withdrawals, non-qualified
+ * Roth growth and realized gains (IRS Pub 915). A Roth conversion runs after pricing and isn't
+ * included (see TODO).
  */
 export function taxableSSFor(
   ssIncome: number,
@@ -294,31 +227,16 @@ interface ComputeTaxFromSlotsInput {
    *  brokerages' own, brokerage-basis.ts) — one ratio per year shared with
    *  the ranking. Omitted: the aggregate ratio from `balances`. */
   brokerageBasisRatio?: number;
-  /** Authoritative totals when the caller already has them (e.g. post-RMD
-   *  in decumulation-year.ts, where rmd-enforcement.ts tracks the total
-   *  incrementally via its own running `+=` + roundToCents, which is not
-   *  bit-for-bit identical to a fresh roundToCents(sumBy(slots, ...)) over
-   *  the same mutated slots — both are correct, but only one matches what
-   *  was actually used elsewhere in that computation, so re-deriving here
-   *  would silently introduce a sub-cent drift). Omit to derive from slots
-   *  directly (correct for withdrawal-solver.ts's estimate, which never runs
-   *  RMD enforcement and has no other source of truth). */
+  /** Authoritative totals when the caller already tracks them (post-RMD in decumulation-year.ts),
+   *  so no sub-cent drift from re-summing. Omit to derive from slots (withdrawal-solver.ts). */
   totalTraditionalWithdrawal?: number;
   totalRothWithdrawal?: number;
-  /** Growth drawn from NON-QUALIFIED Roth distributions this year — ordinary
-   *  income (from
-   *  `roth-distribution-tax.ts`'s `splitRothWithdrawalForTax`). Omitted or
-   *  undefined ⇒ the arithmetic reduces exactly to treating the whole Roth
-   *  withdrawal at `taxRates.roth` (today's behavior). */
-  rothTaxableGrowth?: number;
-  /** 10%/20% early-withdrawal penalty cost this year, from
-   *  `early-withdrawal-penalty.ts`'s `computeEarlyWithdrawalPenalty`.
-   *  An EXCISE, not income tax —
-   *  must NOT enter `actualTaxableIncome` (would inflate the marginal rate
-   *  and the LTCG stacking base) and must NOT be summed into `taxCost`
-   *  (every downstream consumer reads `taxCost` as income tax only).
-   *  Omitted or undefined ⇒ the arithmetic reduces exactly to today's. */
-  penaltyCost?: number;
+  /** Growth in non-qualified Roth distributions this year (`splitRothWithdrawalForTax`):
+   *  ordinary income. 0 taxes the whole Roth withdrawal at `taxRates.roth`. */
+  rothTaxableGrowth: number;
+  /** Early-withdrawal penalty (`computeEarlyWithdrawalPenalty`): an excise, kept out of
+   *  `actualTaxableIncome` and `taxCost` (which mean income tax only). */
+  penaltyCost: number;
   /** The brokerage withdrawal's tax when the caller has re-priced it (the
    *  post-conversion recompute in decumulation-year.ts, where a Roth
    *  conversion raised the LTCG stacking base). Omitted: computed here. */
@@ -341,14 +259,8 @@ interface ComputeTaxFromSlotsInput {
 interface ComputeTaxFromSlotsResult {
   taxCost: number;
   actualTraditionalRate: number;
-  /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS` — the
-   *  single source of truth for "real ordinary income this year," BEFORE
-   *  LTCG/bracket stacking. Callers must read this rather than
-   *  re-deriving their own copy (e.g. `totalTraditionalWithdrawal +
-   *  taxableSS` alone silently drops non-qualified Roth growth income).
-   *  Feeds
-   *  `revisedOrdinary`/MAGI/LTCG-bracket calculations
-   *  downstream in decumulation-year.ts. */
+  /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS`: this year's ordinary income
+   *  before LTCG stacking. Read this rather than re-deriving it. */
   actualTaxableIncome: number;
   /** Return-of-basis portion of the brokerage withdrawal (tax-free). Caller
    *  is responsible for annotating the brokerage slot with this if needed —
@@ -356,41 +268,31 @@ interface ComputeTaxFromSlotsResult {
   brokerageBasisPortion: number;
   /** Taxable-gains portion of the brokerage withdrawal. */
   brokerageGainsPortion: number;
-  /** Tax cost attributable to the brokerage withdrawal alone (subset of
-   *  taxCost) — exposed directly rather than making callers reverse-derive
-   *  it from taxCost, since that would require re-summing already-rounded
-   *  components and risks a rounding mismatch. */
+  /** Tax on the brokerage withdrawal alone (subset of taxCost), exposed so callers don't
+   *  re-derive it from rounded components. */
   brokerageTaxCost: number;
-  /** Tax on the taxable share of Social Security (subset of taxCost) —
-   *  the same average ordinary rate as the withdrawals, since it's part of
-   *  the same ordinary income. Owed whether or not anything is withdrawn,
-   *  so effective-rate-on-withdrawals readers leave it out
-   *  (`withdrawalTaxCost`). */
+  /** Tax on taxable Social Security (subset of taxCost) at the withdrawals' average ordinary rate.
+   *  Owed regardless of withdrawals, so `withdrawalTaxCost` leaves it out. */
   ssTaxCost: number;
   totalTraditionalWithdrawal: number;
   totalRothWithdrawal: number;
   hsaWithdrawal: number;
   brokerageWithdrawal: number;
-  /** Echoes `input.rothTaxableGrowth`, defaulted to 0 — the portion of
+  /** Echoes `input.rothTaxableGrowth` — the portion of
    *  `totalRothWithdrawal` taxed as ordinary income this year. */
   rothTaxableGrowth: number;
-  /** `totalRothWithdrawal - rothTaxableGrowth` — taxed at `taxRates.roth`
-   *  (0 by default). Exposed directly for the same reason
-   *  `brokerageBasisPortion` is: callers must not reverse-derive an
-   *  already-rounded component. */
+  /** `totalRothWithdrawal - rothTaxableGrowth`, taxed at `taxRates.roth` (0 by default); exposed
+   *  so callers don't re-derive a rounded component. */
   rothTaxFreePortion: number;
-  /** Echoes `input.penaltyCost`, defaulted to 0. NOT included in `taxCost`
+  /** Echoes `input.penaltyCost`. NOT included in `taxCost`
    *  — a separate output field for the same reason it's a separate input
    *  (see `ComputeTaxFromSlotsInput.penaltyCost`'s docblock). */
   penaltyCost: number;
 }
 
 /**
- * Compute the tax cost of a completed withdrawal routing result. Single
- * source of truth for "how much tax does this set of slots cost" — used by
- * both the real decumulation-year execution AND withdrawal-solver.ts's
- * estimateWithdrawalTaxCost convergence loop, so the two can never silently
- * diverge on the tax math itself.
+ * Tax cost of a routed set of slots: one path for the real year and withdrawal-solver.ts's
+ * estimateWithdrawalTaxCost loop.
  */
 export function computeTaxFromSlots(
   input: ComputeTaxFromSlotsInput,
@@ -410,13 +312,9 @@ export function computeTaxFromSlots(
     )?.withdrawal ?? 0;
   const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
   const brokerageWithdrawal = brokerageSlot?.withdrawal ?? 0;
-  // Taxable Roth growth (non-qualified distributions) is ordinary
-  // income — it must enter
-  // actualTaxableIncome BEFORE bracket/LTCG stacking below, not just get
-  // summed into taxCost afterward, or the marginal rate and the LTCG
-  // stacking base would both understate real taxable income. Undefined
-  // input reduces this to exactly 0, matching today's behavior.
-  const rothTaxableGrowth = roundToCents(input.rothTaxableGrowth ?? 0);
+  // Non-qualified Roth growth is ordinary income: it enters
+  // actualTaxableIncome before bracket/LTCG stacking.
+  const rothTaxableGrowth = roundToCents(input.rothTaxableGrowth);
   const rothTaxFreePortion = roundToCents(
     totalRothWithdrawal - rothTaxableGrowth,
   );
@@ -501,6 +399,6 @@ export function computeTaxFromSlots(
     brokerageWithdrawal,
     rothTaxableGrowth,
     rothTaxFreePortion,
-    penaltyCost: roundToCents(input.penaltyCost ?? 0),
+    penaltyCost: roundToCents(input.penaltyCost),
   };
 }

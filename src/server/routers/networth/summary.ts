@@ -97,10 +97,8 @@ export const summaryProcedures = {
 
       // Current-state values from app_settings (editable, not tied to year-end snapshots)
       const setting = parseAppSettings(settings);
-      // Resolved once and threaded into getEffectiveCash/
-      // getEffectiveCreditCardDebt below instead of each independently
-      // re-querying it (previously 3 separate getActiveBudgetApi calls in
-      // this one procedure).
+      // Resolved once and passed to getEffectiveCash/getEffectiveCreditCardDebt
+      // below instead of each querying it.
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [
@@ -113,7 +111,7 @@ export const summaryProcedures = {
         otherAssetsResult,
       ] = await Promise.all([
         getEffectiveCash(ctx.db, settings, activeBudgetApi),
-        getEffectiveOtherAssetsDetailed(ctx.db, settings),
+        getEffectiveOtherAssetsDetailed(ctx.db, settings, ctx.scope.asOf),
       ]);
       const otherAssets = otherAssetsResult.total;
 
@@ -144,10 +142,10 @@ export const summaryProcedures = {
       const otherAssetsSyncSource =
         activeBudgetApi !== "none" ? activeBudgetApi : null;
 
-      // Typed figure + the debts list + mapped credit cards
-      // (server/services/debts/other-liabilities.ts).
+      // Typed figure + the debts list + mapped credit cards.
       const otherLiabilitiesParts = await getEffectiveOtherLiabilities(ctx.db, {
         activeBudgetApi,
+        asOf: ctx.scope.asOf,
       });
       const otherLiabilities = otherLiabilitiesParts.total;
       const homeImprovements = setting("current_home_improvements", 0);

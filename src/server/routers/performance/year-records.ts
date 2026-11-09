@@ -88,11 +88,9 @@ export const yearRecordProcedures = {
       }
       if (Object.keys(updates).length === 0) return { ok: true };
 
-      // Block edits to lifetime_* fields on immutable rows. Lifetime totals
-      // on finalized rows are authoritative and move only with edits to the
-      // year's account_performance rows (syncYearRollups carries the change
-      // forward) — never directly via the user-facing updateAnnual mutation.
-      // DESIGN.md § Data Model Principles point 4 cascade rule.
+      // Block lifetime_* edits on immutable rows: finalized lifetime totals move only
+      // with the year's account_performance rows (syncYearRollups carries them
+      // forward). DESIGN.md § Data Model Principles point 4 cascade rule.
       const LIFETIME_FIELDS = new Set([
         "lifetimeGains",
         "lifetimeContributions",
@@ -126,10 +124,8 @@ export const yearRecordProcedures = {
     }),
 
   /**
-   * Edit one account row (editAccountRow: a balanced row stays balanced,
-   * every affected year's rollups follow). `chainNextYear` moves next year's
-   * beginning with a changed ending; `dryRun` returns what would change and
-   * writes nothing.
+   * Edit one account row via editAccountRow (rows stay balanced, rollups follow).
+   * `chainNextYear` moves next year's beginning; `dryRun` returns changes, writes nothing.
    */
   updateAccount: performanceProcedure
     .input(
@@ -176,11 +172,9 @@ export const yearRecordProcedures = {
     }),
 
   /**
-   * The household's note on an account-year, which figures are still
-   * estimates, and gaps accepted as on purpose. Accepting reads the gap
-   * from the same checks the page shows, and needs its own reason; the
-   * check comes back when the gap is no longer the one accepted.
-   * Not a figure change — the performance timestamp doesn't move.
+   * An account-year's note, which figures are estimates, and gaps accepted on purpose
+   * (each with a reason; the check returns when the gap differs from the accepted one).
+   * Not a figure change: the performance timestamp doesn't move.
    */
   annotateAccount: performanceProcedure
     .input(
@@ -328,31 +322,36 @@ export const yearRecordProcedures = {
         // One query at a time on the transaction's connection.
         for (const { year } of years)
           before.push(await captureYearRollups(tx, year));
-        for (const acct of input.accounts) {
+        for (const account of input.accounts) {
           await tx
             .update(schema.accountPerformance)
             .set({
-              ...(acct.beginningBalance !== undefined && {
-                beginningBalance: acct.beginningBalance,
+              ...(account.beginningBalance !== undefined && {
+                beginningBalance: account.beginningBalance,
               }),
-              ...(acct.estimatedFields && {
-                estimatedFields: parseEstimatedFields(acct.estimatedFields),
+              ...(account.estimatedFields && {
+                estimatedFields: parseEstimatedFields(account.estimatedFields),
               }),
-              ...(acct.note !== undefined && { note: acct.note || null }),
-              totalContributions: acct.totalContributions,
-              employerContributions: acct.employerContributions,
-              distributions: acct.distributions,
-              rollovers: acct.rollovers,
-              fees: acct.fees,
-              endingBalance: acct.endingBalance,
-              yearlyGainLoss: acct.yearlyGainLoss,
+              ...(account.note !== undefined && { note: account.note || null }),
+              totalContributions: account.totalContributions,
+              employerContributions: account.employerContributions,
+              distributions: account.distributions,
+              rollovers: account.rollovers,
+              fees: account.fees,
+              endingBalance: account.endingBalance,
+              yearlyGainLoss: account.yearlyGainLoss,
             })
-            .where(eq(schema.accountPerformance.id, acct.id));
+            .where(eq(schema.accountPerformance.id, account.id));
         }
         for (const b of before) await syncYearRollups(tx, b);
         await stampPerformanceUpdated(tx);
         if (input.simplefinFill)
-          await recordFill(tx, "performance", input.simplefinFill);
+          await recordFill(
+            tx,
+            "performance",
+            input.simplefinFill,
+            ctx.scope.asOf,
+          );
       });
       return { ok: true };
     }),

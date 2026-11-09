@@ -1,23 +1,6 @@
-/** Risk-watchlist section of the advisor report: RMD shortfall/excise
- *  exposure and ACA/IRMAA cliff proximity — both currently buried in a
- *  per-row hover tooltip (projection-table-decum-row.tsx's "diag" trigger)
- *  and never aggregated into a plan-level statement. Pure function: reads
- *  only the STRUCTURED fields the engine already computes
- *  (irmaaCost/acaMagiHeadroom/acaSubsidyPreserved/rmdShortfallAmount) —
- *  never the free-form `warnings[]` strings, which have no typed link to
- *  this code and could drift silently if matched on text.
- *
- * Consecutive years with the SAME condition are collapsed into one range
- * entry rather than one line per year — a
- * household with a decades-long ACA cliff exposure got 40 near-identical
- * lines ("2044: ACA subsidy was lost", "2045: ACA subsidy was lost", ...),
- * which is unreadable in a document meant to be read, not scanned like a
- * table (the full year-by-year table already exists separately, Phase 4,
- * for households that want every year). A ranged entry can't show one
- * exact dollar figure (amounts vary year to year within the range), so
- * multi-year ranges state the condition and point to that table instead
- * of a specific amount; a single-year entry still shows its real figure.
- */
+/** Advisor report risk watchlist: RMD shortfall and ACA/IRMAA cliff proximity, from the
+ *  engine's structured fields (never `warnings[]` text). Consecutive years with the same
+ *  condition collapse into one range, which points to the year table instead of an amount. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { formatCurrency } from "@/lib/utils/format";
 
@@ -33,10 +16,8 @@ export interface WatchlistSection {
   narrative: string;
 }
 
-/** Below this MAGI headroom, a year reads as "close to the cliff" even
- *  though the subsidy technically held — matches the per-row diag
- *  tooltip's own framing of headroom as a proximity signal, not just a
- *  binary preserved/lost flag. */
+/** Real-dollar MAGI headroom at or below which a year reads as "close to the cliff"
+ *  though the subsidy held. */
 const ACA_CLOSE_TO_CLIFF_THRESHOLD = 3000;
 
 type FlagKind = "rmd-shortfall" | "irmaa" | "aca-lost" | "aca-close";
@@ -109,19 +90,8 @@ export function buildWatchlist(
     if (y.acaSubsidyPreserved === false) {
       flags.push({ year: y.year, kind: "aca-lost", severity: "warning" });
     } else {
-      // acaMagiHeadroom is a NOMINAL dollar figure
-      // (grows with the household's income over the projection, same as
-      // every other engine value), so it must be deflated to real terms
-      // BEFORE comparing against a fixed real-dollar watchlist threshold
-      // -- comparing it nominal, as this used to, silently shrinks the
-      // real window this flag fires in every year further from
-      // the FPL table's own year (by year 40 at typical inflation, a nominal
-      // $3,000 window is worth well under half that in real terms, so
-      // this watchlist entry would quietly stop firing in exactly the
-      // late years where the cliff bites hardest). this
-      // bug was mostly invisible before Phase 4 (a frozen ACA cliff kept
-      // driving headroom to $0 regardless), and only becomes a real,
-      // Phase-4-activated distortion once headroom genuinely grows.
+      // acaMagiHeadroom is nominal: deflate before comparing with the real-dollar
+      // threshold, or the window shrinks in later years, where the cliff bites hardest.
       const realHeadroom = deflate(y.acaMagiHeadroom, y.year);
       if (realHeadroom > 0 && realHeadroom <= ACA_CLOSE_TO_CLIFF_THRESHOLD) {
         flags.push({
@@ -181,7 +151,7 @@ export function buildWatchlist(
   const narrative =
     parts.length === 0
       ? "No Medicare IRMAA surcharges, ACA subsidy losses, or Required Minimum Distribution shortfalls were found in your projection."
-      : `Across your retirement, this plan has ${parts.join(", ")}. See below for the specific years.`;
+      : `Across your retirement, this projection has ${parts.join(", ")}. See below for the specific years.`;
 
   return { items, narrative };
 }

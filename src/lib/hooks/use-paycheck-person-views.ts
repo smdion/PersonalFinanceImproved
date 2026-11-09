@@ -1,27 +1,9 @@
 "use client";
 
 /**
- * The one derivation of "what the Paycheck view shows for each person".
- *
- * The real Paycheck page and the Budget page's
- * What-If tab share this single computation path: query-input assembly (session
- * -scenario salary overrides included), the two-person aligned deduction
- * rows, the shared contribution group order, and the per-contribution
- * annual/limit data that the contribution cards render.
- *
- * That last one is why this hook exists at all beyond code reuse:
- * `ContributionsSection` used to make its OWN `contribution.computeSummary`
- * query keyed on a different profile id than the pay stub, so the
- * contribution cards and the pay stub could show two different Contribution
- * Profiles. Contribution
- * data is now resolved ONCE here, with the same ids as the paycheck query,
- * and handed down as a prop. No component below this point queries for it.
- *
- * Naming note: the spec called for `usePaycheckPersonView(personId, …)`. A
- * per-person hook can't be called from the page's `people.map(...)` without
- * breaking the rules of hooks, and the aligned-deduction rows are inherently
- * a two-person derivation, so this returns one view PER PERSON from a single
- * household query instead.
+ * What the Paycheck view shows for each person, shared by the Paycheck page and
+ * the What-If tab. Contribution data is resolved here with the paycheck query's
+ * ids and passed down, so no component below queries it.
  */
 
 import type { FicaRates } from "@/lib/pure/paycheck/paystub-check";
@@ -105,13 +87,12 @@ export type PaycheckPersonView = {
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;
   coverageNoteGroup?: string;
-  otherJointContribs: JointContrib[];
+  otherJointContributions: JointContrib[];
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
-  /** Contribution account ids owned by this person/job with no active
-   *  value under the current Contribution Profile — see
-   *  getIncompleteContribAccountIds. Not a blocker, just a "some numbers
-   *  here are quietly excluded" signal. */
+  /** This person/job's contribution account ids with no active value under the
+   *  current Contribution Profile (getIncompleteContribAccountIds): a warning,
+   *  not a blocker. */
   incompleteAccountIds: number[];
 };
 
@@ -119,15 +100,11 @@ type UsePaycheckPersonViewsOptions = {
   contributionProfileId: number | null;
   salaryProfileId: number | null;
   taxYearOverride?: number;
-  /** The What-If tab's hand-edited salary/bonus entries — sent to BOTH the
-   *  paycheck AND contribution queries below (see paycheckRouter's
-   *  identical field for why sending it to only one reproduces the
-   *  ContributionsSection divergence bug this hook exists to avoid). */
+  /** The What-If tab's hand-edited salary/bonus entries, sent to both the
+   *  paycheck and contribution queries so their figures agree. */
   sandboxSalaryEntries?: SandboxSalaryEntries;
-  /** The What-If tab's hand-edited deduction amounts/additions — paycheck
-   *  -only (contribution.computeSummary doesn't read deductions at all, so
-   *  sending these there would be a no-op input, not a second compute
-   *  path). */
+  /** The What-If tab's hand-edited deduction amounts/additions; paycheck-only
+   *  (contribution.computeSummary doesn't read deductions). */
   sandboxDeductionEdits?: { id: number; amountPerPeriod: number }[];
   sandboxDeductionAdditions?: {
     personId: number;
@@ -201,7 +178,7 @@ export function usePaycheckPersonViews({
 
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
-  const { data: contribData } = trpc.contribution.computeSummary.useQuery({
+  const { data: contributionData } = trpc.contribution.computeSummary.useQuery({
     ...(contributionProfileId != null ? { contributionProfileId } : {}),
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
@@ -216,14 +193,6 @@ export function usePaycheckPersonViews({
     ...(salaryProfileId != null ? { salaryProfileId } : {}),
   });
 
-  // NOTE: session-scenario overrides on job/deduction/contribution-account
-  // fields used to be re-applied here client-side via `getOverride("jobs" |
-  // "deductions" | "contributionAccounts", ...)`. That was dead code: the
-  // only writer of a session-scenario override anywhere in the app writes
-  // entity "people", field "salary" (paycheck/paycheck-content.tsx's toggleSalaryOverride)
-  // — a different entity than any of the keys this block ever read, so
-  // every `getOverride` call here always returned its fallback. Removed
-  // rather than kept as a misleading no-op.
   const people = useMemo(
     () => (rawData?.people ?? []).filter((d) => d.paycheck && d.job),
     [rawData?.people],
@@ -301,7 +270,7 @@ export function usePaycheckPersonViews({
   }, [people]);
 
   // Shared contribution group order so both people's cards line up.
-  const sharedContribGroupOrder = useMemo(() => {
+  const sharedContributionGroupOrder = useMemo(() => {
     const getGroupKey = (type: string) =>
       configGetLimitGroup(type as AccountCategory) ?? type;
     const order: string[] = [];
@@ -340,7 +309,7 @@ export function usePaycheckPersonViews({
   const views: PaycheckPersonView[] = useMemo(
     () =>
       people.map((d, index) => {
-        const personContrib = contribData?.people.find(
+        const personContribution = contributionData?.people.find(
           (p) => p.person.id === d.person.id,
         );
         return {
@@ -373,14 +342,14 @@ export function usePaycheckPersonViews({
           alignedPostTax: alignedData?.postTax[index as 0 | 1],
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
-          otherJointContribs: jointContribs,
-          perContribData: (personContrib?.perContribData ??
+          otherJointContributions: jointContribs,
+          perContribData: (personContribution?.perContribData ??
             []) as PerContribView[],
           incompleteAccountIds: ((d as Record<string, unknown>)
             .incompleteAccountIds ?? []) as number[],
         };
       }),
-    [people, contribData, alignedData, jointContribs],
+    [people, contributionData, alignedData, jointContribs],
   );
 
   return {
@@ -389,6 +358,6 @@ export function usePaycheckPersonViews({
     isLoading,
     error,
     refetch: summary.refetch,
-    sharedContribGroupOrder,
+    sharedContributionGroupOrder,
   };
 }

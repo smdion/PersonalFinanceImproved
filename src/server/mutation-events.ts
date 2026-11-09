@@ -1,10 +1,6 @@
 /**
- * "A mutation just succeeded" signal for server-side caches.
- *
- * trpc.ts raises it after every successful mutation; short-lived caches
- * (buildYearEndHistory's) subscribe so a write is never followed by a
- * read of data built before it. A leaf module so trpc.ts doesn't have to
- * import the helpers that own the caches.
+ * "A mutation just succeeded" signal, raised by trpc.ts, so short-lived server caches
+ * never serve data built before a write. A leaf module to keep trpc.ts's imports light.
  */
 const listeners = new Set<() => void>();
 

@@ -1,8 +1,6 @@
 /**
- * A named lock held until the transaction ends, so check-then-write steps
- * under the same name run one at a time. PostgreSQL takes an advisory
- * transaction lock; SQLite needs none, since its transactions already run
- * one at a time (src/lib/db/sqlite-transactions.ts).
+ * A named lock held until the transaction ends, so same-name check-then-write steps run
+ * one at a time. PostgreSQL: advisory transaction lock; SQLite: none (transactions are serial).
  */
 import { sql } from "drizzle-orm";
 import { isPostgres } from "@/lib/db/dialect";

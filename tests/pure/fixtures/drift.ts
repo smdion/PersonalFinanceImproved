@@ -1,5 +1,5 @@
 /**
- * The two balance tracks (acctBal by category, indBal by account) drifting
+ * The two balance tracks (accountBalance by category, indBalance by account) drifting
  * apart by more than $1 shows as this warning in a projection year.
  */
 import { expect } from "vitest";

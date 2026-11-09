@@ -1,7 +1,7 @@
 /** The read-only panel's account rows. */
 import {
-  resolveContribFieldDisplayState,
-  type ContribAccountActiveFields,
+  resolveContributionFieldDisplayState,
+  type ContributionAccountActiveFields,
 } from "@/lib/pure/household/profiles";
 import { groupSharedMatchAccounts } from "./match-groups";
 import type { ProfileDetail } from "./account-row-types";
@@ -9,22 +9,21 @@ import { ACCOUNT_FIELDS } from "./account-fields";
 import { DETAIL_CELLS } from "./detail-cells";
 
 export function renderDetailAccountRows(profile: ProfileDetail) {
-  // A Roth/Traditional split of one account shares one match,
-  // entered on one row and applied to their combined
-  // contributions: every row in the group shows the same match
-  // text (when exactly one row holds the match; else per row).
+  // A Roth/Traditional split shares one match, entered on one row and applied
+  // to the combined contributions: every row in the group shows the same match
+  // text when exactly one row holds it (else per row).
   const { sharedMatchSource, combinedGroupIds } = groupSharedMatchAccounts(
     profile.accountDetails,
   );
 
-  return profile.accountDetails.map((ad, rowIdx) => {
-    const af = ad.activeFields as ContribAccountActiveFields;
+  return profile.accountDetails.map((ad, rowIndex) => {
+    const af = ad.activeFields as ContributionAccountActiveFields;
     const {
       hasValue,
       isDisabled: isProfileDisabled,
       value: activeValue,
       methodSuffix,
-    } = resolveContribFieldDisplayState(af);
+    } = resolveContributionFieldDisplayState(af);
     const activeMethod = af?.contributionMethod;
     const hasActiveName =
       ad.liveAccountName && ad.accountName !== ad.liveAccountName;
@@ -47,7 +46,7 @@ export function renderDetailAccountRows(profile: ProfileDetail) {
       <tr
         key={ad.id}
         className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
-          rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+          rowIndex % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
         } ${isProfileDisabled ? "opacity-40" : ""}`}
       >
         {ACCOUNT_FIELDS.map((field) => {

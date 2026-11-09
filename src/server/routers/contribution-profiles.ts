@@ -1,19 +1,7 @@
 /**
- * Contribution Profiles Router
- *
- * CRUD + resolution for named contribution profiles.
- * Profiles are managed on the budget page (the what-if control center)
- * and consumed by the relocation tool and potentially the retirement page.
- *
- * Salary is NOT part of a Contribution Profile — it lives on the independent
- * salaryProfile router. `loadLiveContribData` resolves salary against
- * whichever Salary Profile is globally ACTIVE (a job has no salary of its
- * own); these endpoints never pair with a specific, caller-chosen Salary
- * Profile.
- *
- * There is no `isDefault` flag and no synthetic id-0 "Live" row: every
- * profile is an ordinary, renamable, editable row, and one with empty
- * contributionActiveFields is simply a profile with nothing customized.
+ * CRUD + resolution for Contribution Profiles (no salary: `loadLiveContribData` uses the
+ * globally active Salary Profile). Every profile is an ordinary row; empty
+ * contributionActiveFields means nothing set.
  */
 import {
   assertWithinIrsLimits,
@@ -31,6 +19,7 @@ import { createTRPCRouter } from "../trpc";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
@@ -63,14 +52,9 @@ const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 type Entry = Record<string, unknown>;
 
 /**
- * A joint account with no jobId has no single person's salary to resolve
- * percent_of_salary against — the salary-resolution fallback in
- * lib/pure/contributions/contribution-rows.ts falls back to job-by-personId, which is
- * null for joint accounts, silently computing a $0 salary instead of the
- * intended percentage. contributionMethod is only ever set here now
- * (accounts carry no method of their own), so every write path that can
- * set it to percent_of_salary (create, update, setAccountActiveFields)
- * must run this same check.
+ * A joint account with no jobId has no salary to resolve percent_of_salary against
+ * (it would compute $0). contributionMethod is set only in profiles, so every write that
+ * can set percent_of_salary (create, update, setAccountActiveFields) runs this check.
  */
 async function assertNoJointPercentOfSalaryWithoutJob(
   db: Db,
@@ -149,10 +133,8 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
     });
   }
 
-  // A fully-unset entry is removed entirely, not stored as `{}` — an
-  // absent key and an empty object mean the same thing here
-  // (getIncompleteContribAccountIds treats them identically), but only
-  // one of them should be the actual on-disk representation.
+  // A fully-unset entry is removed, not stored as `{}` (both mean the same to
+  // getIncompleteContribAccountIds; only absence is stored).
   const nextSub = { ...root[subKey] };
   if (Object.keys(parsed.data).length === 0) {
     delete nextSub[String(entryId)];
@@ -193,12 +175,12 @@ export const contributionProfileRouter = createTRPCRouter({
       jobSalaries,
       rawContribRows,
       salaryProfileActiveMap,
-    } = await loadLiveContribData(ctx.db);
+    } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
     const capHousehold = await loadCapHousehold(
       ctx.db,
       await getAllPeople(ctx.db),
       null,
-      ctx.scope.asOf.getFullYear(),
+      ctx.scope.asOf,
     );
 
     const resolved = profiles.map((profile) => {
@@ -224,13 +206,10 @@ export const contributionProfileRouter = createTRPCRouter({
         0,
       );
 
-      const accountActiveFields =
-        (
-          profile.contributionActiveFields as Record<
-            string,
-            Record<string, Record<string, unknown>>
-          >
-        ).contributionAccounts ?? {};
+      const accountActiveFields = readContributionActiveFields(
+        profile.contributionActiveFields,
+        profile.id,
+      ).contributionAccounts;
 
       return {
         id: profile.id,
@@ -257,13 +236,9 @@ export const contributionProfileRouter = createTRPCRouter({
   }),
 
   /**
-   * Lightweight data for the Compare view and the swap-time diff:
-   * every account's live values plus every profile's raw active-fields
-   * map, keyed by account id. Deliberately skips what `getById` does per
-   * profile — perf-account fuzzy matching and full display-name
-   * disambiguation — since those only need to happen once per account row,
-   * not once per profile × account. `loadLiveContribData` itself still
-   * only runs once for the whole request, same as `list` above.
+   * Lightweight data for the Compare view and swap-time diff: each account's live values
+   * plus each profile's raw active-fields map, keyed by account id. Skips `getById`'s
+   * per-profile perf-account matching and name disambiguation.
    */
   compareData: protectedProcedure.query(async ({ ctx }) => {
     const profiles = await ctx.db
@@ -272,10 +247,8 @@ export const contributionProfileRouter = createTRPCRouter({
       .orderBy(schema.contributionProfiles.createdAt);
 
     const { rawContribRows, peopleMap, jobs, perfAccountMap } =
-      await loadLiveContribData(ctx.db);
-    // portfolioAccountLabel wants id → name, but loadLiveContribData's
-    // peopleMap is id → full person row (shared with other resolution here
-    // that needs more than the name) — derive once rather than twice below.
+      await loadLiveContribData(ctx.db, ctx.scope.asOf);
+    // portfolioAccountLabel wants id → name; peopleMap is id → person row.
     const nameMap = new Map(
       Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
     );
@@ -285,33 +258,17 @@ export const contributionProfileRouter = createTRPCRouter({
         row.performanceAccountId != null
           ? perfAccountMap.get(row.performanceAccountId)
           : undefined;
-      // The real institution (where the account is actually held) comes
-      // from the linked performance account. Falling back to the person's
-      // current employer only covers the rare case of a contribution
-      // account with no performance-account link yet — using employer as
-      // a stand-in for institution is wrong for anything not actually
-      // employer-sponsored (e.g. an IRA), which is exactly what happened
-      // here before: every account showed the owner's current job's name
-      // regardless of where the account is actually held.
+      // The institution comes from the linked performance account; the owner's
+      // current employer is a stand-in only for an account with no link yet.
       const institution =
         perfAccount?.institution ??
         jobs.find(
           (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
         )?.employerName ??
         "";
-      // A contribution row with its own personId is inherently
-      // person-specific (contribution limits are always per-person) even
-      // when the underlying performance account is tracked jointly — e.g.
-      // 10+ years of combined-performance history for one shared IRA
-      // holding both spouses' separate contribution configs. Prefer that
-      // more specific fact over the account's own ownershipType, which
-      // would otherwise flatten both people's rows to the identical
-      // "Joint IRA (Vanguard) — Trad" label with no way to tell them apart.
-      // Genuinely joint contribution rows (row.personId == null) are
-      // unaffected — they still correctly defer to the account's own
-      // ownershipType below. Routed through the shared helper (see
-      // portfolio-labels.ts) so this precedence rule can't drift from the
-      // other 6 call sites that need it.
+      // A row with its own personId is person-specific (limits are per person) even
+      // under a jointly tracked account, so it gets its owner's label; joint rows
+      // (personId null) use the account's ownershipType. Shared rule in portfolio-labels.ts.
       const accountName = portfolioAccountLabel(
         {
           accountType: row.accountType,
@@ -359,17 +316,14 @@ export const contributionProfileRouter = createTRPCRouter({
 
     return {
       accounts,
-      profiles: profiles.map((p) => {
-        const root = p.contributionActiveFields as Record<
-          string,
-          Record<string, Record<string, unknown>>
-        >;
-        return {
-          id: p.id,
-          name: p.name,
-          accountActiveFields: root.contributionAccounts ?? {},
-        };
-      }),
+      profiles: profiles.map((p) => ({
+        id: p.id,
+        name: p.name,
+        accountActiveFields: readContributionActiveFields(
+          p.contributionActiveFields,
+          p.id,
+        ).contributionAccounts,
+      })),
     };
   }),
 
@@ -394,7 +348,7 @@ export const contributionProfileRouter = createTRPCRouter({
         peopleMap,
         perfAccountMap,
         salaryProfileActiveMap,
-      } = await loadLiveContribData(ctx.db);
+      } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
       // portfolioAccountLabel wants id → name; peopleMap here is id → full
       // person row (still needed below for the fuzzy-suggestion matcher).
       const nameMap = new Map(
@@ -409,18 +363,13 @@ export const contributionProfileRouter = createTRPCRouter({
       );
 
       // Build per-account detail for the editor UI
-      const contribActiveFieldsRoot =
-        profile.contributionActiveFields as Record<
-          string,
-          Record<string, Record<string, unknown>>
-        >;
-      const accountActiveFields =
-        (contribActiveFieldsRoot.contributionAccounts ?? {}) as Record<
-          string,
-          Record<string, unknown>
-        >;
-      const deductionActiveFields = (contribActiveFieldsRoot.deductions ??
-        {}) as Record<string, Record<string, unknown>>;
+      const {
+        contributionAccounts: accountActiveFields,
+        deductions: deductionActiveFields,
+      } = readContributionActiveFields(
+        profile.contributionActiveFields,
+        profile.id,
+      );
       // Convert perfAccountMap to array for fallback matching
       const allPerfAccounts = Array.from(perfAccountMap.values());
 
@@ -465,13 +414,8 @@ export const contributionProfileRouter = createTRPCRouter({
           )?.employerName ??
           "";
 
-        // A contribution row with its own personId is inherently
-        // person-specific even when the underlying performance account is
-        // tracked jointly (e.g. 10+ years of combined-performance history
-        // for one shared IRA holding both spouses' separate contribution
-        // configs) — see the matching comment in compareData above. Routed
-        // through the shared helper (portfolio-labels.ts) so this
-        // precedence rule can't drift from the other call sites.
+        // A row with its own personId gets its owner's label even under a jointly
+        // tracked account (see compareData above; rule in portfolio-labels.ts).
         const accountName = portfolioAccountLabel(
           {
             accountType: row.accountType,
@@ -532,10 +476,8 @@ export const contributionProfileRouter = createTRPCRouter({
         };
       });
 
-      // Deductions have no live value on their own any more (Stage B
-      // dropped paycheck_deductions.amount_per_period) — same no-base-value,
-      // exclude-if-absent contract as a contribution account's
-      // contributionValue (see applyDeductionActiveFields).
+      // Deductions have no live value of their own: exclude-if-absent, like a
+      // contribution account's contributionValue (see applyDeductionActiveFields).
       const allDeductions = await ctx.db
         .select()
         .from(schema.paycheckDeductions);
@@ -638,15 +580,13 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-      // Over the limits on a profile used as a future switch: saved, with
-      // a warning (switchProfileLimitWarning).
+      // Over the limits on a future switch: saved, with a warning.
+      const { asOf } = ctx.scope;
       let limitWarning: string | null = null;
-      const before =
-        (
-          existing[0].contributionActiveFields as {
-            contributionAccounts?: Record<string, Record<string, unknown>>;
-          }
-        ).contributionAccounts ?? {};
+      const before = readContributionActiveFields(
+        existing[0].contributionActiveFields,
+        input.id,
+      ).contributionAccounts;
       const incoming =
         input.contributionActiveFields &&
         (await activeFieldsWithMatchRates(
@@ -662,8 +602,8 @@ export const contributionProfileRouter = createTRPCRouter({
           after,
           touched: touchedContribAccounts(before, after),
         };
-        await assertWithinIrsLimits(ctx.db, check);
-        limitWarning = await switchProfileLimitWarning(ctx.db, check);
+        await assertWithinIrsLimits(ctx.db, check, asOf);
+        limitWarning = await switchProfileLimitWarning(ctx.db, check, asOf);
       }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
@@ -711,6 +651,7 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
+      const { asOf } = ctx.scope;
       let limitWarning: string | null = null;
       const row = await ctx.db.transaction((tx) =>
         patchProfileSubEntry(
@@ -730,8 +671,8 @@ export const contributionProfileRouter = createTRPCRouter({
               after,
               touched: touchedContribAccounts(before, after),
             };
-            await assertWithinIrsLimits(tx, check);
-            limitWarning = await switchProfileLimitWarning(tx, check);
+            await assertWithinIrsLimits(tx, check, asOf);
+            limitWarning = await switchProfileLimitWarning(tx, check, asOf);
           },
           (entry, before) =>
             entriesWithMatchRates(
@@ -747,10 +688,8 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Patch (merge) one deduction's active amount within a profile — same
-   * field-level-patch, same-transaction pattern as setAccountActiveFields.
-   * A deduction has no live amountPerPeriod any more (Stage B dropped the
-   * column) — this is the only way to give one a resolvable value.
+   * Patch one deduction's active amount within a profile (same pattern as
+   * setAccountActiveFields): the only way a deduction gets a resolvable value.
    */
   setDeductionActiveFields: contributionProfileProcedure
     .input(
@@ -777,12 +716,8 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Delete a contribution profile. Blocked when it's the last one left (the
-   * active-profile setting must always resolve to a real row), when it's the
-   * globally-active selection, and when any Plan still pins it — the
-   * scenarios FK is `set null`, so without that check deleting would silently
-   * unpin every Plan referencing it. (Mirrors salaryProfile.delete, which had
-   * the Plan-pin guard first.)
+   * Delete a contribution profile. Blocked for the last one, the globally-active one, and
+   * one any Plan uses (the scenarios FK is `set null`, so deleting would unset those Plans).
    */
   delete: contributionProfileProcedure
     .input(z.object({ id: z.number() }))

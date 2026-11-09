@@ -16,12 +16,12 @@ export function updatePerPersonTradBalance(
 ): void {
   if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.hasIndividualAccounts) return;
   state.priorYearEndTradByPerson.clear();
-  for (const ia of ctx.indAccts) {
+  for (const ia of ctx.indAccounts) {
     const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
     if (owner != null && isPreTaxType(ia.taxType)) {
-      const bal = state.indBal.get(ctx.indKey(ia)) ?? 0;
+      const balance = state.indBalance.get(ctx.indKey(ia)) ?? 0;
       const prev = state.priorYearEndTradByPerson.get(owner) ?? 0;
-      state.priorYearEndTradByPerson.set(owner, prev + bal);
+      state.priorYearEndTradByPerson.set(owner, prev + balance);
     }
   }
 }

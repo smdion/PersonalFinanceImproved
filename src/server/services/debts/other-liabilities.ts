@@ -1,22 +1,12 @@
 /**
- * Other liabilities (everything but the mortgage), one computation for
- * every reader — net worth, the year-end snapshot, finalizing a year, the
- * Liabilities page and milestones:
- *  - `manual`: the household's typed "other debts, not itemized" figure
- *    (app_settings current_other_liabilities);
- *  - `itemized`: open rows of the debts list (not paid off as of `asOf`);
- *  - `creditCardMapped`: credit-card balances from the budget's mapped
- *    accounts (getEffectiveCreditCardDebt).
- * Balances are as entered (never amortized forward) — or, for a debt
- * mapped to a budget account, the balance last pulled from it (written on
- * sync, like the mortgage's). Finalizing a year
- * stores today's balances, as it always has for the typed one, for the
- * debts open at that year's Dec 31.
+ * Other liabilities (all but the mortgage) for every reader: `manual` typed figure, `itemized`
+ * debts-list rows open as of `asOf`, `creditCardMapped` budget credit-card balances.
+ * Balances are as entered, or as last pulled for a debt mapped to a budget account.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { getEffectiveCreditCardDebt } from "@/server/services/budget/account-balances";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import type { DbOrTx } from "@/lib/db";
@@ -35,10 +25,7 @@ type OtherLiabilities = {
 
 export async function getEffectiveOtherLiabilities(
   db: DbOrTx,
-  {
-    activeBudgetApi,
-    asOf = new Date(),
-  }: { activeBudgetApi?: ActiveBudgetApi; asOf?: Date } = {},
+  { activeBudgetApi, asOf }: { activeBudgetApi?: ActiveBudgetApi; asOf: Date },
 ): Promise<OtherLiabilities> {
   const [manualRow] = await db
     .select()
@@ -48,7 +35,7 @@ export async function getEffectiveOtherLiabilities(
     "current_other_liabilities",
     0,
   );
-  const day = localDateStr(asOf);
+  const day = calendarDateOf(asOf);
   const openDebts = (await db.select().from(schema.debts)).filter((d) =>
     isOpenDebt(d, day),
   );

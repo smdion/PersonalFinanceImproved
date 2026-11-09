@@ -1,16 +1,14 @@
 "use client";
 
 /**
- * The household's milestones, judged once by `evaluateMilestones()` from the
- * same queries the dashboard already runs (React Query shares them). Fetching
- * only — every figure is mapped by `buildMilestoneInput()` and judged by the
- * pure engine, so the Milestones page and the Financial Checkup agree.
+ * The household's milestones, judged by the pure engine from queries the
+ * dashboard already runs, so the Milestones page and the Checkup agree.
  */
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -25,18 +23,17 @@ import {
 /** The contribution-summary input every dashboard card sends. */
 export function useContributionSummaryInput() {
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
+  const { queryInput: contributionProfileInput } =
+    useEffectiveContributionProfileId();
   return {
-    ...contribProfileInput,
+    ...contributionProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 }
 
 /**
- * The household's milestones. Rows that need data a viewer may not see
- * (linked holdings: portfolio; brokerage goals: brokerage) are gated here,
- * once, so every caller — Milestones page, Checkup, Recommendations — judges
- * the same set.
+ * The household's milestones. Rows needing data a viewer may lack (portfolio,
+ * brokerage) are gated here once, so every caller judges the same set.
  */
 export function useMilestones(): {
   isLoading: boolean;
@@ -52,7 +49,7 @@ export function useMilestones(): {
   const user = useUser();
   const withHoldings = hasPermission(user, "portfolio");
   const withBrokerageGoals = hasPermission(user, "brokerage");
-  const contribInput = useContributionSummaryInput();
+  const contributionInput = useContributionSummaryInput();
   const [efundBudgetColumn] = usePersistedSetting<number>(
     SK_EFUND_BUDGET_COLUMN,
     -1,
@@ -62,7 +59,7 @@ export function useMilestones(): {
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
-  const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
+  const contribs = trpc.contribution.computeSummary.useQuery(contributionInput);
   const savings = trpc.savings.computeSummary.useQuery(
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }
@@ -73,9 +70,12 @@ export function useMilestones(): {
   const holdings = trpc.investments.getHoldingsOverview.useQuery(undefined, {
     enabled: withHoldings,
   });
-  const buyingMonths = trpc.investments.getBuyingMonths.useQuery(undefined, {
-    enabled: withHoldings,
-  });
+  const buyingMonths = trpc.investments.computeBuyingMonths.useQuery(
+    undefined,
+    {
+      enabled: withHoldings,
+    },
+  );
   const brokerageGoals = trpc.brokerage.listGoals.useQuery(undefined, {
     enabled: withBrokerageGoals,
   });

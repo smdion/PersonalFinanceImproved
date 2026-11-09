@@ -4,5 +4,7 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import { loadBuyingMonths } from "@/server/services/investments/buying-months";
 
 export const investmentBuyingRouter = createTRPCRouter({
-  getBuyingMonths: portfolioProcedure.query(({ ctx }) => loadBuyingMonths(ctx)),
+  computeBuyingMonths: portfolioProcedure.query(({ ctx }) =>
+    loadBuyingMonths(ctx),
+  ),
 });

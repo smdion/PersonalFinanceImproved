@@ -15,12 +15,14 @@ const items = [
   { id: 2, profileId: 2, amounts: [5000], contributionAccountId: null },
 ] as unknown as Items;
 
-const run = (opts: Parameters<typeof resolvePhaseExpenses>[1]["opts"]) =>
+const run = (
+  opts: Omit<Parameters<typeof resolvePhaseExpenses>[1]["opts"], "asOf">,
+) =>
   resolvePhaseExpenses({} as never, {
     allBudgetProfiles: profiles,
     allBudgetItems: items,
     globalActiveCol: 0,
-    opts,
+    opts: { ...opts, asOf: new Date() },
   });
 
 describe("resolvePhaseExpenses with a budget profile id that no longer exists", () => {

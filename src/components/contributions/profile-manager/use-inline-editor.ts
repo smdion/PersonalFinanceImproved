@@ -28,10 +28,8 @@ export function useInlineEditorState(profileId: number, onSaved: () => void) {
         utils.contributionProfile.invalidate();
       },
     });
-  /** Same generic-field-patch pattern as paycheck/paycheck-content.tsx's onUpdateDeduction
-   *  — one call site builds the full record from the current row plus the
-   *  one field being changed, instead of each editable cell hand-writing
-   *  its own copy of the other four fields. */
+  /** Builds the full deduction record from the current row plus the changed field,
+   *  the same pattern as paycheck-content.tsx's onUpdateDeduction. */
   const patchDeductionRecord = (
     d: DeductionRow,
     changes: Partial<
@@ -118,11 +116,9 @@ export function inlineEditorCommits(editor: {
   const deductionActiveFields = (id: number) =>
     root.deductions?.[String(id)] ?? {};
 
-  /** Split a {key: value | undefined} changes record into a patch (fields
-   *  actually being set) and an unset list (fields being cleared) — the
-   *  wire format the server-side patch procedures expect, since a JSON
-   *  body can't carry `undefined` as a distinguishable value from "field
-   *  omitted". */
+  /** Split {key: value | undefined} into a patch (set fields) and an unset list
+   *  (cleared fields), the wire format the patch procedures expect, since JSON
+   *  can't tell `undefined` from an omitted field. */
   const splitChanges = (changes: Record<string, unknown>) => {
     const fields: Record<string, unknown> = {};
     const unset: string[] = [];

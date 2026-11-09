@@ -24,7 +24,7 @@ import {
   accountCategoryEnum,
   DEFAULT_WITHDRAWAL_SPLITS,
   getDisplayConfig,
-  isDiscountBasisEmployerContrib,
+  isDiscountBasisEmployerContribution,
   tracksRothBasis,
   type AccountCategory,
   isPreTaxTreatment,
@@ -103,9 +103,9 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
     expect(getDisplayConfig("brokerage", "ESPP").employerContribKind).toBe(
       "discount",
     );
-    expect(isDiscountBasisEmployerContrib("brokerage", "ESPP")).toBe(true);
-    expect(isDiscountBasisEmployerContrib("brokerage", null)).toBe(false);
-    expect(isDiscountBasisEmployerContrib("401k", null)).toBe(false);
+    expect(isDiscountBasisEmployerContribution("brokerage", "ESPP")).toBe(true);
+    expect(isDiscountBasisEmployerContribution("brokerage", null)).toBe(false);
+    expect(isDiscountBasisEmployerContribution("401k", null)).toBe(false);
   });
 });
 
@@ -503,9 +503,9 @@ describe("display labels", () => {
   });
 
   it("EMPLOYER_MATCH_LABELS covers all match types", () => {
-    expect(EMPLOYER_MATCH_LABELS["none"]).toBe("None");
+    expect(EMPLOYER_MATCH_LABELS["none"]).toBe("No match");
     expect(EMPLOYER_MATCH_LABELS["percent_of_contribution"]).toBe(
-      "% of Contrib",
+      "% of contribution",
     );
   });
 

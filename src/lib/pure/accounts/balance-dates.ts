@@ -1,11 +1,7 @@
 /**
- * How current linked balances are, per institution — for the Live Balance
- * card's footer. Pure.
- *
- * Dates are valuation dates (the trading day a balance reflects, as for
- * holdings), so a balance reported on a Saturday counts as Friday's close
- * and isn't "behind" one from Friday. Each institution is as current as its
- * least current account.
+ * How current linked balances are, per institution (Live Balance card footer). Dates are
+ * valuation dates, so Saturday's report counts as Friday's close; an institution is as
+ * current as its least current account.
  */
 import {
   tradingDaysBetween,

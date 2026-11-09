@@ -9,7 +9,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import {
   WhatIfContributionsEditor,
   WhatIfDeductionsEditor,
-  type ContribAddition,
+  type ContributionAddition,
   type DeductionAddition,
 } from "@/app/(dashboard)/budget/what-if-editors";
 import type { PaycheckPersonView } from "@/lib/hooks/use-paycheck-person-views";
@@ -62,7 +62,7 @@ const deductionAddition: DeductionAddition = {
   isPretax: true,
   ficaExempt: true,
 };
-const contribAddition: ContribAddition = {
+const contribAddition: ContributionAddition = {
   localId: -2,
   personId: 1,
   accountType: "ira",

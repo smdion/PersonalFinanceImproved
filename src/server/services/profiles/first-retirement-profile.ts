@@ -15,14 +15,9 @@ export function lockFirstRetirementProfile(tx: DbOrTx): Promise<void> {
 }
 
 /**
- * Give an install with saved retirement settings and no Retirement profile
- * its first one, in one transaction: "Current Retirement", every
- * `retirement_settings` row with no profile pointed at it, a
- * `retirement_profile_people` row from each of those, everyone else added
- * as `people.create` adds a person (addPersonToRetirementProfile), and
- * made active. Does nothing once any profile
- * exists, or before any settings are saved (a person's row needs an age).
- * Returns the new profile's id, or null when nothing changed.
+ * Give an install with saved retirement settings but no Retirement profile its first one,
+ * "Current Retirement", adopting unassigned settings rows and every person, and make it active.
+ * No-op once a profile exists or before any settings are saved; returns the new id or null.
  */
 export async function adoptFirstRetirementProfile(
   db: DbOrTx,
@@ -77,11 +72,9 @@ export async function adoptFirstRetirementProfile(
 }
 
 /**
- * Completeness invariant: give a person with no rows in a profile that
- * profile's rows, a `retirement_settings` row and a
- * `retirement_profile_people` row, each cloned from the primary person's
- * row in it (else the lowest person id's), with person and profile swapped.
- * Skips a table the profile has no row in to clone.
+ * Completeness invariant: give a person with no rows in a profile its `retirement_settings` and
+ * `retirement_profile_people` rows, cloned from the primary person's (else the lowest id's) with
+ * person and profile swapped. Skips a table the profile has no row in.
  */
 export async function addPersonToRetirementProfile(
   tx: DbOrTx,

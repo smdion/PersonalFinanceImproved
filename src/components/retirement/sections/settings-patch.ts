@@ -1,15 +1,6 @@
 /**
- * `buildSettingsPatch` — single source of truth for the 6-field required
- * anchor payload that every `retirementSettings.upsert` call must include.
- *
- * The tRPC upsert schema requires personId, retirementAge, endAge,
- * returnAfterRetirement, annualInflation, and salaryAnnualIncrease on every
- * call (they identify the row and prevent accidental field erasure). Without
- * a helper, each call site must repeat all six — ~16 sites × 6 fields = drift
- * risk if the required set ever changes.
- *
- * Usage:
- *   upsertSettings.mutate(buildSettingsPatch(settings, { withdrawalRate: '0.04' }))
+ * `buildSettingsPatch`: the 6 anchor fields every `retirementSettings.upsert` call must send
+ * (personId, retirementAge, endAge, returnAfterRetirement, annualInflation, salaryAnnualIncrease).
  */
 import type { Settings, SettingsPatch, UpsertSettingsInput } from "./types";
 
@@ -25,10 +16,9 @@ export function buildSettingsPatch(
 ): UpsertSettingsInput {
   return {
     personId: current.personId,
-    // Always forwarded so the write scopes to the profile these values
-    // came from, not the household's globally-active one — see
-    // retirementSettings.upsert's docblock (retirement.ts) on why key
-    // PRESENCE (not just value) matters here.
+    // Always forwarded so the write scopes to the profile these values came
+    // from, not the active one; retirementSettings.upsert
+    // (routers/retirement/settings.ts) says why the key's presence matters.
     profileId: current.profileId,
     retirementAge: current.ownRetirementAge,
     endAge: current.ownEndAge,

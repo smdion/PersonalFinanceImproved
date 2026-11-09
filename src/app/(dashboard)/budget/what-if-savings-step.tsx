@@ -37,11 +37,8 @@ export function WhatIfSavingsStep({
         livePoolEstimate={leftover}
         livePoolColumnLabel={cols[activeColumn]}
         onLocalChange={() => {
-          // Sandbox savings edits are local-only for this preview session
-          // (no downstream consumer needs them yet — the leftover figure
-          // above already reflects the salary/budget sandbox). Accepting
-          // the callback (rather than omitting it) is what keeps the
-          // table's writes redirected away from the real upsert mutation.
+          // Sandbox savings edits stay local; passing this callback is what
+          // keeps the table's writes away from the real upsert mutation.
         }}
       />
     </WhatIfStep>

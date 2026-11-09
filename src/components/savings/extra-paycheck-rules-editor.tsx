@@ -1,18 +1,9 @@
 "use client";
 
 /**
- * ExtraPaycheckJobPanel / ExtraPaycheckRulesEditor / ExtraPaycheckDestinationToggle
- *
- * ExtraPaycheckJobPanel is the full per-job routing editor — rules, splits
- * across savings goals, growth rates, month overrides. ExtraPaycheckRulesEditor
- * wraps it in a multi-person grid and renders on the Savings page, where
- * this detail belongs (it's Savings-domain mechanics, not a Salary Profile
- * concern). Salary Profile Manager instead renders only
- * ExtraPaycheckDestinationToggle, next to a job's payPeriod/anchorPayDate —
- * just the comp-layer decision of whether the extra check is diverted at
- * all (see DESIGN.md's extraPaycheckRouting section), not the mechanics of
- * where. Saves via savings.extraPaycheckRouting.save/saveGrowth/
- * saveOverride/setEnabled.
+ * Extra-paycheck routing: the per-job editor (rules, goal splits, growth, month overrides) and its
+ * multi-person grid for the Savings page, plus the Savings-vs-Budget toggle Salary Profile Manager
+ * shows (see DESIGN.md's extraPaycheckRouting section).
  */
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -46,12 +37,8 @@ import type {
 } from "@/lib/db/schema-pg";
 
 /**
- * extraPaycheckRouting now lives inside the Salary Profile entry, not a
- * savings-only table — invalidating only `savings.*` leaves Salary Profile
- * Manager (`salaryProfile.getById`) and the Paycheck page
- * (`paycheck.computeSummary`) showing stale routing after a save, since
- * neither query lives under the `savings` router. Every mutation in this
- * file that touches routing must invalidate all three.
+ * Routing lives on the Salary Profile entry, so every routing mutation here invalidates
+ * `savings.*`, `salaryProfile.getById` and `paycheck.computeSummary`.
  */
 function invalidateExtraPaycheckConsumers(
   utils: ReturnType<typeof trpc.useUtils>,
@@ -196,7 +183,7 @@ function ExtraPaycheckJobPanel({
     return keys.map((k) => k.slice(0, 7)); // "YYYY-MM-01" → "YYYY-MM"
   }, [job.anchorPayDate, job.payPeriod, monthDates]);
 
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [addForm, setAddForm] = useState<RuleForm | null>(null);
 
   // Override state: which month is open for override editing
@@ -259,16 +246,16 @@ function ExtraPaycheckJobPanel({
 
   function openAdd() {
     setAddForm(emptyForm());
-    setEditingIdx(null);
+    setEditingIndex(null);
   }
 
   function cancelAdd() {
     setAddForm(null);
   }
 
-  function openEdit(idx: number) {
-    const r = rules[idx]!;
-    setEditingIdx(idx);
+  function openEdit(index: number) {
+    const r = rules[index]!;
+    setEditingIndex(index);
     setAddForm({
       from: r.from,
       to: r.to ?? "",
@@ -277,7 +264,7 @@ function ExtraPaycheckJobPanel({
   }
 
   function cancelEdit() {
-    setEditingIdx(null);
+    setEditingIndex(null);
     setAddForm(null);
   }
 
@@ -293,8 +280,8 @@ function ExtraPaycheckJobPanel({
     };
 
     let updated: ExtraPaycheckRule[];
-    if (editingIdx !== null) {
-      updated = rules.map((r, i) => (i === editingIdx ? newRule : r));
+    if (editingIndex !== null) {
+      updated = rules.map((r, i) => (i === editingIndex ? newRule : r));
     } else {
       updated = [...rules, newRule].sort((a, b) =>
         a.from.localeCompare(b.from),
@@ -307,11 +294,11 @@ function ExtraPaycheckJobPanel({
       yearlyGrowth,
     });
     setAddForm(null);
-    setEditingIdx(null);
+    setEditingIndex(null);
   }
 
-  function deleteRule(idx: number) {
-    const updated = rules.filter((_, i) => i !== idx);
+  function deleteRule(index: number) {
+    const updated = rules.filter((_, i) => i !== index);
     saveMutation.mutate({ jobId: job.id, rules: updated });
   }
 
@@ -327,7 +314,7 @@ function ExtraPaycheckJobPanel({
     setAddForm({ ...addForm, splits });
   }
 
-  function setSplitPct(si: number, pct: string) {
+  function setSplitPercent(si: number, pct: string) {
     if (!addForm) return;
     const splits = addForm.splits.map((s, i) => (i === si ? { ...s, pct } : s));
     setAddForm({ ...addForm, splits });
@@ -464,12 +451,12 @@ function ExtraPaycheckJobPanel({
           {addForm && (
             <div className="border-subtle bg-surface-sunken/50 space-y-3 rounded-md border p-3">
               <RuleFormFields
-                editingIdx={editingIdx}
+                editingIndex={editingIndex}
                 addForm={addForm}
                 setFormField={setFormField}
                 setSplitGoal={setSplitGoal}
                 goals={goals}
-                setSplitPct={setSplitPct}
+                setSplitPercent={setSplitPercent}
                 removeSplit={removeSplit}
                 addSplit={addSplit}
                 splitTotal={splitTotal}
@@ -479,7 +466,7 @@ function ExtraPaycheckJobPanel({
                 saveForm={saveForm}
                 formValid={formValid}
                 saveMutation={saveMutation}
-                editingIdx={editingIdx}
+                editingIndex={editingIndex}
                 cancelEdit={cancelEdit}
                 cancelAdd={cancelAdd}
               />
@@ -500,15 +487,7 @@ function ExtraPaycheckJobPanel({
   );
 }
 
-/**
- * Full multi-person routing editor — one ExtraPaycheckJobPanel per job,
- * grouped by person. Lives on the Savings page: rules/splits/goals/growth
- * are Savings-domain complexity (percentage splits across savings GOALS,
- * a concept this component owns), not a Salary Profile concern. Salary
- * Profile Manager shows only ExtraPaycheckDestinationToggle below — the
- * simple comp-layer decision of whether the extra check is diverted at
- * all, without the detailed mechanics of where.
- */
+/** Savings page's multi-person routing editor: one ExtraPaycheckJobPanel per job, grouped by person. */
 export function ExtraPaycheckRulesEditor({
   goals,
   netPayByPersonId,
@@ -587,14 +566,8 @@ export function ExtraPaycheckRulesEditor({
 }
 
 /**
- * Minimal Savings-vs-Budget control for Salary Profile Manager — just the
- * pill toggle, no rules/splits/growth/overrides. Those are Savings-domain
- * mechanics (see ExtraPaycheckRulesEditor above); this only surfaces the
- * comp-layer decision itself: is the job's extra biweekly paycheck diverted
- * anywhere at all. Reuses `routing` already fetched by the caller (Salary
- * Profile Manager already has each job's entry in scope) rather than
- * re-querying savings.extraPaycheckRouting.list for a job Manager already
- * has data for.
+ * Savings-vs-Budget pill toggle for Salary Profile Manager: whether a job's extra paycheck is
+ * diverted at all. Uses the caller's `routing` rather than re-querying.
  */
 const EXTRA_PAYCHECK_OPTIONS = [
   { value: "savings", label: "Savings" },

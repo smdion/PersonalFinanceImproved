@@ -9,8 +9,8 @@ import { YearTableHead } from "./brokerage-year-table-head";
 
 // --- Tooltip builders ---
 
-function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
-  const items = yr.individualAccounts.map((ia) => ({
+function contributionTooltip(yearRow: BrokerageGoalYear): TooltipData {
+  const items = yearRow.individualAccounts.map((ia) => ({
     label: ia.name,
     amount: ia.intentionalContribution ?? ia.contribution,
     match: ia.employerMatch > 0 ? ia.employerMatch : undefined,
@@ -23,26 +23,26 @@ function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
     items,
     total: {
       label: "Total",
-      amount: yr.contribution,
-      match: yr.employerMatch > 0 ? yr.employerMatch : undefined,
+      amount: yearRow.contribution,
+      match: yearRow.employerMatch > 0 ? yearRow.employerMatch : undefined,
       matchLabel: "match",
     },
-    ...(yr.proRateFraction != null
+    ...(yearRow.proRateFraction != null
       ? {
           proRate: {
-            months: Math.round(yr.proRateFraction * 12),
+            months: Math.round(yearRow.proRateFraction * 12),
             annualAmount: Math.round(
-              safeDivide(yr.contribution, yr.proRateFraction!),
+              safeDivide(yearRow.contribution, yearRow.proRateFraction!),
             ),
-            proRatedAmount: yr.contribution,
+            proRatedAmount: yearRow.contribution,
           },
         }
       : {}),
   };
 }
 
-function overflowTooltip(yr: BrokerageGoalYear): TooltipData {
-  const items = yr.individualAccounts
+function overflowTooltip(yearRow: BrokerageGoalYear): TooltipData {
+  const items = yearRow.individualAccounts
     .filter((ia) => (ia.overflowContribution ?? 0) > 0)
     .map((ia) => ({
       label: ia.name,
@@ -57,8 +57,8 @@ function overflowTooltip(yr: BrokerageGoalYear): TooltipData {
   };
 }
 
-function growthTooltip(yr: BrokerageGoalYear): TooltipData {
-  const items = yr.individualAccounts.map((ia) => ({
+function growthTooltip(yearRow: BrokerageGoalYear): TooltipData {
+  const items = yearRow.individualAccounts.map((ia) => ({
     label: ia.name,
     amount: ia.growth,
     prefix: (ia.growth >= 0 ? "+" : "-") as "+" | "-",
@@ -67,14 +67,14 @@ function growthTooltip(yr: BrokerageGoalYear): TooltipData {
   return {
     kind: "money",
     header: "Investment Growth",
-    meta: `Return rate: ${formatPercent(yr.returnRate)}`,
+    meta: `Return rate: ${formatPercent(yearRow.returnRate)}`,
     items,
-    growth: { amount: yr.growth },
+    growth: { amount: yearRow.growth },
   };
 }
 
-function withdrawalTooltip(yr: BrokerageGoalYear): TooltipData {
-  const items = yr.goalWithdrawals.map((gw) => ({
+function withdrawalTooltip(yearRow: BrokerageGoalYear): TooltipData {
+  const items = yearRow.goalWithdrawals.map((gw) => ({
     label: gw.name,
     amount: gw.amount,
     prefix: "-" as const,
@@ -97,40 +97,43 @@ function withdrawalTooltip(yr: BrokerageGoalYear): TooltipData {
     kind: "money",
     header: "Goal Withdrawals",
     items,
-    withdrawals: { amount: yr.totalWithdrawal, taxCost: yr.totalTaxCost },
+    withdrawals: {
+      amount: yearRow.totalWithdrawal,
+      taxCost: yearRow.totalTaxCost,
+    },
   };
 }
 
 function balanceTooltip(
-  yr: BrokerageGoalYear,
+  yearRow: BrokerageGoalYear,
   prevBalance: number,
 ): TooltipData {
-  const items = yr.individualAccounts.map((ia) => ({
+  const items = yearRow.individualAccounts.map((ia) => ({
     label: ia.name,
     amount: ia.balance,
     color: "blue" as const,
   }));
-  const change = yr.endBalance - prevBalance;
+  const change = yearRow.endBalance - prevBalance;
   return {
     kind: "money",
     header: "End Balance",
-    meta: `Return rate: ${formatPercent(yr.returnRate)}`,
+    meta: `Return rate: ${formatPercent(yearRow.returnRate)}`,
     items,
     yearChange: {
-      total: yr.endBalance,
+      total: yearRow.endBalance,
       change,
       parts: [
         {
           label: "Contributions",
-          amount: yr.contribution + yr.overflow,
+          amount: yearRow.contribution + yearRow.overflow,
           color: "blue",
         },
-        { label: "Growth", amount: yr.growth, color: "emerald" },
-        ...(yr.totalWithdrawal > 0
+        { label: "Growth", amount: yearRow.growth, color: "emerald" },
+        ...(yearRow.totalWithdrawal > 0
           ? [
               {
                 label: "Withdrawals",
-                amount: -yr.totalWithdrawal,
+                amount: -yearRow.totalWithdrawal,
                 color: "red" as const,
               },
             ]
@@ -162,87 +165,87 @@ export function YearByYearTable({
       <table className="w-full text-xs">
         <YearTableHead />
         <tbody>
-          {years.map((yr, index) => {
-            const hasWithdrawals = yr.totalWithdrawal > 0;
+          {years.map((yearRow, index) => {
+            const hasWithdrawals = yearRow.totalWithdrawal > 0;
             const prevBalance = index > 0 ? years[index - 1]!.endBalance : 0;
-            const hasAccounts = yr.individualAccounts.length > 0;
+            const hasAccounts = yearRow.individualAccounts.length > 0;
             return (
               <tr
-                key={yr.year}
+                key={yearRow.year}
                 className={`border-subtle border-b ${
                   hasWithdrawals ? "bg-amber-50/50" : ""
                 }`}
               >
                 <td className="text-secondary py-1.5 pr-3 font-medium">
-                  {yr.year}
-                  {yr.proRateFraction != null && (
+                  {yearRow.year}
+                  {yearRow.proRateFraction != null && (
                     <span className="text-micro text-faint ml-1">
-                      ({Math.round(yr.proRateFraction * 12)} months)
+                      ({Math.round(yearRow.proRateFraction * 12)} months)
                     </span>
                   )}
                 </td>
                 <td className="text-muted py-1.5 pr-3 text-right">
-                  {yr.contribution > 0 ? (
+                  {yearRow.contribution > 0 ? (
                     hasAccounts ? (
                       <Tooltip
-                        content={renderTooltip(contributionTooltip(yr))}
+                        content={renderTooltip(contributionTooltip(yearRow))}
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {fmt(yr.contribution, yr.year)}
+                          {fmt(yearRow.contribution, yearRow.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      fmt(yr.contribution, yr.year)
+                      fmt(yearRow.contribution, yearRow.year)
                     )
                   ) : (
                     "\u2014"
                   )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-amber-600">
-                  {yr.overflow > 0 ? (
+                  {yearRow.overflow > 0 ? (
                     hasAccounts ? (
                       <Tooltip
-                        content={renderTooltip(overflowTooltip(yr))}
+                        content={renderTooltip(overflowTooltip(yearRow))}
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {fmt(yr.overflow, yr.year)}
+                          {fmt(yearRow.overflow, yearRow.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      fmt(yr.overflow, yr.year)
+                      fmt(yearRow.overflow, yearRow.year)
                     )
                   ) : (
                     "\u2014"
                   )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-emerald-600">
-                  {yr.growth !== 0 ? (
+                  {yearRow.growth !== 0 ? (
                     hasAccounts ? (
                       <Tooltip
-                        content={renderTooltip(growthTooltip(yr))}
+                        content={renderTooltip(growthTooltip(yearRow))}
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {fmt(yr.growth, yr.year)}
+                          {fmt(yearRow.growth, yearRow.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      fmt(yr.growth, yr.year)
+                      fmt(yearRow.growth, yearRow.year)
                     )
                   ) : (
                     "\u2014"
                   )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-red-600">
-                  {yr.totalWithdrawal > 0 ? (
+                  {yearRow.totalWithdrawal > 0 ? (
                     <Tooltip
-                      content={renderTooltip(withdrawalTooltip(yr))}
+                      content={renderTooltip(withdrawalTooltip(yearRow))}
                       side="top"
                     >
                       <span className="cursor-help border-b border-dotted border-current">
-                        -{fmt(yr.totalWithdrawal, yr.year)}
+                        -{fmt(yearRow.totalWithdrawal, yearRow.year)}
                       </span>
                     </Tooltip>
                   ) : (
@@ -250,22 +253,24 @@ export function YearByYearTable({
                   )}
                 </td>
                 <td className="text-muted py-1.5 pr-3 text-right">
-                  {yr.totalTaxCost > 0
-                    ? fmt(yr.totalTaxCost, yr.year)
+                  {yearRow.totalTaxCost > 0
+                    ? fmt(yearRow.totalTaxCost, yearRow.year)
                     : "\u2014"}
                 </td>
                 <td className="text-primary py-1.5 pr-3 text-right font-medium">
                   {hasAccounts ? (
                     <Tooltip
-                      content={renderTooltip(balanceTooltip(yr, prevBalance))}
+                      content={renderTooltip(
+                        balanceTooltip(yearRow, prevBalance),
+                      )}
                       side="top"
                     >
                       <span className="cursor-help border-b border-dotted border-current">
-                        {fmt(yr.endBalance, yr.year)}
+                        {fmt(yearRow.endBalance, yearRow.year)}
                       </span>
                     </Tooltip>
                   ) : (
-                    fmt(yr.endBalance, yr.year)
+                    fmt(yearRow.endBalance, yearRow.year)
                   )}
                 </td>
               </tr>

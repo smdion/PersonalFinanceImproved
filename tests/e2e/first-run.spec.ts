@@ -108,9 +108,9 @@ test.describe("First run on an empty install", () => {
       timeout: 30_000,
     });
     expect(
-      await trpcQuery(page.request, "settings.isOnboardingComplete"),
+      await trpcQuery(page.request, "settings.getOnboardingStatus"),
     ).toEqual({ complete: true });
-    expect(await trpcQuery(page.request, "settings.firstRunState")).toEqual({
+    expect(await trpcQuery(page.request, "settings.getFirstRunState")).toEqual({
       adminNeeded: false,
     });
 
@@ -139,7 +139,7 @@ test.describe("First run on an empty install", () => {
 
     await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
     expect(
-      await trpcQuery(page.request, "settings.isOnboardingComplete"),
+      await trpcQuery(page.request, "settings.getOnboardingStatus"),
     ).toEqual({ complete: true });
     await expect(page.getByText("Welcome to Ledgr!")).toBeHidden();
   });

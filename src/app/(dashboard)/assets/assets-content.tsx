@@ -115,7 +115,7 @@ export function AssetsContent() {
         <Card
           title={
             <>
-              Total Assets{" "}
+              Non-Portfolio Assets{" "}
               <HelpTip text="Sum of cash, house equity, and other assets (excludes portfolio — see Net Worth)" />
             </>
           }
@@ -419,7 +419,7 @@ export function AssetsContent() {
 
           {/* Grand total */}
           <div className="border-strong flex items-center justify-between border-t-2 py-2 font-semibold">
-            <span>Total Assets</span>
+            <span>Non-Portfolio Assets</span>
             <span>{formatCurrency(current.totalAssets)}</span>
           </div>
         </div>

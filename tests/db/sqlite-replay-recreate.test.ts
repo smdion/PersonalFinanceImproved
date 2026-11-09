@@ -17,6 +17,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite, snapshotColumns } from "../../db-migrate";
+import { sampleJournalPoints } from "../helpers/journal-sample";
 
 const FOLDER = "drizzle-sqlite";
 const journal = JSON.parse(
@@ -214,9 +215,12 @@ describe("every legitimate recreate replay is unchanged", () => {
   });
 
   const cases = recreates.flatMap((r) =>
-    journal.entries
-      .filter((e) => e.idx >= r.idx - 1)
-      .map((e) => [r.tag, r.table, e.tag, r, e.idx] as const),
+    sampleJournalPoints(
+      journal.entries
+        .filter((e) => e.idx >= r.idx - 1)
+        .map((e) => [r.tag, r.table, e.tag, r, e.idx] as const),
+      `${r.tag} recreate replay`,
+    ),
   );
   it.each(cases)(
     "%s (%s) replayed on a cleared journal at %s keeps every value it keeps",

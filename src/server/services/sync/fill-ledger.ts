@@ -1,8 +1,6 @@
 /**
- * Which SimpleFIN transactions a saved Performance / basis fill already
- * counted (see lib/pure/investments/flow-suggestions.ts). One app setting, per scope
- * and year: each row's baseline day (fixed at its first fill) and the
- * counted transaction ids with how each was counted.
+ * Which SimpleFIN transactions a saved Performance / basis fill already counted: one app setting
+ * per scope and year, each row's baseline day (fixed at its first fill) and counted ids with how.
  */
 import { z } from "zod/v4";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
@@ -71,6 +69,7 @@ export async function recordFill(
   tx: DbOrTx,
   scope: FillScope,
   fill: z.infer<typeof zFillRecord>,
+  asOf: Date,
 ) {
   const ids = Object.keys(fill.counted).map(Number).filter(Number.isInteger);
   const known = ids.length
@@ -103,7 +102,7 @@ export async function recordFill(
         record.baselines[row] = baseline;
     for (const { id } of known) record.counted[id] = fill.counted[id]!;
     // Only forward, and never past today or the year.
-    const today = utcDayOf(new Date());
+    const today = utcDayOf(asOf);
     const through = (record.estimatedThrough ??= {});
     for (const [row, d] of Object.entries(fill.estimatedThrough ?? {}))
       if (

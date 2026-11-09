@@ -35,7 +35,7 @@ Monthly pool$0.00/mo
 Living Costs
 Add a job on the Paycheck page to calculate living cost ratios.
 Contributions
-Per check
+Per paycheck
 Monthly
 Annual
 Retirement
@@ -57,7 +57,7 @@ After-tax$1,500,000.00
 Contributions$0.00/yr
 Retirement budget$90,000.00/yr
 Est. Withdrawal (baseline)?$119,500.00/yr(Endowment, varies)
-Coast FIRE?Already Coast(baseline; see Plan Health for simulated)
+Coast FIRE?Already Coast(baseline; see Projection Health for simulated)
 DurationRuns out 2048
 Readiness?
 [Now — 2026]

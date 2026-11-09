@@ -1,15 +1,8 @@
 "use client";
 
 /**
- * Social Security claiming-age comparison — one person, opted into PIA.
- * Runs `sweepSocialSecurityClaimingAges` (ages 62-70) and shows the
- * ending-net-worth comparison, with the recommended age highlighted.
- *
- * Gated entirely on `pia` being a real positive number — a person who
- * hasn't opted into PIA has nothing to compare (their benefit isn't
- * claiming-age-adjusted at all, per SOCIAL-SECURITY-OPTIMIZATION-PLAN.md
- * decision #1/#5), so this component is never rendered for them (see
- * `SocialSecuritySection`'s call site).
+ * Social Security claiming-age comparison for one person: sweeps ages 62-70 and shows ending net
+ * worth per age, recommended age highlighted. Rendered only when `pia` is a positive number.
  */
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useState } from "react";
@@ -30,16 +23,8 @@ type Props = {
    *  a single-person one (matches SocialSecuritySection's own "X's
    *  Benefit" vs "Monthly Benefit" labeling convention). */
   personName: string | null;
-  /** The household's REAL profile/pin context — NOT cosmetic. The sweep
-   *  reruns the household's actual projection at each candidate age
-   *  (budget, expenses, and depletion all come from these), so a
-   *  household viewing a non-active Retirement Profile, or with a pinned
-   *  contribution/salary profile, must resolve against THAT data, not
-   *  silently fall back to whatever's globally active. Omitted (not
-   *  passed at all) only means "use the global default," same as every
-   *  other projection endpoint's optional-id convention — never omit
-   *  these when the caller has real values, which SocialSecuritySection
-   *  always does. */
+  /** The household's real profile context: the sweep reruns the actual projection, so pass the
+   *  viewed profile ids whenever known. Omitted means "use the active profile". */
   retirementProfileId?: number;
   contributionProfileId?: number;
   salaryProfileId?: number;
@@ -122,7 +107,7 @@ export function ClaimingAgeExplorer({
                       </td>
                       <td className="py-0.5 pr-3">
                         {c.fails
-                          ? "Plan falls short"
+                          ? "Projection falls short"
                           : formatCurrency(c.finalNetWorth)}
                       </td>
                       <td className="text-accent py-0.5">

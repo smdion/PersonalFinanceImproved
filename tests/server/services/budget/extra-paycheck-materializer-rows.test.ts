@@ -270,8 +270,8 @@ function tables(ctx: TestDbContext) {
 
 async function runBoth(ctx: TestDbContext, at: string) {
   vi.setSystemTime(new Date(at));
-  await materializeExtraPaycheckSavings(ctx.db as never);
-  await materializeBudgetIncomeAdjustments(ctx.db as never);
+  await materializeExtraPaycheckSavings(ctx.db as never, new Date());
+  await materializeBudgetIncomeAdjustments(ctx.db as never, new Date());
   return { at, ...tables(ctx) };
 }
 

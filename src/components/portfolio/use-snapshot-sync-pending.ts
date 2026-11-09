@@ -1,14 +1,9 @@
 "use client";
 
 /**
- * Tracks "balances on the latest snapshot were edited but not yet pushed
- * to YNAB/Actual" in localStorage, so the state survives a tab close and
- * a persistent banner can nag on any Portfolio visit in this browser.
- *
- * No schema — matches the Feature-B draft decision. Blind spot: a hard
- * close plus never returning in this browser while the other user never
- * opens Portfolio. The snapshot row's manual "Resync" button is the
- * always-there backstop for that.
+ * Tracks "latest-snapshot balances edited but not pushed to YNAB/Actual" in localStorage, so a
+ * banner can nag on any Portfolio visit in this browser. Other browsers won't see it; the
+ * snapshot row's manual "Resync" button is the backstop.
  */
 import { useCallback, useEffect, useState } from "react";
 

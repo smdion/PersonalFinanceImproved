@@ -1,14 +1,6 @@
-/**
- * App-level enum value definitions.
- *
- * These replace the former pgEnum declarations in the schema. All constrained-value
- * columns are now `text` in the database, validated at the app layer via Zod.
- * This follows RULES.md principle 9: "Account type validation is app-level, not DB-level."
- *
- * Pattern: const array here → derived Zod enum in enum-values.schema.ts → used
- * in tRPC input validators. Values only: client components import this file,
- * and Zod stays out of their bundle.
- */
+/** App-level enum values for `text` columns (RULES.md principle 9: validation is app-level).
+ *  Each const array → a Zod enum in enum-values.schema.ts → tRPC validators. Values only, so
+ *  client components can import this without bundling Zod. */
 
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 
@@ -23,9 +15,8 @@ export const PAY_PERIOD_VALUES = [
 export type PayPeriod = (typeof PAY_PERIOD_VALUES)[number];
 
 // ── Investment transaction kind (SimpleFIN ingest) ──
-// What a brokerage/401k/HSA transaction row means for performance math.
-// Only `contribution` and `withdrawal` move money into or out of an
-// account; everything else happens inside it (see simplefin-transaction-rules).
+// Only `contribution` and `withdrawal` move money into or out of an account;
+// everything else happens inside it (see simplefin-transaction-rules).
 
 export const INVESTMENT_TRANSACTION_KIND_VALUES = [
   "contribution", // money in from outside (payroll, bank deposit, IRA conversion in)
@@ -272,10 +263,9 @@ export type StandInPreview = {
   error?: string | null;
 };
 
-/** How a Roth IRA contribution gets there: straight into the Roth, or the
- *  backdoor — a non-deductible traditional IRA contribution converted to
- *  the Roth (works at any income). A Contribution Profile choice on a Roth
- *  IRA account; absent = direct. */
+/** How a Roth IRA contribution gets there (a Contribution Profile choice; absent = direct):
+ *  directly, or backdoor: a non-deductible traditional IRA contribution converted to the
+ *  Roth (works at any income). */
 export const ROTH_IRA_ROUTE_VALUES = ["direct", "backdoor"] as const;
 export type RothIraRoute = (typeof ROTH_IRA_ROUTE_VALUES)[number];
 

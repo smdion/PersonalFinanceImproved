@@ -36,33 +36,36 @@ export function BudgetSummaryHeader({
             maxWidth: 400,
           }}
         />
-        {cols.map((label, colIdx) => (
+        {cols.map((label, colIndex) => (
           <th
             key={label}
             className={`min-w-[90px] px-2 py-1.5 text-right font-semibold transition-colors ${
               isWeighted
                 ? "text-primary"
-                : colIdx === activeColumn
+                : colIndex === activeColumn
                   ? "cursor-pointer bg-blue-50 text-blue-700"
                   : "text-primary cursor-pointer hover:text-blue-600"
             }`}
-            onClick={isWeighted ? undefined : () => onSetActiveColumn(colIdx)}
+            onClick={isWeighted ? undefined : () => onSetActiveColumn(colIndex)}
             title={
               isWeighted
-                ? `${label} — ${columnMonths?.[colIdx] ?? 0} month${(columnMonths?.[colIdx] ?? 0) !== 1 ? "s" : ""}`
-                : colIdx === activeColumn
+                ? `${label} — ${columnMonths?.[colIndex] ?? 0} month${(columnMonths?.[colIndex] ?? 0) !== 1 ? "s" : ""}`
+                : colIndex === activeColumn
                   ? `${label} is the active budget mode`
                   : `Set ${label} as active mode`
             }
           >
-            <CellButton enabled={!isWeighted} pressed={colIdx === activeColumn}>
+            <CellButton
+              enabled={!isWeighted}
+              pressed={colIndex === activeColumn}
+            >
               {label}
-              {!isWeighted && colIdx === activeColumn && (
+              {!isWeighted && colIndex === activeColumn && (
                 <span className="text-caption ml-1 align-super text-blue-500">
                   ●
                 </span>
               )}
-              {apiService && apiLinkedColumnIndex === colIdx && (
+              {apiService && apiLinkedColumnIndex === colIndex && (
                 <Badge color="blue" case="normal" className="ml-1 align-middle">
                   ⇄ {apiService.toUpperCase()}
                 </Badge>

@@ -198,10 +198,8 @@ export const plannedTransactionProcedures = {
             ),
           );
       }),
-    // Settlement is per-occurrence (plannedTxId + occurrenceMonth), never
-    // per-row — a recurring row has many future occurrences, and settling
-    // one must not hide the others from the projection. Never invoked
-    // automatically (e.g. from sync); always an explicit user action.
+    // Settlement is per occurrence (plannedTxId + occurrenceMonth), so settling one
+    // never hides a recurring row's other occurrences. Always an explicit user action.
     settle: savingsProcedure
       .input(
         z.object({
@@ -238,14 +236,9 @@ export const plannedTransactionProcedures = {
           return { ok: true };
         });
       }),
-    // Presence-based hint only — never a write. A trip is many small real
-    // charges that never cleanly sum to one planned placeholder amount, so
-    // this deliberately doesn't try to match dollar amounts: once ANY real
-    // transaction posts in the goal's linked category on/after the planned
-    // date, in the same month, the live balance already reflects it and the
-    // placeholder's forecasting job is done. Surfaced as a dismissible
-    // suggestion the user confirms — settlement itself only ever happens via
-    // the settle/settleMany mutations above.
+    // Presence-based hint, never a write: any real transaction in the goal's linked
+    // category on/after the planned date, same month, suggests settling. Amounts aren't
+    // matched (a trip is many small charges); the user confirms via settle/settleMany.
     getSettlementSuggestions: protectedProcedure.query(async ({ ctx }) => {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") return { suggestions: [] };

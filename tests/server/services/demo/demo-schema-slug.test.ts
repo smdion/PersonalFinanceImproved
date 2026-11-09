@@ -15,9 +15,9 @@ describe("buildDemoSchema slug guard", () => {
   it.each(["x; drop", "../public", "", "public", "constructor"])(
     "refuses %j before any statement",
     async (slug) => {
-      await expect(buildDemoSchema(slug as DemoProfileSlug)).rejects.toThrow(
-        "Not a demo profile",
-      );
+      await expect(
+        buildDemoSchema(slug as DemoProfileSlug, new Date()),
+      ).rejects.toThrow("Not a demo profile");
       expect(connect).not.toHaveBeenCalled();
     },
   );
@@ -25,7 +25,9 @@ describe("buildDemoSchema slug guard", () => {
   it("takes a connection for a real profile", async () => {
     const query = vi.fn().mockRejectedValue(new Error("stop"));
     connect.mockResolvedValue({ query, release: vi.fn() });
-    await expect(buildDemoSchema("single-income")).rejects.toThrow();
+    await expect(
+      buildDemoSchema("single-income", new Date()),
+    ).rejects.toThrow();
     expect(connect).toHaveBeenCalledTimes(1);
   });
 });

@@ -8,6 +8,14 @@ import {
 import { type Rollup, computeReturn } from "./returns";
 import { toNumber } from "@/lib/utils/numbers";
 
+/** annual_performance.category as stored: a performance category or the
+ *  "Portfolio" rollup. Text, so any string a row holds. */
+export type AnnualCategory = string;
+
+/** parent_category as a row holds it ("Retirement" or "Portfolio" by the
+ *  column's check), read as text. */
+export type StoredParentCategory = string;
+
 /** The performance_accounts columns these helpers read; a schema row fits
  *  (the account type is what the category lookup takes). */
 type PerfAccountRef = {
@@ -27,7 +35,7 @@ type AnnualRollupColumns = {
   rollovers: string;
 };
 
-export function buildPerfAcctLookups<P extends PerfAccountRef>(
+export function buildPerfAccountLookups<P extends PerfAccountRef>(
   perfAccounts: P[],
 ) {
   return new Map(perfAccounts.map((pa) => [pa.id, pa]));

@@ -235,7 +235,7 @@ describe("useContributionAccountsMutations", () => {
   });
 
   // ---------------------------------------------------------------------
-  // handleLinkContrib
+  // handleLinkContribution
   // ---------------------------------------------------------------------
 
   it("handleContribUpdate saves a Roth IRA route to the active Contribution Profile — direct as absent, never on the account row", async () => {
@@ -243,7 +243,7 @@ describe("useContributionAccountsMutations", () => {
     const { result } = renderHook(() =>
       useContributionAccountsMutations({
         allContribs: [],
-        activeContribProfileId: 9,
+        activeContributionProfileId: 9,
       }),
     );
     result.current.handleContribUpdate(baseContrib, { rothRoute: "backdoor" });
@@ -267,7 +267,7 @@ describe("useContributionAccountsMutations", () => {
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
-    result.current.handleLinkContrib(1, 99);
+    result.current.handleLinkContribution(1, 99);
     expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ id: 1, performanceAccountId: 99 }),
     );
@@ -278,7 +278,7 @@ describe("useContributionAccountsMutations", () => {
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
-    result.current.handleLinkContrib(1, null);
+    result.current.handleLinkContribution(1, null);
     expect(mutationCalls(P.updateContrib)).toContainEqual(
       expect.objectContaining({ id: 1, performanceAccountId: null }),
     );
@@ -289,7 +289,7 @@ describe("useContributionAccountsMutations", () => {
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
-    result.current.handleLinkContrib(999, 99);
+    result.current.handleLinkContribution(999, 99);
     expect(mutationCalls(P.updateContrib)).toHaveLength(0);
   });
 

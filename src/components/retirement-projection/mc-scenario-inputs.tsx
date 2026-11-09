@@ -9,26 +9,9 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
   const strategy = inputs.withdrawalStrategy as WithdrawalStrategyType;
   const cfg = STRATEGY_CONFIG_BY_STORED_KEY[strategy];
   const isDynamic = strategy !== "fixed";
-  // None of the 8 strategies actually
-  // read this rate to compute spending (Finding 0) — the old
-  // copy here claimed Fixed uses it directly (`isDynamic`
-  // false branch) and every dynamic strategy "adjusts this
-  // yearly," which is also wrong for the 4 balance-derived
-  // strategies (they never read this field at all, seeded or
-  // otherwise) and imprecise for Guyton-Klinger (its guardrail
-  // rate is self-derived, not seeded from this field either).
-  //
-  // Branch on `usesWithdrawalRate` (not `incomeSource`) for the
-  // budget-vs-balance split — `incomeSource` classifies
-  // Guyton-Klinger as "rate" (a UI-framing label, its own
-  // config docs a portfolio-linked rate as the primary
-  // control), but GK's actual spending IS budget-seeded and
-  // guardrail-adjusted every year, same as Fixed/Forgo/
-  // Spending-Decline (verified against guyton-klinger.ts and
-  // methodology/decumulation-content.tsx's grouping).
-  // `usesWithdrawalRate` correctly groups GK with the other 3
-  // budget-continuation strategies; only RMD/Constant %/
-  // Endowment/Vanguard Dynamic are truly balance-derived.
+  // No strategy reads this rate to compute spending. `usesWithdrawalRate` (not
+  // `incomeSource`) splits budget-seeded strategies (Fixed, Forgo, Spending-
+  // Decline, Guyton-Klinger) from the 4 balance-derived ones.
   const isBudgetSeeded = cfg?.usesWithdrawalRate === true;
   const rateTip =
     cfg?.incomeSource === "formula"
@@ -47,7 +30,7 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
         <AssumptionRow
           label="Spending Strategy"
           value={cfg?.label ?? strategy}
-          tip={`${cfg?.label ?? strategy}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. See Strategy Params for this strategy's own parameters — not the rate above.`}
+          tip={`${cfg?.label ?? strategy}: ${cfg?.description ?? "its own yearly rule"}. See Strategy Params for this strategy's own parameters — not the rate above.`}
           highlight
         />
       )}
@@ -60,8 +43,8 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
           tip={
             isDynamic
               ? isBudgetSeeded
-                ? `Starting retirement budget — your ${cfg.label} strategy adjusts actual spending from this figure each year.`
-                : `Starting retirement budget — ${cfg?.label ?? strategy} doesn't read this figure once it takes over (spending is computed from your portfolio balance instead); only used before that strategy fully applies, if at all.`
+                ? `Starting Retirement budget — your ${cfg.label} strategy starts from this figure and adjusts it each year.`
+                : `Starting Retirement budget — ${cfg?.label ?? strategy} sizes spending from your balance (RMD-Based only from the RMD age); this is the need its spending is checked against.`
               : undefined
           }
           highlight
@@ -72,20 +55,20 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
 }
 
 export type InflationRiskRowProps = {
-  draftInflStdDev: string;
+  draftInflationStdDev: string;
   editingInflation: boolean;
   inputs: SimulationInputs;
   onInflationRiskChange: ((stdDev: number) => void) | undefined;
-  setDraftInflStdDev: Dispatch<SetStateAction<string>>;
+  setDraftInflationStdDev: Dispatch<SetStateAction<string>>;
   setEditingInflation: Dispatch<SetStateAction<boolean>>;
 };
 
 export function InflationRiskRow({
-  draftInflStdDev,
+  draftInflationStdDev,
   editingInflation,
   inputs,
   onInflationRiskChange,
-  setDraftInflStdDev,
+  setDraftInflationStdDev,
   setEditingInflation,
 }: InflationRiskRowProps) {
   return (
@@ -101,8 +84,8 @@ export function InflationRiskRow({
           <input
             type="number"
             step="0.1"
-            value={draftInflStdDev}
-            onChange={(e) => setDraftInflStdDev(e.target.value)}
+            value={draftInflationStdDev}
+            onChange={(e) => setDraftInflationStdDev(e.target.value)}
             className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
           />
           <span className="text-faint text-caption">%</span>
@@ -110,7 +93,7 @@ export function InflationRiskRow({
             type="button"
             onClick={() => {
               if (onInflationRiskChange) {
-                onInflationRiskChange(parseFloat(draftInflStdDev) / 100);
+                onInflationRiskChange(parseFloat(draftInflationStdDev) / 100);
               }
               setEditingInflation(false);
             }}
@@ -137,7 +120,7 @@ export function InflationRiskRow({
             <button
               type="button"
               onClick={() => {
-                setDraftInflStdDev(
+                setDraftInflationStdDev(
                   (inputs.inflationRisk.stdDev * 100).toFixed(1),
                 );
                 setEditingInflation(true);

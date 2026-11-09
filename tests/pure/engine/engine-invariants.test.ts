@@ -4,7 +4,7 @@
  * These invariants must hold for ANY valid input. Uses fast-check to
  * generate random inputs and assert mathematical/logical correctness.
  *
- * Run time defaults to 20 runs per invariant (CI-friendly). Override with
+ * Run time defaults to 50 runs per invariant (about 9 s). Override with
  * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
  */
 import {
@@ -40,7 +40,7 @@ import { shippedTaxTables } from "../../helpers/tax-data";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
+const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "50", 10);
 const AS_OF = new Date("2025-03-07");
 const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
@@ -356,6 +356,172 @@ function sumSlotWithdrawals(slots: EngineDecumulationYear["slots"]): number {
 }
 
 // ---------------------------------------------------------------------------
+// Money conservation (group K)
+// ---------------------------------------------------------------------------
+
+/** The input's starting money as six named accounts (zero balances
+ *  included, so every contribution has its own account) plus one
+ *  percent-of-pay contribution spec per account, so the per-account track
+ *  carries every flow the aggregate does. */
+function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
+  const start = input.startingAccountBalances!;
+  const k = start["401k"] as { traditional: number; roth: number };
+  const ira = start.ira as { traditional: number; roth: number };
+  const hsa = start.hsa as { balance: number };
+  const brokerage = start.brokerage as { balance: number; basis: number };
+  const accounts: IndividualAccountInput[] = (
+    [
+      ["401k", "401k", "preTax", k.traditional],
+      ["401k", "401k", "taxFree", k.roth],
+      ["IRA", "ira", "preTax", ira.traditional],
+      ["IRA", "ira", "taxFree", ira.roth],
+      ["HSA", "hsa", "hsa", hsa.balance],
+      ["Brokerage", "brokerage", "afterTax", brokerage.balance],
+    ] as const
+  ).map(([name, category, taxType, startingBalance]) => ({
+    name,
+    category,
+    taxType,
+    startingBalance,
+    parentCategory: "Retirement",
+    ...(category === "brokerage" ? { startingBasis: brokerage.basis } : {}),
+  }));
+  const rate = input.accumulationDefaults.contributionRate;
+  const specs = (
+    [
+      ["401k", "401k", 0.6, "pre_tax"],
+      ["401k", "401k", 0.1, "tax_free"],
+      ["IRA", "ira", 0.1, "tax_free"],
+      ["HSA", "hsa", 0.05, "hsa"],
+      ["Brokerage", "brokerage", 0.15, "after_tax"],
+    ] as const
+  ).map(([name, category, share, taxTreatment]) => ({
+    name,
+    category,
+    method: "percent_of_salary" as const,
+    value: rate * share,
+    salaryFraction: 1,
+    baseAnnual: input.currentSalary * rate * share,
+    taxTreatment,
+    parentCategory: "Retirement",
+  }));
+  const base = (c: AccountCategory) =>
+    specs
+      .filter((sp) => sp.category === c)
+      .reduce((t, sp) => t + sp.baseAnnual, 0);
+  return {
+    ...input,
+    individualAccounts: accounts,
+    contributionSpecs: specs,
+    baseYearContributions: {
+      "401k": base("401k"),
+      "403b": 0,
+      hsa: base("hsa"),
+      ira: base("ira"),
+      brokerage: base("brokerage"),
+    },
+  };
+}
+
+/** Roth conversions on: a 22% conversion ceiling over a bracket table. */
+function withRothConversions(input: ProjectionInput): ProjectionInput {
+  const rates = input.decumulationDefaults.distributionTaxRates;
+  return {
+    ...input,
+    filingStatus: "MFJ",
+    decumulationDefaults: {
+      ...input.decumulationDefaults,
+      distributionTaxRates: {
+        ...rates,
+        enableRothConversions: true,
+        rothConversionTarget: 0.22,
+        taxBrackets: [
+          { threshold: 0, baseWithholding: 0, rate: 0.1 },
+          { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+          { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+          { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
+          { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
+        ],
+      },
+    },
+  };
+}
+
+type ConservationMiss = {
+  year: number;
+  account: string;
+  /** What the account's own flows don't explain: end − (start +
+   *  contribution + match + growth − withdrawal). */
+  unexplained: number;
+  /** The year's money moved between accounts that this account takes. */
+  moved: number;
+};
+
+/** Every account's year checked against its own flows: end = start +
+ *  contributions + employer match + growth − withdrawals (the early-
+ *  withdrawal penalty is paid out of the gross withdrawal) ± money moved
+ *  between accounts: an RMD past the need reinvested in the retirement
+ *  brokerage, a Roth conversion out of Traditional into Roth and its tax
+ *  out of the brokerage, and the dust cleared when the money runs out.
+ *  Moves are year totals, so each tax type's
+ *  accounts are checked together where a move spreads over several. */
+function conservationMisses(input: ProjectionInput): ConservationMiss[] {
+  const misses: ConservationMiss[] = [];
+  const keyOf = (a: { name: string; taxType: string }) =>
+    `${a.name} ${a.taxType}`;
+  const previous = new Map(
+    (input.individualAccounts ?? []).map((a) => [keyOf(a), a.startingBalance]),
+  );
+  for (const y of calculateProjection(input).projectionByYear) {
+    const retired = y.phase === "decumulation";
+    const conversion = retired ? y.rothConversionAmount : 0;
+    const reinvested =
+      retired &&
+      (input.decumulationDefaults.rmdExcessHandling ?? "reinvest") ===
+        "reinvest"
+        ? y.rmdExcessAmount
+        : 0;
+    const conversionTax = retired ? y.rothConversionTaxCost : 0;
+    const movedInto: Record<string, number> = {
+      preTax: -conversion,
+      taxFree: conversion,
+      afterTax: reinvested - conversionTax,
+      hsa: 0,
+    };
+    const byTaxType = new Map<string, number>();
+    for (const a of y.individualAccountBalances) {
+      const key = keyOf(a);
+      const unexplained =
+        a.balance -
+        ((previous.get(key) ?? 0) +
+          a.contribution +
+          a.employerMatch +
+          a.growth -
+          (a.draw?.withdrawal ?? 0));
+      previous.set(key, a.balance);
+      // The year the money runs out, under $1 left in total is cleared
+      // (cleanupDust, balance-deduction.ts): not a flow of the account's.
+      if (y.allAccountsBalance === 0 && unexplained < 0 && unexplained > -1)
+        continue;
+      byTaxType.set(a.taxType, (byTaxType.get(a.taxType) ?? 0) + unexplained);
+      if ((movedInto[a.taxType] ?? 0) === 0 && Math.abs(unexplained) > EPSILON)
+        misses.push({ year: y.year, account: key, unexplained, moved: 0 });
+    }
+    for (const [taxType, unexplained] of byTaxType) {
+      const moved = movedInto[taxType] ?? 0;
+      if (moved !== 0 && Math.abs(unexplained - moved) > EPSILON)
+        misses.push({
+          year: y.year,
+          account: `every ${taxType} account`,
+          unexplained,
+          moved,
+        });
+    }
+  }
+  return misses;
+}
+
+// ---------------------------------------------------------------------------
 // RMD factor table (IRS Uniform Lifetime Table — SECURE 2.0)
 // The engine uses this same table; we replicate it here for invariant checks.
 // ---------------------------------------------------------------------------
@@ -645,7 +811,7 @@ describe("engine invariants", () => {
     });
 
     it("31 — no indBal/acctBal reconciliation diagnostic is emitted for any fixture (v0.7.8 indBal reconciliation follow-up)", () => {
-      // A >$1 indBal/acctBal drift is a structural finding, not rounding, and
+      // A >$1 indBalance/accountBalance drift is a structural finding, not rounding, and
       // reconcileIndividualToAggregate surfaces it as a "[DIAG] indBal/
       // acctBal reconciliation:"-prefixed warning rather than silently
       // absorbing it. This invariant asserts that finding never actually
@@ -1379,6 +1545,87 @@ describe("engine invariants", () => {
         { numRuns: NUM_RUNS },
       );
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Group K: money conservation (ENG-07, ENG-18, ENG-32, ENG-33)
+  // -------------------------------------------------------------------------
+
+  describe("K: money conservation", () => {
+    it("32 — every account, every year: end = start + its flows ± money moved, within a cent", () => {
+      for (const arb of [
+        arbitraryInput(),
+        arbitraryRetiredInput().map((input) => ({
+          ...input,
+          // RMDs from the first year: the excess past the need is reinvested.
+          birthYear: AS_OF.getFullYear() - input.currentAge,
+        })),
+        arbitraryRmdInput(),
+      ]) {
+        fc.assert(
+          fc.property(arb, (input) => {
+            const projected = withAccountsAndSpecs(input);
+            expect(
+              calculateProjection(projected).projectionByYear[0]!
+                .individualAccountBalances.length,
+            ).toBe(6);
+            expect(conservationMisses(projected)).toEqual([]);
+          }),
+          { numRuns: NUM_RUNS },
+        );
+      }
+    });
+
+    it("32 — the reinvested RMD excess is a move the check accounts for", () => {
+      const input = withAccountsAndSpecs({
+        ...makeInput({
+          currentAge: 75,
+          retirementYear: AS_OF.getFullYear() - 1,
+          projectionEndYear: AS_OF.getFullYear() + 10,
+          currentSalary: 0,
+          annualExpenses: 20000,
+          birthYear: AS_OF.getFullYear() - 75,
+        }),
+      });
+      const reinvested = calculateProjection(input)
+        .projectionByYear.filter((y) => y.phase === "decumulation")
+        .reduce((s, y) => s + y.rmdExcessAmount, 0);
+      expect(reinvested).toBeGreaterThan(0);
+      expect(conservationMisses(input)).toEqual([]);
+    });
+
+    // v0.11 bug: a Roth conversion moves no money between the accounts.
+    // performRothConversion (roth-conversion.ts) debits the conversion from
+    // every Retirement account in the category by balance, Roth accounts
+    // included, and credits no Roth account; the year's account rows are
+    // built before reconcileIndividualToAggregate (year-end.ts), so the
+    // conversion year's rows show the Roth money missing (a "[DIAG]
+    // indBal/acctBal reconciliation" drift) and the next year's rows jump.
+    // Here, 2025 converts $94,352.94: the Traditional rows lose $67,094.92
+    // and the Roth rows lose $27,258.02; in 2026 the 401(k) Roth row gains
+    // $85,183.73 and the IRA Roth row $44,940 that no flow explains.
+    it.fails(
+      "33 — v0.11 a Roth conversion moves its amount from Traditional to Roth accounts",
+      () => {
+        const input = withRothConversions(
+          withAccountsAndSpecs(
+            makeInput({
+              currentAge: 67,
+              retirementYear: AS_OF.getFullYear() - 1,
+              projectionEndYear: AS_OF.getFullYear() + 15,
+              currentSalary: 0,
+              annualExpenses: 50000,
+              birthYear: AS_OF.getFullYear() - 67,
+            }),
+          ),
+        );
+        const converted = calculateProjection(input)
+          .projectionByYear.filter((y) => y.phase === "decumulation")
+          .reduce((s, y) => s + y.rothConversionAmount, 0);
+        expect(converted).toBeGreaterThan(0);
+        expect(conservationMisses(input)).toEqual([]);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

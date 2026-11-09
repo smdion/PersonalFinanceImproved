@@ -1,12 +1,7 @@
 /**
- * Engine-backed relocation projection, plus relocation-scenario CRUD (list/
- * save/delete for the Tools page's saved comparison scenarios).
- *
- * Runs the full retirement projection engine for both the current and
- * relocation budget scenarios. Returns portfolio-at-retirement deltas,
- * a binary-search-derived earliest safe relocation year, a year-by-year
- * comparison table, and (when moveYear is provided) a blended projection
- * that switches from the current path to the relocation path at moveYear.
+ * Engine-backed relocation projection (current vs relocation budget, earliest safe move
+ * year, year-by-year rows, optional blended run switching at moveYear), plus CRUD for
+ * the Tools page's saved relocation scenarios.
  */
 import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household/household-timeline";
 import { ageStepAt } from "@/server/services/projection/engine-payload/profile-switches";
@@ -39,12 +34,10 @@ import type {
 } from "@/lib/pure/engine/types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
+import { writeStamp } from "@/lib/utils/clock";
 
-/** Router's large-purchase input is zod-nullable, not optional-undefined like
- *  `RelocationPurchaseInput` — convert once so every call site shares the
- *  same precomputed data (Finding 12: previously reimplemented this math
- *  independently of lib/pure/retirement/relocation.ts, with a `roundToCents`
- *  drift between the two copies). */
+/** Converts the router's nullable large-purchase input to `RelocationPurchaseInput` once,
+ *  so every call site shares lib/pure/retirement/relocation.ts's precomputed data. */
 function toRelocationPurchaseInput(
   purchases: {
     purchaseYear: number;
@@ -69,15 +62,9 @@ function toRelocationPurchaseInput(
 
 export const relocationProjectionRouter = createTRPCRouter({
   /**
-   * Engine-backed relocation projection.
-   *
-   * Uses the full retirement projection engine (same data sources as the
-   * retirement page) to compare current vs. relocation scenarios and find
-   * the earliest year when the user can safely relocate and still retire
-   * at their configured retirementAge. Also returns year-by-year projection
-   * rows for the comparison table, and — when moveYear is provided — a
-   * blended projection switching from current path to relocation path at
-   * that year.
+   * Runs the full projection engine for current vs relocation scenarios to find the earliest
+   * year the user can move and still retire at retirementAge; returns comparison rows and,
+   * with moveYear, a blended projection switching paths at that year.
    */
   computeRelocationFiProjection: protectedProcedure
     .input(
@@ -94,11 +81,8 @@ export const relocationProjectionRouter = createTRPCRouter({
           .int()
           .nullable()
           .default(null),
-        // Same Salary Profile applies to both scenarios — relocation compares
-        // "stay" vs. "move" under one income trajectory, not two. Absent
-        // (null/undefined) means the caller's Plan-pin resolution didn't
-        // find one; falls through to the globally-active Salary Profile the
-        // same way every other engine-backed endpoint does.
+        // One Salary Profile for both scenarios (stay vs move, one income path).
+        // Null: the globally-active Salary Profile, as in every engine endpoint.
         salaryProfileId: z.number().int().nullable().default(null),
         yearAdjustments: z
           .array(
@@ -130,21 +114,15 @@ export const relocationProjectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Fetch all DB tables once — both scenarios share the same base data.
-      // Pre-fetch: batches the Salary Profile row alongside everything
-      // else when an id is known, same as scenarios.ts/monte-carlo.ts/
-      // coast-fire.ts. Contribution Profile is NOT pre-fetched here since
-      // each scenario applies its own (see the two buildEnginePayload calls
-      // below) — only one Salary Profile applies to both.
+      // Fetch all DB tables once — both scenarios share the same base data,
+      // the Salary Profile row included. Each scenario applies its own
+      // Contribution Profile (the two buildEnginePayload calls below).
       const data = await fetchRetirementData(ctx.db, {
         salaryProfileId: input.salaryProfileId ?? undefined,
       });
 
-      // Load the same accumulation overrides the retirement page uses (stored in DB,
-      // not passed via client state). Without these, the current scenario ignores
-      // any year-by-year contribution rate or salary overrides the user has
-      // configured, producing balances that diverge significantly from the
-      // retirement page projection.
+      // The Retirement page's saved accumulation overrides, so the current scenario's
+      // balances match that page's projection.
       const accumOverrideRows = await ctx.db
         .select()
         .from(schema.projectionOverrides)
@@ -174,21 +152,15 @@ export const relocationProjectionRouter = createTRPCRouter({
         (i) => i.profileId === relocProfile.id,
       );
 
-      // Resolved through the same contribution-account chain
-      // computeActiveSummary/build-engine-payload.ts use (see
-      // resolveLinkedBudgetItemAmounts) rather than raw `amounts`, which is
-      // intentionally stale for contribution-linked items — reading it
-      // directly here silently dropped every linked item's dollar amount,
-      // diverging from what the Retirement page shows for the same profile.
-      const currentNumColumns =
-        (currentProfile.columnLabels as string[] | null)?.length ?? 1;
-      const relocNumColumns =
-        (relocProfile.columnLabels as string[] | null)?.length ?? 1;
+      // Resolved through the contribution-account chain (resolveLinkedBudgetItemAmounts),
+      // as the Retirement page does: raw `amounts` is stale for contribution-linked items.
+      const currentNumColumns = currentProfile.columnLabels.length;
+      const relocNumColumns = relocProfile.columnLabels.length;
       const resolvedCurrentItems =
         input.currentExpenseOverride !== null
           ? currentItems
           : await resolveLinkedBudgetItemAmounts(
-              ctx.db,
+              ctx,
               currentItems,
               currentNumColumns,
               {
@@ -200,7 +172,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.relocationExpenseOverride !== null
           ? relocItems
           : await resolveLinkedBudgetItemAmounts(
-              ctx.db,
+              ctx,
               relocItems,
               relocNumColumns,
               {
@@ -215,7 +187,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           : computeBudgetAnnualTotal(
               resolvedCurrentItems,
               input.currentBudgetColumn,
-              currentProfile.columnMonths as number[] | null,
+              currentProfile.columnMonths,
             );
       const relocationAnnualExpenses =
         input.relocationExpenseOverride !== null
@@ -223,13 +195,14 @@ export const relocationProjectionRouter = createTRPCRouter({
           : computeBudgetAnnualTotal(
               resolvedRelocItems,
               input.relocationBudgetColumn,
-              relocProfile.columnMonths as number[] | null,
+              relocProfile.columnMonths,
             );
 
       // Build engine payloads — each scenario applies its own contribution
       // profile, but shares the same (Plan-pinned or globally-active)
       // Salary Profile, matching every other engine-backed endpoint.
       const currentPayload = await buildEnginePayload(ctx.db, data, {
+        asOf: ctx.scope.asOf,
         accumulationExpenseOverride: currentAnnualExpenses,
         contributionProfileId: input.currentContributionProfileId ?? undefined,
         salaryProfileId: input.salaryProfileId ?? undefined,
@@ -240,6 +213,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         return { notConfigured: currentPayload.notConfigured };
 
       const relocPayload = await buildEnginePayload(ctx.db, data, {
+        asOf: ctx.scope.asOf,
         accumulationExpenseOverride: relocationAnnualExpenses,
         contributionProfileId:
           input.relocationContributionProfileId ?? undefined,
@@ -247,15 +221,11 @@ export const relocationProjectionRouter = createTRPCRouter({
       });
       if (!relocPayload) return null;
 
-      // No `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits`
-      // key — this object occupies `buildDecumulationDefaults`'s
-      // CLIENT-override slot, which wins over the household's persisted
-      // `retirement_settings` defaults. Hardcoding the config defaults here
-      // silently suppressed those settings for both the current and
-      // relocation scenarios; omitting the keys lets each resolve its own
-      // household's real routing mode, order, and splits.
+      // No withdrawal routing/order/splits keys: this object is the CLIENT-override slot
+      // of `buildDecumulationDefaults`, so omitting them lets each scenario use the
+      // household's persisted `retirement_settings`.
       const clientDecumulationDefaults = {
-        withdrawalTaxPreference: {} as Record<string, string>,
+        withdrawalTaxPreference: {},
       };
 
       const currentDecumulationDefaults = buildDecumulationDefaults(
@@ -270,11 +240,8 @@ export const relocationProjectionRouter = createTRPCRouter({
       );
 
       // --- Build relocation budget overrides ---
-      // Year adjustments are per-year only, but the engine inflates the previous
-      // year's expenses when there's no override. To prevent a year-adjustment
-      // value from leaking forward via inflation carry, generate an explicit
-      // override schedule for ALL years from the first affected year to retirement,
-      // using inflation-indexed baseline for non-adjusted years.
+      // The engine inflates last year's expenses when a year has no override, so each
+      // year from the first adjusted one to retirement gets an explicit value.
       const purchasePrecomp = precomputePurchases(
         toRelocationPurchaseInput(input.largePurchases),
       );
@@ -315,12 +282,9 @@ export const relocationProjectionRouter = createTRPCRouter({
         }
       }
 
-      // Moving partway through: ONE run from today on the current scenario
-      // that switches to the relocation's expenses and contribution profile
-      // at moveYear. (A second run re-anchored at moveYear restarted the
-      // engine's year count there — salary growth, expense inflation and
-      // the year-0 "actual paycheck" contributions all reset to today's
-      // figures, understating every year after the move.)
+      // Moving partway through: ONE run from today on the current scenario switching to
+      // the relocation's expenses and contribution profile at moveYear, so salary growth,
+      // inflation and year-0 contributions keep counting from today.
       const relocExpensesFrom = (moveYear: number) => {
         const explicit = new Map(
           relocBudgetOverrides.map((o) => [o.year, o.value]),
@@ -339,10 +303,9 @@ export const relocationProjectionRouter = createTRPCRouter({
       };
       const currentBase = currentPayload.baseEngineInput;
       const relocBase = relocPayload.baseEngineInput;
-      // A ProfileSwitch carries contribution specs and the rate ceiling but
-      // not routing/splits, so a different relocation Contribution Profile
-      // also gets a sticky-forward accumulation override at the move year
-      // (before the household's own overrides for that year, which win).
+      // A ProfileSwitch doesn't carry routing/splits, so a different relocation
+      // Contribution Profile also gets a sticky-forward accumulation override at the
+      // move year (the household's own overrides for that year still win).
       const relocProfileDiffers =
         (input.relocationContributionProfileId ?? null) !==
         (input.currentContributionProfileId ?? null);
@@ -424,12 +387,8 @@ export const relocationProjectionRouter = createTRPCRouter({
       const relocationBalanceAtRetirement =
         relocAccRows[relocAccRows.length - 1]?.retirementBalance ?? 0;
 
-      // Delegates to lib/pure/retirement/relocation.ts's real formula (Single
-      // Computation Path — this endpoint used to reimplement it and drop
-      // the steady-state purchase-cost term, drifting from
-      // lib/pure/retirement/relocation.ts's calculateRelocation()). Reuses the
-      // same purchasePrecomp computed above for the budget-override loop —
-      // one precomputation, not two independently-rounded copies.
+      // lib/pure/retirement/relocation.ts's formula (Single Computation Path),
+      // reusing the purchasePrecomp from the budget-override loop.
       const withdrawalRate = toNumber(relocPayload.settings.withdrawalRate);
       const ssMonthly = steadyStateMonthly(purchasePrecomp);
       const relocationFiTarget = safeDivide(
@@ -437,11 +396,8 @@ export const relocationProjectionRouter = createTRPCRouter({
         withdrawalRate,
         0,
       );
-      // Same formula/rate as relocationFiTarget above — so the "Additional
-      // Nest Egg Needed" figure the UI derives from these two never
-      // subtracts a value from this endpoint from a value the client-side
-      // calculator computed independently (was a Single Computation Path
-      // violation; see metrics-and-banner.tsx).
+      // Same formula/rate as relocationFiTarget, so the UI's "Additional Nest Egg
+      // Needed" compares two figures from this endpoint (see metrics-and-banner.tsx).
       const currentFiTarget = safeDivide(
         currentAnnualExpenses,
         withdrawalRate,
@@ -488,8 +444,8 @@ export const relocationProjectionRouter = createTRPCRouter({
         .filter((r): r is NonNullable<typeof r> => r !== null);
 
       // --- Binary search for earliest safe relocation year ---
-      const probeViable = (rowIdx: number): boolean => {
-        const probeResult = runMovingIn(currentAccRows[rowIdx]!.year);
+      const probeViable = (rowIndex: number): boolean => {
+        const probeResult = runMovingIn(currentAccRows[rowIndex]!.year);
         return assessPlan(probeResult).succeeded;
       };
 
@@ -628,7 +584,7 @@ export const relocationProjectionRouter = createTRPCRouter({
             .set({
               name: input.name,
               params: input.params,
-              updatedAt: new Date(),
+              updatedAt: writeStamp(),
             })
             .where(eq(schema.relocationScenarios.id, input.id))
             .returning()

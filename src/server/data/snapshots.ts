@@ -87,10 +87,8 @@ export async function getLatestSnapshot(
     accountType: a.accountType as AccountCategory,
     subType: a.subType,
     label: a.label,
-    // Prefer the master performance_account's parentCategory (authoritative)
-    // over the snapshot row's denormalized copy. Falls back to the snapshot
-    // row only when the portfolio account has no linked performance account
-    // (LEFT JOIN miss — legitimate for accounts that aren't yet tracked).
+    // The performance account's parentCategory is authoritative; the snapshot row's
+    // copy is used only when no performance account is linked (an untracked account).
     parentCategory: a.perfParentCategory ?? a.parentCategory,
     amount: toNumber(a.amount),
     ownerPersonId: a.ownerPersonId,

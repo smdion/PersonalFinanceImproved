@@ -23,11 +23,8 @@ export function ApiCategoryPicker({
 }: ApiCategoryPickerProps) {
   const utils = trpc.useUtils();
   const { data } = trpc.budget.listApiCategories.useQuery();
-  // The main Budget page always links against the currently active service
-  // (there's no per-service selector here, unlike the Integrations sync
-  // page) — item.apiCategoryId/apiCategoryName are already resolved against
-  // this same active service server-side (see budget.ts's computeActive*
-  // read paths), so this is the correct, non-ambiguous service to write to.
+  // Links against the active budget service (no per-service selector here);
+  // item.apiCategoryId is resolved against that same service server-side.
   const { data: activeService } = trpc.sync.getActiveBudgetApi.useQuery();
   const linkMut = trpc.budget.linkToApi.useMutation({
     onSuccess: () => {

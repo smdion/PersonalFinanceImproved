@@ -9,7 +9,9 @@ import path from "path";
 // matches CI; production correctness for real (US) users is enforced
 // separately by the `date.ts` helpers + the no-raw-toISOString-date lint
 // rule (tests/lint/violations.test.ts), not by the test clock.
-process.env.TZ = "UTC";
+// `pnpm test:tz` reruns the date-heavy files in America/Chicago
+// (LEDGR_TEST_TZ), where a date-only string's day differs from UTC's.
+process.env.TZ = process.env.LEDGR_TEST_TZ ?? "UTC";
 
 // Newer Node ships its own native localStorage (Web Storage API), which
 // jsdom 29 defers to on Node versions that have it instead of using its

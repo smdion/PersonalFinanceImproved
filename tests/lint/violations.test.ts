@@ -18,7 +18,7 @@
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. (Engine imports past the barrel: now the dependency-cruiser rule
  *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
- *   12. Hand-rolled Modified-Dietz denominators outside lib/pure/investments/returns.ts
+ *   12. Hand-rolled Simple Dietz denominators outside lib/pure/investments/returns.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
  *   15. `import { z } from "zod"` instead of "zod/v4"
@@ -33,7 +33,7 @@
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit. Scans src/, tests/, and scripts/.
  *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding") and bare roadmap R## tags scan src/, tests/, and scripts/; bare ISO date-stamps scan src/ only (ambiguous elsewhere — see the pattern's own comment)
- *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `localDateStr()` / `parseLocalDateOnly()` from `src/lib/utils/date.ts`. Also an ESLint rule (`local/no-tz-unsafe-date-string`).
+ *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `calendarDateOf(d)` (`src/lib/utils/calendar-date.ts`) / `parseLocalDateOnly()` (`src/lib/utils/date.ts`). Also an ESLint rule (`local/no-tz-unsafe-date-string`).
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -629,13 +629,9 @@ function findStringEnumFieldViolations(): Violation[] {
   );
 }
 
-// Rule 12: hand-rolled Modified-Dietz denominators outside computeReturn().
-// The shape `beginBal + (... - distributions - fees) / 2` must live in
-// exactly one place — src/lib/pure/investments/returns.ts — so a formula fix (e.g.
-// adding a missing term like rollovers) doesn't need to be applied in N
-// places again. This regex is name-dependent (keyed on `beginBal`), not
-// structural — it catches the exact shape previously duplicated in
-// year-end-history.ts, not a differently-named future reimplementation.
+// Rule 12: hand-rolled Simple Dietz denominators outside computeReturn().
+// The shape `beginBal + (... - distributions - fees) / 2` lives only in
+// lib/pure/investments/returns.ts. Keyed on the name `beginBal`, not the shape.
 function findHandRolledDietzDenominatorViolations(): Violation[] {
   return findPatternViolations(
     /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,
@@ -1128,7 +1124,7 @@ function findBroadCitationViolations(): Violation[] {
 //   a) `d.toISOString()` renders in UTC, so `.slice(0, 10)` /
 //      `.substring(0, 10)` / `.split("T")[0]` on it returns TOMORROW's date
 //      for any user behind UTC once local time passes midnight there (all
-//      of the US, every evening). Fix: `localDateStr(d)`.
+//      of the US, every evening). Fix: `calendarDateOf(d)`.
 //   b) `new Date("YYYY-MM-DD")` — a bare date-only string literal parses as
 //      UTC midnight, which reads back as the prior day (or prior YEAR at a
 //      Jan-1 boundary) in any US zone. Fix: `parseLocalDateOnly(...)` or an
@@ -1534,7 +1530,7 @@ describe("RULES.md violations sweep", () => {
           `tomorrow for any user behind UTC every evening) or ` +
           `\`new Date("YYYY-MM-DD")\` (a bare date-only string parses as UTC ` +
           `midnight — the prior day, or prior year at a Jan-1 boundary, in ` +
-          `any US zone). Use \`localDateStr(d)\` / \`parseLocalDateOnly(s)\` ` +
+          `any US zone). Use \`calendarDateOf(d)\` / \`parseLocalDateOnly(s)\` ` +
           `from \`src/lib/utils/date.ts\`. If UTC is genuinely intended (an ` +
           `internally UTC-consistent key never compared to a local day), add ` +
           `\`lint-violation-ok\` to that line.\n` +
@@ -1863,8 +1859,8 @@ describe("one config entry adds an account type", () => {
       Reflect.set(account, "category", SYNTHETIC_CATEGORY);
       const exposure = computeWithdrawalEligibility({
         year: 2030,
-        indAccts: [account],
-        indBal: new Map([["k", 1000]]),
+        indAccounts: [account],
+        indBalance: new Map([["k", 1000]]),
         indKey: () => "k",
       });
       expect(exposure.byKey.get("k")?.penaltyFreeAmount).toBe(0);

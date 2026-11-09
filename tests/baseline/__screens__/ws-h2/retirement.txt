@@ -1,7 +1,7 @@
 Retirement Projection
 Budget scenario: Standard
 Projection
-Plan Health
+Projection Health
 AssumptionsCurrent Retirement
 View only — unlock to edit
 Retire65Through?92Inflation3.00%Withdrawal Rate4.00%StrategySpending DeclineBracket Ceiling?12%
@@ -55,7 +55,7 @@ Clear Cache
 View Assumptions →
 Compute— what gets run
 Scenario?
-Active Plan
+Baseline
 Coast FIRE (2026 (Taylor, 38))
 Coast FIRE (Today)
 Coast FIRE (Custom)
@@ -88,7 +88,7 @@ Off
 80%
 90%
 $Balance Projection
-Traditional After-Tax Withdrawal SS Income Sim. median 50% bandSS StartRMD Start
+Traditional After-tax Withdrawal SS Income Sim. median 50% bandSS StartRMD Start
 Contributions
 Account
 Tax Type
@@ -108,7 +108,7 @@ Rate?
 401k?
 In / Out?
 Traditional?
-After-Tax?
+After-tax?
 Balance?
 Sim. Median?
 Info?
@@ -274,7 +274,7 @@ Full validation evidence →
 Withdrawal Routing
 ?Bracket Filling · 401k → 403b → IRA → Roth/Brokerage/HSA (cost-ranked)
 Configure
-Spending Decline sets HOW MUCH to withdraw from your budget. This section determines FROM WHICH accounts.
+Spending Decline spends your Retirement budget. This section determines FROM WHICH accounts pay for it.
 Changes by year
 ?
 + Add a change

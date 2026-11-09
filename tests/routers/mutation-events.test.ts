@@ -14,7 +14,9 @@ describe("mutation events", () => {
     const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const has2019 = async () =>
-        (await buildYearEndHistory(rawDb)).some((r) => r.year === 2019);
+        (await buildYearEndHistory(rawDb, new Date())).some(
+          (r) => r.year === 2019,
+        );
       expect(await has2019()).toBe(false);
 
       db.insert(schema.netWorthAnnual)
@@ -42,7 +44,7 @@ describe("mutation events", () => {
   it("a query does not invalidate it", async () => {
     const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
-      await buildYearEndHistory(rawDb);
+      await buildYearEndHistory(rawDb, new Date());
       db.insert(schema.netWorthAnnual)
         .values({
           yearEndDate: "2018-12-31",
@@ -56,7 +58,7 @@ describe("mutation events", () => {
         })
         .run();
       await caller.settings.appSettings.list();
-      const rows = await buildYearEndHistory(rawDb);
+      const rows = await buildYearEndHistory(rawDb, new Date());
       expect(rows.some((r) => r.year === 2018)).toBe(false);
     } finally {
       cleanup();

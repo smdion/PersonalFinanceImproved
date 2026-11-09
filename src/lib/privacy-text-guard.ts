@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * Privacy mode's safety net for text the format helpers never touch: names
- * and notes the household typed ("Deck ($20,000)"), milestone labels
- * ("Your first $100k"), server-built sentences. While privacy is on, every
- * "$<digit>" in the page's text and hover tooltips (`title`) is masked — the same rule the privacy E2E
- * checks — except inside `[data-privacy-visible]` (ratios like "per $1",
- * unit labels, colour keys). Turning privacy off restores the original text.
- *
- * Amounts the app formats (formatCurrency, compactCurrency) are already
- * masked when rendered; this only catches what slipped past them, so it
- * rarely changes anything.
+ * Privacy mode's safety net for text the format helpers never touch: masks every
+ * "$<digit>" in page text and `title`s outside `[data-privacy-visible]`, and
+ * restores it when privacy turns off.
  */
 import { maskAmountsInText, maskedAmount } from "@/lib/utils/format";
 

@@ -1,12 +1,13 @@
 /**
  * Modal: the one dialog backdrop. Escape closes the top dialog only, the
- * backdrop closes it unless told not to, focus moves in, stays in (a Tab
- * from outside goes back in), and goes back to whatever opened it.
+ * backdrop closes it unless told not to, neither while it is busy (nor its
+ * ModalCancel), focus moves in, stays in (a Tab from outside goes back
+ * in), and goes back to whatever opened it.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { useState } from "react";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { Modal, type ModalProps } from "@/components/ui/modal";
+import { Modal, ModalCancel, type ModalProps } from "@/components/ui/modal";
 
 afterEach(() => {
   cleanup();
@@ -254,6 +255,33 @@ describe("Modal", () => {
     openWithClick();
     fireEvent.click(screen.getByRole("presentation"));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("while busy, ignores Escape and the backdrop and holds ModalCancel", () => {
+    const onClose = vi.fn();
+    const dialog = (busy: boolean) => (
+      <Modal label="x" className="" onClose={onClose} busy={busy}>
+        <ModalCancel>
+          <button type="button" className="cancel">
+            Cancel
+          </button>
+        </ModalCancel>
+      </Modal>
+    );
+    const { rerender } = render(dialog(true));
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toBeDisabled();
+    expect(cancel.className).toBe("cancel");
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("presentation"));
+    fireEvent.click(cancel);
+    expect(onClose).not.toHaveBeenCalled();
+    rerender(dialog(false));
+    expect(cancel).toBeEnabled();
+    fireEvent.click(cancel);
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(onClose).toHaveBeenCalledTimes(3);
   });
 
   it("Escape closes only the dialog on top", () => {

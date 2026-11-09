@@ -112,10 +112,8 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     }
   };
 
-  /** Copies every known limit type from `copyFrom` into the (empty) active
-   *  year in one shot — offered next to the group headers below when the
-   *  active year has no rows at all yet, as a faster alternative to the
-   *  per-row "+ Set" fallback each group already supports. */
+  /** Copies every limit type from `copyFrom` into the active year; offered only while that
+   *  year has no rows. */
   const handleCopyYear = async () => {
     if (!copyFrom || yearData.length > 0) return;
     const sourceData = (query.data ?? []).filter((l) => l.taxYear === copyFrom);
@@ -179,9 +177,9 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               }
               className="ml-2 rounded border px-2 py-1 text-sm"
             >
-              {years.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
+              {years.map((yearRow) => (
+                <option key={yearRow} value={yearRow}>
+                  {yearRow}
                 </option>
               ))}
             </select>
@@ -213,7 +211,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               <h3 className="text-primary font-medium">{group.label}</h3>
             </div>
             <div className="p-3">
-              {group.keys.map((type, idx) => {
+              {group.keys.map((type, index) => {
                 const record = limitsMap.get(type.key);
                 const prevVal = prevYearMap.get(type.key);
                 const currVal = record ? Number(record.value) : null;
@@ -225,7 +223,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                 return (
                   <div
                     key={type.key}
-                    className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
+                    className={`flex items-center justify-between py-1 text-sm ${index > 0 ? "border-subtle border-t" : ""}`}
                   >
                     <span className="text-muted">
                       {type.label}
@@ -307,10 +305,10 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
             </p>
           </div>
           <div className="p-3">
-            {unusedLimits.map((l, idx) => (
+            {unusedLimits.map((l, index) => (
               <div
                 key={l.id}
-                className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
+                className={`flex items-center justify-between py-1 text-sm ${index > 0 ? "border-subtle border-t" : ""}`}
               >
                 <span className="text-muted">{l.limitType}</span>
                 <span className="flex items-center gap-2">

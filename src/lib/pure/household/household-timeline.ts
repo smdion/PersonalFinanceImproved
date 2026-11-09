@@ -1,18 +1,7 @@
 /**
- * When the household's plan happens, from each person's own age and dates.
- * The one place that decides it: the engine input, the Salary Profile
- * switches, the simulation's horizon and the pages read this, so "when does
- * the plan retire" has one answer.
- *
- * - Ages count from the primary person. The plan's single return rate and
- *   the age on each projection year are theirs, so results depend on who is
- *   primary (the same anchor as the holdings glide path).
- * - Withdrawals start the year the last person with a job retires. Someone
- *   without a job has no pay to replace, so their retirement age doesn't
- *   hold the plan back or end anyone else's work. A job's own end date
- *   doesn't move it either: a job can end without its holder retiring.
- * - With no job in the plan, the last person's retirement year stands.
- * - The projection runs to the last person's end age.
+ * The plan's one timeline: ages count from the primary person; withdrawals start
+ * when the last person with a job retires (else the last person's retirement
+ * year); the projection runs to the last person's end age.
  */
 type TimelinePerson = {
   personId: number;

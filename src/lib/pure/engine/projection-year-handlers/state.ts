@@ -30,11 +30,9 @@ export function buildProjectionState(
   // Clone contribution specs so salaryFraction updates don't mutate caller's input
   const contributionSpecs = input.contributionSpecs?.map((s) => ({ ...s }));
 
-  // Active references for profile switching — point at the current profile's
-  // objects. pre-year-setup.ts replaces these references (state.activeXxx = ps.xxx)
-  // when a profile-switch year is reached, but NEVER mutates the pointed-at
-  // objects' properties. Clone on assignment is therefore NOT required here;
-  // only clone if a handler ever writes state.activeXxx[key] = value.
+  // Active references for profile switching: pre-year-setup replaces them on
+  // a switch but never mutates the objects, so no clone is needed unless a
+  // handler writes into them.
   const activeEmployerMatchRateByCategory = input.employerMatchRateByCategory;
   const activeBaseYearContributions = input.baseYearContributions;
   const activeBaseYearEmployerMatch = input.baseYearEmployerMatch;
@@ -42,7 +40,7 @@ export function buildProjectionState(
 
   // Running balances -- AccountBalances is the source of truth;
   // TaxBuckets is derived for backward compatibility.
-  const acctBal: AccountBalances = cloneAccountBalances(
+  const accountBalance: AccountBalances = cloneAccountBalances(
     input.startingAccountBalances,
   );
   const balances: TaxBuckets = { ...input.startingBalances };
@@ -54,7 +52,7 @@ export function buildProjectionState(
   // Per-person Traditional balance for per-person RMD (from individual accounts)
   const priorYearEndTradByPerson = new Map<number, number>();
   if (ctx.rmdStartAgeByPerson.size > 0 && ctx.hasIndividualAccounts) {
-    for (const ia of ctx.indAccts) {
+    for (const ia of ctx.indAccounts) {
       const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
       if (owner != null && isPreTaxType(ia.taxType)) {
         const prev = priorYearEndTradByPerson.get(owner) ?? 0;
@@ -70,16 +68,15 @@ export function buildProjectionState(
   const incomeHistory: YearIncome[] = [];
 
   // Individual account balances
-  const indBal = new Map<string, number>();
-  for (const ia of ctx.indAccts) indBal.set(ctx.indKey(ia), ia.startingBalance);
+  const indBalance = new Map<string, number>();
+  for (const ia of ctx.indAccounts)
+    indBalance.set(ctx.indKey(ia), ia.startingBalance);
 
-  // Tracked Roth basis — one entry per taxFree-bucket
-  // account, seeded from its "now" rothBasisMeta snapshot. Non-Roth
-  // accounts get no entry at all (absent, not zero — a missing key is
-  // unambiguous, see roth-basis-tracking.ts).
+  // Tracked Roth basis: one entry per taxFree-bucket account, seeded from
+  // its rothBasisMeta snapshot; non-Roth accounts get no entry (not zero).
   const indBasis = new Map<string, RothBasisState>();
   const projectionStartYear = input.asOfDate.getFullYear();
-  for (const ia of ctx.indAccts) {
+  for (const ia of ctx.indAccounts) {
     if (!isTaxFreeBucket(ia.taxType)) continue;
     indBasis.set(
       ctx.indKey(ia),
@@ -89,7 +86,7 @@ export function buildProjectionState(
 
   // Brokerage cost basis per account (each account's own starting basis).
   const brokBasis = seedBrokerageBasis(
-    ctx.indAccts,
+    ctx.indAccounts,
     ctx.indKey,
     input.startingBalances.afterTaxBasis,
   );
@@ -98,7 +95,7 @@ export function buildProjectionState(
     ctx.hasIndividualAccounts && contributionSpecs
       ? buildSpecToAccountMapping(
           contributionSpecs,
-          ctx.indAccts,
+          ctx.indAccounts,
           ctx.indKey,
           ctx.indParentCat,
         )
@@ -110,14 +107,14 @@ export function buildProjectionState(
   // Per-person salary tracking (when salaryByPerson is provided)
   const projectedSalaryByPerson = new Map<number, number>();
   if (ctx.hasPerPersonSalary) {
-    for (const [pid, sal] of Object.entries(input.salaryByPerson!)) {
-      projectedSalaryByPerson.set(Number(pid), sal);
+    for (const [pid, salary] of Object.entries(input.salaryByPerson!)) {
+      projectedSalaryByPerson.set(Number(pid), salary);
     }
   }
 
   return {
     balances,
-    acctBal,
+    accountBalance,
     priorYearEndTradBalance,
     priorYearEndTradByPerson,
     projectedSalary: input.currentSalary,
@@ -125,7 +122,7 @@ export function buildProjectionState(
     budgetOnlyExpenses: input.annualExpenses,
     portfolioWithdrawal: null,
     projectedSalaryByPerson,
-    indBal,
+    indBalance,
     indBasis,
     brokBasis,
     specToAccount,

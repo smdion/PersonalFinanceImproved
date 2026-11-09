@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Mutations for the non-payroll contribution-account-linking section of
- * the integrations preview panel. Covers linking/unlinking a Ledgr budget
- * item to a contribution account (e.g. 401k, HSA) for push-side sync.
- *
- * Isolated into its own hook so that a contrib mutation's pending flip
- * does not cause re-renders in the budget/savings/portfolio sections.
+ * Mutations linking a budget item to a non-payroll contribution account for push sync.
+ * A separate hook so a pending flip doesn't re-render other sections.
  */
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";

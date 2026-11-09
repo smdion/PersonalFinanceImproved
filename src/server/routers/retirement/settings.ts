@@ -31,11 +31,8 @@ import { firstRow } from "@/lib/utils/first-row";
 
 const retirementSettingsInput = z.object({
   personId: z.number().int(),
-  /** Which retirement profile this write targets. Explicit key presence
-   *  matters, not just the value — see the upsert mutation's docblock. Omit
-   *  the field entirely only from legacy/API callers that predate profiles;
-   *  every UI call site should send it (sourced from the `settings.profileId`
-   *  already on the wire from computeProjection, via buildSettingsPatch). */
+  /** Which retirement profile this write targets; key presence matters (see `upsert`).
+   *  Omitted only by API callers without profiles; UI call sites always send it. */
   profileId: z.number().int().nullable().optional(),
   retirementAge: z.number().int().min(18).max(100),
   endAge: z.number().int().min(30).max(120),
@@ -98,24 +95,9 @@ export const settingsProcedures = {
         .from(schema.retirementSettings)
         .orderBy(asc(schema.retirementSettings.personId)),
     ),
-    // Retirement Profiles phase 4: `retirement_settings` was re-keyed in
-    // step C to a composite (profile_id, person_id) index — a person can
-    // now hold ONE ROW PER PROFILE. This mutation must scope every read and
-    // write by profile, or a household with 2+ profiles gets every profile's
-    // row for that person matched (and overwritten) by a single edit.
-    //
-    // Key PRESENCE, not just value, matters: `profileId: undefined` (key
-    // omitted — a legacy/API caller that predates profiles) resolves
-    // server-side to the household's globally-active profile, so every
-    // existing UI call site keeps editing exactly what it edits today.
-    // `profileId: null` (key present, value null) means "the caller
-    // resolved a real profileId and it was null" (e.g. a fresh/pre-backfill
-    // household with zero profiles yet) — that is NOT the same as "use the
-    // active profile," and must NOT silently retarget the write there; it
-    // scopes to the (rare, legitimate) null-profile rows via `isNull`
-    // instead of `eq`. Collapsing these two cases with `??` was the bug:
-    // once the assumptions band lets you VIEW a non-active profile, an
-    // omitted-vs-null mixup would render profile B while writing profile A.
+    // Every read and write is scoped by profile (one row per profile and person).
+    // `profileId` omitted resolves to the globally-active profile; `null` scopes to the
+    // null-profile rows via `isNull`. Never collapse the two with `??`.
     upsert: adminProcedure
       .input(retirementSettingsInput)
       .mutation(async ({ ctx, input }) => {
@@ -204,41 +186,16 @@ export const settingsProcedures = {
                   .returning()
                   .then(firstRow);
 
-          // Propagate household-grain fields to every other person's row —
-          // WITHIN THE SAME PROFILE ONLY (the `profileScope` filter below).
-          //
-          // `retirement_settings` is one row per (profile, person), but a
-          // few of its columns are presented in the UI as a SINGLE
-          // household control while being read across all people within
-          // that profile. Historically `end_age` was the live case here
-          // ("Plan Through" — see sections/timeline.tsx). As of the
-          // Retirement Profiles migration (step B), the engine's actual
-          // per-person read for end_age moved to `retirement_profile_people`
-          // — see the `retirementProfilePeople.upsertPerson` /
-          // `upsertHouseholdEndAge` mutations below, which are now the
-          // real write path for that field. This fan-out stays for
-          // whatever legacy readers still fall back to
-          // `retirement_settings.end_age` (build-engine-payload.ts's
-          // `pp ?? retSettings.find(...)` fallback, reached only when a
-          // profile-person row is missing).
-          //
-          // DELIBERATELY NARROW. Do not extend this to every column:
-          // `salary_annual_increase` is genuinely per-person and read
-          // per-person (build-engine-payload.ts, whose docblock records
-          // that applying the primary's raise rate to everyone "silently
-          // produced the wrong number" — a bug already fixed once). Fanning
-          // that out would re-introduce it. Only add a field here if its UI
-          // control is household-wide AND its read path aggregates across
-          // people within one profile.
+          // Fan household-grain fields to every person's row in the SAME profile, for
+          // readers that fall back to `retirement_settings.end_age`. Add a field only if its
+          // UI control is household-wide AND its read aggregates across people.
           const HOUSEHOLD_FANOUT_FIELDS = ["endAge"] as const;
           const fanout = Object.fromEntries(
             HOUSEHOLD_FANOUT_FIELDS.map((f) => [f, resolvedInput[f]]),
           );
           if (Object.keys(fanout).length > 0) {
-            // Existing rows only — a person with no row already inherits the
-            // primary's value via the `?? settings.endAge` fallback in
-            // build-engine-payload.ts, so creating rows here would add
-            // state without changing the result.
+            // Existing rows only: a person with no row already inherits the primary's
+            // value via the `?? settings.endAge` fallback in build-engine-payload.ts.
             await tx
               .update(schema.retirementSettings)
               .set(fanout)
@@ -258,23 +215,9 @@ export const settingsProcedures = {
         });
       }),
 
-    // `salary_annual_increase` is stored per (profile, person) on
-    // `retirement_settings` and read per-person by the engine
-    // (`build-engine-payload.ts`'s `raiseRateByPerson`), but the "Pre-
-    // Retirement Raise" UI control was a single household control that only
-    // ever wrote the primary person's row via `retirementSettings.upsert` —
-    // so a second household member's raise rate was unreachable after seed
-    // time. This narrow mutation writes ONLY that one column for one
-    // (profile, person); the multi-person Income section calls it per person.
-    // Deliberately NOT a fan-out (that would overwrite each person's distinct
-    // rate with the primary's — the exact bug `raiseRateByPerson`'s docblock
-    // records as already fixed once) and deliberately NOT folded into
-    // `upsert` (which requires a full anchor payload the per-person UI
-    // doesn't have, runs the endAge fan-out, and resolves+writes a default
-    // filing status — all wrong for a one-field raise-rate edit).
-    // UPDATE-only: the step-A completeness invariant guarantees a row per
-    // (profile, person); a missing row is an error, not a silent insert with
-    // guessed NOT NULL anchor values.
+    // Writes only `salary_annual_increase` for one (profile, person), which the engine
+    // reads per person; never fan it out. UPDATE-only: the completeness invariant
+    // guarantees the row, so a missing one is an error, not a guessed insert.
     upsertPersonRaiseRate: adminProcedure
       .input(
         z.object({

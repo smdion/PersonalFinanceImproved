@@ -1,12 +1,9 @@
 "use client";
 
 /**
- * Fills in the household time zone from an admin's browser the first time
- * the app opens without one, so server date math (year-end snapshots,
- * paycheck and budget materializers, syncs) runs on the household's days
- * instead of UTC. Once set, it only changes in Settings → General →
- * Household. Silent on failure (demo / read-only): the server keeps its
- * container zone. A browser on UTC doesn't fill it (see below).
+ * Fills in an unset household time zone from an admin's (non-UTC) browser, so
+ * server date math runs on the household's days. Settings → General → Household
+ * changes it after that. Silent on failure (demo / read-only).
  */
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";

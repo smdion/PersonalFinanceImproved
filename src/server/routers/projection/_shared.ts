@@ -1,27 +1,27 @@
 /**
- * Shared infrastructure for the projection router family.
- *
- * Every sibling file in this directory (monte-carlo, scenarios, strategy,
- * stress-test, presets) imports its Zod schemas and helper builders from
- * here. This keeps shared pipeline code in exactly one place and removes
- * the duplicate-schema risk of spreading them across the sibling files.
+ * Shared Zod schemas and helper builders for the projection router family
+ * (monte-carlo, scenarios, strategy, stress-test, presets).
  */
 
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
-import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
-import type { AccountCategory } from "@/lib/config/account-types";
+import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import type { DecumulationDefaults } from "@/lib/pure/engine/types";
+import { readStoredValue } from "@/lib/db/stored-setting";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import {
+  decumulationDefaultsInputSchema,
   decumulationOverrideArraySchema,
   lumpSumSchema,
+  storedWithdrawalOrderSchema,
+  storedWithdrawalSplitsSchema,
 } from "@/lib/pure/engine/types";
 import {
   getAllStrategyKeys,
@@ -32,18 +32,9 @@ import {
 import type { Db } from "@/lib/db";
 
 /**
- * Baseline "current" SS claiming age for the strategy optimizer's
- * ssStartAge lever. `baseEngineInput.ssStartAge` is the household-scalar
- * `retirement_settings.ss_start_age`, which can be STALE for a
- * multi-person household — "SS Start Age" is written ONLY to
- * `retirement_profile_people` (see build-engine-payload.ts's own comment
- * on this exact staleness). Sourcing the lever's baseline from the stale
- * scalar can clamp the lever out of range entirely, or offer "delay from
- * 68" for a household really claiming at 62. Use the earliest of the real
- * per-person start ages instead, for multi-person households — the
- * household's actual earliest actionable claiming age. Single-person
- * households have no separate per-person source to drift from the
- * scalar, so it's already correct there.
+ * Baseline SS claiming age for the optimizer's ssStartAge lever: the earliest per-person
+ * start age, since the household scalar `retirement_settings.ss_start_age` can be stale
+ * for multi-person households (see build-engine-payload.ts); single-person uses the scalar.
  */
 export function resolveSsStartAgeBaseline(
   perPersonSettings: ReadonlyArray<{ ssStartAge: number }> | undefined,
@@ -54,12 +45,9 @@ export function resolveSsStartAgeBaseline(
     : baseEngineInputSsStartAge;
 }
 
-// Shared Zod schemas for accumulation/decumulation overrides ("Changes by
-// year") — used by every projection procedure's input. OMITTED means the
-// household's saved rows (resolveProjectionOverrides): every surface — the
-// dashboard, the Retirement page, strategy comparison, stress tests — gets
-// the same baseline without each client loading them, and only an editor
-// with unsaved changes sends its own.
+// Accumulation/decumulation override schemas ("Changes by year") for every
+// projection input. Omitted = the household's saved rows (resolveProjectionOverrides);
+// only an editor with unsaved changes sends its own.
 const accumulationOverrideArraySchema = z.array(
   z.object({
     year: z.number().int(),
@@ -158,6 +146,13 @@ export function buildStrategyParams(
   return out;
 }
 
+/** retirement_settings' withdrawal routing, as its writer stores it. */
+const storedRouting = z.looseObject({
+  withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES),
+  withdrawalOrder: storedWithdrawalOrderSchema.nullish(),
+  withdrawalSplits: storedWithdrawalSplitsSchema.nullish(),
+});
+
 /**
  * Build decumulation defaults from DB settings + client-supplied routing overrides.
  * Shared by computeProjection and computeMonteCarloProjection.
@@ -165,8 +160,8 @@ export function buildStrategyParams(
 export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
-    withdrawalStrategy: string | null;
-    withdrawalRoutingMode?: string | null;
+    withdrawalStrategy: string;
+    withdrawalRoutingMode: string;
     withdrawalOrder?: string[] | null;
     withdrawalSplits?: Record<string, number> | null;
     rmdExcessHandling?: string | null;
@@ -175,44 +170,26 @@ export function buildDecumulationDefaults(
     rmdSmoothingMaxBracketTarget?: string | null;
     discretionaryWithdrawalOrder?: string | null;
   },
-  clientDefaults: {
-    withdrawalRoutingMode?: string;
-    withdrawalOrder?: string[];
-    withdrawalSplits?: Record<string, number>;
-    withdrawalTaxPreference: Record<string, string>;
-  },
+  clientDefaults: z.output<typeof decumulationDefaultsInputSchema>,
   distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
 ): DecumulationDefaults {
+  const saved = readStoredValue("retirement_settings", settings, storedRouting);
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
-    // Client override wins when the caller sent one (the Retirement page's
-    // per-session Configure toggle, once the user actively touches it);
-    // otherwise fall back to the household's persisted
-    // `retirement_settings.withdrawal_routing_mode`; "bracket_filling" only
-    // if even that's somehow missing (pre-migration row). This is the ONE
-    // place that resolves the mode — every caller (computeProjection,
-    // Monte Carlo, Tax Optimization) goes through this function so they
-    // can't independently drift on which value wins.
-    withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
-      settings.withdrawalRoutingMode ??
-      DEFAULT_WITHDRAWAL_ROUTING_MODE) as DecumulationDefaults["withdrawalRoutingMode"],
-    // Same three-tier resolution as `withdrawalRoutingMode` above: a
-    // touched-session client override wins, else the household's persisted
-    // `retirement_settings.withdrawal_order` / `.withdrawal_splits`, else
-    // the config default. A NULL DB column means "never customized" and
-    // falls through to the config default.
-    withdrawalOrder: (clientDefaults.withdrawalOrder ??
-      settings.withdrawalOrder ??
-      getDefaultDecumulationOrder()) as AccountCategory[],
-    withdrawalSplits: (clientDefaults.withdrawalSplits ??
-      settings.withdrawalSplits ?? {
-        ...CONFIG_WITHDRAWAL_SPLITS,
-      }) as Record<AccountCategory, number>,
-    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference as Partial<
-      Record<AccountCategory, "traditional" | "roth">
-    >,
+    // The ONE place the routing is resolved, for every caller: a client
+    // override (the Retirement page's touched Configure toggle) wins, else
+    // the household's saved value; a NULL order or splits is the config's.
+    withdrawalRoutingMode:
+      clientDefaults.withdrawalRoutingMode ?? saved.withdrawalRoutingMode,
+    withdrawalOrder:
+      clientDefaults.withdrawalOrder ??
+      saved.withdrawalOrder ??
+      getDefaultDecumulationOrder(),
+    withdrawalSplits: clientDefaults.withdrawalSplits ??
+      saved.withdrawalSplits ?? { ...CONFIG_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference,
     distributionTaxRates,
-    withdrawalStrategy: settings.withdrawalStrategy as WithdrawalStrategyType,
+    withdrawalStrategy: readStoredStrategy(settings.withdrawalStrategy),
     strategyParams: buildStrategyParams(settings),
     rmdExcessHandling:
       settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",

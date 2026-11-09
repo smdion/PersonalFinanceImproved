@@ -1,14 +1,6 @@
-// Shared SimpleFIN sync logic — the single code path for pulling balances
-// and writing a daily snapshot. Called by both the CRON_SECRET-guarded
-// daily route (src/app/api/simplefin/daily/route.ts) and the "Sync Now"
-// tRPC mutation, so both behave identically (single computation path).
-//
-// Deliberately does NOT go through lib/budget-api/factory.ts's
-// getApiConnection/getClientForService — those are hard-typed to
-// "ynab" | "actual" and reserved for the BudgetAPIClient contract.
-// SimpleFIN is a parallel, read-only balance integration with no
-// transaction/category/budget concepts, so it queries api_connections
-// directly instead of widening that union.
+// SimpleFIN sync for the daily cron route and the "Sync Now" mutation: pulls
+// balances and writes the day's snapshot. A read-only balance feed, not a
+// budget app (`BudgetApiService`), so it reads api_connections directly.
 
 import "server-only";
 import { eq, sql } from "drizzle-orm";
@@ -36,10 +28,10 @@ import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { reidentifySimplefinAccounts } from "./reidentify";
 import { utcDayOf } from "@/lib/utils/date";
 import { toDecimalColumn } from "@/lib/utils/math";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import type { Db, DbOrTx } from "@/lib/db";
-
-export { localDateStr };
+import { loadStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 export type SimplefinConfig = {
   accessUrl: string;
@@ -58,17 +50,14 @@ type SimplefinSyncResult = {
 /** Re-request this many days before the last successful sync so late-posting rows are caught. */
 const WINDOW_OVERLAP_DAYS = 5;
 /**
- * SimpleFIN keeps 90 days of transactions and answers a request for more
- * than that with a "capped" notice — and an exact 90 can already exceed it
- * by the time the provider evaluates it. Ask for a day less; if the
- * provider ever reports a smaller limit, use that instead (learned, see
- * getWindowLimitDays).
+ * SimpleFIN keeps 90 days of transactions and an exact 90 can already be capped,
+ * so ask for a day less; a smaller reported limit wins (learnWindowLimit).
  */
 const DEFAULT_MAX_WINDOW_DAYS = 89;
 const WINDOW_LIMIT_KEY = "simplefin_window_limit_days";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Start of the transaction window to request: last success minus the overlap, at most 90 days back. */
+/** Start of the transaction window to request: last success minus the overlap, at most `maxDays` back. */
 export function transactionWindowStart(
   lastSyncedAt: Date | null,
   now: Date,
@@ -83,13 +72,9 @@ export function transactionWindowStart(
 
 const LAST_ERROR_SETTING_KEY = "simplefin_last_error";
 const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
-/** Cap same-day retries for a partial sync (an account silently missing from
- *  SimpleFIN's response, no explicit error) — an account that's genuinely
- *  broken (needs re-auth the user hasn't done yet) would otherwise get
- *  retried every hourly cron tick, burning the whole ~24/day quota chasing
- *  something a retry can't fix. After this many same-day attempts, give up
- *  and mark the connection synced (stop retrying today) but keep the
- *  warning visible. */
+/** Same-day retry cap for a partial sync (an account silently missing), so a
+ *  broken account can't burn the ~24/day quota; after it, stop for today but
+ *  keep the warning. */
 export const MAX_PARTIAL_SYNC_RETRIES_PER_DAY = 3;
 
 const INVESTMENTS_SYNCED_AT_KEY = "simplefin_investments_synced_at";
@@ -176,22 +161,13 @@ export async function getSimplefinConnection(db: Db) {
 }
 
 /**
- * True if the SimpleFIN connection's lastSyncedAt already falls on
- * `asOfDate`'s local calendar day — the daily cron uses this to skip
- * calling the external API a second time today. Deliberately reads
- * api_connections.lastSyncedAt (set only by a real runSimplefinSync API
- * call) rather than simplefin_balance_snapshots (also written by the
- * zero-API-cost recomputeTodaySnapshotFromLocal path, which would make
- * this guard skip the real sync on any day a user merely toggles an
- * account's inclusion).
+ * True if lastSyncedAt falls on `asOfDate`'s local day, so the cron skips a second
+ * API call. Reads api_connections, not snapshots (local recomputes write those too).
  */
-export async function hasSyncedToday(
-  db: Db,
-  asOfDate: Date = new Date(),
-): Promise<boolean> {
+export async function hasSyncedToday(db: Db, asOfDate: Date): Promise<boolean> {
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
-  return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
+  return calendarDateOf(conn.lastSyncedAt) === calendarDateOf(asOfDate);
 }
 
 /** Record (or clear) the last SimpleFIN sync error for display in the UI. */
@@ -213,15 +189,13 @@ async function setSimplefinLastError(db: Db, message: string | null) {
 
 /** Read the last recorded SimpleFIN sync error, if any. */
 export async function getSimplefinLastError(db: Db): Promise<string | null> {
-  const rows = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, LAST_ERROR_SETTING_KEY))
-    .limit(1);
-  return (rows[0]?.value as string | undefined) ?? null;
+  return (
+    (await loadStoredSetting(db, LAST_ERROR_SETTING_KEY, z.string())) ?? null
+  );
 }
 
-type PartialSyncState = { date: string; attempts: number };
+const partialSyncState = z.object({ date: z.string(), attempts: z.number() });
+type PartialSyncState = z.infer<typeof partialSyncState>;
 
 /** Increment (or start) today's partial-sync retry counter, returning the
  *  new attempt count for today. Resets to 1 whenever the stored date isn't
@@ -230,13 +204,10 @@ async function bumpPartialSyncAttempts(
   db: DbOrTx,
   asOfDate: Date,
 ): Promise<number> {
-  const today = localDateStr(asOfDate);
-  const rows = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, PARTIAL_SYNC_STATE_KEY))
-    .limit(1);
-  const prev = (rows[0]?.value as PartialSyncState | undefined) ?? null;
+  const today = calendarDateOf(asOfDate);
+  const prev =
+    (await loadStoredSetting(db, PARTIAL_SYNC_STATE_KEY, partialSyncState)) ??
+    null;
   const attempts = prev && prev.date === today ? prev.attempts + 1 : 1;
   const next: PartialSyncState = { date: today, attempts };
   await db
@@ -289,24 +260,17 @@ type SimplefinAccountRow = {
 };
 
 /**
- * Upsert every fetched account by its stable externalAccountId. The update
- * branch deliberately omits `isIncluded` from `set` so a user's manual
- * toggle survives future syncs; the insert branch relies on the column's
- * schema default (true) so a brand-new account starts out included.
- * Returns each row's full resulting state (via RETURNING), which is how
- * callers learn the current isIncluded flag for accounts they didn't
- * explicitly toggle themselves.
+ * Upsert fetched accounts by externalAccountId. Updates leave `isIncluded` alone so
+ * a user's toggle survives; inserts default it to true. Returns the resulting rows.
  */
 export async function upsertSimplefinAccounts(
   db: DbOrTx,
   accounts: SimplefinAccount[],
+  now: Date,
 ): Promise<SimplefinAccountRow[]> {
   if (accounts.length === 0) return [];
-  const now = new Date();
-  // Postgres rejects a multi-row ON CONFLICT DO UPDATE batch if the same
-  // conflict target appears twice ("cannot affect row a second time") —
-  // dedupe defensively so a provider response with a repeated account id
-  // can't crash the whole sync. Keep the last occurrence (most current).
+  // Postgres rejects an ON CONFLICT batch that hits the same row twice, so dedupe
+  // repeated account ids, keeping the last occurrence.
   const deduped = [...new Map(accounts.map((a) => [a.id, a])).values()];
   const rows = await db
     .insert(schema.simplefinAccounts)
@@ -369,30 +333,13 @@ async function writeSnapshot(
 }
 
 /**
- * Pull current balances from SimpleFIN, upsert the account registry, and
- * upsert today's snapshot row from only the accounts currently marked
- * included. Upserting the snapshot on snapshotDate (rather than
- * skip-if-exists) means calling this multiple times in one day — cron
- * plus a manual "Sync Now" — is safe and keeps the snapshot current,
- * without ever creating a duplicate row for the same day.
- *
- * If SimpleFIN's response silently omits a previously-included account (no
- * explicit error, just missing from the list), that's treated as a partial
- * sync: today's snapshot still reflects whatever DID come back (mixed with
- * the missing account's last-known balance), a warning is surfaced via
- * getSimplefinLastError, and `lastSyncedAt` is deliberately NOT advanced —
- * so hasSyncedToday() stays false and the next hourly cron tick retries,
- * instead of the connection looking fully synced while one account is
- * silently stuck. Capped at MAX_PARTIAL_SYNC_RETRIES_PER_DAY same-day
- * attempts to protect the ~24/day quota from a permanently-broken account.
- *
- * Throws if no SimpleFIN connection is configured — callers (cron route,
- * tRPC mutation) are responsible for translating that into a skip/error
- * response appropriate to their context.
+ * Fetch balances, upsert the account registry and today's snapshot (safe to rerun
+ * the same day). An included account missing from the response is a partial sync:
+ * lastSyncedAt isn't advanced, so the cron retries (capped per day). Throws if unconfigured.
  */
 export async function runSimplefinSync(
   db: Db,
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<SimplefinSyncResult> {
   const conn = await getSimplefinConnection(db);
   if (!conn) {
@@ -454,14 +401,14 @@ export async function runSimplefinSync(
     // next request stays inside it (and this isn't reported as an error).
     if (windowLimitDays) await learnWindowLimit(db, windowLimitDays);
     const fetchedIds = new Set(fetched.map((a) => a.id));
-    const snapshotDate = localDateStr(asOfDate);
+    const snapshotDate = calendarDateOf(asOfDate);
 
     // Every balance write together: a failure partway leaves the accounts,
     // loans and today's snapshot as they were, never half updated.
     const synced = await db.transaction(async (tx) => {
       // An account reported under a new SimpleFIN id keeps its row first.
       const renewed = await reidentifySimplefinAccounts(tx, response, asOfDate);
-      await upsertSimplefinAccounts(tx, fetched);
+      await upsertSimplefinAccounts(tx, fetched, asOfDate);
       const missingAccounts = expectedIncluded.filter(
         (a) => !fetchedIds.has(a.externalAccountId) && !renewed.has(a.id),
       );
@@ -471,10 +418,8 @@ export async function runSimplefinSync(
         new Set([...fetchedIds].filter((id) => !errored.has(id))),
       );
 
-      // Re-query the full included set rather than trusting the upsert's
-      // RETURNING rows — those only cover accounts present in this fetch, so
-      // a missing account's stale (but still real) balance needs to be
-      // re-read from the DB to keep contributing to today's total.
+      // Re-read the full included set: RETURNING covers only fetched accounts,
+      // and a missing account's last balance still counts toward today's total.
       const allIncluded = (
         await tx
           .select()
@@ -584,16 +529,12 @@ export async function runSimplefinSync(
 }
 
 /**
- * Recompute today's snapshot from the local simplefin_accounts registry —
- * no SimpleFIN API call. Used when a user toggles an account's inclusion:
- * the change should be reflected immediately without burning SimpleFIN's
- * ~24-requests/day quota. Sums whatever lastBalance each included account
- * had as of its own last sync, so is only as fresh as the least-recently-
- * synced included account (bounded to <=24h by the daily cron).
+ * Recompute today's snapshot from the local registry with no API call (for an
+ * inclusion toggle); each balance is only as fresh as that account's last sync.
  */
 export async function recomputeTodaySnapshotFromLocal(
   db: Db,
-  asOfDate: Date = new Date(),
+  asOfDate: Date,
 ): Promise<SimplefinSyncResult> {
   const rows = (
     await db
@@ -604,7 +545,7 @@ export async function recomputeTodaySnapshotFromLocal(
 
   const totalBalance = rows.reduce((sum, r) => sum + Number(r.lastBalance), 0);
   const accountCount = rows.length;
-  const snapshotDate = localDateStr(asOfDate);
+  const snapshotDate = calendarDateOf(asOfDate);
 
   await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
 

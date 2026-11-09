@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * What SimpleFIN knows about one tracked account, inside its card in
- * Account & Contribution Settings: link status and live balance, the funds
- * it holds (with the household's fund-fact controls), its asset mix and
- * yearly fee, and whether deposits match the paycheck setup.
+ * What SimpleFIN knows about one tracked account, in its settings card: link status, live
+ * balance, funds held (with fund-fact controls), asset mix, fee and whether deposits match.
  */
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
@@ -23,7 +21,7 @@ import {
 import { SettingsLink } from "@/components/ui/settings-link";
 
 export type AccountInsight =
-  RouterOutputs["investments"]["getAccountInsights"][number];
+  RouterOutputs["investments"]["computeAccountInsights"][number];
 
 const day = (d: string) => formatDate(d, "medium");
 
@@ -173,7 +171,7 @@ function CostBasisSuggestion({
   const save = trpc.performance.updateCostBasis.useMutation({
     onSuccess: () =>
       Promise.all([
-        utils.investments.getAccountInsights.invalidate(),
+        utils.investments.computeAccountInsights.invalidate(),
         utils.performance.invalidate(),
       ]),
   });
@@ -397,7 +395,7 @@ export function AccountLiveSection({
 
 /** The household line, fetched on its own (hidden without the portfolio permission). */
 export function SinceSnapshotBanner() {
-  const { data } = trpc.investments.getAccountInsights.useQuery(undefined, {
+  const { data } = trpc.investments.computeAccountInsights.useQuery(undefined, {
     retry: false,
   });
   if (!data) return null;

@@ -1,18 +1,6 @@
-/**
- * Recognising what kind of account a SimpleFIN account is from its name,
- * to suggest which of the household's sub-accounts it is.
- *
- * Why sub-accounts: a tracked (performance) account is often several
- * sub-accounts — one per owner, tax treatment and kind (e.g. a joint
- * "IRA" holding each spouse's Roth, or a 401k's Roth + Traditional +
- * employer match + rollover; see DESIGN.md "Performance Accounts"), while
- * institutions report each of those as a separate account. Linking a
- * SimpleFIN account to the right sub-account keeps per-person and
- * per-tax-type numbers exact.
- *
- * Data, not code: generic words institutions use, never household names.
- * First match wins, so more specific patterns come first.
- */
+/** Name patterns suggesting which sub-account (owner, tax type, kind; DESIGN.md "Performance
+ *  Accounts") a SimpleFIN account is. Generic institution words, never household names; first
+ *  match wins, so more specific patterns come first. */
 import type { AccountCategory } from "./account-types";
 import type { PortfolioTaxType } from "./enum-values";
 

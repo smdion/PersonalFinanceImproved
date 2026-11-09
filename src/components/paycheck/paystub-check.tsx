@@ -41,10 +41,8 @@ const STATUS_TEXT: Record<PaystubFinding["status"], string> = {
 };
 
 /**
- * "Check against a pay stub": type one real stub's figures (any of them)
- * and see where Ledgr's paycheck differs and the likely fix. Nothing is
- * saved. A regular check, or the bonus check (paid on its own) — each
- * against its own figures.
+ * "Check against a pay stub": enter any of a real stub's figures (regular or bonus check) and
+ * see where Ledgr's paycheck differs and the likely fix. Nothing is saved.
  */
 export function PaystubCheck({
   paycheck,
@@ -72,7 +70,7 @@ export function PaystubCheck({
   // year's.
   const otherYear = date !== null && date.getUTCFullYear() !== taxYear;
   const n = paystubCheckNumber(
-    date,
+    date ?? new Date(),
     payPeriod,
     anchor,
     paycheck.periodsPerYear,

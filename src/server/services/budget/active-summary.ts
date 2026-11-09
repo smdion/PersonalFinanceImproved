@@ -58,11 +58,8 @@ export const zBudgetActiveSummaryInput = z
   .optional();
 
 /**
- * Household monthly take-home from computePaycheckSummary: each job's net
- * pay × the paychecks per month the budget counts. netPay is gross −
- * pre-tax − withholding − FICA − post-tax, so this is the same take-home the
- * client's buildPayrollBreakdown derives line by line. Null when no one has
- * a paycheck.
+ * Household monthly take-home: each job's net pay × the paychecks per month the budget
+ * counts (the same take-home as buildPayrollBreakdown). Null when no one has a paycheck.
  */
 export function netMonthlyTakeHome(data: {
   people: readonly {
@@ -90,15 +87,9 @@ export async function computeBudgetActiveSummary(
     input?.profileId,
   );
 
-  // Sum of budget_income_adjustments (Budget-mode extra-paycheck
-  // materializer output) landing in the REAL current calendar month.
-  // Computed unconditionally, before activeProfile is even checked —
-  // deliberately NOT parameterized by selectedColumn/profileId, so it
-  // can't be used to silently corrupt a What-If scenario comparison
-  // (the advisor rejected folding this into netMonthlyIncome for
-  // exactly that reason: netMonthlyIncome is per-selectedColumn and has
-  // no "this is the live view" signal). Same value for every scenario
-  // column (invariant test: tests/routers/budget-coverage.test.ts).
+  // Budget-mode extra-paycheck adjustments landing in the REAL current month. Deliberately
+  // independent of selectedColumn/profileId so it can't skew a What-If comparison: the same
+  // value for every column (tests/routers/budget-coverage.test.ts).
   const { asOf } = ctx.scope;
   const nowMonthStart = currentMonthKey(asOf);
   const nextMonthStart = currentMonthKey(
@@ -161,47 +152,29 @@ export async function computeBudgetActiveSummary(
   const selectedColumn = Math.min(input?.selectedColumn ?? 0, numColumns - 1);
 
   // ── Contribution-linked budget amounts ──
-  // Budget items linked to a contribution account (via
-  // contributionAccountId) use the contribution's monthly amount
-  // directly — no fill-in heuristics — under the (Contribution, Salary)
-  // pair the page shows: its own local selection (What-If), else the
-  // active profiles. A budget column is a spending level, so the pair is
-  // the same for every column (and matches use-budget-derived-data.ts).
+  // Linked items use the contribution's monthly amount under the page's (Contribution,
+  // Salary) pair (What-If selection, else active profiles), the same for every column.
   const profiles = await resolveProfileSelection(ctx.scope, input?.selection);
-  // Resolved through the SAME helper listProfiles uses above
-  // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
-  // its own independent copy of this exact resolution (the only
-  // difference being What-If sandbox support), which the helper now
-  // accepts directly, so a linked item's $ figure can never drift
-  // between the two call sites.
+  // The same resolveLinkedBudgetItemAmounts as listProfiles, What-If sandbox included.
   const resolvedItemsById = new Map(
     (
-      await resolveLinkedBudgetItemAmounts(
-        ctx.db,
-        items,
-        numColumns,
-        profiles,
-        {
-          sandboxContribActiveFields: input?.sandboxContribActiveFields,
-          sandboxSalaryEntries: input?.sandboxSalaryEntries,
-        },
-      )
+      await resolveLinkedBudgetItemAmounts(ctx, items, numColumns, profiles, {
+        sandboxContribActiveFields: input?.sandboxContribActiveFields,
+        sandboxSalaryEntries: input?.sandboxSalaryEntries,
+      })
     ).map((r) => [r.id, r]),
   );
 
-  // For linked items, the contribution's monthly amount (the same in
-  // every column) replaces the column's DB amount. For unlinked items, use DB amounts
-  // as-is. The What-If tab's hand-edited amounts are ONE MORE LAYER on
-  // top of that resolution chain — never a replacement for it, per
-  // toItemAmountActiveMap's docblock — applied here so every
-  // downstream total (result, allColumnResults, weightedAnnualTotal,
-  // netMonthlyIncome's leftover) reflects the sandbox's edits through
-  // the ONE resolution path instead of a second client-side computation.
+  // Linked items take the contribution's monthly amount; unlinked use DB amounts. The
+  // What-If tab's hand-edited amounts layer on top here so every downstream total
+  // reflects the sandbox through this one path.
   const itemActiveMap = toItemAmountActiveMap(input?.itemAmountActiveFields);
   const applyItemActiveFields = (itemId: number, amounts: number[]) =>
     itemActiveMap.size === 0
       ? amounts
-      : amounts.map((amt, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amt);
+      : amounts.map(
+          (amount, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amount,
+        );
   const budgetItems = items.map((i) => {
     const resolved = resolvedItemsById.get(i.id)!;
     if (!i.contributionAccountId)
@@ -237,8 +210,8 @@ export async function computeBudgetActiveSummary(
   const result = calculateBudget(budgetInput);
 
   // Also compute all columns for side-by-side comparison
-  const allColumnResults = columnLabels.map((_: string, colIdx: number) =>
-    calculateBudget({ ...budgetInput, selectedColumn: colIdx }),
+  const allColumnResults = columnLabels.map((_: string, colIndex: number) =>
+    calculateBudget({ ...budgetInput, selectedColumn: colIndex }),
   );
 
   // Raw items: DB amounts for editing, contribution amounts for display on linked items.
@@ -260,7 +233,7 @@ export async function computeBudgetActiveSummary(
       apiSyncDirection: i.apiSyncDirection,
       contributionAccountId: i.contributionAccountId,
       // Per-column reason a linked item's amount is $0 (one per column,
-      // from the same active profiles). See classifyContribResolution.
+      // from the same active profiles). See classifyContributionResolution.
       contribStatus: resolvedItemsById.get(i.id)?.contribStatus ?? null,
     };
   });
@@ -272,13 +245,9 @@ export async function computeBudgetActiveSummary(
     columnMonths,
   );
 
-  // Monthly take-home under the (Contribution, Salary) pair in use,
-  // honoring sandboxSalaryEntries — the same computePaycheckSummary
-  // call and the same netMonthlyTakeHome as listProfiles, so the What-If tab's "available income"
-  // figure can't disagree with what Savings' Unspent shows for the same
-  // inputs. Not derived from WhatIfPaycheckSummary's client-side annual
-  // total, which uses a naive periodsPerYear multiplication that ignores
-  // job.budgetPeriodsPerMonth.
+  // Monthly take-home under the pair in use (with sandboxSalaryEntries), via the same
+  // computePaycheckSummary + netMonthlyTakeHome as listProfiles, so What-If's available
+  // income matches Savings' Unspent.
   let netMonthlyIncome: number | null = null;
   try {
     const incomePaycheckData = await computePaycheckSummary(ctx, {
@@ -321,10 +290,8 @@ export async function computeBudgetActiveSummary(
      *  computation above for why this must be read
      *  instead of re-deriving income client-side. */
     netMonthlyIncome,
-    /** Sum of Budget-mode extra-paycheck adjustments landing in the
-     *  REAL current calendar month — independent of selectedColumn, see
-     *  computation above. A separate, additively-labeled figure; never
-     *  folded into netMonthlyIncome or any What-If total. */
+    /** Budget-mode extra-paycheck adjustments in the REAL current month, independent of
+     *  selectedColumn; never folded into netMonthlyIncome or any What-If total. */
     budgetIncomeAdjustmentThisMonth,
   };
 }

@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Mutations for the sinking-fund matching section of the integrations
- * preview panel. Covers linking/unlinking savings goals to API categories,
- * rename reconciliation, and linking the emergency-fund reimbursement
- * category.
- *
- * Isolated into its own hook so that a savings mutation's pending flip
- * does not cause re-renders in the budget/contrib/portfolio sections.
+ * Sinking-fund matching mutations (link/unlink goals, rename, emergency-fund reimbursement
+ * category). A separate hook so a pending flip doesn't re-render other sections.
  */
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";

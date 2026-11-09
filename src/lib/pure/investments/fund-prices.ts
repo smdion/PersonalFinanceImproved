@@ -1,17 +1,7 @@
 /**
- * A fund's own price at each close, for funds with no public ticker: the
- * institution reports each holding's shares and value, and value ÷ shares
- * is the fund's unit price on the close that report shows. Never a
- * stand-in's or an index's price — a similar mix doesn't move the same.
- *
- * Guarded so a report can't make up a move:
- * - a value rounded to the cent leaves too much error on a small position;
- * - a value left over from an earlier day while the shares updated (or the
- *   same price on a new close — these funds price every session) is stale.
- *
- * Price only: a trust that pays a distribution out instead of reinvesting
- * it would show a drop on its ex-date. Collective trusts reinvest inside
- * the fund, so their unit price is their total return.
+ * Unit price (value ÷ shares) at each close for funds with no public ticker,
+ * never a stand-in's. Skips small positions with too much rounding error and stale
+ * values; price only (collective trusts reinvest, so it is their total return).
  */
 import { IMPLIED_PRICE_MAX_ERROR } from "@/lib/config/fund-prices";
 import type { DailyClose } from "../accounts/current-balances";

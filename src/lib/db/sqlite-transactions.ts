@@ -1,14 +1,7 @@
 /**
- * Async transactions on SQLite. Every transaction in the app is written the
- * Postgres way, `db.transaction(async (tx) => …)`, but better-sqlite3's own
- * refuses a callback that returns a promise, so on a SQLite install each one
- * failed outright. This gives the SQLite handle the same contract: commit
- * when the callback resolves, roll back when it throws.
- *
- * One connection means one transaction at a time, so they queue. A nested
- * `tx.transaction` is a savepoint, as on Postgres, and so is a helper inside
- * one that calls the plain handle's `transaction` (AsyncLocalStorage knows):
- * queueing it behind the transaction it's running in would never finish.
+ * Async `db.transaction(async (tx) => …)` on SQLite (better-sqlite3 rejects a promise-returning
+ * callback): commits on resolve, rolls back on throw, one at a time. A nested call, or one made
+ * inside a running transaction (AsyncLocalStorage), is a savepoint so it never queues behind it.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 

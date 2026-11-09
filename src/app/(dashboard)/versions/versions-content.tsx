@@ -16,7 +16,7 @@ import {
   ValueNotes,
   type ValueNote,
 } from "@/components/versions/restore-notices";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { formatDate } from "@/lib/utils/format";
 
 function formatBytes(bytes: number | null): string {
@@ -38,7 +38,8 @@ async function handleExport() {
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
     const match = disposition.match(/filename="(.+)"/);
-    const filename = match?.[1] ?? `ledgr-backup-${localDateStr()}.json`;
+    const filename =
+      match?.[1] ?? `ledgr-backup-${calendarDateOf(new Date())}.json`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -86,7 +87,6 @@ export function VersionsContent() {
     onSuccess: () => utils.version.getSchedule.invalidate(),
   });
 
-  // Create form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");
@@ -141,11 +141,11 @@ export function VersionsContent() {
     { enabled: !!previewVersionId && !!previewTable },
   );
 
-  const { data: restoreDataLoss } = trpc.version.restoreDataLoss.useQuery(
+  const { data: restoreDataLoss } = trpc.version.listRestoreDataLoss.useQuery(
     { id: restoreTarget?.id ?? 0 },
     { enabled: !!restoreTarget },
   );
-  const { data: importDataLoss } = trpc.version.importDataLoss.useQuery(
+  const { data: importDataLoss } = trpc.version.listImportDataLoss.useQuery(
     { tableNames: importTableNames ?? [] },
     { enabled: showImportConfirm && importTableNames !== null },
   );
@@ -285,6 +285,7 @@ export function VersionsContent() {
         <Card title="Auto Schedule">
           <div className="flex items-center gap-2">
             <select
+              aria-label="Auto Schedule"
               value={scheduleData?.schedule ?? "daily"}
               onChange={(e) => {
                 const val = e.target.value as
@@ -353,6 +354,7 @@ export function VersionsContent() {
           {editingRetention ? (
             <div className="flex items-center gap-2">
               <input
+                aria-label="Retention"
                 type="number"
                 min={1}
                 max={365}
@@ -607,6 +609,7 @@ export function VersionsContent() {
             <div className="flex items-center gap-3">
               <label className="text-muted text-xs font-medium">Table:</label>
               <select
+                aria-label="Table"
                 value={previewTable}
                 onChange={(e) => setPreviewTable(e.target.value)}
                 className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"

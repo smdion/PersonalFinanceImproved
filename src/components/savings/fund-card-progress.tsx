@@ -1,7 +1,8 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
-import type { GoalProjection, PlannedTransaction, RawGoal } from "./types";
+import type { GoalProjection, RawGoal } from "./types";
+import type { PlannedTransaction } from "@/lib/pure/savings/savings-projection";
 
 export function upcomingExpensesNote(transactions: PlannedTransaction[]) {
   // Date-truncated cutoff — matches the shared
@@ -133,7 +134,7 @@ export function FundProgressAndTargetDate({
   savingsGoal,
   rawGoal,
   progress,
-  progressPct,
+  progressPercent,
   efundResult,
   canEdit,
   onGoalUpdate,
@@ -142,7 +143,7 @@ export function FundProgressAndTargetDate({
   savingsGoal: { current: number; target: number };
   rawGoal: RawGoal;
   progress: number;
-  progressPct: string;
+  progressPercent: string;
   efundResult:
     | { neededAfterRepay: number; targetAmount: number; progress: number }
     | null
@@ -167,7 +168,7 @@ export function FundProgressAndTargetDate({
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-muted text-xs font-semibold tabular-nums">
-                {progressPct}%
+                {progressPercent}%
               </span>
               <span className="text-muted text-xs">
                 {rawGoal.isEmergencyFund && efundResult
@@ -186,6 +187,7 @@ export function FundProgressAndTargetDate({
           <span className="text-muted text-xs">Target date</span>
           {canEdit !== false ? (
             <input
+              aria-label="Target date"
               type="date"
               value={rawGoal.targetDate ?? ""}
               onChange={(e) =>

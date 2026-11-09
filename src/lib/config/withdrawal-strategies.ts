@@ -1,10 +1,5 @@
-// Central withdrawal-strategy configuration — the ONLY place strategy-specific
-// knowledge lives. Everything else imports from here.
-//
-// Philosophy: Config declares, code executes.
-// Nothing in the codebase knows what "Guyton-Klinger" is — it only knows how to
-// process a strategy with properties like `paramFields` and `incomeSource`.
-//
+// Withdrawal-strategy configuration: the ONLY place strategy-specific knowledge lives; the
+// engine only reads properties like `paramFields` and `incomeSource`.
 // References: Morningstar "State of Retirement Income: 2025"
 
 import { DEFAULT_ENDOWMENT_ROLLING_YEARS } from "../constants";
@@ -77,10 +72,9 @@ type WithdrawalStrategyConfig = {
   description: string;
   /** Morningstar paper citation. */
   morningstarRef: string | null;
-  /** How spending is determined:
-   *  - "budget": retirement budget is the primary input (rate is informational)
-   *  - "rate": withdrawal rate × portfolio drives spending (budget is starting point)
-   *  - "formula": spending computed from portfolio via IRS/endowment formula (budget and rate not used) */
+  /** How spending is set: "budget" (the retirement budget; rate informational), "rate"
+   *  (withdrawal rate × portfolio; budget is the start), or "formula" (IRS/endowment formula
+   *  on the portfolio; budget and rate unused). */
   incomeSource: IncomeSource;
   /** Params the engine reads that no field edits, keyed by param name. */
   fixedParams?: Readonly<Record<string, number>>;
@@ -90,17 +84,9 @@ type WithdrawalStrategyConfig = {
   usesWithdrawalRate: boolean;
   /** Whether the strategy uses the Post-Retirement Raise to grow expenses. */
   usesPostRetirementRaise: boolean;
-  /** Whether this strategy's own reactive mechanism (guardrail triggers,
-   *  loss-year detection) requires real year-to-year return VOLATILITY to
-   *  ever activate — as opposed to reacting to something that moves
-   *  smoothly on its own (current balance level, age-based IRS factor, a
-   *  fixed decline schedule). The deterministic single-path projection
-   *  uses one smooth average return with no volatility, so a strategy with
-   *  this true will show a flat, uneventful deterministic Yearly Income
-   *  Stability chart even though its Monte Carlo confidence band carries
-   *  real signal — a real household found this confusing. Used to
-   *  suppress the deterministic bars on that chart specifically for these
-   *  strategies (see spending-stability-chart.tsx). */
+  /** Whether the strategy reacts only to return VOLATILITY (guardrails, loss years), which the
+   *  smooth deterministic projection never has; hides the deterministic bars on the Yearly
+   *  Income Stability chart (spending-stability-chart.tsx). */
   reactsToVolatility: boolean;
   /** Which SpendingCrossYearState fields this strategy reads/writes. */
   crossYearStateKeys: readonly string[];
@@ -138,7 +124,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         "In good markets, you leave money on the table (large unspent legacy)",
       ],
       bestFor:
-        "Retirees who prioritize income certainty and have a conservative withdrawal rate.",
+        "Retirees who prioritize income certainty and set a Retirement budget that is a conservative share of the balance.",
       stabilityNote:
         "Stability ≈ success rate. If the portfolio survives, spending is always maintained.",
     },
@@ -216,15 +202,15 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: [],
     guide: {
-      how: "Each year after RMD age (72–75), withdraw your portfolio balance divided by the IRS life expectancy factor, times an optional multiplier. Before RMD age, spending tracks your retirement budget with inflation.",
+      how: "Each year from the RMD age (73, or 75 if born 1960 or later), withdraw your portfolio balance divided by the IRS life expectancy factor, times an optional multiplier. Before RMD age, spending tracks your retirement budget with inflation.",
       strengths: [
-        "Mathematically self-correcting — can never fully deplete the portfolio",
+        "Self-correcting from RMD age: a multiplier of 1 or less takes only a share of what's left each year; above 1 it can run the portfolio out, and so can the budget-funded years before RMD age",
         "Spending naturally increases as time horizon shortens (higher % in later years)",
         "Backed by actuarial tables designed for lifetime distribution",
       ],
       weaknesses: [
         "Spending is volatile year-to-year (directly tied to portfolio balance)",
-        "Early retirement gap — no RMD guidance before age 72, falls back to fixed spending",
+        "Early retirement gap — no RMD guidance before the RMD age, falls back to fixed spending",
         "Rising withdrawal percentages in very old age (10%+ at 95) may exceed needs",
       ],
       bestFor:
@@ -306,7 +292,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         type: "boolean",
         default: true,
         tooltip:
-          "Skip inflation adjustment in years following a portfolio loss (prosperity rule).",
+          "Skip inflation adjustment in years following a portfolio loss (Guyton and Klinger's withdrawal rule).",
       },
     ],
     crossYearStateKeys: [
@@ -316,7 +302,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "priorYearSsIncome",
     ],
     guide: {
-      how: "Start with your budget, adjusted for inflation each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years. The withdrawal rate is what the portfolio pays — spending less Social Security — over its balance, and the 10% moves are 10% of that draw; Social Security starting moves the starting rate with it, so it's never read as a market gain.",
+      how: "Start with your Retirement budget, raised by your Post-Retirement Raise each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years. The withdrawal rate is what the portfolio pays — spending less Social Security — over its balance, and the 10% moves are 10% of that draw; Social Security starting moves the starting rate with it, so it's never read as a market gain.",
       strengths: [
         "Strong portfolio protection — 100% success rate in most scenarios",
         "Responds to both good and bad markets with clear, rule-based adjustments",
@@ -325,7 +311,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       weaknesses: [
         "Spending cuts can compound — multiple 10% cuts stack multiplicatively",
         "Very conservative on the upside — massive portfolio growth may produce only modest spending increases",
-        "The prosperity rule (skip inflation after loss) adds to real spending erosion",
+        "The withdrawal rule (skip inflation after loss) adds to real spending erosion",
         "Can leave very large unspent legacies while restricting current spending",
       ],
       bestFor:
@@ -339,7 +325,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     label: "Spending Decline",
     shortLabel: "Decline",
     description:
-      "Annual real spending decline reflecting reduced consumption in later retirement (per EBRI data)",
+      "Annual real spending decline reflecting reduced consumption in later retirement (Morningstar's 2%, from EBRI data)",
     morningstarRef: "Method 4",
     incomeSource: "budget",
     usesWithdrawalRate: true,
@@ -356,13 +342,13 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.02,
         tooltip:
-          "Annual real spending decline rate. 2% matches EBRI actual spending data.",
+          "Annual real spending decline rate. 2% is Morningstar's steady-rate reading of EBRI spending data.",
         lever: { delta: 0.5, unit: "relative", targets: ["survival"] },
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount", "decumulationYearCount"],
     guide: {
-      how: "Based on EBRI research showing retirees' real spending declines ~2% annually. Spending grows with CPI (maintaining nominal value) but the 2% real decline means purchasing power intentionally reduces each year.",
+      how: "Based on Morningstar's 2% a year, its steady-rate reading of EBRI spending data. Spending grows with CPI (maintaining nominal value) but the 2% real decline means purchasing power intentionally reduces each year.",
       strengths: [
         "Matches actual retiree behavior — most people spend less as they age",
         "Higher initial withdrawal rate than Fixed Real (~5.0% vs ~3.9%)",
@@ -433,10 +419,10 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["initialWithdrawalAmount"],
     guide: {
-      how: "Each year, withdraw 5% of whatever your portfolio is worth. A nominal floor at 90% of your initial withdrawal prevents the most severe cuts. Because you only take a percentage, the portfolio can never reach zero.",
+      how: "Each year, withdraw 5% of whatever your portfolio is worth. A nominal floor at 90% of your initial withdrawal prevents the most severe cuts. Taking a percentage of what's left keeps the portfolio from running out, unless the floor holds withdrawals up after deep losses.",
       strengths: [
         "Self-correcting — spending automatically adjusts to portfolio performance",
-        "Can never fully deplete the portfolio (mathematically impossible without the floor binding)",
+        "Rarely runs out: only the floor can draw the portfolio down to zero",
         "Simple to understand and implement",
       ],
       weaknesses: [
@@ -521,7 +507,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       how: "Withdraw 5% of the 10-year rolling average portfolio balance. This smooths out year-to-year market swings. A nominal floor at 90% of initial withdrawal prevents severe cuts.",
       strengths: [
         "Smoother income than Constant Percentage — volatility is dampened by the rolling average",
-        "Based on how university endowments (Yale, Stanford) manage spending",
+        "Averages the balance over time, as university endowments often do (Morningstar's Method 6)",
         "Self-correcting like Constant Percentage",
       ],
       weaknesses: [
@@ -585,7 +571,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.025,
         tooltip:
-          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.4% in real terms).",
+          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.3% in real terms).",
         lever: { delta: -0.4, unit: "relative", targets: ["smoothness"] },
       },
       {
@@ -601,7 +587,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["priorYearSpending"],
     guide: {
-      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.4% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
+      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.3% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
       strengths: [
         "Excellent downside protection — spending can only fall 2.5% per year in nominal dollars, not 30%+",
         "Asymmetric guardrails favor stability (tighter floor than ceiling)",
@@ -682,7 +668,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     guide: {
       how: "Each year, withdraw a percentage of the portfolio that depends on your age (the younger spouse's, for a couple) and how much is in stocks — the payment that would spend the balance by age 100 at 5% real for stocks and 1.9% for bonds. At 65 with 60% stocks it's 5.0%; it rises every year, and stops growing at 10%. Social Security comes on top.",
       strengths: [
-        "Spends the portfolio on purpose — no large unspent balance at the end",
+        "Spends the portfolio down on purpose; with the 10% limit on, some balance remains at the end",
         "Self-correcting: the withdrawal follows the balance, so it can't run out before the end age",
         "Simple yearly rule with a published table to check against",
       ],

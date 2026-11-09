@@ -4,6 +4,7 @@ import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
 import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
 import type { InlineRowProps } from "./account-row-types";
+import { LabelOptions } from "@/components/ui/label-options";
 
 export function InlineEnabledCell({
   isDisabled,
@@ -149,20 +150,14 @@ export function InlineMethodCell({
             // required-and-present, safe to patch alone.
             patchAccount(ad.id, { contributionMethod: val });
           } else {
-            // No value yet — contributionMethod can't be set
-            // alone (required together). Track the pick
-            // locally; the Value field's commit below picks
-            // it up when a real value is finally entered.
+            // No value yet, and contributionMethod can't be set alone: track
+            // the pick locally; the Value field's commit picks it up.
             setDraft(`a${ad.id}:method`, val);
           }
         }}
         className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
       >
-        {Object.entries(CONTRIBUTION_METHOD_LABELS).map(([k, label]) => (
-          <option key={k} value={k}>
-            {label}
-          </option>
-        ))}
+        <LabelOptions labels={CONTRIBUTION_METHOD_LABELS} />
       </select>
     </td>
   );

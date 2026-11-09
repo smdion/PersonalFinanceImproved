@@ -1,12 +1,7 @@
 /**
- * Weekly SEC fund-facts refresh: for every fund the household holds,
- * resolve its SEC identity, then store its latest expense ratio (shareholder
- * report) and composition (N-PORT, looking through funds it holds).
- * Generic over any registered fund — nothing here names a fund or ticker.
- *
- * Funds SEC doesn't list get a suggested stand-in (stored unconfirmed);
- * facts are fetched for a stand-in only once the household confirms it.
- * A 403/429 from SEC stops the run; the last stored facts stay.
+ * Weekly SEC fund-facts refresh: expense ratio and composition for every held
+ * fund. Unlisted funds get an unconfirmed stand-in, fetched only once confirmed.
+ * A 403/429 stops the run and the last stored facts stay.
  */
 import "server-only";
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
@@ -38,6 +33,7 @@ import {
 import type { EdgarFiling } from "./schemas";
 import { userMessageFor } from "@/lib/budget-api/errors";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 const CHECK_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_LOOK_THROUGH_DEPTH = 2;
@@ -132,10 +128,8 @@ class Composer {
       if (underlying && underlying !== seriesId) {
         resolutions.push(await this.lookThrough(underlying, h.lei, depth + 1));
       } else if (isFundHolding(h)) {
-        // Itself a fund (SEC tags it so) that we can't look through — a
-        // private master portfolio, an unmatched name, or past the depth
-        // limit. Its own asset-category tags say only "equity, US", so
-        // leave it unknown rather than guess.
+        // A fund we can't look through (private master, unmatched, too deep);
+        // its own tags say only "equity, US", so leave it unknown.
         resolutions.push({ kind: "unresolved_fund" });
       } else {
         resolutions.push({ kind: "security" });
@@ -210,16 +204,16 @@ export async function getSecFactsStatus(db: Db): Promise<{
 }
 
 /** Whether the weekly refresh is due (persisted, so it survives restarts). */
-export async function secFactsRefreshDue(db: Db, now = new Date()) {
+export async function secFactsRefreshDue(db: Db, now: Date) {
   const { lastRun } = await getSecFactsStatus(db);
   return !lastRun || now.getTime() - Date.parse(lastRun) >= CHECK_EVERY_MS;
 }
 
 export async function syncSecurityFacts(
   db: Db,
-  options: { force?: boolean; now?: Date; securityIds?: number[] } = {},
+  options: { force?: boolean; now: Date; securityIds?: number[] },
 ): Promise<SecFactsSummary> {
-  const now = options.now ?? new Date();
+  const { now } = options;
   const summary: SecFactsSummary = {
     checked: 0,
     updated: 0,
@@ -229,7 +223,6 @@ export async function syncSecurityFacts(
   };
   const contact = await getSecContact(db);
   if (!contact) return summary;
-
   const s = schema.securities;
   const due = await db
     .select()
@@ -474,10 +467,8 @@ async function refreshOne(
         const ratios = await fetchExpenseRatios(contact, report);
         let classId: string | null = sec.factsClassId;
         if (sec.factsBasis === "standin") {
-          // A plan's own version of a strategy usually costs less than the
-          // retail fund standing in for it: use the stand-in's cheapest
-          // share class in the report (the household can still enter the
-          // real fee, which wins).
+          // A plan's version usually costs less than its retail stand-in: use the
+          // stand-in's cheapest share class (an entered real fee still wins).
           const classes = index.series.get(sec.factsSeriesId!)?.classIds ?? [];
           classId =
             classes
@@ -580,6 +571,6 @@ async function upsertFact(
     .values(values)
     .onConflictDoUpdate({
       target: [f.securityId, f.source, f.asOf],
-      set: { ...values, fetchedAt: new Date() },
+      set: { ...values, fetchedAt: writeStamp() },
     });
 }

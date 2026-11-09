@@ -1,15 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { classifyContribResolution } from "@/lib/pure/contributions/profile-fields";
+import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
 
 // ---------------------------------------------------------------------------
-// classifyContribResolution
+// classifyContributionResolution
 // ---------------------------------------------------------------------------
 
-describe("classifyContribResolution", () => {
+describe("classifyContributionResolution", () => {
   const rawIds = new Set([1, 2, 3]);
 
   it("returns account_unavailable when the account isn't in the global active fetch", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       99,
       rawIds,
       {},
@@ -20,7 +20,7 @@ describe("classifyContribResolution", () => {
   });
 
   it("returns not_in_profile when the profile has no contributionValue entry", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       1,
       rawIds,
       {},
@@ -31,7 +31,7 @@ describe("classifyContribResolution", () => {
   });
 
   it("returns inactive_in_profile when the profile's entry sets isActive: false", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       1,
       rawIds,
       { "1": { contributionValue: "100", isActive: false } },
@@ -42,7 +42,7 @@ describe("classifyContribResolution", () => {
   });
 
   it("returns inactive_in_sandbox when the profile resolves but the account didn't survive the sandbox overlay", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       1,
       rawIds,
       { "1": { contributionValue: "100" } },
@@ -53,7 +53,7 @@ describe("classifyContribResolution", () => {
   });
 
   it("returns no_pay_period when the account resolved but has no resolvable pay period", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       1,
       rawIds,
       { "1": { contributionValue: "100" } },
@@ -64,7 +64,7 @@ describe("classifyContribResolution", () => {
   });
 
   it("returns ok when the account fully resolves", () => {
-    const status = classifyContribResolution(
+    const status = classifyContributionResolution(
       1,
       rawIds,
       { "1": { contributionValue: "100" } },

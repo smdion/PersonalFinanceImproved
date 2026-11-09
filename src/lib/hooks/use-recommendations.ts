@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The household's recommendations, ranked — gathered from what the
- * Milestones engine already judged, less any dismissed or snoozed. The
- * Recommendations page and the dashboard Checkup both read this, so their
- * counts agree.
+ * The household's ranked recommendations, less dismissed or snoozed ones. The
+ * Recommendations page and the dashboard Checkup both read this so counts agree.
  */
 import {
   useContributionSummaryInput,

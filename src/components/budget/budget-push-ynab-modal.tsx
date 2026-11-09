@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Thin wrapper around PushPreviewModal for the budget page's "Push to YNAB"
- * flow.
- *
- * The parent owns the pushPreviewItems state + the tRPC syncToApi mutation;
- * this component is a presentational binding that wires the modal's
- * onConfirm/onCancel to the parent's close callback.
+ * PushPreviewModal binding for "Push to YNAB"; the parent owns the items and
+ * the syncToApi mutation.
  */
 
 import { budgetApiServiceLabel } from "@/lib/utils/format";

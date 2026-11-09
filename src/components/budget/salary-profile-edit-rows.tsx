@@ -18,7 +18,7 @@ export type SalaryEditRowsProps = {
   isSaving: boolean;
   rawSd: Detail;
   removeEntry: (jobId: number | null) => void;
-  rowIdx: number;
+  rowIndex: number;
   sd: Detail;
   setDraft: (key: string, value: string) => void;
   setJobOverride: React.Dispatch<React.SetStateAction<Record<number, number>>>;
@@ -34,7 +34,7 @@ export function SalaryEditRows({
   isSaving,
   rawSd,
   removeEntry,
-  rowIdx,
+  rowIndex,
   sd,
   setDraft,
   setJobOverride,
@@ -44,7 +44,7 @@ export function SalaryEditRows({
     <>
       <tr
         aria-busy={isSaving}
-        className={`${rowClass(rowIdx)} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
+        className={`${rowClass(rowIndex)} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
       >
         <td className="text-secondary py-1.5 pr-3 pl-4 font-medium">
           {sd.personName}
@@ -118,7 +118,7 @@ export function SalaryEditRows({
         )}
       </tr>
       {sd.hasEntry && (
-        <tr className={rowClass(rowIdx)}>
+        <tr className={rowClass(rowIndex)}>
           <td
             colSpan={TABLE_COLUMNS}
             className="bg-surface-sunken/60 px-4 py-3"

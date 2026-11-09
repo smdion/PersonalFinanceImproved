@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Non-payroll contribution-account-linking section of the integrations
- * preview panel. Lets the user tie a Ledgr budget item (e.g. "401k
- * contribution") to a contribution account so the push-sync flow knows
- * which account the monthly amount should land in.
- *
- * Section is only rendered when there is at least one contribution
- * account and at least one linked or unlinked item to show.
+ * Integrations preview section linking a Ledgr budget item to a non-payroll contribution account,
+ * so push-sync knows where the monthly amount lands. Renders only when there is something to show.
  */
 import type { PreviewData } from "../integrations-types";
 import { useIntegrationContributionAccountMutations } from "./use-integration-contribution-account-mutations";
@@ -17,36 +12,39 @@ import {
   SectionSummaryRow,
 } from "./section-summary-badge";
 
-type ContribAccount = {
+type ContributionAccount = {
   id: number;
   displayLabel: string;
 };
 
 type Props = {
   budget: NonNullable<PreviewData["budget"]>;
-  contribAccounts: ContribAccount[];
+  contributionAccounts: ContributionAccount[];
 };
 
-export function ContribSection({ budget, contribAccounts }: Props) {
-  const { linkContrib: linkContribMut, unlinkContrib: unlinkContribMut } =
-    useIntegrationContributionAccountMutations();
+export function ContributionSection({ budget, contributionAccounts }: Props) {
+  const {
+    linkContrib: linkContributionMut,
+    unlinkContrib: unlinkContributionMut,
+  } = useIntegrationContributionAccountMutations();
 
-  if (contribAccounts.length === 0) return null;
+  if (contributionAccounts.length === 0) return null;
 
   const linkedItems = budget.matches.filter(
     (m) => m.contributionAccountId != null,
   );
-  const usedContribIds = new Set(
+  const usedContributionIds = new Set(
     linkedItems.map((m) => m.contributionAccountId),
   );
-  const unlinkedContribs = contribAccounts.filter(
-    (ca) => !usedContribIds.has(ca.id),
+  const unlinkedContributions = contributionAccounts.filter(
+    (ca) => !usedContributionIds.has(ca.id),
   );
   const unlinkedBudgetItems = budget.matches.filter(
     (m) => m.contributionAccountId == null,
   );
 
-  if (linkedItems.length === 0 && unlinkedContribs.length === 0) return null;
+  if (linkedItems.length === 0 && unlinkedContributions.length === 0)
+    return null;
 
   return (
     <details className="border-subtle rounded-lg border">
@@ -61,9 +59,9 @@ export function ContribSection({ budget, contribAccounts }: Props) {
             tone="green"
           />
           <SectionSummaryBadge
-            value={unlinkedContribs.length}
+            value={unlinkedContributions.length}
             label="unlinked"
-            tone={unlinkedContribs.length > 0 ? "amber" : "faint"}
+            tone={unlinkedContributions.length > 0 ? "amber" : "faint"}
           />
         </SectionSummaryRow>
       </summary>
@@ -72,7 +70,7 @@ export function ContribSection({ budget, contribAccounts }: Props) {
         {linkedItems.length > 0 && (
           <div className="space-y-0.5">
             {linkedItems.map((m) => {
-              const ca = contribAccounts.find(
+              const ca = contributionAccounts.find(
                 (c) => c.id === m.contributionAccountId,
               );
               return (
@@ -105,11 +103,11 @@ export function ContribSection({ budget, contribAccounts }: Props) {
                   </span>
                   <button
                     onClick={() =>
-                      unlinkContribMut.mutate({
+                      unlinkContributionMut.mutate({
                         budgetItemId: m.budgetItemId,
                       })
                     }
-                    disabled={unlinkContribMut.isPending}
+                    disabled={unlinkContributionMut.isPending}
                     className="text-caption whitespace-nowrap text-red-400 hover:text-red-600"
                     title="Unlink contribution account"
                   >
@@ -122,13 +120,13 @@ export function ContribSection({ budget, contribAccounts }: Props) {
         )}
 
         {/* Unlinked contribution accounts — pick a budget item to link */}
-        {unlinkedContribs.length > 0 && (
+        {unlinkedContributions.length > 0 && (
           <div className="border-subtle space-y-0.5 border-t pt-2">
             <p className="text-caption text-faint mb-1">
-              {unlinkedContribs.length} unlinked contribution{" "}
-              {unlinkedContribs.length === 1 ? "account" : "accounts"}
+              {unlinkedContributions.length} unlinked contribution{" "}
+              {unlinkedContributions.length === 1 ? "account" : "accounts"}
             </p>
-            {unlinkedContribs.map((ca) => (
+            {unlinkedContributions.map((ca) => (
               <div
                 key={ca.id}
                 className="flex min-h-[24px] items-center gap-1.5 text-xs"
@@ -148,7 +146,7 @@ export function ContribSection({ budget, contribAccounts }: Props) {
                   value=""
                   onChange={(e) => {
                     if (e.target.value) {
-                      linkContribMut.mutate({
+                      linkContributionMut.mutate({
                         budgetItemId: Number(e.target.value),
                         contributionAccountId: ca.id,
                       });

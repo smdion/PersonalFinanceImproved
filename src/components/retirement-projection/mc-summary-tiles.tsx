@@ -10,7 +10,7 @@ import {
   formatRelativeTime,
 } from "@/lib/utils/format";
 
-export type McRateTilesProps = {
+export type SimulationRateTilesProps = {
   si: NonNullable<
     Extract<
       NonNullable<ProjectionState["mcQuery"]["data"]>,
@@ -21,7 +21,11 @@ export type McRateTilesProps = {
   gkImpliedRate: number | null;
 };
 
-export function McRateTiles({ si, mixLines, gkImpliedRate }: McRateTilesProps) {
+export function SimulationRateTiles({
+  si,
+  mixLines,
+  gkImpliedRate,
+}: SimulationRateTilesProps) {
   return (
     <>
       <div className="text-center">
@@ -75,25 +79,9 @@ export function McRateTiles({ si, mixLines, gkImpliedRate }: McRateTilesProps) {
             />
           )}
         </div>
-        {/* For every other strategy this is still
-          the flat "Initial Withdrawal Rate" household
-          setting, an input echo like the return/volatility/
-          inflation figures beside it — not what any
-          strategy's spending math actually reads. For
-          Guyton-Klinger specifically, it's replaced with the
-          rate GK actually captured and will defend — a real
-          number, not a reference figure — since a user
-          could otherwise read "ref. rate" here and
-          reasonably ask why GK's spending seems to track it
-          anyway. The non-GK tooltip used to also name-drop
-          GK ("...which is what you'd see here if it were
-          active") as a preemptive explanation for THAT
-          comparison — but it showed unconditionally for
-          every other strategy too, so someone who's never
-          touched GK got a confusing, unprompted mention of
-          a strategy they're not using. Dropped; the "shown here only as a
-          reference figure" framing already covers why the
-          number exists without needing the GK aside. */}
+        {/* Non-GK strategies: the flat "Initial Withdrawal Rate" setting, an
+          input echo no spending math reads. Guyton-Klinger: the rate GK
+          captured and defends, a real number. */}
         <div className="text-micro text-faint">
           {gkImpliedRate != null ? "GK anchor rate" : "ref. rate"}
         </div>
@@ -105,7 +93,7 @@ export function McRateTiles({ si, mixLines, gkImpliedRate }: McRateTilesProps) {
   );
 }
 
-export type McRunTilesProps = {
+export type SimulationRunTilesProps = {
   firstDecumYear: EngineDecumulationYear | null;
   deflate: ProjectionState["deflate"];
   si: NonNullable<
@@ -118,13 +106,13 @@ export type McRunTilesProps = {
   mcr: NonNullable<NonNullable<ProjectionState["mcQuery"]["data"]>["result"]>;
 };
 
-export function McRunTiles({
+export function SimulationRunTiles({
   firstDecumYear,
   deflate,
   si,
   dollarMode,
   mcr,
-}: McRunTilesProps) {
+}: SimulationRunTilesProps) {
   return (
     <>
       {firstDecumYear && (
@@ -171,7 +159,7 @@ export function McRunTiles({
   );
 }
 
-export type McRunControlsProps = {
+export type SimulationRunControlsProps = {
   si: NonNullable<
     Extract<
       NonNullable<ProjectionState["mcQuery"]["data"]>,
@@ -186,7 +174,7 @@ export type McRunControlsProps = {
   ps: { border: string; pill: string; accent: string };
 };
 
-export function McRunControls({
+export function SimulationRunControls({
   si,
   handleRerun,
   isRerunning,
@@ -194,15 +182,11 @@ export function McRunControls({
   clearProjectionCacheMutation,
   setShowAssumptions,
   ps,
-}: McRunControlsProps) {
+}: SimulationRunControlsProps) {
   return (
     <>
-      {/* Explicit full-width fallback below the ~1024px point
-        where this bar (sidebar + card padding, not raw
-        viewport width) actually runs out of room — without
-        it, this cluster squeezes between the stat blocks
-        instead of dropping to its own clean row (live-user
-        finding, 2026-08-29). */}
+      {/* Full-width fallback below ~1024px, where this bar runs out of room;
+        otherwise the cluster squeezes between the stat blocks. */}
       <div className="ml-auto flex basis-full items-center justify-end gap-3 lg:basis-auto">
         {si.computedAt && (
           <div className="text-center">

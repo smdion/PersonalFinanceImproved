@@ -79,13 +79,8 @@ export const budgetItems = pgTable(
   ],
 );
 
-// One row per (budget item, service) — replaces the old single-slot
-// apiCategoryId/apiCategoryName/apiLastSyncedAt/apiSyncDirection columns on
-// budgetItems, which could only hold ONE service's link at a time and
-// silently clobbered it when a household linked the same item to a second
-// service (YNAB + Actual both connected). Those columns stay on budgetItems,
-// dead-but-present for now; cleanup deferred to a future schema
-// squash (see retirement_settings.person_id's precedent).
+// One row per (budget item, service), so an item can link to several services at once.
+// budgetItems' single-slot api* columns are unused, kept until a schema squash.
 export const budgetItemCategoryLinks = pgTable(
   "budget_item_category_links",
   {

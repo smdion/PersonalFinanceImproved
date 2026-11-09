@@ -25,9 +25,9 @@ export function BrokerageContent() {
     projectionQuery,
     data,
     isLoading,
-    contribData,
+    contributionData,
     brokerageData,
-    contribProfiles,
+    contributionProfiles,
     upsertSetting,
     isGoalsOpen,
     setIsGoalsOpen,
@@ -72,18 +72,18 @@ export function BrokerageContent() {
     apiBalances,
     budgetLinks,
     deflate,
-    totalDirectContrib,
+    totalDirectContribution,
     totalOverflow,
     brokerageRamp,
     activeProfileName,
     hasContextOverrides,
   } = brokerageFigures(
     data,
-    contribData,
+    contributionData,
     brokerageData,
     dollarMode,
     activeProfileId,
-    contribProfiles,
+    contributionProfiles,
   );
 
   return (
@@ -103,7 +103,7 @@ export function BrokerageContent() {
         hasContextOverrides={hasContextOverrides}
         portfolioAccounts={portfolioAccounts}
         portfolioBrokerageAccounts={portfolioBrokerageAccounts}
-        totalDirectContrib={totalDirectContrib}
+        totalDirectContribution={totalDirectContribution}
         totalOverflow={totalOverflow}
         updateCostBasis={updateCostBasis}
         upsertSetting={upsertSetting}

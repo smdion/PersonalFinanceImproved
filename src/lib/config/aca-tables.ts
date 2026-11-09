@@ -1,31 +1,13 @@
-// ACA (Affordable Care Act) subsidy cliff tables.
-// The poverty levels are yearly data (tax-data/us-federal/ →
-// `fpl_by_household`; coverage year N uses the guidelines HHS published in
-// N−1, 26 CFR §1.36B-1(h)), passed in by the caller.
-//
-// IMPORTANT CAVEAT: The subsidy estimation in this file uses NATIONAL AVERAGE benchmark
-// premiums. Actual ACA premiums and subsidy amounts vary dramatically by state, county,
-// age band, tobacco status, and plan metal level. These estimates are useful for
-// directional planning (especially the cliff at 400% FPL) but should NOT be treated as
-// precise figures. Users should verify their actual subsidy at HealthCare.gov (or their
-// state marketplace) using their specific location, ages, and household composition.
-//
-// Key: Going $1 over 400% FPL costs $15,000-$25,000+ in lost subsidies.
-// Roth and HSA withdrawals do NOT count toward MAGI.
+// ACA (Affordable Care Act) subsidy cliff at 400% FPL. Poverty levels are yearly data passed in
+// by the caller (`fpl_by_household`; coverage year N uses the HHS guidelines published in N−1,
+// 26 CFR §1.36B-1(h)). Roth and HSA withdrawals do NOT count toward MAGI.
 
 /** The largest household the Healthcare settings offer (and the
  *  retirement-settings input accepts). */
 export const HOUSEHOLD_SIZE_MAX = 12;
 
-/**
- * The poverty level for a household size. HHS publishes sizes 1–8 and,
- * for a larger household, a fixed amount for each person over 8 — the
- * same step as from 7 to 8, so it's taken from the data, not stored.
- *
- * @param fplByHousehold The poverty levels by household size
- *   (`fpl_by_household`, resolved; sizes 1–8 always present —
- *   fplByHouseholdAmountsSchema).
- */
+/** The poverty level for a household size. `fplByHousehold` holds sizes 1–8; each person
+ *  over 8 adds HHS's fixed step, the same as from 7 to 8, so it's taken from the data. */
 function povertyLevel(
   householdSize: number,
   fplByHousehold: Record<number, number>,
@@ -55,12 +37,3 @@ export function getAcaSubsidyCliff(
 ): number {
   return povertyLevel(householdSize, fplByHousehold) * 4;
 }
-
-// `estimateAcaSubsidyValue` was removed. It had no production
-// caller (the audit and a prior advisor pass both confirmed it dead), and
-// it carried the last of the inline ACA rate ladders — the applicable-
-// percentage sliding scale (2/4/6/7.5/8.5 %) and the age-band benchmark
-// premiums (7200/9600/12000/15600) — as bare `if/else` literals with no
-// year anchor. If ACA subsidy *value* estimation is ever
-// wanted, rebuild it as a year-keyed table wired through resolveTaxParams,
-// not as inline constants.

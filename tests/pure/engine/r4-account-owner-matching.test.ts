@@ -5,7 +5,7 @@
  * `ia.name === spec.accountName` ALONE. Two household members with an
  * identically-named account (a common real pattern — "Long Term Brokerage"
  * is a natural name both spouses might independently choose) would silently
- * collide: whichever account happened to come first in `indAccts` absorbed
+ * collide: whichever account happened to come first in `indAccounts` absorbed
  * BOTH people's continuing contributions.
  *
  * Fixed by reusing `state.specToAccount` — the same owner-aware

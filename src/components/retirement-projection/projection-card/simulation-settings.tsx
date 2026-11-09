@@ -5,20 +5,22 @@ import type { ProjectionState } from "../projection-table-types";
 
 export function SimulationSettings({ state }: { state: ProjectionState }) {
   const {
-    mcPreset,
-    setMcPreset,
-    mcTrials,
-    setMcTrials,
-    mcTaxMode,
-    setMcTaxMode,
+    simulationPreset,
+    setSimulationPreset,
+    simulationTrials,
+    setSimulationTrials,
+    simulationTaxMode,
+    setSimulationTaxMode,
     setShowMethodology,
   } = state;
   return (
     <>
       <LabeledSelect
         label="Preset"
-        value={mcPreset}
-        onChange={(e) => setMcPreset(e.target.value as typeof mcPreset)}
+        value={simulationPreset}
+        onChange={(e) =>
+          setSimulationPreset(e.target.value as typeof simulationPreset)
+        }
         title="Simulation preset"
         helpTip={
           <HelpTip
@@ -63,8 +65,8 @@ export function SimulationSettings({ state }: { state: ProjectionState }) {
       </span>
       <LabeledSelect
         label="Trials"
-        value={mcTrials}
-        onChange={(e) => setMcTrials(Number(e.target.value))}
+        value={simulationTrials}
+        onChange={(e) => setSimulationTrials(Number(e.target.value))}
         title="Number of simulation trials"
       >
         <option value={500}>500</option>
@@ -92,13 +94,13 @@ export function SimulationSettings({ state }: { state: ProjectionState }) {
         }
       >
         <PillBtn
-          active={mcTaxMode === "simple"}
-          onClick={() => setMcTaxMode("simple")}
+          active={simulationTaxMode === "simple"}
+          onClick={() => setSimulationTaxMode("simple")}
           label="Simple"
         />
         <PillBtn
-          active={mcTaxMode === "advanced"}
-          onClick={() => setMcTaxMode("advanced")}
+          active={simulationTaxMode === "advanced"}
+          onClick={() => setSimulationTaxMode("advanced")}
           label="Advanced"
         />
       </LabeledPillGroup>

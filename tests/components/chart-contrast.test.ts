@@ -1,7 +1,7 @@
 /**
  * Enforces DESIGN.md's WCAG 1.4.11 floor: every dark-mode data-carrying
  * chart-line color in `chartLinePalette` must clear 3:1 against the dark
- * card background (and, for mcMedian, against the mcBandMiddle@0.2 fill it
+ * card background (and, for simulationMedian, against the simulationBandMiddle@0.2 fill it
  * is drawn over). Without this the DESIGN.md rule is prose with no teeth.
  */
 import { describe, it, expect } from "vitest";
@@ -51,9 +51,15 @@ describe("chartLinePalette — WCAG 1.4.11 (>=3:1 in dark mode)", () => {
     },
   );
 
-  it("mcMedian clears 3:1 vs the mcBandMiddle@0.2 fill it's drawn over", () => {
-    const bandBackdrop = over(CHART_COLORS.mcBandMiddle, 0.2, DARK_CARD);
-    expect(contrast(dark.mcMedian, bandBackdrop)).toBeGreaterThanOrEqual(3);
+  it("simulationMedian clears 3:1 vs the simulationBandMiddle@0.2 fill it's drawn over", () => {
+    const bandBackdrop = over(
+      CHART_COLORS.simulationBandMiddle,
+      0.2,
+      DARK_CARD,
+    );
+    expect(
+      contrast(dark.simulationMedian, bandBackdrop),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it("light values are unchanged from the CHART_COLORS originals", () => {
@@ -61,6 +67,6 @@ describe("chartLinePalette — WCAG 1.4.11 (>=3:1 in dark mode)", () => {
     expect(light.netWorth).toBe(CHART_COLORS.netWorth);
     expect(light.perfBalance).toBe(CHART_COLORS.perfBalance);
     expect(light.withdrawalFlow).toBe(CHART_COLORS.withdrawalFlow);
-    expect(light.mcMedian).toBe(CHART_COLORS.mcMedian);
+    expect(light.simulationMedian).toBe(CHART_COLORS.simulationMedian);
   });
 });

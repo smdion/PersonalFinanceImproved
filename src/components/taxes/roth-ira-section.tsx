@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * Roth IRA MAGI and the direct-vs-backdoor verdict, in full — the Taxes
- * page. Judged by buildRothIraView (lib/pure/contributions/roth-ira.ts) via useRothIra;
- * this only renders. Without the portfolio permission (no investment
- * income or IRA balances) it shows the wage AGI instead. The dashboard
- * shows only RothIraLine.
+ * Taxes page: Roth IRA MAGI and the direct-vs-backdoor verdict from buildRothIraView (via
+ * useRothIra); this only renders. Without the portfolio permission it shows the wage AGI.
  */
 import { FocusLink } from "@/components/ui/focus-link";
 import { Card } from "@/components/ui/card";

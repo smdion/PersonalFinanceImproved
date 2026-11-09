@@ -44,8 +44,8 @@ export function useBrokeragePage() {
     const byYear = new Map<number, AccumOverride>();
     for (const ls of brokerageLumpSums) {
       const y = parseInt(ls.year);
-      const amt = parseFloat(ls.amount);
-      if (isNaN(y) || isNaN(amt) || amt === 0) continue;
+      const amount = parseFloat(ls.amount);
+      if (isNaN(y) || isNaN(amount) || amount === 0) continue;
       let ov = byYear.get(y);
       if (!ov) {
         ov = { year: y, lumpSums: [] };
@@ -53,7 +53,7 @@ export function useBrokeragePage() {
       }
       ov.lumpSums!.push({
         id: ls.id,
-        amount: Math.abs(amt),
+        amount: Math.abs(amount),
         targetAccount: ls.targetAccount,
         // Brokerage-page lump sums are Portfolio savings.
         targetParentCategory: "Portfolio" as const,
@@ -66,10 +66,8 @@ export function useBrokeragePage() {
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [brokerageLumpSums]);
 
-  // The household's saved Changes by year still apply: sending only the
-  // lump sums would replace them (an omitted list = the saved rows, a sent
-  // one = exactly that list). Merge by year — the saved row keeps its
-  // fields, and the year's lump sums are both lists'.
+  // Sending only the lump sums would replace the saved Changes by year, so
+  // merge by year: the saved row keeps its fields, lump sums come from both.
   const savedAccumQuery = trpc.retirement.projectionOverrides.get.useQuery({
     overrideType: "accumulation",
   });
@@ -85,7 +83,7 @@ export function useBrokeragePage() {
     }
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [accumOverridesFromLumpSums, savedAccumQuery.data]);
-  const contribInput = {
+  const contributionInput = {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
@@ -95,7 +93,7 @@ export function useBrokeragePage() {
     ...(mergedAccumOverrides
       ? { accumulationOverrides: mergedAccumOverrides }
       : {}),
-    selection: profileSelectionFrom(contribInput),
+    selection: profileSelectionFrom(contributionInput),
   };
 
   // With lump sums, wait for the saved rows they're merged into.
@@ -108,10 +106,11 @@ export function useBrokeragePage() {
   const { data } = projectionQuery;
   const isLoading =
     projectionQuery.isLoading || (!engineReady && !projectionQuery.data);
-  const { data: contribData } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
+  const { data: contributionData } =
+    trpc.contribution.computeSummary.useQuery(contributionInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => utils.invalidate(),
   });
@@ -130,9 +129,9 @@ export function useBrokeragePage() {
     projectionQuery,
     data,
     isLoading,
-    contribData,
+    contributionData,
     brokerageData,
-    contribProfiles,
+    contributionProfiles,
     upsertSetting,
     isGoalsOpen,
     setIsGoalsOpen,

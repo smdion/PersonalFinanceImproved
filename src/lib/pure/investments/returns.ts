@@ -1,18 +1,15 @@
-/**
- * Pure business logic extracted from the performance router's finalizeYear transaction.
- * These functions compute values without any DB or I/O dependency.
- */
+/** Investment returns, linked returns and the performance rollups. Pure. */
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
 
 /**
- * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
+ * Simple Dietz return: gainLoss / (beginBalance + netFlows/2).
  * contribs = totalContributions (employee + employer combined).
  * Returns null when denominator is zero (no capital at risk).
  */
 export function computeReturn(
-  beginBal: number,
+  beginBalance: number,
   contribs: number,
   gainLoss: number,
   distributions: number,
@@ -20,7 +17,7 @@ export function computeReturn(
   rollovers: number = 0,
 ): number | null {
   const denominator =
-    beginBal + (contribs + rollovers - distributions - fees) / 2;
+    beginBalance + (contribs + rollovers - distributions - fees) / 2;
   return safeDivide(gainLoss, denominator, null);
 }
 
@@ -34,15 +31,9 @@ export type ChainedReturn = {
 };
 
 /**
- * Chain-link a sequence of per-year returns (e.g. from computeReturn) into a
- * cumulative total return and an annualized (CAGR) return. Null per-year
- * returns (no capital at risk that year — computeReturn's zero-denominator
- * case) are excluded from the chain, not treated as 0%.
- *
- * Geometric-linking (∏(1+rᵢ)) is the standard way to combine period returns
- * regardless of the intra-period methodology — here that's Simple Dietz, so
- * the result compounds that same approximation rather than introducing a new
- * error class. Worth disclosing in the UI, not worth avoiding.
+ * Chain-links per-year returns (∏(1+rᵢ)) into a cumulative and annualized (CAGR)
+ * return. Null years (no capital at risk) are skipped, not 0%. Compounds Simple
+ * Dietz's approximation, adding no new error.
  */
 export function chainReturns(yearlyReturns: (number | null)[]): ChainedReturn {
   const usable = yearlyReturns.filter((r): r is number => r !== null);
@@ -75,7 +66,7 @@ export type AccountLike = {
 };
 
 /** Sum a set of account rows into a rollup. */
-export function sumAccounts(accts: AccountLike[]) {
+export function sumAccounts(accounts: AccountLike[]) {
   let beginBal = 0,
     contribs = 0,
     gainLoss = 0,
@@ -84,7 +75,7 @@ export function sumAccounts(accts: AccountLike[]) {
     distributions = 0,
     fees = 0,
     rollovers = 0;
-  for (const a of accts) {
+  for (const a of accounts) {
     beginBal += toNumber(a.beginningBalance);
     contribs += toNumber(a.totalContributions);
     gainLoss += toNumber(a.yearlyGainLoss);
@@ -112,11 +103,8 @@ export type AccountRowLike = AccountLike & {
 };
 
 /**
- * Filter+bucket account rows by a selected account-ID subset and inclusive
- * year range, then sum each year into a per-year aggregate via sumAccounts
- * + computeReturn. Years with zero matching accounts are omitted from the
- * result (no synthetic zero rows) — an account closed mid-range simply has
- * no row in later years, same as the router's own year-by-year data shape.
+ * Sums the selected accounts' rows per year in an inclusive range (sumAccounts +
+ * computeReturn). Years with no matching rows are omitted, not zero.
  */
 export function aggregateAccountsByYear(
   rows: AccountRowLike[],
@@ -177,7 +165,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees = 0,
     rollovers = 0,
     lifetimeGains = 0,
-    lifetimeContribs = 0,
+    lifetimeContributions = 0,
     lifetimeMatch = 0;
   for (const r of rows) {
     beginBal += r.beginningBalance;
@@ -189,7 +177,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees += r.fees;
     rollovers += r.rollovers;
     lifetimeGains += r.lifetimeGains;
-    lifetimeContribs += r.lifetimeContributions;
+    lifetimeContributions += r.lifetimeContributions;
     lifetimeMatch += r.lifetimeMatch;
   }
   return {
@@ -202,7 +190,7 @@ export function sumAnnualRows(rows: AnnualRowLike[]) {
     fees,
     rollovers,
     lifetimeGains,
-    lifetimeContribs,
+    lifetimeContributions,
     lifetimeMatch,
   };
 }
@@ -266,7 +254,7 @@ export function resolveCategoryValues(
 
   const sums = sumAccounts(catAccounts);
   const ltGains = prevLifetime.lifetimeGains + sums.gainLoss;
-  const ltContribs = prevLifetime.lifetimeContributions + sums.contribs;
+  const ltContributions = prevLifetime.lifetimeContributions + sums.contribs;
   const ltMatch = prevLifetime.lifetimeMatch + sums.employer;
   const returnPct = computeReturn(
     sums.beginBal,
@@ -288,7 +276,7 @@ export function resolveCategoryValues(
       fees: sums.fees,
       rollovers: sums.rollovers,
       lifetimeGains: ltGains,
-      lifetimeContributions: ltContribs,
+      lifetimeContributions: ltContributions,
       lifetimeMatch: ltMatch,
     },
     returnPct,
@@ -328,7 +316,7 @@ export function resolvePortfolioValues(
       fees: ps.fees,
       rollovers: ps.rollovers,
       lifetimeGains: ps.lifetimeGains,
-      lifetimeContributions: ps.lifetimeContribs,
+      lifetimeContributions: ps.lifetimeContributions,
       lifetimeMatch: ps.lifetimeMatch,
     },
     returnPct,
@@ -336,29 +324,9 @@ export function resolvePortfolioValues(
 }
 
 /**
- * Compute gain/loss from flow fields.
- * gainLoss = endingBalance - beginningBalance - contributions
- *            + distributions - rollovers + fees
- *
- * ROLLOVERS ARE ALWAYS SUBTRACTED, in BOTH directions. A rollover moves
- * principal between accounts — it is never investment return — so it must be
- * removed from G/L on whichever side records it. Sign handles the direction:
- *
- * - Outgoing (negative, e.g. ESPP → brokerage on the ESPP side): subtracting a
- *   negative adds it back, cancelling the outflow that shrank the ending balance.
- * - Incoming (positive, e.g. a destination account receiving ESPP proceeds): the
- *   destination's ending balance ALREADY INCLUDES the wired-in money, so
- *   subtracting it strips out the transferred principal and leaves only true
- *   return. Worked example: a destination account receives a +6,187.62 rollover
- *   from a tracked ESPP source; begin 1,264.76 + rollover 6,187.62 + 366.29 gain
- *   = ending 7,818.67. Without the subtraction the 6,187.62 of transferred
- *   principal would be mis-reported as a gain.
- *
- * GOTCHA: a rollover from another tracked account belongs in `rollovers` ONLY —
- * never also in `totalContributions`. Recording it in both double-counts the
- * principal and produces a phantom loss. (An earlier "fix" stopped subtracting
- * incoming rollovers to mask exactly that mis-entry; the real fix is to enter
- * the transfer once, as a rollover. See tests/pure/investments/returns.test.ts.)
+ * gainLoss = ending − beginning − contributions + distributions − rollovers + fees.
+ * Rollovers are principal, subtracted on both sides (the sign gives direction); a
+ * tracked-account transfer goes in `rollovers` only, never also contributions.
  */
 export function computeGainLoss(input: {
   endingBalance: number;
@@ -438,14 +406,9 @@ export function rollupDeltas(
 }
 
 /**
- * A finalized year's return after its figures move by `delta`.
- *
- * The stored return can't always be reproduced from the row (it may be an
- * override entered at finalize, a provider's figure, or imported history),
- * so its basis is kept: the capital it was measured against
- * (gain ÷ return) moves only by the capital the edit moved, weighted the way
- * `computeReturn` weighs it. With no stored return (or a zero one, which
- * says nothing about its basis) the return is computed from the new figures.
+ * A finalized year's return after its figures move by `delta`. The stored return
+ * may not be reproducible, so its capital (gain ÷ return) moves only by the edit's
+ * capital, weighted like `computeReturn`. No or zero stored return ⇒ recomputed.
  */
 export function rebaseLockedReturn(
   prev: {
@@ -492,10 +455,10 @@ type SeedableAccount = {
  * Only active accounts whose master record is also active qualify.
  */
 export function filterAccountsForNextYear<T extends SeedableAccount>(
-  finalizedAccts: T[],
+  finalizedAccounts: T[],
   activeMasterIds: Set<number>,
 ): T[] {
-  return finalizedAccts.filter((a) => {
+  return finalizedAccounts.filter((a) => {
     if (!a.isActive) return false;
     if (a.performanceAccountId && !activeMasterIds.has(a.performanceAccountId))
       return false;

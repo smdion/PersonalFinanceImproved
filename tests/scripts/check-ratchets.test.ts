@@ -17,6 +17,8 @@ import {
   listRises,
 } from "../../scripts/ratchets/code-limits";
 import {
+  AXE_FILE,
+  SUPPRESSION_FILES,
   registerRises,
   sizeRises,
   suppressionRises,
@@ -214,6 +216,33 @@ describe("suppressionRises", () => {
       "src/r/a.ts": { "max-lines": { count: 2 }, "no-x": { count: 1 } },
     };
     expect(suppressionRises("s.json", base, more, split)).toHaveLength(1);
+  });
+
+  it("holds the axe baseline, a rise named by its page and rule", () => {
+    expect(SUPPRESSION_FILES).toContain(AXE_FILE);
+    const page = { "e2e-b/budget": { "heading-order": { count: 1 } } };
+    expect(suppressionRises(AXE_FILE, page, page, alone)).toEqual([]);
+    const rises = suppressionRises(
+      AXE_FILE,
+      page,
+      { "e2e-b/budget": { "heading-order": { count: 2 } } },
+      alone,
+    );
+    expect(texts(rises)).toEqual([
+      "heading-order in e2e-b/budget: 2, 1 at the base",
+    ]);
+    const raise = (v: string) =>
+      excuse(
+        rises[0]!,
+        `test: x\n\nWhy.\n\nRatchet-raise: ${AXE_FILE} — ${v}\n`,
+      );
+    expect(raise("e2e-b/budget heading-order +1, why")).toMatchObject({
+      ok: true,
+    });
+    expect(raise("e2e-b/savings heading-order +1, why")).toMatchObject({
+      ok: false,
+    });
+    expect(raise("e2e-b/budget label +1, why")).toMatchObject({ ok: false });
   });
 });
 
@@ -654,6 +683,84 @@ describe("checkRatchets in a repository", () => {
     const report = checkRatchets(base, "HEAD", dir);
     expect(report.failures).toEqual([]);
     expect(report.excused).toHaveLength(1);
+  });
+  it("passes a proven rename's re-wrap rise and fails one check-commit doesn't prove (owner Q2)", () => {
+    const renamed = (label: string) =>
+      [
+        `const a0 = computeTheValue(\n  0,\n);`,
+        ...lines("a", 300).slice(1),
+        ...lines("b", 300),
+      ]
+        .join("\n")
+        .replaceAll("compute(", "computeTheValue(")
+        .replace("const b0", `const ${label}`);
+    const message = (body: string) =>
+      `refactor: compute is computeTheValue\n\n${body}\n\nMechanical: rename\nRename: compute → computeTheValue\nRatchet-raise: size-baseline.json — src/r.ts +2, the re-wrap of the longer name`;
+    git("checkout", "-q", "-B", "proven-rename", base);
+    write("src/r.ts", renamed("b0"));
+    write("size-baseline.json", size({ "src/r.ts": 602 }));
+    commit(message("A longer name."));
+    const report = checkRatchets(base, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toHaveLength(1);
+
+    git("checkout", "-q", "-B", "unproven-rename", base);
+    write("src/r.ts", renamed("bZero"));
+    write("size-baseline.json", size({ "src/r.ts": 602 }));
+    commit(message("A longer name, and another."));
+    expect(checkRatchets(base, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(
+        /files src\/r\.ts: 602 .*rose \+2 in a Rename: commit check-commit doesn't prove \(src\/r\.ts:303: b0 → bZero is not in the Rename: list\)/,
+      ),
+    ]);
+  });
+  it("moves an unrowed export's register entry with a proven rename (owner Q2)", () => {
+    const register = (names: string[]) =>
+      JSON.stringify({
+        risk: {},
+        highRiskWithoutIndependentTest: [],
+        exportsWithoutRow: names,
+      });
+    git("checkout", "-q", "-B", "register-rename", base);
+    write("src/lib/pure/a.ts", "export const calc = 1;\n");
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calc"]),
+    );
+    const before = commit("chore: an export with no row");
+    write("src/lib/pure/a.ts", "export const calculate = 1;\n");
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calculate"]),
+    );
+    commit(
+      "refactor: calc is calculate\n\nA full name.\n\nMechanical: rename\nRename: calc → calculate",
+    );
+    const report = checkRatchets(before, "HEAD", dir);
+    expect(report.failures).toEqual([]);
+    expect(report.excused).toEqual([
+      expect.stringContaining(
+        "src/lib/pure/a.ts:calculate: added to exportsWithoutRow, by the proven",
+      ),
+    ]);
+
+    git("checkout", "-q", "-B", "register-unrenamed", before);
+    write(
+      "src/lib/pure/a.ts",
+      "export const calc = 1;\nexport const calculate = 2;\n",
+    );
+    write(
+      "scripts/calculation-register-baseline.json",
+      register(["src/lib/pure/a.ts:calculate"]),
+    );
+    commit(
+      "refactor: calc is calculate\n\nA full name.\n\nMechanical: rename\nRename: calc → calculate",
+    );
+    expect(checkRatchets(before, "HEAD", dir).failures).toEqual([
+      expect.stringMatching(
+        /a\.ts:calculate: added to exportsWithoutRow: a Rename: commit check-commit doesn't prove/,
+      ),
+    ]);
   });
   const sha = () => git("rev-parse", "--short=8", "HEAD");
   const rBody = (aCount: number, bFrom = 0) =>

@@ -248,7 +248,7 @@ describe("retirement.retirementSettings", () => {
     });
   });
 
-  // Regression: "Plan Through" is ONE household control (sections/timeline.tsx)
+  // Regression: "Projection Through" is ONE household control (sections/timeline.tsx)
   // but retirement_settings is per-person and the engine reads
   // Math.max(...perPersonSettings.map(p => p.endAge)) (build-engine-payload.ts:380).
   // Writing only the caller's row let a two-person household save endAge 90
@@ -265,7 +265,7 @@ describe("retirement.retirementSettings", () => {
         endAge: 95,
       });
 
-      // Edit "Plan Through" as the FIRST person — the household control.
+      // Edit "Projection Through" as the FIRST person — the household control.
       await caller.retirement.retirementSettings.upsert({
         ...baseSettings(),
         endAge: 90,

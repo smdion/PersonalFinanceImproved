@@ -27,11 +27,9 @@ type RowConfig = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number | null;
   flowType: FlowType;
-  /** Cash-basis figure (gainLoss + discount-only employer money) for rows
-   *  where a discount-kind account (e.g. ESPP) contributes — computed
-   *  per-account server-side (employerMatchDiscount), never assumed by
-   *  category, since a category can mix discount-type and match-type
-   *  employer money. */
+  /** Cash-basis figure (gainLoss + discount-only employer money, e.g. ESPP),
+   *  computed per account server-side (employerMatchDiscount), since a
+   *  category can mix discount- and match-type employer money. */
   cashBasisAccessor?: (row: DetailedHistoryRow) => number | null;
 };
 
@@ -202,10 +200,9 @@ export function SpreadsheetYearOverYearTable({
   const yearBOutdated = isPerformanceOutdated(yearB);
   const hasProrated = annualize && (yearA.isCurrent || yearB.isCurrent);
 
-  // True when one side is a partial (in-progress) year and the other is a
-  // finalized full year — market flows (gains/losses/distributions) are
-  // never scaled to match, so callers need a distinct signal from "*"
-  // (which marks contributions that WERE scaled).
+  // One side partial (in progress) and the other a full finalized year: market
+  // flows are never scaled, so this needs a signal distinct from "*" (scaled
+  // contributions).
   const hasPartialYearMismatch =
     (yearA.isCurrent &&
       yearA.ytdRatio > 0 &&

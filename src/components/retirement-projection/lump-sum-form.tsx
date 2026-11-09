@@ -59,10 +59,11 @@ export function LumpSumForm({
   });
 
   const handleSubmit = () => {
-    const amt = parseFloat(form.amount);
-    if (isNaN(amt) || amt <= 0) return;
+    const amount = parseFloat(form.amount);
+    if (isNaN(amount) || amount <= 0) return;
 
-    const finalAmount = form.direction === "out" ? String(-amt) : String(amt);
+    const finalAmount =
+      form.direction === "out" ? String(-amount) : String(amount);
 
     onAdd({
       id: crypto.randomUUID(),
@@ -147,13 +148,13 @@ export function LumpSumForm({
             }
             onChange={(e) => {
               const val = e.target.value;
-              const acct = accounts.find((a) => optionKey(a) === val);
+              const account = accounts.find((a) => optionKey(a) === val);
               setForm((f) => ({
                 ...f,
-                targetAccountName: acct ? acct.name : "",
-                targetOwnerName: acct?.ownerName ?? "",
-                targetAccount: acct
-                  ? (acct.category as AccountCategory)
+                targetAccountName: account ? account.name : "",
+                targetOwnerName: account?.ownerName ?? "",
+                targetAccount: account
+                  ? (account.category as AccountCategory)
                   : (val as AccountCategory),
               }));
             }}
@@ -211,8 +212,8 @@ export function LumpSumBadge({
   onDelete?: () => void;
   color?: "emerald" | "amber";
 }) {
-  const amt = parseFloat(event.amount);
-  const isWithdrawal = amt < 0;
+  const amount = parseFloat(event.amount);
+  const isWithdrawal = amount < 0;
   const bgClass = color === "amber" ? "bg-amber-50" : "bg-emerald-50";
   const textClass = color === "amber" ? "text-amber-700" : "text-emerald-700";
   const mutedClass = color === "amber" ? "text-amber-400" : "text-emerald-400";
@@ -230,7 +231,7 @@ export function LumpSumBadge({
         )}
         <span>
           {isWithdrawal ? "" : "+"}
-          {formatCurrency(amt)}
+          {formatCurrency(amount)}
         </span>
         {" → "}
         {event.targetAccountName || event.targetAccount}

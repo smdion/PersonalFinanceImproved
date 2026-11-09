@@ -19,7 +19,7 @@ Cash
 Tax Location ?
 Traditional
 66%$405,000.00
-After-Tax
+After-tax
 23%$140,000.00
 Roth
 7%$45,000.00
@@ -36,7 +36,7 @@ Assets
 Investment Portfolioⓘ$618,000.00
 By Tax Type
 Traditional$405,000.00
-After-Tax$140,000.00
+After-tax$140,000.00
 Roth$45,000.00
 HSA$28,000.00
 Total$618,000.00
@@ -69,4 +69,4 @@ FI Target (expenses / withdrawal rate)$1,560,000.00
 Investments + cash ?$658,000.00
 Progress42%
 Projected FI Year ?2035
-Based on retirement plan
+From your projection

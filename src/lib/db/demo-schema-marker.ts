@@ -1,12 +1,7 @@
 /**
- * Demo schemas are copies of the public tables, built when a demo profile
- * is chosen. Each is stamped (a schema comment) with the migrations the
- * database had when it was built — the applied count and the last hash; one
- * built before a later migration is stale. The hash matters because a
- * migration squash resets the count: a schema stamped "13" before a squash
- * could otherwise match a later release with 13 entries. The migrator drops
- * stale ones on every start, and requests refuse to use one (see
- * demoSchemaMiddleware). db-migrate.ts imports both from here.
+ * Demo schemas (copies of public tables) are stamped "<count>:<last hash>" of the migrations
+ * applied when built; a mismatch is stale (the hash catches a squash resetting the count). The
+ * migrator drops stale ones on start and demoSchemaMiddleware refuses them.
  */
 export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
 
@@ -18,11 +13,6 @@ export const MIGRATION_STAMP_SUBQUERY =
 /** The same stamp as a query returning one row `{ stamp }`. */
 export const MIGRATION_STAMP_SQL = `SELECT ${MIGRATION_STAMP_SUBQUERY} AS stamp`;
 
-/** Install-wide tables a demo schema never gets its own copy of: a demo
- *  reads them from public through its search_path ("demo_x, public").
- *  Community tax-data updates are the install's, not household data. The
- *  demo builder skips these and the request check (demoSchemaMiddleware)
- *  doesn't require them — one list, so the two can't disagree (they did:
- *  the builder skipped tax_data_updates while the check required every
- *  public table, so every demo request was refused). */
+/** Install-wide tables a demo schema reads from public (search_path "demo_x, public")
+ *  instead of copying; the demo builder and demoSchemaMiddleware share this list. */
 export const DEMO_SHARED_TABLES: readonly string[] = ["tax_data_updates"];

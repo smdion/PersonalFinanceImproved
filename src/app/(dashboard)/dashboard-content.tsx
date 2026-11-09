@@ -14,15 +14,12 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { trpc } from "@/lib/trpc";
 
 /**
- * Dashboard content — extracted from page.tsx so the page can be a
- * server component that pre-fetches the most expensive queries. This
- * file owns the client interactivity:
- * onboarding wizard, scenario context consumption, useQuery hooks
- * inside each Card.
+ * Dashboard client content: onboarding wizard, scenario context and each
+ * Card's queries; page.tsx is the server component that prefetches.
  */
 export function DashboardContent() {
   const utils = trpc.useUtils();
-  const { data: onboarding } = trpc.settings.isOnboardingComplete.useQuery();
+  const { data: onboarding } = trpc.settings.getOnboardingStatus.useQuery();
 
   return (
     <div>

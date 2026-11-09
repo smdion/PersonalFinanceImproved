@@ -1,14 +1,8 @@
 "use client";
 
 /**
- * CoastFireCard — compact 5th hero KPI card.
- *
- * Displays the deterministic Coast FIRE age (fast, always shown). When the
- * user triggers the Coast FIRE scenario view (via the chart scenario toggle
- * OR the "Validate with Monte Carlo" button on this card), the same
- * `computeCoastFireMC` query runs once — and its result (binary-searched
- * MC-true age + success rate) powers both this card AND the chart's MC fan
- * bands. Single MC run, no duplication.
+ * Coast FIRE hero KPI card: the deterministic age always; once the scenario view or "Validate"
+ * runs `computeCoastFireMC`, that one result powers this card and the chart's fan bands.
  */
 
 import { DEFAULT_SIMULATION } from "@/lib/constants";
@@ -29,7 +23,7 @@ type CoastFireInput = Parameters<
 >[0];
 
 /** The part of computeCoastFireMC's result the card reads. */
-type CoastFireMcResult = Pick<
+type CoastFireSimulationResult = Pick<
   NonNullable<RouterOutputs["projection"]["computeCoastFireMC"]["result"]>,
   | "coastFireAge"
   | "status"
@@ -42,18 +36,16 @@ type CoastFireMcResult = Pick<
   | "warning"
 >;
 
-/** Below this fraction of stop-now trials hitting a penalty-avoided
- *  shortfall, the "why stopping today fails" explanation isn't worth
- *  surfacing — too small a share of outcomes to be the real story. Single
- *  source for both the KPI card's tooltip line and its short headline
- *  caption (previously duplicated as a literal `0.05` in each). */
+/** Below this share of stop-now trials hitting a penalty-avoided shortfall,
+ *  "why stopping today fails" isn't surfaced. Used by both the tooltip line
+ *  and the headline caption. */
 const COAST_FIRE_GAP_MATERIALITY_THRESHOLD = 0.05;
 
-function hasCoastFireGapAmount(mc: CoastFireMcResult): boolean {
+function hasCoastFireGapAmount(simulation: CoastFireSimulationResult): boolean {
   return (
-    mc.stopNowPenaltyAvoidedShortfallRate >
+    simulation.stopNowPenaltyAvoidedShortfallRate >
       COAST_FIRE_GAP_MATERIALITY_THRESHOLD &&
-    mc.stopNowMedianPenaltyAvoidedShortfallPV > 0
+    simulation.stopNowMedianPenaltyAvoidedShortfallPV > 0
   );
 }
 
@@ -68,30 +60,28 @@ interface CoastFireCardProps {
   input: CoastFireInput;
   /** A Coast FIRE age as its year and whose age it is. */
   ageLabel: (age: number) => string;
-  /** Pass-down of the Coast FIRE MC binary-search result from
-   *  use-projection-queries.ts. On demand by default — fires
-   *  once the household selects a Coast FIRE scenario, not on page load —
-   *  so this card usually shows deterministic-only at first; the headline
-   *  automatically upgrades to combined once the MC result arrives. */
-  coastFireMcResult?: CoastFireMcResult;
+  /** Coast FIRE simulation result from use-projection-queries.ts. It runs on
+   *  demand (once a Coast FIRE scenario is selected), so the card shows the
+   *  deterministic age first and upgrades to combined when it arrives. */
+  coastFireMcResult?: CoastFireSimulationResult;
   /** True while the shared coast MC query is fetching. */
-  coastFireMcLoading?: boolean;
+  coastFireSimulationLoading?: boolean;
   /** When the Coast FIRE MC result was computed — ISO string, or null when
    *  it came from a fresh (uncached) run just now. Surfaced so the user can
    *  tell a cached result apart from a just-computed one. */
-  coastFireMcComputedAt?: string | null;
+  coastFireSimulationComputedAt?: string | null;
   /** Why the simulated answer can't be computed (no preset, classes or
    *  glide path); the card shows that in place of a simulated figure. */
-  coastFireMcNotConfigured?: SimulationNotConfigured | null;
+  coastFireSimulationNotConfigured?: SimulationNotConfigured | null;
 }
 
 export function CoastFireCard({
   input,
   ageLabel,
   coastFireMcResult,
-  coastFireMcLoading = false,
-  coastFireMcComputedAt,
-  coastFireMcNotConfigured,
+  coastFireSimulationLoading = false,
+  coastFireSimulationComputedAt,
+  coastFireSimulationNotConfigured,
 }: CoastFireCardProps) {
   const { data: deterministic } = trpc.projection.computeCoastFire.useQuery(
     input,
@@ -102,17 +92,18 @@ export function CoastFireCard({
   );
 
   const det = deterministic?.result ?? undefined;
-  const mcAvailable = coastFireMcResult != null;
-  const hasGapAmount = mcAvailable && hasCoastFireGapAmount(coastFireMcResult);
+  const simulationAvailable = coastFireMcResult != null;
+  const hasGapAmount =
+    simulationAvailable && hasCoastFireGapAmount(coastFireMcResult);
 
   return (
     <KpiCard
       label="Coast FIRE"
       tooltip={[
-        "The earliest age at which you can stop contributing and still fund your plan through end of plan.",
+        "The earliest age at which you can stop contributing and still fund every retirement year of the projection.",
         "Success criterion: every retirement year is funded from retirement money (it doesn't run out or fall short) AND the first year's spending covers your retirement budget.",
         `Headline combines the Baseline answer (at expected returns) and the Simulated answer (90% confidence across ${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} random market outcomes) — only shows 'Already ✓' when BOTH agree.`,
-        `Baseline is a single expected-return path (same math as Active Plan) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
+        `Baseline is a single expected-return path (same math as the Baseline scenario) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
         ...(hasGapAmount
           ? [
               `Why stopping today fails: in ${formatPercent(coastFireMcResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
@@ -123,28 +114,32 @@ export function CoastFireCard({
       {/* Headline upgrades automatically: baseline-only while simulated is
           prefetching, combined baseline+simulated once it lands. Does NOT
           show "Already ✓" unless BOTH baseline and simulated agree. */}
-      {mcAvailable ? (
+      {simulationAvailable ? (
         <CombinedStatus det={det} mc={coastFireMcResult} ageLabel={ageLabel} />
       ) : (
         <DeterministicStatus result={det} ageLabel={ageLabel} />
       )}
       <div className="mt-auto pt-2">
-        {coastFireMcLoading && !coastFireMcResult && (
+        {coastFireSimulationLoading && !coastFireMcResult && (
           <div className="text-caption text-muted animate-pulse">
             Running simulations...
           </div>
         )}
-        {!mcAvailable && coastFireMcNotConfigured && (
+        {!simulationAvailable && coastFireSimulationNotConfigured && (
           <div className="text-caption text-faint leading-tight">
             Simulated:{" "}
-            {SIMULATION_NOT_CONFIGURED_MESSAGE[coastFireMcNotConfigured]}
+            {
+              SIMULATION_NOT_CONFIGURED_MESSAGE[
+                coastFireSimulationNotConfigured
+              ]
+            }
           </div>
         )}
-        {mcAvailable && (
+        {simulationAvailable && (
           <SimulatedDetail
             ageLabel={ageLabel}
             mc={coastFireMcResult}
-            computedAt={coastFireMcComputedAt}
+            computedAt={coastFireSimulationComputedAt}
           />
         )}
       </div>
@@ -153,10 +148,8 @@ export function CoastFireCard({
 }
 
 /**
- * Combined headline when the simulated result is available. Refuses to
- * show "Already ✓" unless BOTH the baseline and simulated answers agree.
- * Shows the more conservative of the two ages otherwise, plus any hard
- * "unreachable" verdict.
+ * Combined headline once the simulated result is available: "Already ✓" only when baseline and
+ * simulated agree; otherwise the more conservative age, plus any hard "unreachable" verdict.
  */
 function CombinedStatus({
   det,
@@ -164,7 +157,7 @@ function CombinedStatus({
   ageLabel,
 }: {
   det: DeterministicResult | undefined;
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
   // If baseline hasn't loaded, fall back to simulated-only headline.
@@ -182,7 +175,7 @@ function CombinedStatus({
         <div className="text-caption text-faint mt-1 leading-tight">
           {mc.status === "unreachable" && det.status !== "unreachable"
             ? "Baseline says reachable but simulated outcomes fail."
-            : "Plan requires contributions through retirement."}
+            : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -205,14 +198,9 @@ function CombinedStatus({
     );
   }
 
-  // Baseline passes stopping today; simulated doesn't. Baseline is a
-  // SINGLE expected-return path (identical math to Active Plan) — it has
-  // no way to see that real returns vary, so it can't detect a case that
-  // only breaks under variance. Simulated (1,000 randomized sequences) is
-  // the one actually answering "does this work in practice." Kept to ONE
-  // short line here (with a "?" for the full explanation + dollar figure,
-  // via KpiCard's tooltip prop above) so this card doesn't blow out the
-  // shared row height of the other 4 hero KPI cards next to it.
+  // Baseline passes stopping today; simulated doesn't. Baseline is one expected-return path
+  // and can't see variance; the simulation answers "does this work in practice." One short
+  // line here keeps the hero row height; the full explanation is in the "?" tooltip.
   if (det.status === "already_coast" && mc.status === "found") {
     const hasGapAmount = hasCoastFireGapAmount(mc);
     const shortLine = hasGapAmount
@@ -233,8 +221,8 @@ function CombinedStatus({
   // Both "found" — show the more conservative (later) age.
   if (det.status === "found" && mc.status === "found") {
     const detAge = det.coastFireAge ?? 0;
-    const mcAge = mc.coastFireAge ?? 0;
-    const headlineAge = Math.max(detAge, mcAge);
+    const simulationAge = mc.coastFireAge ?? 0;
+    const headlineAge = Math.max(detAge, simulationAge);
     return (
       <>
         <div className="text-primary text-xl font-bold tabular-nums">
@@ -271,7 +259,7 @@ function SimulatedOnlyStatus({
   mc,
   ageLabel,
 }: {
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
   if (mc.status === "unreachable") {
@@ -310,7 +298,7 @@ function DeterministicStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          Plan requires contributions through retirement.
+          Needs contributions through retirement.
         </div>
       </>
     );
@@ -349,17 +337,15 @@ function DeterministicStatus({
 }
 
 /**
- * Simulated detail line (Option D format) — shown whenever the simulated
- * Coast FIRE result is available. Always shows "Stopping today: X%
- * simulated" so the user sees the raw confidence at the current age, and
- * indicates the age needed for the confidence threshold if there's a gap.
+ * Simulated detail line, shown whenever the simulated result is available: always "Stopping
+ * today: X% simulated", plus the age needed for the confidence threshold if there's a gap.
  */
 function SimulatedDetail({
   mc,
   computedAt,
   ageLabel,
 }: {
-  mc: CoastFireMcResult;
+  mc: CoastFireSimulationResult;
   computedAt?: string | null;
   ageLabel: (age: number) => string;
 }) {
@@ -390,11 +376,8 @@ function SimulatedDetail({
         {formatPercent(mc.stopNowSuccessRate, 0)} simulated
       </span>
       <span className="text-faint ml-1">{tail}</span>
-      {/* Full "why" (with the dollar figure) lives in KpiCard's tooltip
-          ("?") now, not inline here -- an earlier version added a 2-line
-          paragraph in this spot which, stacked with CombinedStatus's own
-          explanation above, roughly doubled this card's height relative to
-          its 4 siblings in the hero KPI row. */}
+      {/* The full "why" (with the dollar figure) lives in KpiCard's "?"
+          tooltip, keeping this card's height in line with its hero-row siblings. */}
       {mc.warning && (
         <div className="mt-0.5 text-yellow-500">⚠ non-monotone</div>
       )}

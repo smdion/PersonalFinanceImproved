@@ -148,7 +148,7 @@ describe("per-owner RMDs through the engine", () => {
       w.includes("RMD SHORTFALL"),
     )!;
     expect(warning).toContain("Ann");
-    expect(warning).toContain("outside the retirement plan");
+    expect(warning).toContain("held as Portfolio money");
     expect(warning).not.toContain("Roth conversions");
   });
 });
@@ -254,9 +254,9 @@ describe("enforceOwnerRmds", () => {
     accts: IndividualAccountInput[],
     slots: DecumulationSlot[],
     owners: { personId: number; personName: string; required: number }[],
-    acctBal: AccountBalances,
+    accountBalance: AccountBalances,
   ) => {
-    const indBal = new Map(accts.map((a) => [a.name, a.startingBalance]));
+    const indBalance = new Map(accts.map((a) => [a.name, a.startingBalance]));
     const total = slots.reduce((s, x) => s + x.traditionalWithdrawal, 0);
     const result = enforceOwnerRmds({
       owners,
@@ -264,12 +264,12 @@ describe("enforceOwnerRmds", () => {
       slots,
       totalTraditionalWithdrawal: total,
       totalWithdrawal: total,
-      acctBal,
-      indAccts: accts,
+      accountBalance,
+      indAccounts: accts,
       indKey: indKey as never,
-      indBal,
+      indBalance,
     });
-    return { result, indBal };
+    return { result, indBalance };
   };
 
   it("an HSA draw stays put and isn't reshaped into Traditional, RMD due or not", () => {
@@ -294,7 +294,7 @@ describe("enforceOwnerRmds", () => {
       acct("Bo 401k", "401k", 700000, 2),
     ];
     const slots = [slot("401k", 50000)];
-    const { result, indBal } = run(
+    const { result, indBalance } = run(
       accts,
       slots,
       [{ personId: 1, personName: "Ann", required: 20000 }],
@@ -302,20 +302,23 @@ describe("enforceOwnerRmds", () => {
     );
     expect(result.pins.get("Ann 401k")).toBe(20000);
     expect(result.totalTraditionalWithdrawal).toBe(50000);
-    const { decIndWithdrawal } = distributeWithdrawals(
+    const { decumulationIndWithdrawal } = distributeWithdrawals(
       slots,
       accts,
       indKey as never,
-      indBal,
+      indBalance,
       undefined,
       result.pins,
     );
     // Pin first, then the other 30,000 fans out by what's left (280k / 700k).
-    expect(decIndWithdrawal.get("Ann 401k")).toBeCloseTo(
+    expect(decumulationIndWithdrawal.get("Ann 401k")).toBeCloseTo(
       20000 + (30000 * 280) / 980,
       1,
     );
-    expect(decIndWithdrawal.get("Bo 401k")).toBeCloseTo((30000 * 700) / 980, 1);
+    expect(decumulationIndWithdrawal.get("Bo 401k")).toBeCloseTo(
+      (30000 * 700) / 980,
+      1,
+    );
   });
 
   it("a draw moves across categories without adding income", () => {

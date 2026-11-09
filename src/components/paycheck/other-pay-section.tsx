@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * Other pay & taxable benefits on a job's checks — the lines a stub lists
- * under earnings besides salary: extra pay on every check, or a taxable
- * benefit that's never paid (imputed income, e.g. group life over $50k).
- * The line (name, how it's taxed) is the job's; the amount per check is
- * the Salary Profile's, like salary — saved through onSetAmount.
+ * Other pay & taxable benefits on a job's checks: extra pay or a never-paid taxable benefit
+ * (imputed income). The line (name, taxation) is the job's; the per-check amount is the Salary
+ * Profile's, like salary, saved through onSetAmount.
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";

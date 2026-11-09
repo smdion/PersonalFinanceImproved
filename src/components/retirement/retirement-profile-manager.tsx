@@ -14,29 +14,9 @@ import {
 } from "@/components/ui/profile-sidebar";
 
 /**
- * Retirement Profiles list — the left column of the Budget page's
- * Retirement tab, matching the master-detail shell Budget/Contribution/
- * Salary Profiles already use (`grid-cols-[240px_1fr]`, `ProfileListRow`/
- * `ProfileSidebarHeader` from `@/components/ui/profile-sidebar`). Was a
- * one-off flat pill row above the settings editor, found inconsistent with
- * the other three's layout and unified here.
- *
- * Deliberately thin, matching SalaryProfileManager's philosophy: no bare
- * "create" (retirement_settings has ~40 NOT NULL columns with no sensible
- * blank default — Duplicate is the one creation path, same as the router;
- * `ProfileSidebarHeader` renders no "+ New" button since `onCreate` is
- * never passed). Each profile is a COMPLETE WORLD, same contract as Salary
- * Profiles: no baseline, no default, no merge. "Active" is the correct
- * word here, not "pin" — see the profile-terminology memory.
- *
- * Clicking a row now VIEWS that profile (reported via
- * `onViewingProfileChange`) without activating it — the same "view
- * without activating" contract Contribution/Salary's sidebars already
- * have, newly extended to Retirement alongside `RetirementProfileTab`'s
- * new `profileId` prop. Renaming/duplicating/deleting/activating a
- * profile still lives entirely here; editing its assumptions (age,
- * inflation, strategy, ...) happens in RetirementProfileTab to the right,
- * scoped to whichever profile is being VIEWED (not necessarily active).
+ * Retirement Profiles list (left column of the Budget page's Retirement tab). No bare create:
+ * Duplicate is the only creation path. Clicking a row VIEWS a profile without activating it;
+ * rename/duplicate/delete/activate live here, assumption edits in RetirementProfileTab.
  */
 export function RetirementProfileManager({
   viewingProfileId,
@@ -55,12 +35,8 @@ export function RetirementProfileManager({
     useActiveRetirementProfile();
   const { data: profiles, isLoading } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  // Available tax-law years for the "Tax law year" pin
-  // select below, derived from the broadest-coverage existing reference
-  // table (tax_brackets) instead of a new endpoint — resolveTaxParams
-  // itself already answers "which years have data" internally; a second,
-  // independent answer here would be a second computation path in
-  // miniature.
+  // Tax-law years for the "Tax law year" select, read from tax_brackets (the broadest-coverage
+  // reference table) rather than a separate endpoint.
   const { data: taxBracketRows } = trpc.settings.taxBrackets.list.useQuery();
   const availableTaxYears = Array.from(
     new Set((taxBracketRows ?? []).map((r) => r.taxYear)),
@@ -125,13 +101,8 @@ export function RetirementProfileManager({
     },
     onError: (e) => setError(e.message),
   });
-  // taxParamsYear is profile IDENTITY (which tax law this
-  // plan is priced under), the same category as name/description — not a
-  // household assumption like the ones retirementSettings.upsert owns —
-  // so it uses the same retirementProfiles.update mutation shape as
-  // rename, right here, not threaded into TaxesSection (that component is a documented pure presentational leaf owned
-  // entirely by retirement-profile-tab.tsx; a second mutation writing to
-  // a second table there would break that contract).
+  // taxParamsYear is profile identity (which tax law prices the plan), like name, so it is
+  // written with retirementProfiles.update here, not in TaxesSection (a presentational leaf).
   const updateTaxYearMut =
     trpc.retirement.retirementProfiles.update.useMutation({
       onSuccess: () => {
@@ -193,7 +164,7 @@ export function RetirementProfileManager({
         <ProfileSidebarHeader />
         <HelpTip
           maxWidth={340}
-          text="Each Retirement Profile is a complete, self-contained retirement plan — its own retirement age, inflation, withdrawal strategy, everything. There's no shared baseline: changing one profile never affects another. Duplicate a profile to explore a variant (retire two years earlier, a different strategy) without touching the original."
+          text="Each Retirement Profile is a complete, self-contained set of retirement assumptions — its own retirement age, inflation, withdrawal strategy, everything. There's no shared baseline: changing one profile never affects another. Duplicate a profile to explore a variant (retire two years earlier, a different strategy) without touching the original."
         />
       </div>
 
@@ -253,9 +224,9 @@ export function RetirementProfileManager({
                     className="text-caption hover:border-border focus:border-accent cursor-pointer rounded border border-transparent bg-transparent px-0.5 focus:outline-none"
                   >
                     <option value="">Latest (auto)</option>
-                    {availableTaxYears.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
+                    {availableTaxYears.map((yearRow) => (
+                      <option key={yearRow} value={yearRow}>
+                        {yearRow}
                       </option>
                     ))}
                   </select>

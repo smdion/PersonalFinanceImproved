@@ -547,7 +547,7 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
   // profile (duplicate needs an existing profile to clone FROM).
   const PRE_0032_VERSION = "0000_v7_initial_schema";
 
-  it("creates a 'Current Plan' profile and points retirement_settings at it, when settings exist but no profile does", () => {
+  it("creates a 'Current Retirement' profile and points retirement_settings at it, when settings exist but no profile does", () => {
     const tables = makeBackup({
       people: [{ id: 1, name: "Alice", is_primary_user: true }],
       retirement_settings: [
@@ -572,7 +572,7 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
       string,
       unknown
     >;
-    expect(profile.name).toBe("Current Plan");
+    expect(profile.name).toBe("Current Retirement");
 
     const settingsRow = result.tables["retirement_settings"]![0] as Record<
       string,

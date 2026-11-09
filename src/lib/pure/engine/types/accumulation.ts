@@ -21,24 +21,14 @@ export type AccumulationDefaults = {
   routingMode: RoutingMode;
 
   /**
-   * Account priority order for waterfall mode.
-   * The first account in the list fills first, then the next, etc.
-   * Brokerage should usually be last (it's the unlimited overflow catch-all).
-   *
-   * Example: ['401k', 'hsa', 'ira', 'brokerage']
-   *   → Max out 401k first, then HSA, then IRA, remainder to brokerage.
+   * Waterfall-mode priority: the first account fills first. Brokerage, the unlimited overflow
+   * catch-all, usually goes last.
    */
   accountOrder: AccountCategory[];
 
   /**
-   * Percentage splits for percentage mode. Values must sum to 1.0.
-   * Each value is the fraction of the total contribution going to that account.
-   *
-   * Example: { '401k': 0.60, hsa: 0.15, ira: 0.15, brokerage: 0.10 }
-   *   → 60% of contributions to 401k, 15% to HSA, 15% to IRA, 10% to brokerage.
-   *
-   * If a percentage allocation exceeds an account's IRS limit, the excess
-   * redistributes proportionally to the remaining accounts.
+   * Percentage-mode fractions of total contribution per account, summing to 1.0. Excess over an
+   * account's IRS limit redistributes proportionally to the rest.
    */
   accountSplits: Record<AccountCategory, number>;
 
@@ -52,35 +42,9 @@ export type AccumulationDefaults = {
 };
 
 /**
- * A single year-override entry for the accumulation phase.
- *
- * HOW OVERRIDES WORK:
- * - Each field is optional — only set the fields you want to change.
- * - Fields you don't set keep their previous value (sticky-forward).
- * - Multiple overrides can exist for different years.
- * - The engine processes overrides in year order, carrying forward each field.
- * - Two UI views read and write the same AccumulationOverride[]: "by lever"
- *   (one setting across time) and "by year" (each year's resolved config).
- *
- * EXAMPLES:
- *
- * Change just the contribution rate in 2028:
- *   { year: 2028, contributionRate: 0.30 }
- *   → Rate becomes 30% from 2028 onward. All other settings unchanged.
- *
- * Switch to percentage mode and change tax splits in 2030:
- *   { year: 2030, routingMode: 'percentage',
- *     accountSplits: { '401k': 0.5, hsa: 0.2, ira: 0.2, brokerage: 0.1 },
- *     taxSplits: { '401k': 0.5, ira: 1.0 } }
- *   → From 2030: percentage mode, 50/50 Roth/Trad in 401k, all Roth IRA.
- *
- * Cap 401k contributions at $15k in 2029:
- *   { year: 2029, accountCaps: { '401k': 15000 } }
- *   → 401k limited to $15k (below IRS limit). Excess overflows per routing mode.
- *
- * Reset everything back to defaults in 2035:
- *   { year: 2035, reset: true }
- *   → All fields revert to AccumulationDefaults values from 2035 onward.
+ * One year's accumulation override: every field optional and sticky-forward (unset fields keep
+ * their prior value), applied in year order; `reset: true` reverts all fields to defaults. The
+ * "by lever" and "by year" UI views edit the same array.
  */
 export type AccumulationOverride = {
   year: number;
@@ -110,20 +74,14 @@ export type AccumulationOverride = {
   taxSplits?: Partial<TaxSplitConfig>;
 
   /**
-   * Artificial dollar cap per account type for this year.
-   * Caps are BELOW IRS limits — the more restrictive cap wins.
-   * Set a value to cap; omit an account to leave it uncapped.
-   *
-   * Example: { '401k': 15000 } → cap 401k at $15k, others use IRS limits.
+   * Dollar cap per account type below the IRS limit (the stricter wins); omitted accounts are
+   * uncapped.
    */
   accountCaps?: Partial<Record<AccountCategory, number>>;
 
   /**
-   * Cross-account dollar cap per tax type.
-   * Limits total Roth or Traditional contributions across ALL accounts.
-   * The more restrictive of (account cap, tax-type cap) wins.
-   *
-   * Example: { roth: 20000 } → total Roth across 401k+IRA capped at $20k.
+   * Cap on total Roth or Traditional contributions across all accounts; the stricter of account
+   * and tax-type cap wins.
    */
   taxTypeCaps?: Partial<Record<RoutingTaxType, number>>;
 

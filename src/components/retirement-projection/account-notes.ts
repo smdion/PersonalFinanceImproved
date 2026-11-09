@@ -13,7 +13,7 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
-  isHsaCategory,
+  nonMedicalPenaltyRate,
   tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import { describeEligibility } from "@/lib/config/eligibility-labels";
@@ -41,13 +41,9 @@ export function buildEligibilityNote(
     reason?.kind === "age_reached" && reason.gate === "age_59_half";
   const basisDrawn = ia.roth?.basisDrawn ?? 0;
   const totalWithdrawn = ia.draw?.withdrawal ?? 0;
-  // Basis-first ordering draws basis before growth. Under the
-  // penalty-hard-exclusion model, growth this account hasn't earned
-  // penalty-free access to should never be drawn at all by default —
-  // this is only nonzero when the household has explicitly opted out of that
-  // exclusion. Surfaced explicitly, and NEVER worded as plain "Eligible",
-  // so it's never read as a free lunch: growth drawn while not yet
-  // age-59½-qualified is flagged taxable and penalty-exposed.
+  // Basis-first ordering draws basis before growth. Growth without penalty-free access is
+  // drawn only if the household opted out of the penalty exclusion; it's surfaced, never
+  // worded "Eligible", and flagged taxable and penalty-exposed before age 59½.
   const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
   if (isBasisRemainingReason) {
     const startBasis = (ia.roth?.basisRemaining ?? 0) + basisDrawn;
@@ -82,158 +78,127 @@ export function buildEligibilityNote(
 }
 
 /**
- * "Why was this account used" tax-reasoning clause — the household asked
- * directly for this: eligibility/basis info alone doesn't say
- * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
- * this account instead of another. Reads `discretionaryTierBreakdown`
- * (`RouteResult.tierBreakdown`, withdrawal-routing/types.ts) filtered to this
- * account's source kind — see `formatDiscretionaryTierBreakdown`'s
- * docblock (utils.ts) for why this is read directly off routing's own
- * decision rather than re-derived.
- *
- * The breakdown is aggregated at the SOURCE-KIND level (roth/brokerage/
- * hsa), not per-account — a household with more than one account of the
- * same kind (e.g. both spouses' Roth 401k) would see the same combined
- * figures on each. `formatDiscretionaryTierBreakdown`'s own text is
- * explicitly "household-wide" framing for exactly this reason — never
- * implies this is a per-account cost breakdown this data can't actually
- * support, and deliberately avoids "free"/"0%" wording that would clash
- * with `buildEligibilityNote`'s own "taxable" note shown right above it on
- * the same line (Roth basis is genuinely
- * tax-free, but a Roth GROWTH tier entry can also legitimately show a
- * costRate of 0 at the household level, which is an ORDERING statement,
- * not a claim about this specific account's tax treatment).
+ * "Why was this account used" clause, read off routing's own `discretionaryTierBreakdown` for this
+ * account's source kind. That breakdown is household-wide (per kind, not per account), so the
+ * text says so and avoids "free"/"0%" wording beside the eligibility note's "taxable".
  */
 function buildRoutingReasonClause(
   ia: Pick<IndividualAccountYearBalance, "category" | "taxType">,
-  yr: EngineDecumulationYear,
-  deflate: (v: number, yr: number) => number,
+  yearRow: EngineDecumulationYear,
+  deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
 ): string | undefined {
   const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
-  // Traditional portion of a split-capable account (401k/IRA/403b): this
-  // is Phase 1 of bracket_filling, not the cost-ranked discretionary tier
-  // below — a completely different "why" (a configured bracket TARGET,
-  // not a cost comparison between sources). bracketTraditionalCap is the
-  // resolved income cap (rothBracketTarget's marginal-rate threshold minus
-  // taxable SS) the engine actually filled Traditional up to — see
-  // withdrawal-routing/bracket-filling.ts's routeWithdrawalsBracketFilling.
+  // Traditional portion of a split-capable account: bracket_filling's Phase 1, filled to a
+  // configured bracket target, not the cost-ranked tier below. bracketTraditionalCap is that
+  // resolved income cap (see routeWithdrawalsBracketFilling).
   if (
     catCfg?.supportsRothSplit &&
     !isTaxFreeBucket(ia.taxType) &&
-    yr.config.withdrawalRoutingMode === "bracket_filling" &&
-    yr.bracketTraditionalCap != null
+    yearRow.config.withdrawalRoutingMode === "bracket_filling" &&
+    yearRow.bracketTraditionalCap != null
   ) {
-    const targetPct = yr.config.rothBracketTarget;
-    // "Why THIS bracket" — shares
-    // describeBracketTargetChoice with the advisor report
-    // (lib/pure/advice/report/bracket-target-narrative.ts) so the two can never
-    // disagree; folds in the real numeric comparison from the bracket
-    // optimizer when available, falls back to the qualitative-only
-    // version otherwise.
+    const targetPercent = yearRow.config.rothBracketTarget;
+    // "Why THIS bracket": shares describeBracketTargetChoice with the advisor
+    // report so they agree; uses the bracket optimizer's numeric comparison when
+    // available, else the qualitative version.
     const targetClause =
-      targetPct != null
-        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
+      targetPercent != null
+        ? `Filled up to ${formatCurrency(deflate(yearRow.bracketTraditionalCap, yearRow.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
             bracketOptimizerResult,
-            targetPct,
+            targetPercent,
             {
-              bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
-              taxableSS: deflate(yr.taxableSS, yr.year),
-              // The GROWN per-year deduction (bracket-growth.ts), not the
-              // plan-level engineSettings echo — pairing a
-              // grown bracketTraditionalCap with an ungrown deduction in the
-              // same sentence was internally inconsistent for any year
-              // beyond the tax data's vintage.
+              bracketTraditionalCap: deflate(
+                yearRow.bracketTraditionalCap,
+                yearRow.year,
+              ),
+              taxableSS: deflate(yearRow.taxableSS, yearRow.year),
+              // The grown per-year deduction (bracket-growth.ts), matching the
+              // grown bracketTraditionalCap, not the plan-level engineSettings echo.
               standardDeduction:
-                yr.standardDeduction != null
-                  ? deflate(yr.standardDeduction, yr.year)
-                  : yr.standardDeduction,
+                yearRow.standardDeduction != null
+                  ? deflate(yearRow.standardDeduction, yearRow.year)
+                  : yearRow.standardDeduction,
             },
           )}`
-        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
-    // "Why this account over another" (cross-category order, e.g. 401k
-    // before IRA) — your configured Traditional Account Order, restricted
-    // to the Traditional-preference categories Phase 1 actually consults
-    // (same restriction the order editor itself uses).
-    const tradOrder = yr.config.withdrawalOrder.filter((c) =>
+        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yearRow.bracketTraditionalCap, yearRow.year))} of ordinary income`;
+    // "Why this account over another": the configured Traditional Account Order,
+    // restricted to the Traditional-preference categories Phase 1 consults (as
+    // the order editor does).
+    const tradOrder = yearRow.config.withdrawalOrder.filter((c) =>
       tradPreferenceEngineCategories().includes(c),
     );
-    const orderIdx = tradOrder.indexOf(ia.category);
+    const orderIndex = tradOrder.indexOf(ia.category);
     const orderClause =
-      tradOrder.length > 1 && orderIdx >= 0
-        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIdx + 1})`
+      tradOrder.length > 1 && orderIndex >= 0
+        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIndex + 1})`
         : "";
     return `${targetClause}${orderClause}`;
   }
-  // Any HSA draw says how it's treated, with or without a ranking.
-  const hsaNote = isHsaCategory(ia.category) ? HSA_DRAW_TREATMENT : undefined;
-  if (!yr.discretionaryTierBreakdown?.length) return hsaNote;
+  const hsaDraw = nonMedicalPenaltyRate(ia.category) !== null;
+  const hsaNote = hsaDraw ? HSA_DRAW_TREATMENT : undefined; // ranked or not
+  if (!yearRow.discretionaryTierBreakdown?.length) return hsaNote;
   let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
   if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
-  else if (isHsaCategory(ia.category)) sourceKind = "hsa";
+  else if (hsaDraw) sourceKind = "hsa";
   else if (catCfg?.supportsRothSplit && isTaxFreeBucket(ia.taxType))
     sourceKind = "roth";
   if (!sourceKind) return undefined;
-  const relevant = yr.discretionaryTierBreakdown.filter(
+  const relevant = yearRow.discretionaryTierBreakdown.filter(
     (t) => t.source === sourceKind,
   );
   if (relevant.length === 0) return hsaNote;
   const breakdownClause = formatDiscretionaryTierBreakdown(
-    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
+    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yearRow.year) })),
   );
-  // "Why isn't brokerage draining before Roth" —
-  // shares describeDiscretionaryCapacityMath with the advisor report so
-  // the two can never disagree. Household-wide (not scoped to this
-  // account's sourceKind, unlike breakdownClause above), so this uses the
-  // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
-  // roth/brokerage rows only — this paragraph
-  // discusses neither of an HSA row's dollars — AND to `includeCapacityNote`
-  // (with 1 Roth + 2 brokerage accounts drawing the
-  // same year, the identical household-wide paragraph showed up 3 times;
-  // the caller sets this true for only the first qualifying account row).
+  // "Why isn't brokerage draining before Roth" (shared with the advisor report): household-wide,
+  // on roth/brokerage rows only, once per year (`includeCapacityNote` marks the first such row).
   // lint-violation-ok: sourceKind is WithdrawalSourceKind, not an AccountCategory.
   const capacityClause =
     includeCapacityNote && (sourceKind === "roth" || sourceKind === "brokerage")
       ? describeDiscretionaryCapacityMath(
-          yr.rothBasisCapacity != null && yr.brokerageZeroLtcgCapacity != null
+          yearRow.rothBasisCapacity != null &&
+            yearRow.brokerageZeroLtcgCapacity != null
             ? {
-                rothBasisCapacity: deflate(yr.rothBasisCapacity, yr.year),
+                rothBasisCapacity: deflate(
+                  yearRow.rothBasisCapacity,
+                  yearRow.year,
+                ),
                 brokerageZeroLtcgCapacity: deflate(
-                  yr.brokerageZeroLtcgCapacity,
-                  yr.year,
+                  yearRow.brokerageZeroLtcgCapacity,
+                  yearRow.year,
                 ),
               }
             : undefined,
-          yr.discretionaryTierBreakdown.map((t) => ({
+          yearRow.discretionaryTierBreakdown.map((t) => ({
             ...t,
-            amount: deflate(t.amount, yr.year),
+            amount: deflate(t.amount, yearRow.year),
           })),
-          yr.config.discretionaryWithdrawalOrder,
-          yr.rmdOverrodeRouting,
+          yearRow.config.discretionaryWithdrawalOrder,
+          yearRow.rmdOverrodeRouting,
         )
       : undefined;
   if (capacityClause) onCapacityNoteUsed?.();
   return [breakdownClause, capacityClause, hsaNote].filter(Boolean).join(" ");
 }
 
-/** Merges `buildEligibilityNote` (eligibility/basis) with
- *  `buildRoutingReasonClause` (tax reasoning) into the one note line an
- *  account's tooltip row shows — both answer "why," just different
- *  questions (can this money be touched vs. why did routing pick it). */
+/** Merges `buildEligibilityNote` (can this money be touched) with
+ *  `buildRoutingReasonClause` (why routing picked it) into the account's one
+ *  tooltip note line. */
 export function buildFullAccountNote(
   ia: IndividualAccountYearBalance,
-  yr: EngineDecumulationYear,
-  deflate: (v: number, yr: number) => number,
+  yearRow: EngineDecumulationYear,
+  deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
 ): { note?: string; noteLocked?: boolean } {
-  const eligibility = buildEligibilityNote(ia, yr, deflate);
+  const eligibility = buildEligibilityNote(ia, yearRow, deflate);
   const reason = buildRoutingReasonClause(
     ia,
-    yr,
+    yearRow,
     deflate,
     bracketOptimizerResult,
     includeCapacityNote,
@@ -244,10 +209,8 @@ export function buildFullAccountNote(
   return { note, noteLocked: eligibility.noteLocked };
 }
 
-/** Owner-prefixed account label for tooltip lines — omits the "Owner — "
- *  prefix when the account's own name already starts with the owner's
- *  name (many real account names, e.g. "Sam IRA (Vanguard)", already
- *  include it — prefixing again produced a visibly duplicated name). */
+/** Owner-prefixed account label for tooltip lines; omits the "Owner — "
+ *  prefix when the account name already starts with the owner's name. */
 export function ownerAccountLabel(ia: {
   name: string;
   ownerName?: string;

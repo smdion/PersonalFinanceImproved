@@ -1,9 +1,6 @@
-/**
- * Debt kinds: their labels and the rate above which each counts as
- * high-interest — Money Guy's line, which moves with age (Financial Order
- * of Operations step 3; milestones foo3). The line lives here only; the
- * milestone's note reads it.
- */
+/** Debt kinds: labels and the rate above which each counts as high-interest (Money Guy's
+ *  line, which moves with age; Financial Order of Operations step 3, milestone foo3). The
+ *  line lives here only; the milestone's note reads it. */
 import type { DebtKind } from "./enum-values";
 
 /** The age bands the line moves with: under 30, 30s, 40 and over. */

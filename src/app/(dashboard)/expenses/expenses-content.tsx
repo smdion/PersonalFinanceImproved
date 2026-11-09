@@ -31,10 +31,8 @@ import {
 } from "@/lib/constants/settings-keys";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 
-// Code-split the recharts-heavy chart row. Both
-// charts share a single chunk so the recharts payload is fetched once on
-// page mount instead of bundling into the page chunk. ssr:false because
-// Recharts isn't SSR-friendly.
+// Code-split the recharts chart row into one shared chunk loaded on mount.
+// ssr:false because Recharts isn't SSR-friendly.
 const BudgetVsActualBar = dynamic(
   () =>
     import("@/components/expenses/expenses-charts").then((m) => ({
@@ -81,7 +79,7 @@ export function ExpensesContent() {
   const [periodType, setPeriodType] = useState<"month" | "quarter" | "ytd">(
     "month",
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
@@ -96,7 +94,7 @@ export function ExpensesContent() {
   const { data: apiCategories } = trpc.budget.listApiCategories.useQuery();
   const { data: apiActuals } = trpc.budget.listApiActuals.useQuery();
   const { data: budgetProfilesList } = useBudgetProfilesList();
-  const { data: contribProfilesList } =
+  const { data: contributionProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
   // Independent Salary Profile axis (the active profile).
@@ -115,30 +113,30 @@ export function ExpensesContent() {
       activeProfileId: activeBudgetProfileId,
     },
   );
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+  const { profileId: effectiveContributionProfileId } = useEffectiveProfileId(
     "contribution",
     {
-      validIds: contribProfilesList?.map((p) => p.id),
+      validIds: contributionProfilesList?.map((p) => p.id),
       localSelection: null,
-      activeProfileId: activeContribProfileId,
+      activeProfileId: activeContributionProfileId,
     },
   );
 
-  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const [storedActiveSalaryProfileId] = useActiveSalaryProfile();
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
     selection: {
-      contribution: activeContribProfileId,
-      salary: rawActiveSalaryProfileId,
+      contribution: activeContributionProfileId,
+      salary: storedActiveSalaryProfileId,
     },
   });
 
   const paycheckInput = {
-    ...(effectiveContribProfileId != null
-      ? { contributionProfileId: effectiveContribProfileId }
+    ...(effectiveContributionProfileId != null
+      ? { contributionProfileId: effectiveContributionProfileId }
       : {}),
     ...salaryProfileInput,
   };
@@ -750,7 +748,7 @@ function GroupRows({
         items
           .sort((a, b) => b.actual - a.actual)
           .map((item) => {
-            const itemPct =
+            const itemPercent =
               item.budgeted > 0
                 ? item.actual / item.budgeted
                 : item.actual > 0
@@ -790,7 +788,7 @@ function GroupRows({
                 <td className="px-3 py-1 text-right">
                   {item.budgeted > 0 ? (
                     <ProgressBar
-                      value={itemPct}
+                      value={itemPercent}
                       variant="success"
                       ariaLabel="Of budget"
                       allowOver

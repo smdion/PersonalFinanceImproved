@@ -1,19 +1,7 @@
 /**
- * Brings the reference tables (contribution limits, withholding / LTCG /
- * IRMAA tables, poverty lines, tax-data revisions) in line with the shipped
- * tax-data file (`tax-data/us-federal/`) — without ever touching a
- * figure the household changed.
- *
- * Runs on every migrate (db-migrate.ts imports it; esbuild bundles it), in
- * each live demo schema, and in the app after a restore / import / reset
- * (reference-data.ts). One code path for both databases: SQL goes through a
- * tiny adapter (`?` placeholders, `dialect`), and every decision is made
- * here in TypeScript, comparing numbers as numbers and JSON as parsed
- * values (stored text differs by dialect).
- *
- * The same file seeds the Simulation presets from
- * `reference-data/simulation-presets.json` — only into a database whose
- * preset tables are all empty, never over rows already there.
+ * Brings the reference tables in line with the shipped tax-data file without touching a figure
+ * the household changed, and seeds the Simulation presets into empty preset tables. One code
+ * path for both dialects (a tiny SQL adapter); values are compared parsed, not as stored text.
  */
 
 export type RefDialect = "pg" | "sqlite";
@@ -95,10 +83,8 @@ export type TaxDataFile = {
   years: Record<string, TaxDataYear>;
 };
 
-/** Where the tax data lives in the repo (and the image): `index.json`
- *  (formatVersion, dataVersion) and one `YYYY.json` per year. Everything
- *  reads it as one TaxDataFile (assembleTaxData) — the published, signed
- *  file is that same single shape. */
+/** Where the tax data lives: `index.json` (formatVersion, dataVersion) plus one `YYYY.json`
+ *  per year, read as one TaxDataFile (assembleTaxData), the signed file's shape. */
 export const TAX_DATA_DIR = "tax-data/us-federal";
 
 /** The directory's files → one TaxDataFile. A `$schema` line in any file
@@ -326,27 +312,9 @@ function rowKey(keyVals: unknown[]): string {
 }
 
 /**
- * Reconcile the reference tables with the file:
- * 1. A row nobody has classified yet (`origin='user'` and never confirmed —
- *    i.e. from before tracking, or an old backup) holding the shipped value
- *    or one it supersedes is recognised as shipped.
- * 2. Shipped rows (`seed`, or a `community` sync) from an older file
- *    version, and `carried` rows, take the file's value and notes.
- * 3. Rows the household changed (`user`) are never touched; years and keys
- *    the file doesn't have are never touched or removed. A shipped row's
- *    notes follow the file too (Settings doesn't edit notes; a note change
- *    alone doesn't make a row the household's).
- * 4. Missing rows are added. `tax_params` takes a higher revision.
- * 5. A household-started year past the file's newest gets any figure it
- *    lacks, carried forward from the newest shipped year.
- *
- * Step 5 runs once, with the last file applied (`carryForward`): a seed
- * pass followed by a community pass leaves it to the community file,
- * whose newest year is the real one.
- *
- * `community` mode (an approved community update) never runs step 1 — an
- * outside file must not reclassify the household's rows — writes only
- * rows whose value changes, and marks them `community`.
+ * Reconcile with the file: an unclassified row holding a shipped value becomes shipped; shipped
+ * and `carried` rows follow the file; `user` rows and absent keys stay; missing rows are added.
+ * `community` mode (an approved update) skips the first step and writes only changed rows.
  */
 function* reconcileSteps(
   dialect: RefDialect,
@@ -479,10 +447,8 @@ function* reconcileSteps(
     }
   }
 
-  // 5. A year the household started beyond the file's newest (an early
-  //    "+ Year") gets each figure the newest shipped year has and it lacks
-  //    — a figure added in this release — as carried forward, so a figure
-  //    the calculators require is never missing. Its own rows stand.
+  // With `carryForward` (only for the last file applied), a household year past the file's
+  // newest gets each figure it lacks from the newest shipped year, as carried; its rows stand.
   const fileYears = Object.keys(file.years).map(Number);
   if (carryForward && fileYears.length > 0) {
     const newest = Math.max(...fileYears);
@@ -516,11 +482,8 @@ function* reconcileSteps(
   return { inserted, updated, changes };
 }
 
-/** The newest approved community file this code can read that's newer
- *  than the shipped one (`rows`: tax_data_updates `file_text`s with status
- *  'applied', any order), or null. Every limit key is kept: one this
- *  version doesn't use shows as "not used by Ledgr", and is in place for
- *  the version that does. */
+/** The newest approved community file (`rows`: applied tax_data_updates file_texts) this code
+ *  can read that's newer than the shipped one, or null. Keeps every limit key, used or not. */
 export function pickApprovedCommunityFile(
   rows: { file_text: unknown }[],
   shippedVersion: number,
@@ -577,10 +540,8 @@ export const SIMULATION_PRESETS_FILE = "reference-data/simulation-presets.json";
 /** Highest presets file format this code reads. */
 export const SIMULATION_PRESETS_FORMAT_VERSION = 1;
 
-/** The shipped Simulation presets, the asset classes they draw from and
- *  which composition buckets count toward each class, one array per table;
- *  rows name each other by asset class `name` and preset `key`, never by
- *  id. */
+/** The shipped Simulation presets, their asset classes and bucket-to-class map, one array per
+ *  table; rows refer to each other by asset class `name` and preset `key`, never by id. */
 export type SimulationPresetsFile = {
   formatVersion: number;
   asset_class_params: {
@@ -637,10 +598,8 @@ export const SIMULATION_PRESET_TABLES = [
 /** How far a glide-path age's weights may sum from 100%. */
 export const GLIDE_PATH_SUM_TOLERANCE = 1e-6;
 
-/** Parse the presets file, throwing on a format this code can't read, a
- *  figure that isn't a finite number, a correlation outside [-1, 1], a
- *  glide-path age that doesn't sum to 100%, or a row that names a class or
- *  preset the file doesn't have. */
+/** Parse the presets file; throws on an unreadable format, a non-finite figure, a correlation
+ *  outside [-1, 1], a glide-path age not summing to 100%, or a reference to a missing row. */
 export function parseSimulationPresets(text: string): SimulationPresetsFile {
   const f = JSON.parse(text) as SimulationPresetsFile;
   const fail = (why: string) => {
@@ -678,12 +637,8 @@ export function parseSimulationPresets(text: string): SimulationPresetsFile {
   return f;
 }
 
-/**
- * Insert the shipped presets when every preset table is empty (a fresh
- * install, "Reset all data", a new demo schema); otherwise do nothing —
- * rows already there are the install's, whatever they hold. Returns the
- * rows inserted.
- */
+/** Insert the shipped presets when every preset table is empty (fresh install, reset, new
+ *  demo schema); otherwise leave the install's rows alone. Returns the rows inserted. */
 function* presetSeedSteps(
   dialect: RefDialect,
   file: SimulationPresetsFile,

@@ -65,9 +65,9 @@ export function routeWithdrawals(
       // Brokerage is neither roth nor traditional — tracked separately
     } else {
       // Roth/Traditional split accounts (401k, 403b, IRA)
-      const bal = balances[category];
-      const tradBalance = getTraditionalBalance(bal);
-      const rothBalance = getRothBalance(bal);
+      const balance = balances[category];
+      const tradBalance = getTraditionalBalance(balance);
+      const rothBalance = getRothBalance(balance);
       const taxPref = config.withdrawalTaxPreference[category];
       const available = tradBalance + rothBalance;
       const canDraw = roundToCents(Math.min(maxFromAccount, available));

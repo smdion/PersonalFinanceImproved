@@ -1,13 +1,8 @@
 "use client";
 
 /**
- * Left-rail profile picker for the budget page master-detail layout.
- *
- * Parent owns: profile list query, tRPC mutations (set-active, create,
- * rename, delete), and permission gating. This component is purely
- * presentational: it renders the list and wires click / keyboard controls
- * back up through callbacks. Rename is a click-to-edit on the row name
- * (shared `ProfileListRow` behavior) — one `onRename` callback.
+ * Presentational left-rail budget profile picker; the parent owns the query,
+ * mutations and permissions. Rename is click-to-edit via `onRename`.
  */
 
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
@@ -110,23 +105,7 @@ export function BudgetProfileSidebar({
             }
             metaTag={
               apiService && apiLinkedProfileId === p.id
-                ? (() => {
-                    // columnLabels is stored jsonb, typed by a cast here.
-                    const mode =
-                      (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-                      `Mode ${apiLinkedColumnIndex}`;
-                    return (
-                      <Badge
-                        color="blue"
-                        case="normal"
-                        subtle
-                        className="shrink-0"
-                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService)}`}
-                      >
-                        ⇄ {budgetApiServiceLabel(apiService)} → {mode}
-                      </Badge>
-                    );
-                  })()
+                ? renderApiLinkBadge(apiLinkedColumnIndex, apiService, p)
                 : undefined
             }
             meta={
@@ -142,5 +121,28 @@ export function BudgetProfileSidebar({
         );
       })}
     </div>
+  );
+}
+
+/** A profile row's badge naming the budget API mode it syncs with. */
+function renderApiLinkBadge(
+  apiLinkedColumnIndex: number,
+  apiService: string,
+  p: BudgetProfileListEntry,
+) {
+  // columnLabels is stored jsonb, typed by a cast here.
+  const mode =
+    (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
+    `Mode ${apiLinkedColumnIndex}`;
+  return (
+    <Badge
+      color="blue"
+      case="normal"
+      subtle
+      className="shrink-0"
+      title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService)}`}
+    >
+      ⇄ {budgetApiServiceLabel(apiService)} → {mode}
+    </Badge>
   );
 }

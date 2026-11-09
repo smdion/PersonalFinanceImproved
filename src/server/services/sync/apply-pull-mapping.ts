@@ -8,7 +8,7 @@
 import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { log } from "@/lib/logger";
 import { loansFedBySimplefin } from "./loan-feed";
 import {
@@ -36,24 +36,21 @@ export async function applyPullMapping(
     mapping,
     apiBalance,
     service,
-    currentYear,
+    pulledAt,
   }: {
     mapping: AccountMapping;
     apiBalance: number;
     service: string;
-    currentYear: number;
+    /** When the sync read the balance: its date and year. */
+    pulledAt: Date;
   },
 ): Promise<ApplyPullMappingResult> {
+  const currentYear = pulledAt.getFullYear();
   const localId = mapping.localId ?? mapping.localName; // backward compat
 
-  // "cash" / "creditCard" are fixed pseudo-accounts (see AccountMapping's
-  // docblock, schema-pg.ts) — many mappings can share one, summed live by
-  // getEffectiveCash / getEffectiveCreditCardDebt straight from the
-  // accounts cache. They never resolve to a single local row the way
-  // mortgage/asset mappings do, so there's nothing for this per-mapping
-  // pipeline to write; falling through to the asset branch below would
-  // have written into an otherAssetItems row literally named "Cash",
-  // repeatedly overwritten by whichever mapping happened to sync last.
+  // "cash" / "creditCard" are pseudo-accounts summed live from the accounts
+  // cache (getEffectiveCash / getEffectiveCreditCardDebt), with no single local
+  // row to write; the asset branch below would write a row named "Cash".
   if (localId === "cash" || localId === "creditCard") {
     return { applied: false };
   }
@@ -68,7 +65,7 @@ export async function applyPullMapping(
           Math.abs(apiBalance),
           "a balance from the budget app",
         ),
-        apiBalanceDate: localDateStr(),
+        apiBalanceDate: calendarDateOf(pulledAt),
       })
       .where(eq(schema.debts.id, debtId))
       .returning({ id: schema.debts.id });
@@ -107,7 +104,7 @@ export async function applyPullMapping(
             Math.abs(apiBalance),
             "a balance from the budget app",
           ),
-          apiBalanceDate: localDateStr(),
+          apiBalanceDate: calendarDateOf(pulledAt),
         })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };
@@ -116,11 +113,8 @@ export async function applyPullMapping(
   }
 
   // Only target kinds this pipeline knows are written. A portfolio
-  // (`performance:`) account is push-only — its balance is already in net
-  // worth from the snapshot, so falling through to the asset branch below
-  // would write it a second time as an other_asset_items row. Anything else
-  // with a prefix we don't know is skipped the same way. A localId with no
-  // prefix at all (a plain name) is a legacy asset mapping, kept working.
+  // (`performance:`) account is push-only (the asset branch would count it
+  // twice); unknown prefixes are skipped; no prefix is a legacy asset mapping.
   const isAssetTarget =
     mapping.assetId != null ||
     localId.startsWith("asset:") ||
@@ -143,9 +137,8 @@ export async function applyPullMapping(
       .from(schema.otherAssetItems)
       .where(eq(schema.otherAssetItems.id, assetId))
       .then(firstRow);
-    // Typed mapping whose target row no longer exists (e.g. asset deleted).
-    // Skip rather than writing under the stale localName — resurrecting a
-    // deleted asset by name would be worse than silently not syncing it.
+    // Typed mapping whose target row doesn't exist (e.g. asset deleted): skip
+    // rather than resurrect the asset under the stale localName.
     if (!assetRow) return { applied: false };
     assetName = assetRow.name;
   }
@@ -179,9 +172,8 @@ export async function applyPullMapping(
 }
 
 /**
- * Clear pulled balances nothing pulls any more — a debt or mortgage loan
- * whose mapping was removed (or whose connection was deleted) goes back to
- * its own balance instead of keeping the last pulled one forever.
+ * Clear pulled balances nothing pulls: a debt or mortgage loan with no mapping (or connection)
+ * goes back to its own balance instead of keeping the last pulled one.
  */
 export async function clearUnmappedPulledBalances(db: Db): Promise<void> {
   const conns = await db

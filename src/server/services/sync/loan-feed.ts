@@ -1,12 +1,10 @@
 /**
- * A SimpleFIN feed as a mortgage's balance. It writes the same
- * mortgage_loans.api_balance a budget pull does, so every reader follows
- * through computeMortgageBalance; while a feed is included, budget pulls
- * leave that loan alone.
+ * A SimpleFIN feed as a mortgage's balance, written to mortgage_loans.api_balance like a budget
+ * pull so every reader follows via computeMortgageBalance; budget pulls skip a feed-included loan.
  */
 import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { DbOrTx } from "@/lib/db";
 
@@ -50,7 +48,7 @@ export async function applyLoanFeedBalances(
           Math.abs(Number(feed.lastBalance)),
           "a loan balance from SimpleFIN",
         ),
-        apiBalanceDate: localDateStr(feed.lastBalanceDate ?? feed.lastSeenAt),
+        apiBalanceDate: calendarDateOf(feed.lastBalanceDate ?? feed.lastSeenAt),
       })
       .where(eq(schema.mortgageLoans.id, feed.linkedLoanId!));
   }

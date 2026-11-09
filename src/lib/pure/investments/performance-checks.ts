@@ -1,14 +1,7 @@
 /**
- * Reconciliation checks for Performance account rows — figures that don't
- * fit together, found from the rows themselves and the year's last
- * snapshot. Informational: each names a gap and what usually causes it.
- * Some gaps are legitimate (a provider's gain entered on purpose, money from
- * an account that isn't tracked); the household can accept one with a
- * reason, and it stays quiet only while the gap is the one accepted.
- *
- * Rows are matched by account + person (an account held in parts is checked
- * per part, never pooled). Run over the same rows the rollups sum, inactive
- * ones included.
+ * Reconciliation checks for Performance rows against each other and the year's
+ * last snapshot, per account + person. An accepted gap stays quiet only while it
+ * is the gap accepted. Runs over the rows the rollups sum, inactive included.
  */
 import {
   PERF_CHECK_ROUNDING,
@@ -108,9 +101,9 @@ export function performanceChecks(
   const byPart = new Map<string, CheckRow>();
   for (const r of rows) {
     if (r.performanceAccountId == null) continue;
-    const acct = `${r.performanceAccountId}|${r.year}`;
+    const account = `${r.performanceAccountId}|${r.year}`;
     const part = `${ownerKey(r.performanceAccountId, r.ownerPersonId)}|${r.year}`;
-    count.set(acct, (count.get(acct) ?? 0) + 1);
+    count.set(account, (count.get(account) ?? 0) + 1);
     count.set(part, (count.get(part) ?? 0) + 1);
     byPart.set(part, r);
   }
@@ -158,7 +151,7 @@ export function performanceChecks(
 
       const snap = snapshotFor.get(r.year);
       const own = `${ownerKey(r.performanceAccountId, r.ownerPersonId)}|${r.year}`;
-      const snapBal =
+      const snapBalance =
         !snap || count.get(own) !== 1
           ? undefined
           : inParts(r.performanceAccountId, r.year)
@@ -166,12 +159,16 @@ export function performanceChecks(
                 ownerKey(r.performanceAccountId, r.ownerPersonId),
               )
             : snap.byAccount.get(r.performanceAccountId);
-      if (snap && snapBal !== undefined && isGap(r.endingBalance - snapBal))
+      if (
+        snap &&
+        snapBalance !== undefined &&
+        isGap(r.endingBalance - snapBalance)
+      )
         add(r, {
           kind: "snapshot",
-          amount: cents(r.endingBalance - snapBal),
+          amount: cents(r.endingBalance - snapBalance),
           snapshotDate: snap.date,
-          snapshotBalance: cents(snapBal),
+          snapshotBalance: cents(snapBalance),
         });
     }
 

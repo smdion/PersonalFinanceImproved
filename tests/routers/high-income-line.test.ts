@@ -7,7 +7,7 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
 
-describe("contribution.highIncomeLine", () => {
+describe("contribution.computeHighIncomeLine", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
 
   beforeAll(async () => {
@@ -16,7 +16,7 @@ describe("contribution.highIncomeLine", () => {
   afterAll(() => ctx.cleanup());
 
   it("with nobody set up, the single line by household size", async () => {
-    expect(await ctx.caller.contribution.highIncomeLine()).toEqual({
+    expect(await ctx.caller.contribution.computeHighIncomeLine()).toEqual({
       threshold: 100_000,
       basis: "people",
     });
@@ -32,7 +32,7 @@ describe("contribution.highIncomeLine", () => {
       startDate: "2020-01-01",
       w4FilingStatus: "Single",
     });
-    expect(await ctx.caller.contribution.highIncomeLine()).toEqual({
+    expect(await ctx.caller.contribution.computeHighIncomeLine()).toEqual({
       threshold: 100_000,
       basis: "Single",
     });
@@ -40,7 +40,7 @@ describe("contribution.highIncomeLine", () => {
       key: "tax_filing_status",
       value: "MFJ",
     });
-    expect(await ctx.caller.contribution.highIncomeLine()).toEqual({
+    expect(await ctx.caller.contribution.computeHighIncomeLine()).toEqual({
       threshold: 200_000,
       basis: "MFJ",
     });

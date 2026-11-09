@@ -41,7 +41,9 @@ export function yearContributionLimits(
   yearEmployerMatch: Record<AccountCategory, number>,
   hasPerPersonSalary: boolean,
   projectedSalaryByPerson: PreYearSetup["effectiveSalaryByPerson"],
-  useRealContribs: ReturnType<typeof yearZeroBasis>["useRealContribs"],
+  useRealContributions: ReturnType<
+    typeof yearZeroBasis
+  >["useRealContributions"],
   activeBaseYearContributions: ProjectionLoopState["activeBaseYearContributions"],
 ) {
   // IRS limits: every key grows at the limit growth rate; the specs are
@@ -89,7 +91,7 @@ export function yearContributionLimits(
   });
   const yearLimits = slotLimits(
     groupLimits,
-    useRealContribs ? activeBaseYearContributions! : cappedByCategory,
+    useRealContributions ? activeBaseYearContributions! : cappedByCategory,
   );
 
   return { capped, yearLimits };
@@ -97,7 +99,9 @@ export function yearContributionLimits(
 
 /** The year's contribution slots, routed by the path that sizes them. */
 export function routeYearSlots(
-  useRealContribs: ReturnType<typeof yearZeroBasis>["useRealContribs"],
+  useRealContributions: ReturnType<
+    typeof yearZeroBasis
+  >["useRealContributions"],
   activeBaseYearContributions: ProjectionLoopState["activeBaseYearContributions"],
   yearEmployerMatch: Record<AccountCategory, number>,
   proRate: number,
@@ -115,7 +119,7 @@ export function routeYearSlots(
   let specOverflow = 0; // overflow from per-account routing (only IRS cap spillover)
   let rateCeilingScale: number | null = null; // set when rate ceiling scales down contributions
 
-  if (useRealContribs) {
+  if (useRealContributions) {
     // Build slots from per-account annual projections, pro-rated for partial year 0
     const categories: AccountCategory[] = getAllCategories();
     slots = categories

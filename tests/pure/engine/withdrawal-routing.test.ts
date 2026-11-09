@@ -962,7 +962,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     // Regression for the live bug found on the real household:
     // Before
     // reconcileIndividualToAggregate existed, eligibility.penaltyExposedTrad[cat]
-    // (summed from indBal-derived per-account locked amounts) could be a
+    // (summed from indBalance-derived per-account locked amounts) could be a
     // few cents LESS than balances[cat].traditional (the separately-
     // maintained aggregate) even when the category was reported 100%
     // locked -- subtractLocked would then leave that residual "eligible",

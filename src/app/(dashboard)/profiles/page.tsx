@@ -1,7 +1,6 @@
 /**
- * Profiles page — Salary, Contribution, Savings and Retirement profiles and
- * the What-If sandbox (the profile tabs that used to sit on the Budget
- * page). Shares BudgetContent's queries; same prefetch as the Budget page.
+ * Profiles page: Salary, Contribution, Savings and Retirement profiles plus
+ * the What-If sandbox. Shares BudgetContent's queries and the Budget prefetch.
  */
 import { HydrationBoundary } from "@tanstack/react-query";
 import { prefetchForPage } from "@/server/trpc-server";

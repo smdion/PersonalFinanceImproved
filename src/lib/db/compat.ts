@@ -1,9 +1,6 @@
 /**
- * Database compatibility helpers for PostgreSQL / SQLite dual-dialect support.
- *
- * Each helper provides dialect-specific SQL for operations that differ
- * between PostgreSQL and SQLite. Import { isPostgres } from "./dialect"
- * is used at call time so the correct branch runs based on DATABASE_URL.
+ * SQL helpers for operations that differ between PostgreSQL and SQLite;
+ * isPostgres() picks the branch at call time.
  */
 
 import { sql, getTableColumns } from "drizzle-orm";
@@ -13,14 +10,7 @@ import * as pgSchema from "./schema-pg";
 import * as sqliteSchema from "./schema-sqlite";
 
 // ---------------------------------------------------------------------------
-// Raw SQL execution
-//
-// drizzle-orm's Postgres driver exposes `.execute()` returning `{ rows }`;
-// the SQLite (better-sqlite3) driver has no `.execute()` at all — it exposes
-// synchronous `.all()` (rows) / `.run()` (no rows). Every raw-SQL call site
-// must go through one of these two helpers instead of calling `.execute()`
-// directly, or it throws "db.execute is not a function" on SQLite deploys
-// (SQLite is Ledgr's default, zero-config dialect — see docs/DESIGN.md).
+// Raw SQL: SQLite has no `.execute()`, so raw SQL always goes through these.
 // ---------------------------------------------------------------------------
 
 type RawQuery = ReturnType<typeof sql.raw> | ReturnType<typeof sql>;
@@ -102,11 +92,8 @@ export async function truncateTables(
     for (const t of reversed) {
       await execRaw(db, sql.raw(`DELETE FROM "${t.name}"`));
     }
-    // Tables not tracked in VERSION_TABLES (e.g. change_log,
-    // budget_api_cache — real tables resetAllData passes in that aren't
-    // part of the version-snapshot tier ordering) have no known FK tier.
-    // Delete them last, after every tiered table is already gone, so any
-    // FK reference from an untracked table into a tiered one is safe.
+    // Tables outside VERSION_TABLES (e.g. change_log, budget_api_cache) have no
+    // FK tier: delete them last, after every tiered table.
     const untracked = tableNames.filter((name) => !knownNames.has(name));
     for (const name of untracked) {
       await execRaw(db, sql.raw(`DELETE FROM "${name}"`));

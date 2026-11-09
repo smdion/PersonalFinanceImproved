@@ -1,14 +1,8 @@
 "use client";
 
 /**
- * Mutations for the budget-category-matching section of the integrations
- * preview panel. Covers linking/unlinking budget items to API categories,
- * creating new items from unmatched API categories, skip/unskip API
- * categories, rename reconciliation, group moves, and sync-direction
- * toggles.
- *
- * Isolated into its own hook so that a budget mutation's pending flip does
- * not cause re-renders in the savings/contrib/portfolio sections.
+ * Budget-category-matching mutations (link/unlink, create from API category, skip, rename, group
+ * moves, sync direction). A separate hook so a pending flip doesn't re-render other sections.
  */
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";

@@ -13,11 +13,11 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 /** The year's per-account rows, then the accounts reconciled and checked. */
 export function closeYearAccounts(
   hasIndividualAccounts: boolean,
-  indAccts: ProjectionContext["indAccts"],
+  indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
-  indBal: ProjectionLoopState["indBal"],
+  indBalance: ProjectionLoopState["indBalance"],
   indParentCat: ProjectionContext["indParentCat"],
-  indContribs: Map<string, number>,
+  indContributions: Map<string, number>,
   indMatch: Map<string, number>,
   indGrowth: Map<string, number>,
   indIntentional: Map<string, number>,
@@ -28,20 +28,20 @@ export function closeYearAccounts(
   gapRun: ReturnType<typeof yearGapDraw>["gapRun"],
   routeWarnings: string[],
   balances: ProjectionLoopState["balances"],
-  acctBal: ProjectionLoopState["acctBal"],
+  accountBalance: ProjectionLoopState["accountBalance"],
   year: number,
   retirementYear: number,
   age: number,
 ) {
   const indYearBalances: IndividualAccountYearBalance[] = hasIndividualAccounts
     ? buildIndividualYearBalances(
-        indAccts,
+        indAccounts,
         indKey,
-        indBal,
+        indBalance,
         indParentCat,
         "accumulation",
         {
-          contribs: indContribs,
+          contribs: indContributions,
           match: indMatch,
           growth: indGrowth,
           intentional: indIntentional,
@@ -60,28 +60,34 @@ export function closeYearAccounts(
       )
     : [];
 
-  // Reconcile indBal to acctBal once per year, as decumulation-year.ts does:
+  // Reconcile indBalance to accountBalance once per year, as decumulation-year.ts does:
   // after the output row is built (output shows pre-cleanup figures, the
   // carried state post-cleanup) and before the divergence check below.
   if (hasIndividualAccounts) {
     routeWarnings.push(
       ...followReconciliation(
-        indAccts,
+        indAccounts,
         indKey,
-        indBal,
+        indBalance,
         brokBasis,
         balances.afterTaxBasis,
-        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+        () =>
+          reconcileIndividualToAggregate(
+            indAccounts,
+            indKey,
+            indBalance,
+            accountBalance,
+          ),
       ),
     );
     // The aggregate basis is the accounts' sum.
     syncAggregateBasis(
-      indAccts,
+      indAccounts,
       indKey,
-      indBal,
+      indBalance,
       brokBasis,
       balances,
-      acctBal,
+      accountBalance,
       routeWarnings,
     );
   }
@@ -89,14 +95,14 @@ export function closeYearAccounts(
   const { allAccountsBalance, retirementBalance } = scopedBalances(
     balances,
     hasIndividualAccounts
-      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );
 
   // Divergence check: last accumulation year
   if (year === retirementYear - 1) {
     const rothTotal = getAllCategories().reduce((s, cat) => {
-      const b = acctBal[cat];
+      const b = accountBalance[cat];
       return s + (b.structure === "roth_traditional" ? b.roth : 0);
     }, 0);
     if (Math.abs(rothTotal - balances.taxFree) > 1) {

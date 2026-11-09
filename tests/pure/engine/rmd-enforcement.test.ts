@@ -22,21 +22,21 @@ function baseInput(
     slots: [] as DecumulationSlot[],
     totalTraditionalWithdrawal: 0,
     totalWithdrawal: 0,
-    acctBal: makeAccountBalances({ preTax: 500000, afterTax: 0 }),
+    accountBalance: makeAccountBalances({ preTax: 500000, afterTax: 0 }),
     ...overrides,
   };
 }
 
 describe("enforceRmd", () => {
   it("rmdShortfallAmount is 0 when the RMD is fully forced through", () => {
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 100000,
       roth: 0,
     };
     const result = enforceRmd(
-      baseInput({ overrideRmdRequired: 5000, acctBal }),
+      baseInput({ overrideRmdRequired: 5000, accountBalance }),
     );
     expect(result.rmdAmount).toBe(5000);
     expect(result.totalTraditionalWithdrawal).toBe(5000);
@@ -47,7 +47,7 @@ describe("enforceRmd", () => {
   it("an HSA draw doesn't shrink a reported shortfall either", () => {
     // All the Traditional money is out of reach (held outside the plan), so
     // the HSA's $25,000 mustn't read as paying part of the $45,454.55.
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
     const slots = [
       {
         category: "hsa",
@@ -62,7 +62,7 @@ describe("enforceRmd", () => {
         slots,
         totalTraditionalWithdrawal: 25000,
         totalWithdrawal: 25000,
-        acctBal,
+        accountBalance,
       }),
     );
     expect(result.rmdShortfallAmount).toBe(45454.55);
@@ -71,8 +71,8 @@ describe("enforceRmd", () => {
   });
 
   it("an HSA draw in the total doesn't meet the RMD", () => {
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 100000,
       roth: 0,
@@ -88,7 +88,7 @@ describe("enforceRmd", () => {
     const result = enforceRmd(
       baseInput({
         overrideRmdRequired: 5000,
-        acctBal,
+        accountBalance,
         slots,
         totalTraditionalWithdrawal: 8000,
         totalWithdrawal: 8000,
@@ -112,10 +112,10 @@ describe("enforceRmd", () => {
   // -------------------------------------------------------------------
 
   it("caps the shortfall's distribution capacity to Retirement-only balance, leaving a real rmdShortfallAmount when that's insufficient", () => {
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
     // $100k blended 401k balance, but $80k of it is Portfolio-parented --
     // only $20k is actually available to satisfy a forced RMD shortfall.
-    acctBal["401k"] = {
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 100000,
       roth: 0,
@@ -127,7 +127,7 @@ describe("enforceRmd", () => {
       grandTotal: 80000,
     };
     const result = enforceRmd(
-      baseInput({ overrideRmdRequired: 30000, acctBal, nonRetirement }),
+      baseInput({ overrideRmdRequired: 30000, accountBalance, nonRetirement }),
     );
     expect(result.rmdAmount).toBe(30000); // requirement itself unaffected
     expect(result.totalTraditionalWithdrawal).toBe(20000); // capped to Retirement-only capacity
@@ -142,8 +142,8 @@ describe("enforceRmd", () => {
     // Answer-key case ret/R11: born 1951,
     // 76 in 2027, 401(k) 600,000 at 12/31/2026, of which 500,000 is held
     // outside the plan (Portfolio-parented) here.
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 600000,
       roth: 0,
@@ -158,7 +158,7 @@ describe("enforceRmd", () => {
       age: 76,
       rmdStartAge: 73,
       priorYearEndTradBalance: 600000, // blended total
-      acctBal,
+      accountBalance,
       nonRetirement,
     });
     const result = enforceRmd(factorInput);
@@ -178,12 +178,12 @@ describe("enforceRmd", () => {
       roth: 0,
     };
     const withoutArg = enforceRmd(
-      baseInput({ overrideRmdRequired: 30000, acctBal: { ...acctBal } }),
+      baseInput({ overrideRmdRequired: 30000, accountBalance: { ...acctBal } }),
     );
     const withZeroExclusion = enforceRmd(
       baseInput({
         overrideRmdRequired: 30000,
-        acctBal: { ...acctBal },
+        accountBalance: { ...acctBal },
         nonRetirement: {
           total: zeroByCat(),
           trad: zeroByCat(),
@@ -201,13 +201,13 @@ describe("enforceRmd", () => {
   });
 
   it("distributes a shortfall across multiple Retirement-only categories proportionally, excluding each category's own Portfolio-parented share", () => {
-    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
-    acctBal["401k"] = {
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    accountBalance["401k"] = {
       structure: "roth_traditional",
       traditional: 60000,
       roth: 0,
     };
-    acctBal.ira = {
+    accountBalance.ira = {
       structure: "roth_traditional",
       traditional: 40000,
       roth: 0,
@@ -221,7 +221,7 @@ describe("enforceRmd", () => {
       grandTotal: 30000,
     };
     const result = enforceRmd(
-      baseInput({ overrideRmdRequired: 50000, acctBal, nonRetirement }),
+      baseInput({ overrideRmdRequired: 50000, accountBalance, nonRetirement }),
     );
     // Retirement-only capacity: 401k 30000 + ira 40000 = 70000, well over
     // the 50000 shortfall -- fully satisfiable, no rmdShortfallAmount.

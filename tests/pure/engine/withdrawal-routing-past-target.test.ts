@@ -155,6 +155,7 @@ describe("the last-resort pass and the household's caps", () => {
       penaltyExposedRothStillExcluded: {},
       penaltyExposedTotalStillExcluded: {},
       totalPenaltyExposedStillExcluded: 0,
+      reachableByCategory: {},
     }) as unknown as EligibilityRecord; // eslint-disable-line no-restricted-syntax -- only the fields routing reads
 
   it("an account cap covers both passes", () => {
@@ -197,9 +198,9 @@ describe("Roth growth past 59½ ranks as free", () => {
             } as never)
           : ({} as never),
       indBasis: new Map(),
-      indAccts: [account(ownerBirthYear)],
+      indAccounts: [account(ownerBirthYear)],
       indKey: () => "roth",
-      indBal: new Map([["roth", 800000]]),
+      indBalance: new Map([["roth", 800000]]),
       year,
     }).rothBasisAvailable;
 

@@ -1,21 +1,19 @@
 /** The order the household's contributions fill in, by category, for the
  *  PlanHealthCard's contribution-order check. */
 
-interface ActiveContribLite {
+interface ActiveContributionLite {
   accountType: string;
   allocationPriority?: number | null;
 }
 
 /**
- * accumulationOrder: distinct category names from activeContribs in their
- * allocationPriority order (lower = higher priority = filled first). The
- * validateContributionOrder() helper compares this against the CFP
- * heuristic.
+ * Distinct category names from activeContributions in allocationPriority order (lower is
+ * filled first), compared against the CFP heuristic by validateContributionOrder().
  */
 export function buildAccumulationOrder(
-  activeContribs: readonly ActiveContribLite[],
+  activeContributions: readonly ActiveContributionLite[],
 ): string[] {
-  const sorted = [...activeContribs].sort(
+  const sorted = [...activeContributions].sort(
     (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
   );
   const seen = new Set<string>();

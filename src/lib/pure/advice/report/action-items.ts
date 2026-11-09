@@ -1,12 +1,6 @@
-/** Action-items section of the advisor report — recommendations derived
- *  from STRUCTURED engine/Monte Carlo fields only (irmaaCost,
- *  acaMagiHeadroom, acaSubsidyPreserved, rmdShortfallAmount/
- *  rmdExcessAmount, penaltyAvoidedShortfallRate), never by pattern-
- *  matching the free-form `warnings[]` strings — those have no typed
- *  link to this code and could drift silently if matched on text
- *  (RULES.md single-computation-path). The engine's own warnings are
- *  passed through separately, verbatim, as disclosures rather than
- *  parsed into recommendations. */
+/** Advisor report action items, from structured engine and simulation fields only, never
+ *  by matching `warnings[]` text; the engine's warnings pass through verbatim as
+ *  disclosures. */
 import type {
   ProjectionResult,
   EngineDecumulationYear,
@@ -37,16 +31,16 @@ export function buildActionItems(
 
   if (mcResult.successRate < SUCCESS_RATE_THRESHOLD) {
     items.push({
-      title: "Improve your plan's success rate",
+      title: "Improve your projection's success rate",
       detail:
-        "Your simulation succeeds in less than 85% of tested market conditions. Consider increasing your savings rate, reducing planned retirement spending, delaying retirement, or reviewing your investment allocation.",
+        "Your simulation succeeds in less than 85% of tested market conditions. Consider increasing your savings rate, lowering your Retirement budget, delaying retirement, or reviewing your investment allocation.",
     });
   }
 
   if (mcResult.penaltyAvoidedShortfallRate > PENALTY_SHORTFALL_RATE_THRESHOLD) {
     items.push({
       title: "Build more penalty-free money before retirement",
-      detail: `In ${Math.round(mcResult.penaltyAvoidedShortfallRate * 100)}% of tested market conditions, this plan couldn't fully fund a year's spending without either taking a penalized early withdrawal or going short — building up Roth basis or taxable brokerage savings before age 59½ would give this plan more flexibility.`,
+      detail: `In ${Math.round(mcResult.penaltyAvoidedShortfallRate * 100)}% of tested market conditions, this projection couldn't fully fund a year's spending without either taking a penalized early withdrawal or going short — building up Roth basis or taxable brokerage savings before age 59½ would give this projection more flexibility.`,
     });
   }
 
@@ -56,7 +50,7 @@ export function buildActionItems(
   if (rmdShortfallYears.length > 0) {
     items.push({
       title: "Review Required Minimum Distribution capacity",
-      detail: `In ${rmdShortfallYears.length} year${rmdShortfallYears.length !== 1 ? "s" : ""}, this plan's Traditional accounts couldn't fully cover a required distribution — this can trigger a 25% excise tax on the shortfall. Consider Roth conversions in earlier years to reduce future Traditional balances.`,
+      detail: `In ${rmdShortfallYears.length} year${rmdShortfallYears.length !== 1 ? "s" : ""}, this projection's Traditional accounts couldn't fully cover a required distribution — this can trigger a 25% excise tax on the shortfall. Consider Roth conversions in earlier years to reduce future Traditional balances.`,
     });
   }
 

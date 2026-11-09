@@ -1,8 +1,6 @@
 /**
- * Fund facts on the Benchmarks page: what each holding is worth today, what
- * it holds, what it costs, and the household's own answers where SEC has
- * none (confirm or reject a stand-in, enter facts, link asset classes).
- * portfolioProcedure throughout — holdings, values and allocation.
+ * Benchmarks-page fund facts (portfolioProcedure): each holding's value, contents and cost,
+ * plus the household's answers where SEC has none (stand-ins, entered facts, asset classes).
  */
 import { z } from "zod/v4";
 import { and, eq, isNull, ne } from "drizzle-orm";
@@ -16,6 +14,7 @@ import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** How far a hand-entered mix may stray from 100% (rounding). */
 const MIX_TOTAL_TOLERANCE = 0.005;
@@ -53,7 +52,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
   ),
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   getHoldingsOverview: portfolioProcedure.query(({ ctx }) =>
-    loadHoldingsOverview(ctx.db),
+    loadHoldingsOverview(ctx.db, ctx.scope.asOf),
   ),
 
   /** Use the suggested stand-in's SEC filings for this fund, and fetch them now. */
@@ -64,7 +63,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       const updated = await ctx.db
         .update(s)
         .set({
-          standinConfirmedAt: new Date(),
+          standinConfirmedAt: writeStamp(),
           standinPreview: null,
           factsCheckedAt: null,
         })
@@ -76,6 +75,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
           message: "No stand-in to confirm",
         });
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       }).catch((e: unknown) => {
         // Its facts are unchecked, so the next refresh fetches them.
@@ -148,6 +148,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
       if (!sec.preview?.error && Date.now() - last < CHECK_STANDIN_COOLDOWN_MS)
         return { checked: false, stoppedBySec: false, errors: [] };
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       });
       return {
@@ -168,6 +169,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "none")))
         .returning({ id: s.id });
       const summary = await syncSecurityFacts(ctx.db, {
+        now: ctx.scope.asOf,
         securityIds: [input.securityId],
       }).catch((e: unknown) => {
         // A reopened fund is unchecked, so the next refresh looks again.
@@ -264,7 +266,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .values(values)
         .onConflictDoUpdate({
           target: [f.securityId, f.source, f.asOf],
-          set: { ...values, fetchedAt: new Date() },
+          set: { ...values, fetchedAt: writeStamp() },
         });
       return { ok: true as const };
     }),

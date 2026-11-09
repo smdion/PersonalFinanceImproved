@@ -36,12 +36,12 @@ export function DecumulationMethodologyContent() {
         </h4>
         <p className="text-caption text-faint">
           Steps 1–2 below work differently depending on your selected strategy —
-          4 of the 8 strategies (Fixed, Forgo Inflation After Loss, Spending
-          Decline, Guardrails) start from your stated budget and adjust it; the
-          other 4 (RMD-Based, Constant Percentage, Endowment, Vanguard Dynamic)
-          compute spending directly from your portfolio balance and never read
-          the budget figure at all. See the per-strategy descriptions further
-          down this page for exactly how each one works.
+          4 of the 9 (Fixed, Forgo Inflation After Loss, Spending Decline,
+          Guardrails) start from your Retirement budget; the other 5 (RMD-Based,
+          Constant Percentage, Endowment, Vanguard Dynamic, VPW) size spending
+          from your balance (RMD-Based uses the budget until the RMD age). Each
+          is measured against your Retirement budget. See the per-strategy
+          descriptions further down this page for how each one works.
         </p>
         <ol className="list-decimal space-y-1.5 pl-5">
           <li>
@@ -54,20 +54,20 @@ export function DecumulationMethodologyContent() {
             by inflation minus its own decline rate instead, never reading the
             raise rate; Forgo Inflation After Loss grows it like Fixed except
             skips the raise the year after a loss. A budget change by year
-            (carries forward) can change the base amount at any point for all
-            four.
+            (carries forward) changes the base at any point for Fixed, Forgo and
+            Guardrails; Spending Decline uses only year 1.
           </li>
           <li>
             <strong>
               Portfolio-derived spending (balance-based strategies)
             </strong>{" "}
-            — RMD-Based Spending, Constant Percentage, Endowment, and Vanguard
-            Dynamic compute the year&apos;s spending directly from your current
+            — RMD-Based Spending, Constant Percentage, Endowment, Vanguard
+            Dynamic and VPW compute the year&apos;s spending from your current
             portfolio balance (or a rolling average, for Endowment) each year —
-            the Retirement Budget figure is not read at all for these four;
+            the Retirement budget is not spent by these five, only measured;
             it&apos;s replaced outright by each strategy&apos;s own formula, not
             adjusted from it. RMD-Based falls back to budget-seeded spending
-            only before RMD age (72–75).
+            only before the RMD age (73, or 75 if born 1960 or later).
           </li>
           <li>
             <strong>Tax estimation</strong> — the engine estimates the tax cost
@@ -145,8 +145,8 @@ export function DecumulationMethodologyContent() {
         <p className="text-faint mb-2 text-xs">
           Based on Morningstar&apos;s &ldquo;State of Retirement Income:
           2025&rdquo; research. The SWR (starting safe withdrawal rate) shown is
-          the maximum starting rate each strategy can support at 90% historical
-          success over 30 years with a 40/60 portfolio.
+          the highest starting rate each strategy supports in 90% of its
+          simulated trials over 30 years with a 40/60 portfolio.
         </p>
 
         <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
@@ -162,16 +162,15 @@ export function DecumulationMethodologyContent() {
 
         <ul className="list-disc space-y-3 pl-5">
           <li>
-            <strong>Fixed Real (SWR ~3.9%)</strong> — your initial withdrawal
-            amount is set by your configured withdrawal rate applied to your
-            portfolio balance at retirement, then adjusted for inflation each
-            year regardless of portfolio performance. No feedback loop —
-            spending never changes based on how the portfolio is doing.
+            <strong>Fixed Real (SWR ~3.9%)</strong> — year 1 spends your
+            Retirement budget; each year after grows it by the Post-Retirement
+            Raise, whatever the market does. No feedback loop — spending never
+            changes based on how the portfolio is doing.
             <br />
             <span className="text-faint text-label">
               Best for: retirees who need perfectly predictable income and are
-              comfortable with a lower starting rate. Pair with a conservative
-              withdrawal rate (3-4%).
+              comfortable with a lower starting rate. Set a Retirement budget
+              that is a conservative share of the balance (3-4%).
             </span>
           </li>
           <li>
@@ -207,7 +206,7 @@ export function DecumulationMethodologyContent() {
             spending that responds to portfolio performance. When your current
             withdrawal rate drops below the upper guardrail (portfolio grew),
             spending increases. When it rises above the lower guardrail
-            (portfolio shrank), spending decreases. The prosperity rule skips
+            (portfolio shrank), spending decreases. The withdrawal rule skips
             inflation adjustments after a loss year. The withdrawal rate is what
             the portfolio pays — spending less Social Security — over its
             balance, and a raise or cut is 10% of that portfolio draw. When
@@ -225,7 +224,7 @@ export function DecumulationMethodologyContent() {
           <li>
             <strong>Spending Decline (SWR ~5.0%)</strong> — annual real spending
             declines by a fixed rate (default 2%), reflecting actual reduced
-            consumption in later retirement per EBRI spending data. Not
+            consumption in later retirement (Morningstar, from EBRI data). Not
             market-responsive — the decline is predetermined regardless of
             portfolio performance.
             <br />
@@ -240,8 +239,8 @@ export function DecumulationMethodologyContent() {
             <strong>Constant Percentage (SWR ~5.7%)</strong> — withdraw a fixed
             percentage of the current portfolio balance each year. A floor
             (default 90% of initial amount) prevents severe cuts. The portfolio
-            can mathematically never fully deplete — you&apos;re always taking a
-            percentage of what&apos;s left.
+            only runs out if the floor holds withdrawals up — otherwise you take
+            a percentage of what&apos;s left.
             <br />
             <span className="text-faint text-label">
               Best for: retirees comfortable with spending that rises and falls
@@ -337,7 +336,7 @@ export function DecumulationMethodologyContent() {
                 <td className="pr-3">Decimal</td>
                 <td>
                   A reference rate (e.g. 0.04 = 4%) used to size the &ldquo;FI
-                  target&rdquo; estimate on other pages. None of the 8
+                  target&rdquo; estimate on other pages. None of the 9
                   withdrawal strategies below read this field to compute actual
                   spending — see &ldquo;What it computes each year&rdquo; above
                   for what really drives the withdrawal amount for your selected
@@ -514,7 +513,7 @@ export function DecumulationMethodologyContent() {
                   skipInflationAfterLoss
                 </td>
                 <td className="pr-3">true</td>
-                <td>Prosperity rule: skip inflation after a loss year</td>
+                <td>Withdrawal rule: skip inflation after a loss year</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3 font-medium" colSpan={4}>
@@ -526,7 +525,7 @@ export function DecumulationMethodologyContent() {
                 <td className="text-label pr-3 font-mono">annualDeclineRate</td>
                 <td className="pr-3">0.02</td>
                 <td>
-                  Annual real spending decline rate (2% matches EBRI data)
+                  Annual real spending decline rate (2%: Morningstar, from EBRI)
                 </td>
               </tr>
               <tr>

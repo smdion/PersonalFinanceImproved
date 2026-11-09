@@ -8,7 +8,7 @@ You execute the Ledgr release process from OPS.md. You never skip steps. You nev
 
 Ask for the version number if not provided: "What version are we releasing? (e.g., 0.5.3)"
 
-The full procedure is documented in `.scratch/docs/ops/OPS.md` § "Release Process". Read that section before starting — it is the authoritative source. The steps below are a structured execution guide derived from it.
+The full procedure is documented in `docs/OPS.md` § "Release Process". Read that section before starting — it is the authoritative source. The steps below are a structured execution guide derived from it. Your own deployment's details (host, SSH key, where dumps go) belong in your own notes, never in this file.
 
 ---
 
@@ -72,7 +72,7 @@ git commit -m "release: vX.Y.Z"
 
 ### Step 4 — Deploy
 
-**If a migration is pending:** first test it against prod data (refresh dev from prod and run `pnpm db:migrate` there), then `pg_dump -Fc` prod to `/workspace/dev/code-server/ledgr-backups/ledgr-pre-<ver>-<UTC>.dump` and check it lists its tables. Rollback = that dump + the previous image, never the image alone.
+**If a migration is pending:** first test it against prod data (refresh dev from prod and run `pnpm db:migrate` there), then take a database dump of prod (`pg_dump -Fc`, or a copy of the SQLite file; docs/OPS.md § Backups) and check it lists its tables. Rollback = that dump + the previous image, never the image alone.
 
 ```bash
 pnpm run deploy X.Y.Z   # NOT `pnpm deploy` — that's a pnpm built-in
@@ -130,6 +130,8 @@ git branch -d vX.Y.Z && git push origin --delete vX.Y.Z   # the tag needs the na
 git checkout main && git pull
 pnpm release X.Y.Z --dry-run    # validate — read the output carefully
 pnpm release X.Y.Z              # tag, push, create GitHub release
+# Under 24 h after the last tag: pnpm release X.Y.Z --hotfix "<reason>",
+# with a "Hotfix: <reason>" line in the CHANGELOG entry
 ```
 
 The release script: bumps version (no-op if already done), verifies CHANGELOG entry exists, verifies lockfile sync, runs full tests, runs lint, runs docs freshness, creates git tag, pushes with `--follow-tags`, creates GitHub release with CHANGELOG section extracted automatically.
@@ -138,16 +140,15 @@ Read the dry-run output before running for real. If it reports an error, fix it 
 
 ### Step 10 — Verify and clean up
 
+Using the host and key from `.env.deploy` (`DEPLOY_SSH_HOST`, `DEPLOY_SSH_KEY`):
+
 ```bash
 # Confirm prod is on the released version
-ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 \
+ssh -i "$DEPLOY_SSH_KEY" user@deploy-host \
   "docker exec ledgr node -e \"const http=require('http');http.get('http://localhost:3000/api/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))}).on('error',console.error)\""
 
 # Clean up dangling image layers
-ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 "docker image prune -f"
-
-# Delete the SSH key
-rm -f /tmp/ansible_ssh_key
+ssh -i "$DEPLOY_SSH_KEY" user@deploy-host "docker image prune -f"
 ```
 
 The health check should return `{ "status": "ok", "version": "X.Y.Z" }`. If it shows the wrong version, something went wrong with the deploy — investigate before calling the release complete.
@@ -158,12 +159,15 @@ The health check should return `{ "status": "ok", "version": "X.Y.Z" }`. If it s
 
 ### Deploy fails health check
 
+Follow docs/OPS.md § Rollback. Without a migration, retag the previous image and restart (`DEPLOY_STACK_DIR` from `.env.deploy`):
+
 ```bash
-# Retag previous version and restart
-ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 "docker tag ledgr:X.Y.(Z-1) ledgr:latest"
-ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 \
-  "cd /opt/stacks/dev && sudo docker compose up -d ledgr ledgrdemo"
+ssh -i "$DEPLOY_SSH_KEY" user@deploy-host "docker tag ledgr:X.Y.(Z-1) ledgr:latest"
+ssh -i "$DEPLOY_SSH_KEY" user@deploy-host \
+  "cd <DEPLOY_STACK_DIR> && docker compose up -d ledgr ledgrdemo"
 ```
+
+With a migration, restore the pre-deploy dump first: never roll back the image alone.
 
 Fix the bug on the feature branch, redeploy with the same version number (`pnpm run deploy X.Y.Z` is idempotent), smoke test again.
 
@@ -175,15 +179,9 @@ Read the error output. Common causes:
 - Lockfile out of sync → `pnpm install` and commit the updated lockfile
 - Tests failing → fix before tagging
 
-### SSH key not extracted
+### SSH not set up
 
-```bash
-cd /workspace/dev/homelab-ops
-ansible-vault view vars/secrets.yaml \
-  --vault-password-file <(cat /config/.claude/semaphore.conf | grep -A1 '\[vault\]' | tail -1 | cut -d= -f2 | tr -d ' ') \
-  | python3 -c "import sys,yaml; print(yaml.safe_load(sys.stdin)['vault_ansible_user_ssh_private_key'].rstrip())" \
-  > /tmp/ansible_ssh_key && chmod 600 /tmp/ansible_ssh_key
-```
+`pnpm run deploy` reads `.env.deploy` (copy `.env.deploy.example`). If the key or host is missing, stop and ask: where the key comes from is your deployment's business, not this file's.
 
 ---
 
@@ -208,5 +206,4 @@ ansible-vault view vars/secrets.yaml \
 [ ] pnpm release X.Y.Z
 [ ] Verify health endpoint shows correct version
 [ ] docker image prune -f
-[ ] rm /tmp/ansible_ssh_key
 ```

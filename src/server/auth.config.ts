@@ -10,11 +10,9 @@ import { isDevelopmentBuild } from "./auth-mode";
 
 const providers: NextAuthConfig["providers"] = [];
 
-// DEMO_ONLY needs no sign-in (every request gets the read-only demo
-// session), so it registers no providers. Dev Login — any name, no
-// password — exists only in development builds: the NextAuth secret is
-// shared with the demo, so a production build offering it would mint tokens
-// another install could be handed.
+// DEMO_ONLY registers no providers: every request gets the read-only demo session.
+// Dev Login exists only in development builds: the NextAuth secret is shared with
+// the demo, so a production build offering it would mint tokens another install accepts.
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
 if (isDemoOnly) {

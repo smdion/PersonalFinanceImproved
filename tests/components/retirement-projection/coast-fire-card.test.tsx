@@ -124,7 +124,7 @@ describe("CoastFireCard", () => {
       <CoastFireCard
         ageLabel={(age) => `Age ${age}`}
         input={baseInput}
-        coastFireMcLoading
+        coastFireSimulationLoading
         coastFireMcResult={undefined}
       />,
     );
@@ -142,7 +142,7 @@ describe("CoastFireCard", () => {
       <CoastFireCard
         ageLabel={(age) => `Age ${age}`}
         input={baseInput}
-        coastFireMcNotConfigured="no_presets"
+        coastFireSimulationNotConfigured="no_presets"
       />,
     );
     expect(screen.getByText(/No simulation preset/)).toBeInTheDocument();

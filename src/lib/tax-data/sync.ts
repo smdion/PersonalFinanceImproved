@@ -1,14 +1,7 @@
 /**
- * Community tax-data updates: download the project's signed tax-data
- * release, verify it, and when it's newer than anything this install has,
- * keep it for an admin to review (tax_data_updates). Nothing is applied
- * here — an admin approves the changes in Settings → Reference Data.
- *
- * Outbound: one plain GET of the release asset from github.com; nothing
- * about the household is sent. Off unless an admin
- * turned it on (SK_TAX_DATA_SYNC_ENABLED), and always off with
- * LEDGR_TAX_DATA_SYNC=off or in demo-only mode. Behind a proxy, set
- * NODE_USE_ENV_PROXY=1 (Node's fetch ignores HTTPS_PROXY otherwise).
+ * Community tax-data updates: download and verify the signed release (one plain
+ * GET, no household data) and keep a newer one for admin review. Off unless enabled;
+ * forced off by LEDGR_TAX_DATA_SYNC=off or demo. Proxies need NODE_USE_ENV_PROXY=1.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -34,26 +27,40 @@ import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
 import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
+import { readStoredSetting } from "@/lib/db/stored-setting";
+import { z } from "zod/v4";
 
 const TIMEOUT_MS = 15_000;
 const MAX_BYTES = 1024 * 1024;
 const USER_AGENT = "Ledgr self-hosted personal finance (tax-data updates)";
 
-type TaxDataCheckResult =
-  | "off"
-  | "current" // nothing newer than this install has (or nothing published)
-  | "pending" // a verified update is waiting for an admin
-  | "applied" // a newer release changed nothing here: recorded as applied
-  | "needs-newer-ledgr" // a newer file format, or no bundled key verifies
-  | "invalid" // signed but fails the checks — never offered
-  | "rate-limited"
-  | "error";
+const TAX_DATA_CHECK_RESULTS = [
+  "off",
+  "current", // nothing newer than this install has (or nothing published)
+  "pending", // a verified update is waiting for an admin
+  "applied", // a newer release changed nothing here: recorded as applied
+  "needs-newer-ledgr", // a newer file format, or no bundled key verifies
+  "invalid", // signed but fails the checks — never offered
+  "rate-limited",
+  "error",
+] as const;
+type TaxDataCheckResult = (typeof TAX_DATA_CHECK_RESULTS)[number];
 
 type TaxDataLastCheck = {
   at: string;
   result: TaxDataCheckResult;
   detail?: string;
 };
+
+/** The stored last check, as `checkForTaxDataUpdate` writes it. */
+const lastCheckShape: z.ZodType<TaxDataLastCheck | null> = z
+  .looseObject({
+    at: z.string(),
+    result: z.enum(TAX_DATA_CHECK_RESULTS),
+    detail: z.string().optional(),
+  })
+  .nullable();
 
 /** Where to fetch from (tests point this at a fake). */
 type TaxDataSource = {
@@ -94,8 +101,8 @@ export async function setTaxDataSyncEnabled(db: Db, enabled: boolean) {
 export async function lastTaxDataCheck(
   db: Db,
 ): Promise<TaxDataLastCheck | null> {
-  return ((await getSetting(db, SK_TAX_DATA_LAST_CHECK)) ??
-    null) as TaxDataLastCheck | null;
+  const stored = (await getSetting(db, SK_TAX_DATA_LAST_CHECK)) ?? null;
+  return readStoredSetting(SK_TAX_DATA_LAST_CHECK, stored, lastCheckShape);
 }
 
 class RateLimited extends Error {}
@@ -161,13 +168,13 @@ export async function checkForTaxDataUpdate(
   }: { source?: TaxDataSource; force?: boolean } = {},
 ): Promise<TaxDataLastCheck> {
   const done = async (r: Omit<TaxDataLastCheck, "at">) => {
-    const result = { at: new Date().toISOString(), ...r };
+    const result = { at: writeStamp().toISOString(), ...r };
     await setSetting(db, SK_TAX_DATA_LAST_CHECK, result);
     return result;
   };
   const off = await taxDataSyncOffReason(db);
   if (off && !(force && off === "setting"))
-    return { at: new Date().toISOString(), result: "off" };
+    return { at: writeStamp().toISOString(), result: "off" };
 
   try {
     const url =
@@ -230,7 +237,7 @@ export async function checkForTaxDataUpdate(
         status,
         ...(status === "applied" && {
           decidedBy: "automatic (no changes)",
-          decidedAt: new Date(),
+          decidedAt: writeStamp(),
         }),
       })
       .onConflictDoNothing();
@@ -246,10 +253,7 @@ export async function checkForTaxDataUpdate(
 }
 
 /** Is the scheduled check due? Weekly; a day after a failed one. */
-export async function taxDataCheckDue(
-  db: Db,
-  now = new Date(),
-): Promise<boolean> {
+export async function taxDataCheckDue(db: Db, now: Date): Promise<boolean> {
   const last = await lastTaxDataCheck(db);
   if (!last) return true;
   const failed = last.result === "error" || last.result === "rate-limited";

@@ -277,7 +277,8 @@ echo "  Kept: $($SSH_CMD "docker images ledgr --format '{{.Tag}}'" 2>/dev/null |
 
 echo -e "\n${GREEN}${BOLD}Deploy $TAG complete!${NC}"
 echo ""
-echo "Rollback (if needed):"
+echo "Rollback (if needed; a release with a migration restores the pre-deploy"
+echo "dump first, see docs/OPS.md § Rollback):"
 echo "  1. Find previous version: $SSH_CMD \"docker images ledgr --format '{{.Tag}}'\""
 echo "  2. Retag: $SSH_CMD \"docker tag ledgr:X.Y.Z ledgr:latest\""
 echo "  3. Restart: $SSH_CMD \"cd $STACK_DIR && sudo docker compose up -d $PROD_CONTAINER $DEMO_CONTAINER\""

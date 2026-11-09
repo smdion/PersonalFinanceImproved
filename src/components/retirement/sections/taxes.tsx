@@ -1,18 +1,6 @@
 /**
- * Taxes in Retirement panel.
- *
- * The `filingStatus` placeholder in the "Auto" option is derived locally from
- * `settings.filingStatus` (identical to the old `const filingStatus =
- * settings.filingStatus` in the parent). `selectedScenario` is plumbed through
- * so the brokerage LTCG rate still reads off the active scenario.
- *
- * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer):
- * deliberately a plain prop, not a tRPC query owned by this
- * component. This file is documented (retirement-sections-smoke.test.tsx) as
- * a pure presentational leaf — "Settings + callback props in, JSX out" — and
- * the parent (retirement-profile-tab.tsx) already owns every other query
- * this tab depends on, same pattern as `CoastFireCard` receiving
- * `coastFireMcResult` as a prop rather than querying it itself.
+ * Taxes in Retirement panel, a presentational leaf (props in, JSX out): the parent owns every
+ * query, including `bracketOptimizerResult`. `selectedScenario` supplies the brokerage LTCG rate.
  */
 "use client";
 
@@ -77,12 +65,8 @@ export function TaxesSection({
   const id = useId();
   const filingStatus = settings.filingStatus;
 
-  // Persisted withdrawal ORDER / SPLITS defaults (this profile's saved
-  // household choice). NULL columns fall back to the config defaults — the
-  // same resolution `buildDecumulationDefaults` does server-side. The order
-  // editor writes each swap straight through (discrete gesture, like the
-  // routing-mode select); the splits grid keeps a local draft and writes
-  // once on Save to avoid a mutation per keystroke.
+  // Saved withdrawal order/splits; NULL falls back to config defaults (as
+  // `buildDecumulationDefaults` does). Order swaps save at once; splits on Save.
   const persistedOrder =
     (settings.withdrawalOrder as AccountCategory[] | null) ??
     getDefaultDecumulationOrder();
@@ -291,7 +275,7 @@ export function TaxesSection({
                     {formatPercent(recommendedTarget)}
                   </span>
                 </span>
-                <HelpTip text="Searches your own real tax brackets for the target that minimizes lifetime tax cost (including Roth conversions and RMDs, plus a penalty for Traditional money left unconverted at end of plan) while still funding your stated spending need. Recomputed from your current settings — not a one-time suggestion." />
+                <HelpTip text="Searches your own real tax brackets for the target that minimizes lifetime tax cost (including Roth conversions and RMDs, plus a penalty for Traditional money left unconverted at the end of the projection) while still funding your stated spending need. Recomputed from your current settings — not a one-time suggestion." />
                 {isEditable && (
                   <button
                     onClick={applyRecommendedTarget}
@@ -397,7 +381,7 @@ export function TaxesSection({
           <label htmlFor={`${id}-routing`} className="text-muted">
             Withdrawal Routing
             <HelpTip
-              text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can customize it for one session without changing what's saved here.`}
+              text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can change it for one session without changing what's saved here.`}
             />
           </label>
           <div className="font-medium">

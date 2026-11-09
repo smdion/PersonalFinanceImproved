@@ -3,7 +3,7 @@
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, syncProcedure } from "../../trpc";
+import { adminProcedure, createTRPCRouter } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { cacheGet } from "@/lib/budget-api";
 import type { BudgetCategoryGroup } from "@/lib/budget-api";
@@ -17,7 +17,7 @@ import { serviceEnum } from "./_shared";
 
 export const syncNamesRouter = createTRPCRouter({
   /** Rename a budget item's subcategory to match the API category name. */
-  renameBudgetItemToApi: syncProcedure
+  renameBudgetItemToApi: adminProcedure
     .input(z.object({ budgetItemId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const links = await loadBudgetItemLinks(
@@ -40,7 +40,7 @@ export const syncNamesRouter = createTRPCRouter({
     }),
 
   /** Rename a budget item's API category name to match the Ledgr subcategory (update stored name). */
-  renameBudgetItemApiName: syncProcedure
+  renameBudgetItemApiName: adminProcedure
     .input(z.object({ budgetItemId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const [item] = await ctx.db
@@ -77,7 +77,7 @@ export const syncNamesRouter = createTRPCRouter({
     }),
 
   /** Move a budget item to the API's category group. */
-  moveBudgetItemToApiGroup: syncProcedure
+  moveBudgetItemToApiGroup: adminProcedure
     .input(
       z.object({
         budgetItemId: z.number().int(),
@@ -94,7 +94,7 @@ export const syncNamesRouter = createTRPCRouter({
     }),
 
   /** Rename a savings goal to match the API category name. */
-  renameSavingsGoalToApi: syncProcedure
+  renameSavingsGoalToApi: adminProcedure
     .input(z.object({ goalId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const links = await loadSavingsGoalLinks(
@@ -118,7 +118,7 @@ export const syncNamesRouter = createTRPCRouter({
     }),
 
   /** Update a savings goal's stored API name to match its current Ledgr name. */
-  renameSavingsGoalApiName: syncProcedure
+  renameSavingsGoalApiName: adminProcedure
     .input(z.object({ goalId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const [goal] = await ctx.db
@@ -156,7 +156,7 @@ export const syncNamesRouter = createTRPCRouter({
     }),
 
   /** Batch rename all drifted items in one direction. */
-  syncAllNames: syncProcedure
+  syncAllNames: adminProcedure
     .input(
       z.object({
         service: serviceEnum,

@@ -1,29 +1,8 @@
 "use client";
 
 /**
- * useInlineNumberEdit — the "one active cell at a time" state machine
- * behind editable data-grid tables (Batch 24/Pass 38): a single
- * editingKey + editValue pair, click-to-start, Enter/blur-to-commit,
- * Escape-to-cancel. Generic over the key shape (e.g.
- * `{ type: "annual" | "account"; id: number; field: string }` in
- * performance/performance-content.tsx) so callers keep their own "is this cell the one
- * being edited" comparison — deep-equality isn't assumed here.
- *
- *   const edit = useInlineNumberEdit<EditingCell>({
- *     onCommit: (key, value) => {
- *       if (key.type === "annual") updateAnnual.mutate({ id: key.id, [key.field]: value });
- *       else updateAccount.mutate({ id: key.id, [key.field]: value });
- *     },
- *   });
- *
- *   <EditableCell
- *     isEditing={edit.editingKey?.type === "annual" && edit.editingKey.id === row.id && edit.editingKey.field === "fees"}
- *     editValue={edit.editValue}
- *     onStartEdit={() => edit.startEdit({ type: "annual", id: row.id, field: "fees" }, row.fees)}
- *     onEditValueChange={edit.setEditValue}
- *     onSaveEdit={edit.commit}
- *     onKeyDown={edit.handleKeyDown}
- *   />
+ * One-active-cell edit state for editable grids: click to start, Enter/blur to
+ * commit, Escape to cancel. Generic over the key; callers compare keys themselves.
  */
 
 import { useCallback, useRef, useState, type KeyboardEvent } from "react";
@@ -34,12 +13,8 @@ interface UseInlineNumberEditReturn<TKey> {
   setEditValue: (v: string) => void;
   /** Begin editing `key`, seeding the draft from `currentValue`. */
   startEdit: (key: TKey, currentValue: number | string) => void;
-  /** Commit the current draft. A blank draft is a silent no-op cancel by
-   *  default — matching the numeric fields this hook was first written
-   *  for, where an empty input has no sensible value. Pass
-   *  `allowBlankCommit: true` for a field where blank is itself a
-   *  meaningful value (e.g. clearing a text label or note back to null) —
-   *  onCommit then fires with `value === ""` instead of being skipped. */
+  /** Commit the current draft. A blank draft cancels silently unless
+   *  `allowBlankCommit` is set, in which case onCommit gets `""`. */
   commit: () => void;
   cancel: () => void;
   handleKeyDown: (e: KeyboardEvent) => void;

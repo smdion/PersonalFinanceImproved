@@ -460,7 +460,7 @@ describe("monte carlo integration", () => {
     // bucket for the AGGREGATE engine math. The fix is that
     // computeMonteCarloProjection also empties `individualAccounts` in this
     // mode (below) -- a first attempt instead kept individualAccounts real
-    // and skipped the yearly indBal/acctBal reconciliation, which stopped
+    // and skipped the yearly indBalance/accountBalance reconciliation, which stopped
     // the reconciliation from bleeding real balances into the fake bucket
     // in ACCUMULATION years, but in DECUMULATION years silently caused the
     // opposite failure: withdrawals only ever route against the collapsed

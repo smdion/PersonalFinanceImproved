@@ -76,7 +76,7 @@ export function matchValueToStore(_type: MatchType, typed: string): string {
 export function formatEmployerMatch(
   matchType: MatchType,
   matchValue: Stored,
-  maxMatchPct: Stored,
+  maxMatchPercent: Stored,
   matchRate?: Stored,
 ): string | null {
   if (!matchType || matchType === "none") return null;
@@ -84,7 +84,7 @@ export function formatEmployerMatch(
   const shown = percent ? percentFromRate(matchRate) : matchValue;
   const value = parseFloat(String(shown ?? "0"));
   if (matchType === PERCENT_MATCH) {
-    const cap = parseFloat(String(maxMatchPct ?? "0"));
+    const cap = parseFloat(String(maxMatchPercent ?? "0"));
     return cap > 0 ? `${value}% of ${formatPercent(cap, 2)}` : `${value}%`;
   }
   return `${formatCurrency(value)}/yr`;

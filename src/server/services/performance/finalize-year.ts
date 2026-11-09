@@ -24,7 +24,7 @@ import {
 } from "@/lib/pure/investments/returns";
 import type { PerfCategory } from "@/lib/config/display-labels";
 import {
-  buildPerfAcctLookups,
+  buildPerfAccountLookups,
   getEffectiveCategory,
 } from "@/lib/pure/investments/annual-rollups";
 import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis";
@@ -80,13 +80,13 @@ export async function finalizePerformanceYear(
     }
 
     // 1. Get all account_performance rows for this year
-    const finalizedAccts = await tx
+    const finalizedAccounts = await tx
       .select()
       .from(schema.accountPerformance)
       .where(eq(schema.accountPerformance.year, year));
 
     // Guard: reject if no account data exists for this year
-    if (finalizedAccts.length === 0) {
+    if (finalizedAccounts.length === 0) {
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: `No account performance data exists for year ${year}. Add account data before finalizing.`,
@@ -104,13 +104,13 @@ export async function finalizePerformanceYear(
 
     // Load performance_accounts for accountType-based grouping
     const allPerfAccounts = await tx.select().from(schema.performanceAccounts);
-    const finalizeLookups = buildPerfAcctLookups(allPerfAccounts);
+    const finalizeLookups = buildPerfAccountLookups(allPerfAccounts);
 
     // 3. Compute rollups and persist finalized values for each category, then Portfolio
     // Categories derived from accountType (Brokerage, HSA, 401k/IRA), not parentCategory
     const accountCategories = Array.from(
       new Set(
-        finalizedAccts.map((a) => getEffectiveCategory(a, finalizeLookups)),
+        finalizedAccounts.map((a) => getEffectiveCategory(a, finalizeLookups)),
       ),
     );
 
@@ -119,7 +119,7 @@ export async function finalizePerformanceYear(
 
     // First pass: finalize per-category rows
     for (const category of accountCategories) {
-      const catAccounts = finalizedAccts.filter(
+      const catAccounts = finalizedAccounts.filter(
         (a) => getEffectiveCategory(a, finalizeLookups) === category,
       );
       if (catAccounts.length === 0) continue;
@@ -182,10 +182,8 @@ export async function finalizePerformanceYear(
       .set({ isFinalized: true })
       .where(eq(schema.accountPerformance.year, year));
 
-    // 4a-roth. Finalize this year's Roth basis rows and seed next
-    // year's — same year-boundary event, its own correctly-keyed table
-    // (accountPerformance doesn't split a jointly-labeled account per
-    // owner, which Roth basis correctness needs).
+    // 4a-roth. Finalize this year's Roth basis rows and seed next year's, in
+    // their own table (accountPerformance doesn't split a joint account per owner).
     await finalizeRothBasisForYear(tx, year);
 
     // 4b. Load existing next-year rows to merge (create missing accounts, skip existing)
@@ -201,7 +199,7 @@ export async function finalizePerformanceYear(
         allPerfAccounts.filter((m) => m.isActive).map((m) => m.id),
       );
       const activeAccounts = filterAccountsForNextYear(
-        finalizedAccts,
+        finalizedAccounts,
         activeMasterIds,
       );
 
@@ -268,7 +266,7 @@ export async function finalizePerformanceYear(
     // Portfolio data comes from finalized account_performance; non-portfolio from app state
     // (allPerfAccounts already loaded above)
 
-    const portfolioTotal = computePortfolioTotal(finalizedAccts);
+    const portfolioTotal = computePortfolioTotal(finalizedAccounts);
 
     // Non-portfolio data from app state + item tables
     const [
@@ -294,19 +292,15 @@ export async function finalizePerformanceYear(
 
     const yearEndDate = `${year}-12-31`;
     const asOfDate = new Date(yearEndDate);
-
     const { cash } = await getEffectiveCash(tx, allSettings);
     const otherAssets = await getEffectiveOtherAssets(
       tx,
       allSettings,
       asOfDate,
     );
-    // Same addition as buildYearEndHistory's current-year branch
-    // (year-end-history.ts) — locks in whatever the live view showed right
-    // before finalizing, so the permanently-stored figure doesn't
-    // silently drop the debts list or the API-mapped credit cards.
-    // Which debts count is judged at Dec 31 (local) of the year being
-    // finalized: one paid off since then still belongs to that year.
+    // Same addition as buildYearEndHistory's current-year branch, so the stored
+    // figure keeps the debts list and mapped credit cards. Debts count as of
+    // Dec 31 (local) of the finalized year.
     const otherLiabilities = (
       await getEffectiveOtherLiabilities(tx, {
         asOf: new Date(year, 11, 31),
@@ -326,6 +320,7 @@ export async function finalizePerformanceYear(
       mortgageLoans,
       mortgageExtras,
       asOfDate,
+      ctx.scope.asOf,
     );
 
     const activeLoan = getActiveMortgageLoan(mortgageLoans);
@@ -335,15 +330,9 @@ export async function finalizePerformanceYear(
         )
       : 0;
 
-    // Gross income for the finalized year — Historical owns this
-    // directly now (a job has no salary/bonus of its own, and there is
-    // no dated ledger to resolve a past year from any more; see
-    // schema-pg.ts's historicalSalaries table comment). Sum every
-    // person's recorded salary + bonus for this year, falling back
-    // (current year only) to the active Salary Profile the same way
-    // historical.ts's computeSummary/upsertSalary do — otherwise
-    // finalizing before anyone has recorded salary permanently writes
-    // a false $0 into net_worth_annual.
+    // Gross income for the year from Historical: every person's recorded salary +
+    // bonus, falling back (current year only) to the active Salary Profile as
+    // historical.ts does, so finalizing never writes a false $0.
     const yearSalaryRows = await tx
       .select()
       .from(schema.historicalSalaries)
@@ -394,11 +383,9 @@ export async function finalizePerformanceYear(
       propertyTaxes,
     });
 
-    // Build portfolio_by_tax_location from nearest snapshot at finalization time.
-    // This captures the point-in-time tax location breakdown that may not be
-    // reconstructible later (snapshots can be pruned/restructured).
-    // The closest on each side of Dec 31, then the nearer — portable
-    // across PostgreSQL and SQLite (the date arithmetic isn't).
+    // portfolio_by_tax_location from the snapshot nearest Dec 31 (snapshots can be
+    // pruned later): the closest on each side, then the nearer, since the date
+    // arithmetic isn't portable across PostgreSQL and SQLite.
     const [onOrBefore] = await tx
       .select()
       .from(schema.portfolioSnapshots)

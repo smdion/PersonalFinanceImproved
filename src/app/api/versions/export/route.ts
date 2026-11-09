@@ -4,7 +4,7 @@ import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
 import { exportBackup } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 export async function GET() {
   if (process.env.DEMO_ONLY === "true") {
@@ -12,10 +12,8 @@ export async function GET() {
   }
 
   try {
-    // Check auth — require session with version permission or admin. Only
-    // `next dev` with ALLOW_DEV_MODE skips it, the same rule as every
-    // request's session (auth-mode.ts); validateEnv() (src/lib/env.ts) also
-    // refuses to boot a production build with ALLOW_DEV_MODE set.
+    // Require a session with version permission or admin. Only `next dev` with
+    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
     const allowDev = devBypass() === "admin";
     const session = await auth();
     if (!allowDev && !session?.user) {
@@ -31,7 +29,7 @@ export async function GET() {
 
     const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
     const json = JSON.stringify(backup, null, 2);
-    const dateStr = localDateStr();
+    const dateStr = calendarDateOf(new Date());
 
     return new NextResponse(json, {
       status: 200,

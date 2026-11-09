@@ -29,7 +29,7 @@ import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
 import type {
   UseProjectionStateProps,
-  EngineContribRate,
+  EngineContributionRate,
   AccountBreakdown,
 } from "./use-projection-state";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
@@ -51,12 +51,12 @@ export function useProjectionDerived(
     showAllYears,
     personFilter,
     isPersonFiltered,
-    scenarioView,
+    projectionView,
   } = form;
 
   const {
     engineQuery,
-    contribProfilesQuery,
+    contributionProfilesQuery,
     salaryProfilesQuery,
     activeAltMcResult,
   } = queries;
@@ -64,42 +64,28 @@ export function useProjectionDerived(
   const { parentCategoryFilter, people, onContributionRates } = props;
 
   // --- Engine data narrowing ---
-  // In Coast FIRE scenario, swap the deterministic projection source from
-  // the baseline engineQuery to the Coast FIRE MC run's internal
-  // deterministicProjection. This swap is synchronous (React Query cache
-  // read) and happens ATOMICALLY with the MC band swap, eliminating the
-  // visual lag that occurred when engineQuery was refetching with
-  // coastFireOverrideAge while MC bands updated instantly.
+  // Alt-scenario views swap the deterministic source to that MC run's
+  // deterministicProjection, synchronously and atomically with the MC bands.
   const engineData = engineQuery.data;
   const rawResult = useMemo(() => {
-    // Gate on engineData.result first, not just the coastFire branch: both
-    // computeProjection and computeCoastFireMC guard on the same
-    // payload-availability check server-side, so a coastFireMcResult can
-    // only be legitimately non-null when engineData.result is too. Without
-    // this guard, a stale/cached coastFireMcResult (longer staleTime,
-    // placeholderData retention) could keep rendering a projection after
-    // the underlying engine result has gone null (e.g. primary person
-    // deleted) — this also keeps `result` truthy always implying
-    // `engineSettings` defined below, removing the need for `!` assertions
-    // at every consumer.
+    // Gate on engineData.result first: the server only returns an alt MC result
+    // when it does, so a stale cached one can't outlive it, and `result`
+    // truthy always implies `engineSettings` defined below.
     if (!engineData?.result) return null;
-    // Rate-Seeded (Feature B) and Coast FIRE Custom Age both join the same
-    // swap Coast FIRE (found/today) already uses — all source their
-    // deterministic line from their own MonteCarloResult rather than the
-    // baseline engineQuery, via the shared activeAltMcResult selector
-    // (use-projection-queries.ts).
+    // Coast FIRE (all variants) and Rate-Seeded source their deterministic line
+    // from their own MonteCarloResult via the shared activeAltMcResult selector.
     if (
-      (scenarioView === "coastFire" ||
-        scenarioView === "coastFireToday" ||
-        scenarioView === "coastFireCustom" ||
-        scenarioView === "rateSeeded") &&
+      (projectionView === "coastFire" ||
+        projectionView === "coastFireToday" ||
+        projectionView === "coastFireCustom" ||
+        projectionView === "rateSeeded") &&
       activeAltMcResult?.deterministicProjection
     ) {
       return activeAltMcResult.deterministicProjection;
     }
     return engineData.result;
   }, [
-    scenarioView,
+    projectionView,
     activeAltMcResult?.deterministicProjection,
     engineData?.result,
   ]);
@@ -107,21 +93,15 @@ export function useProjectionDerived(
     if (!rawResult || !parentCategoryFilter) return rawResult;
     return {
       ...rawResult,
-      projectionByYear: rawResult.projectionByYear.map((yr) =>
-        filterYearByParentCategory(yr, parentCategoryFilter),
+      projectionByYear: rawResult.projectionByYear.map((yearRow) =>
+        filterYearByParentCategory(yearRow, parentCategoryFilter),
       ),
     };
   }, [rawResult, parentCategoryFilter]);
 
-  // MC "Simple" tax mode (the client default) collapses per-account
-  // balances into one fictional bucket server-side — a scenario sourced
-  // from an MC result under that mode (Rate-Seeded today, potentially
-  // others later) has NO real per-account data at all. Computed once here
-  // so every consumer (person-filter pills, visibleColumns' balance-by-
-  // tax-type/account gating below) reads the same signal instead of each
-  // re-deriving it (showing a fake
-  // "everything in Brokerage" breakdown as if it were the real account
-  // split was actively misleading, not just an unfamiliar simplification).
+  // MC "Simple" tax mode collapses per-account balances into one fictional
+  // bucket, so such a scenario has no real per-account data. Computed once
+  // for every consumer (person-filter pills, balance-by-account columns).
   const hasIndividualAccountData = !!result?.projectionByYear.some(
     (y) => (y.individualAccountBalances?.length ?? 0) > 0,
   );
@@ -159,10 +139,8 @@ export function useProjectionDerived(
     return person?.id ?? primaryPersonId;
   }, [isPersonFiltered, personFilter, enginePeople, primaryPersonId]);
 
-  // Internal-only — safe to read with `?.` here since every use below is a
-  // fallback-guarded read, not an assumption the value exists. The
-  // externally-exposed `engineSettings` (in the return statement) is paired
-  // with `result` via a discriminated union instead.
+  // Internal-only and read with `?.` (every use is fallback-guarded); the
+  // returned `engineSettings` is paired with `result` via a union instead.
   const engineSettings =
     engineData && engineData.result ? engineData.settings : undefined;
   const enginePerPersonSettings =
@@ -178,7 +156,7 @@ export function useProjectionDerived(
     engineData && engineData.result
       ? engineData.budgetProfileSummaries
       : undefined;
-  const contribProfileSummaries = contribProfilesQuery.data;
+  const contributionProfileSummaries = contributionProfilesQuery.data;
   const salaryProfileSummaries = salaryProfilesQuery.data;
 
   const contribSpecs = useMemo(() => {
@@ -223,9 +201,9 @@ export function useProjectionDerived(
 
   // --- Per-person helpers ---
   const getPersonYearTotals = useCallback(
-    (yr: EngineYearProjection) => {
+    (yearRow: EngineYearProjection) => {
       if (!isPersonFiltered) return null;
-      const iabs = yr.individualAccountBalances ?? [];
+      const iabs = yearRow.individualAccountBalances ?? [];
       const mine = iabs.filter((ia) => ia.ownerPersonId === personFilter);
       const balance = mine.reduce((s, ia) => s + ia.balance, 0);
       const contribution = mine.reduce(
@@ -265,16 +243,16 @@ export function useProjectionDerived(
           byAccount[cat] = (byAccount[cat] ?? 0) + ia.balance;
         }
       }
-      const byCategoryContrib: Record<
+      const byCategoryContribution: Record<
         string,
         { employee: number; match: number }
       > = {};
       for (const ia of mine) {
         const cat = ia.category;
-        if (!byCategoryContrib[cat])
-          byCategoryContrib[cat] = { employee: 0, match: 0 };
-        byCategoryContrib[cat].employee += ia.contribution;
-        byCategoryContrib[cat].match += ia.employerMatch;
+        if (!byCategoryContribution[cat])
+          byCategoryContribution[cat] = { employee: 0, match: 0 };
+        byCategoryContribution[cat].employee += ia.contribution;
+        byCategoryContribution[cat].match += ia.employerMatch;
       }
       return {
         balance,
@@ -282,7 +260,7 @@ export function useProjectionDerived(
         growth,
         byTaxType,
         byAccount,
-        byCategoryContrib,
+        byCategoryContribution,
       };
     },
     [isPersonFiltered, personFilter],
@@ -290,12 +268,12 @@ export function useProjectionDerived(
 
   const personDepletionInfo = (() => {
     if (!isPersonFiltered || !result) return null;
-    for (const yr of result.projectionByYear) {
-      if (yr.phase !== "decumulation") continue;
-      const iabs = yr.individualAccountBalances ?? [];
+    for (const yearRow of result.projectionByYear) {
+      if (yearRow.phase !== "decumulation") continue;
+      const iabs = yearRow.individualAccountBalances ?? [];
       const mine = iabs.filter((ia) => ia.ownerPersonId === personFilter);
       const balance = mine.reduce((s, ia) => s + ia.balance, 0);
-      if (balance <= 0) return { year: yr.year, age: yr.age };
+      if (balance <= 0) return { year: yearRow.year, age: yearRow.age };
     }
     return null;
   })();
@@ -318,8 +296,8 @@ export function useProjectionDerived(
     let base = accountBreakdown;
     if (parentCategoryFilter) {
       const out: Record<string, AccountBreakdown[]> = {};
-      for (const [cat, accts] of Object.entries(base)) {
-        const f = accts.filter(
+      for (const [cat, accounts] of Object.entries(base)) {
+        const f = accounts.filter(
           (a) => a.parentCategory === parentCategoryFilter,
         );
         if (f.length > 0) out[cat] = f;
@@ -328,8 +306,8 @@ export function useProjectionDerived(
     }
     if (!isPersonFiltered) return base;
     const out: Record<string, AccountBreakdown[]> = {};
-    for (const [cat, accts] of Object.entries(base)) {
-      const filtered = accts.filter((a) => a.ownerPersonId === personFilter);
+    for (const [cat, accounts] of Object.entries(base)) {
+      const filtered = accounts.filter((a) => a.ownerPersonId === personFilter);
       if (filtered.length > 0) out[cat] = filtered;
     }
     return out;
@@ -337,25 +315,25 @@ export function useProjectionDerived(
 
   // --- Visible columns ---
   const visibleColumns = useMemo(() => {
-    const contribCats = new Set<string>();
-    const contribTaxTypes = new Set<string>();
-    const balanceAccts = new Set<string>();
+    const contributionCats = new Set<string>();
+    const contributionTaxTypes = new Set<string>();
+    const balanceAccounts = new Set<string>();
     const balanceTaxTypes = new Set<string>();
     if (result) {
-      for (const yr of result.projectionByYear) {
+      for (const yearRow of result.projectionByYear) {
         /* eslint-disable no-restricted-syntax -- type narrowing for dynamic engine output */
         if (
-          "slots" in yr &&
-          Array.isArray((yr as unknown as Record<string, unknown>).slots)
+          "slots" in yearRow &&
+          Array.isArray((yearRow as unknown as Record<string, unknown>).slots)
         ) {
-          for (const slot of (yr as unknown as Record<string, unknown>)
+          for (const slot of (yearRow as unknown as Record<string, unknown>)
             .slots as Record<string, unknown>[]) {
             /* eslint-enable no-restricted-syntax */
-            const hasContrib =
+            const hasContribution =
               (slot.employeeContrib ?? 0) !== 0 ||
               (slot.employerMatch ?? 0) !== 0;
             const hasWithdrawal = (slot.withdrawal ?? 0) !== 0;
-            if (hasContrib || hasWithdrawal) {
+            if (hasContribution || hasWithdrawal) {
               const slotCat = slot.category as string;
               if (
                 parentCategoryFilter &&
@@ -363,7 +341,7 @@ export function useProjectionDerived(
                 isOverflowTarget(slotCat as AccountCategory)
               ) {
                 const iabs = (
-                  yr as {
+                  yearRow as {
                     individualAccountBalances?: {
                       category: string;
                       parentCategory?: string;
@@ -373,7 +351,7 @@ export function useProjectionDerived(
                     }[];
                   }
                 ).individualAccountBalances;
-                const hasMatchingContrib = iabs?.some(
+                const hasMatchingContribution = iabs?.some(
                   (ia) =>
                     ia.category === slotCat &&
                     ia.parentCategory === parentCategoryFilter &&
@@ -381,28 +359,28 @@ export function useProjectionDerived(
                       ia.employerMatch !== 0 ||
                       (ia.draw?.withdrawal ?? 0) !== 0),
                 );
-                if (hasMatchingContrib) contribCats.add(slotCat);
+                if (hasMatchingContribution) contributionCats.add(slotCat);
               } else {
-                contribCats.add(slotCat);
+                contributionCats.add(slotCat);
               }
             }
             if (
               (slot.traditionalContrib ?? 0) !== 0 ||
               (slot.traditionalWithdrawal ?? 0) !== 0
             )
-              contribTaxTypes.add("preTax");
+              contributionTaxTypes.add("preTax");
             if (
               (slot.rothContrib ?? 0) !== 0 ||
               (slot.rothWithdrawal ?? 0) !== 0
             )
-              contribTaxTypes.add("taxFree");
+              contributionTaxTypes.add("taxFree");
             if (
-              (hasContrib || hasWithdrawal) &&
+              (hasContribution || hasWithdrawal) &&
               _singleBucketCategories.has(slot.category as string)
             ) {
               const slotCfg =
                 ACCOUNT_TYPE_CONFIG[slot.category as AccountCategory];
-              contribTaxTypes.add(slotCfg.taxBucketKey);
+              contributionTaxTypes.add(slotCfg.taxBucketKey);
             }
           }
         }
@@ -410,14 +388,14 @@ export function useProjectionDerived(
         // per-account and per-tax-type figures are one collapsed bucket, so
         // only the Balance total shows (hasIndividualAccountData above).
         if (hasIndividualAccountData) {
-          if (yr.balanceByAccount) {
+          if (yearRow.balanceByAccount) {
             for (const seg of getAccountSegments()) {
-              if (getSegmentBalance(yr.balanceByAccount, seg) !== 0)
-                balanceAccts.add(seg.key);
+              if (getSegmentBalance(yearRow.balanceByAccount, seg) !== 0)
+                balanceAccounts.add(seg.key);
             }
           }
-          if (yr.balanceByTaxType) {
-            const bt = yr.balanceByTaxType;
+          if (yearRow.balanceByTaxType) {
+            const bt = yearRow.balanceByTaxType;
             if (bt.preTax !== 0) balanceTaxTypes.add("preTax");
             if (bt.taxFree !== 0) balanceTaxTypes.add("taxFree");
             if (bt.hsa !== 0) balanceTaxTypes.add("hsa");
@@ -426,7 +404,12 @@ export function useProjectionDerived(
         }
       }
     }
-    return { contribCats, contribTaxTypes, balanceAccts, balanceTaxTypes };
+    return {
+      contributionCats,
+      contributionTaxTypes,
+      balanceAccounts,
+      balanceTaxTypes,
+    };
   }, [result, parentCategoryFilter, hasIndividualAccountData]);
 
   // --- Column labels and tooltips ---
@@ -434,12 +417,12 @@ export function useProjectionDerived(
     getAccountSegments().map((seg) => [seg.key, seg.label]),
   );
 
-  const contribHeaderTooltip = useMemo(() => {
+  const contributionHeaderTooltip = useMemo(() => {
     const tips: Record<string, string> = {};
     for (const cat of getAllCategories()) {
-      const accts = filteredBreakdown[cat];
-      if (accts && accts.length > 0) {
-        const names = accts.map((a) => a.name).join(",");
+      const accounts = filteredBreakdown[cat];
+      if (accounts && accounts.length > 0) {
+        const names = accounts.map((a) => a.name).join(",");
         tips[cat] = `${names}. Hover values for breakdown.`;
       } else {
         const cfg = getAccountTypeConfig(cat);
@@ -458,12 +441,12 @@ export function useProjectionDerived(
       hsa: [],
       afterTax: [],
     };
-    for (const [cat, accts] of Object.entries(filteredBreakdown)) {
+    for (const [cat, accounts] of Object.entries(filteredBreakdown)) {
       const cfg =
         cat in ACCOUNT_TYPE_CONFIG
           ? ACCOUNT_TYPE_CONFIG[cat as AccountCategory]
           : null;
-      for (const a of accts) {
+      for (const a of accounts) {
         let colKey: string;
         if (cfg && cfg.supportsRothSplit) {
           colKey = `${cat}_${taxTypeToSubKey(a.taxType)}`;
@@ -511,13 +494,13 @@ export function useProjectionDerived(
       onContributionRates?.([]);
       return;
     }
-    const rates: EngineContribRate[] = [];
+    const rates: EngineContributionRate[] = [];
     let prevRate: number | null = null;
-    for (const yr of result.projectionByYear) {
-      if (yr.phase !== "accumulation") break;
-      const r = (yr as EngineAccumulationYear).config.contributionRate;
+    for (const yearRow of result.projectionByYear) {
+      if (yearRow.phase !== "accumulation") break;
+      const r = (yearRow as EngineAccumulationYear).config.contributionRate;
       if (r !== prevRate) {
-        rates.push({ year: yr.year, rate: r });
+        rates.push({ year: yearRow.year, rate: r });
         prevRate = r;
       }
     }
@@ -553,8 +536,8 @@ export function useProjectionDerived(
       const milestones = new Set<number>();
       milestones.add(years[0]!.year);
       milestones.add(years[years.length - 1]!.year);
-      for (const yr of years) {
-        if (yr.year % 5 === 0) milestones.add(yr.year);
+      for (const yearRow of years) {
+        if (yearRow.year % 5 === 0) milestones.add(yearRow.year);
       }
       for (let i = 1; i < years.length; i++) {
         if (years[i]!.phase !== years[i - 1]!.phase)
@@ -567,7 +550,7 @@ export function useProjectionDerived(
       if (failureYear) milestones.add(failureYear);
       // A link to one year shows that year too.
       if (focusedYear !== null) milestones.add(focusedYear);
-      return years.filter((yr) => milestones.has(yr.year));
+      return years.filter((yearRow) => milestones.has(yearRow.year));
     },
     [showAllYears, accumOverrides, decumOverrides, result, focusedYear],
   );
@@ -602,7 +585,7 @@ export function useProjectionDerived(
     annualExpenses,
     decumulationExpenses,
     budgetProfileSummaries,
-    contribProfileSummaries,
+    contributionProfileSummaries,
     salaryProfileSummaries,
     contribSpecs,
     rothBracketPresets,
@@ -613,7 +596,7 @@ export function useProjectionDerived(
     filteredBreakdown,
     visibleColumns,
     columnLabel,
-    contribHeaderTooltip,
+    contributionHeaderTooltip,
     balanceHeaderTooltip,
     inflationRate,
     baseYear,
@@ -628,11 +611,8 @@ export function useProjectionDerived(
   };
 
   // Discriminated on `result`: consumers that check `state.result` (property
-  // access, not a pre-destructured local — TS narrowing doesn't survive
-  // destructuring across a union) before reading `state.engineSettings` get
-  // it typed as always-defined, no `!` needed. See callers in
-  // projection-chart.tsx, projection-hero-kpis.tsx, projection-mc-results.tsx,
-  // and retirement-projection/index.tsx.
+  // access, since narrowing doesn't survive destructuring) get
+  // `state.engineSettings` typed as defined.
   if (result && engineSettings) {
     return { ...commonReturn, result, engineSettings };
   }

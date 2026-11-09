@@ -14,14 +14,9 @@ import {
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 
 /**
- * Fallback periods-per-year for a jobless contribution account: the active
- * jobs' pay period, or `incomplete: true` if there's none, or if they're on
- * different schedules ("per paycheck" then has no single answer: 26 checks
- * or 24 — attach a job or use a monthly amount). `periodsPerYear` is a
- * placeholder when incomplete; callers must not use it for a
- * `fixed_per_period` account without also honoring `incomplete`. Shared by
- * computeActiveSummary's forward computation and
- * applyContributionAccountEdit's inverse so the two can't drift apart.
+ * Jobless account fallback: the active jobs' periods per year, or `incomplete: true` with none
+ * or with mixed schedules (`periodsPerYear` is then a placeholder). Shared by
+ * computeActiveSummary and its inverse, applyContributionAccountEdit.
  */
 export function resolveJoblessPeriodsPerYear(
   activeJobs: { payPeriod: string | undefined }[],
@@ -39,20 +34,11 @@ export function resolveJoblessPeriodsPerYear(
 }
 
 /**
- * Resolve the periods-per-year for a single contribution row, and whether
- * that resolution is incomplete. The job's real pay-period count is returned
- * for every method (a bonus check's share of a fixed-monthly / fixed-annual
- * account is one paycheck's worth — annualContributionWithBonus), but only
- * `fixed_per_period` consumes it for its yearly amount (see
- * computeAnnualContribution), so only that method can be incomplete: a
- * missing/unresolvable job never marks a `percent_of_salary` or
- * `fixed_monthly` account incomplete (see the plan's method-gated
- * treatment) — it just resolves `0`, which callers must not divide by.
- * `job` is the row's own resolved job (by jobId, or by personId for a
- * jobless account) — `undefined` means no job could be resolved for this
- * row at all.
+ * A row's periods per year from its resolved `job` (undefined = none). Only `fixed_per_period`
+ * uses it for its yearly amount, so only it can be incomplete; others resolve `0`, which
+ * callers must not divide by.
  */
-export function resolveContribPeriods(
+export function resolveContributionPeriods(
   method: string,
   job: { payPeriod: string | undefined } | undefined,
 ): { periodsPerYear: number; incomplete: boolean } {
@@ -65,7 +51,7 @@ export function resolveContribPeriods(
 }
 
 /** Minimal fields needed from the DB contribution_accounts row. */
-export type ContribRow = {
+export type ContributionRow = {
   id: number;
   personId: number | null;
   jobId: number | null;
@@ -118,15 +104,9 @@ export function jobPayFor<T extends { job: { id: number; personId: number } }>(
 }
 
 /**
- * A contribution's yearly amount, the paycheck's way: what the regular
- * paychecks take from the base salary, plus what the bonus check takes
- * (bonusCheckContribution — percent-of-pay at its rate of the bonus, a fixed
- * amount once more; only for payroll accounts set to be taken from bonus
- * checks). The one
- * yearly amount the contribution summary and the retirement projection
- * use. (The budget follows regular paychecks only — base salary.) This
- * year's figures pass the pinned bonus as `bonusGross`; the projection
- * passes the formula bonus (contributionPay).
+ * A contribution's yearly amount, the paycheck's way: regular paychecks plus the bonus check's
+ * share (bonusCheckContribution). Used by the summary and the projection; this year passes the
+ * pinned bonus as `bonusGross`, the projection the formula bonus.
  */
 export function annualContributionWithBonus(
   c: {
@@ -168,13 +148,11 @@ export function annualContributionWithBonus(
 }
 
 /**
- * Each contribution row's yearly employee money (from computeValue — the
- * capped value when set), the pay its match is figured on, and the rows
- * whose pay period can't be resolved (yearly money 0). One computation for
- * the category aggregate and the cap pass.
+ * Each row's yearly employee money (computeValue), the pay its match uses, and rows with an
+ * unresolvable pay period (money 0); shared by the category aggregate and the cap pass.
  */
-export function contribRowAmounts(
-  activeContribs: readonly ContribRow[],
+export function contributionRowAmounts(
+  activeContributions: readonly ContributionRow[],
   activeJobs: readonly JobRef[],
   jobSalaries: readonly JobSalaryRef[],
 ): {
@@ -185,15 +163,15 @@ export function contribRowAmounts(
   const incompleteAccountIds: number[] = [];
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
-  const bonusGroups = matchPayGroupsWithBonus([...activeContribs]);
-  for (const c of activeContribs) {
+  const bonusGroups = matchPayGroupsWithBonus([...activeContributions]);
+  for (const c of activeContributions) {
     // Direct job link, or fall back to person's first active job when jobId is null
     const js = jobPayFor(c, jobSalaries);
     const job = c.jobId
       ? activeJobs.find((j) => j.id === c.jobId)
       : activeJobs.find((j) => j.personId === c.personId);
     const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
       c.contributionMethod,
       job,
     );

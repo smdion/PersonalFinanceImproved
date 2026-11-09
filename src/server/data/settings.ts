@@ -25,12 +25,9 @@ function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Read, change and write one app setting as a single step — queued in this
- * process and, on Postgres, under a transaction lock on the key — so two
- * writers changing different parts of the same map both stick (a browser's
- * whole-map upsert could drop one). `change` gets the stored value and
- * returns the new one, or null to leave it as it is. Returns what `change`
- * returned.
+ * Read, change and write one app setting as a single step (queued in-process, plus a
+ * Postgres key lock), so concurrent writers of one map both stick. `change` returns
+ * the new value, or null to leave it; returns what `change` returned.
  */
 export function mergeSettingAtomically<T>(
   db: Db,

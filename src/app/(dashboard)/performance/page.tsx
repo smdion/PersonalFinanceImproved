@@ -1,14 +1,6 @@
 /**
- * Performance server page (server-prefetch split).
- *
- * Server-side prefetches performance.computeSummary — the source of truth
- * for the page's annual/account performance tables. Takes no input, so the
- * prefetch cache key matches the client's eventual query exactly (same as
- * brokerage.computeSummary). Saved settings (the six column/filter toggles)
- * come from the layout (prefetchForShell).
- *
- * Prefetch failures don't block rendering — wrapped in try/catch so the
- * client falls back to its own fetch on error.
+ * Performance server page: prefetches performance.computeSummary (no input, so
+ * the key always matches). Saved settings come from the layout's prefetch.
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";

@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { Db } from "@/lib/db";
+import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 
 /**
- * Fetch a Salary Profile by id.
+ * Fetch a Salary Profile by id, its entries checked (checkSalaryEntries).
  *
- * A null/undefined id means "no Salary Profile selected at this call site"
- * and yields null. A non-null id that doesn't resolve is a genuinely
- * missing row, not a sentinel.
+ * A null/undefined id (none selected here) yields null; a non-null id that
+ * doesn't resolve is a missing row, not a sentinel.
  */
 export async function fetchSalaryProfile(
   db: Db,
@@ -19,15 +19,12 @@ export async function fetchSalaryProfile(
     .select()
     .from(schema.salaryProfiles)
     .where(eq(schema.salaryProfiles.id, salaryProfileId));
-  return rows[0] ?? null;
+  return rows[0] ? checkSalaryEntries(rows[0]) : null;
 }
 
 /**
- * Resolve just the id of the globally-active Salary Profile (the same
- * app_settings lookup loadEffectiveSalaryProfile does internally), for
- * callers that need the id itself to write back into that profile's row —
- * not just its resolved job map. See savings.ts's extraPaycheckRouting
- * sub-router, which reads/writes a single job's entry within this row.
+ * Just the id of the globally-active Salary Profile, for callers that write back into
+ * that profile's row (e.g. savings.ts's extraPaycheckRouting).
  */
 export async function resolveActiveSalaryProfileId(
   db: Db,

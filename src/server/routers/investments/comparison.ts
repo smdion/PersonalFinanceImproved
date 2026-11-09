@@ -27,10 +27,9 @@ import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
-import { localDateStr } from "@/lib/utils/date";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { yearReturnRanges } from "@/lib/pure/simulation/year-return-range";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import { effectiveFacts } from "@/lib/pure/investments/fund-facts";
 import {
   dailyWeightsByAccount,
@@ -55,15 +54,14 @@ import type { Db } from "@/lib/db";
 const MATCHED_MIX_LABEL = "Your mix, in index funds";
 
 /**
- * Your own fund weights (holding history) priced with an index fund per
- * class, through the same simulateIndex as every benchmark. Only years
- * whose months are fully covered from the start of the year; null with no
- * holding history at all.
+ * Your own fund weights priced with one index fund per class via simulateIndex, for years
+ * fully covered from January; null with no holding history.
  */
 async function matchedMixBenchmark(
   db: Db,
   rows: readonly (typeof schema.accountPerformance.$inferSelect)[],
   years: readonly YearlyResult[],
+  today: string,
 ) {
   const [{ positions }, entered] = await Promise.all([
     // From the month before the first year — enough for every month's weights.
@@ -92,7 +90,6 @@ async function matchedMixBenchmark(
         .from(schema.securityFacts)
         .where(inArray(schema.securityFacts.securityId, ids))
     : [];
-  const today = localDateStr();
   const facts = new Map(
     ids.map((id) => [
       id,
@@ -142,7 +139,7 @@ export const investmentComparisonRouter = createTRPCRouter({
   /** The range of one year's return the Simulation expects for each year,
    *  at the primary person's age that year on the chosen preset's glide path —
    *  today's assumptions, not what was known then. */
-  getYearReturnRanges: portfolioProcedure
+  computeYearReturnRanges: portfolioProcedure
     .input(
       z.object({
         preset: z.enum(SIMULATION_PRESET_KEYS),
@@ -150,26 +147,26 @@ export const investmentComparisonRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const [mc, [person]] = await Promise.all([
-        buildMcInputs(ctx.db, input.preset),
+      const [simulation, [person]] = await Promise.all([
+        buildSimulationInputs(ctx.db, input.preset),
         ctx.db
           .select({ dob: schema.people.dateOfBirth })
           .from(schema.people)
           .where(eq(schema.people.isPrimaryUser, true))
           .limit(1),
       ]);
-      if (!mc.preset?.found || !person) return null;
+      if (!simulation.preset?.found || !person) return null;
       const birthYear = Number(person.dob.slice(0, 4));
       const ranges = yearReturnRanges({
         ages: input.years.map((y) => y - birthYear),
-        assetClasses: mc.mcAssetClasses,
-        correlations: mc.mcCorrelations,
-        glidePath: mc.mcGlidePath,
-        clampMin: mc.preset.returnClampMin,
-        clampMax: mc.preset.returnClampMax,
+        assetClasses: simulation.mcAssetClasses,
+        correlations: simulation.mcCorrelations,
+        glidePath: simulation.mcGlidePath,
+        clampMin: simulation.preset.returnClampMin,
+        clampMax: simulation.preset.returnClampMax,
       });
       return {
-        presetLabel: mc.preset.label,
+        presetLabel: simulation.preset.label,
         ranges: ranges.map((r) => ({
           year: r.age + birthYear,
           low: r.low,
@@ -178,7 +175,7 @@ export const investmentComparisonRouter = createTRPCRouter({
       };
     }),
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
-  getComparison: portfolioProcedure
+  computeComparison: portfolioProcedure
     .input(z.object({ fromYear: z.number().int().optional() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.accountPerformance);
@@ -201,7 +198,10 @@ export const investmentComparisonRouter = createTRPCRouter({
       );
       const currentYear = ctx.scope.asOf.getFullYear();
 
-      const retirementYear = await householdRetirementYear(ctx.db);
+      const retirementYear = await householdRetirementYear(
+        ctx.db,
+        ctx.scope.asOf,
+      );
       const benchmarks = await Promise.all(
         BENCHMARKS.map(async (def) => {
           const b = resolveBenchmark(def, retirementYear) ?? {
@@ -230,7 +230,7 @@ export const investmentComparisonRouter = createTRPCRouter({
 
       const matched =
         years.length > 0
-          ? await matchedMixBenchmark(ctx.db, rows, years)
+          ? await matchedMixBenchmark(ctx.db, rows, years, ctx.scope.today)
           : null;
       if (matched) benchmarks.push(matched);
 

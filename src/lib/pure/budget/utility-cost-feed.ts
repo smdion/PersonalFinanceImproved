@@ -1,22 +1,7 @@
 /**
- * Utilities cost feed: a month's utility cost from the synced budget's
- * transactions (YNAB or Actual — the normalized BudgetTransaction shape, so
- * nothing here is service-specific).
- *
- * - A transaction (or a part of a split) counts toward a service when its
- *   category is the one that service is mapped to. A month's cost is its
- *   bills less any refunds or credits (the category's own net spend); a
- *   month that nets to a credit isn't written.
- * - Bills are paid after the month they cover: the service month is the
- *   payment month minus the service's billing lag.
- * - Cost only — usage is never set (the budget has no meter readings).
- * - Never overwrites a cost someone else wrote: it fills empty months and
- *   refreshes the months the same budget service wrote; a different
- *   recorded cost from anyone else is returned as a conflict to review.
- *
- * Every month is whole only because the sync fetches from 1 January of
- * the previous year (services/sync/sync-all.ts) — a rolling start date would make the
- * first payment month partial.
+ * A month's utility cost from the synced budget's transactions: net spend in each service's
+ * mapped category, shifted back by its billing lag; cost only. Fills empty months and its own;
+ * a differing cost from another source is a conflict. Assumes the sync starts on 1 January.
  */
 import type { BudgetTransaction } from "@/lib/budget-api/types";
 import type { UtilitySource } from "@/lib/config/enum-values";
@@ -134,9 +119,8 @@ export function reconcileFeed(
   conflicts: FeedConflict[];
   /** Months that net to a credit (refunds ≥ bills): not written. */
   credits: FeedMonth[];
-  /** Months this service filled before that no longer have any bills in
-   *  the budget (a payment deleted or recategorized, an account closed) —
-   *  shown, never removed. */
+  /** Months this service filled that now have no bills in the budget (deleted,
+   *  recategorized, account closed); shown, never removed. */
   gone: ExistingReading[];
 } {
   const key = (r: { serviceId: number; year: number; month: number }) =>

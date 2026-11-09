@@ -3,10 +3,13 @@
 import React, { useId, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { AddTransactionForm } from "./add-transaction-form";
-import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
-import { occurrenceKey } from "@/lib/pure/savings/savings-projection";
+import { PlannedTxForm, emptyTxForm } from "./types";
+import {
+  occurrenceKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
 import { Badge } from "@/components/ui/badge";
 
 function txToForm(tx: PlannedTransaction): PlannedTxForm {
@@ -53,7 +56,7 @@ export function FundTransactionList({
   updateTxPending?: boolean;
   canEdit?: boolean;
 }) {
-  const today = localDateStr();
+  const today = calendarDateOf(new Date());
   const upcomingCount = transactions.filter(
     (tx) => tx.transactionDate >= today,
   ).length;

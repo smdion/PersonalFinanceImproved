@@ -4,10 +4,8 @@ import type { Db } from "@/lib/db";
 import { pickActiveBudgetProfile } from "@/lib/pure/budget/active-profile";
 
 /**
- * The active budget profile — the only place that should query
- * `budget_profiles.is_active = true`. Returns undefined if none is active
- * (e.g. a crash mid-`setActiveProfile` before that mutation's transaction
- * fix, or before any profile has ever been created).
+ * The active budget profile; the only place that should query
+ * `budget_profiles.is_active = true`. Undefined when no profile is active.
  */
 export async function getActiveBudgetProfile(
   db: Db,
@@ -20,14 +18,9 @@ export async function getActiveBudgetProfile(
 }
 
 /**
- * Resolve "the profile a mutation should target" — explicit `profileId` when
- * given (a client editing a profile it is viewing but hasn't made active),
- * else the active profile. The single place profile item/column mutations
- * (createItem, addColumn, removeColumn, renameColumn, updateColumnMonths,
- * reorderCategory)
- * should resolve their target profile — a bare `getActiveBudgetProfile(db)`
- * in one of those procedures silently redirects an edit made while viewing a
- * non-active profile onto the active one instead.
+ * The profile a mutation should target: explicit `profileId` when given, else the
+ * active one. Profile item/column mutations must use this, so an edit made while
+ * viewing a non-active profile is not redirected onto the active one.
  */
 export async function resolveTargetBudgetProfile(
   db: Db,

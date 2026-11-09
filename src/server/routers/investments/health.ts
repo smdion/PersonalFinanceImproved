@@ -11,7 +11,7 @@ import { loadAccounts } from "@/server/data/investments";
 
 export const investmentHealthRouter = createTRPCRouter({
   /** Accounts whose holdings stopped arriving or don't add up to the balance. */
-  getHealth: portfolioProcedure.query(async ({ ctx }) => {
+  computeHealth: portfolioProcedure.query(async ({ ctx }) => {
     const h = schema.holdingObservations;
     const [observations, balances, accounts] = await Promise.all([
       ctx.db

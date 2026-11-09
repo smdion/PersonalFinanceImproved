@@ -93,42 +93,12 @@ export async function computeSavingsSummary(
     }
   }
 
-  // Override balances for API-linked goals with live cache values, AND
-  // capture each linked category's current-month `budgeted` amount
-  // (currentMonthBudgetedMap) so projectGoalBalances can tell whether
-  // this month's contribution is already reflected in `balance`
-  // instead of guessing from the calendar date.
-  //
-  // Both come from the SAME month-scoped cache entry
-  // (`months/${currentMonthKey}`), not the generic "categories" cache
-  // the balance override used to read alone — sourcing balance and budgeted from two independently-
-  // aged snapshots risks subtracting THIS month's budgeted amount
-  // from a STALE prior month's balance (e.g. synced Aug 31 11pm,
-  // read Sept 1 9am — "categories" would still hold August's numbers
-  // with no signal it's the wrong month). The month-scoped key is
-  // self-verifying: if `months/<currentMonthKey>` is absent, we know
-  // we don't have that month's data at all.
-  //
-  // Degrades safely when that cache entry is missing (no sync yet
-  // this month — most likely right at a month rollover, e.g. viewed
-  // Oct 1 before the first October sync ran): the live balance
-  // override does NOT fire at all for these goals, same as before
-  // this phase existed — `balance` falls back to whatever
-  // savings_monthly last recorded (set above), which could itself be
-  // a prior month's synced snapshot, not "right now". Real but
-  // low-impact: the very next sync (same one that populates
-  // months/${currentMonthKey}) also refreshes savings_monthly.
-  // currentMonthBudgetedMap stays empty for these goals — the same
-  // "unknown, add the full allocation" conservative default a
-  // non-API-synced goal already gets in projectGoalBalances.
-  // Read-only display path — resolve against the currently active
-  // service only (no cross-service ambiguity here; see
-  // src/server/data/category-links.ts).
+  // API-linked goals: live balance and current-month `budgeted` both from the
+  // month-scoped cache entry, so they're never differently aged; without that
+  // entry neither applies (savings_monthly balance, "add full allocation").
   const activeServiceForSummary = await getActiveBudgetApi(ctx.db);
-  // Loaded for EVERY goal (not just active ones) — goalsForClient below
-  // sends the full goals list to the client, and each goal's
-  // isApiSyncEnabled/apiCategoryId/apiCategoryName must reflect this
-  // same resolved link, not the dead raw columns.
+  // Loaded for EVERY goal: the client gets the full list, and each goal's
+  // isApiSyncEnabled/apiCategoryId/apiCategoryName reflect this resolved link.
   const summaryPrimaryLinks =
     activeServiceForSummary === "none"
       ? new Map()
@@ -193,10 +163,8 @@ export async function computeSavingsSummary(
   let efundResult = null;
 
   if (efundGoal) {
-    // Self-loan tracking is exclusive: if a YNAB reimbursement category is
-    // linked, its goalTarget is the source of truth (YNAB-tracked workflow).
-    // Otherwise fall back to the Ledgr DB self_loans table. Using both at
-    // once causes double-counting because the same money appears in both places.
+    // Self-loan tracking is exclusive, else the same money counts twice: a linked
+    // reimbursement category's goalTarget, otherwise the self_loans table.
     let outstandingSelfLoans: number;
     const efundReimbursementLinks =
       activeServiceForSummary === "none"
@@ -264,7 +232,8 @@ export async function computeSavingsSummary(
 
   const savingsInput: SavingsInput = {
     goals: activeGoals.map((g) => {
-      const monthlyContrib = resolvedByGoal.get(g.id)?.monthlyContribution ?? 0;
+      const monthlyContribution =
+        resolvedByGoal.get(g.id)?.monthlyContribution ?? 0;
       // E-fund target is derived from calculator (targetMonths × essential expenses)
       const targetBalance =
         g.isEmergencyFund && efundResult
@@ -281,7 +250,7 @@ export async function computeSavingsSummary(
         name: g.name,
         currentBalance,
         targetBalance,
-        allocationPercent: safeDivide(monthlyContrib, totalMonthlyPool, 0),
+        allocationPercent: safeDivide(monthlyContribution, totalMonthlyPool, 0),
         isEmergencyFund: g.isEmergencyFund,
         isActive: g.isActive,
       };
@@ -325,12 +294,9 @@ export async function computeSavingsSummary(
     source: o.source,
   }));
 
-  // goals sent to the client carry the RESOLVED funding for the active
-  // profile as synthesized fields (savings_goals itself has no funding
-  // columns anymore) — every client-side consumer (fund cards,
-  // recalculate/lock-in previews) reads allocationPercent/
-  // monthlyContribution straight off this list, so resolving once here
-  // keeps them all correct without each one re-deriving it.
+  // Client goals carry the RESOLVED funding for the active profile as
+  // synthesized fields (savings_goals has no funding columns), so every
+  // client consumer reads it straight off this list.
   const goalsForClient = goals.map((g) => {
     // getResolvedGoalAllocations always returns one entry per input
     // goal (defaulting to $0/no-percent), never leaves one unset.
@@ -348,12 +314,8 @@ export async function computeSavingsSummary(
           ? resolved.allocationPercent.toFixed(3)
           : null,
       monthlyContribution: resolved.monthlyContribution.toFixed(2),
-      // null (not just absent) when unknown — projectGoalBalances
-      // treats "no evidence this month is already funded" as "add
-      // the full allocation," the same conservative default a
-      // non-API-synced goal already gets. See
-      // currentMonthBudgetedMap's own comment above for why this is
-      // null instead of falling back to a differently-aged number.
+      // null when unknown: projectGoalBalances then adds the full allocation,
+      // as for a goal not synced from the budget API.
       currentMonthBudgeted: currentMonthBudgetedMap.get(g.id) ?? null,
     };
   });

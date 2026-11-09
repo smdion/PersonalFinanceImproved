@@ -1,9 +1,7 @@
 /**
- * Money Guy's 60/40 rule, year by year (config RAISE_RULE): for each
- * finalized year whose household salary rose by at least the minimum, the
- * change in the household's own contributions over the change in salary.
- * Both years need a salary and finalized contributions; anything else isn't
- * judged.
+ * Money Guy's 60/40 rule by year (RAISE_RULE): for each finalized year whose salary
+ * rose by at least the minimum, contribution change over salary change. Both years
+ * need a salary and finalized contributions, or the year isn't judged.
  */
 import { RAISE_RULE } from "@/lib/config/milestones";
 

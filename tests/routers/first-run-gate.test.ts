@@ -11,7 +11,7 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
 
-vi.mock("@/lib/logger", () => ({ log: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 
@@ -49,7 +49,7 @@ describe("settleFirstRunGate", () => {
       seedLocalAdmin(ctx);
       await settleFirstRunGate(ctx.rawDb, "restore");
       expect(onboardingFlag(ctx)).toBe(true);
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     }));
@@ -59,7 +59,7 @@ describe("settleFirstRunGate", () => {
       vi.stubEnv("AUTH_AUTHENTIK_ISSUER", "https://auth.example.test/o/ledgr/");
       await settleFirstRunGate(ctx.rawDb, "import");
       expect(onboardingFlag(ctx)).toBe(true);
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     }));
@@ -70,11 +70,11 @@ describe("settleFirstRunGate", () => {
       await seedPerson(ctx.db, "Robin");
       await settleFirstRunGate(ctx.rawDb, "import");
       expect(onboardingFlag(ctx)).toBe(false);
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: true,
       });
       // The household is still onboarded: no wizard.
-      expect(await ctx.caller.settings.isOnboardingComplete()).toEqual({
+      expect(await ctx.caller.settings.getOnboardingStatus()).toEqual({
         complete: true,
       });
       expect(log).toHaveBeenCalledWith(
@@ -101,7 +101,7 @@ describe("after Reset all data", () => {
         .values({ key: "onboarding_completed", value: true })
         .run();
       await ctx.caller.version.resetAllData({ confirmation: "delete" });
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: true,
       });
     }));
@@ -116,7 +116,7 @@ describe("after a restore", () => {
       seedLocalAdmin(ctx);
       await ctx.caller.version.restore({ id: version.id });
       expect(ctx.db.select().from(schema.localAdmins).all()).toHaveLength(0);
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: true,
       });
     }));
@@ -128,7 +128,7 @@ describe("after a restore", () => {
       const version = await ctx.caller.version.create({ name: "admin" });
       await ctx.caller.version.restore({ id: version.id });
       expect(onboardingFlag(ctx)).toBe(true);
-      expect(await ctx.caller.settings.firstRunState()).toEqual({
+      expect(await ctx.caller.settings.getFirstRunState()).toEqual({
         adminNeeded: false,
       });
     }));

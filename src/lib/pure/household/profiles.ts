@@ -21,17 +21,11 @@ export function canDeleteBudgetProfile(profile: {
 }
 
 /**
- * Check if a contribution profile can be deleted.
- *
- * There is no privileged "default" profile any more — every Contribution
- * Profile is an ordinary row. What has to stay true instead is that at least
- * ONE profile always exists (the active-profile setting must always point at
- * a real row), hence the profileCount guard.
- *
- * The "used by a Plan" guard lives in the router (assertNoPlanUses), which has to name the
- * offending Plans in its message.
+ * Whether a contribution profile can be deleted: at least one profile must remain
+ * for the active setting to point at. The "used by a Plan" guard lives in the
+ * router (assertNoPlanUses), which names the Plans.
  */
-export function canDeleteContribProfile(
+export function canDeleteContributionProfile(
   activeProfileId: number | null,
   profileId: number,
   profileCount: number,
@@ -52,7 +46,7 @@ export function canDeleteContribProfile(
 
 /**
  * Check if a salary profile can be deleted. Twin of
- * canDeleteContribProfile — no sentinel id, same last-one-standing rule.
+ * canDeleteContributionProfile — no sentinel id, same last-one-standing rule.
  */
 export function canDeleteSalaryProfile(
   activeProfileId: number | null,
@@ -74,10 +68,8 @@ export function canDeleteSalaryProfile(
 }
 
 /**
- * Check if a retirement profile can be deleted. Twin of
- * canDeleteContribProfile/canDeleteSalaryProfile — no sentinel id, same
- * last-one-standing rule. "Used by a Plan" lives in the router, same as
- * the other two, which has to name the offending Plans in its message.
+ * Whether a retirement profile can be deleted: the same last-one-standing rule
+ * as canDeleteContributionProfile; "used by a Plan" lives in the router.
  */
 export function canDeleteRetirementProfile(
   activeProfileId: number | null,
@@ -127,11 +119,8 @@ export type JobLike = {
 };
 
 /**
- * A job is current from its start date through its end date (both days
- * included; no end date = still current), never when speculative. The one
- * rule for "a person's job": every caller says which day it means — today
- * for this year's figures, the projection's or snapshot's own date for
- * theirs.
+ * A job is current from its start through its end date (both inclusive; no end =
+ * still current), never when speculative. Callers pass the day they mean.
  */
 function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
   // Date-only strings parse in local time, so a job that starts/ends on
@@ -189,10 +178,9 @@ export function projectionJobs<T extends JobLike>(
 }
 
 /**
- * A projection job's working years, whole years (the engine's
- * workingYearsByPerson): `start` = the year it starts when that's after
- * `asOf` (null = already working), `end` = the year of its last day (null =
- * no end). Null when it's worked throughout.
+ * A projection job's whole working years: `start` = its start year if after
+ * `asOf` (null = already working), `end` = its last day's year (null = no end).
+ * Null when worked throughout.
  */
 export function workingYears(
   job: Pick<JobLike, "startDate" | "endDate">,
@@ -229,12 +217,10 @@ export function jobYearsNote(
 
 // --- Contribution account per-profile active-field resolution (concept 4) ---
 
-/** A contribution account's raw active-field entry under one Contribution
- *  Profile — `null`/absent means the account carries no value in this
- *  profile at all (excluded, see applyContribActiveFields); `isActive:
- *  false` means it has a value but is switched off within this profile
- *  (a distinct state from having no value). */
-export type ContribAccountActiveFields = {
+/** A contribution account's raw entry under one Contribution Profile: absent =
+ *  no value here (excluded); `isActive: false` = has a value but is switched
+ *  off. */
+export type ContributionAccountActiveFields = {
   contributionValue?: string | number;
   contributionMethod?: string;
   /** Also taken from bonus checks. */
@@ -242,16 +228,10 @@ export type ContribAccountActiveFields = {
   isActive?: boolean;
 } | null;
 
-type ContribFieldDisplayState = {
-  /** True when this profile has a resolvable `contributionValue` for the
-   *  account, including an explicit value of "0" — absence, not zero, is
-   *  what excludes a row (matches getIncompleteContribAccountIds's own
-   *  definition of "incomplete"). An entry can exist without this being
-   *  true — e.g. a custom `displayNameCustom` set on an account that was
-   *  never given a value — so this deliberately checks `contributionValue`
-   *  directly rather than "does an entry object exist at all," which
-   *  previously let a value-less entry fall through to rendering the
-   *  literal string "undefined" in the Compare matrix. */
+type ContributionFieldDisplayState = {
+  /** True when the profile has a `contributionValue` for the account, "0"
+   *  included (as getIncompleteContribAccountIds defines it). An entry can exist
+   *  without one, e.g. only a `displayNameCustom`. */
   hasValue: boolean;
   /** True when the profile's entry explicitly turns the account off
    *  (`isActive: false`) rather than merely omitting it. */
@@ -262,17 +242,13 @@ type ContribFieldDisplayState = {
 };
 
 /**
- * Resolve a contribution account's display state from its raw per-profile
- * active-field entry — shared by the Compare view (one column per profile)
- * and the Profile Manager's read-only summary table (one row per account),
- * which independently reimplemented this identical rule before (RULES.md
- * Rule 6). Not used by the edit-form inputs, which read the same
- * `contributionValue`/`isActive` fields directly since they bind to form
- * state rather than rendering a label.
+ * A contribution account's display state from its per-profile entry, for the
+ * Compare view and the Profile Manager summary. Edit forms bind the fields
+ * directly instead.
  */
-export function resolveContribFieldDisplayState(
-  activeFields: ContribAccountActiveFields,
-): ContribFieldDisplayState {
+export function resolveContributionFieldDisplayState(
+  activeFields: ContributionAccountActiveFields,
+): ContributionFieldDisplayState {
   const hasValue = activeFields?.contributionValue !== undefined;
   const isDisabled = activeFields?.isActive === false;
   const methodSuffix =
@@ -283,11 +259,9 @@ export function resolveContribFieldDisplayState(
 }
 
 /**
- * Why a linked budget item's contribution account resolved to $0 for a
- * given column, distinguishing genuinely-zero from five different "there's
- * no real value here" causes that used to collapse into an indistinguishable
- * $0 — see classifyContribResolution (src/lib/pure/contributions/profile-fields.ts),
- * which is the only place that computes this.
+ * Why a linked budget item's contribution account resolved to $0 for a column:
+ * a real zero or one of five "no value" causes. Computed only by
+ * classifyContributionResolution (contributions/profile-fields.ts).
  */
 export type ContribResolutionStatus =
   | "ok"

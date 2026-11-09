@@ -39,7 +39,11 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
       .run();
 
     const settings: { key: string; value: unknown }[] = [];
-    const result = await getEffectiveOtherAssetsDetailed(ctx.rawDb, settings);
+    const result = await getEffectiveOtherAssetsDetailed(
+      ctx.rawDb,
+      settings,
+      new Date(),
+    );
 
     expect(result.items.length).toBe(2);
 
@@ -73,6 +77,7 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
       const result = await getEffectiveOtherAssetsDetailed(
         ctx2.rawDb,
         settings,
+        new Date(),
       );
 
       expect(result.items.length).toBe(1);
@@ -100,6 +105,7 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
       const result = await getEffectiveOtherAssetsDetailed(
         ctx2.rawDb,
         settings,
+        new Date(),
       );
 
       // Future asset should be excluded
@@ -125,6 +131,7 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
       const result = await getEffectiveOtherAssetsDetailed(
         ctx2.rawDb,
         settings,
+        new Date(),
       );
 
       expect(result.items.length).toBe(1);
@@ -148,6 +155,7 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
       const result = await getEffectiveOtherAssetsDetailed(
         ctx2.rawDb,
         settings as { key: string; value: unknown }[],
+        new Date(),
       );
 
       expect(result.total).toBe(25000);
@@ -162,7 +170,11 @@ describe("getEffectiveOtherAssetsDetailed — carry-forward", () => {
   it("returns empty items and zero total when no items and no manual setting", async () => {
     const ctx2 = await createTestDb();
     try {
-      const result = await getEffectiveOtherAssetsDetailed(ctx2.rawDb, []);
+      const result = await getEffectiveOtherAssetsDetailed(
+        ctx2.rawDb,
+        [],
+        new Date(),
+      );
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
     } finally {
@@ -188,7 +200,7 @@ describe("getEffectiveOtherAssets — returns total only", () => {
         ])
         .run();
 
-      const result = await getEffectiveOtherAssets(ctx.rawDb, []);
+      const result = await getEffectiveOtherAssets(ctx.rawDb, [], new Date());
       expect(result).toBe(15000);
     } finally {
       ctx.cleanup();

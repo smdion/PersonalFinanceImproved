@@ -7,7 +7,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import {
-  AddContribForm,
+  AddContributionForm,
   ContributionRow,
 } from "@/components/portfolio/contribution-accounts-contrib-row";
 import { expectLabelReachesControl } from "./label-click";
@@ -96,7 +96,7 @@ describe("the contribution row's match", () => {
 describe("the new contribution form's labels", () => {
   it("clicking a label reaches its field", () => {
     render(
-      <AddContribForm
+      <AddContributionForm
         accountType="401k"
         parentCategory="Retirement"
         performanceAccountId={1}

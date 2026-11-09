@@ -21,10 +21,9 @@ type BasisFormRow = {
   original: { contributionBasis: string; conversionBasis: string };
 };
 
-/** Bulk Roth basis entry — mirrors UpdatePerformanceForm's batch-save shape,
- *  but for the 3 basis fields only. Reuses taxBuckets.batchUpdateRothBasis
- *  (the same mutation Tax Buckets' own bulk save uses) rather than a second
- *  write path for account_basis rows. */
+/** Bulk Roth basis entry: UpdatePerformanceForm's batch-save shape for the 3
+ *  basis fields, writing through taxBuckets.batchUpdateRothBasis (the one
+ *  write path for account_basis rows). */
 export function UpdateBasisForm({
   currentYear,
   accountRows,
@@ -40,7 +39,7 @@ export function UpdateBasisForm({
     onSuccess: onSaved,
   });
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.suggestBasis.useQuery(
+  const { data: suggestions } = trpc.investments.listBasisSuggestions.useQuery(
     { year: currentYear },
     { retry: false },
   );
@@ -96,9 +95,9 @@ export function UpdateBasisForm({
     ),
   );
 
-  function updateRow(idx: number, field: keyof BasisFormRow, value: string) {
+  function updateRow(index: number, field: keyof BasisFormRow, value: string) {
     setRows((prev) =>
-      prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)),
+      prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
     );
   }
 
@@ -222,7 +221,7 @@ export function UpdateBasisForm({
             )}
           </div>
         )}
-        {rows.map((row, idx) => (
+        {rows.map((row, index) => (
           <div
             key={rowKey(row)}
             className="border-default space-y-2 rounded-lg border p-3"
@@ -253,7 +252,7 @@ export function UpdateBasisForm({
                     step="0.01"
                     value={row.contributionBasis}
                     onChange={(e) =>
-                      updateRow(idx, "contributionBasis", e.target.value)
+                      updateRow(index, "contributionBasis", e.target.value)
                     }
                     className="text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                   />
@@ -276,7 +275,7 @@ export function UpdateBasisForm({
                     step="0.01"
                     value={row.conversionBasis}
                     onChange={(e) =>
-                      updateRow(idx, "conversionBasis", e.target.value)
+                      updateRow(index, "conversionBasis", e.target.value)
                     }
                     className="text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                   />
@@ -295,7 +294,7 @@ export function UpdateBasisForm({
                   step="1"
                   value={row.latestConversionYear}
                   onChange={(e) =>
-                    updateRow(idx, "latestConversionYear", e.target.value)
+                    updateRow(index, "latestConversionYear", e.target.value)
                   }
                   placeholder="none"
                   className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-1 text-right text-xs focus-within:ring-1 focus-within:ring-blue-500 focus:outline-none"

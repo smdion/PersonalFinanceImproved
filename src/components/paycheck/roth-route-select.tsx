@@ -2,10 +2,9 @@
 
 import type { RothIraRoute } from "@/lib/config/enum-values";
 
-/** How a Roth IRA contribution gets there: direct, or the backdoor (a
- *  non-deductible traditional IRA contribution converted to the Roth). The
- *  account stays a Roth contribution either way; the route tells the Roth
- *  IRA income check whether the limit applies. */
+/** How a Roth IRA contribution gets there: direct, or backdoor (a non-deductible
+ *  traditional contribution converted). It stays a Roth contribution either way;
+ *  the route tells the Roth IRA income check whether the limit applies. */
 export function RothRouteSelect({
   value,
   disabled,

@@ -30,15 +30,9 @@ export type MonteCarloPercentileBand = {
      *  (it's held from then on, so it's the same every year). */
     gkAnchorRange?: { p25: number; p75: number };
   };
-  /** % of trials whose ratio fell below MC_SPENDING_STABILITY_THRESHOLD in
-   *  THIS specific year — only populated on `spendingStabilityBands`
-   *  entries (undefined elsewhere). Percentile bands alone can hide a real,
-   *  concentrated deviation: if only e.g. 8% of trials breach the floor in
-   *  a given year, p25/p50/p75 all stay at 1.0 and the band looks flat even
-   *  though something (an RMD, a bad-luck return sequence) is genuinely
-   *  forcing spending off-plan in those trials. This answers "which years"
-   *  directly instead of requiring the reader to infer it from percentile
-   *  shape. */
+  /** % of trials whose ratio fell below SIMULATION_SPENDING_STABILITY_THRESHOLD in THIS year,
+   *  only on `spendingStabilityBands` entries: says which years breach when the percentile
+   *  bands stay flat. */
   breachRate?: number;
 };
 
@@ -110,18 +104,11 @@ export type MonteCarloResult = {
   /** % of trials where withdrawals stayed ≥75% of the user's retirement budget (inflation-adjusted) in every decumulation year.
    *  Null when no retirement budget is set (decumulationAnnualExpenses not provided). */
   budgetStabilityRate: number | null;
-  /** % of trials that failed `successRate`'s bar specifically because a
-   *  year's spending need went unfunded due to `avoidPenalizedWithdrawals`
-   *  excluding penalty-exposed money — as opposed to genuinely running out
-   *  of money. Distinguishes "this
-   *  household can't legally reach its own savings before 59½" from "this
-   *  household is broke," which look identical in `successRate` alone. */
+  /** % of trials that failed because `avoidPenalizedWithdrawals` left a year's need unfunded
+   *  (savings out of reach before 59½), as opposed to running out of money. */
   penaltyAvoidedShortfallRate: number;
-  /** Median total shortfall (today's dollars) among ONLY the trials that hit
-   *  a penalty-avoided shortfall — "how much," not just "how often." Answers
-   *  what a bare rate can't: roughly how much MORE penalty-free money
-   *  (basis, brokerage) would close the gap in a typical affected trial.
-   *  0 when `penaltyAvoidedShortfallRate` is 0. */
+  /** Median total shortfall (today's dollars) among only the penalty-avoided-shortfall trials:
+   *  roughly how much more penalty-free money would close the gap. 0 when the rate is 0. */
   medianPenaltyAvoidedShortfallPV: number;
   /** 50th percentile terminal balance. */
   medianEndBalance: number;
@@ -155,10 +142,8 @@ export type MonteCarloResult = {
     p5EndBalance: number;
   };
 
-  /** The dollar outcomes in today's dollars, each trial deflated by the
-   *  inflation it ran with before the percentiles are taken. Today's-dollar
-   *  views read these — never the nominal figures deflated at the plan's
-   *  rate, which would erase the inflation each trial drew. */
+  /** The dollar outcomes in today's dollars, each trial deflated by its own inflation before
+   *  the percentiles. Today's-dollar views read these, never nominal deflated at the plan rate. */
   today: {
     percentileBands: MonteCarloPercentileBand[];
     terminalBalance: DistributionSummary;
@@ -166,10 +151,8 @@ export type MonteCarloResult = {
     p5EndBalance: number;
   };
 
-  /** Percentile bands for spending stability chart (ratio values, not dollars).
-   *  Each band's p-values represent withdrawal/baseline ratios (e.g., p25=0.82
-   *  means 25th percentile of trials had spending at 82% of baseline).
-   *  Null when there are no decumulation years. */
+  /** Spending stability percentile bands as ratios to baseline (p25=0.82: the 25th percentile
+   *  spent 82% of baseline). Null when there are no decumulation years. */
   spendingStabilityBands: {
     /** Bands for vs-Strategy ratio (withdrawal / year-1 inflation-adjusted withdrawal). */
     stratRatio: MonteCarloPercentileBand[];

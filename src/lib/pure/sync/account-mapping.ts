@@ -1,14 +1,7 @@
 /**
- * Sync rules for budget-API account mappings: the typed ID fields
- * (`performanceAccountId` / `assetId` / `debtId` / `loanId` + `loanMapType`) derived
- * from the legacy `localId` prefix string, the directions a mapping may sync,
- * and which remotes or local targets are pulled twice.
- *
- * The schema's typed fields are canonical. The UI carries `localId` strings
- * for backwards compatibility with select-option values, so every write path
- * must run mappings through `mappingWithTypedIds()` before persisting them
- * to guarantee the typed fields stay populated and `localId` is just
- * a UI breadcrumb.
+ * Sync rules for budget-API account mappings: typed ID fields derived from the `localId` prefix,
+ * allowed directions, and double-pulled targets. Typed fields are canonical; every write path runs
+ * mappings through `mappingWithTypedIds()`, leaving `localId` a UI select value.
  */
 
 import type { ApiSyncDirection } from "@/lib/config/enum-values";
@@ -98,12 +91,8 @@ export function isPullOnlyLocalId(localId: string): boolean {
 export type SyncDirection = ApiSyncDirection;
 
 /**
- * The sync directions a mapping target allows — one rule per target.
- *  - Cash, Credit Card and debts: pull only (see `isPullOnlyLocalId`).
- *  - Portfolio (`performance:`) accounts: push only. Ledgr's snapshot is the
- *    source of truth for them; a pull would write the balance a second time
- *    as an asset and double-count net worth.
- *  - Assets, mortgage rows and legacy plain-name mappings: any direction.
+ * Allowed sync directions per target: cash, credit card and debts pull only; Portfolio
+ * (`performance:`) push only, since a pull would double-count it as an asset; everything else any.
  */
 export function allowedDirectionsForLocalId(localId: string): SyncDirection[] {
   if (isPullOnlyLocalId(localId)) return ["pull"];

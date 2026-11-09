@@ -35,18 +35,12 @@ export type TooltipLineItem = {
   associatedMatch?: number;
   color?: TipColor;
   sub?: TooltipLineItem[];
-  /** Section eyebrow key for a money tooltip's `items` list. Items
-   *  sharing a `group` render together under one uppercase
-   *  header instead of as an undifferentiated flat list — e.g. grouping a
-   *  household withdrawal breakdown by account category. Items without a
-   *  group render first, ungrouped. */
+  /** Section eyebrow key for a money tooltip's `items`: items sharing a
+   *  `group` render together under one uppercase header; ungrouped items
+   *  render first. */
   group?: string;
-  /** Dim secondary line rendered under this item — merges a fact that
-   *  describes the SAME account (withdrawal-ordering eligibility verdict,
-   *  tracked Roth basis draw-down) instead of repeating the account name on
-   *  its own separate line. Replaces the old flat `eligibilityNote` string,
-   *  which concatenated every account's verdict into one opaque paragraph
-   *  the renderer couldn't style per-line. */
+  /** Dim secondary line under this item for facts about the SAME account
+   *  (eligibility verdict, Roth basis draw-down), so the name isn't repeated. */
   note?: string;
   /** Colors `note` amber with a ⚠ glyph instead of the default dim ✓. */
   noteLocked?: boolean;
@@ -58,12 +52,9 @@ export type TooltipData =
       header: string;
       meta?: string;
       meta2?: string;
-      /** RMD-satisfaction status — mirrors the chart tooltip's "was the RMD
-       *  satisfied" treatment (table/chart parity). Silent
-       *  in the ordinary case; `satisfiedNotably` adds a checkmark when met
-       *  via excess/QCD; `shortfallAmount > 0` earns its own red line with
-       *  real IRS excise-tax framing. `excessAmount`'s wording follows the
-       *  household's `rmdExcessHandling` toggle via `excessMode`. */
+      /** RMD status, matching the chart tooltip: `satisfiedNotably` adds a
+       *  checkmark when met; `shortfallAmount > 0` earns a red IRS excise-tax
+       *  line. `excessAmount` wording follows `excessMode` (rmdExcessHandling). */
       rmd?: {
         amount: number;
         isStartYear: boolean;
@@ -72,26 +63,16 @@ export type TooltipData =
         excessAmount: number;
         excessMode: "reinvest" | "spend";
         /** Money sent directly to charity, satisfying part of the RMD
-         *  tax-free — already shown in the chart tooltip and in
-         *  this same table's per-category/bucket tooltips, but was missing
-         *  from this specific "Total Withdrawals" rmd block. */
+         *  tax-free. */
         qcdAmount?: number;
-        /** "Why is my RMD this amount" — per-person divisor × balance
-         *  breakdown, e.g. "Alex: $40,000
-         *  (÷27.4, balance $1,096,000) · Sam: $12,000 (÷25.5, balance
-         *  $306,000)". Pre-formatted by the caller from
-         *  `EngineDecumulationYear.rmdByPerson`'s divisor/priorYearEndTradBalance/age
-         *  fields (or the household-level `rmdDivisor`/`priorYearEndTradBalance`
-         *  fallback) — never re-derived here, so it can't drift from the
-         *  real IRS Uniform Lifetime Table math that produced `amount`. */
+        /** "Why is my RMD this amount": per-person divisor × balance text,
+         *  pre-formatted by the caller from `rmdByPerson` (or the household
+         *  `rmdDivisor` fallback); never re-derived here. */
         divisorDetail?: string;
       };
-      /** Real, material spending-need shortfall for this year (engine's
-       *  `unmetNeedMaterial` verdict). Was
-       *  previously only visible behind the hidden diagMode dev toggle;
-       *  this promotes it to a real, always-visible alert. Only ever set
-       *  when the engine's own materiality floor is cleared — never
-       *  re-derive that threshold in a component. */
+      /** Material spending-need shortfall for this year (engine's
+       *  `unmetNeedMaterial` verdict). Set only when the engine's materiality
+       *  floor is cleared; never re-derive that threshold in a component. */
       shortfall?: {
         amount: number;
         /** Portion attributable to excluding penalty-exposed money
@@ -101,13 +82,9 @@ export type TooltipData =
          *  ("non-retirement") money — see RouteResult's docblock. */
         nonRetirementAmount?: number;
       };
-      /** Guardrail/spending-strategy event explanation for this year (e.g.
-       *  Guyton-Klinger raise/cut, Vanguard Dynamic ceiling/floor) — the
-       *  same data the Balance chart's ReferenceLine markers already show,
-       *  but previously invisible here except behind the hidden diagMode
-       *  dev toggle. Build via
-       *  `buildStrategyEventStyle` in utils.ts so this can't drift from
-       *  the chart's own wording/color. */
+      /** Guardrail/spending-strategy event for this year (e.g. Guyton-Klinger
+       *  raise/cut), as marked on the Balance chart. Build via
+       *  `buildStrategyEventStyle` in utils.ts to share the chart's wording/color. */
       strategyEvent?: { color: string; text: string };
       items?: TooltipLineItem[];
       total?: {
@@ -324,7 +301,7 @@ type AccountSplit = {
 
 export type AccountSplitsResult = {
   splits: AccountSplit[];
-  splitContrib: number;
+  splitContribution: number;
   splitGrowth: number;
 };
 
@@ -339,10 +316,10 @@ export type SpecFracInput = {
 };
 export type MatchFracInput = { matchAnnual: number; allMatchAnnual: number };
 export type ColumnChangeInput = {
-  deflate: (v: number, yr: number) => number;
-  bal: number;
+  deflate: (v: number, year: number) => number;
+  balance: number;
   year: number;
-  prev: { bal: number; year: number } | null;
-  splitContrib: number;
+  prev: { balance: number; year: number } | null;
+  splitContribution: number;
   splitGrowth: number;
 };

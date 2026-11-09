@@ -82,7 +82,7 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
   async function resolvedTotalComp(
     db: Parameters<typeof loadLiveContribData>[0],
   ) {
-    const live = await loadLiveContribData(db);
+    const live = await loadLiveContribData(db, new Date());
     const resolved = resolveProfile(
       { contributionActiveFields: { contributionAccounts: {} } },
       live.contribs,

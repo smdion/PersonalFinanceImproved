@@ -7,16 +7,9 @@ import {
 import { penaltyFreePrefixAmount } from "@/lib/pure/accounts/early-access";
 import { AccountEntry } from "./tax-buckets-account-row";
 
-/** Household-first: group every account entry into one of the 5 buckets,
- *  summing balance + accessible-now/locked across BOTH people. Brokerage
- *  is unconditionally penalty-free regardless of owner (no age/employer
- *  gate at all), so a jointly-owned brokerage entry — which skips
- *  per-person early-access computation entirely — still counts its full
- *  balance as accessible; other jointly-owned entries (rare in practice)
- *  are excluded from the accessible/locked split and called out.
- *
- *  Shared between the "Now" and "At Retirement" views — same grouping
- *  logic, fed a different `entries` array. */
+/** Groups every entry into the 5 buckets, summed across both people (used by
+ *  "Now" and "At Retirement"). Joint brokerage counts as fully accessible; other
+ *  joint entries are left out of the accessible/locked split and called out. */
 export function buildBuckets(entries: AccountEntry[]) {
   const buckets = new Map<
     BucketKey,
@@ -43,14 +36,9 @@ export function buildBuckets(entries: AccountEntry[]) {
     b.balance += entry.balance;
     b.entries.push(entry);
     if (entry.slices.length > 0) {
-      // Penalty-free capacity is the LEADING, CONTIGUOUS prefix of
-      // penalty-free slices (penaltyFreePrefixAmount, @/lib/pure/accounts/early-access)
-      // — the SAME single computation path the withdrawal-routing engine
-      // uses — NOT a sum of every penalty-free slice regardless of
-      // position. An unseasoned Roth conversion slice blocks access to any
-      // penalty-free slice behind it even though that slice's own
-      // `penaltyFree` flag is true; summing them independently here would
-      // silently disagree with what the engine actually routes.
+      // Accessible = the leading contiguous run of penalty-free slices, the
+      // engine's own penaltyFreePrefixAmount: an unseasoned conversion blocks
+      // penalty-free slices behind it.
       const accessibleNow = penaltyFreePrefixAmount(entry.slices);
       b.accessibleNow += accessibleNow;
       b.locked += entry.balance - accessibleNow;

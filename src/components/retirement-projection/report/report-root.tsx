@@ -1,10 +1,6 @@
-/** Orchestrator for the retirement advisor report — mounted by index.tsx
- *  only when `reportMode === "advisor"`, hidden on screen via the caller's
- *  `hidden print:block` wrapper. Builds the narrative once (pure function,
- *  lib/pure/advice/report) and renders each section. Requires a fresh, baseline,
- *  Advanced-tax-mode Monte Carlo result — index.tsx only reaches this
- *  component after `checkReportGate` has passed, so `mcResult` here is
- *  always real, never degraded. */
+/** Orchestrator for the print-only retirement advisor report: builds the
+ *  narrative once (lib/pure/advice/report) and renders each section. Mounted
+ *  only after `checkReportGate` passes, so `mcResult` is always real. */
 import type { ProjectionResult } from "@/lib/pure/engine/types/index";
 import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import type { PerPersonSettings } from "@/components/retirement/sections/types";

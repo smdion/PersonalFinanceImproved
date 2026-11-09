@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * The household's high-income line — the saved setting, else the default by
- * this year's filing status (contribution.highIncomeLine). Every savings
- * rate, the Checkup and the Milestones read it here. `threshold` is
- * undefined until known — the saved setting loaded, and the default when
- * nothing's saved — so no surface shows a result for the wrong line.
- * `error` is the default's load error when the line can't become known
- * (nothing's saved): callers show it, not a lasting skeleton.
+ * The household's high-income line: the saved setting, else the default by
+ * filing status. `threshold` is undefined until known; `error` is the default's
+ * load error when nothing's saved, for callers to show instead of a skeleton.
  */
 import { trpc, type RouterError } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -32,12 +28,10 @@ export function useHighIncomeLine(): {
     SK_HIGH_INCOME_THRESHOLD,
     null,
   );
-  const { data, error, refetch } = trpc.contribution.highIncomeLine.useQuery(
-    undefined,
-    {
+  const { data, error, refetch } =
+    trpc.contribution.computeHighIncomeLine.useQuery(undefined, {
       staleTime: 60_000,
-    },
-  );
+    });
   const threshold = loaded
     ? effectiveHighIncomeLine(saved, data?.threshold)
     : undefined;

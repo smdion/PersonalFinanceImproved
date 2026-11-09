@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * How the retirement projection treats this loan. The budget line that pays
- * it stops the year after payoff, once the household has said which line
- * that is; names don't say, so it's never guessed. A retirement budget typed
- * in as a figure has no lines, so it's left as entered.
+ * How the retirement projection treats this loan: its paying budget line stops the year after
+ * payoff once the household names that line (never guessed); a figure-only budget is as entered.
  */
 import { trpc } from "@/lib/trpc";
 
@@ -16,10 +14,10 @@ export function RetirementPayoffNote({
   payoffDate: string;
 }) {
   const utils = trpc.useUtils();
-  const { data } = trpc.budget.mortgageItemChoices.useQuery({ loanId });
+  const { data } = trpc.budget.listMortgageItemChoices.useQuery({ loanId });
   const setItem = trpc.budget.setMortgageItem.useMutation({
     onSuccess: () => {
-      void utils.budget.mortgageItemChoices.invalidate({ loanId });
+      void utils.budget.listMortgageItemChoices.invalidate({ loanId });
       void utils.projection.invalidate();
     },
   });
@@ -60,7 +58,7 @@ export function RetirementPayoffNote({
           ? `Your retirement projection stops spending this payment from ${endsYear}. Taxes and insurance stay.`
           : "Pick the line that pays this loan and your retirement projection stops spending it after payoff."}
         {data.retirementTyped
-          ? " Retirement spending you typed in as a figure stays as entered."
+          ? " A Retirement budget you typed in as an amount stays as entered."
           : ""}
       </p>
     </div>

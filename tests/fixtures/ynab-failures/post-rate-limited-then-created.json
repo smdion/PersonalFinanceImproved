@@ -1,0 +1,75 @@
+{
+  "description": "A transaction POST YNAB rate-limits (rejected before it runs), then creates: POST /transactions twice.",
+  "source": {
+    "spec": "YNAB API spec 1.88.0 (api.ynab.com/papi/open_api_spec.yaml): ErrorResponse {error: {id, name, detail}}, server_knowledge on every list",
+    "built": "by hand from the spec, not recorded (YNAB can't be recorded live); invented ids",
+    "paths": "relative to https://api.ynab.com/v1",
+    "ledgr": "v0.10.5"
+  },
+  "pairs": [
+    {
+      "method": "POST",
+      "path": "/budgets/budget-1/transactions",
+      "requestBody": {
+        "transaction": {
+          "account_id": "acct-1",
+          "date": "2026-10-03",
+          "amount": -19990,
+          "payee_name": "Dup",
+          "memo": "same fingerprint 626787",
+          "cleared": "cleared",
+          "approved": true
+        }
+      },
+      "status": 429,
+      "responseBody": {
+        "error": {
+          "id": "429",
+          "name": "too_many_requests",
+          "detail": "Too many requests"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/budgets/budget-1/transactions",
+      "requestBody": {
+        "transaction": {
+          "account_id": "acct-1",
+          "date": "2026-10-03",
+          "amount": -19990,
+          "payee_name": "Dup",
+          "memo": "same fingerprint 626787",
+          "cleared": "cleared",
+          "approved": true
+        }
+      },
+      "status": 201,
+      "responseBody": {
+        "data": {
+          "transaction_ids": ["tx-new"],
+          "transaction": {
+            "id": "tx-new",
+            "date": "2026-10-03",
+            "amount": -19990,
+            "memo": null,
+            "cleared": "cleared",
+            "approved": true,
+            "flag_color": null,
+            "account_id": "acct-1",
+            "account_name": "Checking",
+            "payee_id": null,
+            "payee_name": null,
+            "category_id": "cat-groc",
+            "category_name": "Groceries",
+            "transfer_account_id": null,
+            "import_id": null,
+            "deleted": false,
+            "subtransactions": []
+          },
+          "server_knowledge": 42
+        }
+      }
+    }
+  ]
+}

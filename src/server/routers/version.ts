@@ -112,7 +112,7 @@ export const versionRouter = createTRPCRouter({
     }),
 
   /** Tables a restore of this version would empty (it predates them), for the pre-restore warning. */
-  restoreDataLoss: versionProcedure
+  listRestoreDataLoss: versionProcedure
     .input(z.object({ id: z.number().int() }))
     .query(async ({ ctx, input }) => {
       const tables = await ctx.db
@@ -127,7 +127,7 @@ export const versionRouter = createTRPCRouter({
     }),
 
   /** Same check for an uploaded backup file, given only its table names. */
-  importDataLoss: versionProcedure
+  listImportDataLoss: versionProcedure
     .input(z.object({ tableNames: z.array(z.string().max(100)).max(500) }))
     .query(async ({ ctx, input }) => {
       return tablesLostOnRestore(ctx.db, input.tableNames, {
@@ -244,11 +244,8 @@ export const versionRouter = createTRPCRouter({
         listTablesSQL(),
       );
 
-      // Tables to preserve (versioning system + app config)
-      // local_admins is preserved: it's app auth, not user financial data, and
-      // wiping it (while app_settings.onboarding_completed survives) opens an
-      // unauthenticated admin-takeover window via createLocalAdmin. Manage/delete
-      // accounts via Settings.
+      // Preserve versioning + app config, and local_admins: wiping app auth while
+      // onboarding_completed survives would reopen createLocalAdmin to anyone.
       const preserve = new Set([
         "state_versions",
         "state_version_tables",

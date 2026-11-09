@@ -115,7 +115,9 @@ describe("SavingsGoalsCard smoke", () => {
     setQueryState(SUMMARY, { error: new Error("x") });
     setQuery(REIMB, undefined);
     render(<SavingsGoalsCard />);
-    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load Savings Goals. Try again."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 

@@ -7,6 +7,7 @@ import { ESLint, Linter } from "eslint";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ratchetPlugin } from "../../eslint-ratchet.mjs";
+import { sitesIn } from "../../scripts/fallback-inventory";
 
 const linter = new Linter({ configType: "flat" });
 
@@ -134,6 +135,311 @@ describe("ratchet/no-raw-chart-container", () => {
       ),
     ).toEqual([1]);
   });
+});
+
+describe("ratchet/no-abbreviation", () => {
+  it("counts a declared name with an abbreviated word, a plural included", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const totalAmt = 1;",
+          "function f(rowIdx) { return rowIdx; }",
+          "const o = { mcRuns: 1 };",
+          "const { indAccts } = x;",
+          "class Yr {}",
+          "import { a as decBal } from 'm';",
+          "try {} catch (wdErr) {}",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("passes full words, words that only contain one, uses, imports and carve-outs", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const totalAmount = decimal + estimate + month + balance;",
+          "const o = { amount: x.totalAmt, [yrKey]: 1, totalPct };",
+          "f(rowIdx);",
+          "import { mcResult } from 'm';",
+          "const { employerMaxMatchPct } = row;",
+          "const pct = 1;",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("counts type names, enum members and property and method signatures", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const [result] = await eslint.lintText(
+      [
+        "export type AcctRow = { yrEnd: number; calcIt(): void };",
+        "export interface Plan { contribs2: number }",
+        "export enum Mode { WdFirst }",
+        "",
+      ].join("\n"),
+      { filePath: "src/lib/pure/demo/part.ts" },
+    );
+    expect(
+      result!.messages
+        .filter((m) => m.ruleId === "ratchet/no-abbreviation")
+        .map((m) => m.message.split("'")[1]),
+    ).toEqual(["AcctRow", "yrEnd", "calcIt", "contribs2", "WdFirst"]);
+  }, 30_000);
+});
+
+describe("ratchet/no-config-reach-through", () => {
+  it("counts displayLabel read off the config entry, not through getDisplayConfig (owner Q10b)", () => {
+    expect(
+      reported(
+        "no-config-reach-through",
+        [
+          "const a = getAccountTypeConfig(t).displayLabel;",
+          "const b = ACCOUNT_TYPE_CONFIG[t].displayLabel;",
+          "const c = getAccountTypeConfig(t)?.displayLabel;",
+          "const d = getDisplayConfig(t, subType).displayLabel;",
+          "const e = getAccountTypeConfig(t).supportsRothSplit;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+});
+
+describe("ratchet/no-lint-violation-ok (owner Q10c)", () => {
+  it("counts each escape in a line, block or JSX comment, with a reason or without", () => {
+    const messages = linter.verify(
+      [
+        "const a = 1; // lint-violation-ok: fixture",
+        "/* lint-violation-ok: one */ /* lint-violation-ok:two */",
+        "/**",
+        " * lint-violation-ok: first, lint-violation-ok: second",
+        " */",
+        "const b = <div>{/* lint-violation-ok: JSX */}</div>;",
+        "// the reason is missing. lint-violation-ok",
+        "const c = 'lint-violation-ok: in a string, not a comment';",
+      ].join("\n"),
+      [
+        {
+          files: ["**/*.jsx"],
+          plugins: { ratchet: ratchetPlugin },
+          languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+          rules: { "ratchet/no-lint-violation-ok": "error" },
+        },
+      ],
+      "component.jsx",
+    );
+    expect(messages.map((m) => [m.line, m.column])).toEqual([
+      [1, 17],
+      [2, 4],
+      [2, 33],
+      [4, 4],
+      [4, 30],
+      [6, 20],
+      [7, 27],
+    ]);
+    expect(messages.at(-1)!.message).toContain("no reason");
+    expect(messages[0]!.message).not.toContain("no reason");
+  });
+
+  it("covers src, tests and scripts, not the finders' own file", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const a = 1; // lint-violation-ok: fixture\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-lint-violation-ok",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(await counted("tests/demo/part.test.ts")).toBe(true);
+    expect(await counted("scripts/demo-part.ts")).toBe(true);
+    expect(await counted("tests/lint/violations.test.ts")).toBe(false);
+  }, 30_000);
+});
+
+describe("ratchet/no-clock-read", () => {
+  it("counts new Date() with no argument, also inside a call, and Date.now()", () => {
+    expect(
+      reported(
+        "no-clock-read",
+        [
+          "const a = new Date();",
+          "const b = Date.now();",
+          "const c = calendarDateOf(new Date());",
+          "const d = new Date(ms);",
+          "const e = calendarDateOf(asOf);",
+          "const f = Date.UTC(2026, 0, 1);",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+
+  it("covers server and lib code, not the scope's clock, the stamp helper, client hooks or the UI", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const today = () => new Date();\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some((m) => m.ruleId === "ratchet/no-clock-read");
+    };
+    expect(await counted("src/server/services/demo/part.ts")).toBe(true);
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/trpc.ts")).toBe(false);
+    expect(await counted("src/lib/utils/clock.ts")).toBe(false);
+    expect(await counted("src/lib/hooks/use-demo.ts")).toBe(false);
+    expect(await counted("src/components/demo/part.tsx")).toBe(false);
+  }, 30_000);
+});
+
+describe("ratchet/no-unregistered-fallback (docs/FALLBACKS.md)", () => {
+  const code = [
+    "const a = row.amount ?? 0;",
+    "const b = row.amount || 0;",
+    "const c = byId.get(id) ?? 0;",
+    "const d = limits[key] ?? 0;",
+    "total.sum = (total.sum ?? 0) + v;",
+    "out[k] = (out[k] ?? 0) + v;",
+    "const e = row.name ?? '';",
+    "try { f(); } catch { return null; }",
+    "try { f(); } catch (e) { log(e); throw e; }",
+    "try { f(); } catch { const g = () => 1; }",
+    "p.catch(() => null);",
+    "p.catch(() => fallbackRows());",
+    "p.catch((e) => void log(e));",
+    "p.catch((e) => { log(e); });",
+    "const h = readMaybeEncrypted(row.config);",
+  ].join("\n");
+  const lines = (zeroDefaults: boolean) =>
+    linter
+      .verify(
+        `function wrap() {\n${code}\n}`,
+        [
+          {
+            files: ["**/*.ts"],
+            plugins: { ratchet: ratchetPlugin },
+            rules: {
+              "ratchet/no-unregistered-fallback": ["error", { zeroDefaults }],
+            },
+          },
+        ],
+        "part.ts",
+      )
+      .map((m) => m.line - 1);
+
+  it("counts ?? 0 and || 0 in money code, record reads included, not Map reads or seeds", () => {
+    expect(lines(true)).toEqual([1, 2, 4, 8, 11, 12, 15]);
+  });
+
+  it("counts value-returning catches (a call's value too) and readMaybe* calls everywhere", () => {
+    expect(lines(false)).toEqual([8, 11, 12, 15]);
+  });
+
+  it("agrees with scripts/fallback-inventory.ts on what is counted", () => {
+    const counted = sitesIn("src/lib/pure/demo/part.ts", code)
+      .filter((s) => s.counted)
+      .map((s) => s.line);
+    expect(counted).toEqual(lines(true));
+  });
+
+  it("counts zero defaults in money paths only", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const zero = "export const f = (x?: number) => x ?? 0;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(zero, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-unregistered-fallback",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/services/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/routers/demo/part.ts")).toBe(true);
+    expect(await counted("src/server/data/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(false);
+    expect(await counted("src/lib/db/demo.ts")).toBe(false);
+  }, 30_000);
+});
+
+describe("ratchet/no-identity-predicate-import", () => {
+  it("counts each predicate imported, not the behavior helpers", () => {
+    expect(
+      reported(
+        "no-identity-predicate-import",
+        [
+          "import { isHsaCategory, isIraCategory } from '@/lib/config/account-types';",
+          "import { isTaxableCategory, getLimitGroup } from '@/lib/config/account-types';",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 1]);
+  });
+
+  it("leaves Tax Buckets' four files to them until v0.11", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code =
+      "import { isHsaCategory } from '@/lib/config/account-types';\nexport const f = isHsaCategory;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-identity-predicate-import",
+      );
+    };
+    expect(await counted("src/lib/pure/demo/part.ts")).toBe(true);
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(
+      await counted("src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts"),
+    ).toBe(false);
+    expect(await counted("src/lib/pure/accounts/tax-bucket-analysis.ts")).toBe(
+      false,
+    );
+  }, 30_000);
+});
+
+describe("ratchet/no-retired-ui-word", () => {
+  it("counts MC, pin, override and customize in JSX text and shown string props", () => {
+    expect(
+      reported(
+        "no-retired-ui-word",
+        [
+          "const a = <p>Each MC trial draws</p>;",
+          "const b = <p>Pinned profile</p>;",
+          "const c = <HelpTip text='You can override it' />;",
+          "const d = <HelpTip text={`Customize ${x} here`} />;",
+          "const e = <p>{'Overrides apply'}</p>;",
+          "const f = <Tab label='Customization' />;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("passes other words, lowercase mc, hidden props and code", () => {
+    expect(
+      reported(
+        "no-retired-ui-word",
+        [
+          "const a = <p>Simulation trials, active profile, spinning, mcdonald</p>;",
+          "const b = <div className='pin-1' data-testid='override-row' id='mc' />;",
+          "const c = <button onClick={() => setOverride(null)}>Reset</button>;",
+          "const d = overrides.map((o) => <Row key={o.id} />);",
+          "const e = <p>{mcResult.median}</p>;",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("covers components and app, not lib", async () => {
+    const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
+    const code = "export const P = () => <p>MC results</p>;\n";
+    const counted = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return result!.messages.some(
+        (m) => m.ruleId === "ratchet/no-retired-ui-word",
+      );
+    };
+    expect(await counted("src/components/demo/part.tsx")).toBe(true);
+    expect(await counted("src/app/demo/part.tsx")).toBe(true);
+    expect(await counted("src/lib/demo/part.tsx")).toBe(false);
+  }, 30_000);
 });
 
 describe("the repo config's scopes (owner Q4, v0.10.4)", () => {

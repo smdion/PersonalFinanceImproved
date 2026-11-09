@@ -1,13 +1,14 @@
 import {
   PERF_BALANCE_MISMATCH_ABS,
-  PERF_BALANCE_MISMATCH_PCT,
+  PERF_BALANCE_MISMATCH_PERCENT,
 } from "@/lib/constants";
 import type { AccountOwnership } from "@/lib/config/enum-values";
 import type { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
 import type { isRetirementParent } from "@/lib/config/account-types";
 import { toNumber } from "@/lib/utils/numbers";
 import { accountDisplayName } from "@/lib/utils/format";
-import { localDateStr, parseLocalDateOnly } from "@/lib/utils/date";
+import { parseLocalDateOnly } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { computeReturn } from "./returns";
 import { resolveMaster } from "./annual-rollups";
 import {
@@ -68,19 +69,16 @@ export function performanceAccountRows(
 ) {
   const accountRows = accounts.map((r) => {
     const master = resolveMaster(r, perfLookups);
-    const beginBal = toNumber(r.beginningBalance);
+    const beginBalance = toNumber(r.beginningBalance);
     const contribs = toNumber(r.totalContributions);
     const gainLoss = toNumber(r.yearlyGainLoss);
     const employer = toNumber(r.employerContributions);
     const distributions = toNumber(r.distributions);
     const fees = toNumber(r.fees);
     const rollovers = toNumber(r.rollovers);
-    // Roth basis is per person, but one Performance row can cover an
-    // account two people hold (a joint-labeled IRA with each spouse's
-    // Roth). Every person's basis for this account and year rides along;
-    // the row's own figures are their total.
-    // (An account tracked with a row per person keeps each row to its
-    // own person, so nothing is counted twice.)
+    // One row can cover an account two people hold, so every person's Roth basis
+    // rides along and the row's figures are their total. With a row per person,
+    // each row keeps its own person, so nothing counts twice.
     const perPerson =
       (rowsPerAccountYear.get(`${r.performanceAccountId}|${r.year}`) ?? 0) > 1;
     const owners = basisRows.filter(
@@ -130,12 +128,12 @@ export function performanceAccountRows(
       ownerName: resolveOwnerName(r.ownerPersonId, peopleMap),
       ownerPersonId: r.ownerPersonId,
       ownershipType: master.ownershipType,
-      beginningBalance: beginBal,
+      beginningBalance: beginBalance,
       totalContributions: contribs,
       yearlyGainLoss: gainLoss,
       endingBalance: toNumber(r.endingBalance),
       annualReturnPct: computeReturn(
-        beginBal,
+        beginBalance,
         contribs,
         gainLoss,
         distributions,
@@ -189,7 +187,7 @@ export function performanceBalanceMismatch(
     // already tomorrow in UTC).
     const perfDate =
       typeof performanceLastUpdated === "string"
-        ? localDateStr(parseLocalDateOnly(performanceLastUpdated))
+        ? calendarDateOf(parseLocalDateOnly(performanceLastUpdated))
         : null;
     if (!perfDate || snapDate !== perfDate) return null;
 
@@ -200,7 +198,7 @@ export function performanceBalanceMismatch(
     const delta = perfTotal - snapTotal;
     const threshold = Math.max(
       PERF_BALANCE_MISMATCH_ABS,
-      snapTotal * PERF_BALANCE_MISMATCH_PCT,
+      snapTotal * PERF_BALANCE_MISMATCH_PERCENT,
     );
     if (Math.abs(delta) <= threshold) return null;
     return { perfTotal, snapTotal, delta };

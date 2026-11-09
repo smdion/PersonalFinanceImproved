@@ -1,10 +1,7 @@
 /**
- * A brand-new Salary Profile entry: no pay or bonus yet, and the most common
- * setup for everything that can't be empty (biweekly, MFJ, no extra
- * withholding). The one definition — Profiles → Salary's "+ Add",
- * onboarding, and salaryProfile.getById's starting values for a job the
- * profile doesn't have yet. Never a fallback in a calculation: a job with no
- * entry contributes $0 everywhere.
+ * A new Salary Profile entry: no pay or bonus, biweekly, MFJ, no extra withholding. Used by
+ * "+ Add", onboarding and getById for a job the profile lacks; never a calculation fallback
+ * (a job with no entry contributes $0).
  */
 import type { z } from "zod/v4";
 import type { salaryEntrySchema } from "@/lib/db/json-schemas";

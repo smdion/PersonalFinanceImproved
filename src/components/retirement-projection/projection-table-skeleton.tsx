@@ -1,7 +1,6 @@
-/** Loading skeleton for ProjectionTable — full-width, matches the real table's
- *  column structure (Timeline | Contributions | Balances | Notes) so the layout
- *  doesn't shift when data arrives. Uses the same min-width and overflow-x-auto
- *  wrapper as the real table. */
+/** Loading skeleton for ProjectionTable: same column structure, min-width
+ *  and overflow-x-auto wrapper as the real table so the layout doesn't shift
+ *  when data arrives. */
 
 // Column definitions mirror the real table's default "tax type" view:
 // Timeline (3) + Contributions (6) + Balances (6) + Notes (1) = 16 columns.

@@ -5,12 +5,8 @@ import React, { createContext, useContext, useState, useMemo } from "react";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 export type { ViewMode };
 
-/**
- * Page-wide view state shared by the header and every page. Plans are not
- * held here: a Plan is a named set of profiles, applying it makes those the
- * active profiles (server-side), and which Plan is in use is derived from
- * the active profiles — see usePlans.
- */
+/** Page-wide view state shared by the header and every page. Plans aren't held here: the
+ *  Plan in use is derived from the active profiles (see usePlans). */
 type ScenarioContextValue = {
   /** Global view mode: projected year, year-end estimate or actual YTD. */
   viewMode: ViewMode;

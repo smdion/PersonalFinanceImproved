@@ -8,9 +8,9 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { AccountBadge } from "@/components/ui/account-badge";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { SectionHeader } from "./section-header";
-import { ContribCard } from "./contrib-card";
+import { ContributionCard } from "./contrib-card";
 import {
-  ContribAccountForm,
+  ContributionAccountForm,
   type ContribAccountFormValues,
 } from "./contrib-account-form";
 import type { RawContrib, JointContrib } from "./types";
@@ -51,24 +51,15 @@ export function ContributionsSection({
 }: {
   rawContribs: RawContrib[];
   /**
-   * Per-contribution annual/limit figures, already resolved by the caller's
-   * shared paycheck hook with the SAME Contribution/Salary Profile ids the
-   * rest of the page uses.
-   *
-   * This section used to run its own `contribution.computeSummary` query
-   * keyed on the raw globally-active contribution setting while using the
-   * Plan-pin-aware hook for the salary axis. That made the cards ignore an
-   * active Plan's Contribution Profile pin, and made the page's own
-   * Contribution Profile dropdown move the pay stub without moving these
-   * cards — two different profiles rendered in one view. Never reintroduce a
-   * query here: this data arrives as a prop.
+   * Per-contribution annual/limit figures from the caller's shared paycheck hook, on the
+   * same profile ids as the rest of the page. Never query here: it must stay a prop.
    */
   perContribData: PerContribView[];
   onUpdateContrib: (id: number, field: string, value: string) => void;
   onToggleAutoMax?: (
     id: number,
     value: boolean,
-    targetContribValue?: number,
+    targetContributionValue?: number,
   ) => void;
   onDeleteContrib?: (id: number) => void;
   onCreateContrib?: (data: ContribAccountFormValues) => void;
@@ -89,16 +80,15 @@ export function ContributionsSection({
   /** Sandbox/preview mode — cards are read-only and the "add account"
    *  action is omitted entirely. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — contributionValue/Method
-   *  write into the viewed Contribution Profile's active fields when
-   *  unlocked, so only that field gates on it; delete/toggle/institution
-   *  edits are unrelated and keep gating on `readOnly` alone. */
+  /** Mirrors PersonPaycheck's salary padlock for contributionValue/Method only
+   *  (they write the viewed Contribution Profile's active fields); other edits
+   *  gate on `readOnly` alone. */
   contribValueReadOnly?: boolean;
 }) {
   const [addingAccount, setAddingAccount] = useState(false);
 
   // Lookup from contribId -> per-contrib computed data (resolved upstream).
-  const perContribMap = new Map<number, PerContribView>(
+  const perContributionMap = new Map<number, PerContribView>(
     perContribData.map((pcd) => [pcd.contribId, pcd]),
   );
 
@@ -142,9 +132,9 @@ export function ContributionsSection({
     }
   }
 
-  const groupedContribs = new Map<LimitGroupKey, RawContrib[]>();
+  const groupedContributions = new Map<LimitGroupKey, RawContrib[]>();
   for (const key of groupOrder) {
-    groupedContribs.set(
+    groupedContributions.set(
       key,
       rawContribs.filter((c) => getGroupKey(c.accountType) === key),
     );
@@ -194,7 +184,7 @@ export function ContributionsSection({
       {isExpanded && (
         <div className="mt-2 space-y-4">
           {groupOrder.map((groupKey) => {
-            const contribs = groupedContribs.get(groupKey) ?? [];
+            const contribs = groupedContributions.get(groupKey) ?? [];
             const jointContribs = groupedJoint.get(groupKey) ?? [];
             // A group has a shared limit if any category in it has an IRS limit and shares a limit group
             const irsLimitCats = categoriesWithIrsLimit();
@@ -212,12 +202,12 @@ export function ContributionsSection({
             let sharedLimitAmount: number | undefined;
             let sharedLimitUsed = 0;
             if (isSharedLimit && contribs.length > 0) {
-              const firstData = perContribMap.get(contribs[0]!.id);
+              const firstData = perContributionMap.get(contribs[0]!.id);
               if (firstData) {
                 sharedLimitAmount = firstData.limit;
                 sharedLimitUsed = contribs.reduce(
                   (sum, c) =>
-                    sum + (perContribMap.get(c.id)?.annualAmount ?? 0),
+                    sum + (perContributionMap.get(c.id)?.annualAmount ?? 0),
                   0,
                 );
               }
@@ -262,23 +252,25 @@ export function ContributionsSection({
                 {/* Account cards */}
                 <div className="ml-1 space-y-2">
                   {contribs.map((c) => {
-                    const pcd = perContribMap.get(c.id);
+                    const pcd = perContributionMap.get(c.id);
                     return (
-                      <ContribCard
+                      <ContributionCard
                         key={c.id}
                         contrib={c}
-                        onUpdateContrib={onUpdateContrib}
+                        onUpdateContribution={onUpdateContrib}
                         onToggleAutoMax={onToggleAutoMax}
-                        onDeleteContrib={onDeleteContrib}
+                        onDeleteContribution={onDeleteContrib}
                         onUpdateInstitution={onUpdateInstitution}
                         _methodLabel={methodLabel}
                         salary={salary}
                         periodsPerYear={periodsPerYear}
                         annualLimit={pcd?.limit}
-                        siblingAnnualContribs={pcd?.siblingAnnualTotal ?? 0}
+                        siblingAnnualContributions={
+                          pcd?.siblingAnnualTotal ?? 0
+                        }
                         employerMatchAnnual={pcd?.employerMatchAnnual ?? 0}
                         readOnly={readOnly}
-                        contribValueReadOnly={contribValueReadOnly}
+                        contributionValueReadOnly={contribValueReadOnly}
                       />
                     );
                   })}
@@ -394,7 +386,7 @@ export function ContributionsSection({
               onClose={() => setAddingAccount(false)}
               title="Add Contribution Account"
             >
-              <ContribAccountForm
+              <ContributionAccountForm
                 initialValues={{ personId, jobId: jobId ?? null }}
                 onSave={(data) => {
                   onCreateContrib(data);

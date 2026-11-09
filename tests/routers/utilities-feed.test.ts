@@ -143,7 +143,7 @@ describe.each(["ynab", "actual"] as const)(
     it("previews then writes costs by service month — split parts included, refunds and usage left out", async () => {
       const { caller, gas, water, cleanup } = await household(service);
       try {
-        const plan = await caller.utilities.previewBudgetApiFeed();
+        const plan = await caller.utilities.computeBudgetApiFeedPreview();
         expect(plan.conflicts).toEqual([]);
         expect(
           plan.changes.map((c) => [
@@ -173,9 +173,9 @@ describe.each(["ynab", "actual"] as const)(
           ],
         );
         // Pulled again: nothing to do.
-        expect((await caller.utilities.previewBudgetApiFeed()).changes).toEqual(
-          [],
-        );
+        expect(
+          (await caller.utilities.computeBudgetApiFeedPreview()).changes,
+        ).toEqual([]);
       } finally {
         cleanup();
       }
@@ -191,7 +191,7 @@ describe.each(["ynab", "actual"] as const)(
           cost: "150",
           usage: "80",
         });
-        const plan = await caller.utilities.previewBudgetApiFeed();
+        const plan = await caller.utilities.computeBudgetApiFeedPreview();
         expect(plan.conflicts).toEqual([
           expect.objectContaining({
             serviceId: gas.id,
@@ -203,7 +203,8 @@ describe.each(["ynab", "actual"] as const)(
           }),
         ]);
         await caller.utilities.applyBudgetApiFeed({
-          planHash: (await caller.utilities.previewBudgetApiFeed()).planHash,
+          planHash: (await caller.utilities.computeBudgetApiFeedPreview())
+            .planHash,
         });
         const jan = (await caller.utilities.computeSummary()).summaries
           .find((s) => s.serviceId === gas.id)!
@@ -222,7 +223,8 @@ describe("utilities cost feed — who wrote the cost", () => {
     const { caller, db, gas, cleanup } = await household("ynab");
     try {
       await caller.utilities.applyBudgetApiFeed({
-        planHash: (await caller.utilities.previewBudgetApiFeed()).planHash,
+        planHash: (await caller.utilities.computeBudgetApiFeedPreview())
+          .planHash,
       });
       const source = () =>
         db
@@ -255,7 +257,9 @@ describe("utilities cost feed — who wrote the cost", () => {
   it("nothing mapped or nothing synced: an empty plan; only an admin can pull", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      expect(await caller.utilities.previewBudgetApiFeed()).toMatchObject({
+      expect(
+        await caller.utilities.computeBudgetApiFeedPreview(),
+      ).toMatchObject({
         changes: [],
         conflicts: [],
       });
@@ -278,7 +282,7 @@ describe("utilities cost feed — who wrote the cost", () => {
   it("applies only the plan that was reviewed — a cost typed in since isn't overwritten", async () => {
     const { caller, gas, cleanup } = await household("ynab");
     try {
-      const plan = await caller.utilities.previewBudgetApiFeed();
+      const plan = await caller.utilities.computeBudgetApiFeedPreview();
       // Someone types January's gas in after the review.
       await caller.utilities.upsertReading({
         serviceId: gas.id,
@@ -309,7 +313,7 @@ describe("utilities cost feed — who wrote the cost", () => {
         }),
       ).rejects.toThrow(/already fed/);
       await caller.utilities.updateService({ id: gas.id, active: false });
-      const plan = await caller.utilities.previewBudgetApiFeed();
+      const plan = await caller.utilities.computeBudgetApiFeedPreview();
       expect(plan.changes.every((c) => c.serviceId !== gas.id)).toBe(true);
     } finally {
       cleanup();

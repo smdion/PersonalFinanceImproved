@@ -33,7 +33,7 @@ vi.mock("@/lib/db/schema", () => ({
   appSettings: {},
   stateVersions: { id: {}, versionType: {}, name: {} },
 }));
-vi.mock("@/lib/logger", () => ({ log: m.log }));
+vi.mock("@/lib/logger", () => ({ log: m.log, logWarnOnce: vi.fn() }));
 vi.mock("@/lib/simplefin/sync", () => ({
   getSimplefinConnection: vi.fn().mockResolvedValue({ id: 1 }),
   hasSyncedToday: vi.fn().mockResolvedValue(false),

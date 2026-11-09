@@ -1,7 +1,5 @@
-/** Executive-summary section of the retirement advisor report: plan
- *  verdict, key numbers, and a short narrative paragraph. Pure function —
- *  no React, no formatting decisions left to the component layer, so
- *  correctness is testable without a DOM. */
+/** Advisor report executive summary: plan verdict, key numbers and a short narrative.
+ *  Pure, with all formatting decided here. */
 import {
   assessPlan,
   describePlanFailure,
@@ -11,10 +9,8 @@ import type { MonteCarloResult } from "@/lib/pure/simulation/monte-carlo.types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { ReportExecutiveSummary, ReportVerdict } from "./types";
 
-/** Below this Monte Carlo success rate, the plan reads as "needs
- *  attention" even if the deterministic projection never depletes —
- *  the deterministic run is one path among many; a low success rate
- *  means most of the OTHER paths don't end as well. */
+/** Below this simulation success rate the plan "needs attention" even when the
+ *  deterministic run never depletes. */
 const SUCCESS_RATE_ON_TRACK_THRESHOLD = 0.85;
 
 export function buildVerdict(
@@ -22,11 +18,14 @@ export function buildVerdict(
   mcResult: MonteCarloResult,
 ): ReportVerdict {
   const deterministicOnTrack = assessPlan(projectionResult).succeeded;
-  const mcOnTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
-  const onTrack = deterministicOnTrack && mcOnTrack;
+  const simulationOnTrack =
+    mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
+  const onTrack = deterministicOnTrack && simulationOnTrack;
   return {
     onTrack,
-    headline: onTrack ? "Your plan is on track" : "Your plan needs attention",
+    headline: onTrack
+      ? "Your projection is on track"
+      : "Your projection needs attention",
   };
 }
 
@@ -40,13 +39,13 @@ export function buildExecutiveSummary(
   const verdict = buildVerdict(projectionResult, mcResult);
   const outcome = assessPlan(projectionResult);
 
-  const successPct = formatPercent(mcResult.successRate, 0);
+  const successPercent = formatPercent(mcResult.successRate, 0);
   const sustainablePV = formatCurrency(
     mcResult.distributions.sustainableWithdrawalPV.median,
   );
 
   const keyNumbers: { label: string; value: string }[] = [
-    { label: "Simulation success rate", value: successPct },
+    { label: "Simulation success rate", value: successPercent },
     {
       label: "Sustainable annual spending (today's dollars)",
       value: sustainablePV,
@@ -58,7 +57,7 @@ export function buildExecutiveSummary(
       label:
         outcome.failureReason === "depleted"
           ? "Year retirement money runs out"
-          : "Year the plan first falls short",
+          : "Year the projection first falls short",
       value: String(outcome.failureYear),
     });
   }
@@ -66,19 +65,19 @@ export function buildExecutiveSummary(
   let narrative: string;
   if (verdict.onTrack) {
     narrative =
-      `Based on your current savings and spending plan, your simulation succeeds ${successPct} of the time — ` +
+      `Based on your current savings and Retirement budget, your simulation succeeds ${successPercent} of the time — ` +
       `your retirement money is not projected to run out in the deterministic projection, and a sustainable annual ` +
       `spending level of about ${sustainablePV} (in today's dollars) holds up across most of the market ` +
       `conditions this report tested.`;
   } else if (!outcome.succeeded) {
     narrative =
-      `Your simulation succeeds ${successPct} of the time. In the deterministic projection — a single, ` +
-      `middle-of-the-road path — your plan ${describePlanFailure(outcome)}. ` +
-      `This is worth addressing before you rely on this plan.`;
+      `Your simulation succeeds ${successPercent} of the time. In the deterministic projection — a single, ` +
+      `middle-of-the-road path — your projection ${describePlanFailure(outcome)}. ` +
+      `This is worth addressing before you rely on this projection.`;
   } else {
     narrative =
       `Your deterministic projection funds every retirement year, but your simulation only succeeds ` +
-      `${successPct} of the time — meaning a meaningful share of the market conditions this report tested ` +
+      `${successPercent} of the time — meaning a meaningful share of the market conditions this report tested ` +
       `end less favorably than the single deterministic path shown elsewhere in this report. Worth a closer look.`;
   }
 

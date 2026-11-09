@@ -45,6 +45,7 @@ interface ProcedureEntry {
   source: string;
   kind: "query" | "mutation";
   procType: string; // "protectedProcedure", "adminProcedure", etc.
+  /** Its doc comment's text, or "" when it has none. */
   description: string;
 }
 
@@ -156,8 +157,8 @@ function descriptionAbove(lines: string[], i: number): string {
     } else if (prev.startsWith("//")) {
       description =
         prev.slice(2).trim() + (description ? " " + description : "");
-    } else if (description) {
-      break;
+    } else {
+      break; // code: a comment above it belongs to something else
     }
   }
   return description;
@@ -235,8 +236,7 @@ function collect(
         source: path.relative(ctx.routersDir, file).replace(/\\/g, "/"),
         kind: proc.kind,
         procType: proc.procType,
-        description:
-          descriptionAbove(sf.text.split("\n"), line) || "(no description)",
+        description: descriptionAbove(sf.text.split("\n"), line),
       });
     } else {
       throw new Error(
@@ -345,13 +345,15 @@ export function buildRouterCatalog(
   const sortedRouters = Array.from(byRouter.keys()).sort();
   for (const router of sortedRouters) {
     md += `## \`${router}\`\n\n`;
-    md += "| Procedure | Kind | Auth | Source | Description |\n";
-    md += "|---|---|---|---|---|\n";
     const procs = byRouter.get(router)!;
     procs.sort((a, b) => a.path.localeCompare(b.path));
+    // The Description column only where a procedure has a doc comment.
+    const described = procs.some((p) => p.description !== "");
+    md += `| Procedure | Kind | Auth | Source |${described ? " Description |" : ""}\n`;
+    md += `|---|---|---|---|${described ? "---|" : ""}\n`;
     for (const p of procs) {
       const desc = p.description.replace(/\|/g, "\\|").slice(0, 200);
-      md += `| \`${p.path}\` | ${p.kind} | \`${p.procType}\` | \`${p.source}\` | ${desc} |\n`;
+      md += `| \`${p.path}\` | ${p.kind} | \`${p.procType}\` | \`${p.source}\` |${described ? ` ${desc} |` : ""}\n`;
     }
     md += "\n";
   }

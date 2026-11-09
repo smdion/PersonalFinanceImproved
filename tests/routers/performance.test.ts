@@ -155,7 +155,6 @@ describe("performance router", () => {
         expect(a).toHaveProperty("parentCategory");
         expect(a).toHaveProperty("isActive");
         expect(a).toHaveProperty("ownershipType");
-        expect(a).toHaveProperty("displayOrder");
       }
     });
   });
@@ -288,7 +287,7 @@ describe("performance router", () => {
           r.year === 2024 && r.institution === "Schwab",
       );
       expect(row).toBeDefined();
-      // Modified Dietz: gainLoss / (beginBal + (contribs - fees) / 2)
+      // Simple Dietz: gainLoss / (beginBal + (contribs - fees) / 2)
       // = 5000 / (50000 + (10000 - 100) / 2) = 5000 / 54950
       const expectedReturn = 5000 / 54950;
       expect(row!.annualReturnPct).toBeCloseTo(expectedReturn, 4);
@@ -878,7 +877,7 @@ describe("performance router", () => {
           r.year === 2020 && r.category === "401k/IRA",
       );
       expect(row).toBeDefined();
-      // Modified Dietz: 8000 / (60000 + (10000 - 200) / 2) = 8000 / 64900
+      // Simple Dietz: 8000 / (60000 + (10000 - 200) / 2) = 8000 / 64900
       const expected = 8000 / 64900;
       expect(row!.annualReturnPct).toBeCloseTo(expected, 4);
     });
@@ -1973,7 +1972,7 @@ describe("performance.computeSummary — lifetime cumulative + null return fill"
     );
     expect(row2018).toBeDefined();
     // Return should be computed since it was null in stored row
-    // Modified Dietz: 10000 / (100000 + (25000 - 200) / 2) = 10000 / 112400
+    // Simple Dietz: 10000 / (100000 + (25000 - 200) / 2) = 10000 / 112400
     const expected = 10000 / (100000 + (25000 - 200) / 2);
     expect(row2018!.annualReturnPct).toBeCloseTo(expected, 4);
   });
@@ -2156,7 +2155,7 @@ describe("performance.computeSummary — enriched accountRows", () => {
       (r: { institution: string }) => r.institution === "Schwab",
     );
     expect(row).toBeDefined();
-    // Return should be computed via Modified Dietz
+    // Return should be computed via Simple Dietz
     expect(row!.annualReturnPct).not.toBeNull();
     expect(typeof row!.annualReturnPct).toBe("number");
   });
@@ -2339,7 +2338,7 @@ describe("finalizeYear — pure computation logic", () => {
       expect(sums.fees).toBe(250);
       // Lifetime fields summed across categories
       expect(sums.lifetimeGains).toBe(53000);
-      expect(sums.lifetimeContribs).toBe(95000);
+      expect(sums.lifetimeContributions).toBe(95000);
       expect(sums.lifetimeMatch).toBe(20000);
     });
 

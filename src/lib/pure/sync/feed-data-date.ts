@@ -1,21 +1,7 @@
 /**
- * The market day behind a feed's balance — which can be older than the
- * report suggests. A report after the 4 pm close isn't proof of that day's
- * close: some institutions publish the prior session's values late in the
- * evening. Most certain first:
- *
- * - proven: a position's reported value ÷ its shares is the price the
- *   institution used, and matching it to a market close names the day.
- * - learned: an institution's own balance history. Balances change only
- *   when a new session's close arrives, so a report-time lag shows up
- *   around market gaps: a same-day publisher changes on Monday night, a
- *   next-day one on Saturday night and never on Monday. That tells a
- *   next-day publisher from a same-day one and no more, so the lag is 0 or
- *   1; it's believed only on evidence at several gaps.
- * - assumed: `valuationDateFor`, until then.
- *
- * Money with no market behind it (no positions) has no close: its date is
- * the report's own day.
+ * The market day behind a feed's balance, which can predate the report (some institutions publish
+ * the prior close late). Most certain first: proven by position prices, learned from the
+ * institution's balance history, else `valuationDateFor`. No positions: the report's own day.
  */
 import { addDays } from "@/lib/utils/date";
 import {
@@ -51,11 +37,9 @@ export function laggedSession(reportedAt: Date, k: number): string {
 }
 
 /**
- * The lag that fits one institution's market feeds (each feed's reports
- * ascending). A lag is ruled out by a balance changing between two reports
- * it puts on the same session; it's believed when the other lag was ruled
- * out at several different gaps, and rarely hits that itself. Null while
- * no balance has moved.
+ * The report lag (0 or 1) fitting one institution's market feeds (reports ascending): a balance
+ * change between two reports a lag puts on one session rules it out; the other is believed once
+ * ruled out at several gaps. Null while no balance has moved.
  */
 export function learnReportLag(
   feeds: readonly (readonly { reportedAt: Date; balance: number }[])[],
@@ -88,10 +72,8 @@ export function learnReportLag(
 }
 
 /**
- * The market day whose closes match a feed's positions, or null when no
- * single day fits. Only the latest day a report could show and the few
- * sessions before it are tried, and that latest day's close must be known:
- * without it, a near-miss on an older day would read as proof.
+ * The market day whose closes match a feed's positions, or null when no single day fits. Only the
+ * latest possible day and a few sessions before it are tried, and that day's close must be known.
  */
 export function provenDataDay(
   positions: readonly {

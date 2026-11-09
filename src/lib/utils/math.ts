@@ -1,13 +1,6 @@
 /**
- * Safe division — returns fallback when denominator is zero.
- * If fallback is null, returns null (caller must handle).
- * If fallback is a number, returns that number.
- * If fallback is omitted, returns 0.
- *
- * Overloaded so the common (non-null) cases type as `number`, not
- * `number | null` — callers no longer need `?? 0`/`!`/`as number` to
- * satisfy a `number`-typed field, which the audit identified as the actual
- * reason this helper was under-adopted in favor of manual ternaries.
+ * Division returning `fallback` (default 0, or null) when the denominator is 0.
+ * Overloaded so non-null fallbacks type as `number`.
  */
 export function safeDivide(numerator: number, denominator: number): number;
 export function safeDivide(
@@ -32,16 +25,8 @@ export function safeDivide(
 }
 
 /**
- * Parse a form-field string into a positive integer, or null.
- *
- * `parseInt(x) || null` (the pattern this replaces) silently maps invalid
- * input, "0", and empty string all to `null` — but also lets negative
- * numbers AND trailing garbage straight through: `parseInt("-5") || null`
- * is `-5` (negative numbers are truthy), and `parseInt("3.7")`/
- * `parseInt("3months")` both stop at the first non-digit and return `3`.
- * Used for fields like "recur every N months" where anything that isn't
- * cleanly a positive integer should be rejected the same way as empty
- * input (null = "not set"), not silently truncated or accepted.
+ * A form-field string as a positive integer, or null for anything else (empty,
+ * "0", negatives, "3.7", "3months"), unlike `parseInt(x) || null`.
  */
 export function parsePositiveInt(value: string): number | null {
   const trimmed = value.trim();
@@ -52,10 +37,8 @@ export function parsePositiveInt(value: string): number | null {
 }
 
 /**
- * Round to cents (2 decimal places), half-away-from-zero.
- * Uses Math.abs + Math.sign to correctly handle negatives (credits, refunds,
- * negative cash flow). The EPSILON nudge avoids float multiplication bias at
- * .5-cent boundaries (e.g. 1.005 * 100 = 100.49999... in IEEE-754).
+ * Round to cents, half away from zero (negatives included). The EPSILON nudge
+ * fixes float bias at .5-cent boundaries (1.005 * 100 = 100.4999…).
  */
 export function roundToCents(value: number): number {
   // EPSILON * 100 scales the nudge to the cents space (~2.22e-14), large enough
@@ -105,11 +88,8 @@ export function calculateLoanMonthlyPayment(
 }
 
 /**
- * Months to pay off a balance at a fixed monthly payment — the inverse of
- * calculateLoanMonthlyPayment. `undefined` when there's no payment or no
- * rate to go on (a missing rate is unknown, not 0%); `null` when the
- * payment doesn't cover the interest (it never pays off). A zero balance is
- * 0 months.
+ * Months to pay off a balance at a fixed payment (0 for a zero balance).
+ * `undefined` without a payment or rate (missing ≠ 0%); `null` if it never pays off.
  */
 export function loanPayoffMonths(
   balance: number,

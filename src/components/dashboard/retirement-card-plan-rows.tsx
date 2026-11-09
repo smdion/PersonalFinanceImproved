@@ -4,13 +4,13 @@ export function PlanTimeRows({
   yearsToRet,
   result,
   yearOf,
-  retAge,
+  retirementAge,
   portfolioTotal,
 }: {
   yearsToRet: number;
   result: { projectionByYear: { year: number }[] };
   yearOf: (age: number) => number;
-  retAge: number;
+  retirementAge: number;
   portfolioTotal: number;
 }) {
   return (
@@ -20,7 +20,7 @@ export function PlanTimeRows({
         <span className="text-primary">
           {yearsToRet} yrs{" "}
           <span className="text-caption text-faint">
-            ({result.projectionByYear[0]?.year} → {yearOf(retAge)})
+            ({result.projectionByYear[0]?.year} → {yearOf(retirementAge)})
           </span>
         </span>
       </div>

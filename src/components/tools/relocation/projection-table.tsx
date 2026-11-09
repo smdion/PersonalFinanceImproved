@@ -1,12 +1,7 @@
 "use client";
 
-/** Year-by-year portfolio projection comparison table for the Relocation
- *  calculator. Stateless — all state flows via props.
- *
- *  Two display modes:
- *  - Two-column comparison (no moveYear): current path vs. full relocation path.
- *  - Blended (moveYear set): single balance column, current→relocation path.
- */
+/** Relocation calculator's year-by-year projection table: current vs. relocation columns, or one
+ *  blended current→relocation column when moveYear is set. */
 
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -251,7 +246,7 @@ function ComparisonTable({
           // When a move year is set, use blended data for the move-path column
           // so the gap is $0 before the move and only opens up after.
           const blended = moveYear != null ? blendedByYear.get(row.year) : null;
-          const moveContrib = blended
+          const moveContribution = blended
             ? blended.contribution
             : row.relocationContribution;
           const moveBalance = blended ? blended.balance : row.relocationBalance;
@@ -304,7 +299,7 @@ function ComparisonTable({
                 {formatCurrency(deflate(row.currentBalance, row.year))}
               </td>
               <td className="py-1 pr-3 text-right font-mono">
-                {formatCurrency(deflate(moveContrib, row.year))}
+                {formatCurrency(deflate(moveContribution, row.year))}
               </td>
               <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(moveBalance, row.year))}

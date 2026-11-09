@@ -1,5 +1,5 @@
 /**
- * getComparison's matched-mix entry: entered holding history priced with
+ * computeComparison's matched-mix entry: entered holding history priced with
  * the bucket proxies through the same yearly simulator. Tiingo is mocked;
  * funds, accounts and prices are invented.
  */
@@ -80,7 +80,9 @@ describe("matched mix", () => {
   afterAll(() => ctx.cleanup());
 
   it("is a benchmark entry priced from the history", async () => {
-    const r = await ctx.caller.investments.getComparison({ fromYear: 2024 });
+    const r = await ctx.caller.investments.computeComparison({
+      fromYear: 2024,
+    });
     const mm = r.benchmarks.find((b) => b.key === "matched_mix")!;
     expect(mm.available).toBe(true);
     expect(mm.years[0]!.year).toBe(2024);
@@ -180,7 +182,9 @@ describe("matched mix — an account reported per part", () => {
   afterAll(() => ctx.cleanup());
 
   it("combines the parts by their snapshot shares", async () => {
-    const r = await ctx.caller.investments.getComparison({ fromYear: 2024 });
+    const r = await ctx.caller.investments.computeComparison({
+      fromYear: 2024,
+    });
     const mm = r.benchmarks.find((b) => b.key === "matched_mix")!;
     expect(mm.available).toBe(true);
     // 75% stocks (+1%/month), 25% bonds (flat).

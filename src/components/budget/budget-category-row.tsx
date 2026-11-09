@@ -33,7 +33,7 @@ type BudgetCategoryRowProps = {
   categoryNames: string[];
   addingItemToCategory: string | null;
   onSetAddingItemToCategory: (category: string | null) => void;
-  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  matchContribution: (subcategory: string, colIndex?: number) => number | null;
   activeColumn: number;
   canEdit?: boolean;
   apiActualsMap?: Map<
@@ -71,7 +71,7 @@ export function BudgetCategoryRow({
   categoryNames,
   addingItemToCategory,
   onSetAddingItemToCategory,
-  matchContrib,
+  matchContribution,
   activeColumn,
   canEdit = true,
   apiActualsMap,
@@ -191,11 +191,11 @@ export function BudgetCategoryRow({
           />
         )}
       {/* Item rows */}
-      {items.map((item, idx) => (
+      {items.map((item, index) => (
         <BudgetItemRow
           key={item.id}
           item={item}
-          index={idx}
+          index={index}
           itemsInCategory={items.length}
           numCols={numCols}
           editMode={editMode}
@@ -208,18 +208,14 @@ export function BudgetCategoryRow({
           onReorderItem={onReorderItem}
           categoryNames={categoryNames}
           currentCategory={categoryName}
-          contribMonthly={
-            // A linked item's own resolved amount is the real number
-            // (matches what getCatTotals uses) — the fuzzy name match is
-            // only ever a display estimate for items with NO real link,
-            // so a linked item must never show the fuzzy figure instead
-            // of its own (e.g. two accounts sharing a keyword like
-            // "brokerage", one linked, one not).
+          contributionMonthly={
+            // A linked item shows its own resolved amount (as getCatTotals
+            // does); the fuzzy name match is only for items with NO link.
             item.contributionAccountId != null
               ? (item.contribAmounts?.[activeColumn] ??
                 item.contribAmount ??
                 null)
-              : matchContrib(item.subcategory, activeColumn)
+              : matchContribution(item.subcategory, activeColumn)
           }
           contribStatus={item.contribStatus?.[activeColumn] ?? "ok"}
           canEdit={canEdit}

@@ -27,10 +27,8 @@ export function goldilocksPlan(
   return { share, months: Math.min(r.maxMonths, r.startMonths + steps) };
 }
 
-/** What a projection has invested at the start of `year`: the end of the
- *  latest year before it — every account, Portfolio included (the rule
- *  sizes against all invested money, not retirement's). undefined when the
- *  projection starts at or after `year`. */
+/** Invested at the start of `year`: the latest prior year's end, every account incl.
+ *  Portfolio. undefined when the projection starts at or after `year`. */
 export function investedAtStartOf(
   rows: readonly { year: number; allAccountsBalance: number }[],
   year: number,

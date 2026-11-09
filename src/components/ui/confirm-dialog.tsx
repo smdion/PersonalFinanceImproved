@@ -56,10 +56,8 @@ export function confirm(message: string): Promise<boolean> {
 }
 
 /**
- * Imperative confirm API for a change list — e.g. "switching profiles will
- * change these accounts" — rendered as an amber bulleted list rather than
- * `confirm()`'s single-paragraph message, which has no line-wrap handling
- * for multi-item content. Returns a Promise<boolean> exactly like confirm().
+ * Imperative confirm for a change list, shown as an amber bulleted list. Returns a
+ * Promise<boolean> like confirm().
  */
 export function confirmWithDiff(
   message: string,

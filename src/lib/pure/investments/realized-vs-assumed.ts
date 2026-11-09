@@ -1,12 +1,7 @@
 /**
- * Realized vs assumed returns: each completed year's actual return (the
- * Performance page's Portfolio return) next to the rate the projections
- * assume for that year. Pure; display only.
- *
- * The assumed rate is looked up the way the projection engine does: the
- * return-rate table's row for the highest age at or below the primary
- * person's age. Years compound into one annual figure per side (chain-
- * linked), so a few big years don't dominate a simple average.
+ * Each completed year's Portfolio return next to the rate projections assume
+ * (the engine's lookup by the primary person's age). Both sides chain-link into
+ * one annual figure, so a few big years don't dominate.
  */
 import { chainReturns } from "./returns";
 import { returnRateAtAge } from "../simulation/return-rate-breakpoints";

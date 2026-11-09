@@ -1,9 +1,6 @@
 /**
- * Shared API balance resolution — eliminates duplicated apiBalanceMap patterns.
- *
- * Two helpers:
- *   getApiAccountBalanceMap  — async, fetches cached accounts and builds Map
- *   resolveAccountBalance    — pure, picks API or snapshot balance for one account
+ * Shared API balance resolution: `getApiAccountBalanceMap` (async, cached accounts → Map) and
+ * `resolveAccountBalance` (pure, API or snapshot balance for one account).
  */
 
 import type { BudgetAccount, BudgetApiService } from "@/lib/budget-api";

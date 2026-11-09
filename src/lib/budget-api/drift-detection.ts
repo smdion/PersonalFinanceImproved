@@ -1,18 +1,12 @@
-/**
- * Account drift detection for budget API mappings.
- *
- * The concern: when a YNAB or Actual account is renamed or deleted,
- * the local mapping silently breaks (lookup returns undefined, sync skips
- * the row, user sees nothing). This module detects drift by diffing the
- * cached account list against the freshly-fetched one and produces a
- * structured report the UI can render as actionable callouts.
- */
+/** Account drift detection for budget API mappings: diffs the cached account
+ *  list against a fresh fetch so renamed or deleted remote accounts surface
+ *  as callouts instead of silently breaking a mapping. */
 
 import type { BudgetAccount } from "./types";
 import type { AccountMapping } from "@/lib/db/schema";
 
 interface DriftReport {
-  /** Mappings whose remote account no longer exists in the latest fetch. */
+  /** Mappings whose remote account is missing from the latest fetch. */
   brokenMappings: BrokenMapping[];
   /** Accounts that exist in the new fetch but didn't in the cache (informational). */
   newRemoteAccounts: BudgetAccount[];
@@ -35,12 +29,8 @@ interface RenamedAccount {
   newName: string;
 }
 
-/**
- * Diff the previous cached account list against the new fetch. Returns
- * a structured report listing broken mappings, renames, and new
- * accounts. The sync layer should attach this to the sync result so
- * the UI can render callouts.
- */
+/** Diff the cached account list against the new fetch: broken mappings,
+ *  renames and new accounts, for the sync result's UI callouts. */
 export function detectDrift(
   cachedAccounts: BudgetAccount[],
   newAccounts: BudgetAccount[],
@@ -51,8 +41,8 @@ export function detectDrift(
 
   const brokenMappings: BrokenMapping[] = [];
   for (const mapping of mappings) {
-    const newAcct = newById.get(mapping.remoteAccountId);
-    if (!newAcct) {
+    const newAccount = newById.get(mapping.remoteAccountId);
+    if (!newAccount) {
       const cached = cachedById.get(mapping.remoteAccountId);
       brokenMappings.push({
         remoteAccountId: mapping.remoteAccountId,
@@ -64,13 +54,13 @@ export function detectDrift(
   }
 
   const renamedAccounts: RenamedAccount[] = [];
-  for (const newAcct of newAccounts) {
-    const cached = cachedById.get(newAcct.id);
-    if (cached && cached.name !== newAcct.name) {
+  for (const newAccount of newAccounts) {
+    const cached = cachedById.get(newAccount.id);
+    if (cached && cached.name !== newAccount.name) {
       renamedAccounts.push({
-        remoteAccountId: newAcct.id,
+        remoteAccountId: newAccount.id,
         oldName: cached.name,
-        newName: newAcct.name,
+        newName: newAccount.name,
       });
     }
   }

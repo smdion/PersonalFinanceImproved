@@ -511,7 +511,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
         accountId,
         monthlyAmount,
         profileAId,
-        assertWithinIrsLimits,
+        (db, check) => assertWithinIrsLimits(db, check, new Date()),
       );
       const valueA = await readContributionValue(db, profileAId, accountId);
 
@@ -520,7 +520,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
         accountId,
         monthlyAmount,
         profileBId,
-        assertWithinIrsLimits,
+        (db, check) => assertWithinIrsLimits(db, check, new Date()),
       );
       const valueB = await readContributionValue(db, profileBId, accountId);
 

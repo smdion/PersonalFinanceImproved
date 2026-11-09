@@ -1,22 +1,7 @@
 /**
- * Roth distribution taxability — splits a year's Roth withdrawals into the
- * taxable-growth portion (non-qualified distributions) and the tax-free
- * portion (contribution basis, conversion basis, and growth from qualified
- * distributions), from the per-account `BasisDraw`s `roth-basis-tracking.ts`
- * already computed.
- *
- * Scope is deliberately narrow: this module
- * decides ONLY whether an account's already-computed `growthDrawn` is
- * taxable. It never re-slices a withdrawal — `drawFromBasis` in
- * `roth-basis-tracking.ts` remains the one place that happens.
- *
- * "Qualified" here means the same thing `early-access.ts`'s
- * `computeRothIraAccess` already means by it: `age >= PENALTY_FREE_AGE`.
- * Deliberately NOT the full IRS 5-year-rule test: a stricter local
- * definition would be a second, conflicting definition of "qualified" (a
- * Single Computation Path violation). Rule of 55 does NOT make a
- * distribution qualified for tax purposes — it only ever exempts the 10%
- * penalty, priced separately — so it plays no role here.
+ * Roth distribution taxability: whether each account's already-drawn `growthDrawn` (from
+ * roth-basis-tracking.ts) is taxable. "Qualified" is `computeRothIraAccess`'s `age >=
+ * PENALTY_FREE_AGE`, not the 5-year rule; Rule of 55 waives only the penalty, so it's not used.
  */
 import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { ageInYear } from "@/lib/utils/date";
@@ -46,13 +31,8 @@ export function isQualifiedRothOwner(
 }
 
 /**
- * Splits this year's Roth withdrawals (already sliced into BasisDraws) into
- * taxable-growth vs. tax-free, per account and in aggregate.
- *
- * An account with no resolvable `ownerBirthYear` (joint account) is treated
- * as qualified — matching `eligibility.ts`'s identical "no age to
- * gate on" handling for the same accounts, so the two modules never
- * disagree about the same account.
+ * Splits this year's Roth withdrawals (BasisDraws) into taxable growth vs tax-free, per account
+ * and in total. No `ownerBirthYear` (joint) counts as qualified, as in `eligibility.ts`.
  */
 export function splitRothWithdrawalForTax(input: {
   accounts: { indKey: string; ownerBirthYear?: number }[];
@@ -67,18 +47,21 @@ export function splitRothWithdrawalForTax(input: {
   let taxableGrowth = 0;
   let taxFreeAmount = 0;
 
-  for (const acct of accounts) {
-    const draw = draws.get(acct.indKey);
+  for (const account of accounts) {
+    const draw = draws.get(account.indKey);
     if (!draw) continue;
-    const qualified = isQualifiedRothOwner(acct.ownerBirthYear, year);
-    const acctTaxableGrowth = qualified ? 0 : draw.growthDrawn;
-    const acctTaxFree =
+    const qualified = isQualifiedRothOwner(account.ownerBirthYear, year);
+    const accountTaxableGrowth = qualified ? 0 : draw.growthDrawn;
+    const accountTaxFree =
       draw.contributionDrawn +
       draw.conversionDrawn +
-      (draw.growthDrawn - acctTaxableGrowth);
-    byKey.set(acct.indKey, { taxableGrowth: acctTaxableGrowth, qualified });
-    taxableGrowth += acctTaxableGrowth;
-    taxFreeAmount += acctTaxFree;
+      (draw.growthDrawn - accountTaxableGrowth);
+    byKey.set(account.indKey, {
+      taxableGrowth: accountTaxableGrowth,
+      qualified,
+    });
+    taxableGrowth += accountTaxableGrowth;
+    taxFreeAmount += accountTaxFree;
   }
 
   return {

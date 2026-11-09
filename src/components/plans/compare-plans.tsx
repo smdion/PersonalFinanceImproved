@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Compare Plans — each saved Plan's key numbers side by side. No new math:
- * every figure comes from the same procedures the Budget and Retirement
- * pages use, run with that Plan's profiles (a Plan slot left empty uses the
- * active profile of that kind, as applying it would).
+ * Compare Plans: each saved Plan's key numbers side by side, from the Budget and Retirement
+ * procedures run with that Plan's profiles (an empty slot uses the active profile of that kind).
  */
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import { useState } from "react";
@@ -53,11 +51,9 @@ function PlanColumn({
     },
     { enabled: ids.budget != null },
   );
-  // The dashboard's own projection input (one computation path — and the
-  // Plan in use hits the same cached run), changing only the kinds where
-  // this Plan differs from the active profiles. The household's chosen
-  // retirement-budget settings stay as they are; a Plan's Budget profile
-  // stands in for the working-years budget.
+  // The dashboard's projection input, changing only the kinds where this Plan
+  // differs from the active profiles. Retirement-budget settings stay as they
+  // are; the Plan's Budget profile stands in for the working-years budget.
   const { input: engineInput, ready } = usePlanEngineInput();
   const differs = (k: PlanProfileKind) =>
     ids[k] != null && ids[k] !== activeIds[k];
@@ -148,18 +144,7 @@ function PlanColumn({
         </FieldRow>
         <FieldRow label="Money lasts">
           <span>
-            {result
-              ? (() => {
-                  const outcome = assessPlan(result);
-                  return outcome.succeeded
-                    ? "through the plan"
-                    : outcome.failureReason === "depleted"
-                      ? `to ${outcome.failureYear}`
-                      : `falls short in ${outcome.failureYear}`;
-                })()
-              : projection.isLoading
-                ? "…"
-                : "—"}
+            {result ? moneyLastsText(result) : projection.isLoading ? "…" : "—"}
           </span>
         </FieldRow>
         {onApply && !inUse && (
@@ -183,7 +168,8 @@ export function ComparePlans() {
   const { plans, activeIds, planInUse, apply } = usePlans();
   const confirmApplyPlan = useConfirmApplyPlan();
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
@@ -192,7 +178,7 @@ export function ComparePlans() {
     readonly { id: number; name: string }[] | undefined
   > = {
     salary: salaryProfiles,
-    contribution: contribProfiles,
+    contribution: contributionProfiles,
     budget: budgetProfiles,
     retirement: retirementProfiles,
   };
@@ -261,4 +247,14 @@ export function ComparePlans() {
       </div>
     </div>
   );
+}
+
+/** How long the money lasts under a plan's projection. */
+function moneyLastsText(result: Parameters<typeof assessPlan>[0]) {
+  const outcome = assessPlan(result);
+  return outcome.succeeded
+    ? "through the projection"
+    : outcome.failureReason === "depleted"
+      ? `to ${outcome.failureYear}`
+      : `falls short in ${outcome.failureYear}`;
 }

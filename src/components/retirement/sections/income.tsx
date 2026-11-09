@@ -1,11 +1,6 @@
 /**
- * Income section. Sits in
- * the left column of the Projection Assumptions card alongside Timeline,
- * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
- * and the Contribution Profile picker.
- *
- * The `decToWhole` helper lives in `./helpers` and is shared across the
- * retirement sections that need it (not duplicated locally).
+ * Income section (left column of Projection Assumptions, beside Timeline): Household Salary
+ * (read-only), Pre-Retirement Raise, Salary Cap, and the Contribution Profile picker.
  */
 "use client";
 
@@ -18,19 +13,17 @@ import type {
   Settings,
   PerPersonSettings,
   UpsertSettingsMutation,
-  ContribProfileListEntry as ContribProfile,
+  ContributionProfileListEntry as ContributionProfile,
   IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
-import { decToWhole } from "./helpers";
+import { decimalToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
   combinedSalary: number | null | undefined;
-  /** id/name for every household member — joined against salaryByPerson to
-   *  build the hover breakdown. Omit (or leave salaryByPerson empty) for a
-   *  single-person household; the breakdown only adds value once there's
-   *  more than one number to break down. */
+  /** id/name for every household member, joined against salaryByPerson for the hover
+   *  breakdown. Omit (or leave salaryByPerson empty) for a single-person household. */
   people?: { id: number; name: string }[];
   /** personId -> that person's share of combinedSalary. Same aggregate
    *  (totalComp, includes bonus) as combinedSalary itself — the per-person
@@ -42,14 +35,12 @@ type Props = {
   perPersonSettings?: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
-  /** Per-person "Pre-Retirement Raise" writer. `wholePercent` is a
-   *  whole-number string ("3"), same shape `handleSettingPercentUpdate`
-   *  receives — the handler converts it to a decimal. Required whenever
-   *  `perPersonSettings` has more than one entry. */
+  /** Per-person "Pre-Retirement Raise" writer; `wholePercent` is a whole-number string ("3")
+   *  that the handler converts to a decimal. Required when `perPersonSettings` has 2+ entries. */
   handlePerPersonRaiseRate?: (personId: number, wholePercent: string) => void;
-  contribProfiles: ContribProfile[];
-  contribProfileId: number | null;
-  setContribProfileId: (id: number | null) => void;
+  contributionProfiles: ContributionProfile[];
+  contributionProfileId: number | null;
+  setContributionProfileId: (id: number | null) => void;
   salaryProfiles: { id: number; name: string }[];
   salaryProfileId: number | null;
   setSalaryProfileId: (id: number | null) => void;
@@ -65,9 +56,9 @@ export function IncomeSection({
   upsertSettings,
   handleSettingPercentUpdate,
   handlePerPersonRaiseRate,
-  contribProfiles,
-  contribProfileId,
-  setContribProfileId,
+  contributionProfiles,
+  contributionProfileId,
+  setContributionProfileId,
   salaryProfiles,
   salaryProfileId,
   setSalaryProfileId,
@@ -89,27 +80,7 @@ export function IncomeSection({
             <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
           </span>
           <div className="font-medium">
-            {(() => {
-              const breakdown = (people ?? [])
-                .filter((p) => salaryByPerson?.[p.id])
-                .map((p) => ({ name: p.name, salary: salaryByPerson![p.id]! }));
-              const value =
-                combinedSalary != null ? formatCurrency(combinedSalary) : "—";
-              if (breakdown.length < 2) return value;
-              return (
-                <Tooltip
-                  lines={breakdown.map((b) => (
-                    <span key={b.name}>
-                      {b.name}: {formatCurrency(b.salary)}
-                    </span>
-                  ))}
-                >
-                  <span className="decoration-faint cursor-help underline decoration-dotted underline-offset-2">
-                    {value}
-                  </span>
-                </Tooltip>
-              );
-            })()}
+            {renderHouseholdSalary(combinedSalary, people, salaryByPerson)}
             <span className="text-caption text-faint ml-1 font-normal">
               from jobs
             </span>
@@ -126,7 +97,7 @@ export function IncomeSection({
               </span>
               <div className="font-medium">
                 <InlineEdit
-                  value={decToWhole(ps.salaryAnnualIncrease)}
+                  value={decimalToWhole(ps.salaryAnnualIncrease)}
                   onSave={(v) => handlePerPersonRaiseRate?.(ps.personId, v)}
                   formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -145,7 +116,7 @@ export function IncomeSection({
             </span>
             <div className="font-medium">
               <InlineEdit
-                value={decToWhole(settings.salaryAnnualIncrease)}
+                value={decimalToWhole(settings.salaryAnnualIncrease)}
                 onSave={(v) =>
                   handleSettingPercentUpdate("salaryAnnualIncrease", v)
                 }
@@ -219,14 +190,14 @@ export function IncomeSection({
             <select
               id={`${id}-contrib`}
               className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-              value={contribProfileId ?? ""}
+              value={contributionProfileId ?? ""}
               onChange={(e) =>
-                setContribProfileId(
+                setContributionProfileId(
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
             >
-              {contribProfiles.map((p) => (
+              {contributionProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -236,5 +207,31 @@ export function IncomeSection({
         </div>
       </div>
     </div>
+  );
+}
+
+/** The household salary, with each person's share on hover. */
+function renderHouseholdSalary(
+  combinedSalary: Props["combinedSalary"],
+  people: Props["people"],
+  salaryByPerson: Props["salaryByPerson"],
+) {
+  const breakdown = (people ?? [])
+    .filter((p) => salaryByPerson?.[p.id])
+    .map((p) => ({ name: p.name, salary: salaryByPerson![p.id]! }));
+  const value = combinedSalary != null ? formatCurrency(combinedSalary) : "—";
+  if (breakdown.length < 2) return value;
+  return (
+    <Tooltip
+      lines={breakdown.map((b) => (
+        <span key={b.name}>
+          {b.name}: {formatCurrency(b.salary)}
+        </span>
+      ))}
+    >
+      <span className="decoration-faint cursor-help underline decoration-dotted underline-offset-2">
+        {value}
+      </span>
+    </Tooltip>
   );
 }

@@ -4,15 +4,9 @@
 import { PAY_PERIOD_CONFIG, payPeriodConfig } from "@/lib/config/pay-periods";
 
 /**
- * Standard number of pay periods per calendar month (not annualized).
- * For budget/savings contexts where extra paycheck months (biweekly/weekly)
- * are handled separately and should not be amortized into monthly income.
- *
- * Use this for monthly budget calculations. Use getPeriodsPerYear()/12 for
- * annual projections (retirement engine, dashboard annual income, etc.).
- *
- * Accepts an optional per-job override from `jobs.budget_periods_per_month`.
- * When set, the override takes precedence over the default for that frequency.
+ * Pay periods per calendar month for budgets, not annualized: extra paycheck months are
+ * handled separately. Annual projections use getPeriodsPerYear()/12 instead.
+ * A per-job `jobs.budget_periods_per_month` override wins when set.
  */
 export function getRegularPeriodsPerMonth(
   periodsPerYear: number,

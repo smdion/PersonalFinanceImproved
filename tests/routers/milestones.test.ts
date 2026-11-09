@@ -196,14 +196,14 @@ describe("milestones.recordReached", () => {
   afterAll(() => ctx.cleanup());
 
   it("a viewer's visit records; what was already reached stays undated", async () => {
-    expect(await ctx.caller.milestones.firstReached()).toBeNull();
+    expect(await ctx.caller.milestones.getFirstReached()).toBeNull();
     const first = await ctx.caller.milestones.recordReached();
     expect(first?.since).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // Nothing reached before recording began gets a day.
     expect(Object.values(first!.reached).every((v) => v.length !== 10)).toBe(
       true,
     );
-    expect(await ctx.caller.milestones.firstReached()).toEqual(first);
+    expect(await ctx.caller.milestones.getFirstReached()).toEqual(first);
     // Bookkeeping, not an edit: nothing in the change log.
     expect(ctx.db.select().from(schema.changeLog).all()).toEqual([]);
   });
@@ -213,7 +213,7 @@ describe("milestones.recordReached", () => {
   });
 
   it("one reached after recording began gets today's date", async () => {
-    const stored = (await ctx.caller.milestones.firstReached())!;
+    const stored = (await ctx.caller.milestones.getFirstReached())!;
     const [id] = Object.keys(stored.reached);
     expect(id).toBeDefined();
     const { [id!]: _dropped, ...rest } = stored.reached;
@@ -277,7 +277,7 @@ describe("milestones.recordReached on a household with contributions", () => {
       caller.contribution.computeSummary({ contributionProfileId }),
       caller.savings.computeSummary(),
       caller.mortgage.computeActiveSummary(),
-      caller.contribution.highIncomeLine(),
+      caller.contribution.computeHighIncomeLine(),
     ]);
     const efund = savings.efund;
     const pageReached = evaluateMilestones(

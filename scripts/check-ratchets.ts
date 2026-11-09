@@ -4,10 +4,13 @@
  * a commit can't loosen the rule it is checked by:
  *
  *   size-baseline.json, eslint-suppressions.json, eslint-suppressions-typed.json,
+ *   tests/accessibility/axe-baseline.json (counts per page and rule),
  *   scripts/calculation-register-baseline.json (lists and risk labels),
+ *   scripts/ratchets/duplicates.json (copied blocks and lines),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
- *   tests/lint/violations.test.ts and tests/baseline/router-baseline-postgres.test.ts,
+ *   tests/lint/violations.test.ts, tests/lint/procedure-verbs.test.ts and
+ *   tests/baseline/router-baseline-postgres.test.ts,
  *   and tests/baseline/__baseline__/**, __sync__/** and __text__/** (only
  *   deletions pass).
  *
@@ -23,7 +26,9 @@
  * split's part wrapper and mount, or a stage's or UI cut's function lines
  * around what it took and its call: once check-commit's moves are cut out,
  * the code lines left rise by exactly the import lines. Every excused rise
- * is printed. A re-recorded baseline file needs
+ * is printed. In a `Mechanical:` commit whose `Rename:` check-commit
+ * proves (owner Q2), a size entry rises by the lines prettier's re-wrap of
+ * the renamed lines adds. A re-recorded baseline file needs
  * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
  * A known-list entry whose key changes and nothing else is excused by that
  * commit's `Known-renamed:` trailer (scripts/ratchets/known-renamed.ts).
@@ -34,12 +39,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  DUPLICATES_FILE,
   REGISTER_FILE,
   SIZE_FILE,
   SUPPRESSION_FILES,
+  duplicateRises,
   registerRises,
   sizeRises,
   suppressionRises,
+  type Duplicates,
   type Register,
   type SizeBaseline,
 } from "./ratchets/counts";
@@ -53,9 +61,12 @@ import {
   listRises,
 } from "./ratchets/code-limits";
 import {
+  RENAME,
   commitsIn,
   gitIn,
+  mechanicalProblem,
   parseNumstat,
+  readRenames,
   structuralMoves,
   trailerValues,
   type Git,
@@ -180,6 +191,7 @@ export const RATCHET_FILES = [
   SIZE_FILE,
   ...SUPPRESSION_FILES,
   REGISTER_FILE,
+  DUPLICATES_FILE,
   BUNDLE_FILE,
   COVERAGE_FILE,
   ...LIST_FILES,
@@ -228,6 +240,12 @@ export function risesBetween(git: Git, from: string, to: string): Rise[] {
     ...registerRises(
       json(was, REGISTER_FILE, emptyRegister),
       json(now, REGISTER_FILE, emptyRegister),
+    ),
+  );
+  rises.push(
+    ...duplicateRises(
+      json<Duplicates | undefined>(was, DUPLICATES_FILE, undefined),
+      json<Duplicates | undefined>(now, DUPLICATES_FILE, undefined),
     ),
   );
   rises.push(...bundleRises(...both(BUNDLE_FILE), now));
@@ -440,6 +458,66 @@ function functionsTakenOver(
   return `${what} don't explain ${problems.join("; ")}`;
 }
 
+/**
+ * Owner Q2: in a `Mechanical:` commit whose `Rename:` check-commit proves, a
+ * size entry may rise by the lines prettier adds re-wrapping the longer
+ * names (listed under `Ratchet-raise:`); nothing else changed.
+ */
+function notRewrapped(git: Git, sha: string, rise: Rise): string | undefined {
+  if (rise.file !== SIZE_FILE) return undefined;
+  const problem = mechanicalProblem(
+    git("log", "-1", "--format=%B", sha),
+    parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+    git("show", "-M", "-U1000000", "--format=", sha),
+  );
+  return problem === undefined
+    ? undefined
+    : `rose +${rise.by ?? 0} in a Rename: commit check-commit doesn't prove (${problem})`;
+}
+
+/**
+ * Owner Q2: a proven rename of an export the register doesn't row moves its
+ * `exportsWithoutRow` entry to the new name. The entry is the same one when
+ * the commit's `Rename:` list maps the old name to it, the old entry at the
+ * same path is gone, and check-commit proves the commit. Undefined: not such
+ * a move (judged as any other rise).
+ */
+function renamedRegisterEntry(
+  git: Git,
+  sha: string,
+  message: string,
+  rise: Rise,
+): { ok: true; old: string } | { ok: false; why: string } | undefined {
+  if (rise.file !== REGISTER_FILE) return undefined;
+  const entry = rise.id.slice(rise.file.length + 1);
+  const at = entry.lastIndexOf(":");
+  if (at < 0 || !rise.text.endsWith("added to exportsWithoutRow"))
+    return undefined;
+  const [file, name] = [entry.slice(0, at), entry.slice(at + 1)];
+  const old = [...readRenames(message).map].find(([, to]) => to === name)?.[0];
+  if (old === undefined) return undefined;
+  const list = (ref: string) =>
+    (
+      JSON.parse(git("show", `${ref}:${REGISTER_FILE}`)) as {
+        exportsWithoutRow: string[];
+      }
+    ).exportsWithoutRow;
+  const [was, now] = [list(`${sha}^`), list(sha)];
+  if (!was.includes(`${file}:${old}`) || now.includes(`${file}:${old}`))
+    return undefined;
+  const problem = mechanicalProblem(
+    message,
+    parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+    git("show", "-M", "-U1000000", "--format=", sha),
+  );
+  return problem === undefined
+    ? { ok: true, old }
+    : {
+        ok: false,
+        why: `a Rename: commit check-commit doesn't prove (${problem})`,
+      };
+}
+
 /** The import-lines rule alone (before owner Q14). */
 function importLinesOnly(
   git: Git,
@@ -486,6 +564,7 @@ export function checkRatchets(
     renamedKeys = new Map<string, KnownRename>(),
   ) => {
     const mechanical = trailerValues(message, "Mechanical").length > 0;
+    const renamed = trailerValues(message, RENAME).length > 0;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
     const undone = reverted(message);
@@ -512,6 +591,17 @@ export function checkRatchets(
         );
         continue;
       }
+      const moved = renamed
+        ? renamedRegisterEntry(git, sha, message, rise)
+        : undefined;
+      if (moved?.ok) {
+        excused.push(`${where}, by the proven "${RENAME}: ${moved.old} → …"`);
+        continue;
+      }
+      if (moved) {
+        failures.push(`${where}: ${moved.why}`);
+        continue;
+      }
       const verdict = excuse(rise, message);
       if (!verdict.ok) {
         failures.push(
@@ -520,7 +610,9 @@ export function checkRatchets(
         continue;
       }
       const imports = mechanical
-        ? notImportLines(git, sha, rise, moves)
+        ? renamed
+          ? notRewrapped(git, sha, rise)
+          : notImportLines(git, sha, rise, moves)
         : undefined;
       if (imports) failures.push(`${where}: ${imports}`);
       else excused.push(`${where}, by "${verdict.trailer}"`);

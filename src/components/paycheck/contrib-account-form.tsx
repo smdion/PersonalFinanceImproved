@@ -1,22 +1,9 @@
 "use client";
 
 /**
- * Full-field contribution-account create form — the one complete surface
- * for `settings.contributionAccounts.create`'s entire field set. Mirrors
- * the field set and conditional-visibility logic already proven in
- * ContributionRow's edit panel (contribution-accounts-contrib-row.tsx),
- * plus the three fields that panel doesn't need because it edits an
- * account already scoped inside one institution's card: institution
- * (performanceAccountId), label, and subType.
- *
- * No Value/Method fields here — an account is purely structural.
- * contributionValue/contributionMethod are ALWAYS a Contribution Profile's
- * active-field entry, set afterward in the Contribution Profile editor, not
- * at creation time (see applyContribActiveFields — accounts carry no value
- * of their own, no fallback).
- *
- * Used by What-If's "Make real", the Contribution Profiles tab's
- * "+ Add Account", and the Paycheck page's create flow.
+ * Create form for a contribution account's structural fields: ContributionRow's edit fields
+ * plus institution, label and subType. No Value/Method: those are always a Contribution
+ * Profile's active fields, set afterward (see applyContribActiveFields).
  */
 
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
@@ -38,13 +25,15 @@ import {
   HSA_COVERAGE_LABELS,
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
-import { resolveContribFieldDisplayState } from "@/lib/pure/household/profiles";
+import { resolveContributionFieldDisplayState } from "@/lib/pure/household/profiles";
 import {
   matchFigureForForm,
   matchValueToStore,
   rowMatchValue,
   withMatchClear,
 } from "@/lib/pure/contributions/match-display";
+import { LabelOptions } from "@/components/ui/label-options";
+import { renderProfilesNote } from "./contrib-account-profiles-note";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -106,7 +95,7 @@ function defaultsFor(
   };
 }
 
-export function ContribAccountForm({
+export function ContributionAccountForm({
   initialValues,
   onSave,
   onCancel,
@@ -165,7 +154,7 @@ export function ContribAccountForm({
     (compareData?.profiles ?? [])
       .filter(
         (p) =>
-          resolveContribFieldDisplayState(
+          resolveContributionFieldDisplayState(
             p.accountActiveFields[String(accountId)] ?? null,
           ).hasValue,
       )
@@ -257,12 +246,7 @@ export function ContribAccountForm({
           {linkedExistingId != null ? (
             <>
               {`Reusing your existing ${TAX_LABELS[v.taxTreatment] ?? v.taxTreatment} ${cfg.displayLabel} account — saving will update it, not create a new one.`}
-              {(() => {
-                const names = profileNamesFor(linkedExistingId);
-                return names.length > 0
-                  ? ` Note: ${names.join(", ")} ${names.length > 1 ? "have" : "has"} a value set for this account.`
-                  : "";
-              })()}
+              {renderProfilesNote(linkedExistingId, profileNamesFor)}
             </>
           ) : (
             "Creating a new contribution account. Set its contribution amount afterward in the Contribution Profile editor — accounts don't carry a value of their own."
@@ -393,11 +377,7 @@ export function ContribAccountForm({
               set("employerMatchType", e.target.value as EmployerMatchType)
             }
           >
-            {Object.entries(MATCH_LABELS).map(([k, label]) => (
-              <option key={k} value={k}>
-                {label}
-              </option>
-            ))}
+            <LabelOptions labels={MATCH_LABELS} />
           </FormSelect>
         </FormField>
 
@@ -455,11 +435,7 @@ export function ContribAccountForm({
                   )
                 }
               >
-                {Object.entries(MATCH_TAX_LABELS).map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
-                  </option>
-                ))}
+                <LabelOptions labels={MATCH_TAX_LABELS} />
               </FormSelect>
             </FormField>
           </>
@@ -477,11 +453,7 @@ export function ContribAccountForm({
               }
             >
               <option value="">—</option>
-              {Object.entries(HSA_COVERAGE_LABELS).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
-                </option>
-              ))}
+              <LabelOptions labels={HSA_COVERAGE_LABELS} />
             </FormSelect>
           </FormField>
         )}

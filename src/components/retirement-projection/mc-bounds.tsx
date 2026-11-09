@@ -150,6 +150,7 @@ export function ReturnClampSection({
           <div className="flex items-center gap-1">
             <span className="text-muted">Min (floor)</span>
             <input
+              aria-label="Min (floor)"
               type="number"
               step="1"
               value={draftClampMin}
@@ -161,6 +162,7 @@ export function ReturnClampSection({
           <div className="flex items-center gap-1">
             <span className="text-muted">Max (ceiling)</span>
             <input
+              aria-label="Max (ceiling)"
               type="number"
               step="1"
               value={draftClampMax}

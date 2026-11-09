@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * Liabilities ▸ Other debts: every debt besides the mortgage — student and
- * car loans, cards carried month to month, personal and medical debt —
- * with its rate, monthly payment and payoff estimate; paid-off debts kept
- * below as history. Balances are as entered (with the date they're as of),
- * never moved forward on their own. The typed "other debts, not itemized"
- * figure and mapped credit cards are shown alongside (server/services/
- * debts/other-liabilities.ts sums all three).
+ * Liabilities ▸ Other debts: every non-mortgage debt with rate, payment and payoff estimate,
+ * paid-off debts below. Balances are as entered, never moved forward; the unitemized figure
+ * and mapped credit cards show alongside (summed in server/services/debts/other-liabilities.ts).
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -16,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { DEBT_KIND_CONFIG } from "@/lib/config/debts";
 import { DEBT_KIND_VALUES, type DebtKind } from "@/lib/config/enum-values";
 
@@ -40,7 +36,7 @@ const blank = (): Draft => ({
   kind: "student_loan",
   ownerPersonId: "",
   balance: "",
-  balanceAsOf: localDateStr(),
+  balanceAsOf: calendarDateOf(new Date()),
   ratePct: "",
   monthlyPayment: "",
   originalAmount: "",
@@ -57,7 +53,7 @@ export function DebtsCard() {
   const admin = isAdmin(useUser());
   const utils = trpc.useUtils();
   const { data: debts } = trpc.debts.list.useQuery();
-  const { data: summary } = trpc.debts.summary.useQuery();
+  const { data: summary } = trpc.debts.computeSummary.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
   const done = () => {
     utils.debts.invalidate();
@@ -432,7 +428,7 @@ export function DebtsCard() {
                           if (confirm(`Mark ${d.name} paid off today?`))
                             markPaidOff.mutate({
                               id: d.id,
-                              date: localDateStr(),
+                              date: calendarDateOf(new Date()),
                             });
                         }}
                         title="Mark paid off today"

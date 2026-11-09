@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Release script for Ledgr
 #
-# Usage: pnpm release <version> [--dry-run]
+# Usage: pnpm release <version> [--dry-run] [--hotfix "<reason>"]
 #   e.g.: pnpm release 0.2.0
 #         pnpm release 0.2.0 --dry-run
+#         pnpm release 0.2.1 --hotfix "sign-in loop after the upgrade"
 #
 # Runs on main after the release PR is merged (OPS.md § Release Process).
 # The version bump is a commit in that PR: this script never commits and
 # never pushes a branch, only the tag (main is protected).
+#
+# Soak gate first: a release under 24 h after the last release tag is
+# refused unless --hotfix names a reason the CHANGELOG entry carries as a
+# "Hotfix: <reason>" line (scripts/release-soak.ts). A dry run reports it.
 #
 # Steps:
 #   1. Validate version format; package.json must already be at it
@@ -32,16 +37,26 @@ NC='\033[0m'
 # Parse arguments
 DRY_RUN=false
 VERSION=""
-for arg in "$@"; do
-  case "$arg" in
+HOTFIX=false
+HOTFIX_REASON=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --dry-run) DRY_RUN=true ;;
-    -*) echo -e "${RED}Unknown flag: $arg${NC}"; exit 1 ;;
-    *) VERSION="$arg" ;;
+    --hotfix)
+      if [[ $# -lt 2 ]]; then
+        echo -e "${RED}--hotfix needs a reason: --hotfix \"<reason>\"${NC}"; exit 1
+      fi
+      HOTFIX=true
+      HOTFIX_REASON="$2"
+      shift ;;
+    -*) echo -e "${RED}Unknown flag: $1${NC}"; exit 1 ;;
+    *) VERSION="$1" ;;
   esac
+  shift
 done
 
 if [[ -z "$VERSION" ]]; then
-  echo -e "${RED}Usage: pnpm release <version> [--dry-run]${NC}"
+  echo -e "${RED}Usage: pnpm release <version> [--dry-run] [--hotfix \"<reason>\"]${NC}"
   echo "  e.g.: pnpm release 0.2.0"
   echo "        pnpm release 0.2.0 --dry-run"
   exit 1
@@ -95,6 +110,22 @@ if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
 fi
 
 HEAD_SHA=$(git rev-parse HEAD)
+
+# Soak gate: 24 h after the last release tag, unless a hotfix (owner Q13).
+echo -e "\n${BOLD}Soak gate...${NC}"
+git fetch --quiet --tags origin || echo -e "${YELLOW}  Couldn't fetch tags: checking the local ones${NC}"
+SOAK_ARGS=("$VERSION")
+if $HOTFIX; then SOAK_ARGS+=(--hotfix "$HOTFIX_REASON"); fi
+SOAK_REFUSED=false
+if npx tsx scripts/release-soak.ts "${SOAK_ARGS[@]}"; then
+  echo -e "${GREEN}  Soak gate passed${NC}"
+elif $DRY_RUN; then
+  SOAK_REFUSED=true
+  echo -e "${YELLOW}  A real run would stop here (reason above); the dry run goes on${NC}"
+else
+  echo -e "${RED}  Refused by the soak gate (reason above).${NC}"
+  exit 1
+fi
 
 # Step 1: package.json is already at the version (bumped in the release PR)
 echo -e "\n${BOLD}[1/7] Checking package.json's version...${NC}"
@@ -150,7 +181,11 @@ fi
 # --- Dry-run exits here ---
 if $DRY_RUN; then
   echo -e "\n${YELLOW}${BOLD}DRY RUN COMPLETE${NC}"
-  echo "All validations passed. Would have:"
+  if $SOAK_REFUSED; then
+    echo -e "${YELLOW}The soak gate refuses a real run now (reason above); every other validation passed. Would have:${NC}"
+  else
+    echo "All validations passed. Would have:"
+  fi
   echo "  - Tagged $TAG on ${HEAD_SHA:0:8}"
   echo "  - Pushed the tag (no branch)"
   echo "  - Created GitHub release"

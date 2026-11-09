@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const log = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/logger", () => ({ log }));
+vi.mock("@/lib/logger", () => ({ log, logWarnOnce: vi.fn() }));
 import {
   getValidCronSecret,
   timingSafeSecretMatch,

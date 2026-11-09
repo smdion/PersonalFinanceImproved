@@ -15,7 +15,7 @@ import {
   combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
 import {
-  isDiscountBasisEmployerContrib,
+  isDiscountBasisEmployerContribution,
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
@@ -49,14 +49,11 @@ export function YearRow({
   onOpenNotes,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
-  // Per-account, data-driven gate — never assume a whole category is pure
-  // ESPP discount (Brokerage can mix in cash-type sub-types like
-  // mega-backdoor/after-tax). Rollup categories (Retirement/Portfolio) are
-  // explicitly excluded: they blend discount-type and match-type employer
-  // money, and showing this annotation there would need a visibly-labeled
-  // basis toggle (deferred), not a silent always-on figure.
+  // Per-account gate, never by category (Brokerage can mix in after-tax sub-types).
+  // Rollup categories are excluded: they blend discount- and match-type employer
+  // money, which would need a labeled basis toggle rather than a silent figure.
   const discountAccountsForYear = accounts.filter((a) =>
-    isDiscountBasisEmployerContrib(a.accountType ?? "", a.subType),
+    isDiscountBasisEmployerContribution(a.accountType ?? "", a.subType),
   );
   const isRollupCategory = (
     PARENT_CATEGORY_ROLLUPS as readonly string[]
@@ -75,12 +72,9 @@ export function YearRow({
         )} ${CASH_BASIS_HELP}`}
       />
     ) : undefined;
-  // Year-level basis rollups — sums over this year's real accounts, not a
-  // proxy off AnnualRow's lifetime fields (those blend account types that
-  // don't track basis the same way). Shown regardless of which category tab
-  // is active — the tabs are filters over the same account data, not a
-  // reason to hide these columns; only account type gates whether a given
-  // row/account actually carries a basis figure.
+  // Year-level basis rollups over this year's real accounts, not AnnualRow's
+  // lifetime fields (which blend account types). Shown on every category tab;
+  // only account type decides whether an account carries a basis figure.
   const costBasisAccountsForYear = accounts.filter((a) =>
     tracksCostBasis(a.accountType ?? ""),
   );
@@ -372,17 +366,17 @@ export function YearRow({
         </td>
       </tr>
       {isExpanded &&
-        accounts.map((a, idx) => {
-          const acctEditable = row.isCurrentYear && canEdit;
+        accounts.map((a, index) => {
+          const accountEditable = row.isCurrentYear && canEdit;
           // Figures in any year: a past year's change is previewed first.
           const figuresEditable = canEdit;
-          const acctGainColor =
+          const accountGainColor =
             a.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
           const isHistoricalDivider =
             activeAccountCount !== undefined &&
-            idx === activeAccountCount &&
-            idx > 0;
-          const isDiscountBasis = isDiscountBasisEmployerContrib(
+            index === activeAccountCount &&
+            index > 0;
+          const isDiscountBasis = isDiscountBasisEmployerContribution(
             a.accountType ?? "",
             a.subType,
           );
@@ -390,11 +384,11 @@ export function YearRow({
             a.yearlyGainLoss,
             a.employerContributions,
           );
-          const acctName = accountDisplayName({
+          const accountName = accountDisplayName({
             ...a,
             accountType: a.accountType ?? undefined,
           });
-          const acctLabel = `${acctName} ${row.year}`;
+          const accountLabel = `${accountName} ${row.year}`;
           const cashBasisAnnotation = isDiscountBasis ? (
             <HelpTip
               text={`${formatCurrency(cashBasisGainLoss)} ${CASH_BASIS_HELP}`}
@@ -418,11 +412,11 @@ export function YearRow({
                 </tr>
               )}
               <tr
-                className={`group border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
+                className={`group border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && index >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
               >
                 <td className="text-muted px-4 py-2 pl-10">
                   <span className="flex items-center gap-2">
-                    <span>{acctName}</span>
+                    <span>{accountName}</span>
                     {!onlyBasis && (
                       <CheckBadge
                         checks={a.checks ?? []}
@@ -437,7 +431,7 @@ export function YearRow({
                   <>
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Beginning, ${acctLabel}`}
+                        label={`Beginning, ${accountLabel}`}
                         value={a.beginningBalance}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "beginningBalance")}
@@ -462,7 +456,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Total Contributions, ${acctLabel}`}
+                        label={`Total Contributions, ${accountLabel}`}
                         value={a.totalContributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "totalContributions")}
@@ -487,7 +481,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Employer Match, ${acctLabel}`}
+                        label={`Employer Match, ${accountLabel}`}
                         value={a.employerContributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(
@@ -515,7 +509,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Distributions, ${acctLabel}`}
+                        label={`Distributions, ${accountLabel}`}
                         value={a.distributions}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "distributions")}
@@ -540,7 +534,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Rollovers, ${acctLabel}`}
+                        label={`Rollovers, ${accountLabel}`}
                         value={a.rollovers}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "rollovers")}
@@ -560,7 +554,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Fees, ${acctLabel}`}
+                        label={`Fees, ${accountLabel}`}
                         value={a.fees}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "fees")}
@@ -580,7 +574,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Gain/Loss, ${acctLabel}`}
+                        label={`Gain/Loss, ${accountLabel}`}
                         value={a.yearlyGainLoss}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "yearlyGainLoss")}
@@ -596,12 +590,12 @@ export function YearRow({
                         onEditValueChange={onEditValueChange}
                         onSaveEdit={onSaveEdit}
                         onKeyDown={onKeyDown}
-                        className={acctGainColor}
+                        className={accountGainColor}
                         annotation={cashBasisAnnotation}
                       />
                     ) : (
                       <td
-                        className={`px-4 py-2 text-right whitespace-nowrap ${acctGainColor}`}
+                        className={`px-4 py-2 text-right whitespace-nowrap ${accountGainColor}`}
                       >
                         {formatCurrency(a.yearlyGainLoss)}
                         {cashBasisAnnotation}
@@ -609,7 +603,7 @@ export function YearRow({
                     )}
                     {figuresEditable ? (
                       <EditableCell
-                        label={`Ending, ${acctLabel}`}
+                        label={`Ending, ${accountLabel}`}
                         value={a.endingBalance}
                         formatter={formatCurrency}
                         isEditing={isEditingAccount(a.id, "endingBalance")}
@@ -652,9 +646,9 @@ export function YearRow({
                             <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
-                          ) : acctEditable && master ? (
+                          ) : accountEditable && master ? (
                             <EditableCell
-                              label={`Cost Basis, ${acctLabel}`}
+                              label={`Cost Basis, ${accountLabel}`}
                               value={basis}
                               formatter={formatCurrency}
                               isEditing={
@@ -689,7 +683,7 @@ export function YearRow({
                             <BasisCell
                               row={a}
                               field="contributionBasis"
-                              editable={!!acctEditable}
+                              editable={!!accountEditable}
                               editingField={
                                 editingCell?.type === "basis" &&
                                 editingCell.id === a.id
@@ -713,7 +707,7 @@ export function YearRow({
                             <BasisCell
                               row={a}
                               field="conversionBasis"
-                              editable={!!acctEditable}
+                              editable={!!accountEditable}
                               editingField={
                                 editingCell?.type === "basis" &&
                                 editingCell.id === a.id

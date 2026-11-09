@@ -1,11 +1,9 @@
 import { z } from "zod/v4";
 import { asc, desc, eq, gte } from "drizzle-orm";
-import { protectedProcedure, syncProcedure } from "../../trpc";
+import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  recomputeTodaySnapshotFromLocal,
-  localDateStr,
-} from "@/lib/simplefin/sync";
+import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";
 import {
   applyLoanFeedBalances,
@@ -25,20 +23,9 @@ import { loadLinkContext } from "@/server/services/sync/simplefin";
 
 export const accountsProcedures = {
   /**
-   * All known linked accounts, for the Settings include/exclude + match
-   * list. For accounts matched to a performance_accounts row (via
-   * setAccountMapping), also attaches the latest weekly snapshot's
-   * balance for that account and a live-vs-snapshot delta — display
-   * only, this never writes to the snapshot.
-   *
-   * Matching is many-to-one (multiple SimpleFIN accounts can point at the
-   * same performance account — e.g. a historical account split/merge that
-   * Ledgr still tracks as one account), so the delta is computed at the
-   * matched-group level: every SimpleFIN account linked to a given
-   * performance account shares the same `change`, comparing their
-   * *combined* live balance against that one snapshot balance. A per-row
-   * delta would be meaningless here since no single SimpleFIN account
-   * necessarily represents the whole tracked account on its own.
+   * Linked accounts for the Settings include/exclude + match list. Matched accounts get the
+   * latest snapshot balance and a display-only drift `change`, computed per performance
+   * account: every SimpleFIN account linked to it shares the combined-balance delta.
    */
   listAccounts: protectedProcedure.query(async ({ ctx }) => {
     const [rows, latest] = await Promise.all([
@@ -57,10 +44,8 @@ export const accountsProcedures = {
     const snapshotBalanceByPerfId = new Map<number, number>();
     const taxTypesSeenByPerfId = new Map<number, Set<PortfolioTaxType>>();
     const parentCategoryByPerfId = new Map<number, ParentCategory>();
-    // accountType/subType are single canonical fields on the performance_accounts
-    // master row (not split per snapshot row like tax type can be), so every
-    // snapshot row sharing a performanceAccountId carries an identical value —
-    // plain overwrite is safe here, unlike the tax-type "mixed" case below.
+    // accountType/subType live on the performance_accounts master row, so every snapshot
+    // row for a performanceAccountId carries the same value: overwriting is safe.
     const accountTypeByPerfId = new Map<number, AccountCategory>();
     const subTypeByPerfId = new Map<number, string | null>();
     if (latest) {
@@ -87,10 +72,8 @@ export const accountsProcedures = {
         subTypeByPerfId.set(a.performanceAccountId, a.subType);
       }
     }
-    // A performanceAccountId split across >1 distinct tax types in this
-    // snapshot (e.g. a 401k with both Traditional and Roth buckets) has no
-    // single correct tax type — resolve to "mixed" rather than silently
-    // picking one and misattributing the whole balance to it.
+    // A performanceAccountId split across >1 tax types in this snapshot has no single
+    // tax type: resolve to "mixed" rather than misattribute the balance.
     const taxTypeByPerfId = new Map<number, PortfolioTaxType | "mixed">();
     for (const [perfId, taxTypes] of taxTypesSeenByPerfId) {
       const [only] = taxTypes;
@@ -133,7 +116,7 @@ export const accountsProcedures = {
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,
         linkedLoanId: r.linkedLoanId,
         unclaimedDebt: isUnclaimedDebt(r),
-        // The sub-account it's linked to; a key no longer in the latest
+        // The sub-account it's linked to; a key missing from the latest
         // snapshot (edited or deactivated) is kept and flagged, and the
         // link counts for the whole account meanwhile.
         linkedSubKey:
@@ -176,12 +159,8 @@ export const accountsProcedures = {
       return {
         ...base,
         snapshotBalance,
-        // Rounded to cents — a performanceAccountId with multiple linked
-        // SimpleFIN rows (e.g. a 401k's Traditional + Roth sub-accounts)
-        // sums their balances via float addition, which can leave a
-        // sub-cent residue that's genuinely nonzero but renders as "$0.00"
-        // — real incident: a category showed a "+$0.00" drift badge next
-        // to sibling categories with no badge at all for a true zero.
+        // Rounded to cents: summing several linked rows can leave a float residue
+        // that would show as a "+$0.00" drift badge.
         change:
           snapshotBalance == null
             ? null
@@ -201,7 +180,7 @@ export const accountsProcedures = {
    * data immediately — no SimpleFIN API call, so this is free to click
    * repeatedly. Does not touch any prior day's snapshot.
    */
-  setAccountIncluded: syncProcedure
+  setAccountIncluded: adminProcedure
     .input(z.object({ id: z.number().int(), isIncluded: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const [row] = await ctx.db
@@ -225,7 +204,7 @@ export const accountsProcedures = {
 
       return {
         ok: true as const,
-        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db, ctx.scope.asOf)),
       };
     }),
 
@@ -235,7 +214,7 @@ export const accountsProcedures = {
     .query(async ({ ctx, input }) => {
       const since = new Date(ctx.scope.asOf);
       since.setDate(since.getDate() - input.days);
-      const sinceStr = localDateStr(since);
+      const sinceStr = calendarDateOf(since);
 
       const rows = await ctx.db
         .select()

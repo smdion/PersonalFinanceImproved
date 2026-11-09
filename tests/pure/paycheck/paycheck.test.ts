@@ -160,10 +160,8 @@ describe("calculatePaycheck", () => {
   });
 
   describe("payFrequencyLabel", () => {
-    // paycheck.ts's local label map is consolidated onto
-    // display-labels.ts's PAY_PERIOD_LABELS — semimonthly's
-    // "(1st & 15th)" suffix and biweekly's even/odd suffix are paycheck-specific
-    // detail not present in the shared base labels, preserved here explicitly.
+    // The base is display-labels' PAY_PERIOD_LABELS; semimonthly's
+    // "(1st & 15th)" and biweekly's even/odd weeks are the paycheck's own.
     it("weekly", () => {
       const result = calculatePaycheck({
         ...PERSON_A_PAYCHECK_INPUT,
@@ -188,7 +186,7 @@ describe("calculatePaycheck", () => {
         payPeriod: "semimonthly",
         payWeek: "na",
       });
-      expect(result.payFrequencyLabel).toBe("Semi-Monthly (1st & 15th)");
+      expect(result.payFrequencyLabel).toBe("Semimonthly (1st & 15th)");
     });
 
     it("biweekly even weeks", () => {

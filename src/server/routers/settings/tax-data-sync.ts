@@ -1,8 +1,6 @@
 /**
- * Community tax-data updates (lib/tax-data/sync.ts): whether they're on,
- * the last check, and the review of a waiting update — what it would
- * change, then Apply or Dismiss (admin). Apply re-verifies the stored file
- * and refuses if the figures changed since the admin reviewed them.
+ * Community tax-data updates (lib/tax-data/sync.ts): status, last check, and admin
+ * review/Apply/Dismiss of a waiting update; Apply refuses if the figures changed since review.
  */
 import { createHash } from "crypto";
 import { z } from "zod/v4";
@@ -32,6 +30,7 @@ import {
   taxDataSyncOffReason,
 } from "@/lib/tax-data/sync";
 import type { Db } from "@/lib/db";
+import { writeStamp } from "@/lib/utils/clock";
 
 /** The waiting update (the newest pending one above everything this
  *  install has applied or ships), or null. */
@@ -79,7 +78,7 @@ let lastManualCheck = 0;
 export const taxDataSyncProcedures = {
   taxDataSync: createTRPCRouter({
     /** On/off, the last check, and a summary of any waiting update. */
-    status: protectedProcedure.query(async ({ ctx }) => {
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
       const off = await taxDataSyncOffReason(ctx.db);
       const pending = await pendingUpdate(ctx.db);
       return {
@@ -97,7 +96,7 @@ export const taxDataSyncProcedures = {
     }),
 
     /** What the waiting update would change, and a hash to approve it by. */
-    preview: protectedProcedure.query(async ({ ctx }) => {
+    computePreview: protectedProcedure.query(async ({ ctx }) => {
       const pending = await pendingUpdate(ctx.db);
       if (!pending) return null;
       const file = verifiedFile(pending);
@@ -150,7 +149,7 @@ export const taxDataSyncProcedures = {
           .set({
             status: "applied",
             decidedBy: getSessionUserLabel(ctx.session),
-            decidedAt: new Date(),
+            decidedAt: writeStamp(),
           })
           .where(
             and(
@@ -169,7 +168,7 @@ export const taxDataSyncProcedures = {
           .set({
             status: "dismissed",
             decidedBy: getSessionUserLabel(ctx.session),
-            decidedAt: new Date(),
+            decidedAt: writeStamp(),
           })
           .where(
             and(

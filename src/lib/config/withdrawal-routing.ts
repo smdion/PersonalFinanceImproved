@@ -1,19 +1,6 @@
-/**
- * Withdrawal routing mode — labels + descriptions, one source for every
- * surface that names or explains `withdrawalRoutingMode` ("bracket_filling"
- * | "waterfall" | "percentage"): the Retirement page's Withdrawal Routing
- * panel (decumulation-config.tsx), the Taxes-in-Retirement profile section
- * (persisted default), and the Tax Optimization withdrawal-strategy
- * comparison. Previously each hand-wrote its own copy — the comparison
- * page's own label, "Tax-optimized," appeared nowhere else, which is why a
- * user who saw it win there had no way to find or set it on their profile.
- *
- * "Withdrawal Routing" (not "Withdrawal Strategy") deliberately, everywhere
- * — `withdrawalStrategy` (Guyton-Klinger, fixed, etc., `withdrawal-
- * strategies.ts`) is a DIFFERENT, already-named concept: HOW MUCH to
- * withdraw each year. This governs FROM WHICH accounts. Reusing "Strategy"
- * for both is how the naming split happened in the first place.
- */
+/** Labels + descriptions for `withdrawalRoutingMode`, for every surface that names it. Always
+ *  "Withdrawal Routing" (FROM WHICH accounts), never "Strategy": `withdrawalStrategy`
+ *  (withdrawal-strategies.ts) is HOW MUCH to withdraw. */
 import type { RoutingMode } from "@/lib/pure/engine/types";
 
 export const WITHDRAWAL_ROUTING_MODES = [
@@ -23,8 +10,8 @@ export const WITHDRAWAL_ROUTING_MODES = [
 ] as const satisfies readonly RoutingMode[];
 
 /** The household-wide default when nothing else specifies one: the DB
- *  default of `retirement_settings.withdrawal_routing_mode`, and the last
- *  fallback in `buildDecumulationDefaults`. */
+ *  default of `retirement_settings.withdrawal_routing_mode`, and the
+ *  projection form's starting value. */
 export const DEFAULT_WITHDRAWAL_ROUTING_MODE: RoutingMode = "bracket_filling";
 
 export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<RoutingMode, string> = {

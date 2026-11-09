@@ -12,11 +12,8 @@ import { buildActionItems } from "./action-items";
 import { buildYearTableRows } from "./year-table";
 import type { ReportNarrative } from "./types";
 /**
- * Build the full advisor-report narrative. Callers should only invoke this
- * after `checkReportGate` has passed — `mcResult` is required (not
- * optional) precisely because the gate guarantees a fresh one exists by
- * the time this runs; this function does not itself degrade gracefully
- * for a missing/stale MC result.
+ * The full advisor-report narrative. Call only after `checkReportGate` passes: it guarantees
+ * the fresh `mcResult` this requires.
  */
 export function buildReportNarrative(
   projectionResult: ProjectionResult,

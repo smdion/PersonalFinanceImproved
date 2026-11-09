@@ -15,15 +15,11 @@ export type ContributionSpec = {
   method: ContributionMethod;
   /** A fraction of pay for percent_of_salary (0.16 = 16%), else dollars. */
   value: number;
-  /** Fraction of total compensation this spec's job represents (0–1).
-   *  For percent_of_salary: engine computes `projectedSalary × salaryFraction × value`
-   *  so that multi-job households don't inflate per-account contributions.
-   *  Defaults to 1.0 for single-job households. */
+  /** Share of total compensation this spec's job represents (0–1; 1.0 with one job).
+   *  percent_of_salary computes `projectedSalary × salaryFraction × value`. */
   salaryFraction: number;
-  /** percent_of_salary: the pay this spec applies to as a share of its
-   *  person's total pay (below 1 when the bonus check doesn't take
-   *  this contribution — fromBonus). The engine re-derives salaryFraction from it each year
-   *  when it tracks salary per person. Absent = 1. */
+  /** percent_of_salary: this spec's pay as a share of the person's pay (below 1 when the bonus
+   *  check doesn't take it, fromBonus); salaryFraction is re-derived from it yearly. Absent = 1. */
   personPayShare?: number;
   /** Periods per year (for fixed_per_period). Ignored for other methods. */
   periodsPerYear?: number;
@@ -84,12 +80,12 @@ export type ProfileSwitch = {
   /** This profile's base-year amounts and match over retirement money only
    *  — what Simple tax mode swaps in (simple-tax-mode.ts). Set by the
    *  payload; switches built elsewhere never reach Simple. */
-  retirementOnly?: RetirementContribSlice;
+  retirementOnly?: RetirementContributionSlice;
 };
 
 /** A contribution profile's base-year amounts and match over retirement
  *  money only (built from paycheck data next to the all-accounts ones). */
-export type RetirementContribSlice = {
+export type RetirementContributionSlice = {
   baseYearContributions: Record<AccountCategory, number>;
   baseYearEmployerMatch: Record<AccountCategory, number>;
   employerMatchRateByCategory: Record<AccountCategory, number>;

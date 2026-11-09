@@ -1,15 +1,6 @@
 /**
- * "ACTIVE" / "VIEWING (active: X)" badge — the shared visual language for
- * "which budget profile does the data on screen belong to." Used by both
- * the Budget Profiles tab (BudgetSummaryBar) and the Savings Profiles tab
- * (SavingsAllocationPanel), since both are scoped to the same budget-profile
- * selection and should say so identically, rather than each inventing its
- * own "which profile" indicator.
- *
- * "Active" covers both the globally-active profile and one a Plan has made
- * active (a Plan making a profile effective is just that profile being
- * active, so there's no separate "pinned" state). "Viewing" is neither — the
- * page is just looking at a profile without it being in effect anywhere else.
+ * Shared "ACTIVE" / "VIEWING (active: X)" badge for the budget-profile tabs.
+ * "Active" includes a profile a Plan makes active; "Viewing" is in effect nowhere.
  */
 import { Badge } from "@/components/ui/badge";
 

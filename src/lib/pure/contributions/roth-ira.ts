@@ -1,26 +1,13 @@
 /**
- * Roth IRA eligibility — judged once here; the Taxes page, the Income card's line and the
- * Backdoor Roth / pro-rata recommendations read the result.
- *
- * Roth IRA MAGI (Pub 590-A Worksheet 2-1) starts from AGI, removes Roth
- * conversion income and adds back a few exclusions. Ledgr's AGI estimate
- * never includes conversion income and doesn't model the traditional IRA
- * deduction, so the estimate IS the Roth IRA MAGI here — conversions are
- * left out of both sides (subtracting them would understate MAGI, the wrong
- * direction for this decision).
- *
- * The verdict is deliberately asymmetric: a wrong "direct is fine" costs a
- * 6% excise tax or a recharacterization, a wrong "use the backdoor" costs
- * paperwork. So "direct" needs a safety margin below the phase-out start —
- * by default the phase-out range's own width (data-derived), overridable by
- * a household setting. Every number comes from yearly reference data.
+ * Roth IRA eligibility, judged once for every reader. Ledgr's AGI estimate excludes conversions
+ * so it is the Roth IRA MAGI (Pub 590-A). "Direct" needs a safety margin below the phase-out
+ * start (default: the range's width), since a wrong "direct" costs a 6% excise tax.
  */
 import {
   getAllCategories,
-  isHsaCategory,
-  isIraCategory,
-  isPayrollDeductibleCategory,
+  hasEarlyAccessRule,
   isPreTaxType,
+  isRothIncomeLimited,
   isTaxFree,
 } from "@/lib/config/account-types";
 import type { RothIraRoute } from "@/lib/config/enum-values";
@@ -111,10 +98,8 @@ export function judgeRothIra(args: {
       : magi >= phaseOut.end
         ? "backdoor"
         : "tooClose";
-  // IRA money can't exceed compensation. Married filing jointly, a spouse
-  // can use the couple's combined compensation less what the other spouse
-  // puts in (IRC 219(c)) — so the higher earner goes first and the rest
-  // shares what's left; together they never pass combined compensation.
+  // IRA money can't exceed compensation; married filing jointly, a spouse may use the
+  // couple's combined compensation less the other's (IRC 219(c)): higher earner first.
   const householdCompensation = sumBy(args.people, (p) =>
     Math.max(0, p.compensation),
   );
@@ -154,11 +139,8 @@ export function judgeRothIra(args: {
 export const PENDING_CONVERSION_WINDOW_DAYS = 45;
 
 /**
- * A deposit sitting in a traditional IRA, waiting to be converted to Roth:
- * the latest balance less the lowest in the recent window (just after the
- * last conversion, when only leftovers were there). Read from balances,
- * since institutions send the deposit as a transaction days later. Only a
- * backdoor route makes this after-tax money (the caller decides that).
+ * A traditional IRA deposit awaiting Roth conversion: latest balance less the window's lowest,
+ * read from balances (transactions arrive days later). After-tax only on a backdoor route.
  */
 export function pendingConversion(
   balances: readonly { day: string; balance: number }[],
@@ -173,11 +155,8 @@ export function pendingConversion(
 }
 
 /**
- * Pre-tax money in each person's IRAs (traditional / SEP / SIMPLE — every
- * pre-tax balance in an IRA-type account; 401(k)/403(b) are outside the
- * pool). A backdoor Roth conversion is taxed pro-rata over this balance as
- * of Dec 31, so any amount makes most of the conversion taxable. The
- * current balance stands in for Dec 31.
+ * Pre-tax money in each person's IRA-type accounts (not 401(k)/403(b)); a backdoor conversion
+ * is taxed pro-rata over it as of Dec 31, for which the current balance stands in.
  */
 export function preTaxIraByPerson(
   accounts: readonly {
@@ -194,7 +173,8 @@ export function preTaxIraByPerson(
   const byPerson = new Map<number, number>();
   let unowned = 0;
   for (const a of accounts) {
-    if (!isIraCategory(a.accountType) || !isPreTaxType(a.taxType)) continue;
+    if (!isRothIncomeLimited(a.accountType) || !isPreTaxType(a.taxType))
+      continue;
     if (a.amount <= 0) continue;
     if (a.ownerPersonId === null) {
       unowned += a.amount;
@@ -248,10 +228,8 @@ export type RothIraView = {
 };
 
 /**
- * The Roth IRA view from the paycheck summary (wages, limits, phase-out
- * rows) and the investment side (investment income, IRA balances). Every
- * reader — the Taxes page, the Income card's line and the recommendations — goes through
- * this, so the verdict is judged once.
+ * The Roth IRA view from the paycheck summary and the investment side; every reader goes
+ * through it, so the verdict is judged once.
  */
 export function buildRothIraView(args: {
   rothIra: RothIraSummary;
@@ -272,10 +250,8 @@ export function buildRothIraView(args: {
   const rawPreTax = new Map(
     args.preTaxIraByPerson.map((p) => [p.personId, p.amount]),
   );
-  // A backdoor deposit waiting to be converted is after-tax money (a
-  // nondeductible contribution, Form 8606 basis): the pro-rata rule doesn't
-  // tax it. Only for someone going the backdoor route, never more than a
-  // year's IRA contribution, never more than what's there.
+  // A pending backdoor deposit is after-tax (Form 8606 basis), outside the pro-rata
+  // rule: backdoor people only, capped at a year's IRA contribution and the balance.
   const backdoorPeople = new Set(
     args.rothIra.people
       .filter((p) => p.rothRoute === "backdoor")
@@ -368,19 +344,15 @@ type RothIraSummary = {
   }[];
 };
 
-/** A workplace retirement plan (payroll-deducted, not an HSA) — where a
- *  pre-tax IRA balance could be rolled to clear the pro-rata pool. */
+/** A workplace retirement plan (the employer-plan early-access rule) —
+ *  where a pre-tax IRA balance could be rolled to clear the pro-rata pool. */
 function isEmployerPlanType(accountType: string): boolean {
-  return (
-    isPayrollDeductibleCategory(accountType) && !isHsaCategory(accountType)
-  );
+  return hasEarlyAccessRule(accountType, "employer_plan");
 }
 
 /**
- * The year's Roth IRA inputs from reference data and each person's
- * earnings — phase-out rows for the filing status and IRA limits read
- * softly (a restore or demo schema can lack newer keys; the panel then
- * hides). No filing status (no one with a job) → null.
+ * The year's Roth IRA inputs from reference data and earnings, read softly (missing keys hide
+ * the panel). No filing status (no one with a job) → null.
  */
 export function rothIraSummary(args: {
   filingStatus: string | null;
@@ -399,7 +371,7 @@ export function rothIraSummary(args: {
     rothRoute?: RothIraRoute | null;
   }[];
 }): RothIraSummary | null {
-  const iraCategory = getAllCategories().find(isIraCategory);
+  const iraCategory = getAllCategories().find(isRothIncomeLimited);
   if (!args.filingStatus || !iraCategory) return null;
   const keys = rothIraPhaseoutKeys(args.filingStatus);
   const start = args.limits[keys.start];
@@ -431,7 +403,7 @@ export function isRothIraContribution(c: {
   accountType: string;
   taxTreatment: string;
 }): boolean {
-  return isIraCategory(c.accountType) && isTaxFree(c.taxTreatment);
+  return isRothIncomeLimited(c.accountType) && isTaxFree(c.taxTreatment);
 }
 
 /** A person's Roth IRA route from their effective contribution rows: the
@@ -459,13 +431,8 @@ export function backdoorPlanned(view: RothIraView | null): boolean {
 }
 
 /**
- * What the verdict means for how the household actually contributes (each
- * person's Roth IRA route) — the one wording for the Taxes page and the
- * recommendation. `action` is one short line, null when there's nothing to
- * do: the backdoor works at any income, so a household already using it
- * has nothing to decide, and direct contributions under the limit are fine.
- * `detail` is the how / the fallback, shown under the action.
- * `whenAllowed` says when contributions for the year are allowed.
+ * The verdict as each person's contribution route, worded once: `action` one line (null when
+ * nothing to do), `detail` the how or fallback, `whenAllowed` when the year's money is allowed.
  */
 export function rothIraAdvice(
   view: RothIraView,

@@ -20,12 +20,8 @@ export type TaxBuckets = {
 };
 
 /**
- * Per-account balance breakdown by waterfall category and tax treatment.
- * More granular than TaxBuckets — tracks 401k vs IRA separately so
- * decumulation routing uses real balances instead of heuristic splits.
- *
- * Each entry is a discriminated union (AccountBalance) whose shape is
- * determined by the account type's `balanceStructure` config property.
+ * Per-account balances by waterfall category and tax treatment (401k and IRA
+ * kept apart). Each entry's shape follows its type's `balanceStructure` config.
  */
 export type AccountBalances = Record<AccountCategory, AccountBalance>;
 
@@ -44,13 +40,9 @@ export type IndividualAccountInput = {
   /** The household's chosen account for reinvested RMD money (Retirement
    *  settings) — resolved by the payload; at most one account. */
   rmdExcessTarget?: boolean;
-  /** A retirement brokerage that exists only in the projection — added when
-   *  the household has no Retirement brokerage, so retirement money that
-   *  needs a brokerage home (contribution overflow, reinvested RMD money)
-   *  never lands in a Portfolio account. It also takes retirement lump sums
-   *  with no account named, and the Brokerage page's ramp only when the
-   *  household has no brokerage at all; never contributions of its own or
-   *  goal draws. Spent in retirement like any retirement account. */
+  /** Projection-only retirement brokerage, added when the household has none: holds
+   *  retirement money that needs a brokerage (overflow, reinvested RMDs, unnamed lump
+   *  sums). Never its own contributions or goal draws; spent like any retirement account. */
   projectedOnly?: boolean;
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by
@@ -62,61 +54,26 @@ export type IndividualAccountInput = {
   ownerPersonId?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
-  /** "Now" Rule of 55 / separation resolution for this account —
-   *  only present for 401k/403b-type accounts
-   *  (`accountType` config's `rothOrderingRules === "pro_rata"`) with a
-   *  resolvable owner. The engine re-evaluates this for a future projected
-   *  year itself via `projectRuleOf55`
-   *  (`src/lib/pure/accounts/tax-bucket-projection.ts`) rather than trusting a
-   *  precomputed "now" answer for a different year (`eligibility.ts`). */
+  /** "Now" Rule of 55 / separation status; only for 401k/403b-type accounts
+   *  (`rothOrderingRules === "pro_rata"`) with a resolvable owner. Future years
+   *  are re-evaluated by `projectRuleOf55`, never read from this. */
   ruleOf55?: RuleOf55Status | null;
   /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
    *  same scope/caveats; seeds tracked Roth basis. */
   rothBasisMeta?: RothBasisMeta | null;
-  /** `ownerPersonId`'s birth year — carried directly on
-   *  the account rather than requiring a separate personId→birthYear
-   *  lookup at consumption time. No general "every household member's
-   *  birth year, keyed by personId" map exists elsewhere in `EngineInput`:
-   *  `perPersonBirthYears` is a positional array (no personId link), and
-   *  `socialSecurityEntries`/`rmdStartAgeByPerson` are only populated for
-   *  multi-person households. Attaching it here means the withdrawal-
-   *  eligibility gate never depends on which of those partial
-   *  sources happened to cover a given owner. */
+  /** `ownerPersonId`'s birth year, carried here because no complete personId→birth
+   *  year map exists in `EngineInput`; the withdrawal-eligibility gate reads it. */
   ownerBirthYear?: number;
   /** The owner's planned retirement year (birth year + retirement age) —
    *  when a still-active job is assumed to end, for Rule of 55. */
   ownerRetirementYear?: number;
-  /** Rule of 55 forecasting override — per-person, forces the
-   *  PROJECTED (future-year) Rule of 55 verdict to ineligible for this
-   *  account's owner, regardless of what the real job-separation
-   *  computation says. Only ever set `true` (never `false`) — omitted
-   *  entirely for the default (no override) case, so every household not
-   *  using this feature has a byte-identical engine input (and so an
-   *  unchanged projection-cache hash — see `hashEngineInput` in
-   *  `server/services/projection/projection-cache.ts`). One-directional: can only push
-   *  eligibility from true to false. See `projectRuleOf55`'s
-   *  `opts.forceIneligible` docblock (`lib/pure/accounts/tax-bucket-projection.ts`)
-   *  for the full contract, and why this is threaded as a parameter INTO
-   *  that function rather than checked by either of its two callers —
-   *  short-circuiting to "locked" in the consumer was a real bug
-   *  (Rule-of-55-ineligible isn't the same as locked; the
-   *  59½ path must still apply). */
+  /** Forces the projected Rule of 55 verdict to ineligible for this owner (the 59½
+   *  path still applies; see `projectRuleOf55`'s `opts.forceIneligible`). Only ever
+   *  `true`, omitted otherwise so the projection-cache hash stays stable. */
   ruleOf55ForceIneligible?: boolean;
-  /** Household is fine paying the 10%/20% early-withdrawal penalty on THIS
-   *  account when the projection needs to draw from it. Makes this
-   *  account's penalty-exposed balance normally withdrawable — NOT a
-   *  strict last-resort guarantee; ordinary routing order still decides
-   *  when it's drawn (see `performanceAccounts.allowPenalizedWithdrawals`'s
-   *  docblock, `schema-pg.ts`, for the full contract and the tracked
-   *  follow-up for true last-resort ordering). Only ever set `true` —
-   *  omitted entirely for the default (no override) case, same cache-hash-
-   *  stability convention as `ruleOf55ForceIneligible` above. Consumed by
-   *  `computeWithdrawalEligibility` (`lib/pure/accounts/eligibility.ts`),
-   *  which uses it to compute a second, narrower "still-excluded" aggregate
-   *  that `subtractPenaltyExposed` (`lib/pure/engine/balance-utils.ts`)
-   *  subtracts instead of the category's full penalty-exposed total — this
-   *  account's exposed dollars stay in the routable pool while every other
-   *  account's stay excluded. */
+  /** Household accepts the early-withdrawal penalty on this account: its exposed
+   *  balance is routable in normal order (not last resort). Only ever `true`, omitted
+   *  otherwise (hash stability); read by `computeWithdrawalEligibility`. */
   allowPenalizedWithdrawals?: boolean;
 };
 
@@ -148,10 +105,8 @@ export type IndividualAccountYearBalance = {
    *  every retirement year, and a year a paycheck is gone (gap-year-draw.ts).
    *  Absent in an accumulation year with no draw. */
   draw?: AccountYearDraw;
-  /** Tracked Roth basis: present only for taxFree-bucket accounts with
-   *  tracked basis (see `@/lib/pure/accounts/roth-basis-tracking`); absent
-   *  (not zero) for everything else, so "no data" is never confused with
-   *  "$0 left". */
+  /** Tracked Roth basis, only for taxFree-bucket accounts with tracked basis;
+   *  absent (not zero) otherwise so "no data" never reads as "$0 left". */
   roth?: AccountYearRothBasis;
 };
 
@@ -159,13 +114,9 @@ export type IndividualAccountYearBalance = {
 export type AccountYearDraw = {
   /** Per-account withdrawal amount. */
   withdrawal: number;
-  /** Withdrawal-ordering eligibility for this account, this year. `true` =
-   *  the full balance was treated as locked (penalty-preferred-against)
-   *  when withdrawal routing ran this year (see `eligibility.ts`'s module
-   *  docblock for when routing may still draw it). `reason` explains why,
-   *  from `AccountEligibility.reason`. Absent when the account has no
-   *  resolvable eligibility question for this category (e.g. brokerage —
-   *  though that case still gets a reason, just never `locked`). */
+  /** `true` = the full balance was treated as locked when routing ran this year
+   *  (see `eligibility.ts`). `reason` is from `AccountEligibility.reason`; absent
+   *  with no eligibility question for this category (brokerage: reason, never locked). */
   eligibilityLocked?: boolean;
   reason?: EligibilityReason;
   /** Start-of-year dollars drawable this year without the early-withdrawal

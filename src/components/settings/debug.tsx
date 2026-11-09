@@ -16,11 +16,8 @@ import { Button } from "@/components/ui/button";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { formatDate } from "@/lib/utils/format";
 
-/** A stored freshness value can be a plain "YYYY-MM-DD" or a full ISO
- *  timestamp — take just the calendar day so the <input type="date"> and
- *  the "Current:" label both derive from the same normalization the
- *  sidebar's formatDate ultimately renders (avoids the Debug view and the
- *  sidebar tooltip disagreeing by a day). */
+/** A stored freshness value is "YYYY-MM-DD" or a full ISO timestamp; take the calendar day, as
+ *  the sidebar's formatDate does, so both show the same date. */
 function toDateInputValue(raw: string | null | undefined): string {
   if (!raw) return "";
   return raw.slice(0, 10);
@@ -63,11 +60,8 @@ export function DebugSettings() {
       </nav>
 
       <div>
-        {/* All three stay mounted — Data Freshness and Danger Zone each
-         *  hold in-progress local draft state (typed-but-unsaved dates,
-         *  the reset confirmation text) that would silently reset on a
-         *  switch away and back otherwise, same pattern the other shells
-         *  guard against. */}
+        {/* All three stay mounted so unsaved drafts (dates, the reset
+         *  confirmation text) survive switching sections. */}
         <div className={section === "diagnostics" ? "" : "hidden"}>
           <DiagnosticsSection />
         </div>
@@ -103,7 +97,7 @@ function DiagnosticsSection() {
           </span>
           <p className="text-muted text-xs">
             Show diagnostic tooltips and debug data on projection tables
-            (withdrawal routing, MC proof notes, etc.)
+            (withdrawal routing, Simulation proof notes, etc.)
           </p>
         </div>
       </label>

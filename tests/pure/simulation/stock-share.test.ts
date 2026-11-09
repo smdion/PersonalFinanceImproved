@@ -50,7 +50,7 @@ describe("stock share by age", () => {
     ).toBeNull();
   });
 
-  it("Plan Health's stock allocation: the percent at the whole age, one decimal; null when there's none", () => {
+  it("Projection Health's stock allocation: the percent at the whole age, one decimal; null when there's none", () => {
     const bucketRows = [
       { assetClassId: 1, bucket: "us_equity" as const },
       { assetClassId: 2, bucket: "us_bond" as const },

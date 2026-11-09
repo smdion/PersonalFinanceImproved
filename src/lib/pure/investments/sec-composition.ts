@@ -1,16 +1,7 @@
 /**
- * What a fund holds, summed into fixed composition buckets from its SEC
- * N-PORT holdings. Pure. Works for any registered fund — nothing here is
- * specific to a fund family or ticker.
- *
- * - Long positions only (short and negative positions are left out).
- * - A holding that is itself a registered fund is "looked through": the
- *   caller resolves it (registry name match confirmed by LEI) and passes
- *   that fund's own composition, weighted by the holding's share.
- * - A holding that looked like a fund but couldn't be confirmed stays
- *   unresolved — it lowers `coverage` rather than being guessed.
- * - Every other holding is classified by SEC's own asset category and
- *   country tags.
+ * A fund's composition buckets from its SEC N-PORT long positions. Registered-fund
+ * holdings are looked through (caller resolves them by LEI); unconfirmed ones lower
+ * `coverage`; the rest classify by SEC asset category and country.
  */
 import type { CompositionBucket } from "@/lib/config/enum-values";
 

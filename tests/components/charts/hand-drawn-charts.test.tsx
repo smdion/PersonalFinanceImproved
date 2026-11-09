@@ -20,7 +20,7 @@ describe("hand-drawn charts", () => {
     "the funding bar %s a match beyond it is an image described by its summary",
     async (_c, matchPct) => {
       const { container } = render(
-        <FundingBar pct={0.5} matchPct={matchPct} accountType="401k" />,
+        <FundingBar pct={0.5} matchPercent={matchPct} accountType="401k" />,
       );
       const bar = screen.getByRole("img", {
         name: "Funding toward the IRS limit",

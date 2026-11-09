@@ -28,7 +28,7 @@ describe("HighIncomeLineEdit", () => {
     saved = null;
     setSaved.mockClear();
     resetTrpcMock();
-    setQuery("contribution.highIncomeLine", {
+    setQuery("contribution.computeHighIncomeLine", {
       threshold: 100_000,
       basis: "Single",
     });

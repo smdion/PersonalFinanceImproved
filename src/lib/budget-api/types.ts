@@ -113,14 +113,9 @@ export type NewBudgetTransaction = {
   categoryId?: string;
   memo?: string;
   cleared?: boolean;
-  /** Verified-against-statement state — stronger than `cleared`, and the
-   *  state both YNAB's and Actual's own UIs lock against casual edits.
-   *  `reconciled: true` implies cleared regardless of what `cleared` says;
-   *  each client derives its own `cleared` value defensively rather than
-   *  trusting every caller to set both. DELETE
-   *  succeeds on a reconciled transaction on both YNAB's real API and the
-   *  deployed actual-http-api wrapper — no lock blocks the resync
-   *  delete-then-repost cycle in budget-api-push.ts. */
+  /** Verified against a statement; implies cleared whatever `cleared` says
+   *  (each client derives `cleared` itself). DELETE still succeeds on a
+   *  reconciled transaction in both YNAB and Actual, so resync can repost. */
   reconciled?: boolean;
   approved?: boolean;
 };
@@ -135,11 +130,9 @@ export type ActualConfig = {
   serverUrl: string;
   apiKey: string;
   budgetSyncId: string;
-  /** User-facing URL for the Actual web app itself — `serverUrl` is often a
-   *  private/internal address the server uses for API calls (e.g. a LAN IP
-   *  or the actual-http-api wrapper's own address), not something a
-   *  browser outside that network can reach. Optional: a nav link to the
-   *  active budget API only renders once this is set. */
+  /** Browser-reachable URL of the Actual web app (`serverUrl` is often an
+   *  internal address for API calls). The nav link to the active budget API
+   *  renders only when this is set. */
   externalUrl?: string;
 };
 

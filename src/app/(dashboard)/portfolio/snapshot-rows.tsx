@@ -34,10 +34,8 @@ export function groupByPerformanceAccount(
     if (!group) {
       const perfName = accountDisplayName({
         displayName: a.perfDisplayName ?? null,
-        // null (not a hand-built fallback string) when there's no real
-        // linked label — lets accountDisplayName fall through to its
-        // casing-aware Priority-3 construction instead of returning a raw
-        // lowercase DB key like "ira (Vanguard)" verbatim.
+        // null when there's no linked label, so accountDisplayName builds a
+        // properly cased name instead of returning a raw DB key.
         accountLabel: a.perfAccountLabel ?? null,
         accountType: a.accountType,
         institution: a.institution,
@@ -56,13 +54,9 @@ export function groupByPerformanceAccount(
     group.accounts.push(a);
     group.total += a.amount;
   }
-  // Detect multi-owner groups (e.g., joint IRA with multiple owner sub-rows).
-  // DESIGN.md's owner-prefix rule is a two-part test: the performance
-  // account must be joint (perfOwnerPersonId null) AND sub-rows must carry
-  // different ownerPersonId values — checking only the second half would
-  // wrongly prefix an individually-owned account whose sub-rows happen to
-  // carry mismatched owner IDs (a data inconsistency, not a real joint
-  // account).
+  // Owner prefix (DESIGN.md) needs both: a joint performance account
+  // (perfOwnerPersonId null) AND sub-rows with different ownerPersonIds.
+  // Mismatched owners on an individual account are bad data, not joint.
   const result = Array.from(groups.values());
   for (const group of result) {
     const isJointPerfAccount =

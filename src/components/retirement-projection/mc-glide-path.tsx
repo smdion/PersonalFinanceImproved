@@ -48,8 +48,8 @@ export function GlidePathTable({
                         value={gp.allocations[ac.id] ?? "0"}
                         onChange={(e) => {
                           setDraftGlidePath((prev) =>
-                            prev.map((item, idx) =>
-                              idx === gi
+                            prev.map((item, index) =>
+                              index === gi
                                 ? {
                                     age: item.age,
                                     allocations: {

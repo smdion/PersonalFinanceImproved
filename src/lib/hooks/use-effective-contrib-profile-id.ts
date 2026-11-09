@@ -2,28 +2,24 @@
 
 import { trpc } from "@/lib/trpc";
 import { useEffectiveProfileId } from "./use-effective-profile-id";
-import { useActiveContribProfile } from "./use-active-contrib-profile";
+import { useActiveContributionProfile } from "./use-active-contrib-profile";
 
 /**
- * The Contribution Profile axis, resolved once: the active setting.
- * Mirrors useEffectiveSalaryProfileId exactly — every page that shows
- * contribution-dependent data calls this rather than reading the setting
- * directly (see docs/DESIGN.md "Profile Resolution").
- *
- * Returns the id plus a ready-made query-input fragment, since every
- * consumer spreads it into a tRPC input the same way.
+ * The Contribution Profile axis, resolved once (see docs/DESIGN.md "Profile
+ * Resolution"). Returns the id plus a query-input fragment to spread.
  */
-export function useEffectiveContribProfileId(): {
+export function useEffectiveContributionProfileId(): {
   contributionProfileId: number | null;
   /** `{ contributionProfileId }` when set, `{}` otherwise — spread into query input. */
   queryInput: { contributionProfileId?: number };
 } {
-  const [activeContribProfileId] = useActiveContribProfile();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const [activeContributionProfileId] = useActiveContributionProfile();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { profileId } = useEffectiveProfileId("contribution", {
-    validIds: contribProfiles?.map((p) => p.id),
+    validIds: contributionProfiles?.map((p) => p.id),
     localSelection: null,
-    activeProfileId: activeContribProfileId,
+    activeProfileId: activeContributionProfileId,
   });
   const contributionProfileId = profileId;
   return {

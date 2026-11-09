@@ -1,10 +1,6 @@
 /**
- * Timeline section. Shows
- * per-person retirement ages (multi-person households) or a single retirement
- * age plus the shared Plan-Through end age. Lives in the left column of the
- * Timeline+Income sunken box; this component only renders the Timeline inner
- * block, keeping the outer wrapper at the call site so Income can sit next
- * to it inside the same rounded container.
+ * Timeline section: per-person (or single) retirement ages plus the shared Plan-Through end age.
+ * Renders only the inner block; the call site owns the wrapper it shares with Income.
  */
 "use client";
 
@@ -114,7 +110,7 @@ export function TimelineSection({
         )}
         <div>
           <span className="text-muted">
-            Plan Through
+            Projection Through
             <HelpTip text="How long your money needs to last. Higher = more safety margin." />
           </span>
           <div className="flex items-baseline gap-1 font-medium">
@@ -152,7 +148,7 @@ export function TimelineSection({
             label="Withdraw what pay doesn't cover"
             size="xs"
             disabled={!isEditable}
-            title="Off: nothing comes out of the accounts in these years, and the plan spends only what's coming in."
+            title="Off: nothing comes out of the accounts in these years, and the projection spends only what's coming in."
           />
         </div>
       </div>

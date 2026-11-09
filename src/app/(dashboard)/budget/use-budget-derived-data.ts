@@ -1,14 +1,9 @@
 "use client";
 
 /**
- * useBudgetDerivedData — extracted from budget-content.tsx.
- *
- * Owns: the payroll breakdown (one per column, same pay in each),
- * category/item derivation, sinking-fund list, API-actuals map,
- * matchContrib, and getCatTotals.
- *
- * All hooks run unconditionally (before early returns in the parent).
- * When `data` is null/undefined, outputs default to safe empty values.
+ * useBudgetDerivedData: payroll breakdown, category/item derivation, sinking
+ * funds, API actuals, matchContribution and getCatTotals. Hooks always run;
+ * null `data` yields safe empty outputs.
  */
 
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
@@ -16,10 +11,10 @@ import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
-  buildNonPayrollContribs,
+  buildNonPayrollContributions,
   fixedContributionMonthly,
 } from "@/components/budget/helpers";
-import { normalizeContribKey } from "@/lib/config/account-types";
+import { normalizeContributionKey } from "@/lib/config/account-types";
 import type {
   RawItem,
   PayrollBreakdown,
@@ -70,7 +65,7 @@ export function useBudgetDerivedData({
   data,
   savingsGoals,
   apiActualsData,
-  contribProfileId,
+  contributionProfileId,
   salaryProfileId,
   editMode,
   getDraft,
@@ -81,7 +76,7 @@ export function useBudgetDerivedData({
   apiActualsData: ApiActualsData;
   /** The profiles budget.computeActiveSummary resolves for this page (its
    *  pick, else the active one), so the payroll breakdown matches it. */
-  contribProfileId: number | null;
+  contributionProfileId: number | null;
   salaryProfileId: number | null;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
@@ -100,13 +95,11 @@ export function useBudgetDerivedData({
   const isWeighted = columnMonths !== null && columnMonths.length > 0;
 
   // ---- Pay under the profiles this page shows ----
-  // A budget column is a spending level, not a different pay world, so one
-  // paycheck query (the page's local selection — What-If — else the active
-  // profiles, as budget.computeActiveSummary resolves them) serves every
-  // column.
+  // A column is a spending level, not a different pay world: one paycheck query
+  // (local What-If selection, else the active profiles) serves every column.
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery({
-    ...(contribProfileId != null
-      ? { contributionProfileId: contribProfileId }
+    ...(contributionProfileId != null
+      ? { contributionProfileId: contributionProfileId }
       : {}),
     ...(salaryProfileId != null ? { salaryProfileId } : {}),
   });
@@ -124,7 +117,7 @@ export function useBudgetDerivedData({
   );
 
   // ---- Raw items ----
-  // Declared before contribByCanonicalPerCol so the fuzzy-match pool below
+  // Declared before contributionByCanonicalPerCol so the fuzzy-match pool below
   // can exclude accounts already linked to a budget item.
 
   const allColumnResults =
@@ -135,13 +128,9 @@ export function useBudgetDerivedData({
     [data?.rawItems],
   );
 
-  // A contribution account already linked to a budget item (via
-  // contributionAccountId) has its real dollars resolved through that link
-  // (contribAmounts/contribAmount) — it must not ALSO be eligible for
-  // name-based matching against some OTHER unlinked item, or that other
-  // item's badge/total silently borrows the linked account's balance
-  // (e.g. two brokerage accounts sharing the keyword "brokerage", one
-  // linked and one not).
+  // Accounts already linked to a budget item resolve through that link, so
+  // they're excluded from name matching; otherwise an unlinked item sharing a
+  // keyword would borrow the linked account's dollars.
   const linkedContributionAccountIds = useMemo(
     () =>
       new Set(
@@ -152,17 +141,17 @@ export function useBudgetDerivedData({
     [rawItems],
   );
 
-  const contribByCanonicalPerCol: Map<string, number>[] = useMemo(() => {
+  const contributionByCanonicalPerCol: Map<string, number>[] = useMemo(() => {
     return perColumnPaycheckData.map((pData) => {
       const map = new Map<string, number>();
       if (!pData) return map;
 
-      const nonPayroll = buildNonPayrollContribs(
+      const nonPayroll = buildNonPayrollContributions(
         pData.people,
         linkedContributionAccountIds,
       );
       for (const [accountType, monthly] of Array.from(nonPayroll.entries())) {
-        const key = normalizeContribKey(accountType);
+        const key = normalizeContributionKey(accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
@@ -185,7 +174,7 @@ export function useBudgetDerivedData({
             : c.contributionMethod === "fixed_monthly"
               ? val
               : val / 12;
-        const key = normalizeContribKey(c.accountType);
+        const key = normalizeContributionKey(c.accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
@@ -193,17 +182,15 @@ export function useBudgetDerivedData({
     });
   }, [perColumnPaycheckData, linkedContributionAccountIds]);
 
-  // matchContrib is a display-only estimate for UNLINKED items (the "PC"
-  // badge/tooltip) — it must never feed getCatTotals's total below, or the
-  // page's own category subtotal disagrees with the server-computed
-  // calculateBudget total (RULES.md Single Computation Path).
-  const matchContrib = (
+  // Display-only estimate for UNLINKED items (the "PC" badge). Never feed it
+  // into getCatTotals, or the subtotal disagrees with calculateBudget's total.
+  const matchContribution = (
     subcategory: string,
-    colIdx?: number,
+    colIndex?: number,
   ): number | null => {
-    const map = contribByCanonicalPerCol[colIdx ?? 0];
+    const map = contributionByCanonicalPerCol[colIndex ?? 0];
     if (!map || map.size === 0) return null;
-    const key = normalizeContribKey(subcategory);
+    const key = normalizeContributionKey(subcategory);
     return key ? (map.get(key) ?? null) : null;
   };
 
@@ -237,19 +224,9 @@ export function useBudgetDerivedData({
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
         items.reduce((s, it) => {
-          // contribAmounts is the server's own per-column figure (every
-          // column from the active profiles); contribAmount is only the
-          // selected column's value and is the last resort before raw
-          // amounts. Fuzzy name-matching (matchContrib) never contributes
-          // here — it's a badge/tooltip-only estimate for UNLINKED items,
-          // and folding it into the total would make this page's own
-          // subtotal disagree with the server-computed calculateBudget
-          // total (RULES.md Single Computation Path). This is the SAME
-          // resolved value regardless of edit mode — editMode only adds a
-          // draft on TOP of it (via getDraft's `original` argument), it
-          // never bypasses this resolution chain. (Bypassing it here used
-          // to make a contribution-linked item's total silently change the
-          // instant edit mode turned on, before the user touched anything.)
+          // Server per-column figure, then the selected column's contribAmount,
+          // then raw amounts. Never matchContribution (badge-only). Edit mode
+          // only layers a draft on top via getDraft's `original`.
           const resolved =
             it.contribAmounts?.[col] ??
             (it.contribAmount != null
@@ -263,15 +240,8 @@ export function useBudgetDerivedData({
   );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----
-  // Reads the stored monthlyContribution snapshot directly, even for
-  // percentage-based goals — it should only change when the user
-  // explicitly hits "Recalculate" on the savings page (recalculateAllocation),
-  // not whenever paycheck/budget data shifts underneath it.
-  // `savingsGoals` here is already resolved server-side for the profile
-  // being viewed (goals with no override fall back to the global default,
-  // per getResolvedGoalAllocations) — this must not read a raw,
-  // unresolved savings_goals row, or this total can silently disagree
-  // with what the Savings page shows for the same profile.
+  // Uses the stored monthlyContribution snapshot (changes only on "Recalculate"),
+  // from goals already resolved server-side for the viewed profile.
 
   const sinkingFunds: SinkingFundLine[] = useMemo(
     () =>
@@ -312,22 +282,19 @@ export function useBudgetDerivedData({
   }, [apiActualsData]);
 
   // ---- Push-preview builder ----
-  // Returns the diff items needed to render the "push to API" confirmation
-  // modal. Ledgr's budget amount maps to YNAB's goal target (not the
-  // month-specific "budgeted" field), matching what syncBudgetToApi writes.
+  // Diff items for the "push to API" modal. Ledgr's amount maps to YNAB's goal
+  // target (not month "budgeted"), as syncBudgetToApi writes.
   const buildPushPreviewItems = (activeColumn: number): PushPreviewItem[] => {
     const items: PushPreviewItem[] = [];
     for (const item of rawItems) {
       if (!item.apiCategoryId) continue;
       if (item.apiSyncDirection !== "push" && item.apiSyncDirection !== "both")
         continue;
-      // Contribution-linked items keep `amounts` frozen/stale on purpose
-      // (see resolveLinkedBudgetItemAmounts) — the resolved figure this
-      // modal must preview (and what syncBudgetToApi actually pushes)
-      // lives in `contribAmounts` instead.
+      // Contribution-linked items keep `amounts` stale (see
+      // resolveLinkedBudgetItemAmounts); the pushed figure is `contribAmounts`.
       const amounts = (item.contribAmounts ?? item.amounts) as number[];
-      const colIdx = Math.min(activeColumn, amounts.length - 1);
-      const newValue = amounts[colIdx] ?? 0;
+      const colIndex = Math.min(activeColumn, amounts.length - 1);
+      const newValue = amounts[colIndex] ?? 0;
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
@@ -340,9 +307,8 @@ export function useBudgetDerivedData({
   };
 
   // ---- Pull-preview builder ----
-  // Returns the diff items needed to render the "pull from API" confirmation
-  // modal: current Ledgr amount vs. what it will become after pulling YNAB's
-  // goal target, matching what syncBudgetFromApi reads.
+  // Diff items for the "pull from API" modal: current amount vs. YNAB's goal
+  // target, as syncBudgetFromApi reads.
   const buildPullPreviewItems = (activeColumn: number): PushPreviewItem[] => {
     const items: PushPreviewItem[] = [];
     for (const item of rawItems) {
@@ -350,8 +316,8 @@ export function useBudgetDerivedData({
       if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
         continue;
       const amounts = item.amounts as number[];
-      const colIdx = Math.min(activeColumn, amounts.length - 1);
-      const currentValue = amounts[colIdx] ?? 0;
+      const colIndex = Math.min(activeColumn, amounts.length - 1);
+      const currentValue = amounts[colIndex] ?? 0;
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
@@ -371,7 +337,7 @@ export function useBudgetDerivedData({
     isWeighted,
     perColumnPaycheckData,
     payrollBreakdowns,
-    matchContrib,
+    matchContribution,
     allColumnResults,
     rawItems,
     categoryMap,

@@ -344,21 +344,21 @@ describe("computeViewAwareTotals", () => {
 });
 
 describe("validateContributionOrder (M1 — CFP heuristic)", () => {
-  const overflowWarn = (cat: string, position: number) => ({
+  const overflowWarn = (cat: string, label: string, position: number) => ({
     severity: "warn",
     category: cat,
     position,
     message:
-      `${cat} (tax-advantaged) appears after brokerage in your contribution ` +
-      "order. Most CFP guidance recommends filling tax-advantaged accounts " +
-      "before taxable / brokerage to maximize tax savings. Move " +
-      `${cat} earlier in the list, or document why your situation differs.`,
+      `${label} (tax-advantaged) appears after Brokerage in your contribution ` +
+      "order. Filling tax-advantaged accounts before taxable ones usually " +
+      `saves more tax. Move ${label} earlier in the list, or document why ` +
+      "your situation differs.",
   });
 
   it("returns every warning in order, the HSA one word for word", () => {
     expect(validateContributionOrder(["brokerage", "401k", "hsa"])).toEqual([
-      overflowWarn("401k", 1),
-      overflowWarn("hsa", 2),
+      overflowWarn("401k", "401k", 1),
+      overflowWarn("hsa", "HSA", 2),
       {
         severity: "info",
         category: "hsa",
@@ -381,7 +381,7 @@ describe("validateContributionOrder (M1 — CFP heuristic)", () => {
   it("HSA alone or first draws no HSA warning", () => {
     expect(validateContributionOrder(["hsa"])).toEqual([]);
     expect(validateContributionOrder(["hsa", "brokerage", "401k"])).toEqual([
-      overflowWarn("401k", 2),
+      overflowWarn("401k", "401k", 2),
     ]);
   });
 

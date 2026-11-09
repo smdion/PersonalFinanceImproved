@@ -36,7 +36,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 }));
 
 const CONTRIB = "contribution.computeSummary";
-const PACE = "investments.getSavingsThisYear";
+const PACE = "investments.computeSavingsThisYear";
 /** What contribution.computeSummary answers. */
 function contribQueryIs({
   data,
@@ -50,7 +50,7 @@ function contribQueryIs({
   setQuery(CONTRIB, data);
   setQueryState(CONTRIB, { isLoading, error });
 }
-/** What investments.getSavingsThisYear answers. */
+/** What investments.computeSavingsThisYear answers. */
 function paceQueryIs({ data }: { data: MockOutput<typeof PACE> | undefined }) {
   setQuery(PACE, data);
 }
@@ -178,7 +178,7 @@ const mockData = {
 beforeEach(() => {
   resetTrpcMock();
   // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
-  // useEffectiveContribProfileId → useActiveContribProfile. An empty list
+  // useEffectiveContributionProfileId → useActiveContributionProfile. An empty list
   // is the "nothing to resolve" case: the hook leaves the active id alone
   // rather than re-pointing it.
   setQuery("salaryProfile.list", []);
@@ -202,7 +202,9 @@ describe("ContributionsCard smoke", () => {
       error: new Error("x"),
     });
     render(<ContributionsCard />);
-    expect(screen.getByText("Failed to load: x")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load Contributions. Try again."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 

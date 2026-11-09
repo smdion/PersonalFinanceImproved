@@ -30,7 +30,7 @@ export function LiabilitiesContent() {
   const [showManageLoans, setShowManageLoans] = useState(false);
   const summary = trpc.mortgage.computeActiveSummary.useQuery();
   const { data } = summary;
-  const { data: other } = trpc.debts.summary.useQuery();
+  const { data: other } = trpc.debts.computeSummary.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const serviceLabel = budgetApiServiceLabel(syncStatus?.service);
   const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
@@ -161,13 +161,13 @@ export function LiabilitiesContent() {
         <>
           {/* Active loan cards */}
           <FocusTarget topic="mortgage" className="space-y-6">
-            {result.loans.map((loan, idx) => (
+            {result.loans.map((loan, index) => (
               <ActiveLoanCard
                 key={loan.name}
                 loan={loan}
-                showSchedule={showSchedule === idx}
+                showSchedule={showSchedule === index}
                 onToggleSchedule={() =>
-                  setShowSchedule(showSchedule === idx ? null : idx)
+                  setShowSchedule(showSchedule === index ? null : index)
                 }
               />
             ))}

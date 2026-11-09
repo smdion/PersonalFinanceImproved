@@ -15,6 +15,7 @@ import {
 } from "@/server/services/profiles/first-retirement-profile";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
 import { speculativeJobValues } from "@/server/data/jobs";
+import { firstRow } from "@/lib/utils/first-row";
 
 // --- Zod schemas ---
 
@@ -31,10 +32,8 @@ export const peopleProcedures = {
       .input(personInput)
       .mutation(async ({ ctx, input }) => {
         return ctx.db.transaction(async (tx) => {
-          // Resolved BEFORE inserting the new person — this is who existing
-          // retirement_profile rows are cloned FROM, and the new person (who
-          // by definition has no row of their own yet in any profile) must
-          // not be a candidate for that.
+          // Resolved BEFORE inserting the new person: existing retirement_profile
+          // rows are cloned from these people, never from the new one.
           const existingPeople = await tx
             .select()
             .from(schema.people)
@@ -46,16 +45,14 @@ export const peopleProcedures = {
             .values(input)
             .returning()
             .then((r) => r[0]!);
-          // Provision the speculative-job peg atomically with the person —
-          // inserted directly (not via jobs.create) so it doesn't trigger
-          // materializeExtraPaycheckSavings, which a job that never has
-          // real routing rules has no need for.
-          await tx.insert(schema.jobs).values(speculativeJobValues(person.id));
+          // Provision the speculative-job peg with the person, inserted directly (not
+          // via jobs.create) to skip materializeExtraPaycheckSavings.
+          await tx
+            .insert(schema.jobs)
+            .values(speculativeJobValues(person.id, ctx.scope.asOf));
 
-          // Completeness invariant: every profile holds rows for every
-          // person, so the new person joins each existing profile. Under the
-          // first-profile lock, so a first profile made at the same time
-          // either includes this person or is seen here.
+          // Completeness invariant: every profile holds rows for every person. Under the
+          // first-profile lock, so a concurrent first profile includes this person or is seen.
           await lockFirstRetirementProfile(tx);
           const existingProfiles = await tx
             .select({ id: schema.retirementProfiles.id })
@@ -79,18 +76,11 @@ export const peopleProcedures = {
           .set(data)
           .where(eq(schema.people.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
-        // The speculative-job peg is an implementation detail of this
-        // person's row, not real employment history — delete it first so
-        // it never blocks a person delete via jobs' onDelete: "restrict"
-        // FK. Any REAL job still correctly blocks the delete. Both deletes
-        // must be one transaction — otherwise a failed person delete (a
-        // real job still referencing them) leaves the peg gone with no
-        // re-provisioning path.
         // Debts they own block the delete (owner_person_id restrict) —
         // say so instead of surfacing the foreign-key error.
         const owned = await ctx.db
@@ -140,6 +130,8 @@ export const peopleProcedures = {
             message:
               "They have Roth basis recorded on an account — remove it first",
           });
+        // The speculative-job peg is not employment history: delete it in the same
+        // transaction so it never blocks the delete via the jobs FK.
         return ctx.db.transaction(async (tx) => {
           await tx
             .delete(schema.jobs)

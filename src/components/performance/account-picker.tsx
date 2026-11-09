@@ -8,11 +8,8 @@ import type { MasterAccount } from "./types";
 import { Popover } from "@/components/ui/popover";
 
 /**
- * Multi-select account picker for the Performance page's custom filtering
- * feature. Portal + search pattern borrowed from
- * src/components/budget/api-category-picker.tsx, but multi-select and
- * fully controlled — no internal mutations, unlike its single-select
- * ancestor (this component owns no server calls at all).
+ * Multi-select account picker for the Performance page's custom filter. Fully
+ * controlled: it owns no server calls.
  */
 export function AccountPicker({
   masterAccounts,
@@ -31,11 +28,8 @@ export function AccountPicker({
   const visibleAccounts = masterAccounts.filter(
     (m) => showInactive || m.isActive,
   );
-  // Compare against the TRUE total (all master accounts), not just the
-  // currently-visible list — the default selection includes inactive
-  // accounts (see page.tsx), so comparing against a showInactive-filtered
-  // count here would produce a nonsensical "21 of 8" when inactive
-  // accounts are hidden but still selected.
+  // Compare against all master accounts, not the visible list: the default
+  // selection includes inactive accounts, so a filtered count could read "21 of 8".
   const allIds = new Set(masterAccounts.map((m) => m.id));
 
   const groups = new Map<string, MasterAccount[]>();
@@ -65,9 +59,9 @@ export function AccountPicker({
     onChange(next);
   };
 
-  const toggleGroup = (accts: MasterAccount[], select: boolean) => {
+  const toggleGroup = (accounts: MasterAccount[], select: boolean) => {
     const next = new Set(selectedAccountIds);
-    for (const m of accts) {
+    for (const m of accounts) {
       if (select) next.add(m.id);
       else next.delete(m.id);
     }
@@ -159,8 +153,8 @@ export function AccountPicker({
               </p>
             )}
 
-            {[...groups.entries()].map(([category, accts]) => {
-              const allSelected = accts.every((m) =>
+            {[...groups.entries()].map(([category, accounts]) => {
+              const allSelected = accounts.every((m) =>
                 selectedAccountIds.has(m.id),
               );
               return (
@@ -170,13 +164,13 @@ export function AccountPicker({
                       {category}
                     </span>
                     <button
-                      onClick={() => toggleGroup(accts, !allSelected)}
+                      onClick={() => toggleGroup(accounts, !allSelected)}
                       className="text-micro text-blue-600 hover:text-blue-700"
                     >
                       {allSelected ? "Deselect all" : "Select all"}
                     </button>
                   </div>
-                  {accts.map((m) => (
+                  {accounts.map((m) => (
                     <label
                       key={m.id}
                       className="text-secondary flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50"

@@ -1,8 +1,6 @@
 /**
- * Whether this install still needs its first admin. One answer for the
- * public `settings.firstRunState` query, the /login page and
- * `settings.createLocalAdmin`'s guard, so what the page offers and what
- * the server allows can't drift apart.
+ * Whether this install still needs its first admin: the one answer for
+ * `settings.getFirstRunState`, the /login page and `settings.createLocalAdmin`'s guard.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -44,10 +42,8 @@ export async function localAdminExists(db: DbOrTx): Promise<boolean> {
 }
 
 /**
- * An admin is needed while no local admin exists and onboarding isn't
- * complete. An OIDC-only install never has a local admin, so onboarding
- * completion also closes it. `onboarding_completed = false` (written by
- * settleFirstRunGate) keeps it open even with people. Never under DEMO_ONLY.
+ * Needed while no local admin exists and onboarding isn't complete (OIDC-only installs
+ * close it by onboarding); `onboarding_completed = false` keeps it open. Never in DEMO_ONLY.
  */
 export async function firstRunState(
   db: DbOrTx,
@@ -61,10 +57,8 @@ export async function firstRunState(
 }
 
 /**
- * After Reset all data, a restore or an import, which replace the people,
- * settings and local admins: close the first-admin gate when a way to sign
- * in remains (a local admin, or Authentik), else leave it open as on a
- * fresh install, so a backup with no admin can't lock the household out.
+ * After a reset, restore or import: close the first-admin gate when a way to sign in
+ * remains (a local admin, or Authentik), else leave it open so the household isn't locked out.
  */
 export async function settleFirstRunGate(
   db: DbOrTx,

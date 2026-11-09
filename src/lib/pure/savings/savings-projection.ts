@@ -1,34 +1,31 @@
 /**
- * Sinking-fund balance projection — single source of truth for "what will
- * this goal's balance be N months from now."
- *
- * Previously this walk was implemented independently in two places
- * (src/app/(dashboard)/savings/savings-content.tsx and
- * src/components/dashboard/savings-goals-card.tsx), which had already
- * diverged: the dashboard card's copy never applied the "don't double-count
- * this month's contribution for YNAB-linked goals" guard the page's copy
- * has. Both now call this module instead of reimplementing the walk.
+ * Sinking-fund balance projection: the one source for "what will this goal's balance be N months
+ * from now".
  */
-import type { PlannedTransaction } from "@/components/savings/types";
+
+/** A savings goal's planned-transaction row; recurring rows repeat
+ *  every `recurrenceMonths`. */
+export interface PlannedTransaction {
+  id: number;
+  goalId: number;
+  transactionDate: string;
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  recurrenceMonths: number | null;
+  transferPairId?: string | null;
+  source?: string;
+  /** Occurrence months ("YYYY-MM") already settled for this row. */
+  settledOccurrences?: string[];
+}
 
 export interface ProjectionGoalInput {
   id: number;
   current: number;
   monthlyAllocation: number;
   /**
-   * The linked category's ACTUAL current-month `budgeted` amount (real
-   * money assigned in YNAB/Actual this month), or `null` when unknown
-   * (not API-linked, or no fresh-enough sync data — see the server's
-   * `currentMonthBudgetedMap`, `savings.ts`, for how this is resolved
-   * and why a stale/wrong-month value is never passed here instead of
-   * `null`).
-   *
-   * Replaces a former `isApiSyncEnabled`/`apiCategoryId` + `now.getDate()
-   * > 1` date heuristic (a household that
-   * assigned September's money on the 1st itself broke the heuristic's
-   * assumption that day-1 can never already be funded, double-counting
-   * the contribution). `budgeted` is real evidence instead of a guess —
-   * see `projectGoalBalances`' own docblock for the math.
+   * The linked category's actual current-month `budgeted` amount, or `null` when unknown (not
+   * API-linked, or no fresh sync for this month; see `currentMonthBudgetedMap` in `savings.ts`).
    */
   currentMonthBudgeted?: number | null;
 }
@@ -148,38 +145,9 @@ interface ProjectGoalBalancesOptions {
 }
 
 /**
- * Walks `projectionMonths` months forward from `now` for a single goal,
- * folding in that goal's planned-transaction events and allocation
- * overrides.
- *
- * Month 0 (the current month) is special for API-linked goals: `current`
- * is a LIVE balance, which may already reflect part or all of this
- * month's planned contribution if the household already assigned money
- * to the linked category. Adding the full `allocation` unconditionally
- * would double-count whatever's already there.
- *
- * Previously this was inferred from the calendar date (`now.getDate() >
- * 1` — "day 1 can't possibly be funded yet, day 2+ always already is").
- * That heuristic broke for a household that assigned
- * September's money on the morning of the 1st itself — it had it double-
- * counted, because the heuristic assumed day 1 could never be funded.
- * Fixed by using `goal.currentMonthBudgeted` — the category's REAL
- * current-month budgeted amount — as actual evidence instead of a guess:
- *
- *   balance += max(0, allocation - currentMonthBudgeted)
- *
- * This is the arithmetically correct step, not a skip/don't-skip binary:
- * `balance` is structurally `carryover + budgeted − activity` on both
- * YNAB and Actual, so `budgeted` is already INSIDE `current` — the
- * projection only needs to add whatever portion of this month's
- * allocation ISN'T already budgeted. A household that partially funds a
- * category mid-month is handled correctly (adds the remainder), not just
- * the fully-funded/not-funded cases a binary skip would cover. When
- * `currentMonthBudgeted` is `null` (not API-linked, or no fresh sync
- * data for this month), the full `allocation` is added — the same
- * conservative default as before. Planned-transaction events (settled or
- * not yet settled) always apply in every month they fall in, unaffected
- * by any of this.
+ * Walks `projectionMonths` months from `now` for one goal with its planned events and allocation
+ * overrides. Month 0 adds max(0, allocation - currentMonthBudgeted) since a live balance already
+ * holds what's budgeted (full allocation when null); planned events apply every month they fall in.
  */
 export function projectGoalBalances(
   goal: ProjectionGoalInput,
@@ -223,8 +191,8 @@ export function projectGoalBalances(
     const mk = monthKey(monthDates[i]!);
     const events = txByMonth?.get(mk) ?? null;
     const overrideAmount = overrideMap.get(mk);
-    const yr = monthDates[i]!.getFullYear();
-    const defaultAllocation = allocationForYear(goal.monthlyAllocation, yr);
+    const year = monthDates[i]!.getFullYear();
+    const defaultAllocation = allocationForYear(goal.monthlyAllocation, year);
     const allocation =
       overrideAmount !== undefined ? overrideAmount : defaultAllocation;
     if (i === 0 && goal.currentMonthBudgeted != null) {
@@ -248,12 +216,8 @@ export function projectGoalBalances(
 }
 
 /** @internal Only tests import it (knip --production).
- * Is this planned transaction (or, for recurring rows, at least one future
- * occurrence of it) still upcoming and unsettled as of `now`? Single shared
- * predicate for the "upcoming" list filters that were previously re-cut
- * independently (with different date-truncation semantics) in
- * all-transactions-tab.tsx, planned-events-tab.tsx, upcoming-goals.tsx, and
- * fund-card.tsx.
+ * Whether this planned transaction (or, if recurring, a future occurrence) is still upcoming and
+ * unsettled as of `now`: the one predicate for every "upcoming" list.
  */
 export function isFuturePlannedTx(
   tx: PlannedTransaction,
@@ -297,15 +261,8 @@ export interface PoolGrowthEarner {
 }
 
 /**
- * Projects the monthly savings pool forward across years by applying each
- * earner's stored raise rates to their current net pay, holding budget
- * expenses flat. Was implemented inline in savings/savings-content.tsx, right next to
- * projectGoalBalances — the one calculation on this page that hadn't
- * followed the same "pure function, not page-local" pattern.
- *
- * Year `startYear` is seeded directly from `maxMonthlyFunding` (today's
- * actual computed pool, not a projection); each subsequent year compounds
- * the previous year's raises onto every earner's current net pay.
+ * The monthly savings pool by year: `startYear` is today's `maxMonthlyFunding`; each later year
+ * compounds every earner's stored raise rates onto current net pay, budget expenses held flat.
  */
 export function computeDerivedPoolByYear(
   earners: PoolGrowthEarner[],
@@ -321,13 +278,13 @@ export function computeDerivedPoolByYear(
   const derivedPoolByYear = new Map<number, number>();
   derivedPoolByYear.set(startYear, maxMonthlyFunding);
 
-  for (let yr = startYear + 1; yr <= startYear + projectionYears; yr++) {
+  for (let year = startYear + 1; year <= startYear + projectionYears; year++) {
     let projectedMonthlyNet = 0;
     for (const earner of earners) {
       const perMonth = earner.budgetPerMonth ?? earner.periodsPerYear / 12;
       const raises = earner.yearlyGrowth ?? {};
       let netPerCheck = earner.netPay;
-      for (let y = startYear + 1; y <= yr; y++) {
+      for (let y = startYear + 1; y <= year; y++) {
         const e = raises[String(y)];
         if (!e || e.value === 0) continue;
         netPerCheck =
@@ -338,7 +295,7 @@ export function computeDerivedPoolByYear(
       projectedMonthlyNet += netPerCheck * perMonth;
     }
     derivedPoolByYear.set(
-      yr,
+      year,
       Math.max(0, projectedMonthlyNet - budgetMonthlyTotal),
     );
   }

@@ -153,12 +153,12 @@ export const brokerageRouter = createTRPCRouter({
 
             // Aggregate snapshot balances by performanceAccountId
             const balanceByPerfId = new Map<number, number>();
-            for (const acct of snapshotAccounts) {
-              if (!acct.performanceAccountId) continue;
+            for (const account of snapshotAccounts) {
+              if (!account.performanceAccountId) continue;
               balanceByPerfId.set(
-                acct.performanceAccountId,
-                (balanceByPerfId.get(acct.performanceAccountId) ?? 0) +
-                  Number(acct.amount),
+                account.performanceAccountId,
+                (balanceByPerfId.get(account.performanceAccountId) ?? 0) +
+                  Number(account.amount),
               );
             }
 
@@ -168,10 +168,10 @@ export const brokerageRouter = createTRPCRouter({
             );
 
             // Resolve each performance account's balance
-            for (const [perfId, snapshotBal] of balanceByPerfId) {
+            for (const [perfId, snapshotBalance] of balanceByPerfId) {
               const mapping = mappingByPerfId.get(perfId);
               const resolved = resolveAccountBalance(
-                snapshotBal,
+                snapshotBalance,
                 mapping,
                 apiBalanceMap,
               );
@@ -180,7 +180,7 @@ export const brokerageRouter = createTRPCRouter({
                 accountCategory:
                   perfAccountMap.get(perfId)?.accountType ?? "brokerage",
                 resolvedBalance: resolved.balance,
-                snapshotBalance: snapshotBal,
+                snapshotBalance: snapshotBalance,
                 source: resolved.source,
               });
             }

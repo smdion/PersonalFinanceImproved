@@ -1,23 +1,7 @@
 /**
- * RMD Handling panel — what happens to Required Minimum Distribution
- * money beyond stated spending need. Two independent settings:
- * - rmdExcessHandling: reinvest into brokerage (default) or spend it, and
- *   rmdExcessTargetPerformanceAccountId: which Retirement brokerage the
- *   reinvested money goes to (default: spread across them; never a
- *   Portfolio account).
- * - qcdMaximize: automatically apply Qualified Charitable Distributions
- *   against the RMD each year (a proactive election on the RMD itself,
- *   not a rule for leftover money).
- *
- * A third, independent setting, rmdSmoothingEnabled, proactively
- * sizes Roth conversions BEFORE RMD age to shrink the future RMD toward
- * projected spending need, instead of reacting to an already-forced
- * excess. Requires individual-account tracking. Its own bracket-ceiling
- * dropdown (rmdSmoothingMaxBracketTarget) only renders once enabled, and
- * is seeded from the household's current rothBracketTarget the first time
- * they turn smoothing on — never a hardcoded default — so opting in can
- * never look like it silently lowered a Roth-conversion rate they already
- * configured.
+ * RMD Handling panel: excess RMD reinvested (into a Retirement brokerage) or spent, QCDs applied
+ * against the RMD, and RMD smoothing (pre-RMD-age Roth conversions). Smoothing's bracket ceiling
+ * is seeded from the household's current rothBracketTarget the first time it is enabled.
  */
 "use client";
 

@@ -1,9 +1,7 @@
 /**
- * The stock share of the portfolio at each age, from an allocation glide
- * path — what VPW sizes its percentage by. An asset class counts as stocks
- * when any of its composition buckets is a stock bucket (the same rule the
- * holdings view uses; a class's buckets carry no weights to split it by).
- * Ages between glide-path points interpolate like the Simulation does.
+ * The stock share at each age from an allocation glide path (what VPW sizes by): a class counts as
+ * stocks when any of its composition buckets is a stock bucket, as in the holdings view. Ages
+ * between points interpolate like the Simulation.
  */
 import {
   interpolateAllocations,
@@ -15,7 +13,7 @@ import {
 } from "@/lib/config/enum-values";
 
 /** glide_path_allocations rows → the glide path, by age (the shape the
- *  Simulation's buildMcInputs builds from the same table). */
+ *  Simulation's buildSimulationInputs builds from the same table). */
 export function glidePathFromRows(
   rows: readonly {
     age: number;
@@ -61,10 +59,10 @@ export function stockShareByAge(
   let any = false;
   if (glidePath.length === 0) return null;
   for (let age = Math.floor(fromAge); age <= Math.ceil(toAge); age++) {
-    const alloc = interpolateAllocations(glidePath, age);
+    const allocation = interpolateAllocations(glidePath, age);
     let mapped = 0;
     let stocks = 0;
-    for (const [id, weight] of Object.entries(alloc)) {
+    for (const [id, weight] of Object.entries(allocation)) {
       if (!classes.mapped.has(Number(id))) continue;
       mapped += weight;
       if (classes.stocks.has(Number(id))) stocks += weight;
@@ -76,7 +74,7 @@ export function stockShareByAge(
   return any ? out : null;
 }
 
-/** Plan Health's stock allocation: the percent (one decimal) of stocks in
+/** Projection Health's stock allocation: the percent (one decimal) of stocks in
  *  the Default preset's glide path at `currentAge`, by the share VPW uses.
  *  Null without a glide path or a mapped class (no glide-path warning). */
 export function computeCurrentStockAllocationPercent(

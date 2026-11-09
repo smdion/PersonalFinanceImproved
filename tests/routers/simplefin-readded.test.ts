@@ -212,24 +212,22 @@ describe("simplefin.mergeReaddedAccount", () => {
     expect(feeds()).toEqual(before);
   });
 
-  it("needs the sync permission", async () => {
-    const viewer = await createTestCaller(
-      createViewerSessionWithPermissions([]),
-    );
+  it("is admin-only", async () => {
     const syncer = await createTestCaller(
       createViewerSessionWithPermissions(["sync"]),
     );
+    const admin = await createTestCaller();
     try {
       await expect(
-        viewer.caller.simplefin.mergeReaddedAccount({ copyId, keepId: oldId }),
-      ).rejects.toThrow(/FORBIDDEN|permission/i);
+        syncer.caller.simplefin.mergeReaddedAccount({ copyId, keepId: oldId }),
+      ).rejects.toThrow(/Admin access required/);
       // A separate database: the procedure is reached, the pair not found.
       await expect(
-        syncer.caller.simplefin.mergeReaddedAccount({ copyId, keepId: oldId }),
+        admin.caller.simplefin.mergeReaddedAccount({ copyId, keepId: oldId }),
       ).rejects.toThrow(/not found/);
     } finally {
-      viewer.cleanup();
       syncer.cleanup();
+      admin.cleanup();
     }
   });
 

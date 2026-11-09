@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Actual vs the plan, under the balance it measures: where the plan
- * expected the money by now, from the last finalized year (a starting point
- * the projection can't move). Only while the plan's first year follows that
- * finalized year and it's still saving — otherwise the two don't line up.
+ * Actual vs where the plan expected the money by now, from the last finalized year. Shown
+ * only while the plan's first year follows that year and it's still saving.
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
@@ -42,7 +40,7 @@ export function PlanPaceLine({
   return (
     <div className="text-caption text-muted flex justify-between gap-2">
       <span>
-        Plan expected by now
+        Projected by now
         <HelpTip
           text={`What your retirement projection counted on for today. It starts from your ${lastFinalized.year} year-end balance of ${formatCurrency(lastFinalized.balance, 0)}, grows it at the plan's ${formatPercent(plan.annualizedReturnRate, 1)} a year for the part of ${plan.year} gone by, and adds that part of the ${formatCurrency(contributions, 0)} a year the plan contributes, employer money included. Ahead or behind can come from returns or from contributing more or less than the plan.`}
         />

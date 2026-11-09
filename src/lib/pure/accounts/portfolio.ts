@@ -27,14 +27,8 @@ export function buildPrevInactiveKeys(
 }
 
 /**
- * A sub-account's identity across snapshots: tracked account, tax type,
- * kind (subType) and owner. Sub-accounts exist only as snapshot rows (one
- * tracked account holds several — each spouse's Roth in a joint IRA, a
- * 401k's Roth + Traditional + match; DESIGN.md "Performance Accounts"), so
- * this key is how a row is recognised from one snapshot to the next and
- * how a SimpleFIN account links to one. The owner is part of it: two
- * people's Roth rows in one joint IRA are different sub-accounts. The
- * free-text `label` is a display override and deliberately not part of it.
+ * A sub-account's identity across snapshots and for SimpleFIN links: tracked account, tax
+ * type, subType and owner (two people's Roth rows in one IRA differ). `label` is display only.
  */
 export function snapshotAccountKey(account: SubAccountIdentity): string {
   return `${account.performanceAccountId ?? ""}_${account.taxType}_${account.subType ?? ""}_${account.ownerPersonId ?? ""}`;
@@ -71,19 +65,8 @@ export function computeSnapshotEndingBalances(
 }
 
 /**
- * Zero out the amount for any account whose linked master
- * (performance_accounts) record is closed, when building a NEW snapshot.
- * Accounts with no linked performanceAccountId (unlinked/joint manual
- * entries) have no master to check and pass through unchanged.
- *
- * Zeroing (not omitting) the row is deliberate: omitting it would break
- * period conservation — the account_performance beginning balance for that
- * account would survive untouched while the snapshot total driving ending
- * balance silently dropped, producing a phantom loss equal to the closed
- * account's balance in that year's return calculation. A `0` ending
- * balance correctly reads as "this account's money left," which is what a
- * closure/rollover actually is, and reopening the account naturally
- * resumes picking up its balance with no separate recovery step.
+ * Zero the amount of accounts whose linked performance account is closed, for a new
+ * snapshot. Zeroed, not omitted, so the period return doesn't book the balance as a loss.
  */
 export function resolveSnapshotAccountAmounts<
   T extends {

@@ -1,11 +1,7 @@
 /**
- * Typed errors for budget API integrations.
- *
- * The concern: ynab-client and actual-client both threw generic
- * Error on 401, 403, 429, 500, etc. Sync code couldn't distinguish auth
- * errors (re-auth needed) from rate limits (back off + retry) from server
- * errors (might be transient). This module gives every error a typed
- * subclass so the sync layer + UI can react appropriately.
+ * Typed errors for budget API integrations: each failure carries a code, so
+ * the sync layer and UI can tell auth (re-auth) from a rate limit (back off)
+ * from a server error (may be transient).
  */
 
 export type BudgetApiErrorCode =
@@ -17,12 +13,9 @@ export type BudgetApiErrorCode =
   | "timeout" // AbortController fired
   | "unsupported" // the connected provider has no API for this operation at
   // all — not an HTTP failure, retrying or re-authing never helps.
-  | "conflict" // the provider CAN perform this operation in general, but
-  // the target already has state that can't be safely overwritten without
-  // clobbering something the household configured directly — e.g. Actual's
-  // note-based goal write finding an existing #template of a different
-  // shape already there. See BudgetAPIClient.prepareGoalWrite and
-  // actual-goal-notes.ts.
+  | "conflict" // the target holds household-set state a write would
+  // clobber (e.g. an Actual #template of a different shape); see
+  // BudgetAPIClient.prepareGoalWrite.
   | "bad-response" // the service answered, but not in the shape Ledgr
   // reads (a missing, renamed or mistyped field); the same answer would
   // come back, so it's never retried.
@@ -172,8 +165,7 @@ export function userMessageFor(error: unknown): string | null {
 
 /** A failure that may pass on its own (rate limit, 5xx, network, timeout):
  *  the only kind a caller may retry, skip or count per item. Anything else
- *  (auth, a rejected request, an unexpected response) won't change by
- *  trying again and must stop the operation. */
+ *  won't change by trying again and must stop the operation. */
 export function isTransientError(err: unknown): boolean {
   return err instanceof BudgetApiError && err.isRetryable;
 }
@@ -301,13 +293,9 @@ export async function retryWithBackoff<T>(
   throw lastErr;
 }
 
-/**
- * Whether a failed request can be sent again. A request that failed with a
- * timeout, network or server error may still have been applied; sending a
- * read, a set (PUT/PATCH) or a delete again is harmless, but a POST creates
- * something and could create it twice. A POST is sent again only after a
- * rate limit, which rejects it before it runs.
- */
+/** Whether a failed request can be sent again: reads, PUT/PATCH and DELETE
+ *  always; a POST (which may have been applied and would create twice) only
+ *  after a rate limit, which rejects it before it runs. */
 export function isResendable(err: BudgetApiError, init?: RequestInit): boolean {
   const method = (init?.method ?? "GET").toUpperCase();
   return method !== "POST" || err.code === "rate-limit";

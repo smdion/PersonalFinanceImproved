@@ -21,18 +21,15 @@ import {
   setRoth,
   setBalance,
 } from "../../config/account-balance";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, safeDivide } from "../../utils/math";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
 } from "@/lib/pure/accounts/eligibility";
 
 /**
- * A balance in its two scopes: every account (net-worth views), and
- * retirement money — the aggregate minus the Portfolio-parented accounts
- * (`computeNonRetirementExclusion`, the same exclusion spending and routing
- * use; clamped at 0). Without individual accounts every dollar is
- * retirement money.
+ * A balance in two scopes: every account (net worth), and retirement money (the aggregate minus
+ * Portfolio-parented accounts, clamped at 0). Without individual accounts all of it is retirement.
  */
 export function scopedBalances(
   balances: TaxBuckets,
@@ -70,24 +67,24 @@ export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   const totalGroups = Object.keys(groupCounts).length;
   const fracByGroup: Record<string, number> = {};
   for (const group of Object.keys(groupCounts)) {
-    fracByGroup[group] = totalGroups > 0 ? 1 / totalGroups : 0;
+    fracByGroup[group] = safeDivide(1, totalGroups, 0);
   }
 
   return Object.fromEntries(
     getAllCategories().map((cat) => {
-      const bal = zeroBalance(cat);
+      const balance = zeroBalance(cat);
       const group = getLimitGroup(cat);
-      if (bal.structure === "roth_traditional" && group) {
+      if (balance.structure === "roth_traditional" && group) {
         const frac = fracByGroup[group] ?? 0;
-        bal.traditional = roundToCents(b.preTax * frac);
-        bal.roth = roundToCents(b.taxFree * frac);
-      } else if (bal.structure === "single_bucket") {
-        bal.balance = b.hsa;
-      } else if (bal.structure === "basis_tracking") {
-        bal.balance = b.afterTax;
-        bal.basis = b.afterTaxBasis;
+        balance.traditional = roundToCents(b.preTax * frac);
+        balance.roth = roundToCents(b.taxFree * frac);
+      } else if (balance.structure === "single_bucket") {
+        balance.balance = b.hsa;
+      } else if (balance.structure === "basis_tracking") {
+        balance.balance = b.afterTax;
+        balance.basis = b.afterTaxBasis;
       }
-      return [cat, bal];
+      return [cat, balance];
     }),
   ) as AccountBalances;
 }
@@ -100,42 +97,34 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 }
 
 /** @internal Only tests import it (knip --production).
- * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
- * balances, per category. Floors at 0 —
- * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
- * of individual-account penalty-exposed amounts, which can't exceed the
- * category total they're within, but flooring keeps this safe against any
- * future drift between `acctBal` and the sum of individual accounts (the
- * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
- * already watches for). Locked design: the penalty-free balance is derived
- * by SUBTRACTION from the real `acctBal`, never by summing `indBal` (the
- * other direction breaks byte-identity).
- */
+ * Subtracts a record's penalty-exposed dollars per category, floored at 0. Derived by subtraction
+ * from `accountBalance`, never by summing `indBalance`. */
 export function subtractPenaltyExposed(
   balances: AccountBalances,
   record: EligibilityRecord,
 ): AccountBalances {
   const result = cloneAccountBalances(balances);
   for (const cat of getAllCategories()) {
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       setTraditional(
-        bal,
+        balance,
         Math.max(
           0,
-          bal.traditional - record.penaltyExposedTradStillExcluded[cat],
+          balance.traditional - record.penaltyExposedTradStillExcluded[cat],
         ),
       );
       setRoth(
-        bal,
-        Math.max(0, bal.roth - record.penaltyExposedRothStillExcluded[cat]),
+        balance,
+        Math.max(0, balance.roth - record.penaltyExposedRothStillExcluded[cat]),
       );
     } else {
       setBalance(
-        bal,
+        balance,
         Math.max(
           0,
-          getTotalBalance(bal) - record.penaltyExposedTotalStillExcluded[cat],
+          getTotalBalance(balance) -
+            record.penaltyExposedTotalStillExcluded[cat],
         ),
       );
     }
@@ -144,21 +133,9 @@ export function subtractPenaltyExposed(
 }
 
 /**
- * Subtract BOTH still-excluded penalty exposure and Portfolio-parented
- * ("non-retirement") balances from `balances`, per category. Sums
- * the two sources before a single floor-at-0 per bucket — mathematically
- * equivalent to two sequential `subtractPenaltyExposed`-style clamps
- * (`max(0, max(0, x-a)-b) === max(0, x-a-b)` for non-negative `a`/`b`), so
- * this isn't about floor-order correctness; it's simply the natural shape
- * once there are two sources instead of one. The property that actually
- * matters — and the reason the two sources are safe to add together at
- * all — is that they're guaranteed not to double-count the same dollar:
- * `computeWithdrawalEligibility` never adds a Portfolio-parented account's
- * exposure to its `*StillExcluded` aggregates (see that function's
- * `isRetirementParent` gate), so `exposure`'s totals and `nonRetirement`'s
- * totals never overlap. Either argument may be omitted/all-zero; degrades
- * to `subtractPenaltyExposed`'s exact behavior, or a no-op clone,
- * accordingly.
+ * Subtracts still-excluded penalty exposure plus Portfolio-parented balances per category, one
+ * floor at 0 each. The two never overlap (`computeWithdrawalEligibility` skips Portfolio
+ * accounts' exposure). Either may be omitted.
  */
 export function subtractExcluded(
   balances: AccountBalances,
@@ -167,64 +144,42 @@ export function subtractExcluded(
 ): AccountBalances {
   const result = cloneAccountBalances(balances);
   for (const cat of getAllCategories()) {
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       const tradExcl =
         (exposure?.penaltyExposedTradStillExcluded[cat] ?? 0) +
         (nonRetirement?.trad[cat] ?? 0);
       const rothExcl =
         (exposure?.penaltyExposedRothStillExcluded[cat] ?? 0) +
         (nonRetirement?.roth[cat] ?? 0);
-      setTraditional(bal, Math.max(0, bal.traditional - tradExcl));
-      setRoth(bal, Math.max(0, bal.roth - rothExcl));
+      setTraditional(balance, Math.max(0, balance.traditional - tradExcl));
+      setRoth(balance, Math.max(0, balance.roth - rothExcl));
     } else {
       const totalExcl =
         (exposure?.penaltyExposedTotalStillExcluded[cat] ?? 0) +
         (nonRetirement?.total[cat] ?? 0);
-      setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
+      setBalance(balance, Math.max(0, getTotalBalance(balance) - totalExcl));
     }
     // Never more than the category's tracked accounts can give: money no
     // tracked account holds is not penalty-free by default
     // (EligibilityRecord.reachableByCategory).
-    const reachable = exposure?.reachableByCategory?.[cat];
-    const total = getTotalBalance(bal);
+    const reachable = exposure?.reachableByCategory[cat];
+    const total = getTotalBalance(balance);
     if (reachable != null && total > reachable) {
-      const keep = total > 0 ? Math.max(0, reachable) / total : 0;
-      if (bal.structure === "roth_traditional") {
-        setTraditional(bal, roundToCents(bal.traditional * keep));
-        setRoth(bal, roundToCents(bal.roth * keep));
-      } else setBalance(bal, roundToCents(total * keep));
+      const keep = safeDivide(Math.max(0, reachable), total, 0);
+      if (balance.structure === "roth_traditional") {
+        setTraditional(balance, roundToCents(balance.traditional * keep));
+        setRoth(balance, roundToCents(balance.roth * keep));
+      } else setBalance(balance, roundToCents(total * keep));
     }
   }
   return result;
 }
 
 /**
- * Replay a `RouteResult`'s drawn slots back onto an `AccountBalances`
- * clone — reduces each category by what was actually withdrawn, mirroring
- * `routeWithdrawals`'s own per-category branching (roth/traditional split
- * for `roth_traditional` categories, total withdrawal for everything else:
- * `single_bucket` HSA and `basis_tracking`/overflow brokerage both reduce
- * by total dollars the same way `subtractExcluded`'s own `else` branch
- * already does). Floors at 0 for the same drift-safety reason
- * `subtractPenaltyExposed` floors — a slot's withdrawal can't exceed the
- * balance it was drawn from BY CONSTRUCTION (`routeWithdrawals` clamps to
- * available balance), but flooring costs nothing and guards against any
- * future divergence.
- *
- * The one piece of new balance-mutation arithmetic
- * `routeWithLastResortAllowance`'s two-dispatch merge needs and that didn't
- * exist anywhere in the engine before — `dispatchOnce`/`routeWithdrawals`
- * never mutate the `AccountBalances` they're given, they only compute
- * slots; the real balance reduction has always happened elsewhere
- * (decumulation-year.ts's own post-routing bookkeeping), which is fine for
- * a single dispatch per year but not for chaining a second dispatch against
- * "what's left after the first one drew."
- *
- * Categories with no slot entry are left untouched (not zeroed) — a slot
- * array need not cover every category (e.g. a category the withdrawal
- * order skipped, or a partial/filtered slots array from a caller that only
- * cares about specific categories).
+ * Replays a RouteResult's slots onto an `AccountBalances` clone (roth/traditional split or total,
+ * as `routeWithdrawals` branches), floored at 0, so a second dispatch can chain off the first.
+ * Categories with no slot stay untouched.
  */
 export function applySlotsToBalances(
   balances: AccountBalances,
@@ -235,15 +190,18 @@ export function applySlotsToBalances(
   for (const cat of getAllCategories()) {
     const slot = byCategory.get(cat);
     if (!slot || slot.withdrawal === 0) continue;
-    const bal = result[cat];
-    if (bal.structure === "roth_traditional") {
+    const balance = result[cat];
+    if (balance.structure === "roth_traditional") {
       setTraditional(
-        bal,
-        Math.max(0, bal.traditional - slot.traditionalWithdrawal),
+        balance,
+        Math.max(0, balance.traditional - slot.traditionalWithdrawal),
       );
-      setRoth(bal, Math.max(0, bal.roth - slot.rothWithdrawal));
+      setRoth(balance, Math.max(0, balance.roth - slot.rothWithdrawal));
     } else {
-      setBalance(bal, Math.max(0, getTotalBalance(bal) - slot.withdrawal));
+      setBalance(
+        balance,
+        Math.max(0, getTotalBalance(balance) - slot.withdrawal),
+      );
     }
   }
   return result;

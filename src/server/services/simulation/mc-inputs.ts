@@ -34,12 +34,11 @@ export async function loadSavedInflationOverrides(
 }
 
 /**
- * The Simulation's inputs: asset classes, correlations, glide path and
- * inflation risk, under `presetKey` (services/simulation/simulation-preset.ts). Without
- * one, the raw table values — computeMonteCarloProjection applies the
- * run's preset itself, with the run's own asset-class changes on top.
+ * The Simulation's inputs (asset classes, correlations, glide path, inflation risk) under
+ * `presetKey`; without one, the raw table values (computeMonteCarloProjection applies the
+ * run's preset itself, with the run's asset-class changes on top).
  */
-export async function buildMcInputs(
+export async function buildSimulationInputs(
   db: Db,
   presetKey?: SimulationPresetKey,
 ): Promise<{

@@ -1,8 +1,6 @@
 /**
- * Pure logic for the Roth basis year-scoped lifecycle: selecting the
- * "current" row per (account, owner) pair, and computing what a year-end
- * finalize needs to do to roll basis forward — mirrors the live-then-
- * finalized pattern accountPerformance/annualPerformance already use.
+ * Roth basis year lifecycle: picking each (account, owner) pair's current row and computing
+ * a year-end finalize's roll-forward (live-then-finalized, like accountPerformance).
  */
 
 export type RothBasisRollupRow = {
@@ -21,11 +19,8 @@ function pairKey(performanceAccountId: number, ownerPersonId: number): string {
 }
 
 /**
- * Select the "current" row for a single (account, owner) pair from its full
- * row history: the latest non-finalized row if one exists, otherwise the
- * latest finalized row. Never returns nothing just because the most recent
- * finalize didn't seed a successor — that would silently drop a real,
- * locked-in basis figure back to "nothing entered."
+ * One (account, owner) pair's current row: the latest non-finalized row, else the latest
+ * finalized one, so a finalize without a successor never drops a locked-in figure.
  */
 export function selectCurrentRothBasisRow(
   rowsForPair: RothBasisRollupRow[],
@@ -69,15 +64,8 @@ type SeedRothBasisRow = {
 };
 
 /**
- * Compute what a finalize needs to do for one year's roll-forward:
- * - which currently-non-finalized rows at that year get marked finalized
- * - which (account, owner) pairs need a new seeded next-year row
- *
- * Row-driven, not account-driven: an account with no rothBasis row at all
- * is simply absent from `rowsAtYear` and never force-created at $0 (a
- * seeded zero would be indistinguishable from the user asserting real
- * basis is zero). A pair that already has a next-year row (entered before
- * this year was finalized) is skipped — never overwritten.
+ * A year's finalize: which non-finalized rows to finalize and which pairs need a seeded
+ * next-year row. Row-driven (no row → never a $0 seed); existing next-year rows are kept.
  */
 export function computeRothBasisRollover(
   rowsAtYear: RothBasisRollupRow[],

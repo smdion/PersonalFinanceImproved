@@ -30,11 +30,8 @@ export const mortgageLoans = sqliteTable(
     isActive: integer("is_active", { mode: "boolean" })
       .notNull()
       .default(false),
-    // Self-reference to this table's own id (the loan this one replaced via
-    // refinance). ON DELETE SET NULL: deleting an old, refinanced-away loan
-    // shouldn't be blocked by a newer loan's pointer to it; the pointer just
-    // clears. Expressed as a lazy self-reference so the FK lives in the
-    // generated schema rather than a hand-written migration.
+    // The loan this one refinanced (lazy self-reference so the FK is in the generated
+    // schema). SET NULL so deleting the old loan isn't blocked by this pointer.
     refinancedFromId: integer("refinanced_from_id").references(
       (): AnySQLiteColumn => mortgageLoans.id,
       { onDelete: "set null" },
@@ -99,13 +96,9 @@ export const mortgageExtraPayments = sqliteTable(
 );
 
 /**
- * Debts other than the mortgage — student and car loans, credit cards
- * carried month to month, personal and medical debt. One row per debt, kept
- * after it's paid off (paid_off_date) as history. Balances are what the
- * household entered, as of `balance_as_of` — never amortized forward into
- * net worth; the payoff estimate is computed on read
- * (utils/math.ts `loanPayoffMonths`). A household fact, the same in every
- * profile.
+ * Non-mortgage debts (student/car loans, carried cards, personal, medical), one row each, kept
+ * after paid_off_date. Balances are as entered as of `balance_as_of`, never amortized into net
+ * worth; payoff is computed on read (`loanPayoffMonths`). A household fact, same in every profile.
  */
 export const debts = sqliteTable(
   "debts",

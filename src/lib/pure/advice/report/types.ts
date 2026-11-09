@@ -3,8 +3,8 @@
  *  no React, so every section is unit-testable without a DOM. */
 
 export interface ReportVerdict {
-  /** Plain-English headline, e.g. "Your plan is on track" /
-   *  "Your plan needs attention." */
+  /** Plain-English headline, e.g. "Your projection is on track" /
+   *  "Your projection needs attention." */
   headline: string;
   /** True when the deterministic projection never depletes the portfolio
    *  AND the Monte Carlo success rate clears a reasonable bar — the

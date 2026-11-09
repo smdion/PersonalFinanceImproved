@@ -129,8 +129,6 @@ describe("FinancialIndependenceCard smoke", () => {
     portfolioTotal: 480000,
     cash: 20000,
     withdrawalRate: 0.04,
-    currentExpenseColumn: 0,
-    onExpenseColumnChange: vi.fn(),
   };
 
   it("asks for a retirement setup when there's no projection yet", () => {
@@ -166,7 +164,7 @@ describe("FinancialIndependenceCard smoke", () => {
     };
     render(<FinancialIndependenceCard {...baseProps} />);
     expect(screen.getByText("2045")).toBeInTheDocument();
-    expect(screen.getByText("Based on retirement plan")).toBeInTheDocument();
+    expect(screen.getByText("From your projection")).toBeInTheDocument();
   });
 
   it("shows Reached once FI progress is complete", () => {
@@ -180,15 +178,9 @@ describe("FinancialIndependenceCard smoke", () => {
     expect(screen.getByText("Reached")).toBeInTheDocument();
   });
 
-  it("renders budget scenario toggle buttons when budgetColumnLabels has >1 entry", () => {
-    render(
-      <FinancialIndependenceCard
-        {...baseProps}
-        budgetColumnLabels={["Lean", "Fat"]}
-      />,
-    );
-    expect(screen.getByRole("button", { name: "Lean" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Fat" })).toBeInTheDocument();
+  it("has no expense scenario picker (the FI target reads the active budget column)", () => {
+    render(<FinancialIndependenceCard {...baseProps} />);
+    expect(screen.queryByText(/Expense Scenario/)).toBeNull();
   });
 });
 

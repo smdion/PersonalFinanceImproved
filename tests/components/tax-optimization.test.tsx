@@ -208,7 +208,7 @@ describe("WithdrawalComparison", () => {
     expect(screen.getByText("lowest")).toBeInTheDocument();
   });
 
-  it("annotates the preset that matches the household's real current plan", () => {
+  it("annotates the preset that matches the household's real current settings", () => {
     const terminalByTaxType = {
       preTax: 1,
       taxFree: 2,
@@ -217,10 +217,10 @@ describe("WithdrawalComparison", () => {
       hsa: 0,
     };
     setQuery(COMPARE, {
-      baselineLabel: "Your current plan",
+      baselineLabel: "Your current settings",
       strategies: [
         {
-          label: "Your current plan",
+          label: "Your current settings",
           mode: "bracket_filling",
           withdrawalOrder: [],
           isCurrentPlan: true,
@@ -239,7 +239,7 @@ describe("WithdrawalComparison", () => {
           label: "Bracket Filling",
           mode: "bracket_filling",
           // Config match (same mode) AND output match (same
-          // lifetimeTax/failureYear as "Your current plan" above) —
+          // lifetimeTax/failureYear as "Your current settings" above) —
           // this is the row that should get the annotation.
           lifetimeTax: 90000,
           terminalByTaxType,
@@ -248,10 +248,14 @@ describe("WithdrawalComparison", () => {
       ],
     });
     render(<WithdrawalComparison selection={{}} />);
-    expect(screen.getByText("(same as your current plan)")).toBeInTheDocument();
+    expect(
+      screen.getByText("(same as your current settings)"),
+    ).toBeInTheDocument();
     // "Traditional first" has a different mode AND different numbers — no
     // annotation, and only one match should exist in the whole table.
-    expect(screen.getAllByText("(same as your current plan)")).toHaveLength(1);
+    expect(screen.getAllByText("(same as your current settings)")).toHaveLength(
+      1,
+    );
   });
 
   it("does not annotate a preset that shares a mode but not the resolved order or the numbers", () => {
@@ -259,7 +263,7 @@ describe("WithdrawalComparison", () => {
       baselineLabel: "Traditional first",
       strategies: [
         {
-          label: "Your current plan",
+          label: "Your current settings",
           mode: "waterfall",
           // Deliberately NOT one of the two waterfall presets' orders.
           withdrawalOrder: ["hsa", "brokerage", "401k", "403b", "ira"],
@@ -286,7 +290,7 @@ describe("WithdrawalComparison", () => {
     });
     render(<WithdrawalComparison selection={{}} />);
     expect(
-      screen.queryByText("(same as your current plan)"),
+      screen.queryByText("(same as your current settings)"),
     ).not.toBeInTheDocument();
   });
 });

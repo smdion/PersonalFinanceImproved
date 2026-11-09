@@ -1,8 +1,6 @@
-/** Static, print-safe rendering of the Monte Carlo percentile-band fan
- *  chart — plain inline SVG, not Recharts/canvas (correction from the
- *  advisor-report plan: print output can't depend on an interactive chart
- *  library). Presentational only; `buildRiskBandPoints` (lib/pure/advice/report/
- *  risk-narrative.ts) already shaped the data. */
+/** Static, print-safe Monte Carlo percentile-band fan chart as plain inline
+ *  SVG (print can't depend on an interactive chart library). Data is shaped
+ *  by `buildRiskBandPoints` (lib/pure/advice/report/risk-narrative.ts). */
 import { compactCurrency } from "@/lib/utils/format";
 import type { RiskBandPoint } from "@/lib/pure/advice/report/risk-narrative";
 import { ChartSummaryText } from "@/components/charts/chart-summary-text";

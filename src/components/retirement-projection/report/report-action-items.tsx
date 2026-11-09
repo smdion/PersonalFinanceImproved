@@ -1,7 +1,5 @@
-/** Action-items section of the advisor report — recommendations plus the
- *  engine's own raw disclosure warnings (kept separate: recommendations
- *  above are derived from structured fields, disclosures below are the
- *  engine's own warning text, never parsed — see
+/** Advisor report action items: recommendations derived from structured
+ *  fields, then the engine's raw disclosure warnings, never parsed (see
  *  lib/pure/advice/report/action-items.ts). Presentational only. */
 import { maskAmountsInText } from "@/lib/utils/format";
 import type { ActionItemsSection } from "@/lib/pure/advice/report/action-items";
@@ -30,7 +28,7 @@ export function ReportActionItemsSection({
         </ol>
       ) : (
         <p className="text-muted text-sm">
-          No specific recommendations — this plan looks solid based on the
+          No specific recommendations — this projection looks solid based on the
           analysis above.
         </p>
       )}

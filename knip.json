@@ -3,6 +3,7 @@
   "entry": [
     "src/proxy.ts!",
     "src/instrumentation.node.ts!",
+    "src/server/services/demo/dev-seed.ts!",
     "scripts/**/*.ts!",
     "drizzle-sqlite.config.ts!",
     "src/lib/db/schema.ts!",
@@ -16,7 +17,7 @@
   ],
   "project": ["src/**/*.{ts,tsx}!", "scripts/**/*.ts!", "tests/**/*.{ts,tsx}"],
   "ignore": ["src/lib/db/sqlite/**", "src/lib/db/schema-sqlite.ts"],
-  "ignoreDependencies": ["tailwindcss"],
+  "ignoreDependencies": ["tailwindcss", "jscpd"],
   "rules": {
     "duplicates": "off"
   },

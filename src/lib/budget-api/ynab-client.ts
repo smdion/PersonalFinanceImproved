@@ -1,7 +1,6 @@
 // YNAB API client implementing BudgetAPIClient.
-// Base URL: https://api.ynab.com/v1
-// Auth: Bearer token
-// Amounts: milliunits (÷1000 for dollars)
+// Base URL: https://api.ynab.com/v1; auth: Bearer token.
+// Amounts: milliunits (÷1000 for dollars).
 
 import { serviceError } from "./errors";
 import "server-only";
@@ -339,40 +338,9 @@ export class YnabClient implements BudgetAPIClient {
     };
   }
 
-  /**
-   * Set a recurring "assign this every month" goal (what YNAB's UI/response
-   * *displays* as goal_type "NEED", or legacy "MF" — same concept, just an
-   * old vs. new name for it).
-   *
-   * IMPORTANT: `goal_type` is NOT a writable field in YNAB's current API —
-   * verified against the live OpenAPI spec (api.ynab.com/papi/open_api_spec.yaml,
-   * `SaveCategory` schema). It only appears on responses as a read-only
-   * label YNAB derives from goal_target/goal_frequency/goal_target_date.
-   * PATCHing a `goal_type` value (as this code used to do) is silently
-   * ignored — it does nothing, in either direction. The actual write
-   * surface is:
-   *   - goal_target        — the dollar amount (required)
-   *   - goal_frequency      — "monthly"/"weekly"/"yearly"; SETS the goal to
-   *                           recurring at that cadence. Per the spec:
-   *                           "replacing any existing target."
-   *   - (goal_frequency omitted) — "Omit to leave an existing target's
-   *                           cadence unchanged." For a category with NO
-   *                           existing goal, omitting it still creates a
-   *                           goal (a monthly NEED, per the spec's default),
-   *                           but for a category that already has a
-   *                           *different* cadence (or none), omitting
-   *                           goal_frequency will NOT force it to monthly —
-   *                           it just leaves whatever's already there. So
-   *                           goal_frequency: "monthly" must be sent
-   *                           explicitly to guarantee this goal is recurring
-   *                           monthly regardless of the category's prior state.
-   *
-   * Goal fields only exist on the plan-level category endpoint — YNAB has
-   * no month-specific goal fields, so PATCHing
-   * /months/{month}/categories/{id} with goal_target 400s with "param is
-   * missing or the value is empty or invalid: category" (the month-category
-   * schema only accepts `budgeted`).
-   */
+  /** Set a recurring monthly goal (YNAB shows NEED / legacy MF) on the plan-level category:
+   *  `goal_type` isn't writable, and omitting goal_frequency keeps an existing cadence,
+   *  so "monthly" is sent explicitly. The month-category endpoint has no goal fields. */
   private async writeMonthlyGoal(
     categoryId: string,
     targetAmount: number,
@@ -392,31 +360,9 @@ export class YnabClient implements BudgetAPIClient {
     });
   }
 
-  /**
-   * Update the dollar amount on a "build up to and hold a target balance"
-   * goal (e.g. an emergency fund) WITHOUT touching its shape/cadence.
-   *
-   * This intentionally does NOT try to create or convert a goal into a
-   * particular type — after repeated live testing against a real YNAB
-   * account, every field combination this client tried
-   * (`goal_type` — not writable at all, confirmed against the OpenAPI spec;
-   * clear-then-recreate with no `goal_frequency`; clear-then-recreate with
-   * `goal_needs_whole_amount` + `goal_target_date`) either left the goal
-   * unchanged or made it WORSE: the last attempt produced a goal reading
-   * "Set Aside Another $X Each Month" — a recurring monthly re-assignment
-   * of the *full* target amount, which is actively wrong for an emergency
-   * fund. `goal_frequency`'s only valid values are monthly/weekly/yearly
-   * (there's no "none"/"custom" option in the public API), and the
-   * "Custom cadence + Repeat off" shape YNAB's own app can create is not
-   * achievable through this endpoint — it likely uses an internal API.
-   *
-   * So: this method only ever sends `goal_target`, a single PATCH, nothing
-   * else. Per the OpenAPI spec, that updates just the amount and leaves
-   * whatever goal shape is already configured (cadence, "set aside" vs.
-   * "refill", target date, etc.) untouched. The goal's *type* must be set
-   * up once, manually, in the YNAB app — this method is only safe to keep
-   * the target dollar amount in sync with Ledgr afterward.
-   */
+  /** Update only the amount of a target-balance goal (e.g. an emergency fund): sends just
+   *  `goal_target`, which leaves the goal's shape untouched. The public API can't create
+   *  that shape, so the goal is set up once in the YNAB app. */
   private async writeTargetBalance(
     categoryId: string,
     targetAmount: number,
@@ -454,10 +400,8 @@ export class YnabClient implements BudgetAPIClient {
           payee_name: tx.payeeName,
           category_id: tx.categoryId,
           memo: tx.memo,
-          // "reconciled" implies cleared — YNAB has no separate reconciled
-          // field, just a 3-value enum. See NewBudgetTransaction.reconciled
-          // docblock for why this derives cleared rather than trusting the
-          // caller to set both.
+          // "reconciled" implies cleared: YNAB has one 3-value enum, not a
+          // separate reconciled field (see NewBudgetTransaction.reconciled).
           cleared: tx.reconciled
             ? "reconciled"
             : tx.cleared

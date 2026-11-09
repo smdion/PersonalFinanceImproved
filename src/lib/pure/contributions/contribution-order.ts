@@ -2,6 +2,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
+  getDisplayConfig,
   isTripleTaxAdvantaged,
 } from "@/lib/config/account-types";
 
@@ -20,19 +21,9 @@ type ContributionOrderWarning = {
 };
 
 /**
- * Validate a user's accumulation order against the CFP Financial Order of
- * Operations heuristic. Returns warnings (never throws) so the user can
- * override if they have a good reason.
- *
- * The default-good order (per CFP best practice for high-savings households):
- *   1. Employer-match-eligible contributions (401k/403b up to match)
- *   2. HSA (triple tax advantage)
- *   3. Tax-advantaged retirement (Roth IRA, Traditional IRA, 401k beyond match)
- *   4. After-tax / brokerage (no tax advantage)
- *
- * It doesn't enforce the exact order; it flags two common mistakes:
- *   - Brokerage / taxable accounts come BEFORE any tax-advantaged account
- *   - A triple tax-advantaged type (HSA) comes AFTER another tax-advantaged one
+ * Warnings (never throws) for an accumulation order against the CFP order: match, HSA,
+ * tax-advantaged, then brokerage. Flags only brokerage before any tax-advantaged account, and
+ * HSA after another tax-advantaged one.
  */
 export function validateContributionOrder(
   order: readonly string[],
@@ -45,23 +36,22 @@ export function validateContributionOrder(
   // Find the first taxable / overflow position. If a tax-advantaged
   // category comes after it, the user is filling taxable before tax-
   // advantaged — flag it.
-  const firstOverflowIndex = order.findIndex((c) => !taxAdvantaged.includes(c));
+  const firstOverflow = order.find((c) => !taxAdvantaged.includes(c));
 
-  if (firstOverflowIndex >= 0) {
-    // Any tax-advantaged category appearing AFTER the first overflow position
-    // means the user is filling taxable first.
+  if (firstOverflow !== undefined) {
+    const overflow = getDisplayConfig(firstOverflow).displayLabel;
     order.forEach((cat, i) => {
-      if (i > firstOverflowIndex && taxAdvantaged.includes(cat)) {
+      if (i > order.indexOf(firstOverflow) && taxAdvantaged.includes(cat)) {
+        const label = getDisplayConfig(cat).displayLabel;
         warnings.push({
           severity: "warn",
           category: cat,
           position: i,
           message:
-            `${cat} (tax-advantaged) appears after ${order[firstOverflowIndex]} ` +
-            `in your contribution order. Most CFP guidance recommends filling ` +
-            `tax-advantaged accounts before taxable / brokerage to maximize ` +
-            `tax savings. Move ${cat} earlier in the list, or document why ` +
-            `your situation differs.`,
+            `${label} (tax-advantaged) appears after ${overflow} in your ` +
+            `contribution order. Filling tax-advantaged accounts before ` +
+            `taxable ones usually saves more tax. Move ${label} earlier in ` +
+            `the list, or document why your situation differs.`,
         });
       }
     });

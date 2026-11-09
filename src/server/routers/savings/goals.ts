@@ -25,10 +25,8 @@ import { getActiveBudgetApi } from "@/lib/budget-api";
 import { firstRow } from "@/lib/utils/first-row";
 
 /**
- * Delete a savings goal, detaching its sub-goals first (they become
- * top-level). The database can't be relied on for this: installs since
- * v0.8.0 have no foreign key on parent_goal_id (SQLite can't add one in
- * place), and an orphaned sub-goal disappears from the Savings page.
+ * Delete a savings goal, detaching its sub-goals first (they become top-level): SQLite
+ * installs may have no foreign key on parent_goal_id, and an orphan disappears from Savings.
  */
 async function deleteSavingsGoal(db: Context["db"], id: number) {
   await db.transaction(async (tx) => {
@@ -64,11 +62,8 @@ export const goalProcedures = {
         monthlyContribution: zDecimal.default("0"),
         targetAmount: zDecimal.nullable().optional(),
         targetMode: targetModeSchema.default("ongoing"),
-        // Which service's link (if any) to carry over to the new goal.
-        // Omitted: defensible default for a conversion action — copy the
-        // link for whichever service is currently active, if the item has
-        // one. Writes always require an explicit service when the caller
-        // knows it; this is not a silent fallback for a plain link-mutation.
+        // Which service's link to carry over; omitted copies every service the item
+        // is linked to.
         service: budgetApiServiceSchema.optional(),
       }),
     )
@@ -97,15 +92,8 @@ export const goalProcedures = {
           .returning();
 
         if (goal) {
-          // A budget item can carry a link for EACH service at once
-          // (budget_item_category_links is keyed per (item, service) —
-          // that's the whole point of the join-table migration). An
-          // explicit `input.service` copies just that one (the caller knows
-          // which they mean); omitted copies every service the item is
-          // actually linked to, not just whichever one happens to be
-          // "active" — otherwise a household with both YNAB and Actual
-          // connected silently loses the inactive service's link on every
-          // conversion.
+          // An item can link to EACH service at once; an explicit `input.service` copies
+          // just that one, omitted copies every linked service so none is lost.
           const servicesToCopy = input.service
             ? [input.service]
             : BUDGET_API_SERVICE_VALUES;
@@ -153,10 +141,8 @@ export const goalProcedures = {
         subcategory: z.string().min(1),
         isEssential: z.boolean().default(false),
         profileId: z.number().optional(),
-        // Which service's link (if any) to carry over to the new budget
-        // item. Omitted: defensible default for a conversion action — copy
-        // the link for whichever service is currently active, if the goal
-        // has one.
+        // Which service's link to carry over; omitted copies every service the goal
+        // is linked to.
         service: budgetApiServiceSchema.optional(),
       }),
     )
@@ -227,10 +213,8 @@ export const goalProcedures = {
           .returning();
 
         if (item) {
-          // Same reasoning as convertBudgetItemToGoal above: a savings goal
-          // can carry a primary link for each service at once. Explicit
-          // input.service copies just that one; omitted copies every
-          // service the goal is actually linked to.
+          // As in convertBudgetItemToGoal: explicit input.service copies that one link,
+          // omitted copies every service the goal is linked to.
           const servicesToCopy = input.service
             ? [input.service]
             : BUDGET_API_SERVICE_VALUES;
@@ -264,12 +248,8 @@ export const goalProcedures = {
     }),
 
   savingsGoals: createTRPCRouter({
-    // No live UI consumer reads this today (the Savings page uses
-    // computeSummary's goalsForClient instead — see budget-content.tsx's
-    // comment), but it's a general-purpose CRUD list endpoint, so its
-    // apiCategoryId/apiCategoryName/isApiSyncEnabled must still reflect the
-    // resolved link, not the dead raw columns, in case something starts
-    // reading them.
+    // General-purpose list (the Savings page uses computeSummary instead); its API
+    // link fields still reflect the resolved link, not the raw columns.
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()

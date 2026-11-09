@@ -1,26 +1,6 @@
 /**
- * Withdrawal strategy recommendation.
- *
- * Ledgr offers 6+ withdrawal strategies side-by-side without flagging
- * which one fits the user's plan. This is "analysis paralysis"
- * — without guidance, users either stick with a default (status quo bias)
- * or pick randomly. This module returns a single recommendation with a
- * rationale string the UI can render as a "Recommended for your plan"
- * highlight.
- *
- * The recommendation is heuristic, not prescriptive. Users override
- * freely. The goal is to give first-time users a defensible starting
- * point, not to lock anyone in.
- *
- * This previously declared its own hyphenated `WithdrawalStrategy`
- * union, parallel to (and misspelled relative to) the canonical
- * underscored `WithdrawalStrategyType` in `withdrawal-strategies.ts` — a
- * "looks like one canonical value, isn't" gap. The one call site that read
- * `.strategy` bridged the two spellings with a manual translation map
- * (`RECOMMENDED_KEY_MAP` in
- * `retirement-profile-tab.tsx`); not a live bug (the map was complete and
- * correct), but a maintainability trap the next new strategy could fall
- * into. Now imports and reuses the canonical type directly.
+ * Recommends one withdrawal strategy with a rationale the UI shows as "Recommended for your plan":
+ * a heuristic starting point for first-time users, freely overridden.
  */
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -44,21 +24,8 @@ export interface PlanCharacteristics {
 }
 
 /**
- * Recommend a withdrawal strategy based on plan characteristics.
- *
- * Decision tree (simple, defensible):
- *   - Horizon ≥ 30 years → Guyton-Klinger (dynamic guardrails handle
- *     sequence-of-returns risk over long horizons better than Fixed)
- *   - Horizon 20–29 years + budget linked → Vanguard Dynamic (lets
- *     users see real essential expenses driving withdrawals)
- *   - Horizon 20–29 years, no budget link → Guyton-Klinger
- *   - Horizon < 20 years → Fixed (4% rule is fine for short horizons,
- *     simpler is better)
- *
- * The default-good strategy for first-time users is always Guyton-Klinger
- * if no plan characteristics are available — it adapts to market conditions
- * better than Fixed and is well-studied (Trinity Study + cFIREsim both
- * validate it).
+ * Recommend a withdrawal strategy by horizon: ≥ 30 years Guyton-Klinger; 20–29 Vanguard Dynamic
+ * with a linked budget, else Guyton-Klinger; < 20 Fixed.
  */
 export function recommendWithdrawalStrategy(
   plan: PlanCharacteristics,
@@ -71,9 +38,10 @@ export function recommendWithdrawalStrategy(
       label: "Guyton-Klinger guardrails",
       rationale:
         "For your 30+ year retirement horizon, Guyton-Klinger guardrails " +
-        "adapt spending up or down based on portfolio performance. Cuts " +
-        "sequence-of-returns risk significantly compared to Fixed without " +
-        "requiring you to pick a single safe withdrawal rate.",
+        "start from the withdrawal rate you choose, then raise spending " +
+        "after strong years and cut it after weak ones. That lowers " +
+        "sequence-of-returns risk compared to Fixed, at the cost of some " +
+        "years with less to spend.",
     };
   }
 
@@ -82,10 +50,10 @@ export function recommendWithdrawalStrategy(
       strategy: "vanguard_dynamic",
       label: "Vanguard Dynamic Spending",
       rationale:
-        "You have a budget linked, so Vanguard Dynamic Spending can use " +
-        "your real essential-expense floor as the lower guardrail. This " +
-        "ties withdrawals to your actual spending rather than an abstract " +
-        "rate.",
+        "You have a budget linked and a 20–30 year horizon, so Vanguard " +
+        "Dynamic Spending is a steady place to start: each year's " +
+        "withdrawal follows the portfolio, but can rise or fall only so " +
+        "far from last year's spending.",
     };
   }
 
@@ -95,9 +63,9 @@ export function recommendWithdrawalStrategy(
       label: "Guyton-Klinger guardrails",
       rationale:
         "For a 20–30 year horizon, Guyton-Klinger guardrails balance " +
-        "simplicity with resilience to sequence-of-returns risk. Link a " +
-        "budget profile to upgrade to Vanguard Dynamic, which uses your " +
-        "real essential-expense floor.",
+        "simplicity with resilience to sequence-of-returns risk. With a " +
+        "budget profile linked, Vanguard Dynamic Spending is suggested " +
+        "instead.",
     };
   }
 

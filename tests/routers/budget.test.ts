@@ -11,7 +11,7 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq, asc } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { SK_RETIREMENT_DEC_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -258,7 +258,7 @@ describe("budget router", () => {
     it("clears the retirement spending-profile setting and API link that pointed at it", async () => {
       const gone = await caller.budget.createProfile({ name: "Retire On" });
       const keep = await caller.budget.createProfile({ name: "Keep" });
-      const key = SK_RETIREMENT_DEC_BUDGET_PROFILE_ID;
+      const key = SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID;
       const setSetting = (value: unknown) =>
         db
           .insert(sqliteSchema.appSettings)
@@ -1623,7 +1623,7 @@ describe("budget router", () => {
   // -------------------------------------------------------------------------
   // contribStatus — why a linked item's amount is $0 for a given column,
   // distinguishing genuinely-zero from causes the "PC" badge used to be
-  // unable to tell apart (classifyContribResolution).
+  // unable to tell apart (classifyContributionResolution).
   // -------------------------------------------------------------------------
 
   describe("contribStatus on linked items", () => {
@@ -1680,7 +1680,7 @@ describe("budget router", () => {
     });
 
     // "inactive_in_sandbox" is exercised directly against
-    // classifyContribResolution (tests/pure/contributions/profile-fields.test.ts)
+    // classifyContributionResolution (tests/pure/contributions/profile-fields.test.ts)
     // rather than end-to-end here: zSandboxContribActiveFields
     // (lib/pure/household/what-if.schema.ts) only accepts { contributionValue }, so
     // isActive is stripped before it ever reaches the resolver — a What-If

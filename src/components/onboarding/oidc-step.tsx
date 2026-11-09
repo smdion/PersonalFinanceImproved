@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 export function OidcStep() {
   const [shouldTest, setShouldTest] = useState(false);
 
-  const testConnection = trpc.settings.testOidcConnection.useQuery(undefined, {
+  const testConnection = trpc.settings.getOidcStatus.useQuery(undefined, {
     enabled: shouldTest,
   });
 

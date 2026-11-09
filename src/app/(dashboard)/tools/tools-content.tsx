@@ -1,10 +1,7 @@
 "use client";
 
-/** Financial analysis tools page — currently hosts the Relocation decision
- *  calculator. Large UI sub-sections live in
- *  `src/components/tools/relocation/`; this file owns tRPC queries/mutations +
- *  local state and orchestrates them.
- */
+/** Financial tools page (Relocation calculator): owns queries, mutations and
+ *  state; sub-sections live in `src/components/tools/relocation/`. */
 
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -87,10 +84,14 @@ export function ToolsContent() {
   });
 
   // Contribution profile selectors (default to the live/default profile)
-  const [relocCurrentContribProfileId, setRelocCurrentContribProfileId] =
-    useState<number | null>(null);
-  const [relocTargetContribProfileId, setRelocTargetContribProfileId] =
-    useState<number | null>(null);
+  const [
+    relocCurrentContributionProfileId,
+    setRelocCurrentContributionProfileId,
+  ] = useState<number | null>(null);
+  const [
+    relocTargetContributionProfileId,
+    setRelocTargetContributionProfileId,
+  ] = useState<number | null>(null);
 
   // User-controlled move year (null = show comparison table + earliest viable hint)
   const [relocMoveYear, setRelocMoveYear] = useState<number | null>(null);
@@ -130,22 +131,18 @@ export function ToolsContent() {
     relocTargetProfileId ?? relocDefaultProfileId ?? 0;
 
   // Contribution profiles for relocation selectors
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
+  const contributionProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const contributionProfiles = contributionProfilesQuery.data ?? [];
   // No profile is privileged any more — the first (oldest) one is simply the
   // pre-selection when the relocation scenario hasn't picked one yet.
-  const defaultContribProfileId = contribProfiles[0]?.id;
-  const effectiveCurrentContribProfileId =
-    relocCurrentContribProfileId ?? defaultContribProfileId ?? null;
-  const effectiveTargetContribProfileId =
-    relocTargetContribProfileId ?? defaultContribProfileId ?? null;
+  const defaultContributionProfileId = contributionProfiles[0]?.id;
+  const effectiveCurrentContributionProfileId =
+    relocCurrentContributionProfileId ?? defaultContributionProfileId ?? null;
+  const effectiveTargetContributionProfileId =
+    relocTargetContributionProfileId ?? defaultContributionProfileId ?? null;
 
-  // Salary Profile axis (the active profile) — one profile
-  // applies to both scenarios, matching every other engine-backed endpoint
-  // (Retirement page, Monte Carlo, Coast FIRE). Without this the engine-
-  // backed relocation projection silently fell back to whichever Salary
-  // Profile is globally active, diverging from the Retirement page's own
-  // number for the same "current" baseline.
+  // The active Salary Profile, applied to both scenarios like every other
+  // engine-backed page, so the "current" baseline matches the Retirement page.
   const { salaryProfileId: effectiveSalaryProfileId } =
     useEffectiveSalaryProfileId();
 
@@ -196,8 +193,8 @@ export function ToolsContent() {
         : null,
       yearAdjustments: relocYearAdjustments,
       largePurchases: relocLargePurchases,
-      currentContributionProfileId: effectiveCurrentContribProfileId,
-      relocationContributionProfileId: effectiveTargetContribProfileId,
+      currentContributionProfileId: effectiveCurrentContributionProfileId,
+      relocationContributionProfileId: effectiveTargetContributionProfileId,
       moveYear: relocMoveYear,
     }),
     [
@@ -209,8 +206,8 @@ export function ToolsContent() {
       relocTargetOverride,
       relocYearAdjustments,
       relocLargePurchases,
-      effectiveCurrentContribProfileId,
-      effectiveTargetContribProfileId,
+      effectiveCurrentContributionProfileId,
+      effectiveTargetContributionProfileId,
       relocMoveYear,
     ],
   );
@@ -243,8 +240,8 @@ export function ToolsContent() {
         id: crypto.randomUUID(),
       })),
     );
-    setRelocCurrentContribProfileId(params.currentContributionProfileId);
-    setRelocTargetContribProfileId(params.relocationContributionProfileId);
+    setRelocCurrentContributionProfileId(params.currentContributionProfileId);
+    setRelocTargetContributionProfileId(params.relocationContributionProfileId);
     const loadedMoveYear = params.moveYear ?? null;
     setRelocMoveYear(loadedMoveYear);
     setRelocMoveYearInput(loadedMoveYear != null ? String(loadedMoveYear) : "");
@@ -319,8 +316,8 @@ export function ToolsContent() {
       yearAdjustments: relocYearAdjustments,
       contributionOverrides: [] as never[],
       largePurchases: relocLargePurchases,
-      currentContributionProfileId: effectiveCurrentContribProfileId,
-      relocationContributionProfileId: effectiveTargetContribProfileId,
+      currentContributionProfileId: effectiveCurrentContributionProfileId,
+      relocationContributionProfileId: effectiveTargetContributionProfileId,
       moveYear: relocMoveYear,
     }),
     [
@@ -332,8 +329,8 @@ export function ToolsContent() {
       relocTargetOverride,
       relocYearAdjustments,
       relocLargePurchases,
-      effectiveCurrentContribProfileId,
-      effectiveTargetContribProfileId,
+      effectiveCurrentContributionProfileId,
+      effectiveTargetContributionProfileId,
       relocMoveYear,
     ],
   );
@@ -422,143 +419,137 @@ export function ToolsContent() {
           onSaveDialogSubmit={handleSaveDialogSubmit}
         />
         {relocQuery.data?.budgetInfo ? (
-          (() => {
-            const bi = relocQuery.data.budgetInfo;
-            const r = relocQuery.data.result;
+          <div className="space-y-4">
+            <RelocationBudgetSelectors
+              budgetInfo={relocQuery.data.budgetInfo}
+              effectiveCurrentProfileId={effectiveCurrentProfileId}
+              setRelocCurrentProfileId={setRelocCurrentProfileId}
+              relocCurrentCol={relocCurrentCol}
+              setRelocCurrentCol={setRelocCurrentCol}
+              relocCurrentOverride={relocCurrentOverride}
+              setRelocCurrentOverride={setRelocCurrentOverride}
+              effectiveTargetProfileId={effectiveTargetProfileId}
+              setRelocTargetProfileId={setRelocTargetProfileId}
+              relocTargetCol={relocTargetCol}
+              setRelocTargetCol={setRelocTargetCol}
+              relocTargetOverride={relocTargetOverride}
+              setRelocTargetOverride={setRelocTargetOverride}
+              contributionProfiles={contributionProfiles}
+              effectiveCurrentContributionProfileId={
+                effectiveCurrentContributionProfileId
+              }
+              setRelocCurrentContributionProfileId={
+                setRelocCurrentContributionProfileId
+              }
+              effectiveTargetContributionProfileId={
+                effectiveTargetContributionProfileId
+              }
+              setRelocTargetContributionProfileId={
+                setRelocTargetContributionProfileId
+              }
+              currentContribProfile={relocQuery.data.currentContribProfile}
+              relocationContribProfile={
+                relocQuery.data.relocationContribProfile
+              }
+            />
 
-            return (
-              <div className="space-y-4">
-                <RelocationBudgetSelectors
-                  budgetInfo={bi}
-                  effectiveCurrentProfileId={effectiveCurrentProfileId}
-                  setRelocCurrentProfileId={setRelocCurrentProfileId}
-                  relocCurrentCol={relocCurrentCol}
-                  setRelocCurrentCol={setRelocCurrentCol}
-                  relocCurrentOverride={relocCurrentOverride}
-                  setRelocCurrentOverride={setRelocCurrentOverride}
-                  effectiveTargetProfileId={effectiveTargetProfileId}
-                  setRelocTargetProfileId={setRelocTargetProfileId}
-                  relocTargetCol={relocTargetCol}
-                  setRelocTargetCol={setRelocTargetCol}
-                  relocTargetOverride={relocTargetOverride}
-                  setRelocTargetOverride={setRelocTargetOverride}
-                  contribProfiles={contribProfiles}
-                  effectiveCurrentContribProfileId={
-                    effectiveCurrentContribProfileId
-                  }
-                  setRelocCurrentContribProfileId={
-                    setRelocCurrentContribProfileId
-                  }
-                  effectiveTargetContribProfileId={
-                    effectiveTargetContribProfileId
-                  }
-                  setRelocTargetContribProfileId={
-                    setRelocTargetContribProfileId
-                  }
-                  currentContribProfile={relocQuery.data.currentContribProfile}
-                  relocationContribProfile={
-                    relocQuery.data.relocationContribProfile
-                  }
-                />
+            {relocNotConfigured && (
+              <NotConfiguredNotice reason={relocNotConfigured} />
+            )}
 
-                {relocNotConfigured && (
-                  <NotConfiguredNotice reason={relocNotConfigured} />
+            {/* Planned Move Year input */}
+            <div className="flex items-center gap-3">
+              <label className="text-muted text-sm whitespace-nowrap">
+                Planned Move Year
+              </label>
+              <input
+                aria-label="Planned Move Year"
+                type="number"
+                className="w-24 rounded border px-2 py-1 text-sm"
+                placeholder={
+                  relocFi?.earliestRelocateYear != null
+                    ? String(relocFi.earliestRelocateYear)
+                    : "—"
+                }
+                value={relocMoveYearInput}
+                min={new Date().getFullYear()}
+                max={2100}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setRelocMoveYearInput(raw);
+                  const parsed = parseInt(raw, 10);
+                  setRelocMoveYear(
+                    !isNaN(parsed) && parsed >= 1900 && parsed <= 2100
+                      ? parsed
+                      : null,
+                  );
+                }}
+              />
+              {relocMoveYear !== null && (
+                <button
+                  className="text-muted hover:text-secondary text-xs"
+                  onClick={() => {
+                    setRelocMoveYear(null);
+                    setRelocMoveYearInput("");
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+              {relocFi?.earliestRelocateYear != null &&
+                relocMoveYear === null && (
+                  <span className="text-faint text-xs">
+                    Earliest viable: {relocFi.earliestRelocateYear} (age{" "}
+                    {relocFi.earliestRelocateAge})
+                  </span>
                 )}
+            </div>
 
-                {/* Planned Move Year input */}
-                <div className="flex items-center gap-3">
-                  <label className="text-muted text-sm whitespace-nowrap">
-                    Planned Move Year
-                  </label>
-                  <input
-                    type="number"
-                    className="w-24 rounded border px-2 py-1 text-sm"
-                    placeholder={
-                      relocFi?.earliestRelocateYear != null
-                        ? String(relocFi.earliestRelocateYear)
-                        : "—"
-                    }
-                    value={relocMoveYearInput}
-                    min={new Date().getFullYear()}
-                    max={2100}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      setRelocMoveYearInput(raw);
-                      const parsed = parseInt(raw, 10);
-                      setRelocMoveYear(
-                        !isNaN(parsed) && parsed >= 1900 && parsed <= 2100
-                          ? parsed
-                          : null,
-                      );
-                    }}
-                  />
-                  {relocMoveYear !== null && (
-                    <button
-                      className="text-muted hover:text-secondary text-xs"
-                      onClick={() => {
-                        setRelocMoveYear(null);
-                        setRelocMoveYearInput("");
-                      }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                  {relocFi?.earliestRelocateYear != null &&
-                    relocMoveYear === null && (
-                      <span className="text-faint text-xs">
-                        Earliest viable: {relocFi.earliestRelocateYear} (age{" "}
-                        {relocFi.earliestRelocateAge})
-                      </span>
-                    )}
-                </div>
+            <RelocationMetricsAndBanner
+              result={relocQuery.data.result}
+              engineResult={
+                relocFiQuery.isPending || relocFiQuery.isFetching
+                  ? undefined
+                  : (relocFi ?? null)
+              }
+              moveYear={relocMoveYear}
+            />
 
-                <RelocationMetricsAndBanner
-                  result={r}
-                  engineResult={
-                    relocFiQuery.isPending || relocFiQuery.isFetching
-                      ? undefined
-                      : (relocFi ?? null)
-                  }
-                  moveYear={relocMoveYear}
-                />
+            <RelocationLargePurchases
+              result={relocQuery.data.result}
+              relocLargePurchases={relocLargePurchases}
+              setRelocLargePurchases={setRelocLargePurchases}
+              purchaseForm={purchaseForm}
+              setPurchaseForm={setPurchaseForm}
+            />
 
-                <RelocationLargePurchases
-                  result={r}
-                  relocLargePurchases={relocLargePurchases}
-                  setRelocLargePurchases={setRelocLargePurchases}
-                  purchaseForm={purchaseForm}
-                  setPurchaseForm={setPurchaseForm}
-                />
+            <RelocationYearAdjustments
+              budgetInfo={relocQuery.data.budgetInfo}
+              relocYearAdjustments={relocYearAdjustments}
+              setRelocYearAdjustments={setRelocYearAdjustments}
+              relocAdjMode={relocAdjMode}
+              setRelocAdjMode={setRelocAdjMode}
+              relocAdjForm={relocAdjForm}
+              setRelocAdjForm={setRelocAdjForm}
+            />
 
-                <RelocationYearAdjustments
-                  budgetInfo={bi}
-                  relocYearAdjustments={relocYearAdjustments}
-                  setRelocYearAdjustments={setRelocYearAdjustments}
-                  relocAdjMode={relocAdjMode}
-                  setRelocAdjMode={setRelocAdjMode}
-                  relocAdjForm={relocAdjForm}
-                  setRelocAdjForm={setRelocAdjForm}
-                />
-
-                <RelocationProjectionTable
-                  result={r}
-                  showRelocAllYears={showRelocAllYears}
-                  setShowRelocAllYears={setShowRelocAllYears}
-                  relocYearAdjustments={relocYearAdjustments}
-                  relocLargePurchases={relocLargePurchases}
-                  peopleLookup={peopleLookup}
-                  displayAge={displayAge}
-                  ageTooltip={ageTooltip}
-                  engineResult={
-                    relocFiQuery.isPending || relocFiQuery.isFetching
-                      ? undefined
-                      : (relocFi ?? null)
-                  }
-                  moveYear={relocMoveYear}
-                />
-              </div>
-            );
-          })()
+            <RelocationProjectionTable
+              result={relocQuery.data.result}
+              showRelocAllYears={showRelocAllYears}
+              setShowRelocAllYears={setShowRelocAllYears}
+              relocYearAdjustments={relocYearAdjustments}
+              relocLargePurchases={relocLargePurchases}
+              peopleLookup={peopleLookup}
+              displayAge={displayAge}
+              ageTooltip={ageTooltip}
+              engineResult={
+                relocFiQuery.isPending || relocFiQuery.isFetching
+                  ? undefined
+                  : (relocFi ?? null)
+              }
+              moveYear={relocMoveYear}
+            />
+          </div>
         ) : relocQuery.isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-8 w-1/2" />

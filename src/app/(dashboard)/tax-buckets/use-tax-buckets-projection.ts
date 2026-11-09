@@ -1,7 +1,7 @@
 import { useMemo, type SetStateAction, type Dispatch } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-bucket-projection";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import type { FocusStateValue } from "@/lib/config/focus-topics";
@@ -13,13 +13,13 @@ export function useTaxBucketsProjection(
   setShowBulkBasis: Dispatch<SetStateAction<boolean>>,
   data: RouterOutputs["taxBuckets"]["computeBreakdown"] | undefined,
 ) {
-  const { queryInput: contribPick } = useEffectiveContribProfileId();
+  const { queryInput: contributionPick } = useEffectiveContributionProfileId();
   const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
   // Only fetched when the user actually switches to "At Retirement" — the
   // "now" view stays free of any projected bleed-through, and the page
   // doesn't pay for the heavier call on every visit.
   const projectionQuery = trpc.projection.computeProjection.useQuery(
-    { selection: profileSelectionFrom({ ...contribPick, ...salaryPick }) },
+    { selection: profileSelectionFrom({ ...contributionPick, ...salaryPick }) },
     { enabled: view === "atRetirement" },
   );
 
@@ -42,10 +42,8 @@ export function useTaxBucketsProjection(
 
   const projection = useMemo(() => {
     if (!data || !projectionQuery.data?.result) return null;
-    // Rule of 55 forecasting override -- must read the SAME
-    // per-person setting the retirement engine reads, or this page and the
-    // retirement projection would disagree about the same account's
-    // eligibility. `perPersonSettings` rides on the same query result.
+    // Rule of 55 forecasting override: the same per-person setting the
+    // retirement engine reads (`perPersonSettings` on this query result).
     const ruleOf55OverrideByPersonId =
       "perPersonSettings" in projectionQuery.data
         ? new Map(

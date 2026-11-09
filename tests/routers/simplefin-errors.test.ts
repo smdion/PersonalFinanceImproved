@@ -84,7 +84,7 @@ describe("simplefin.testConnection when SimpleFIN answers badly", () => {
   it("says what SimpleFIN sent, claiming nothing", async () => {
     mockGetAccounts.mockRejectedValueOnce(badResponse());
     expect(await t.caller.simplefin.testConnection()).toEqual({
-      success: false,
+      ok: false,
       error: "SimpleFIN sent something Ledgr doesn't understand (errors).",
     });
   });

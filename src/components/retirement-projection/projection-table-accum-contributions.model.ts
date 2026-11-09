@@ -28,7 +28,7 @@ export function categoryContributionTooltip(
   specTotal: number,
   rawEmp: number,
   deflate: ProjectionState["deflate"],
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   cat: AccountCategory,
   rawMatch: number,
   personFilterName: ProjectionState["personFilterName"],
@@ -62,11 +62,11 @@ export function categoryContributionTooltip(
             });
             return {
               label,
-              amount: deflate(personEmp, yr.year),
+              amount: deflate(personEmp, yearRow.year),
               taxType: itemTaxType(cat, sp.taxTreatment),
               match:
                 (sp.matchAnnual ?? 0) > 0
-                  ? deflate(rawMatch * mFrac, yr.year)
+                  ? deflate(rawMatch * mFrac, yearRow.year)
                   : undefined,
               matchLabel: getDisplayConfig(
                 cat,
@@ -79,9 +79,9 @@ export function categoryContributionTooltip(
             label:
               catSpecs[0]?.ownerName ??
               (isPersonFiltered ? personFilterName : "Employee"),
-            amount: deflate(emp, yr.year),
+            amount: deflate(emp, yearRow.year),
             taxType: itemTaxType(cat, catSpecs[0]?.taxTreatment),
-            match: match > 0 ? deflate(match, yr.year) : undefined,
+            match: match > 0 ? deflate(match, yearRow.year) : undefined,
             matchLabel: getDisplayConfig(
               cat,
               catSpecs[0]?.name !== cat ? catSpecs[0]?.name : undefined,
@@ -97,33 +97,36 @@ export function categoryContributionTooltip(
       slot &&
       (slot.rothContrib > 0 || slot.traditionalContrib > 0)
         ? {
-            traditional: deflate(slot.traditionalContrib, yr.year),
-            roth: deflate(slot.rothContrib, yr.year),
+            traditional: deflate(slot.traditionalContrib, yearRow.year),
+            roth: deflate(slot.rothContrib, yearRow.year),
           }
         : undefined,
     rateCeiling:
-      yr.rateCeilingScale != null &&
-      yr.rateCeilingScale < 1 &&
-      yr.rateCeilingScale > 0
+      yearRow.rateCeilingScale != null &&
+      yearRow.rateCeilingScale < 1 &&
+      yearRow.rateCeilingScale > 0
         ? {
-            uncapped: deflate(safeDivide(emp, yr.rateCeilingScale), yr.year),
-            capped: deflate(emp, yr.year),
-            pct: 1 - yr.rateCeilingScale,
+            uncapped: deflate(
+              safeDivide(emp, yearRow.rateCeilingScale),
+              yearRow.year,
+            ),
+            capped: deflate(emp, yearRow.year),
+            pct: 1 - yearRow.rateCeilingScale,
           }
         : undefined,
     irsLimit: slot
       ? {
           category: catLabel,
-          limit: deflate(slot.irsLimit, yr.year),
-          used: deflate(emp, yr.year),
+          limit: deflate(slot.irsLimit, yearRow.year),
+          used: deflate(emp, yearRow.year),
         }
       : undefined,
     proRate:
-      yr.proRateFraction != null
+      yearRow.proRateFraction != null
         ? {
-            months: proRateMonths(yr.proRateFraction),
-            annualAmount: deflate(specTotal, yr.year),
-            proRatedAmount: deflate(emp, yr.year),
+            months: proRateMonths(yearRow.proRateFraction),
+            annualAmount: deflate(specTotal, yearRow.year),
+            proRatedAmount: deflate(emp, yearRow.year),
           }
         : undefined,
   });
@@ -135,7 +138,7 @@ export function overflowContributionTooltip(
   ofEmp: number,
   ofMatch: number,
   deflate: ProjectionState["deflate"],
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   ofCat: AccountCategory,
   renderTooltip: ProjectionState["renderTooltip"],
   ofLabel: string,
@@ -165,8 +168,8 @@ export function overflowContributionTooltip(
           const spMatch = ofMatch * mFrac;
           return {
             label,
-            amount: deflate(personOf, yr.year),
-            match: spMatch > 0 ? deflate(spMatch, yr.year) : undefined,
+            amount: deflate(personOf, yearRow.year),
+            match: spMatch > 0 ? deflate(spMatch, yearRow.year) : undefined,
             matchLabel: getDisplayConfig(
               ofCat,
               sp.name !== ofCat ? sp.name : undefined,
@@ -176,8 +179,8 @@ export function overflowContributionTooltip(
       : [
           {
             label: "Employee",
-            amount: deflate(ofEmp, yr.year),
-            match: ofMatch > 0 ? deflate(ofMatch, yr.year) : undefined,
+            amount: deflate(ofEmp, yearRow.year),
+            match: ofMatch > 0 ? deflate(ofMatch, yearRow.year) : undefined,
             matchLabel: getDisplayConfig(ofCat).employerMatchLabel,
           },
         ];
@@ -187,21 +190,21 @@ export function overflowContributionTooltip(
     header: `${ofLabel} Contributions`,
     items,
     rateCeiling:
-      yr.rateCeilingScale != null &&
-      yr.rateCeilingScale > 0 &&
-      yr.rateCeilingScale < 1
+      yearRow.rateCeilingScale != null &&
+      yearRow.rateCeilingScale > 0 &&
+      yearRow.rateCeilingScale < 1
         ? {
-            uncapped: deflate(ofEmp / yr.rateCeilingScale, yr.year),
-            capped: deflate(ofEmp, yr.year),
-            pct: 1 - yr.rateCeilingScale,
+            uncapped: deflate(ofEmp / yearRow.rateCeilingScale, yearRow.year),
+            capped: deflate(ofEmp, yearRow.year),
+            pct: 1 - yearRow.rateCeilingScale,
           }
         : undefined,
     proRate:
-      yr.proRateFraction != null && ofAnnual > 0
+      yearRow.proRateFraction != null && ofAnnual > 0
         ? {
-            months: proRateMonths(yr.proRateFraction),
-            annualAmount: deflate(ofAnnual, yr.year),
-            proRatedAmount: deflate(ofEmp, yr.year),
+            months: proRateMonths(yearRow.proRateFraction),
+            annualAmount: deflate(ofAnnual, yearRow.year),
+            proRatedAmount: deflate(ofEmp, yearRow.year),
           }
         : undefined,
   });
@@ -214,7 +217,7 @@ export function taxTypeContributionTooltip(
   items: TooltipLineItem[],
   deflate: ProjectionState["deflate"],
   bucketTotal: number,
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   bucketMatch: number,
   bucketAssocMatch: number,
   bucketAnnual: number,
@@ -227,10 +230,10 @@ export function taxTypeContributionTooltip(
       items.length > 1
         ? {
             label: "Total",
-            amount: deflate(bucketTotal, yr.year),
+            amount: deflate(bucketTotal, yearRow.year),
             match:
               bucketMatch + bucketAssocMatch > 0
-                ? deflate(bucketMatch + bucketAssocMatch, yr.year)
+                ? deflate(bucketMatch + bucketAssocMatch, yearRow.year)
                 : undefined,
           }
         : undefined,
@@ -239,11 +242,11 @@ export function taxTypeContributionTooltip(
         ? `Match flows to ${taxTypeLabel("preTax")}`
         : undefined,
     proRate:
-      yr.proRateFraction != null && bucketAnnual > 0
+      yearRow.proRateFraction != null && bucketAnnual > 0
         ? {
-            months: proRateMonths(yr.proRateFraction),
-            annualAmount: deflate(bucketAnnual, yr.year),
-            proRatedAmount: deflate(bucketTotal, yr.year),
+            months: proRateMonths(yearRow.proRateFraction),
+            annualAmount: deflate(bucketAnnual, yearRow.year),
+            proRatedAmount: deflate(bucketTotal, yearRow.year),
           }
         : undefined,
   });

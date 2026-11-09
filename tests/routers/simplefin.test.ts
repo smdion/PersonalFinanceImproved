@@ -111,47 +111,41 @@ describe("simplefin router", () => {
       expect(accountsAfter.find((a) => a.id === row.id)?.isIncluded).toBe(true);
     });
 
-    it("rejects a caller without sync permission", async () => {
-      const { caller: viewerCaller, cleanup: viewerCleanup } =
-        await createTestCaller(viewerSession);
-      try {
-        await expect(
-          viewerCaller.simplefin.setAccountIncluded({
-            id: 1,
-            isIncluded: false,
-          }),
-        ).rejects.toThrow(TRPCError);
-      } finally {
-        viewerCleanup();
-      }
-    });
-
-    it("allows a caller with explicit sync permission", async () => {
-      const syncSession = createViewerSessionWithPermissions(["sync"]);
-      const {
-        caller: syncCaller,
-        db: syncDb,
-        cleanup: syncCleanup,
-      } = await createTestCaller(syncSession);
-      try {
-        const row = syncDb
-          .insert(sqliteSchema.simplefinAccounts)
-          .values({
-            externalAccountId: "perm-check-1",
-            orgName: "Bank",
-            accountName: "Perm Check",
-            lastBalance: "10.00",
-          })
-          .returning({ id: sqliteSchema.simplefinAccounts.id })
-          .get();
-
-        const result = await syncCaller.simplefin.setAccountIncluded({
-          id: row.id,
-          isIncluded: false,
-        });
-        expect(result.ok).toBe(true);
-      } finally {
-        syncCleanup();
+    it("rejects a viewer, even one with sync permission, and changes nothing", async () => {
+      for (const session of [
+        viewerSession,
+        createViewerSessionWithPermissions(["sync"]),
+      ]) {
+        const {
+          caller: viewerCaller,
+          db: viewerDb,
+          cleanup: viewerCleanup,
+        } = await createTestCaller(session);
+        try {
+          const row = viewerDb
+            .insert(sqliteSchema.simplefinAccounts)
+            .values({
+              externalAccountId: "perm-check-1",
+              orgName: "Bank",
+              accountName: "Perm Check",
+              lastBalance: "10.00",
+            })
+            .returning({ id: sqliteSchema.simplefinAccounts.id })
+            .get();
+          await expect(
+            viewerCaller.simplefin.setAccountIncluded({
+              id: row.id,
+              isIncluded: false,
+            }),
+          ).rejects.toMatchObject({ code: "FORBIDDEN" });
+          const after = viewerDb
+            .select({ isIncluded: sqliteSchema.simplefinAccounts.isIncluded })
+            .from(sqliteSchema.simplefinAccounts)
+            .all();
+          expect(after).toEqual([{ isIncluded: true }]);
+        } finally {
+          viewerCleanup();
+        }
       }
     });
   });
@@ -535,11 +529,13 @@ describe("simplefin router", () => {
       }));
       try {
         expect(await ctx.caller.simplefin.testConnection()).toMatchObject({
-          success: false,
+          ok: false,
         });
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(log()).toEqual([["/accounts", "error", 503]]);
-        expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+        expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(
+          1,
+        );
       } finally {
         vi.unstubAllGlobals();
         ctx.cleanup();
@@ -577,7 +573,7 @@ describe("simplefin router", () => {
             .run();
         const result = await ctx.caller.simplefin.testConnection();
         expect(result).toEqual({
-          success: false,
+          ok: false,
           error: `Paused: ${SIMPLEFIN_DAILY_REQUEST_LIMIT} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
         });
         expect(fetchMock).not.toHaveBeenCalled();
@@ -611,8 +607,14 @@ describe("simplefin router", () => {
     });
 
     it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
+      // Logged now (the request's clock; SQLite's own default is the real one).
       db.insert(sqliteSchema.syncRequestLog)
-        .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
+        .values({
+          service: "simplefin",
+          endpoint: "/accounts",
+          outcome: "ok",
+          requestedAt: new Date(),
+        })
         .run();
       await expect(caller.simplefin.syncNow()).rejects.toThrow(
         "Ledgr sent SimpleFIN a request less than a minute ago. Try again in 10 minutes — SimpleFIN allows only about 24 requests a day.",

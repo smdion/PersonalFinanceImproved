@@ -60,6 +60,26 @@ export function releaseTopLevelTestDb(testDb: object): void {
   if (topLevelDb.current === testDb) topLevelDb.current = null;
 }
 
+// The router suite runs on SQLite, or on PostgreSQL when
+// LEDGR_ROUTER_DIALECT=postgres (postgres-router-db.ts): the dialect, the
+// schema and the top-level db's dialect follow it.
+const onPostgres = vi.hoisted(
+  () => process.env.LEDGR_ROUTER_DIALECT === "postgres",
+);
+const dialect = vi.hoisted(() =>
+  process.env.LEDGR_ROUTER_DIALECT === "postgres"
+    ? {
+        getDialect: () => "postgresql" as const,
+        isPostgres: (): boolean => true,
+        isSQLite: (): boolean => false,
+      }
+    : {
+        getDialect: () => "sqlite" as const,
+        isPostgres: (): boolean => false,
+        isSQLite: (): boolean => true,
+      },
+);
+
 vi.mock("@/lib/db", () => ({
   db: new Proxy(
     {},
@@ -75,23 +95,18 @@ vi.mock("@/lib/db", () => ({
     },
   ),
   pool: null,
-  isPostgres: () => false,
-  isSQLite: () => true,
-  getDialect: () => "sqlite",
+  ...dialect,
 }));
 
-// Mock dialect to return sqlite
-vi.mock("@/lib/db/dialect", () => ({
-  getDialect: () => "sqlite",
-  isPostgres: () => false,
-  isSQLite: () => true,
-}));
+vi.mock("@/lib/db/dialect", () => dialect);
 
-// Mock schema module — use the SQLite schema for test DB compatibility.
-// The PG schema has `now()` defaults that don't work in SQLite.
-vi.mock("@/lib/db/schema", async () => {
-  return await vi.importActual("@/lib/db/schema-sqlite");
-});
+// The schema of the dialect the suite runs on. The PG schema has `now()`
+// defaults that don't work in SQLite.
+vi.mock("@/lib/db/schema", async () =>
+  onPostgres
+    ? await vi.importActual("@/lib/db/schema-pg")
+    : await vi.importActual("@/lib/db/schema-sqlite"),
+);
 
 // Mock rate-limit — disable rate limiting in tests. A vi.fn() (not a bare
 // arrow function) so tests that specifically exercise rate-limit wiring

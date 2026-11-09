@@ -17,7 +17,7 @@ import {
   colWithdrawal,
   colEngineTaxType,
   slotBucketWithdrawal,
-  slotBucketContrib,
+  slotBucketContribution,
   slotsColumnBalanceInflow,
   slotsBucketBalanceInflow,
   filterSpecsForBucket,
@@ -145,7 +145,7 @@ describe("colBalance", () => {
   it("returns 0 for a category with no balance entry at all (not just a zero-valued one)", () => {
     // accountBalancesFromTaxBuckets always populates every category (even
     // with a zero-valued structure), so it can't exercise the truly-missing
-    // -key branch (`if (!bal) return 0`) — construct a partial object
+    // -key branch (`if (!balance) return 0`) — construct a partial object
     // directly to hit that branch specifically.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentionally partial to omit the "hsa" key entirely
     const ba = {} as any;
@@ -227,7 +227,7 @@ describe("colEngineTaxType", () => {
 });
 
 // ---------------------------------------------------------------------------
-// slotBucketWithdrawal / slotBucketContrib
+// slotBucketWithdrawal / slotBucketContribution
 // ---------------------------------------------------------------------------
 
 describe("slotBucketWithdrawal", () => {
@@ -271,7 +271,7 @@ describe("slotBucketContrib", () => {
       rothContrib: 100,
       employeeContrib: 500,
     };
-    expect(slotBucketContrib(slot, "preTax")).toBe(400);
+    expect(slotBucketContribution(slot, "preTax")).toBe(400);
   });
 
   it("returns 0 for single-bucket categories on preTax/taxFree buckets", () => {
@@ -281,7 +281,7 @@ describe("slotBucketContrib", () => {
       rothContrib: 0,
       employeeContrib: 300,
     };
-    expect(slotBucketContrib(slot, "preTax")).toBe(0);
+    expect(slotBucketContribution(slot, "preTax")).toBe(0);
   });
 
   it("returns the employee contribution for a single-bucket category's own bucket", () => {
@@ -291,7 +291,7 @@ describe("slotBucketContrib", () => {
       rothContrib: 0,
       employeeContrib: 300,
     };
-    expect(slotBucketContrib(slot, "hsa")).toBe(300);
+    expect(slotBucketContribution(slot, "hsa")).toBe(300);
   });
 });
 
@@ -450,29 +450,29 @@ describe("computeColumnChange", () => {
   it("computes displayChange as contrib + growth when there is no prior year", () => {
     const result = computeColumnChange({
       deflate: identityDeflate,
-      bal: 10000,
+      balance: 10000,
       year: 2026,
       prev: null,
-      splitContrib: 1000,
+      splitContribution: 1000,
       splitGrowth: 500,
     });
     expect(result.displayChange).toBe(1500);
-    expect(result.displayContrib).toBe(1000);
+    expect(result.displayContribution).toBe(1000);
     expect(result.displayGrowth).toBe(500);
-    expect(result.boyBal).toBe(8500);
+    expect(result.boyBalance).toBe(8500);
   });
 
   it("computes displayChange as the balance delta when there is a prior year", () => {
     const result = computeColumnChange({
       deflate: identityDeflate,
-      bal: 12000,
+      balance: 12000,
       year: 2027,
-      prev: { bal: 10000, year: 2026 },
-      splitContrib: 1500,
+      prev: { balance: 10000, year: 2026 },
+      splitContribution: 1500,
       splitGrowth: 500,
     });
     expect(result.displayChange).toBe(2000);
-    expect(result.boyBal).toBe(10000);
+    expect(result.boyBalance).toBe(10000);
   });
 });
 
@@ -505,7 +505,7 @@ describe("computeAccountSplits", () => {
     const result = computeAccountSplits(accounts);
     expect(result.splits).toHaveLength(1);
     expect(result.splits[0]!.contribution).toBe(600);
-    expect(result.splitContrib).toBe(600);
+    expect(result.splitContribution).toBe(600);
     expect(result.splitGrowth).toBe(50);
   });
 

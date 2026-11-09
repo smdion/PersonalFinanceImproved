@@ -22,7 +22,8 @@ import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
-import { getAge, localDateStr } from "@/lib/utils/date";
+import { getAge } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
 import { toFactRows } from "@/server/data/fund-facts";
@@ -56,7 +57,10 @@ async function loadBucketLinks(
  * household's current glide path when it has set one, otherwise the
  * retirement simulation's glide path (the engine's own interpolation).
  */
-async function targetByAssetClass(db: Db): Promise<{
+async function targetByAssetClass(
+  db: Db,
+  asOf: Date,
+): Promise<{
   age: number | null;
   target: Record<number, number>;
   source: "current" | "retirement";
@@ -64,8 +68,8 @@ async function targetByAssetClass(db: Db): Promise<{
   glidePath: { age: number; allocations: Record<number, number> }[];
   currentGlidePath:
     { age: number; allocations: Record<number, number> }[] | null;
-  /** The saved current glide path names an asset class that no longer
-   *  exists, so the target falls back to the retirement glide path. */
+  /** The saved current glide path names a missing asset class, so the
+   *  target falls back to the retirement glide path. */
   currentGlidePathStale: boolean;
 }> {
   const [[person], rows, [currentRow], activeClasses] = await Promise.all([
@@ -113,7 +117,7 @@ async function targetByAssetClass(db: Db): Promise<{
       currentGlidePath,
       currentGlidePathStale,
     };
-  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
+  const age = getAge(new Date(`${person.dob}T00:00:00`), asOf);
   return {
     age,
     target: interpolateAllocations(glidePath, age),
@@ -132,6 +136,7 @@ async function targetByAssetClass(db: Db): Promise<{
 export async function valueHoldings(
   db: Db,
   holdings: Awaited<ReturnType<typeof loadLatestHoldings>>,
+  asOf: Date,
 ) {
   const securityIds = [...new Set(holdings.map((h) => h.securityId))];
   const [securities, facts] = securityIds.length
@@ -146,7 +151,7 @@ export async function valueHoldings(
           .where(inArray(schema.securityFacts.securityId, securityIds)),
       ])
     : [[], []];
-  const today = localDateStr();
+  const today = calendarDateOf(asOf);
   const securityById = new Map(securities.map((s) => [s.id, s]));
   const factsBySecurity = new Map(
     securityIds.map((id) => [
@@ -193,10 +198,8 @@ export async function valueHoldings(
 }
 
 /**
- * Money in the account that isn't in any reported position (an HSA's cash
- * balance, a brokerage's settlement cash): the feed's balance less the
- * positions as the institution valued them, only when both are from the
- * same day (otherwise price moves would read as cash). null = can't tell.
+ * Cash not in any reported position (HSA cash, brokerage settlement): feed balance less the
+ * positions as the institution valued them, only when both are same-day. null = can't tell.
  */
 function uninvestedCash(
   account: { balance: number | null; balanceDay: string | null } | undefined,
@@ -213,8 +216,8 @@ function uninvestedCash(
 }
 
 /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
-export async function loadHoldingsOverview(db: Db) {
-  const year = Number(localDateStr().slice(0, 4));
+export async function loadHoldingsOverview(db: Db, asOf: Date) {
+  const year = asOf.getFullYear();
   const [holdings, accounts, sec, assetClasses, target] = await Promise.all([
     loadLatestHoldings(db),
     loadAccounts(db),
@@ -229,16 +232,15 @@ export async function loadHoldingsOverview(db: Db) {
       .from(schema.assetClassParams)
       .where(eq(schema.assetClassParams.isActive, true))
       .orderBy(schema.assetClassParams.sortOrder),
-    targetByAssetClass(db),
+    targetByAssetClass(db, asOf),
   ]);
   const [allValued, links] = await Promise.all([
-    valueHoldings(db, holdings),
+    valueHoldings(db, holdings, asOf),
     loadBucketLinks(db),
   ]);
-  // Only SimpleFIN accounts linked to a Ledgr account count — an unlinked
-  // feed (a duplicate connection, an old replay, an account Ledgr doesn't
-  // track) would otherwise count the same money twice. Their dollars are
-  // reported so the page can say what's left out.
+  // Only SimpleFIN accounts linked to a Ledgr account count: an unlinked feed
+  // would count the same money twice. Their dollars are reported so the page
+  // can say what's left out.
   const isLinked = (simplefinAccountId: number) =>
     accounts.get(simplefinAccountId)?.performanceAccountId != null;
   const valued = allValued.filter((v) => isLinked(v.simplefinAccountId));

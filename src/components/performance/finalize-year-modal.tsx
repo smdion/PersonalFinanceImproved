@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalCancel } from "@/components/ui/modal";
 import { accountDisplayName, formatCurrency } from "@/lib/utils/format";
 import { describeCheck, PERF_FIELD_HELP } from "@/lib/config/performance-help";
 import {
@@ -126,8 +126,7 @@ export function FinalizeYearModal({
     <Modal
       onClose={onCancel}
       label={`Finalize ${year}`}
-      closeOnEscape={!isPending}
-      closeOnBackdrop={!isPending}
+      busy={isPending}
       className="bg-surface-primary mx-4 max-h-[85vh] w-full max-w-4xl overflow-auto rounded-lg border shadow-xl"
     >
       <div className="bg-surface-primary sticky top-0 flex items-center justify-between border-b px-6 py-4">
@@ -242,13 +241,11 @@ export function FinalizeYearModal({
       </div>
 
       <div className="bg-surface-primary sticky bottom-0 flex justify-end gap-3 border-t px-6 py-4">
-        <button
-          onClick={onCancel}
-          disabled={isPending}
-          className="text-muted hover:bg-surface-elevated rounded-md px-4 py-2 text-sm transition-colors"
-        >
-          Cancel
-        </button>
+        <ModalCancel>
+          <button className="text-muted hover:bg-surface-elevated rounded-md px-4 py-2 text-sm transition-colors">
+            Cancel
+          </button>
+        </ModalCancel>
         <button
           onClick={handleConfirm}
           disabled={isPending}

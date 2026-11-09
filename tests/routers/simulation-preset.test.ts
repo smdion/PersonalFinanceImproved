@@ -44,7 +44,7 @@ describe("simulation presets", () => {
       .run();
     const preset = (key: string, returnMultiplier: string) =>
       db
-        .insert(sqlite.mcPresets)
+        .insert(sqlite.simulationPresets)
         .values({
           key,
           label: key,
@@ -61,13 +61,13 @@ describe("simulation presets", () => {
         .get().id;
     const def = preset("default", "0.5");
     preset("conservative", "0.5");
-    db.insert(sqlite.mcPresetGlidePaths)
+    db.insert(sqlite.simulationPresetGlidePaths)
       .values([
         { presetId: def, age: 60, assetClassId: stocks, allocation: "0.6" },
         { presetId: def, age: 60, assetClassId: bonds, allocation: "0.4" },
       ])
       .run();
-    db.insert(sqlite.mcPresetReturnOverrides)
+    db.insert(sqlite.simulationPresetReturnOverrides)
       .values({ presetId: def, assetClassId: stocks, meanReturn: "0.06" })
       .run();
     db.insert(sqlite.glidePathAllocations)
@@ -123,6 +123,22 @@ describe("simulation presets", () => {
     ]);
     expect(s!.meanReturn).toBe(0.09);
     expect(b!.meanReturn).toBe(0.03);
+  });
+
+  it("a class a zero-multiplier preset doesn't override draws at half its table mean", async () => {
+    // simulation-preset.ts's documented fallback (November's S25, a 0.5 →
+    // 1.0 mutant, survived): under a preset whose multiplier is 0 with
+    // return overrides, a class without one takes 0.5 × its table mean
+    // (Conservative's International Bonds, answer key K16).
+    const p = await loadSimulationPreset(ctx.db as never, "default");
+    const [s, b] = presetAssetClasses(classes(), {
+      ...p,
+      returnMultiplier: 0,
+      returnOverrides: new Map([[stocks, 0.03]]),
+      savedAssetOverrides: [],
+    });
+    expect(s!.meanReturn).toBe(0.03);
+    expect(b!.meanReturn).toBe(0.02);
   });
 
   it("the glide-path check reads the Default preset, not Custom's table", async () => {

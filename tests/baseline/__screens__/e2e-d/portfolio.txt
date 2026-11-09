@@ -21,13 +21,13 @@ Sam$560,000.00(23.4%)
 Alex$330,000.00(13.8%)
 Total$2,390,000.00
 Tax Bucket
-After-Tax$1,500,000.00(62.8%)
+After-tax$1,500,000.00(62.8%)
 Traditional$650,000.00(27.2%)
 Roth$200,000.00(8.4%)
 HSA$40,000.00(1.7%)
 Total$2,390,000.00
 Per Person Detail
-Joint After-Tax$1,500,000.00(62.8%)
+Joint After-tax$1,500,000.00(62.8%)
 Sam Traditional$400,000.00(16.7%)
 Alex Traditional$250,000.00(10.5%)
 Sam Roth$120,000.00(5.0%)

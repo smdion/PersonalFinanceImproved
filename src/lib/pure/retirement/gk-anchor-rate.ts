@@ -1,9 +1,7 @@
 /**
- * The rate Guyton-Klinger actually anchors on (not the flat "Initial
- * Withdrawal Rate" setting): what the portfolio pays in the first retirement
- * year — spending less Social Security — over the retirement balance carried
- * into it. Null while Social Security covers all of it (the engine anchors
- * later), or with no retirement year or balance.
+ * Guyton-Klinger's real anchor rate: the first retirement year's portfolio draw (spending less
+ * Social Security) over the balance carried into it. Null while Social Security covers all of it
+ * (the engine anchors later), or with no retirement year or balance.
  */
 export function gkAnchorRate(
   years: readonly {

@@ -16,19 +16,9 @@ import {
 
 export const summaryProcedures = {
   /**
-   * List all budget profiles with summary totals (for profile sidebar), plus
-   * each profile's own "Unspent" figure — take-home pay under the active
-   * Contribution/Salary Profiles, minus that profile's spending, minus its
-   * savings allocations.
-   *
-   * Unspent is computed here rather than client-side because the panel that
-   * shows it used to call `paycheck.computeSummary` with no input at all,
-   * which server-side means *no* profile is applied — so the figure silently
-   * ignored the active Contribution and Salary Profiles. This procedure
-   * already loops every profile and already resolves each profile's own
-   * savings allocations and per-mode weighting, so resolving the pay side
-   * here too keeps it to one round trip and one computation path. The
-   * active ids are read from app_settings here.
+   * Every budget profile with summary totals and its own "Unspent": take-home pay under the
+   * active Contribution/Salary Profiles, minus that profile's spending and savings
+   * allocations. Computed here, where each profile's allocations already resolve.
    */
   listProfiles: protectedProcedure.query(async ({ ctx }) => {
     const profiles = await ctx.db
@@ -52,11 +42,8 @@ export const summaryProcedures = {
         .where(eq(schema.savingsGoals.isActive, true)),
       resolveProfileSelection(ctx.scope),
     ]);
-    // Savings funding is per-(goal, profile) — resolve once per profile and
-    // fold the monthly total into annualTotal so it isn't silently excluded
-    // (Budget spends what Contributions sets, Savings allocates what's
-    // left — annualTotal should reflect all three stages, not just budget
-    // items).
+    // Savings funding is per (goal, profile): resolve per profile and fold the
+    // monthly total into annualTotal, which covers budget items and savings.
     const monthlySavingsByProfile = new Map<number, number>();
     if (activeGoals.length > 0) {
       await Promise.all(
@@ -74,10 +61,8 @@ export const summaryProcedures = {
     }
 
     // ── Take-home pay ──
-    // The active Contribution/Salary pair — the same for every budget
-    // profile, since a budget column is a spending level, not a different
-    // pay world. One computePaycheckSummary call (the summary the
-    // Paycheck page shows), not a parallel re-derivation.
+    // One active Contribution/Salary pair for every budget profile (a column is
+    // a spending level, not a pay world), via the Paycheck page's computePaycheckSummary.
     const paycheckData = await computePaycheckSummary(
       ctx,
       summaryProfileIdsInput(activeProfiles),
@@ -105,7 +90,7 @@ export const summaryProcedures = {
       // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
       // every contribution-linked item from this sidebar's totals.
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,

@@ -5,12 +5,19 @@
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
 import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
+import {
+  ContributionPeriodToggle,
+  getPeriodSuffix,
+  householdPeriodsPerYear,
+  toContributionPeriod,
+  type ContributionPeriod,
+} from "@/components/ui/contrib-period-toggle";
 import { ContributionsQueryBoundary } from "./contributions-query-boundary";
 import { queryPending } from "@/components/ui/query-boundary";
 import {
@@ -35,24 +42,6 @@ import {
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
-type PeriodMode = "annual" | "monthly" | "per-period";
-
-function toDisplay(
-  annual: number,
-  periodsPerYear: number,
-  mode: PeriodMode,
-): number {
-  if (mode === "monthly") return annual / 12;
-  if (mode === "per-period") return annual / periodsPerYear;
-  return annual;
-}
-
-function periodLabel(mode: PeriodMode): string {
-  if (mode === "monthly") return "/mo";
-  if (mode === "per-period") return "/period";
-  return "/yr";
-}
-
 export function ContributionsContent() {
   const { viewMode } = useScenario();
   const user = useUser();
@@ -60,26 +49,21 @@ export function ContributionsContent() {
   const canEditPriorYear = isAdmin(user);
   const utils = trpc.useUtils();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
-  const [period, setPeriod] = useState<PeriodMode>("annual");
-  const [activeProfileId] = useActiveContribProfile();
+  const [period, setPeriod] = useState<ContributionPeriod>("annual");
+  const [activeProfileId] = useActiveContributionProfile();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  // the active profile — the primary summary below must stay
-  // in sync with Paycheck/Budget's resolution instead of always reading raw
-  // Live data (see docs/DESIGN.md "Profile Resolution"). This is distinct from
-  // selectedProfileId below, which is a "compare against a specific other
-  // profile" picker and deliberately stays local-only.
-  const { profileId: effectiveActiveContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
+  // The active profile, resolved like Paycheck/Budget (docs/DESIGN.md "Profile
+  // Resolution"). Separate from selectedProfileId, a local compare picker.
+  const { profileId: effectiveActiveContributionProfileId } =
+    useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
       localSelection: null,
       activeProfileId,
-    },
-  );
+    });
   const dataInput = {
-    ...(effectiveActiveContribProfileId != null
-      ? { contributionProfileId: effectiveActiveContribProfileId }
+    ...(effectiveActiveContributionProfileId != null
+      ? { contributionProfileId: effectiveActiveContributionProfileId }
       : {}),
     ...salaryProfileInput,
   };
@@ -94,8 +78,8 @@ export function ContributionsContent() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
-  const { threshold: highIncomeThreshold, error: highIncomeError } =
-    useHighIncomeLine();
+  const highIncome = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   // Before the early returns (hooks): the switches are shared app-wide.
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(
@@ -117,25 +101,19 @@ export function ContributionsContent() {
     { enabled: !!selectedProfileId },
   );
 
-  if (highIncomeError) {
+  if (highIncomeError)
     return (
-      <div>
-        <PageHeader
-          title="Contributions"
-          subtitle="Household contribution breakdown and savings rates"
-        />
-        <Card>
-          <p className="py-8 text-center text-sm text-red-500">
-            Failed to load the high-income line
-          </p>
-        </Card>
-      </div>
+      <ContributionsQueryBoundary
+        query={highIncome}
+        what="the high-income line"
+      />
     );
-  }
 
-  // The high-income line's own failure has its card above.
+  // The high-income line's own failure has its boundary above.
   if (queryPending(summary) || highIncomeThreshold === undefined)
-    return <ContributionsQueryBoundary query={summary} />;
+    return (
+      <ContributionsQueryBoundary query={summary} what="contribution data" />
+    );
 
   const people = data?.people ?? [];
   const priorYearWindow = data?.priorYearWindow ?? null;
@@ -164,11 +142,9 @@ export function ContributionsContent() {
     0,
   );
 
-  const avgPeriodsPerYear =
-    activePeople.length > 0
-      ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
-        activePeople.length
-      : 26;
+  const avgPeriodsPerYear = householdPeriodsPerYear(
+    activePeople.map((p) => p.periodsPerYear),
+  );
 
   // Household totals and rates: the same calculation as the Financial
   // Checkup (householdSavings — joint accounts per view; YTD divides by pay
@@ -207,7 +183,53 @@ export function ContributionsContent() {
   const totalWithout = savingsWithout.total;
   const totalEmployerMatch = totalWith - totalWithout;
 
-  const pl = periodLabel(period);
+  const pl = getPeriodSuffix(period);
+
+  // Total counts Portfolio money only while the portfolio switch is on.
+  const counted = (sv: HouseholdSavings) =>
+    includePortfolio ? sv.total : group(sv, "retirement").total;
+  const share = (n: number) => safeDivide(n, savingsWith.compensation, 0);
+  const hhRateWith = share(counted(savingsWith));
+  const hhRateWithout = share(counted(savingsWithout));
+  const retRateWith = group(savingsWith, "retirement").share;
+  const retRateWithout = group(savingsWithout, "retirement").share;
+  const portRateWith = group(savingsWith, "portfolio").share;
+  const portRateWithout = group(savingsWithout, "portfolio").share;
+  const isBlended = viewMode === "blended";
+  const primary = excludeMatch ? "without" : "with";
+
+  // Profile Comparison's rows, once the compared profile has loaded.
+  const profile = profileData
+    ? savingsOf(
+        {
+          people: profileData.people.filter((p) => p.salary > 0),
+          joint: profileData.jointAccountTypes,
+        },
+        excludeMatch,
+      )
+    : null;
+  const profileRows =
+    profile === null
+      ? []
+      : [
+          {
+            label: excludeMatch ? "Total (w/o match)" : "Total (w/ match)",
+            current: excludeMatch ? totalWithout : totalWith,
+            profile: profile.total,
+          },
+          {
+            label: "Retirement",
+            current: excludeMatch
+              ? totalRetirementWithout
+              : totalRetirementWith,
+            profile: group(profile, "retirement").total,
+          },
+          {
+            label: "Portfolio",
+            current: excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
+            profile: group(profile, "portfolio").total,
+          },
+        ];
 
   return (
     <div>
@@ -242,25 +264,12 @@ export function ContributionsContent() {
               </select>
             </label>
           )}
-          <div className="bg-surface-elevated flex gap-1 rounded-full p-0.5">
-            {(["annual", "monthly", "per-period"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setPeriod(m)}
-                className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                  period === m
-                    ? "bg-blue-600 text-white"
-                    : "text-muted hover:text-primary"
-                }`}
-              >
-                {m === "annual"
-                  ? "Annual"
-                  : m === "monthly"
-                    ? "Monthly"
-                    : "Per Period"}
-              </button>
-            ))}
-          </div>
+          <ContributionPeriodToggle
+            value={period}
+            onChange={setPeriod}
+            order="annualFirst"
+            look="pill"
+          />
         </div>
       </PageHeader>
       <CoastFireNote />
@@ -281,105 +290,85 @@ export function ContributionsContent() {
 
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {(() => {
-          // Total counts Portfolio money only while the portfolio switch is on.
-          const counted = (sv: HouseholdSavings) =>
-            includePortfolio ? sv.total : group(sv, "retirement").total;
-          const share = (n: number) =>
-            safeDivide(n, savingsWith.compensation, 0);
-          const hhRateWith = share(counted(savingsWith));
-          const hhRateWithout = share(counted(savingsWithout));
-          const retRateWith = group(savingsWith, "retirement").share;
-          const retRateWithout = group(savingsWithout, "retirement").share;
-          const portRateWith = group(savingsWith, "portfolio").share;
-          const portRateWithout = group(savingsWithout, "portfolio").share;
-          const isBlended = viewMode === "blended";
-          const primary = excludeMatch ? "without" : "with";
-          return (
-            <>
-              {/* The sentence, with what the savings rate counts at its
-                  right — a household setting (the Dashboard's too), so it
-                  sits with the rates it changes. The account tables below
-                  always show every account. */}
-              <div className="md:col-span-3">
-                <PlainSummary
-                  aside={
-                    <>
-                      <span className="text-caption text-faint">Counts</span>
-                      <ChipToggle
-                        isChecked={!excludeMatch}
-                        onChange={toggleMatch}
-                        label="Employer match"
-                        title="Count the employer match in the savings rate (also on the Dashboard)"
-                      />
-                      <ChipToggle
-                        isChecked={includePortfolio}
-                        onChange={togglePortfolio}
-                        label="Portfolio"
-                        title="Count brokerage and other non-retirement savings (also on the Dashboard)"
-                      />
-                      <HighIncomeLineEdit />
-                    </>
-                  }
-                  text={
-                    viewMode !== "projected"
-                      ? undefined
-                      : contributionsSummaryLine({
-                          rate:
-                            primary === "without" ? hhRateWithout : hhRateWith,
-                          annualAmount: counted(
-                            excludeMatch ? savingsWithout : savingsWith,
-                          ),
-                          matchIncluded: !excludeMatch,
-                          includePortfolio,
-                          nextAction: nextPaycheckAction,
-                        })
-                  }
-                />
-              </div>
-              <SummaryCard
-                label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
-                rate={primary === "without" ? hhRateWithout : hhRateWith}
-                rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
-                  counted(excludeMatch ? savingsWithout : savingsWith),
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-blue-500"
-              />
-              <SummaryCard
-                label={isBlended ? "Retirement (Est.)" : "Retirement"}
-                rate={primary === "without" ? retRateWithout : retRateWith}
-                rateAlt={primary === "without" ? retRateWith : retRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
-                  excludeMatch ? totalRetirementWithout : totalRetirementWith,
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-emerald-500"
-              />
-              <SummaryCard
-                label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
-                rate={primary === "without" ? portRateWithout : portRateWith}
-                rateAlt={primary === "without" ? portRateWith : portRateWithout}
-                altLabel={excludeMatch ? "w/ match" : "w/o match"}
-                amount={toDisplay(
-                  excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
-                  avgPeriodsPerYear,
-                  period,
-                )}
-                pl={pl}
-                color="bg-purple-500"
-                note={includePortfolio ? undefined : "Not counted in the total"}
-              />
-            </>
-          );
-        })()}
+        <>
+          {/* The sentence, with the savings-rate "counts" setting beside
+                  it (household-wide); the account tables show every account. */}
+          <div className="md:col-span-3">
+            <PlainSummary
+              aside={
+                <>
+                  <span className="text-caption text-faint">Counts</span>
+                  <ChipToggle
+                    isChecked={!excludeMatch}
+                    onChange={toggleMatch}
+                    label="Employer match"
+                    title="Count the employer match in the savings rate (also on the Dashboard)"
+                  />
+                  <ChipToggle
+                    isChecked={includePortfolio}
+                    onChange={togglePortfolio}
+                    label="Portfolio"
+                    title="Count brokerage and other non-retirement savings (also on the Dashboard)"
+                  />
+                  <HighIncomeLineEdit />
+                </>
+              }
+              text={
+                viewMode !== "projected"
+                  ? undefined
+                  : contributionsSummaryLine({
+                      rate: primary === "without" ? hhRateWithout : hhRateWith,
+                      annualAmount: counted(
+                        excludeMatch ? savingsWithout : savingsWith,
+                      ),
+                      matchIncluded: !excludeMatch,
+                      includePortfolio,
+                      nextAction: nextPaycheckAction,
+                    })
+              }
+            />
+          </div>
+          <SummaryCard
+            label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
+            rate={primary === "without" ? hhRateWithout : hhRateWith}
+            rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              counted(excludeMatch ? savingsWithout : savingsWith),
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-blue-500"
+          />
+          <SummaryCard
+            label={isBlended ? "Retirement (Est.)" : "Retirement"}
+            rate={primary === "without" ? retRateWithout : retRateWith}
+            rateAlt={primary === "without" ? retRateWith : retRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              excludeMatch ? totalRetirementWithout : totalRetirementWith,
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-emerald-500"
+          />
+          <SummaryCard
+            label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
+            rate={primary === "without" ? portRateWithout : portRateWith}
+            rateAlt={primary === "without" ? portRateWith : portRateWithout}
+            altLabel={excludeMatch ? "w/ match" : "w/o match"}
+            amount={toContributionPeriod(
+              excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
+              avgPeriodsPerYear,
+              period,
+            )}
+            pl={pl}
+            color="bg-purple-500"
+            note={includePortfolio ? undefined : "Not counted in the total"}
+          />
+        </>
       </div>
 
       {/* Employer match summary */}
@@ -388,7 +377,11 @@ export function ContributionsContent() {
           <div className="flex items-center gap-4 py-2">
             <div className="text-2xl font-bold text-emerald-600">
               {formatCurrency(
-                toDisplay(totalEmployerMatch, avgPeriodsPerYear, period),
+                toContributionPeriod(
+                  totalEmployerMatch,
+                  avgPeriodsPerYear,
+                  period,
+                ),
               )}
               <span className="text-muted ml-1 text-sm font-normal">{pl}</span>
             </div>
@@ -436,7 +429,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
@@ -445,7 +438,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right text-emerald-600">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employerMatch,
                             person.periodsPerYear,
                             period,
@@ -454,7 +447,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-1.5 text-right font-medium">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].totalContrib,
                             person.periodsPerYear,
                             period,
@@ -488,7 +481,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].employeeContrib,
                           avgPeriodsPerYear,
                           period,
@@ -497,7 +490,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right text-emerald-600">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].employerMatch,
                           avgPeriodsPerYear,
                           period,
@@ -506,7 +499,7 @@ export function ContributionsContent() {
                     </td>
                     <td className="py-1.5 text-right font-medium">
                       {formatCurrency(
-                        toDisplay(
+                        toContributionPeriod(
                           a.views[viewMode].totalContrib,
                           avgPeriodsPerYear,
                           period,
@@ -545,11 +538,11 @@ export function ContributionsContent() {
             </thead>
             <tbody>
               {person.accountTypes.map((a) => {
-                const utilPct = a.views[viewMode].fundingPct * 100;
+                const utilPercent = a.views[viewMode].fundingPct * 100;
                 const barColor =
-                  utilPct >= 95
+                  utilPercent >= 95
                     ? "bg-emerald-500"
-                    : utilPct >= 80
+                    : utilPercent >= 80
                       ? "bg-yellow-500"
                       : "bg-blue-500";
 
@@ -588,7 +581,7 @@ export function ContributionsContent() {
                       </td>
                       <td className="py-2 text-right">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
@@ -599,7 +592,7 @@ export function ContributionsContent() {
                         {a.employerMatch > 0 ? (
                           <span className="text-emerald-600">
                             {formatCurrency(
-                              toDisplay(
+                              toContributionPeriod(
                                 a.views[viewMode].employerMatch,
                                 person.periodsPerYear,
                                 period,
@@ -620,7 +613,7 @@ export function ContributionsContent() {
                               <div
                                 className={`h-full rounded-full ${barColor}`}
                                 style={{
-                                  width: `${Math.min(100, utilPct)}%`,
+                                  width: `${Math.min(100, utilPercent)}%`,
                                 }}
                               />
                             </div>
@@ -695,16 +688,7 @@ export function ContributionsContent() {
                               />
                             </div>
                             <span className="text-caption text-muted w-10 text-right">
-                              {(() => {
-                                const priorYearRatio = safeDivide(
-                                  a.priorYear.amount,
-                                  a.priorYear.limit,
-                                  null,
-                                );
-                                return priorYearRatio === null
-                                  ? "—"
-                                  : formatPercent(priorYearRatio, 0);
-                              })()}
+                              {renderPriorYearShare(a.priorYear)}
                             </span>
                           </div>
                         </td>
@@ -719,7 +703,7 @@ export function ContributionsContent() {
                 <td className="py-2 font-medium">Total</td>
                 <td className="py-2 text-right font-medium">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
                       period,
@@ -728,7 +712,7 @@ export function ContributionsContent() {
                 </td>
                 <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       person.totals.views[viewMode].totalWithMatch -
                         person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
@@ -759,7 +743,7 @@ export function ContributionsContent() {
       {/* Joint accounts */}
       {jointAccountTypes.length > 0 && (
         <Card
-          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}${pl}`}
+          title={`Joint — ${formatCurrency(toContributionPeriod(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}${pl}`}
           className="mb-6"
         >
           <table className="w-full text-sm">
@@ -793,7 +777,7 @@ export function ContributionsContent() {
                   </td>
                   <td className="py-2 text-right">
                     {formatCurrency(
-                      toDisplay(
+                      toContributionPeriod(
                         a.views[viewMode].employeeContrib,
                         avgPeriodsPerYear,
                         period,
@@ -804,7 +788,7 @@ export function ContributionsContent() {
                     {a.employerMatch > 0 ? (
                       <span className="text-emerald-600">
                         {formatCurrency(
-                          toDisplay(
+                          toContributionPeriod(
                             a.views[viewMode].employerMatch,
                             avgPeriodsPerYear,
                             period,
@@ -827,7 +811,7 @@ export function ContributionsContent() {
                 <td className="py-2 font-medium">Total</td>
                 <td className="py-2 text-right font-medium">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       jointTotals.totalWithoutMatch,
                       avgPeriodsPerYear,
                       period,
@@ -836,7 +820,7 @@ export function ContributionsContent() {
                 </td>
                 <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
-                    toDisplay(
+                    toContributionPeriod(
                       jointTotals.totalWithMatch -
                         jointTotals.totalWithoutMatch,
                       avgPeriodsPerYear,
@@ -864,50 +848,27 @@ export function ContributionsContent() {
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const profile = savingsOf(
-                  {
-                    people: profileData.people.filter((p) => p.salary > 0),
-                    joint: profileData.jointAccountTypes,
-                  },
-                  excludeMatch,
-                );
-                return [
-                  {
-                    label: excludeMatch
-                      ? "Total (w/o match)"
-                      : "Total (w/ match)",
-                    current: excludeMatch ? totalWithout : totalWith,
-                    profile: profile.total,
-                  },
-                  {
-                    label: "Retirement",
-                    current: excludeMatch
-                      ? totalRetirementWithout
-                      : totalRetirementWith,
-                    profile: group(profile, "retirement").total,
-                  },
-                  {
-                    label: "Portfolio",
-                    current: excludeMatch
-                      ? totalPortfolioWithout
-                      : totalPortfolioWith,
-                    profile: group(profile, "portfolio").total,
-                  },
-                ];
-              })().map((row) => {
+              {profileRows.map((row) => {
                 const delta = row.profile - row.current;
                 return (
                   <tr key={row.label} className="border-subtle border-b">
                     <td className="py-1.5">{row.label}</td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(row.current, avgPeriodsPerYear, period),
+                        toContributionPeriod(
+                          row.current,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
                       )}
                     </td>
                     <td className="py-1.5 text-right">
                       {formatCurrency(
-                        toDisplay(row.profile, avgPeriodsPerYear, period),
+                        toContributionPeriod(
+                          row.profile,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
                       )}
                     </td>
                     <td
@@ -915,7 +876,7 @@ export function ContributionsContent() {
                     >
                       {delta > 0 ? "+" : ""}
                       {formatCurrency(
-                        toDisplay(delta, avgPeriodsPerYear, period),
+                        toContributionPeriod(delta, avgPeriodsPerYear, period),
                       )}
                     </td>
                   </tr>
@@ -927,6 +888,12 @@ export function ContributionsContent() {
       )}
     </div>
   );
+}
+
+/** A prior-year row's share of its limit, or a dash when it has none. */
+function renderPriorYearShare(priorYear: { amount: number; limit: number }) {
+  const priorYearRatio = safeDivide(priorYear.amount, priorYear.limit, null);
+  return priorYearRatio === null ? "—" : formatPercent(priorYearRatio, 0);
 }
 
 function SummaryCard({

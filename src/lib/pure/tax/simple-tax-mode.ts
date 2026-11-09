@@ -1,14 +1,7 @@
 /**
- * Simple tax mode (simulation only, cFIREsim-comparable): retirement money
- * as one tax-free pot. Retirement answers count retirement money only, so
- * Simple is the retirement side of the household collapsed — never Portfolio
- * balances, Portfolio contributions or match, brokerage goals, or injections
- * that land in Portfolio money in the full (Advanced) projection. Its total
- * then equals its retirement balance by construction.
- *
- * Built from the Advanced input while it still has its individual accounts,
- * so lump sums are judged by the same target rule the engine uses
- * (`resolveLumpSumTarget`).
+ * Simple tax mode (simulation only, cFIREsim-comparable): retirement money as one tax-free pot,
+ * with nothing that lands in Portfolio money in the Advanced projection. Built from the Advanced
+ * input while it has its accounts, so lump sums follow `resolveLumpSumTarget`.
  */
 import {
   getAllCategories,
@@ -23,7 +16,7 @@ import type { AccountCategory } from "../../config/account-types";
 import type {
   AccumulationDefaults,
   ProjectionInput,
-  RetirementContribSlice,
+  RetirementContributionSlice,
 } from "../engine/types";
 import type {
   IndividualAccountInput,
@@ -35,7 +28,7 @@ export type SimpleTaxModeParts = {
   retirementBuckets: TaxBuckets;
   /** The default contribution profile's retirement slice, plus the
    *  routing splits recomputed from it. */
-  defaults: RetirementContribSlice & {
+  defaults: RetirementContributionSlice & {
     accountSplits: AccumulationDefaults["accountSplits"];
     taxSplits: AccumulationDefaults["taxSplits"];
   };
@@ -46,13 +39,13 @@ export type SimpleTaxModeParts = {
  *  are marked as Portfolio savings. */
 function withRetirementLumpSums<T extends { lumpSums?: LumpSum[] }>(
   override: T,
-  indAccts: readonly IndividualAccountInput[],
+  indAccounts: readonly IndividualAccountInput[],
 ): T {
   if (!override.lumpSums) return override;
   return {
     ...override,
     lumpSums: override.lumpSums.filter((ls) => {
-      const target = resolveLumpSumTarget(ls, indAccts);
+      const target = resolveLumpSumTarget(ls, indAccounts);
       return target
         ? isRetirementMoney(target.parentCategory)
         : isRetirementMoney(ls.targetParentCategory);
@@ -64,14 +57,14 @@ export function toSimpleTaxMode(
   input: ProjectionInput,
   parts: SimpleTaxModeParts,
 ): ProjectionInput {
-  const indAccts = input.individualAccounts ?? [];
+  const indAccounts = input.individualAccounts ?? [];
   const b = parts.retirementBuckets;
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
     isRetirementMoney(s.parentCategory);
   // The ramp is Portfolio savings whenever there's a real Portfolio
   // brokerage to hold it (the engine's rule); otherwise retirement money.
-  const hasPortfolioBrokerage = indAccts.some(
+  const hasPortfolioBrokerage = indAccounts.some(
     (ia) =>
       isOverflowTarget(ia.category) &&
       !ia.projectedOnly &&
@@ -133,10 +126,8 @@ export function toSimpleTaxMode(
         ...sw.retirementOnly,
       };
     }),
-    // Tax-free means no table-based tax either: with a filing status the
-    // engine taxes the pot's gains on the capital-gains brackets (not the
-    // 0 brokerage rate above) and adds NIIT; IRMAA and the ACA check read
-    // the same gains as MAGI. None of them belong in one tax-free pot.
+    // Tax-free means no table-based tax either: no capital-gains brackets, NIIT, IRMAA or ACA
+    // MAGI on the pot's gains.
     filingStatus: undefined,
     enableIrmaaAwareness: false,
     irmaaAwareRothConversions: false,
@@ -146,14 +137,14 @@ export function toSimpleTaxMode(
       ? 0
       : input.brokerageContributionRamp,
     accumulationOverrides: input.accumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccts),
+      withRetirementLumpSums(o, indAccounts),
     ),
     decumulationOverrides: input.decumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccts),
+      withRetirementLumpSums(o, indAccounts),
     ),
     // Simple discards account identity: the one pot is the only
     // representation (per-account tracking would route withdrawals against
-    // real accounts the aggregate no longer has).
+    // real accounts the aggregate doesn't have).
     individualAccounts: [],
   };
 }

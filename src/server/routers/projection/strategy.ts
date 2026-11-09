@@ -1,27 +1,7 @@
 /**
- * Withdrawal strategy comparison + analyzer endpoints, plus the
- * strategy-adjacent settings mutations.
- *
- * Contains:
- * - `computeStrategyComparison` — runs calculateProjection() for each
- *   strategy varying only withdrawalStrategy + strategyParams.
- * - `analyzeStrategy` — runs what-if MC scenarios on the active strategy
- *   and returns ranked recommendations.
- * - `updateAssetClassOverrides` — persists user asset class return/vol
- *   overrides to appSettings.
- *
- * Both procedures below build `decumulationDefaults` via the shared
- * `buildDecumulationDefaults` (_shared.ts) — the single place that
- * resolves a household's real RMD/QCD/discretionary-order/routing-mode
- * settings — then override only the field(s) that are the actual
- * controlled variable for that comparison (`withdrawalStrategy` +
- * `strategyParams` per candidate in `computeStrategyComparison`; nothing
- * in `analyzeStrategy`, which already wants the household's real active
- * strategy). Previously both hand-built the object inline and silently
- * dropped `rmdExcessHandling`/`qcdMaximize`/`rmdSmoothingEnabled`/
- * `discretionaryWithdrawalOrder` to engine defaults regardless of what was
- * configured — fixed alongside a related cache-key bug (see
- * `computeStrategyComparison`'s `inputHash` comment).
+ * `computeStrategyComparison`, `analyzeStrategy` and `updateAssetClassOverrides`. Both
+ * procedures build decumulation defaults via `buildDecumulationDefaults` (_shared.ts) and
+ * override only the compared variable (withdrawalStrategy + strategyParams per candidate).
  */
 import {
   planEndAge as planEndAgeOf,
@@ -44,6 +24,7 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import { calculateProjection } from "@/lib/pure/engine";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
@@ -51,9 +32,9 @@ import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
-import { formatPercent } from "@/lib/utils/format";
-import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import { roundToCents } from "@/lib/utils/math";
+import { formatPercent } from "@/lib/utils/percent";
+import { SIMULATION_CONFIDENCE_THRESHOLD } from "@/lib/constants";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { prepareProjectionRun } from "@/server/services/projection/projection-run";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
@@ -71,7 +52,7 @@ import {
   resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
-import { buildMcInputs } from "@/server/services/simulation/mc-inputs";
+import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -83,6 +64,12 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 import { upsertSetting } from "@/server/data/settings";
+
+/** The mean of `values`; 0 when there are none. */
+function average(values: readonly number[]): number {
+  const total = values.reduce((s, v) => s + v, 0);
+  return safeDivide(total, values.length, 0);
+}
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -123,11 +110,14 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
-        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(
+          ctx.db,
+          input?.preset ?? DEFAULT_SIMULATION.preset,
+        ),
       ]);
       if (!payload) return { strategies: [], activeStrategy: null };
       if (payload.notConfigured)
@@ -145,7 +135,7 @@ export const strategyRouter = createTRPCRouter({
       } = payload;
 
       // Build MC-aligned deterministic return rates using geometric means
-      const mcReturnRates: { label: string; rate: number }[] = [];
+      const simulationReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
         a <= planEndAgeOf(baseEngineInput);
@@ -153,12 +143,12 @@ export const strategyRouter = createTRPCRouter({
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = weightedGeometricRate(mcAssetClasses, allocations);
-        mcReturnRates.push({ label: `Age ${a}`, rate: blended });
+        simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcBaseEngineInput = {
         ...baseEngineInput,
-        returnRates: mcReturnRates,
+        returnRates: simulationReturnRates,
         // VPW sizes by the stock share of the glide path this run uses.
         stockShareByAge:
           stockShareByAge(
@@ -173,27 +163,19 @@ export const strategyRouter = createTRPCRouter({
       const hasMcData = notConfigured === null;
 
       const userStrategyParams = buildStrategyParams(settings);
-      const activeStrategy =
-        settings.withdrawalStrategy as WithdrawalStrategyType;
+      const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
 
-      // Resolved ONCE for the whole request — every candidate below spreads
-      // this and overrides only withdrawalStrategy/strategyParams, so the
-      // household's real RMD/QCD/discretionary-order/routing-mode/order/splits
-      // settings apply to every candidate, not just whichever one happens to
-      // be "active" (buildDecumulationDefaults, _shared.ts). No client
-      // override slot filled here — order/splits resolve from the
-      // household's persisted profile defaults.
+      // Resolved once; each candidate overrides only withdrawalStrategy/strategyParams,
+      // so the household's RMD/QCD/routing/order/splits settings apply to all of them
+      // (no client override slot: persisted profile defaults).
       const baseDecumulationDefaults = buildDecumulationDefaults(
         settings,
         { withdrawalTaxPreference: {} },
         distributionTaxRates,
       );
 
-      // Every strategy's lightweight MC uses a fixed seed (42, common random
-      // numbers across strategies for a fair comparison) — like Coast-FIRE
-      // MC's search, this whole computation is already a pure function of
-      // its inputs, so no seed persistence is needed, unlike
-      // computeMonteCarloProjection's per-run random seed.
+      // Every strategy's lightweight Simulation uses fixed seed 42 (common random
+      // numbers for a fair comparison), so no seed needs persisting.
       type StrategyComparisonResult = {
         /** The Simulation preset behind the Success and Stability columns. */
         presetLabel: string;
@@ -203,18 +185,9 @@ export const strategyRouter = createTRPCRouter({
         activeStrategy: WithdrawalStrategyType;
         retirementAge: number;
       };
-      // `decumulationDefaults` (not the old `activeStrategy, userStrategyParams`
-      // pair) is what actually varies the computed result — it already
-      // contains both of those PLUS distributionTaxRates and every
-      // RMD/QCD/routing setting. The old key omitted distributionTaxRates
-      // and settings.withdrawalRoutingMode entirely: changing Withdrawal
-      // Routing on the Retirement Profile did NOT invalidate this cache,
-      // so this endpoint could silently
-      // serve a stale comparison computed under the household's OLD
-      // routing mode for the life of the cached row. Every other cache
-      // site in this codebase (scenarios.ts, monte-carlo.ts, coast-fire.ts)
-      // hashes the full built engine input; this was the one exception.
-      // A changed input hash misses every older row; they orphan and evict.
+      // `decumulationDefaults` holds the strategy, its params, distributionTaxRates and
+      // every RMD/QCD/routing setting, so changing any of them misses the cache, as the
+      // other cache sites hash their full engine input. Old rows orphan and evict.
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,
@@ -263,20 +236,17 @@ export const strategyRouter = createTRPCRouter({
             });
 
             // Extract decumulation years for year-by-year data
-            const decYears = result.projectionByYear.filter(
+            const decumulationYears = result.projectionByYear.filter(
               (y): y is Extract<typeof y, { phase: "decumulation" }> =>
                 y.phase === "decumulation",
             );
 
-            const withdrawals = decYears.map((y) => y.totalWithdrawal);
+            const withdrawals = decumulationYears.map((y) => y.totalWithdrawal);
             // What each strategy has the household spend — comparable across
             // strategies whether Social Security comes out of a strategy's
             // amount or on top of it (withdrawals alone aren't).
-            const spendings = decYears.map(strategySpending);
-            const avgWithdrawal =
-              withdrawals.length > 0
-                ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
-                : 0;
+            const spendings = decumulationYears.map(strategySpending);
+            const avgWithdrawal = average(withdrawals);
 
             // Run lightweight MC (200 trials) for success rate + spending stability
             let successRate: number | null = null;
@@ -313,24 +283,12 @@ export const strategyRouter = createTRPCRouter({
                 failureYear,
                 failureReason,
               }))(assessPlan(result)),
-              // sustainableWithdrawal dropped from
-              // this comparison — it's never rendered by
-              // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
-              // min/max already give the real per-strategy withdrawal picture,
-              // sourced from the same totalWithdrawal figures), and after
-              // Step 2 made it strategy-real it would either duplicate
-              // year1Withdrawal (common case) or read as a second, differently
-              // -computed one (RMD-active years, where it reflects the target
-              // before RMD-forced excess rather than what was actually
-              // withdrawn) — a Single Computation Path risk with no UI
-              // consumer to justify it.
+              // No sustainableWithdrawal: nothing renders it, and it would either
+              // duplicate year1Withdrawal or, in RMD years, read as a second
+              // differently-computed withdrawal.
               year1Spending: roundToCents(spendings[0] ?? 0),
-              avgAnnualSpending: roundToCents(
-                spendings.length > 0
-                  ? spendings.reduce((s, v) => s + v, 0) / spendings.length
-                  : 0,
-              ),
-              year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
+              avgAnnualSpending: roundToCents(average(spendings)),
+              year1Withdrawal: decumulationYears[0]?.totalWithdrawal ?? 0,
               avgAnnualWithdrawal: roundToCents(avgWithdrawal),
               minAnnualWithdrawal:
                 withdrawals.length > 0
@@ -341,17 +299,19 @@ export const strategyRouter = createTRPCRouter({
                   ? roundToCents(Math.max(...withdrawals))
                   : 0,
               endRetirementBalance:
-                decYears.length > 0
-                  ? decYears[decYears.length - 1]!.retirementBalance
+                decumulationYears.length > 0
+                  ? decumulationYears[decumulationYears.length - 1]!
+                      .retirementBalance
                   : 0,
               legacyAmount:
-                decYears.length > 0
-                  ? decYears[decYears.length - 1]!.retirementBalance
+                decumulationYears.length > 0
+                  ? decumulationYears[decumulationYears.length - 1]!
+                      .retirementBalance
                   : 0,
               successRate,
               spendingStabilityRate,
               budgetStabilityRate,
-              yearByYear: decYears.map((y, i) => ({
+              yearByYear: decumulationYears.map((y, i) => ({
                 age: y.age,
                 year: y.year,
                 withdrawal: roundToCents(y.totalWithdrawal),
@@ -406,11 +366,14 @@ export const strategyRouter = createTRPCRouter({
           notConfigured,
         },
       ] = await Promise.all([
-        prepareProjectionRun(ctx.db, {
+        prepareProjectionRun(ctx, {
           selection: input?.selection,
           snapshotId: input?.snapshotId,
         }),
-        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
+        buildSimulationInputs(
+          ctx.db,
+          input?.preset ?? DEFAULT_SIMULATION.preset,
+        ),
       ]);
 
       if (!payload)
@@ -438,7 +401,7 @@ export const strategyRouter = createTRPCRouter({
         };
 
       // Build MC return rates
-      const mcReturnRates: { label: string; rate: number }[] = [];
+      const simulationReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
         a <= planEndAgeOf(baseEngineInput);
@@ -446,19 +409,18 @@ export const strategyRouter = createTRPCRouter({
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = weightedGeometricRate(mcAssetClasses, allocations);
-        mcReturnRates.push({ label: `Age ${a}`, rate: blended });
+        simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
 
-      const activeStrategy =
-        settings.withdrawalStrategy as WithdrawalStrategyType;
+      const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
       const strategyMeta = getStrategyMeta(activeStrategy);
       const userStrategyParams = buildStrategyParams(settings);
       const activeParams = userStrategyParams[activeStrategy] ?? {};
 
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
-      const mcBaseEngineInput = {
+      const simulationBaseEngineInput = {
         ...baseEngineInput,
-        returnRates: mcReturnRates,
+        returnRates: simulationReturnRates,
         // VPW sizes by the stock share of the glide path this run uses.
         stockShareByAge:
           stockShareByAge(
@@ -468,11 +430,8 @@ export const strategyRouter = createTRPCRouter({
             planEndAgeOf(baseEngineInput),
           ) ?? undefined,
         ...saved,
-        // buildDecumulationDefaults already resolves withdrawalStrategy to
-        // settings.withdrawalStrategy (= activeStrategy) and strategyParams
-        // to buildStrategyParams(settings) (= userStrategyParams) — a pure
-        // drop-in, no override needed here (unlike computeStrategyComparison,
-        // which varies both per candidate).
+        // buildDecumulationDefaults already resolves the active strategy and its
+        // params, so no override is needed (unlike computeStrategyComparison).
         decumulationDefaults: buildDecumulationDefaults(
           settings,
           { withdrawalTaxPreference: {} },
@@ -481,8 +440,8 @@ export const strategyRouter = createTRPCRouter({
       };
 
       // --- Run baseline MC ---
-      const baselineMc = await runMonteCarloOffThread({
-        engineInput: mcBaseEngineInput,
+      const baselineSimulation = await runMonteCarloOffThread({
+        engineInput: simulationBaseEngineInput,
         numTrials: 200,
         seed: COMPARISON_SEED,
         assetClasses: mcAssetClasses,
@@ -493,16 +452,17 @@ export const strategyRouter = createTRPCRouter({
         returnClampMax: preset!.returnClampMax,
       });
       const baseline = {
-        successRate: baselineMc.successRate,
+        successRate: baselineSimulation.successRate,
         // The budget rate when computable, else the spending rate.
         stabilityRate:
-          baselineMc.budgetStabilityRate ?? baselineMc.spendingStabilityRate,
+          baselineSimulation.budgetStabilityRate ??
+          baselineSimulation.spendingStabilityRate,
       };
 
       // --- Diagnose ---
       type DiagnosisGoal = "survival" | "smoothness" | "healthy";
       let primaryGoal: DiagnosisGoal = "healthy";
-      if (baseline.successRate < MC_CONFIDENCE_THRESHOLD)
+      if (baseline.successRate < SIMULATION_CONFIDENCE_THRESHOLD)
         primaryGoal = "survival";
       else if (baseline.stabilityRate < 0.5) primaryGoal = "smoothness";
       const targetMetric: "survival" | "smoothness" =
@@ -548,10 +508,8 @@ export const strategyRouter = createTRPCRouter({
         });
       }
 
-      // See resolveSsStartAgeBaseline's docblock — avoids gating the
-      // lever below on a possibly-stale household scalar for a
-      // multi-person household. Used for both the lever's `currentValue`
-      // here and the delta computed from it below.
+      // Baseline for the lever's `currentValue` and its delta below, not the possibly
+      // stale household scalar (see resolveSsStartAgeBaseline).
       const ssStartAgeBaseline = resolveSsStartAgeBaseline(
         perPersonSettings,
         baseEngineInput.ssStartAge,
@@ -636,8 +594,7 @@ export const strategyRouter = createTRPCRouter({
           if (field?.max != null) rounded = Math.min(field.max, rounded);
         }
 
-        // Build variant engine input
-        let variantInput = { ...mcBaseEngineInput };
+        let variantInput = { ...simulationBaseEngineInput };
         if (lever.kind === "strategyParam") {
           const tweakedParams = {
             ...userStrategyParams,
@@ -656,12 +613,11 @@ export const strategyRouter = createTRPCRouter({
         } else {
           // Global lever — modify the engine input field directly
           if (lever.field === "retirementAge") {
-            // Everyone works the extra years, whoever retires first. The
-            // payload is built again with the later ages, so every window
-            // that follows from the retirement year (profile switches,
-            // contribution caps, working years) moves with it.
+            // Everyone works the extra years. The payload is rebuilt with the later
+            // ages, so every window tied to the retirement year moves with it.
             const shifted = await buildEnginePayload(ctx.db, data, {
               ...profiles,
+              asOf: ctx.scope.asOf,
               retirementAgeDelta: rounded - lever.currentValue,
             });
             if (!shifted) continue;
@@ -675,24 +631,16 @@ export const strategyRouter = createTRPCRouter({
               decumulationDefaults: variantInput.decumulationDefaults,
             };
           } else if (lever.field === "ssStartAge") {
-            // "Delay claiming by N years" — shift every person's SS start
-            // age by the same delta and re-derive the benefit amounts.
-            // Same `ssStartAgeBaseline` the lever's `currentValue` above
-            // was built from — NOT `baseEngineInput.ssStartAge` directly,
-            // which can be a stale household scalar for a multi-person
-            // household (see the comment there).
+            // "Delay claiming by N years": shift every person's SS start age by the same
+            // delta from `ssStartAgeBaseline` (not the possibly stale scalar) and
+            // re-derive the benefit amounts.
             const delta = rounded - ssStartAgeBaseline;
             variantInput = { ...variantInput, ssStartAge: rounded };
 
             if (perPersonSettings.length > 1) {
-              // Multi-person: the engine reads
-              // `socialSecurityEntries[].startAge`, not the scalar. Rebuild
-              // the entries with every claiming age shifted by `delta` via
-              // the SAME helper the real payload uses, so PIA claiming-age
-              // adjustment and MFJ spousal math stay consistent between the
-              // baseline and this variant. (Without this, moving the scalar
-              // `ssStartAge` did nothing for multi-person households — the
-              // "delay SS" lever silently returned ~0 and burned an MC run.)
+              // Multi-person: the engine reads `socialSecurityEntries[].startAge`, not the
+              // scalar, so rebuild the entries via the payload's own helper, keeping PIA
+              // claiming-age adjustment and MFJ spousal math consistent with the baseline.
               variantInput = {
                 ...variantInput,
                 socialSecurityEntries: buildSocialSecurityEntries(
@@ -702,10 +650,9 @@ export const strategyRouter = createTRPCRouter({
                 ),
               };
             } else {
-              // Single-person: scalar path. A PIA household's benefit
-              // AMOUNT responds to the claiming age (delayed-retirement
-              // credits), so recompute it; a non-PIA household's flat
-              // `socialSecurityMonthly` genuinely doesn't (the old model).
+              // Single-person: scalar path. A PIA benefit responds to claiming age
+              // (delayed-retirement credits), so recompute it; a flat
+              // `socialSecurityMonthly` doesn't.
               const solo = perPersonSettings[0];
               const soloPia = parseAnnualPia(solo?.socialSecurityPia);
               if (solo && soloPia != null) {
@@ -722,7 +669,7 @@ export const strategyRouter = createTRPCRouter({
           }
         }
 
-        const variantMc = await runMonteCarloOffThread({
+        const variantSimulation = await runMonteCarloOffThread({
           engineInput: variantInput,
           numTrials: 200,
           seed: COMPARISON_SEED,
@@ -735,7 +682,8 @@ export const strategyRouter = createTRPCRouter({
         });
 
         const variantStability =
-          variantMc.budgetStabilityRate ?? variantMc.spendingStabilityRate;
+          variantSimulation.budgetStabilityRate ??
+          variantSimulation.spendingStabilityRate;
 
         // Format display values
         const formatVal = (v: number, l: Lever) => {
@@ -757,9 +705,9 @@ export const strategyRouter = createTRPCRouter({
           label: lever.label,
           currentValue: formatVal(lever.currentValue, lever),
           adjustedValue: formatVal(rounded, lever),
-          successRate: variantMc.successRate,
+          successRate: variantSimulation.successRate,
           stabilityRate: variantStability,
-          successDelta: variantMc.successRate - baseline.successRate,
+          successDelta: variantSimulation.successRate - baseline.successRate,
           stabilityDelta: variantStability - baseline.stabilityRate,
         });
       }

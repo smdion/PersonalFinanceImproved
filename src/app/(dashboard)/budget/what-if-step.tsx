@@ -2,17 +2,9 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 /**
- * A numbered card for one step of the workflow (Paycheck → Budget →
- * Savings). Gives the tab visual structure instead of one long
- * undifferentiated column — each step is its own bounded region with a
- * clear "what is this for" line, matching how a multi-step form reads.
- *
- * Collapsible rather than a wizard: the whole point of What-If is seeing
- * the cascade (a salary tweak in step 1 changes the leftover figure in
- * step 3) so hiding earlier steps behind "Next" would work against the
- * tool's purpose. Folding a step you're done with just reclaims vertical
- * space — `headerExtra` (each step's key figure) stays visible either way,
- * so a collapsed step still tells you what it resolved to.
+ * Numbered, collapsible card for one What-If step (Paycheck → Budget → Savings).
+ * Not a wizard, so the cascade between steps stays visible; `headerExtra` shows
+ * the step's key figure even when collapsed.
  */
 export function WhatIfStep({
   number,

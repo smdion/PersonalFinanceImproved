@@ -3,7 +3,7 @@
  * clamps before the year loop reads them.
  */
 import type { ProjectionInput } from "./types/projection-result";
-import { formatPercent } from "../../utils/format";
+import { formatPercent } from "../../utils/percent";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
 import {
   getAccountTypeConfig,
@@ -24,20 +24,19 @@ export function validateEngineInputs(
   postRetirementInflationRate: number;
 } {
   // Setup notes the caller resolved while building the input (e.g. a
-  // chosen account that no longer qualifies) — shown with the result's.
+  // chosen account that doesn't qualify) — shown with the result's.
   warnings.push(...(input.inputWarnings ?? []));
-  // The aggregate buckets, the per-category balances (what withdrawal
-  // routing draws from) and the individual accounts must describe the same
-  // money: a gap is counted as retirement money the router may never
-  // reach, which moves withdrawals, depletion and the plan's verdict.
+  // Aggregate buckets, per-category balances and individual accounts must
+  // describe the same money: a gap counts as retirement money the router
+  // may never reach.
   const categoryTotals = emptyTaxBucketMap();
-  for (const bal of Object.values(input.startingAccountBalances)) {
-    if (bal.structure === "roth_traditional") {
-      categoryTotals.preTax += bal.traditional;
-      categoryTotals.taxFree += bal.roth;
-    } else if (bal.structure === "single_bucket")
-      categoryTotals.hsa += bal.balance;
-    else categoryTotals.afterTax += bal.balance;
+  for (const balance of Object.values(input.startingAccountBalances)) {
+    if (balance.structure === "roth_traditional") {
+      categoryTotals.preTax += balance.traditional;
+      categoryTotals.taxFree += balance.roth;
+    } else if (balance.structure === "single_bucket")
+      categoryTotals.hsa += balance.balance;
+    else categoryTotals.afterTax += balance.balance;
   }
   for (const [key, sum] of Object.entries(categoryTotals)) {
     const start = input.startingBalances[key as keyof typeof categoryTotals];

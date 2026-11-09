@@ -69,14 +69,9 @@ const TREATMENTS = [
 export type SavingsTreatment = (typeof TREATMENTS)[number][0];
 
 /**
- * The household savings rate for a view, and what it's made of: every
- * person's and every joint account's contributions over the compensation
- * the view divides by (YTD: earned so far), split by goal group
- * (Retirement / Portfolio — parentCategory) and, within each, by tax
- * treatment. Treatments come from the paycheck setup, so each group's split
- * is scaled to the view's employee dollars; the employer match (when
- * included) is its own line. Shares are fractions of compensation, and a
- * group's lines add up to the group.
+ * Household savings rate for a view: all contributions over the compensation it divides by,
+ * split by goal group then tax treatment (scaled to the view's employee dollars), with the
+ * employer match as its own line. Shares are fractions of compensation.
  */
 export function householdSavings(
   people: SavingsRatePerson[],

@@ -14,10 +14,15 @@ import { withAsyncTransactions } from "@/lib/db/sqlite-transactions";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
+import { vi } from "vitest";
 import type { Session } from "next-auth";
 import { openTestSqlite } from "../helpers/db-harness";
 import type { Permission } from "@/lib/config/permissions";
 import { releaseTopLevelTestDb, setTopLevelTestDb } from "./setup-mocks";
+import {
+  openPostgresTestDatabase,
+  ROUTERS_ON_POSTGRES,
+} from "./postgres-router-db";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
@@ -85,15 +90,52 @@ interface TestCaller {
   cleanup: () => void;
 }
 
+/** The date a test caller's requests run on (the router baseline's
+ *  BASELINE_NOW): the same answer on every day the suite runs. */
+export const TEST_NOW = new Date("2026-03-07T18:00:00.000Z");
+
+/** Open callers holding the clock this module froze. */
+let clockHolders = 0;
+
 /**
  * Creates an isolated test environment with:
  * - A temp SQLite database with all migrations applied
  * - A tRPC caller bound to an admin session (or `null`: signed out)
  * - A cleanup function to close the DB
+ * - The clock (`Date` only) held at TEST_NOW until the last open caller
+ *   is cleaned up. A test that already fakes the clock keeps its own;
+ *   `{ realTime: true }` leaves the real clock.
  */
 export async function createTestCaller(
   session: Session | null = adminSession,
+  options: { realTime?: boolean } = {},
 ): Promise<TestCaller> {
+  // A clock the test faked itself (none of ours open) is the test's own.
+  const ownClock = clockHolders === 0 && vi.isFakeTimers();
+  const holdsClock = !options.realTime && !ownClock;
+  if (holdsClock) {
+    if (!vi.isFakeTimers())
+      vi.useFakeTimers({ toFake: ["Date"], now: TEST_NOW });
+    clockHolders++;
+  }
+  let released = false;
+  const releaseClock = () => {
+    if (holdsClock && !released) {
+      released = true;
+      clockHolders--;
+      if (clockHolders === 0) vi.useRealTimers();
+    }
+  };
+  if (ROUTERS_ON_POSTGRES) {
+    const pg = await createPostgresTestCaller(session);
+    return {
+      ...pg,
+      cleanup: () => {
+        releaseClock();
+        pg.cleanup();
+      },
+    };
+  }
   // A fresh in-memory copy of the migrated, seeded template (built once
   // per worker — see openTestSqlite).
   const sqlite = openTestSqlite();
@@ -118,6 +160,7 @@ export async function createTestCaller(
   setTopLevelTestDb(db);
 
   const cleanup = () => {
+    releaseClock();
     // Audit writes stop with this db; a later caller's db stays current.
     releaseTopLevelTestDb(db);
     try {
@@ -127,6 +170,27 @@ export async function createTestCaller(
     }
   };
 
+  return { caller, db, rawDb, sqlite, cleanup };
+}
+
+/** createTestCaller on PostgreSQL (postgres-router-db.ts): the procedures
+ *  run on the app's PostgreSQL db; `db` and `sqlite` keep SQLite's shape
+ *  over the same database, for the seed helpers. */
+async function createPostgresTestCaller(
+  session: Session | null,
+): Promise<TestCaller> {
+  const pgTest = await openPostgresTestDatabase();
+  // eslint-disable-next-line no-restricted-syntax -- better-sqlite3's surface over PostgreSQL, for the SQLite-typed seed helpers
+  const sqlite = pgTest.sqlite as unknown as InstanceType<typeof Database>;
+  const db = drizzle(sqlite, { schema: sqliteSchema });
+  // eslint-disable-next-line no-restricted-syntax -- the app's db type; node-postgres drizzle with the PostgreSQL schema
+  const rawDb = pgTest.db as unknown as DbType;
+  const caller = _callerFactory({ db: rawDb, session, demoSchema: null });
+  setTopLevelTestDb(rawDb);
+  const cleanup = () => {
+    releaseTopLevelTestDb(rawDb);
+    pgTest.drop();
+  };
   return { caller, db, rawDb, sqlite, cleanup };
 }
 

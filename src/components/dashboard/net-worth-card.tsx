@@ -5,12 +5,16 @@ import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  formatDate,
+} from "@/lib/utils/format";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";
 import { PlanPaceLine } from "./plan-pace-line";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
@@ -43,17 +47,14 @@ function NetWorthCardImpl() {
     ? data.homeValueEstimated
     : data.homeValueConservative;
 
-  // Freshness footer, matching the pattern established by the Linked
-  // Balance card. Snapshot half always shows when a snapshot exists;
-  // the budget-API half only shows when a budget API actually drives
-  // the cash figure (cashSource !== "manual") — otherwise there's
-  // nothing to report and showing a sync claim would be misleading.
+  // Freshness footer: the snapshot half shows when a snapshot exists; the
+  // budget-API half only when a budget API drives cash (cashSource !== "manual").
   const freshnessParts: string[] = [];
   if (data.snapshotDate) {
     freshnessParts.push(`Snapshot ${formatDate(data.snapshotDate, "medium")}`);
   }
   if (data.cashSource !== "manual" && syncStatus?.lastSynced) {
-    const serviceLabel = syncStatus.service === "ynab" ? "YNAB" : "Actual";
+    const serviceLabel = budgetApiServiceLabel(syncStatus.service);
     const time = formatDate(new Date(syncStatus.lastSynced), "time");
     freshnessParts.push(`${serviceLabel} synced ${time}`);
   }
@@ -99,7 +100,11 @@ function NetWorthCardImpl() {
         </div>
         <PlanPaceLine
           actual={data.portfolioTotal + (sinceSnapshot?.estimate?.change ?? 0)}
-          day={sinceSnapshot?.estimate ? localDateStr() : data.snapshotDate}
+          day={
+            sinceSnapshot?.estimate
+              ? calendarDateOf(new Date())
+              : data.snapshotDate
+          }
           lastFinalized={data.lastFinalized ?? null}
         />
         {data.hasHouse && (

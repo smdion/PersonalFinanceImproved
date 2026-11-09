@@ -4,9 +4,11 @@ import { sql } from "drizzle-orm";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { log } from "@/lib/logger";
 import { validateCronBearerRequest } from "@/lib/auth/cron";
+import { lastJobResults } from "@/server/services/scheduled-job-results";
 
 /**
- * Detailed health endpoint with database pool stats and budget API status.
+ * Detailed health endpoint with database pool stats, budget API status and
+ * each scheduled job's last result (a failed job doesn't degrade it).
  * Requires CRON_SECRET as Bearer token for authentication.
  */
 export async function GET(request: NextRequest) {
@@ -64,6 +66,8 @@ export async function GET(request: NextRequest) {
       error: err instanceof Error ? err.message : String(err),
     };
   }
+
+  status.scheduledJobs = lastJobResults();
 
   const httpStatus = status.status === "ok" ? 200 : 503;
   return NextResponse.json(status, { status: httpStatus });

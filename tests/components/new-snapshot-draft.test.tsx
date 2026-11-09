@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 const mockLatest = {
   snapshot: { id: 7, snapshotDate: "2025-01-01" },
@@ -50,10 +50,10 @@ const { NewSnapshotForm } =
   await import("@/components/portfolio/new-snapshot-form");
 
 // The form defaults its date to "today" and keys the draft on it via
-// localDateStr() (LOCAL date) — use the same function here, not
+// calendarDateOf (LOCAL date) — use the same function here, not
 // toISOString() (UTC), or the key mismatches in any timezone behind UTC
 // during the evening.
-const TODAY = localDateStr();
+const TODAY = calendarDateOf(new Date());
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -105,6 +105,7 @@ describe("NewSnapshotForm local draft", () => {
     window.localStorage.setItem(
       `pf-snapshot-draft:${TODAY}`,
       JSON.stringify({
+        version: 1,
         snapshotDate: TODAY,
         notes: "half done",
         sourceSnapshotId: 7,
@@ -115,6 +116,9 @@ describe("NewSnapshotForm local draft", () => {
             institution: "Fidelity",
             accountType: "401k",
             taxType: "preTax",
+            subType: null,
+            label: null,
+            ownerPersonId: 1,
             amount: "123456",
           },
         ],
@@ -153,6 +157,7 @@ describe("NewSnapshotForm local draft", () => {
       window.localStorage.setItem(
         `pf-snapshot-draft:${TODAY}`,
         JSON.stringify({
+          version: 1,
           snapshotDate: TODAY,
           notes: "",
           sourceSnapshotId: 7,
@@ -176,7 +181,7 @@ describe("NewSnapshotForm local draft", () => {
     }
   });
 
-  it("does not offer resume when the date already has a snapshot", async () => {
+  it("drops a draft with no version stamp instead of reading it", async () => {
     window.localStorage.setItem(
       `pf-snapshot-draft:${TODAY}`,
       JSON.stringify({
@@ -190,6 +195,41 @@ describe("NewSnapshotForm local draft", () => {
             institution: "Fidelity",
             accountType: "401k",
             taxType: "preTax",
+            amount: "9",
+          },
+        ],
+      }),
+    );
+    render(<NewSnapshotForm onClose={() => {}} onSaved={() => {}} />);
+
+    await screen.findByText(/Snapshot Date/i);
+    expect(
+      screen.queryByRole("button", { name: "Resume" }),
+    ).not.toBeInTheDocument();
+    // Removed on read; an autosave after it holds the form's own rows.
+    expect(
+      window.localStorage.getItem(`pf-snapshot-draft:${TODAY}`) ?? "",
+    ).not.toContain('"amount":"9"');
+  });
+
+  it("does not offer resume when the date already has a snapshot", async () => {
+    window.localStorage.setItem(
+      `pf-snapshot-draft:${TODAY}`,
+      JSON.stringify({
+        version: 1,
+        snapshotDate: TODAY,
+        notes: "",
+        sourceSnapshotId: 7,
+        savedAt: Date.now(),
+        rows: [
+          {
+            performanceAccountId: 11,
+            institution: "Fidelity",
+            accountType: "401k",
+            taxType: "preTax",
+            subType: null,
+            label: null,
+            ownerPersonId: 1,
             amount: "9",
           },
         ],
@@ -211,6 +251,7 @@ describe("NewSnapshotForm local draft", () => {
     window.localStorage.setItem(
       `pf-snapshot-draft:${TODAY}`,
       JSON.stringify({
+        version: 1,
         snapshotDate: TODAY,
         notes: "",
         sourceSnapshotId: 7,
@@ -221,6 +262,9 @@ describe("NewSnapshotForm local draft", () => {
             institution: "Fidelity",
             accountType: "401k",
             taxType: "preTax",
+            subType: null,
+            label: null,
+            ownerPersonId: 1,
             amount: "5",
           },
         ],

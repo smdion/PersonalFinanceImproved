@@ -1,35 +1,7 @@
 /**
- * Withdrawal-ordering penalty exposure — the
- * per-projected-year computation that tells the decumulation engine's
- * withdrawal routing exactly which dollars, in each individual account,
- * would incur the 10% early-withdrawal penalty this year (Rule of 55, 59½,
- * HSA 65, Roth ordering) — the same rules the Tax Buckets analysis tool
- * displays.
- *
- * Key decisions this module implements:
- *
- * - A penalty-exposed dollar is not reachable-but-disfavored: the router
- *   (see `withdrawal-routing/`) excludes it by default
- *   (`config.avoidPenalizedWithdrawals`, default true). This module only
- *   computes the per-dollar partition; it does not itself gate anything —
- *   the router decides what to do with the partition.
- * - Per-dollar partition, one rule for every account type: penalty-free
- *   capacity is the LEADING, CONTIGUOUSLY
- *   penalty-free PREFIX of an account's `early-access.ts` slices, in the
- *   order that account's own ordering rules release them — not the sum of
- *   every penalty-free slice regardless of position. See
- *   `penaltyFreePrefixAmount`'s docblock.
- * - `locked` (whole-account) and `penalty-exposed` (per dollar) are NOT
- *   parallel ideas — every dollar in a "locked" account is penalty-exposed,
- *   but a partially penalty-exposed account (e.g. a pre-59½ Roth IRA with
- *   contribution basis) isn't "locked". `draw.eligibilityLocked` means
- *   "every dollar in this account is penalty-exposed", and `draw.reason` is
- *   a structured `EligibilityReason` (worded by `describeEligibility`);
- *   `penaltyExposedAmount` is the number that matters for routing.
- *
- * Leaf predicates (`early-access.ts`) and `projectRuleOf55`
- * (`tax-bucket-projection.ts`) are called verbatim — never reimplemented
- * (RULES.md § Single Computation Path).
+ * Per projected year, which dollars in each account would draw the early-withdrawal penalty
+ * (the penalty-free prefix of its `early-access.ts` slices). Computes the partition only;
+ * the router decides policy. Reuses the leaf predicates and `projectRuleOf55` as-is.
  */
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -56,11 +28,8 @@ import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 
-/** The account shape this module needs — a structural subset of
- *  `IndividualAccountInput` (`lib/pure/accounts/account-balances.types.ts`), named
- *  locally rather than importing that type so this module (and the engine,
- *  its only intended caller) don't have to agree on every unrelated field
- *  `IndividualAccountInput` carries. */
+/** The structural subset of `IndividualAccountInput` this module needs, named locally
+ *  so it needn't track that type's unrelated fields. */
 export type EligibilityAccountInput = {
   name: string;
   category: AccountCategory;
@@ -72,71 +41,43 @@ export type EligibilityAccountInput = {
    *  `IndividualAccountInput.ownerBirthYear`'s docblock for why this isn't
    *  a separate `birthYearByPersonId` lookup. */
   ownerBirthYear?: number;
-  /** Rule of 55 forecasting override — see
-   *  `projectRuleOf55`'s `opts.forceIneligible` docblock
-   *  (`tax-bucket-projection.ts`) for the full contract. Passed straight
-   *  through to that function; this module never inspects or short-circuits
-   *  on it directly: Rule-of-55-ineligible is not the same as locked (the
-   *  pro_rata branch below is "Rule of 55 OR 59½"). */
+  /** Passed straight to `projectRuleOf55` (`opts.forceIneligible`); never checked here,
+   *  since Rule-of-55-ineligible is not locked (pro_rata is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
   /** The owner's planned retirement year — caps when a still-active job is
    *  assumed to end (see `projectRuleOf55`'s `opts.ownerRetirementYear`). */
   ownerRetirementYear?: number;
-  /** Household is fine paying the penalty on THIS account if it avoids an
-   *  otherwise-real shortfall. Only ever `true` when set — see
-   *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
-   *  (`lib/pure/accounts/account-balances.types.ts`) for the full contract. This
-   *  module doesn't gate on it directly (it computes the partition; the
-   *  router decides policy) —
-   *  it just carries the flag onto `AccountEligibility` and folds it into
-   *  the record's "still excluded" aggregates below, which
-   *  `subtractPenaltyExposed` (`engine/balance-utils.ts`) is the one that
-   *  actually acts on. */
+  /** Household accepts the penalty on this account (see
+   *  `IndividualAccountInput.allowPenalizedWithdrawals`); folded into the "still excluded"
+   *  aggregates that `subtractPenaltyExposed` acts on. */
   allowPenalizedWithdrawals?: boolean;
-  /** "Retirement" | "Portfolio" | undefined (undefined means Retirement,
-   *  same convention as `build-engine-payload.ts`'s
-   *  `a.parentCategory ?? "Retirement"`). Not used by this module's own
-   *  age/penalty logic — carried through so the aggregation step below can
-   *  exclude a Portfolio-parented account's penalty exposure from the
-   *  category-level totals (see `computeNonRetirementExclusion`,
-   *  which handles Portfolio-parented accounts as a wholly separate,
-   *  unconditional exclusion; this field's only job here is to keep the
-   *  two exclusion sources from double-counting the same dollar). */
+  /** "Retirement" | "Portfolio" | undefined (= Retirement). Portfolio-parented exposure is
+   *  left out of the category totals, since `computeNonRetirementExclusion` already excludes
+   *  those accounts whole. */
   parentCategory?: string;
 };
 
-/** Dollars of one individual account that are penalty-free this projected
- *  year, and dollars that are not (see module docblock).
- *  `penaltyFreeAmount + penaltyExposedAmount ===`
- *  the account's balance, always. */
+/** One account's penalty-free and penalty-exposed dollars this projected year;
+ *  `penaltyFreeAmount + penaltyExposedAmount` always equals the balance. */
 export type AccountEligibility = {
   indKey: string;
   category: AccountCategory;
   taxType: string;
-  /** Dollars drawable this year with NO 10% penalty — the leading,
-   *  contiguously penalty-free prefix of this account's early-access
-   *  slices, in their own ordering-rule release order. See
-   *  `penaltyFreePrefixAmount`. */
+  /** Dollars drawable this year with no penalty: see `penaltyFreePrefixAmount`. */
   penaltyFreeAmount: number;
   /** Balance − penaltyFreeAmount. Every dollar here costs 10% if drawn. */
   penaltyExposedAmount: number;
   /** Which early-access rule decided the verdict above, with the age,
    *  year or basis that drove it. Always present. */
   reason: EligibilityReason;
-  /** Start-of-year tracked Roth basis remaining (contribution + conversion
-   *  combined) — present only when `indBasis` was supplied and this is a
-   *  taxFree-bucket account. Absent (not zero) when tracked basis isn't
-   *  available, so a caller never mistakes "we don't know" for "$0 left". */
+  /** Start-of-year tracked Roth basis left (contribution + conversion); only with
+   *  `indBasis` on a taxFree-bucket account, absent (not zero) when unknown. */
   basisRemaining?: number;
-  /** True when the tracked-basis figure rests on a stale (pre-projection)
-   *  or auto-seeded, never-reviewed `account_basis` row — see
-   *  `RothBasisState.stale`/`isSeeded`. The figure may understate real
-   *  basis; never overstates it. */
+  /** The basis figure rests on a stale or seeded, unreviewed `account_basis` row
+   *  (`RothBasisState.stale`/`isSeeded`): it may understate basis, never overstate. */
   basisUncertain?: boolean;
-  /** Copied straight from `EligibilityAccountInput.allowPenalizedWithdrawals`
-   *  — always present (defaults `false`), unlike the input's own
-   *  omit-when-false convention, since this is an internal record read by
-   *  the engine rather than a cache-hashed payload field. */
+  /** From the input's `allowPenalizedWithdrawals`, always present (default `false`):
+   *  an internal record, not a cache-hashed payload field. */
   allowPenalizedWithdrawals: boolean;
 };
 
@@ -149,28 +90,19 @@ export type EligibilityRecord = {
   penaltyExposedTrad: Record<AccountCategory, number>;
   penaltyExposedRoth: Record<AccountCategory, number>;
   penaltyExposedTotal: Record<AccountCategory, number>;
-  /** Same three aggregates, but excluding any account with
-   *  `allowPenalizedWithdrawals: true` — the narrower total that
-   *  `subtractPenaltyExposed` actually excludes from the routable pool, so
-   *  an allowed account's exposed dollars stay reachable while every other
-   *  account's stay excluded. Identical to the aggregates above whenever no
-   *  account has the override set (the default), by construction. */
+  /** The same aggregates without accounts that allow penalized withdrawals: what
+   *  `subtractPenaltyExposed` excludes from the routable pool. Equal to the above
+   *  when no account allows them. */
   penaltyExposedTradStillExcluded: Record<AccountCategory, number>;
   penaltyExposedRothStillExcluded: Record<AccountCategory, number>;
   penaltyExposedTotalStillExcluded: Record<AccountCategory, number>;
-  /** Scalar sum of `penaltyExposedTotalStillExcluded` across every category
-   *  — the counterpart to `totalPenaltyExposed`. `routeForMode` MUST
-   *  gate its early-out and price `penaltyAvoidedShortfall` off THIS value,
-   *  not `totalPenaltyExposed`: once any account opts in, the two diverge,
-   *  and using the blind total would attribute a real household shortfall
-   *  to "penalty avoidance" for dollars that were never excluded at all. */
+  /** Sum of `penaltyExposedTotalStillExcluded` over categories. `routeForMode` gates its
+   *  early-out and prices `penaltyAvoidedShortfall` off this, not `totalPenaltyExposed`,
+   *  so allowed accounts' dollars aren't blamed for a shortfall. */
   totalPenaltyExposedStillExcluded: number;
-  /** Per category with tracked retirement accounts under an early-access
-   *  rule (not brokerage): the most routing may draw from it — those
-   *  accounts' penalty-free money plus any account allowed a penalized
-   *  draw. Money in the category no tracked account holds (e.g. a Roth
-   *  401(k) contribution with no Roth 401(k) account yet) isn't reachable
-   *  without penalty by default; uncapped, it was drawn as if it were. */
+  /** Per category with tracked early-access retirement accounts: the most routing may draw
+   *  (their penalty-free money plus allowed penalized accounts). Category money no tracked
+   *  account holds isn't reachable penalty-free by default. */
   reachableByCategory: Partial<Record<AccountCategory, number>>;
 };
 
@@ -190,35 +122,18 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
 }
 
 /**
- * Computes per-account, per-dollar penalty exposure for one projected year.
- *
- * `indBal` supplies each account's *current* projected balance (not its
- * `startingBalance` — that's an accumulation-phase input, stale by the time
- * decumulation runs). Each account's own `ownerBirthYear` and `ruleOf55`
- * ("now" resolution, threaded by `engine-payload/individual-accounts.ts`) are
- * external inputs; every eligibility question is re-derived from them
- * fresh for `year` via the same leaf predicates `early-access.ts` and the
- * Tax Buckets tool already use.
- *
- * `indBasis` (tracked Roth basis follow-up, optional): when supplied,
- * Roth basis figures come from `indBasis.get(key)` (a running, per-year
- * tracked balance — see `@/lib/pure/accounts/roth-basis-tracking`) instead of each
- * account's static `ia.rothBasisMeta` snapshot. When omitted, behavior is
- * byte-identical to before tracked basis existed — this keeps every
- * non-engine caller and existing test unchanged. The gate and the UI
- * number MUST read the same figure (reading the
- * snapshot for the gate while showing tracked basis in the UI would be
- * two numbers for one quantity, the exact Single Computation Path failure
- * this avoids).
+ * Per-account, per-dollar penalty exposure for one year, from current `indBalance` and each
+ * account's owner and "now" Rule of 55. With `indBasis`, Roth basis comes from tracked basis
+ * (the same figure the UI shows); without it, from `rothBasisMeta`.
  */
 export function computeWithdrawalEligibility(input: {
   year: number;
-  indAccts: EligibilityAccountInput[];
-  indBal: Map<string, number>;
+  indAccounts: EligibilityAccountInput[];
+  indBalance: Map<string, number>;
   indKey: IndKeyFn;
   indBasis?: Map<string, RothBasisState>;
 }): EligibilityRecord {
-  const { year, indAccts, indBal, indKey, indBasis } = input;
+  const { year, indAccounts, indBalance, indKey, indBasis } = input;
   const byKey = new Map<string, AccountEligibility>();
   const penaltyExposedTrad = zeroByCategory();
   const penaltyExposedRoth = zeroByCategory();
@@ -230,9 +145,9 @@ export function computeWithdrawalEligibility(input: {
   let totalPenaltyExposedStillExcluded = 0;
   const reachableByCategory: Partial<Record<AccountCategory, number>> = {};
 
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     const key = indKey(ia);
-    const balance = indBal.get(key) ?? 0;
+    const balance = indBalance.get(key) ?? 0;
     const birthYear = ia.ownerBirthYear;
 
     let reason: EligibilityReason = { kind: "no_owner" };
@@ -250,10 +165,8 @@ export function computeWithdrawalEligibility(input: {
       trackedBasis?.latestConversionYear ??
       ia.rothBasisMeta?.latestConversionYear ??
       null;
-    // No resolvable owner (joint account, or an owner with no birth-year
-    // record) — no age to gate on, so nothing here can be penalty-exposed
-    // by an early-access rule. Matches computeTaxBucketAnalysis's identical
-    // joint-account handling.
+    // No resolvable owner (joint, or no birth year): no age to gate on, so no
+    // early-access exposure; same as computeTaxBucketAnalysis.
     if (birthYear != null) {
       const currentAge = ageInYear(birthYear, year);
       const rule = earlyAccessRuleOf(ia.category);
@@ -395,22 +308,9 @@ export function computeWithdrawalEligibility(input: {
 }
 
 /**
- * Per-category totals of Portfolio-parented account balances. A
- * Portfolio-parented account (e.g. a taxable brokerage the household
- * doesn't consider part of the retirement plan) is excluded from
- * retirement withdrawal routing WHOLESALE and unconditionally — no age
- * gate, no penalty, no opt-out lever. This is a fully separate exclusion
- * from `computeWithdrawalEligibility`'s penalty-exposure partition (which
- * explicitly does NOT count a Portfolio-parented account's exposure — see
- * that function's `isRetirementParent` gate — so the two sources never
- * overlap on the same dollar and can be summed together safely by
- * `subtractExcluded`, `balance-utils.ts`).
- *
- * Portfolio-parented accounts are NOT removed from `indAccts`/`indBal`
- * themselves — they still receive contributions and growth normally; only
- * the routing-time VIEW computed here excludes their balance. Mirrors
- * `computeWithdrawalEligibility`'s "recomputed fresh every year from
- * current indBal" discipline, not a persistent removal.
+ * Per-category Portfolio-parented balances, excluded from retirement routing wholesale (no
+ * age gate or opt-out). Never overlaps the penalty partition, so `subtractExcluded` sums both;
+ * the accounts still grow and take contributions.
  */
 export type NonRetirementExclusion = {
   total: Record<AccountCategory, number>;
@@ -420,14 +320,14 @@ export type NonRetirementExclusion = {
 };
 
 export function computeNonRetirementExclusion(
-  indAccts: {
+  indAccounts: {
     name: string;
     category: AccountCategory;
     taxType: string;
     ownerPersonId?: number;
     parentCategory?: string;
   }[],
-  indBal: Map<string, number>,
+  indBalance: Map<string, number>,
   indKey: IndKeyFn,
 ): NonRetirementExclusion {
   const total = zeroByCategory();
@@ -435,9 +335,9 @@ export function computeNonRetirementExclusion(
   const roth = zeroByCategory();
   let grandTotal = 0;
 
-  for (const ia of indAccts) {
+  for (const ia of indAccounts) {
     if (isRetirementMoney(ia.parentCategory)) continue;
-    const balance = Math.max(0, indBal.get(indKey(ia)) ?? 0);
+    const balance = Math.max(0, indBalance.get(indKey(ia)) ?? 0);
     if (balance <= 0) continue;
     total[ia.category] += balance;
     grandTotal += balance;

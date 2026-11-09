@@ -5,30 +5,30 @@ import {
 } from "@/lib/config/account-types";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
-  ContribAccountForm,
+  ContributionAccountForm,
   type ContribAccountFormValues,
 } from "@/components/paycheck/contrib-account-form";
-import { type ContribAddition } from "./what-if-editors";
+import { type ContributionAddition } from "./what-if-editors";
 import type { Dispatch, SetStateAction } from "react";
 
 export type WhatIfMakeRealPanelProps = {
-  createContribAccount: ReturnType<
+  createContributionAccount: ReturnType<
     typeof trpc.settings.contributionAccounts.create.useMutation
   >;
   handleSaveMakeReal: (values: ContribAccountFormValues) => void;
-  makeRealAddition: ContribAddition | null;
-  setMakeRealAddition: Dispatch<SetStateAction<ContribAddition | null>>;
-  updateContribAccount: ReturnType<
+  makeRealAddition: ContributionAddition | null;
+  setMakeRealAddition: Dispatch<SetStateAction<ContributionAddition | null>>;
+  updateContributionAccount: ReturnType<
     typeof trpc.settings.contributionAccounts.update.useMutation
   >;
 };
 
 export function WhatIfMakeRealPanel({
-  createContribAccount,
+  createContributionAccount,
   handleSaveMakeReal,
   makeRealAddition,
   setMakeRealAddition,
-  updateContribAccount,
+  updateContributionAccount,
 }: WhatIfMakeRealPanelProps) {
   return (
     <SlidePanel
@@ -37,7 +37,7 @@ export function WhatIfMakeRealPanel({
       title="Make Real: Contribution Account"
     >
       {makeRealAddition && (
-        <ContribAccountForm
+        <ContributionAccountForm
           initialValues={{
             personId: makeRealAddition.personId,
             accountType: makeRealAddition.accountType,
@@ -49,7 +49,8 @@ export function WhatIfMakeRealPanel({
           onSave={handleSaveMakeReal}
           onCancel={() => setMakeRealAddition(null)}
           isPending={
-            createContribAccount.isPending || updateContribAccount.isPending
+            createContributionAccount.isPending ||
+            updateContributionAccount.isPending
           }
         />
       )}

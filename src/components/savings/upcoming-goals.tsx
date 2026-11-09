@@ -3,8 +3,11 @@
 import React from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import { GoalProjection, PlannedTxForm, PlannedTransaction } from "./types";
-import { monthKey } from "@/lib/pure/savings/savings-projection";
+import { GoalProjection, PlannedTxForm } from "./types";
+import {
+  monthKey,
+  type PlannedTransaction,
+} from "@/lib/pure/savings/savings-projection";
 
 interface SavingsGoalSummary {
   goalId: number;
@@ -49,9 +52,9 @@ export function UpcomingGoals({
 
   // Build one card per fund — only funds with an upcoming expense are shown
   const cards = goalProjections
-    .map((gp, gpIdx) => {
+    .map((gp, gpIndex) => {
       const sg = savingsGoals.find((g) => g.goalId === gp.goalId);
-      const color = FUND_COLORS[gpIdx % FUND_COLORS.length]!;
+      const color = FUND_COLORS[gpIndex % FUND_COLORS.length]!;
 
       // Only consider withdrawals (expenses), skip deposits and transfers
       const nextExpense =

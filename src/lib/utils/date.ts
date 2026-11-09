@@ -1,5 +1,3 @@
-import { calendarDateOf } from "./calendar-date";
-
 /**
  * Get a person's age as of a given date.
  */
@@ -16,20 +14,9 @@ export function getAge(birthDate: Date, asOfDate: Date): number {
 }
 
 /**
- * A person's integer age in a given calendar year — the coarse,
- * calendar-year-granularity convention the retirement projection engine
- * uses everywhere it reasons about age (it projects year-by-year, never by
- * exact date). Deliberately NOT `getAge` above, which is date-precise and
- * wants a real birth date + as-of date; this is `year - birthYear`, nothing
- * more.
- *
- * The convention this implies for age-threshold constants that aren't whole
- * numbers (e.g. `PENALTY_FREE_AGE = 59.5`) is worth stating explicitly:
- * `ageInYear(birthYear, year) >= 59.5` is only ever true when
- * `ageInYear(...) >= 60`, i.e. eligibility starts in the calendar year the
- * person turns 60, not the year they actually turn 59.5. That reads like an
- * off-by-one at first glance; it isn't — it's the correct, conservative
- * interpretation of a mid-year threshold under year-granularity modeling.
+ * Age as `year - birthYear`, the projection engine's year-granularity convention
+ * (not date-precise like getAge). So `>= 59.5` first holds in the year a person
+ * turns 60: a conservative reading of a mid-year threshold, not an off-by-one.
  */
 export function ageInYear(birthYear: number, year: number): number {
   return year - birthYear;
@@ -40,28 +27,10 @@ export function ageInYear(birthYear: number, year: number): number {
  * (January 1 through April 15). During this window, IRA and HSA contributions
  * can be designated for the prior tax year.
  */
-export function isPriorYearContribWindow(date: Date = new Date()): boolean {
+export function isPriorYearContributionWindow(date: Date): boolean {
   const month = date.getMonth(); // 0-indexed
   const day = date.getDate();
   return month < 3 || (month === 3 && day <= 15);
-}
-
-/**
- * A calendar date (YYYY-MM-DD) in the CALLER'S OWN local timezone, not UTC.
- *
- * `date.toISOString().slice(0, 10)` — the pattern this replaces — reads the
- * date in UTC, which silently returns tomorrow's date once local time passes
- * midnight UTC (e.g. after ~7pm Eastern, ~4pm Pacific). Every "today"
- * default (a new snapshot's date, a new transaction's date, a backup
- * filename) computed this way is silently wrong for part of every day.
- *
- * Moved here from `lib/simplefin/sync.ts` — that module already
- * had this exact helper for exactly this reason ("matching the version-cron
- * convention"); centralizing it is what lets every other "today" call site
- * share the same fix instead of re-deriving it.
- */
-export function localDateStr(date: Date = new Date()): string {
-  return calendarDateOf(date);
 }
 
 /** The year of a YYYY-MM-DD date. `new Date(d).getFullYear()` parses it as
@@ -71,18 +40,8 @@ export function calendarYear(date: string): number {
 }
 
 /**
- * Parse a value that MAY be a bare date-only string ("2020-11-01") as LOCAL // lint-violation-ok: literal date-string format example
- * midnight rather than UTC midnight — `new Date("2020-11-01")` (unguarded) // lint-violation-ok: literal date-string format example
- * parses as UTC, which `.toLocaleDateString()`/`.getMonth()`/etc. then read
- * back as the PRIOR calendar day in any timezone behind UTC (all of the US).
- * A value that already carries a time component (has a "T", e.g. a
- * JSON-serialized full timestamp) is passed through unchanged — appending a
- * second time component would corrupt it.
- *
- * Same guard `formatDate` (`lib/utils/format.ts`) already applies inline;
- * extracted here so call sites that need the `Date` itself (not just a
- * formatted string) — comparisons, `.getFullYear()`, etc. — can share it
- * too, instead of re-deriving the guard or (worse) skipping it.
+ * Parse a bare date-only string as LOCAL midnight (as UTC it reads as the prior
+ * day behind UTC); a value with a "T" time part or a Date passes through unchanged.
  */
 export function parseLocalDateOnly(value: string | Date): Date {
   if (value instanceof Date) return value;
@@ -92,15 +51,13 @@ export function parseLocalDateOnly(value: string | Date): Date {
 /** Midnight, local time, of the given date's calendar day — for calendar-day
  *  arithmetic (e.g. "how many days old is this date-only value") that must
  *  not be thrown off by the date's own time-of-day component. */
-export function localMidnight(date: Date = new Date()): Date {
+export function localMidnight(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 /**
- * UTC calendar day (YYYY-MM-DD) of a timestamp. Institutions report posting
- * dates as UTC timestamps, so posted dates, balance dates and windows are
- * compared as UTC days — an internal key, never compared to a local "today"
- * (use localDateStr for that).
+ * UTC calendar day (YYYY-MM-DD) of a timestamp: institutions post in UTC, so this
+ * is an internal key, never compared to a local "today" (use calendarDateOf).
  */
 export function utcDayOf(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -118,10 +75,10 @@ export function addDays(day: string, n: number): string {
 export function isCalendarDate(value: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const [y, month, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (y < 1900 || y > 2100) return false;
-  const date = new Date(Date.UTC(y, mo - 1, d));
-  return date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const date = new Date(Date.UTC(y, month - 1, d));
+  return date.getUTCMonth() === month - 1 && date.getUTCDate() === d;
 }
 
 /** A day that some year has in that month (Feb 29 counts). */

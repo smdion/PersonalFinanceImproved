@@ -1,10 +1,6 @@
 /**
- * Pure portfolio-snapshot → tax-bucket aggregation.
- *
- * The Retirement engine and the Tax Buckets analysis tool share this one
- * implementation of "what do we actually hold, by tax bucket" instead of
- * two that can silently drift apart (RULES.md § Pure Business Logic
- * Boundary / no second computation path).
+ * Portfolio snapshot → tax buckets: the one implementation the Retirement engine and the
+ * Tax Buckets tool share.
  */
 import type {
   TaxBuckets,
@@ -25,7 +21,7 @@ import {
   addBalance,
   addBasis,
 } from "@/lib/config/account-balance";
-import { accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/account-name";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
@@ -55,24 +51,13 @@ type TaxBucketPerfAccount = {
   costBasis: string | null;
 };
 
-/** Per-(name, category, taxType, owner) rollup — the join key the Tax
- *  Buckets tool needs to attach `rothBasis` rows and early-access flags to
- *  real balances without re-querying `portfolio_accounts` itself.
- *
- *  Grouped on the SAME tuple as `accountBreakdownByCategory` (and, via that,
- *  the engine's own `individualAccounts` keying) rather than on
- *  `performanceAccountId` alone — a raw-ID key merges/splits sub-type rows
- *  (Rollover, Employer Match, ...) differently than the name-based grouping
- *  the engine payload uses, which can silently drop or double-count a
- *  projected balance when the two sides are joined by name in v2. */
+/** Per-(name, category, taxType, owner) rollup that lets the Tax Buckets tool attach
+ *  `rothBasis` rows and early-access flags to balances. Same key as
+ *  `accountBreakdownByCategory` (and the engine), not `performanceAccountId`. */
 type AccountRollupEntry = {
   name: string;
-  /** Null only when a merged group of same-(name,category,taxType,owner)
-   *  rows spans more than one real performance account — rare, since that
-   *  requires two distinct accounts to also share a display name. Per-
-   *  account edit actions (basis, separation date) key off
-   *  `performanceAccounts` directly, not off this rollup, so ambiguity
-   *  here doesn't block those. */
+  /** Null only when a merged group spans several performance accounts sharing a name;
+   *  per-account edits key off `performanceAccounts`, so that doesn't block them. */
   performanceAccountId: number | null;
   ownerPersonId: number | null;
   taxType: string;
@@ -107,10 +92,8 @@ export type TaxBucketBreakdown = {
 };
 
 /**
- * Aggregate a portfolio snapshot into tax buckets, per-account balances, and
- * per-person ownership fractions. `perfAccounts` supplies cost basis for the
- * after-tax (brokerage) bucket — filtered `isActive` same as the household
- * sum this mirrors.
+ * A snapshot as tax buckets, per-account balances and per-person ownership fractions.
+ * `perfAccounts` (filtered `isActive`) supplies the brokerage bucket's cost basis.
  */
 export function computeTaxBucketBreakdown(
   snapshotData: { accounts: TaxBucketSnapshotAccount[] } | null,
@@ -199,14 +182,14 @@ export function computeTaxBucketBreakdown(
       portfolioByTaxType.afterTaxBasis += basis;
       portfolioByTaxTypeByParentCat[pCat].afterTaxBasis += basis;
 
-      const catAsBal = cat as AccountCategory;
-      const bal = portfolioByAccount[catAsBal];
-      if (bal.structure === "roth_traditional") {
-        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
-        else addTraditional(bal, a.amount);
+      const catAsBalance = cat as AccountCategory;
+      const balance = portfolioByAccount[catAsBalance];
+      if (balance.structure === "roth_traditional") {
+        if (isTaxFreeBucket(a.taxType)) addRoth(balance, a.amount);
+        else addTraditional(balance, a.amount);
       } else {
-        addBalance(bal, a.amount);
-        if (basis > 0) addBasis(bal, basis);
+        addBalance(balance, a.amount);
+        if (basis > 0) addBasis(balance, basis);
       }
 
       if (ownerName) {
@@ -237,11 +220,8 @@ export function computeTaxBucketBreakdown(
 
       if (!accountBreakdownByCategory[cat])
         accountBreakdownByCategory[cat] = [];
-      // Owner included in the merge key: two different people's accounts sharing a
-      // display name within the same category/taxType must stay separate
-      // rows — merging them silently kept only the first owner's
-      // ownerPersonId, which downstream per-owner eligibility gating
-      // (Rule of 55, 59½, etc.) needs to be correct.
+      // Owner is in the merge key: same-named accounts of different people stay
+      // separate rows, so per-owner eligibility (Rule of 55, 59½) sees the right owner.
       const existing = accountBreakdownByCategory[cat].find(
         (e) =>
           e.name === displayName &&
@@ -276,19 +256,9 @@ export function computeTaxBucketBreakdown(
         });
       }
 
-      // Per-(name, category, taxType, owner) rollup — grouped on the exact
-      // same tuple as accountBreakdownByCategory above, so the two merge
-      // identically and a v2 join by name can't drop or double-count a row
-      // that the breakdown split/merged differently than a raw-ID key would.
-      //
-      // Retirement-only: unlike accountBreakdownByCategory (which the engine
-      // needs for its full net-worth projection, Portfolio category
-      // included), this rollup feeds the Tax Buckets tool specifically —
-      // early-access/Rule-of-55 questions don't apply to a taxable
-      // Portfolio-category brokerage account (e.g. "Long Term Brokerage"),
-      // only to Retirement-category holdings. Excluding it here means the
-      // v2 "at retirement" join (which matches by this same tuple against
-      // the engine's projected accounts) naturally excludes it too.
+      // Rollup on the same tuple as accountBreakdownByCategory so both merge alike.
+      // Retirement-only: early-access rules don't apply to Portfolio brokerage, and
+      // the "at retirement" join on this tuple excludes it too.
       if (isRetirementParent(pCat)) {
         const rollupKey = `${displayName}|${cat}|${a.taxType}|${a.ownerPersonId ?? "null"}`;
         const rollupExisting = rollupByKey.get(rollupKey);
@@ -316,20 +286,22 @@ export function computeTaxBucketBreakdown(
     accountOwnersByCategory[cat] = Array.from(names).join(" + ");
   }
   const totalByCategory: Record<string, number> = {};
-  for (const personBals of Object.values(balanceByPersonByCategory)) {
-    for (const [cat, amt] of Object.entries(personBals)) {
-      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amt;
+  for (const personBalances of Object.values(balanceByPersonByCategory)) {
+    for (const [cat, amount] of Object.entries(personBalances)) {
+      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amount;
     }
   }
   const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
   const ownershipByPerson: Record<string, Record<string, number>> = {};
-  for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
+  for (const [name, personBalances] of Object.entries(
+    balanceByPersonByCategory,
+  )) {
     ownershipByPerson[name] = {};
     let personTotal = 0;
-    for (const [cat, amt] of Object.entries(personBals)) {
+    for (const [cat, amount] of Object.entries(personBalances)) {
       const catTotal = totalByCategory[cat] ?? 1;
-      ownershipByPerson[name][cat] = safeDivide(amt, catTotal, 0);
-      personTotal += amt;
+      ownershipByPerson[name][cat] = safeDivide(amount, catTotal, 0);
+      personTotal += amount;
     }
     ownershipByPerson[name]._overall = safeDivide(
       personTotal,

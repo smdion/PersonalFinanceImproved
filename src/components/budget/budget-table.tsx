@@ -1,22 +1,8 @@
 "use client";
 
 /**
- * Full budget table.
- *
- * Renders the sticky-left Category/Item column, per-mode columns (with
- * API-link badge on the linked column), an optional YNAB/API actuals
- * column, and a body of BudgetCategoryRow entries plus the
- * IntersectionObserver sentinel for lazy "load more" scrolling. The
- * parent still owns:
- *   - rawItems → categories grouping
- *   - edit-mode draft store
- *   - all tRPC mutations (passed in as plain callback props)
- *   - the sentinel ref + observer wiring
- *
- * Stable per-context values (cols, apiService, profileId,
- * apiLinkedProfileId, apiLinkedColumnIndex, showApiColumn, canEdit,
- * editMode) are now consumed from BudgetPageContext instead of props.
- * Layout props are bundled into the `layout` prop object. Props: 21 → 7.
+ * Full budget table: sticky Category/Item column, per-mode columns, optional API
+ * actuals column, category rows and the lazy-load sentinel. Reads BudgetPageContext.
  */
 
 import React from "react";
@@ -53,7 +39,7 @@ export type RowHandlers = {
   ) => void;
   addItemPending: boolean;
   addItemError: { message: string } | null;
-  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  matchContribution: (subcategory: string, colIndex?: number) => number | null;
   // Adding-item state bundled here so the standalone add-item form
   // outside the table can share the same handler via rowHandlers.
   addingItemToCategory: string | null;
@@ -108,15 +94,9 @@ export function BudgetTable({
           <tr className="border-strong border-b-2">
             <th
               className="text-muted bg-surface-sunken sticky left-0 z-10 py-2 pr-3 text-left font-medium select-none"
-              // No fixed `width` — table-layout:fixed gives every OTHER
-              // column (below) a real pixel width, so this is the one
-              // column left as "auto" and absorbs 100% of whatever's left
-              // over. That's what makes a 3-mode table and a 6-mode table
-              // both fill the card at a sane column width instead of the
-              // name column staying cramped while a handful of amount
-              // columns stretch to soak up the leftover space (or, before
-              // this, a container-level max-width fighting w-full to fake
-              // the same effect).
+              // No fixed `width`: every other column has a pixel width under
+              // table-layout:fixed, so this one absorbs the leftover space at
+              // any mode count.
               style={{ minWidth: effectiveNameColWidth, maxWidth: 400 }}
             >
               <span className="flex items-center justify-between">
@@ -130,7 +110,7 @@ export function BudgetTable({
                 </span>
               </span>
             </th>
-            {cols.map((label, colIdx) => (
+            {cols.map((label, colIndex) => (
               <th
                 key={label}
                 className="text-muted px-3 py-2 text-right font-medium"
@@ -139,7 +119,7 @@ export function BudgetTable({
                 {label}
                 {apiService &&
                   apiLinkedProfileId === profileId &&
-                  apiLinkedColumnIndex === colIdx && (
+                  apiLinkedColumnIndex === colIndex && (
                     <Badge
                       color="blue"
                       case="normal"
@@ -188,7 +168,7 @@ export function BudgetTable({
               categoryNames={categoryNames}
               addingItemToCategory={addingItemToCategory}
               onSetAddingItemToCategory={onSetAddingItemToCategory}
-              matchContrib={rowHandlers.matchContrib}
+              matchContribution={rowHandlers.matchContribution}
               activeColumn={activeColumn}
               canEdit={canEdit}
               apiActualsMap={apiActualsMap}

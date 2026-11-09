@@ -1,11 +1,8 @@
 "use client";
 
 /**
- * useBudgetPageState — extracted from budget-content.tsx.
- *
- * Owns: edit mode, draft store, column resize state, lazy-rendering
- * visible-count, IntersectionObserver lifecycle, selectedColumnRef, and
- * the beforeunload guard.
+ * useBudgetPageState: edit mode, draft store, column resize, lazy-render
+ * visible count, selectedColumnRef and the beforeunload guard.
  */
 
 import {
@@ -52,11 +49,8 @@ export function useBudgetPageState({
 }) {
   // ---- Edit mode + draft store ----
 
-  // Locked (read-only) is the default, persisted per-browser like every other
-  // padlock in the app. Stored as "locked" — editMode is its inverse. Shares
-  // EDIT_LOCK_KEYS.profileEditLocked with the Salary/Contribution/Savings tabs —
-  // one padlock for the whole Budget page, not four independent ones that
-  // could drift out of sync.
+  // Locked by default, persisted per browser; editMode is its inverse. Shares
+  // EDIT_LOCK_KEYS.profileEditLocked with the profile tabs: one page padlock.
   const [budgetLocked, setBudgetLocked] = useLocalStorage<boolean>(
     EDIT_LOCK_KEYS.profileEditLocked,
     true,
@@ -114,10 +108,8 @@ export function useBudgetPageState({
       updates,
       selection: paySelectionRef.current,
     });
-    // Cells the server couldn't apply (a since-deleted item, or a column
-    // that no longer exists because the budget's columns changed while
-    // editing). They can't be re-saved without a reload, so clear the
-    // drafts as usual and just tell the user what didn't land.
+    // Cells the server couldn't apply (deleted item or missing column) can't be
+    // re-saved without a reload: clear drafts and tell the user what didn't land.
     if (res.skipped.length > 0) {
       const total = res.updated + res.skipped.length;
       toast(
@@ -131,10 +123,8 @@ export function useBudgetPageState({
 
   const toggleEditMode = () => {
     if (editMode) {
-      // A thrown save is already surfaced app-wide by the QueryClient's
-      // MutationCache.onError (providers.tsx). Just swallow the rejection
-      // here so it isn't an unhandled promise; the `skipped[]` partial-
-      // success toast in saveAllDrafts is the only budget-specific case.
+      // Thrown saves surface via MutationCache.onError (providers.tsx); catch
+      // here only to avoid an unhandled rejection.
       saveAllDrafts().catch((e: unknown) => {
         console.warn("budget batch save failed", e);
       });

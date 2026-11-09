@@ -138,7 +138,7 @@ describe("simplefin/sync", () => {
   describe("runSimplefinSync", () => {
     it("throws when no connection is configured", async () => {
       await removeSimplefinConnection(ctx.rawDb);
-      await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow(
+      await expect(runSimplefinSync(ctx.rawDb, new Date())).rejects.toThrow(
         /No SimpleFIN connection configured/,
       );
     });
@@ -386,14 +386,18 @@ describe("simplefin/sync", () => {
       const asOfDate = new Date(2026, 4, 1);
 
       // Seed: exclude "excluded-1" before the sync that would otherwise sum it in.
-      await upsertSimplefinAccounts(ctx.rawDb, [
-        bare({
-          id: "excluded-1",
-          name: "Old Credit Card",
-          balance: 999.99,
-          orgName: "Included Bank",
-        }),
-      ]);
+      await upsertSimplefinAccounts(
+        ctx.rawDb,
+        [
+          bare({
+            id: "excluded-1",
+            name: "Old Credit Card",
+            balance: 999.99,
+            orgName: "Included Bank",
+          }),
+        ],
+        new Date(),
+      );
       await ctx.rawDb
         .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })
@@ -625,40 +629,52 @@ describe("simplefin/sync", () => {
 
   describe("upsertSimplefinAccounts", () => {
     it("defaults a brand-new account to included", async () => {
-      const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
-        bare({
-          id: "new-acct-1",
-          name: "New Account",
-          balance: 50,
-          orgName: "Bank",
-        }),
-      ]);
+      const [row] = await upsertSimplefinAccounts(
+        ctx.rawDb,
+        [
+          bare({
+            id: "new-acct-1",
+            name: "New Account",
+            balance: 50,
+            orgName: "Bank",
+          }),
+        ],
+        new Date(),
+      );
       expect(row!.isIncluded).toBe(true);
       expect(row!.lastBalance).toBe(50);
     });
 
     it("preserves a manually-excluded account's flag across re-upserts, but refreshes its balance", async () => {
-      await upsertSimplefinAccounts(ctx.rawDb, [
-        bare({
-          id: "toggle-1",
-          name: "Toggle Me",
-          balance: 10,
-          orgName: "Bank",
-        }),
-      ]);
+      await upsertSimplefinAccounts(
+        ctx.rawDb,
+        [
+          bare({
+            id: "toggle-1",
+            name: "Toggle Me",
+            balance: 10,
+            orgName: "Bank",
+          }),
+        ],
+        new Date(),
+      );
       await ctx.rawDb
         .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })
         .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "toggle-1"));
 
-      const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
-        bare({
-          id: "toggle-1",
-          name: "Toggle Me",
-          balance: 99,
-          orgName: "Bank",
-        }),
-      ]);
+      const [row] = await upsertSimplefinAccounts(
+        ctx.rawDb,
+        [
+          bare({
+            id: "toggle-1",
+            name: "Toggle Me",
+            balance: 99,
+            orgName: "Bank",
+          }),
+        ],
+        new Date(),
+      );
 
       expect(row!.isIncluded).toBe(false);
       expect(row!.lastBalance).toBe(99);
@@ -676,10 +692,14 @@ describe("simplefin/sync", () => {
         new Date(2026, 5, 1),
       );
 
-      await upsertSimplefinAccounts(ctx.rawDb, [
-        bare({ id: "local-1", name: "A", balance: 40, orgName: "Bank" }),
-        bare({ id: "local-2", name: "B", balance: 60, orgName: "Bank" }),
-      ]);
+      await upsertSimplefinAccounts(
+        ctx.rawDb,
+        [
+          bare({ id: "local-1", name: "A", balance: 40, orgName: "Bank" }),
+          bare({ id: "local-2", name: "B", balance: 60, orgName: "Bank" }),
+        ],
+        new Date(),
+      );
       await ctx.rawDb
         .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })

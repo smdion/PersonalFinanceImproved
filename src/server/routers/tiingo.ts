@@ -1,15 +1,12 @@
 /**
- * Tiingo router — market-data API key management (benchmark price history).
- *
- * Mirrors the SimpleFIN router's permission split: mutations use
- * syncProcedure (same domain as SimpleFIN connection management) since
- * they write shared server-side credentials and call an
- * external API; getStatus uses protectedProcedure and never returns the key.
+ * Tiingo router: the market-data API key (benchmark price history). Saving,
+ * testing and removing the key are admin-only, as the Integrations page is;
+ * getStatus is protected and never returns the key.
  */
 
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
+import { adminProcedure, createTRPCRouter, protectedProcedure } from "../trpc";
 import {
   getTiingoConnection,
   getTiingoApiKey,
@@ -41,7 +38,7 @@ const KEY_UNREADABLE =
 
 export const tiingoRouter = createTRPCRouter({
   /** Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. */
-  saveKey: syncProcedure
+  saveKey: adminProcedure
     .input(z.object({ apiKey: z.string().trim().min(1) }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -60,7 +57,7 @@ export const tiingoRouter = createTRPCRouter({
     }),
 
   /** Test the stored key and report how far back price history goes. */
-  testConnection: syncProcedure.mutation(
+  testConnection: adminProcedure.mutation(
     async ({
       ctx,
     }): Promise<
@@ -71,29 +68,29 @@ export const tiingoRouter = createTRPCRouter({
         apiKey = await getTiingoApiKey(ctx.db);
       } catch {
         // A key saved under another ENCRYPTION_KEY (e.g. a restored backup).
-        return { success: false as const, error: KEY_UNREADABLE };
+        return { ok: false as const, error: KEY_UNREADABLE };
       }
       if (!apiKey) {
         return {
-          success: false as const,
+          ok: false as const,
           error: "No Tiingo connection configured",
         };
       }
       try {
         const meta = await testApiKey(apiKey);
         return {
-          success: true as const,
+          ok: true as const,
           ticker: meta.ticker,
           historyStart: meta.startDate,
         };
       } catch (e) {
-        return { success: false as const, error: describeTiingoError(e) };
+        return { ok: false as const, error: describeTiingoError(e) };
       }
     },
   ),
 
   /** Remove the stored key. */
-  removeConnection: syncProcedure.mutation(async ({ ctx }) => {
+  removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeTiingoConnection(ctx.db);
     return { ok: true as const };
   }),

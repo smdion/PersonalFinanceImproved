@@ -102,16 +102,9 @@ export async function computeSyncPreview(
   const accounts = accountsCache.data;
   const categoryGroups = categoriesCache?.data ?? [];
 
-  // Compute what cash would be under API control — same precedence as
-  // getEffectiveCash (server/services/budget/account-balances.ts): explicit "cash"
-  // account mappings win when present (the only path that works for
-  // Actual at all, which has no account-type field to auto-detect
-  // from), else fall back to type-based
-  // auto-detection (YNAB). This preview used to duplicate the
-  // type-based logic independently, so it kept showing $0 even after
-  // a household mapped Cash accounts — a household with mappings must
-  // see the SAME total here as Net Worth/Assets, not a second,
-  // differently-computed number.
+  // Cash under API control, same precedence as getEffectiveCash: explicit
+  // "cash" mappings win (Actual has no account type), else type-based
+  // detection (YNAB), so this matches Net Worth/Assets.
   const { onBudgetCashAccounts, apiCash } = previewCash(conn, accounts);
 
   // Current manual cash for comparison
@@ -181,14 +174,12 @@ export async function computeSyncPreview(
         apiSyncDirection: link?.syncDirection ?? null,
       };
     });
-    // Contribution-linked items freeze `amounts` on edit (see
-    // resolveLinkedBudgetItemAmounts docblock) — this preview must show
-    // the same figure syncBudgetToApi would actually push, not the
-    // stale DB column.
+    // Contribution-linked items freeze `amounts` on edit, so resolve them to
+    // show what syncBudgetToApi would push.
     const previewNumColumns = (activeProfile.columnLabels as string[]).length;
     const activeProfiles = await resolveProfileSelection(ctx.scope);
     budgetItemRows = await resolveLinkedBudgetItemAmounts(
-      ctx.db,
+      ctx,
       linkedRows,
       previewNumColumns,
       activeProfiles,
@@ -225,14 +216,9 @@ export async function computeSyncPreview(
       type: a.type,
     }));
 
-  // Every non-closed account, on-budget included — the remote-account
-  // picker for the "Cash" and "Credit Card" pseudo-mappings needs
-  // on-budget checking/savings/credit-card accounts, which
-  // trackingAccounts (off-budget only) excludes by design. Actual's API
-  // has no account "type" field at all (the
-  // wrapper's own schema only has id/name/offbudget/closed), so there's
-  // no way to auto-restrict this list to "checking/savings-like"
-  // accounts; the household picks manually instead.
+  // Every non-closed account, on-budget included: the "Cash" / "Credit Card"
+  // pseudo-mapping picker needs on-budget accounts, and Actual has no account
+  // type to filter by, so the household picks manually.
   const allAccounts = accounts
     .filter((a) => !a.closed)
     .map((a) => ({
@@ -250,7 +236,7 @@ export async function computeSyncPreview(
     ownerPersonId: number | null;
   }> = [];
   if (latestSnapshot) {
-    const [snapAccts, allPeople, perfAccounts] = await Promise.all([
+    const [snapAccounts, allPeople, perfAccounts] = await Promise.all([
       ctx.db
         .select()
         .from(schema.portfolioAccounts)
@@ -261,16 +247,9 @@ export async function computeSyncPreview(
     const peopleMap = new Map(allPeople.map((p) => [p.id, p.name]));
     const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-    // Aggregate by performanceAccountId + ownerPersonId for stable identity.
-    // Two people may share the same performanceAccountId (e.g. both have an IRA
-    // at the same institution) — they must appear as separate line items.
-    // ownerPersonId is carried through to the client (not just used for
-    // the label) because the label alone isn't safe identity — two
-    // people's labels only differ when accountDisplayName resolves them
-    // differently, which silently stops being true if a displayName is
-    // ever set on the shared performance account. See
-    // portfolio-section.tsx, which keys/values its <option>s on the
-    // (performanceAccountId, ownerPersonId) tuple this map already dedupes on.
+    // Aggregate by (performanceAccountId, ownerPersonId): two people can share a
+    // performance account, and the label alone isn't a safe identity
+    // (portfolio-section.tsx keys its options on the pair).
     const perfOwnerMap = new Map<
       string,
       {
@@ -280,7 +259,7 @@ export async function computeSyncPreview(
         balance: number;
       }
     >();
-    for (const a of snapAccts) {
+    for (const a of snapAccounts) {
       if (!a.performanceAccountId) continue;
       const perf = perfMap.get(a.performanceAccountId);
       const label = portfolioAccountLabel(a, perf, a.ownerPersonId, peopleMap);

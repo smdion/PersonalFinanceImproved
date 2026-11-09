@@ -14,7 +14,7 @@ import { shortfallFloor } from "@/lib/pure/engine";
 
 /** The contribution total's tooltip: what went in, what came out, growth and budget. */
 export function totalContributionTooltip(
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   pt: ReturnType<ProjectionState["getPersonYearTotals"]>,
   personFilter: ProjectionState["personFilter"],
   accumulationBudgetProfileId: number | undefined,
@@ -34,9 +34,9 @@ export function totalContributionTooltip(
   personFilterName: ProjectionState["personFilterName"],
   accumOverrideNotes: string | undefined,
   accumOverrides: ProjectionState["accumOverrides"],
-  contribSpecs: ProjectionState["contribSpecs"],
+  contributionSpecs: ProjectionState["contribSpecs"],
 ) {
-  const iabs = yr.individualAccountBalances ?? [];
+  const iabs = yearRow.individualAccountBalances ?? [];
   const totalGrowth = (
     pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
   ).reduce((s, ia) => s + ia.growth, 0);
@@ -47,20 +47,23 @@ export function totalContributionTooltip(
         )
       : undefined;
   const mine = pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : [];
-  const empAmount = deflate(pt ? pt.contribution : yr.totalEmployee, yr.year);
+  const empAmount = deflate(
+    pt ? pt.contribution : yearRow.totalEmployee,
+    yearRow.year,
+  );
   const matchAmount = pt
     ? deflate(
         mine.reduce((s, ia) => s + ia.employerMatch, 0),
-        yr.year,
+        yearRow.year,
       )
-    : yr.totalEmployer > 0
-      ? deflate(yr.totalEmployer, yr.year)
+    : yearRow.totalEmployer > 0
+      ? deflate(yearRow.totalEmployer, yearRow.year)
       : 0;
   const budgetProfileName =
     accumulationExpenseOverride != null
-      ? `Set for this year${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
+      ? `Set for this year${yearRow.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
       : accBudgetProfile
-        ? `${accBudgetProfile.name}${accumulationBudgetColumn != null && accBudgetProfile.columnLabels[accumulationBudgetColumn] ? ` (${accBudgetProfile.columnLabels[accumulationBudgetColumn]})` : ""}${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
+        ? `${accBudgetProfile.name}${accumulationBudgetColumn != null && accBudgetProfile.columnLabels[accumulationBudgetColumn] ? ` (${accBudgetProfile.columnLabels[accumulationBudgetColumn]})` : ""}${yearRow.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
         : undefined;
   // Build per-bucket items from slots (shows all tax types that have contributions)
   const inOutItems: TooltipLineItem[] = [];
@@ -70,16 +73,16 @@ export function totalContributionTooltip(
       amount: matchAmount,
       color: "green",
     });
-  inOutItems.push(...contributionTaxTypeTotals(yr, pt, mine, deflate));
+  inOutItems.push(...contributionTaxTypeTotals(yearRow, pt, mine, deflate));
   // A year a paycheck is gone: money comes out as well as in. With
   // a person or category filter only the accounts shown count, and
   // the household's figures (tax, the why) are left out.
-  const gap = yr.gapDraw;
+  const gap = yearRow.gapDraw;
   const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
   if (gap) {
-    inOutItems.push(...gapDrawnItems(yr, scopedIabs(iabs), deflate));
+    inOutItems.push(...gapDrawnItems(yearRow, scopedIabs(iabs), deflate));
   }
-  const money = (v: number) => formatCurrency(deflate(v, yr.year));
+  const money = (v: number) => formatCurrency(deflate(v, yearRow.year));
   const gapMeta = gap
     ? gap.withdrawal > 0
       ? `A paycheck is gone: pay ${money(gap.pay)}${gap.ssIncome > 0 ? ` and Social Security ${money(gap.ssIncome)}` : ""}, less ${money(gap.taxOnIncome)} tax and what's saved, leave spending ${money(gap.need)} short, so it's withdrawn`
@@ -93,44 +96,47 @@ export function totalContributionTooltip(
     meta: gapScoped ? undefined : gapMeta,
     shortfall:
       gap && !gapScoped && gap.unmetNeed >= shortfallFloor(gap.need)
-        ? { amount: deflate(gap.unmetNeed, yr.year) }
+        ? { amount: deflate(gap.unmetNeed, yearRow.year) }
         : undefined,
     withdrawals:
       gap && gap.withdrawal > 0 && !gapScoped
         ? {
-            amount: deflate(gap.withdrawal, yr.year),
-            taxCost: deflate(gap.taxCost, yr.year),
+            amount: deflate(gap.withdrawal, yearRow.year),
+            taxCost: deflate(gap.taxCost, yearRow.year),
           }
         : undefined,
     items: inOutItems.length > 0 ? inOutItems : undefined,
     growth:
       Math.abs(totalGrowth) > 1
         ? {
-            amount: deflate(totalGrowth, yr.year),
+            amount: deflate(totalGrowth, yearRow.year),
           }
         : undefined,
     budget: budgetProfileName
       ? {
           profile: budgetProfileName,
-          amount: deflate(yr.projectedExpenses, yr.year),
+          amount: deflate(yearRow.projectedExpenses, yearRow.year),
         }
       : undefined,
     overrideNote:
       accumOverrideNotes &&
       !accumOverrides.some(
-        (o) => o.year === yr.year && o.contributionRate !== undefined,
+        (o) => o.year === yearRow.year && o.contributionRate !== undefined,
       )
         ? `Changed this year: ${accumOverrideNotes}`
         : undefined,
     proRate:
-      yr.proRateFraction != null
+      yearRow.proRateFraction != null
         ? (() => {
             const totalAnnual =
-              contribSpecs?.reduce((s, sp) => s + (sp.baseAnnual || 0), 0) ?? 0;
+              contributionSpecs?.reduce(
+                (s, sp) => s + (sp.baseAnnual || 0),
+                0,
+              ) ?? 0;
             return totalAnnual > 0
               ? {
-                  months: proRateMonths(yr.proRateFraction),
-                  annualAmount: deflate(totalAnnual, yr.year),
+                  months: proRateMonths(yearRow.proRateFraction),
+                  annualAmount: deflate(totalAnnual, yearRow.year),
                   proRatedAmount: empAmount,
                 }
               : undefined;
@@ -141,18 +147,18 @@ export function totalContributionTooltip(
 
 /** One balance column's tooltip, per account. */
 export function accountBalanceTooltip(
-  colDisplayContrib: number,
+  colDisplayContribution: number,
   colDisplayGrowth: number,
   splits: ReturnType<typeof computeAccountSplits>["splits"],
   colSplitsTotal: number,
   deflate: ProjectionState["deflate"],
-  yr: EngineAccumulationYear,
+  yearRow: EngineAccumulationYear,
   catKey: string,
   renderTooltip: ProjectionState["renderTooltip"],
   col: { key: string; val: number; color: string; label: string },
   pct: number,
-  colBoyBal: number,
-  colDeflatedBal: number,
+  colBoyBalance: number,
+  colDeflatedBalance: number,
   colDisplayChange: number,
 ) {
   const colChangeParts: {
@@ -160,10 +166,10 @@ export function accountBalanceTooltip(
     amount: number;
     color: TipColor;
   }[] = [];
-  if (colDisplayContrib > 0)
+  if (colDisplayContribution > 0)
     colChangeParts.push({
       label: "contrib",
-      amount: colDisplayContrib,
+      amount: colDisplayContribution,
       color: "green",
     });
   if (Math.abs(colDisplayGrowth) > 1)
@@ -174,32 +180,32 @@ export function accountBalanceTooltip(
     });
   const splitItems: TooltipLineItem[] = splits.map(
     ({
-      name: acctName,
+      name: accountName,
       taxType: spTaxType,
-      balance: spBal,
-      contribution: spContrib,
+      balance: spBalance,
+      contribution: spContribution,
       growth: spGrowth,
     }) => {
-      const entryPct = percentOf(spBal, colSplitsTotal);
+      const entryPercent = percentOf(spBalance, colSplitsTotal);
       const subItems: TooltipLineItem[] = [];
-      if (spContrib > 1)
+      if (spContribution > 1)
         subItems.push({
           label: "contrib",
-          amount: deflate(spContrib, yr.year),
+          amount: deflate(spContribution, yearRow.year),
           prefix: "+",
           color: "green",
         });
       if (Math.abs(spGrowth) > 1)
         subItems.push({
           label: "growth",
-          amount: deflate(spGrowth, yr.year),
+          amount: deflate(spGrowth, yearRow.year),
           prefix: spGrowth >= 0 ? "+" : undefined,
           color: spGrowth >= 0 ? "blue" : "red",
         });
       return {
-        label: acctName,
-        amount: deflate(spBal, yr.year),
-        percent: entryPct,
+        label: accountName,
+        amount: deflate(spBalance, yearRow.year),
+        percent: entryPercent,
         taxType: itemTaxType(catKey, spTaxType),
         sub: subItems.length > 0 ? subItems : undefined,
       };
@@ -208,10 +214,10 @@ export function accountBalanceTooltip(
   return renderTooltip({
     kind: "money",
     header: `${col.label}: ${pct}% of portfolio`,
-    meta: `${yr.year} · BoY: ${formatCurrency(colBoyBal)} → EoY: ${formatCurrency(colDeflatedBal)} · ${formatPercent(yr.returnRate, 1)} return${yr.proRateFraction != null && yr.proRateFraction > 0 ? ` (${formatPercent(yr.annualizedReturnRate, 1)} annual)` : ""}`,
+    meta: `${yearRow.year} · BoY: ${formatCurrency(colBoyBalance)} → EoY: ${formatCurrency(colDeflatedBalance)} · ${formatPercent(yearRow.returnRate, 1)} return${yearRow.proRateFraction != null && yearRow.proRateFraction > 0 ? ` (${formatPercent(yearRow.annualizedReturnRate, 1)} annual)` : ""}`,
     items: splitItems,
     yearChange: {
-      total: colDeflatedBal,
+      total: colDeflatedBalance,
       change: colDisplayChange,
       parts: colChangeParts.length > 0 ? colChangeParts : undefined,
     },

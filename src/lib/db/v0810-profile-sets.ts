@@ -1,8 +1,6 @@
 /**
  * The v0.8.10 data conversion, for restoring a backup taken before v0.8.10
- * (backup-transforms.ts). Migration 0009 also ran it on live tables until
- * the v0.9.0 squash folded the v0.8 line into one baseline — a database
- * that old must go through v0.8.15 first.
+ * (backup-transforms.ts).
  */
 
 type V0810Row = Record<string, unknown>;
@@ -50,25 +48,9 @@ function v0810Truthy(value: unknown): boolean {
 }
 
 /**
- * Convert v0.8.9-and-older profile data to the v0.8.10 shapes, in place:
- *
- * 1. A Plan's stored salaries (`scenarios.overrides.people[personId].salary`)
- *    become a new Salary Profile — a copy of the Plan's own (or else the
- *    active) Salary Profile with those salaries on each person's current
- *    job — and the Plan uses it.
- * 2. Where each person's bonus goes (the `bonus_destinations` setting)
- *    moves into every Salary Profile entry for that person's jobs
- *    (`bonusDestination`, only when "spending"); the setting is deleted.
- * 3. The Salary Profile's bonus switches (`include401kInBonus` /
- *    `includeBonusInContributions`) become each payroll account's own
- *    `fromBonus` in every Contribution Profile that has an entry for it —
- *    read from the active Salary Profile's entry for the account's job,
- *    else the first profile that has one — and are removed from entries.
- * 4. Duplicate Plan names get " (2)", " (3)", … so the new unique index
- *    can be built.
- *
- * Every step does nothing when its source is gone, so running it twice
- * changes nothing the second time. Only non-default values are written.
+ * Convert pre-v0.8.10 profile data to the v0.8.10 shapes in place, in the numbered steps
+ * below. Each step skips a missing source, so a second run changes nothing; only non-default
+ * values are written.
  */
 export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
   const result: V0810Result = {
@@ -292,8 +274,8 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
     if (result.changed.salary_profiles.has(Number(p["id"])))
       p["salaries"] = salariesOf.get(p);
 
-  // Budget columns no longer have profiles of their own (0009 drops them):
-  // note each Budget profile whose columns had one.
+  // In v0.8.10 Budget columns carry no profiles of their own: note each Budget profile
+  // whose columns had one.
   for (const bp of tables["budget_profiles"] ?? []) {
     const ids = [
       v0810Json(bp["column_contribution_profile_ids"]),

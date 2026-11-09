@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * IRMAA-cliff callout (roadmap #4 sub-item). Reads existing row fields
- * only — years where an IRMAA surcharge is actually charged, or where a
- * Roth conversion was capped to stay under a threshold (Group D flag).
- * No new computation.
+ * IRMAA-cliff callout from existing row fields: years with an IRMAA surcharge, or where a Roth
+ * conversion is capped to stay under a threshold.
  */
 import type { RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";

@@ -8,8 +8,8 @@ import {
 function baseInput(overrides: Partial<ReportGateInput> = {}): ReportGateInput {
   const sharedInput = { a: 1 };
   return {
-    scenarioView: "baseline",
-    mcTaxMode: "advanced",
+    projectionView: "baseline",
+    simulationTaxMode: "advanced",
     sharedInput,
     debouncedInput: sharedInput,
     engineQuery: { isFetching: false, isPlaceholderData: false, data: {} },
@@ -24,12 +24,12 @@ describe("checkReportGate", () => {
   });
 
   it("blocks a non-baseline scenario (Coast FIRE/Rate-Seeded source a different MC result and different deterministic projection than the baseline assumptions echo)", () => {
-    const result = checkReportGate(baseInput({ scenarioView: "coastFire" }));
+    const result = checkReportGate(baseInput({ projectionView: "coastFire" }));
     expect(result).toEqual({ ok: false, failure: "not-baseline-scenario" });
   });
 
   it("blocks Simple tax mode (no RMDs/Roth conversions/ACA-IRMAA effects modeled at all under Simple)", () => {
-    const result = checkReportGate(baseInput({ mcTaxMode: "simple" }));
+    const result = checkReportGate(baseInput({ simulationTaxMode: "simple" }));
     expect(result).toEqual({ ok: false, failure: "simple-tax-mode" });
   });
 
@@ -88,8 +88,8 @@ describe("checkReportGate", () => {
   it("checks scenario and tax-mode before the freshness checks (cheap, deterministic conditions first)", () => {
     const result = checkReportGate(
       baseInput({
-        scenarioView: "rateSeeded",
-        mcTaxMode: "simple",
+        projectionView: "rateSeeded",
+        simulationTaxMode: "simple",
         mcQuery: { isFetching: true, data: undefined },
       }),
     );

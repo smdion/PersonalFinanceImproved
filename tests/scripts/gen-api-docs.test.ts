@@ -6,7 +6,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { readRouterCatalog } from "../../scripts/gen-api-docs";
+import {
+  buildRouterCatalog,
+  readRouterCatalog,
+} from "../../scripts/gen-api-docs";
 
 let dir: string | null = null;
 afterEach(() => {
@@ -81,5 +84,39 @@ export const groupRouter = createTRPCRouter({
     expect(() => readRouterCatalog(d)).toThrow(
       /group\.stray is written in an index\.ts/,
     );
+  });
+
+  it("prints the Description column only for a router with a doc comment", () => {
+    const d = routers({
+      "index.ts": `
+import { notesRouter } from "./notes";
+import { bareRouter } from "./bare";
+export const appRouter = createTRPCRouter({ notes: notesRouter, bare: bareRouter });`,
+      "notes.ts": `
+export const notesRouter = createTRPCRouter({
+  /** Lists notes. */
+  list: protectedProcedure.query(() => []),
+  save: adminProcedure.mutation(() => null),
+});`,
+      "bare.ts": `
+export const bareRouter = createTRPCRouter({
+  get: protectedProcedure.query(() => 1),
+});`,
+    });
+    const md = buildRouterCatalog(d, null);
+    expect(md).toContain("| Procedure | Kind | Auth | Source | Description |");
+    expect(md).toContain(
+      "| `notes.list` | query | `protectedProcedure` | `notes.ts` | Lists notes. |",
+    );
+    expect(md).toContain(
+      "| `notes.save` | mutation | `adminProcedure` | `notes.ts` |  |",
+    );
+    expect(md).toContain(
+      "| Procedure | Kind | Auth | Source |\n|---|---|---|---|\n",
+    );
+    expect(md).toContain(
+      "| `bare.get` | query | `protectedProcedure` | `bare.ts` |\n",
+    );
+    expect(md).not.toContain("(no description)");
   });
 });

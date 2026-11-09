@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * ExtraPaycheckBudgetNote
- *
- * Informational note for the Budget page: which biweekly jobs have an extra
- * paycheck NOT routed to a savings goal (the "Budget" toggle on the Savings
- * page's extra-paycheck editor), and which upcoming months to expect it in.
- * When the CURRENT month is one of them, also surfaces the real dollar
- * figure the budget-income-materializer wrote to `budget_income_adjustments`
- * for that job/month — a clearly separate, additively-labeled line, never
- * merged into any other number this component or the Budget page shows. See
- * DESIGN.md's extraPaycheckRouting section.
+ * Budget page note: biweekly jobs whose extra paycheck isn't routed to savings, and
+ * the months to expect it. In such a month it also shows that month's
+ * `budget_income_adjustments` figure as its own line (DESIGN.md extraPaycheckRouting).
  */
 
 import { trpc } from "@/lib/trpc";

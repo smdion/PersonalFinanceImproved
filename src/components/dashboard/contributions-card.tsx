@@ -19,12 +19,13 @@ import {
 } from "@/lib/utils/colors";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
-import { safeDivide, sumBy } from "@/lib/utils/math";
+import { safeDivide } from "@/lib/utils/math";
 import {
-  ContribPeriodToggle,
-  getContribMultiplier,
+  ContributionPeriodToggle,
+  getContributionMultiplier,
   getPeriodSuffix,
-  type ContribPeriod,
+  householdPeriodsPerYear,
+  type ContributionPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import {
   getAllCategories,
@@ -39,101 +40,27 @@ import {
   type SavingsGroup,
 } from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { FundingBar } from "@/components/paycheck/funding-bar";
 import { PaceStatusText } from "./pace-status";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
-
-function FundingBar({
-  percent,
-  matchPercent,
-  matchCountsTowardLimit,
-  accountType,
-}: {
-  percent: number;
-  matchPercent?: number;
-  matchCountsTowardLimit?: boolean;
-  accountType?: string;
-}) {
-  const showMatchBeyond = (matchPercent ?? 0) > 0 && !matchCountsTowardLimit;
-  const employeeClamped = Math.min(percent, 1);
-  const totalPercent = showMatchBeyond
-    ? percent + (matchPercent ?? 0)
-    : percent;
-  const typeColor = accountType ? accountColor(accountType) : null;
-  const color =
-    percent > OVER_LIMIT_THRESHOLD
-      ? "bg-red-500"
-      : (typeColor ??
-        (percent >= 1
-          ? "bg-green-500"
-          : percent >= 0.75
-            ? "bg-blue-500"
-            : percent >= 0.5
-              ? "bg-yellow-500"
-              : "bg-red-400"));
-  const matchBarColor = accountType
-    ? accountMatchColor(accountType)
-    : "bg-blue-300/60";
-
-  if (!showMatchBeyond) {
-    return (
-      <div className="bg-surface-strong relative h-2 w-full rounded-full">
-        <div
-          className={`${color} h-2 rounded-full transition-all`}
-          style={{ width: `${employeeClamped * 100}%` }}
-          title={`Employee contribution: ${formatPercent(percent)} of IRS limit`}
-        />
-        {/* IRS limit marker at 100% */}
-        <div
-          className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
-          style={{ left: "100%" }}
-          title="100% IRS annual limit"
-        />
-      </div>
-    );
-  }
-
-  const scale = totalPercent > 1 ? 1 / totalPercent : 1;
-  const employeeWidth = employeeClamped * scale * 100;
-  const matchWidth = (matchPercent ?? 0) * scale * 100;
-  const limitPosition = 1 * scale * 100;
-
-  return (
-    <div className="bg-surface-strong relative h-2 w-full rounded-full">
-      <div
-        className={`${color} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
-        style={{ width: `${employeeWidth}%` }}
-        title={`Employee contribution: ${formatPercent(percent)} of IRS limit`}
-      />
-      <div
-        className={`${matchBarColor} absolute top-0 h-2 rounded-r-full transition-all`}
-        style={{ left: `${employeeWidth}%`, width: `${matchWidth}%` }}
-        title={`Employer match (does not count toward IRS limit)`}
-      />
-      <div
-        className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
-        style={{ left: `${limitPosition}%` }}
-        title="100% IRS annual limit"
-      />
-    </div>
-  );
-}
+import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
-  const contribInput = {
-    ...contribProfileInput,
+  const { queryInput: contributionProfileInput } =
+    useEffectiveContributionProfileId();
+  const contributionInput = {
+    ...contributionProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-  const summary = trpc.contribution.computeSummary.useQuery(contribInput);
+  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
   const { data } = summary;
   // Live status per tracked account (needs the portfolio permission; the
   // card works without it).
-  const { data: pace } = trpc.investments.getSavingsThisYear.useQuery(
+  const { data: pace } = trpc.investments.computeSavingsThisYear.useQuery(
     undefined,
     { retry: false },
   );
@@ -147,7 +74,8 @@ function ContributionsCardImpl() {
       </span>
     ) : null;
   };
-  const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
+  const [contributionPeriod, setContributionPeriod] =
+    useState<ContributionPeriod>("annual");
   const highIncome = useHighIncomeLine();
   const { threshold: highIncomeThreshold } = highIncome;
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
@@ -203,28 +131,32 @@ function ContributionsCardImpl() {
     },
   ];
 
-  // Use average periodsPerYear for household-level multiplier
-  const avgPeriodsPerYear =
-    people.length > 0
-      ? sumBy(people, (p) => p.periodsPerYear!) / people.length
-      : 26;
-  const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
-  const suffix = getPeriodSuffix(contribPeriod);
+  const avgPeriodsPerYear = householdPeriodsPerYear(
+    people.map((p) => p.periodsPerYear!),
+  );
+  const householdMult = getContributionMultiplier(
+    contributionPeriod,
+    avgPeriodsPerYear,
+  );
+  const suffix = getPeriodSuffix(contributionPeriod);
 
   return (
     <Card
       title="Contributions"
       href={focusHref({ topic: "contributionElections" })}
       headerRight={
-        <ContribPeriodToggle
-          value={contribPeriod}
-          onChange={setContribPeriod}
+        <ContributionPeriodToggle
+          value={contributionPeriod}
+          onChange={setContributionPeriod}
         />
       }
     >
       <div className="space-y-3">
         {people.map((p, personIndex) => {
-          const mult = getContribMultiplier(contribPeriod, p.periodsPerYear!);
+          const mult = getContributionMultiplier(
+            contributionPeriod,
+            p.periodsPerYear!,
+          );
           return (
             <div
               key={p.person.id}
@@ -243,7 +175,7 @@ function ContributionsCardImpl() {
                     ? getAccountTypeConfig(at.categoryKey as AccountCategory)
                         .matchCountsTowardLimit
                     : false;
-                  const matchPctOfLimit =
+                  const matchPercentOfLimit =
                     hasLimit && at.views[viewMode].employerMatch > 0
                       ? at.views[viewMode].employerMatch / at.limit
                       : undefined;
@@ -276,14 +208,14 @@ function ContributionsCardImpl() {
                         </div>
                       </div>
 
-                      {/* Funding bar with IRS limit marker — always shows annual funding % */}
                       {hasLimit && (
                         <div className="mt-1">
                           <FundingBar
-                            percent={at.views[viewMode].fundingPct}
-                            matchPercent={matchPctOfLimit}
+                            pct={at.views[viewMode].fundingPct}
+                            matchPercent={matchPercentOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
+                            limitMarker
                           />
                           <div className="text-caption mt-0.5 flex justify-between">
                             <span

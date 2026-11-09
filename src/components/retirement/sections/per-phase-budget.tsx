@@ -1,21 +1,7 @@
 /**
- * Per-phase budget profile + column selection.
- *
- * This is the middle child block of Decumulation Plan: it renders the
- * decumulation-phase Budget Source picker (profile dropdown + column picker
- * or weighted summary) alongside the Salary Override inline edit. Returns
- * null if there are no budget profiles at all, matching the IIFE guard.
- *
- * The block also shows an amber "strategy X computes spending from ..."
- * banner when the active withdrawal strategy doesn't consume the budget /
- * withdrawal rate / post-retirement raise — and also
- * disables the budget-source select/column select/salary-override edit in
- * that case too (previously only dimmed via opacity, still fully editable
- * underneath — same class of bug as raise-and-rate.tsx's two fields, found
- * alongside it). This component also had no `isEditable`/admin gating at
- * all until the same pass — every other section in this tab disables for
- * non-admins; this one let a non-admin interact freely and only failed
- * silently at the (adminProcedure-gated) mutation layer.
+ * Decumulation Budget Source picker (profile + column or weighted summary) and Salary Override.
+ * Null without budget profiles. When the strategy ignores the budget, an amber banner shows and
+ * the controls are disabled; they also follow `isEditable`.
  */
 "use client";
 
@@ -31,10 +17,10 @@ type Props = {
   budgetProfileSummaries: BudgetProfileSummaries;
   decumulationBudgetProfileId: number | null | undefined;
   decumulationBudgetColumn: number;
-  decExpenseOverride: string | null;
-  setDecExpenseOverride: (v: string | null) => void;
-  setDecBudgetProfileId: (id: number | null) => void;
-  setDecBudgetCol: (col: number | null) => void;
+  decumulationExpenseOverride: string | null;
+  setDecumulationExpenseOverride: (v: string | null) => void;
+  setDecumulationBudgetProfileId: (id: number | null) => void;
+  setDecumulationBudgetCol: (col: number | null) => void;
   isEditable: IsEditable;
 };
 
@@ -43,37 +29,31 @@ export function PerPhaseBudgetSection({
   budgetProfileSummaries,
   decumulationBudgetProfileId,
   decumulationBudgetColumn,
-  decExpenseOverride,
-  setDecExpenseOverride,
-  setDecBudgetProfileId,
-  setDecBudgetCol,
+  decumulationExpenseOverride,
+  setDecumulationExpenseOverride,
+  setDecumulationBudgetProfileId,
+  setDecumulationBudgetCol,
   isEditable,
 }: Props) {
   const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
   if (!meta) return null;
   const { incomeSource } = meta;
   const { usesWithdrawalRate, usesPostRetirementRaise } = meta;
-  // Branch on usesWithdrawalRate, not incomeSource -- incomeSource labels
-  // Guyton-Klinger "rate" (a UI-framing distinction), but GK's actual
-  // year-1 spending IS budget-seeded (initialWithdrawalRate is DERIVED
-  // FROM the budget, not an independent setting) and every subsequent
-  // year is a guardrail adjustment of that, same as Fixed/Forgo/Spending
-  // Decline. usesWithdrawalRate already correctly separates the 4
-  // genuinely budget-seeded strategies from the 4 that aren't (RMD-based,
-  // Constant %, Endowment, Vanguard Dynamic) -- same fix already applied
-  // in mc-simulation-assumptions.tsx for this exact distinction.
+  // Branch on usesWithdrawalRate, not incomeSource: incomeSource labels Guyton-Klinger "rate",
+  // but its year-1 spending is derived from the budget, like Fixed/Forgo/Spending Decline.
   const budgetNotUsed = !usesWithdrawalRate;
   const profiles = budgetProfileSummaries;
   if (profiles.length === 0) return null;
 
-  const decProfile =
+  const decumulationProfile =
     profiles.find((p) => p.id === decumulationBudgetProfileId) ??
     profiles.find((p) => p.isActive);
-  const decLabels = decProfile?.columnLabels ?? [];
-  const decTotals = decProfile?.columnTotals ?? [];
-  const decMonths = (decProfile?.columnMonths as number[] | null) ?? null;
-  const decWeighted =
-    (decProfile?.weightedAnnualTotal as number | null) ?? null;
+  const decumulationLabels = decumulationProfile?.columnLabels ?? [];
+  const decumulationTotals = decumulationProfile?.columnTotals ?? [];
+  const decumulationMonths =
+    (decumulationProfile?.columnMonths as number[] | null) ?? null;
+  const decumulationWeighted =
+    (decumulationProfile?.weightedAnnualTotal as number | null) ?? null;
 
   return (
     <div>
@@ -100,24 +80,25 @@ export function PerPhaseBudgetSection({
         <div>
           <span className="text-muted">
             Budget Source
-            <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set an amount yourself or use a budget profile." />
+            <HelpTip text={budgetTip(meta, "source")} />
           </span>
           <div className="flex flex-col gap-1 font-medium">
-            {decExpenseOverride ? (
+            {decumulationExpenseOverride ? (
               <span className="text-faint text-xs italic">
                 Using the amount you set
               </span>
             ) : (
               <>
                 <select
+                  aria-label="Budget Source"
                   className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   value={decumulationBudgetProfileId ?? ""}
                   disabled={!isEditable || budgetNotUsed}
                   onChange={(e) => {
-                    setDecBudgetProfileId(
+                    setDecumulationBudgetProfileId(
                       e.target.value ? Number(e.target.value) : null,
                     );
-                    setDecBudgetCol(null);
+                    setDecumulationBudgetCol(null);
                   }}
                 >
                   {profiles.map((p) => (
@@ -127,28 +108,31 @@ export function PerPhaseBudgetSection({
                     </option>
                   ))}
                 </select>
-                {decMonths ? (
+                {decumulationMonths ? (
                   <Badge color="amber" size="sm" case="normal">
-                    Weighted: {formatCurrency(decWeighted ?? 0)}
+                    Weighted: {formatCurrency(decumulationWeighted ?? 0)}
                     /yr
                     <span className="text-caption text-faint ml-1">
                       (
-                      {decMonths
-                        .map((m, i) => `${m}mo ${decLabels[i] ?? ""}`)
+                      {decumulationMonths
+                        .map((m, i) => `${m}mo ${decumulationLabels[i] ?? ""}`)
                         .join(" +")}
                       )
                     </span>
                   </Badge>
-                ) : decLabels.length >= 2 ? (
+                ) : decumulationLabels.length >= 2 ? (
                   <select
                     className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     value={decumulationBudgetColumn}
                     disabled={!isEditable || budgetNotUsed}
-                    onChange={(e) => setDecBudgetCol(Number(e.target.value))}
+                    onChange={(e) =>
+                      setDecumulationBudgetCol(Number(e.target.value))
+                    }
                   >
-                    {decLabels.map((label: string, idx: number) => (
-                      <option key={label} value={idx}>
-                        {label} ({formatCurrency((decTotals[idx] ?? 0) * 12)}
+                    {decumulationLabels.map((label: string, index: number) => (
+                      <option key={label} value={index}>
+                        {label} (
+                        {formatCurrency((decumulationTotals[index] ?? 0) * 12)}
                         /yr)
                       </option>
                     ))}
@@ -162,14 +146,14 @@ export function PerPhaseBudgetSection({
         <div>
           <span className="text-muted">
             Set amount
-            <HelpTip text="Set a flat annual amount as your starting retirement salary, used instead of the budget profile. Grows by the Post-Retirement Raise rate each year." />
+            <HelpTip text={budgetTip(meta, "amount")} />
           </span>
           <div className="flex items-center gap-1 font-medium">
             <InlineEdit
-              value={decExpenseOverride ?? ""}
+              value={decumulationExpenseOverride ?? ""}
               onSave={(v) => {
                 const cleaned = v.replace(/[^0-9]/g, "");
-                setDecExpenseOverride(cleaned || null);
+                setDecumulationExpenseOverride(cleaned || null);
               }}
               formatDisplay={(v) =>
                 v ? `${formatCurrency(Number(v))}/yr` : "None (using budget)"
@@ -179,11 +163,11 @@ export function PerPhaseBudgetSection({
               className="text-sm"
               isEditable={isEditable && !budgetNotUsed}
             />
-            {decExpenseOverride && (
+            {decumulationExpenseOverride && (
               <button
                 disabled={!isEditable}
                 className="text-caption text-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => setDecExpenseOverride(null)}
+                onClick={() => setDecumulationExpenseOverride(null)}
               >
                 clear
               </button>
@@ -208,4 +192,24 @@ function dimmedSettingsNote(
   return dimmed.length > 0
     ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
     : "";
+}
+
+/** The Budget Source and Set amount tips: what the budget is, and what the
+ *  chosen strategy does with it (config flags, not strategy names). */
+function budgetTip(
+  meta: {
+    label: string;
+    usesWithdrawalRate: boolean;
+    usesPostRetirementRaise: boolean;
+  },
+  field: "source" | "amount",
+): string {
+  const use = !meta.usesWithdrawalRate
+    ? `${meta.label} sizes its withdrawals from your balance; this is the need its spending is checked against.`
+    : meta.usesPostRetirementRaise
+      ? "Grows by the Post-Retirement Raise."
+      : "Grows with inflation less the strategy's decline rate.";
+  return field === "source"
+    ? `What you need each year in retirement, Social Security included. ${use} Set an amount yourself or use a budget profile.`
+    : `Set a flat yearly amount as your Retirement budget, used instead of the budget profile. ${use}`;
 }

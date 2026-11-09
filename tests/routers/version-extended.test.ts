@@ -691,7 +691,7 @@ describe("resetAllData", () => {
         { id: cls!.id, meanReturn: 0.2 },
       ]);
       ctx.db
-        .update(sqliteSchema.mcPresets)
+        .update(sqliteSchema.simulationPresets)
         .set({ label: "Changed by the household" })
         .run();
       await ctx.caller.version.resetAllData({ confirmation: "delete" });
@@ -703,7 +703,7 @@ describe("resetAllData", () => {
       expect(keys).not.toContain("mc_asset_class_overrides");
       const labels = ctx.db
         .select()
-        .from(sqliteSchema.mcPresets)
+        .from(sqliteSchema.simulationPresets)
         .all()
         .map((p) => p.label);
       expect(labels.sort()).toEqual(["Aggressive", "Conservative", "Default"]);
@@ -767,14 +767,14 @@ describe("version router — restore data-loss warning", () => {
   afterAll(() => ctx.cleanup());
 
   it("lists tables with rows that the version predates", async () => {
-    const lost = await ctx.caller.version.restoreDataLoss({
+    const lost = await ctx.caller.version.listRestoreDataLoss({
       id: oldVersionId,
     });
     expect(lost).toContainEqual({ tableName: "securities", currentRows: 2 });
   });
 
   it("does not warn when the backup has the table, even empty", async () => {
-    const lost = await ctx.caller.version.importDataLoss({
+    const lost = await ctx.caller.version.listImportDataLoss({
       tableNames: ["people", "securities"],
     });
     expect(lost.find((t) => t.tableName === "securities")).toBeUndefined();
@@ -782,7 +782,7 @@ describe("version router — restore data-loss warning", () => {
   });
 
   it("checks an uploaded file by its table names", async () => {
-    const lost = await ctx.caller.version.importDataLoss({
+    const lost = await ctx.caller.version.listImportDataLoss({
       tableNames: ["people"],
     });
     expect(lost).toContainEqual({ tableName: "securities", currentRows: 2 });
@@ -792,7 +792,7 @@ describe("version router — restore data-loss warning", () => {
     const viewer = await createTestCaller(viewerSession);
     try {
       await expect(
-        viewer.caller.version.restoreDataLoss({ id: oldVersionId }),
+        viewer.caller.version.listRestoreDataLoss({ id: oldVersionId }),
       ).rejects.toThrow();
     } finally {
       viewer.cleanup();

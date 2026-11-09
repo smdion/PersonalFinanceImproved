@@ -12,9 +12,6 @@ export function FinancialIndependenceCard({
   cash,
   withdrawalRate,
   withdrawalRateIsDefault,
-  budgetColumnLabels,
-  currentExpenseColumn,
-  onExpenseColumnChange,
 }: {
   fiTarget: number;
   fiProgress: number;
@@ -22,9 +19,6 @@ export function FinancialIndependenceCard({
   cash: number;
   withdrawalRate: number;
   withdrawalRateIsDefault?: boolean;
-  budgetColumnLabels?: string[];
-  currentExpenseColumn: number;
-  onExpenseColumnChange: (index: number) => void;
 }) {
   const projected = useProjectedFiYear(fiTarget, cash);
   return (
@@ -38,29 +32,6 @@ export function FinancialIndependenceCard({
       className="mb-6"
     >
       <div className="space-y-3 text-sm">
-        {budgetColumnLabels && budgetColumnLabels.length > 1 && (
-          <div className="border-subtle flex items-center justify-between border-b py-2">
-            <span className="text-muted">
-              Expense Scenario{" "}
-              <HelpTip text="Choose which budget scenario to use for calculating your FI target" />
-            </span>
-            <div className="flex gap-1">
-              {budgetColumnLabels.map((label: string, index: number) => (
-                <button
-                  key={label}
-                  onClick={() => onExpenseColumnChange(index)}
-                  className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
-                    index === currentExpenseColumn
-                      ? "bg-blue-600 text-white"
-                      : "bg-surface-elevated text-muted hover:bg-surface-strong"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
         <div className="border-subtle flex justify-between border-b py-2">
           <span className="text-muted">Annual Expenses</span>
           <span className="font-medium">
@@ -109,7 +80,7 @@ export function FinancialIndependenceCard({
           <div className="flex justify-between">
             <span>
               Projected FI Year{" "}
-              <HelpTip text="The year your liquid net worth — all your investments, retirement and other, plus cash — reaches the FI target in your retirement plan's projection. The target grows with inflation, since the projection is in future dollars." />
+              <HelpTip text="The year your liquid net worth — all your investments, retirement and other, plus cash — reaches the FI target in your projection. The target grows with inflation, since the projection is in future dollars." />
             </span>
             <span className="text-primary font-medium">
               {fiProgress >= 1
@@ -125,7 +96,7 @@ export function FinancialIndependenceCard({
           </div>
           {projected.fi !== null && fiProgress < 1 && (
             <div className="text-caption text-faint mt-0.5 text-right">
-              Based on retirement plan
+              From your projection
             </div>
           )}
         </div>

@@ -13,10 +13,10 @@ import {
   planMatchesActive,
   planProfileIds,
 } from "@/lib/pure/household/plans";
-import { diffContribProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
+import { diffContributionProfileSwap } from "@/lib/pure/contributions/contrib-profile-diff";
 import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
-import { useActiveContribProfile } from "./use-active-contrib-profile";
+import { useActiveContributionProfile } from "./use-active-contrib-profile";
 import { useActiveSalaryProfile } from "./use-active-salary-profile";
 import { useActiveRetirementProfile } from "./use-active-retirement-profile";
 import { useBudgetProfilesList } from "./use-budget-profiles-list";
@@ -53,7 +53,7 @@ export function usePlanNamesUsing(): (
 export function usePlans() {
   const plans = usePlanList();
   const utils = trpc.useUtils();
-  const [contribution] = useActiveContribProfile();
+  const [contribution] = useActiveContributionProfile();
   const [salary] = useActiveSalaryProfile();
   const [retirement] = useActiveRetirementProfile();
   const { data: budgetProfiles } = useBudgetProfilesList();
@@ -91,7 +91,7 @@ export function usePlans() {
     activeIds,
     /** The Plan whose profiles are the active ones, if any. */
     planInUse,
-    /** The Plan last applied — offered as "Update ‹Plan›" once it no longer matches. */
+    /** The Plan last applied — offered as "Update ‹Plan›" once the active ones differ. */
     lastAppliedPlan,
     /** Same as planInUse — offered as "same profiles as ‹Plan›" when saving. */
     sameAsActive,
@@ -100,15 +100,14 @@ export function usePlans() {
 }
 
 /**
- * Ask before applying a Plan — one confirm for the header and Compare
- * Plans. It lists the profiles that change and, like the Contributions
- * picker, the contribution amounts a Contribution Profile swap changes,
- * since applying is household-wide (and syncs to the budget app).
+ * Confirm before applying a Plan (header and Compare Plans): lists the profiles
+ * and contribution amounts that change, since applying is household-wide.
  */
 export function useConfirmApplyPlan() {
   const { activeIds } = usePlans();
   const { data: budgetProfiles } = useBudgetProfilesList();
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contributionProfiles } =
+    trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
@@ -118,11 +117,11 @@ export function useConfirmApplyPlan() {
   >(
     () => ({
       salary: salaryProfiles,
-      contribution: contribProfiles,
+      contribution: contributionProfiles,
       budget: budgetProfiles,
       retirement: retirementProfiles,
     }),
-    [salaryProfiles, contribProfiles, budgetProfiles, retirementProfiles],
+    [salaryProfiles, contributionProfiles, budgetProfiles, retirementProfiles],
   );
 
   return useCallback(
@@ -133,17 +132,17 @@ export function useConfirmApplyPlan() {
         ({ kind, id }) =>
           `${PLAN_PROFILE_KIND_TITLES[kind]}: ${lists[kind]?.find((p) => p.id === id)?.name ?? "—"}`,
       );
-      const contribChange = changes.find((c) => c.kind === "contribution");
-      if (contribChange && compare) {
+      const contributionChange = changes.find((c) => c.kind === "contribution");
+      if (contributionChange && compare) {
         const outgoing = compare.profiles.find(
           (p) => p.id === activeIds.contribution,
         );
         const incoming = compare.profiles.find(
-          (p) => p.id === contribChange.id,
+          (p) => p.id === contributionChange.id,
         );
         if (outgoing)
           lines.push(
-            ...diffContribProfileSwap(
+            ...diffContributionProfileSwap(
               outgoing.accountActiveFields,
               incoming?.accountActiveFields ?? {},
               compare.accounts,

@@ -18,8 +18,8 @@ import type {
 const LINE_LABEL: Record<SavingsTreatment | "match", string> = {
   preTax: taxTypeLabel("preTax"),
   taxFree: taxTypeLabel("taxFree"),
-  afterTax: "After-tax",
-  hsa: "HSA",
+  afterTax: taxTypeLabel("afterTax"),
+  hsa: taxTypeLabel("hsa"),
   match: "Employer match",
 };
 
@@ -40,11 +40,8 @@ const VIEW_SUFFIX: Record<ViewMode, string> = {
 };
 
 /**
- * What the household savings rate is made of — the Financial Checkup's
- * Savings Rate row, expanded: dollars over compensation, by goal group
- * (Retirement / Portfolio) and tax treatment, with the employer-match switch.
- * Without the toggle handlers it's read-only (the Milestones page shows
- * Money Guy's fixed definition this way).
+ * The household savings rate's parts: dollars over compensation by goal group and tax
+ * treatment, with the employer-match switch. Without toggle handlers it's read-only.
  */
 export function SavingsRateBreakdown({
   savings,

@@ -31,9 +31,9 @@ export const lumpSumSchema = z
  *  `withdrawalRate`: the rate always comes from retirement_settings. */
 export const decumulationDefaultsInputSchema = z
   .object({
-    // `.optional()`, never `.default(...)`, on these three: a default here
-    // would hide the household's saved value; `buildDecumulationDefaults`
-    // owns the fallback (client > DB setting > config default).
+    // `.optional()`, never `.default(...)`: a default would hide the saved
+    // value; `buildDecumulationDefaults` owns the fallback (client > DB
+    // setting, then the config default for order and splits).
     withdrawalRoutingMode: z
       .enum(["bracket_filling", "waterfall", "percentage"])
       .optional(),

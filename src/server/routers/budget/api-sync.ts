@@ -23,6 +23,7 @@ import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type { BudgetMonthDetail, PreparedGoalWrite } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { writeStamp } from "@/lib/utils/clock";
 
 export const apiSyncProcedures = {
   /** Pull budgeted amounts from API for all linked items (API -> Ledgr). */
@@ -71,7 +72,7 @@ export const apiSyncProcedures = {
       // Same connection-configured column the preview (sync/preview.ts) and
       // syncBudgetToApi use — a client-sent column would write a number into
       // a column the user never saw in the preview.
-      const colIdx = conn?.linkedColumnIndex ?? 0;
+      const colIndex = conn?.linkedColumnIndex ?? 0;
 
       const itemRows = await ctx.db
         .select()
@@ -111,7 +112,7 @@ export const apiSyncProcedures = {
         const amounts = budgetAmountsSchema.parse(item.amounts);
         // An item with no amount columns has nowhere to write (index -1).
         if (amounts.length === 0) continue;
-        amounts[Math.min(colIdx, amounts.length - 1)] = apiCat.goalTarget;
+        amounts[Math.min(colIndex, amounts.length - 1)] = apiCat.goalTarget;
 
         await ctx.db
           .update(schema.budgetItems)
@@ -123,7 +124,7 @@ export const apiSyncProcedures = {
           categoryId: item.apiCategoryId,
           categoryName: item.apiCategoryName,
           syncDirection: item.apiSyncDirection,
-          lastSyncedAt: new Date(),
+          lastSyncedAt: writeStamp(),
         });
         updated++;
       }
@@ -154,11 +155,9 @@ export const apiSyncProcedures = {
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
-      // Same connection-configured column getPreview derives its
-      // `ledgrAmount` from (src/server/routers/sync/preview.ts) — pushing a
-      // different, client-supplied column would push a number the preview
-      // never showed the user.
-      const colIdx = conn?.linkedColumnIndex ?? 0;
+      // The connection's column, the same one getPreview's `ledgrAmount` uses
+      // (sync/preview.ts), so the push matches what the preview showed.
+      const colIndex = conn?.linkedColumnIndex ?? 0;
 
       const pushItemRows = await ctx.db
         .select()
@@ -185,7 +184,7 @@ export const apiSyncProcedures = {
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
       // would push the stale value instead of the profile's live one.
       const resolvedItems = await resolveLinkedBudgetItemAmounts(
-        ctx.db,
+        ctx,
         items,
         numColumns,
         activeProfiles,
@@ -209,7 +208,7 @@ export const apiSyncProcedures = {
         )
           continue;
 
-        const amount = item.amounts[Math.min(colIdx, numColumns - 1)] ?? 0;
+        const amount = item.amounts[Math.min(colIndex, numColumns - 1)] ?? 0;
 
         // Push as a goal target (plan-level, not month-specific)
         try {
@@ -245,7 +244,7 @@ export const apiSyncProcedures = {
             categoryId: item.apiCategoryId!,
             categoryName: item.apiCategoryName,
             syncDirection: item.apiSyncDirection,
-            lastSyncedAt: new Date(),
+            lastSyncedAt: writeStamp(),
           });
         }
       } catch (err) {
@@ -256,7 +255,7 @@ export const apiSyncProcedures = {
       // previews show what was just pushed, not pre-push diffs.
       if (pushed > 0) {
         try {
-          await refreshCategoryCache(ctx.db, active, client);
+          await refreshCategoryCache(ctx, active, client);
         } catch (err) {
           // Pushes already succeeded remotely — a stale cache must not turn
           // a successful push into a client-visible failure.

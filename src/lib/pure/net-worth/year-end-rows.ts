@@ -20,7 +20,7 @@ export type CategoryPerformance = {
   gainLoss: number;
   distributions: number;
   /** Portion of employerMatch that is a purchase-price discount (e.g. ESPP),
-   *  not real cash — see isDiscountBasisEmployerContrib(). 0 when no
+   *  not real cash — see isDiscountBasisEmployerContribution(). 0 when no
    *  discount-kind account contributes to this category/year. */
   employerMatchDiscount: number;
 };
@@ -96,9 +96,9 @@ export type YearEndRow = {
   wealthScoreMarket: number;
   /** Net worth / lifetime earnings (savings efficiency %) — cost basis. */
   wealthScoreCostBasis: number;
-  /** Money Guy Wealth Accumulator — market value. */
+  /** Money Guy's enhanced Millionaire Next Door score — market value. */
   aawScoreMarket: number;
-  /** Money Guy Wealth Accumulator — cost basis. */
+  /** Money Guy's enhanced Millionaire Next Door score — cost basis. */
   aawScoreCostBasis: number;
   /** (portfolioTotal + cash) / fiTarget. */
   fiProgress: number;
@@ -175,7 +175,7 @@ export function yearEndPerformance(
     distributions: string;
     annualReturnPct: string | null;
   }[],
-  resolveHistoryMaster: (acct: {
+  resolveHistoryMaster: (account: {
     id: number;
     performanceAccountId: number | null;
     institution: string;
@@ -196,11 +196,12 @@ export function yearEndPerformance(
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     let portfolioTotal = 0;
     const byType: Record<string, number> = {};
-    for (const acct of yearAccounts) {
-      const endBal = toNumber(acct.endingBalance);
-      const master = resolveHistoryMaster(acct);
-      portfolioTotal += endBal;
-      byType[master.accountType] = (byType[master.accountType] ?? 0) + endBal;
+    for (const account of yearAccounts) {
+      const endBalance = toNumber(account.endingBalance);
+      const master = resolveHistoryMaster(account);
+      portfolioTotal += endBalance;
+      byType[master.accountType] =
+        (byType[master.accountType] ?? 0) + endBalance;
     }
     perfPortfolioByYear.set(year, { portfolioTotal, byType });
   }
@@ -209,15 +210,17 @@ export function yearEndPerformance(
   const perfByAccountByYear = new Map<number, YearEndRow["perfByAccount"]>();
   for (const year of Array.from(allPerfAccountYears)) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
-    const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
-      label: `${acct.institution} — ${acct.accountLabel.replace(` (${acct.institution})`, "")}`,
-      accountType: resolveHistoryMaster(acct).accountType,
-      beginningBalance: toNumber(acct.beginningBalance),
-      contributions: toNumber(acct.totalContributions),
-      employerMatch: toNumber(acct.employerContributions),
-      gainLoss: toNumber(acct.yearlyGainLoss),
-      endingBalance: toNumber(acct.endingBalance),
-    }));
+    const accounts: YearEndRow["perfByAccount"] = yearAccounts.map(
+      (account) => ({
+        label: `${account.institution} — ${account.accountLabel.replace(` (${account.institution})`, "")}`,
+        accountType: resolveHistoryMaster(account).accountType,
+        beginningBalance: toNumber(account.beginningBalance),
+        contributions: toNumber(account.totalContributions),
+        employerMatch: toNumber(account.employerContributions),
+        gainLoss: toNumber(account.yearlyGainLoss),
+        endingBalance: toNumber(account.endingBalance),
+      }),
+    );
     perfByAccountByYear.set(year, accounts);
   }
 
@@ -248,8 +251,8 @@ export function yearEndPerformance(
     if (perfByCategoryByYear.has(year)) continue;
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const yearMap: Record<string, CategoryPerformance> = {};
-    for (const acct of yearAccounts) {
-      const master = resolveHistoryMaster(acct);
+    for (const account of yearAccounts) {
+      const master = resolveHistoryMaster(account);
       const category = accountTypeToPerformanceCategory(master.accountType);
       const existing = yearMap[category] ?? {
         endingBalance: 0,
@@ -259,11 +262,11 @@ export function yearEndPerformance(
         distributions: 0,
         employerMatchDiscount: 0, // backfilled by buildYearEndHistory's step 3
       };
-      existing.endingBalance += toNumber(acct.endingBalance);
-      existing.contributions += toNumber(acct.totalContributions);
-      existing.employerMatch += toNumber(acct.employerContributions);
-      existing.gainLoss += toNumber(acct.yearlyGainLoss);
-      existing.distributions += toNumber(acct.distributions);
+      existing.endingBalance += toNumber(account.endingBalance);
+      existing.contributions += toNumber(account.totalContributions);
+      existing.employerMatch += toNumber(account.employerContributions);
+      existing.gainLoss += toNumber(account.yearlyGainLoss);
+      existing.distributions += toNumber(account.distributions);
       yearMap[category] = existing;
     }
     perfByCategoryByYear.set(year, yearMap);
@@ -289,8 +292,8 @@ export function yearEndPerformanceSummary(
   for (const year of Array.from(allPerfAccountYears)) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const yearMap: Record<string, CategoryPerformance> = {};
-    for (const acct of yearAccounts) {
-      const master = resolveHistoryMaster(acct);
+    for (const account of yearAccounts) {
+      const master = resolveHistoryMaster(account);
       const parentCategory = master.parentCategory;
       const existing = yearMap[parentCategory] ?? {
         endingBalance: 0,
@@ -303,11 +306,11 @@ export function yearEndPerformanceSummary(
         // sits on per-category rows), so this isn't backfilled.
         employerMatchDiscount: 0,
       };
-      existing.endingBalance += toNumber(acct.endingBalance);
-      existing.contributions += toNumber(acct.totalContributions);
-      existing.employerMatch += toNumber(acct.employerContributions);
-      existing.gainLoss += toNumber(acct.yearlyGainLoss);
-      existing.distributions += toNumber(acct.distributions);
+      existing.endingBalance += toNumber(account.endingBalance);
+      existing.contributions += toNumber(account.totalContributions);
+      existing.employerMatch += toNumber(account.employerContributions);
+      existing.gainLoss += toNumber(account.yearlyGainLoss);
+      existing.distributions += toNumber(account.distributions);
       yearMap[parentCategory] = existing;
     }
     perfByParentCategoryByYear.set(year, yearMap);
@@ -392,7 +395,17 @@ export function mortgageBalanceByYearFrom(
   return { mortgageBalanceByYear };
 }
 
-export function storedYearEndRows(
+export function storedYearEndRows({
+  nwRows,
+  perfPortfolioByYear,
+  perfSummaryByYear,
+  mortgageBalanceByYear,
+  homeImprovementsCumulativeByYear,
+  propTaxByYear,
+  perfByAccountByYear,
+  perfByCategoryByYear,
+  perfByParentCategoryByYear,
+}: {
   nwRows: {
     yearEndDate: string;
     portfolioTotal: string | null;
@@ -413,26 +426,14 @@ export function storedYearEndRows(
     taxesPaid: string | null;
     propertyTaxes: string | null;
     portfolioByTaxLocation: unknown;
-  }[],
-  perfPortfolioByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfPortfolioByYear"],
-  perfSummaryByYear: ReturnType<
-    typeof yearEndPerformanceSummary
-  >["perfSummaryByYear"],
-  mortgageBalanceByYear: Map<number, number>,
-  homeImprovementsCumulativeByYear: Map<number, number>,
-  propTaxByYear: Map<number, number>,
-  perfByAccountByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfByAccountByYear"],
-  perfByCategoryByYear: ReturnType<
-    typeof yearEndPerformance
-  >["perfByCategoryByYear"],
-  perfByParentCategoryByYear: ReturnType<
-    typeof yearEndPerformanceSummary
-  >["perfByParentCategoryByYear"],
-) {
+  }[];
+} & Pick<
+  ReturnType<typeof yearEndPerformance>,
+  "perfPortfolioByYear" | "perfByAccountByYear" | "perfByCategoryByYear"
+> &
+  ReturnType<typeof yearEndPerformanceSummary> &
+  ReturnType<typeof homeFiguresByYear> &
+  ReturnType<typeof mortgageBalanceByYearFrom>) {
   const history: YearEndRow[] = nwRows.map((r) => {
     const year = calendarYear(r.yearEndDate);
     const perf = perfPortfolioByYear.get(year);

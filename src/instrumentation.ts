@@ -1,9 +1,6 @@
 /**
- * Next.js instrumentation — runs once on server startup.
- *
- * Node.js-specific code (process.on, process.exit) lives in
- * instrumentation.node.ts and is dynamically imported so that
- * Turbopack does not bundle it into the Edge Runtime chunk.
+ * Next.js instrumentation, run once on server startup. Node-only code lives in
+ * instrumentation.node.ts, imported dynamically to keep it out of the Edge bundle.
  */
 
 export async function register() {

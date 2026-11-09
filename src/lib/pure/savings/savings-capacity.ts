@@ -20,11 +20,8 @@ interface BudgetMonthlyTotalSource {
 }
 
 /**
- * Derive one "monthly spend" figure from a budget summary — the single
- * computation path for this derivation, previously re-typed at 3 call
- * sites (savings/savings-content.tsx twice, savings.ts's computeLiveMaxMonthlyFunding
- * once). Weighted profiles blend to a "typical month" (weightedAnnualTotal
- * / 12); non-weighted profiles use the single column's totalMonthly as-is.
+ * One "monthly spend" figure from a budget summary: weighted profiles blend to a typical month
+ * (weightedAnnualTotal / 12); others use the single column's totalMonthly.
  */
 export function deriveBudgetMonthlyTotal(
   budgetSummary: BudgetMonthlyTotalSource | null | undefined,
@@ -56,18 +53,9 @@ export function computeMaxMonthlyFunding(
 }
 
 /**
- * Effective monthly contribution for a savings goal: percentage-of-pool
- * when the goal has allocationPercent set, otherwise the flat fallback
- * amount (the goal's stored monthlyContribution).
- *
- * Shared by the savings page display (what you see) and the push-to-API
- * server logic (what gets pushed to YNAB) — a percentage-based goal's
- * dollar amount moves whenever the underlying pool (paycheck/budget
- * totals) changes, but `savings_goals.monthly_contribution` is only a
- * point-in-time snapshot, last written whenever the goal was edited. If
- * push read that stale column directly, it would silently push an amount
- * that no longer matches what's shown on screen — this keeps both
- * derivations identical so they can't drift apart.
+ * A savings goal's effective monthly contribution: its share of the pool when allocationPercent
+ * is set, else the flat fallback. Display and push both use this, since the stored
+ * `monthly_contribution` is only a snapshot from the last edit.
  */
 export function resolveEffectiveMonthlyContribution(
   allocationPercent: number | null,

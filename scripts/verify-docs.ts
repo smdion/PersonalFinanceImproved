@@ -2,13 +2,13 @@
  * Documentation Freshness Verification Script
  *
  * Scans the codebase for actual counts of key entities (engine modules,
- * routers, pages, tables, tests, etc.) and compares them
- * against the counts claimed in DESIGN.md and TESTING.md.
+ * routers, pages, tables, etc.) and compares them
+ * against the counts claimed in DESIGN.md.
  *
  * Usage:  npx tsx scripts/verify-docs.ts
  * Exit 0: All counts within 10% tolerance AND every tracked count has a marker
  * Exit 1: One or more counts drifted beyond 10%, OR a tracked count is
- *         missing its marker in DESIGN.md/TESTING.md (orphaned tracker)
+ *         missing its marker in DESIGN.md (orphaned tracker)
  */
 
 import fs from "fs";
@@ -94,14 +94,6 @@ function countTables(): number {
     (n, f) => n + countInFile(f, /pgTable\(/g),
     0,
   );
-}
-
-function countTestFiles(): number {
-  return globFiles(path.join(ROOT, "tests"), /\.test\.(ts|tsx)$/).length;
-}
-
-function countE2EFiles(): number {
-  return globFiles(path.join(ROOT, "tests/e2e"), /\.spec\.ts$/).length;
 }
 
 function countMigrations(): number {
@@ -213,29 +205,6 @@ function parseDesignClaims(): Record<string, number> {
   return claims;
 }
 
-/**
- * Extract claimed counts from TESTING.md.
- * Key pattern: "Total: **672 tests** across **40 vitest files** + **7 Playwright E2E tests** (3 files)."
- */
-function parseTestingClaims(): Record<string, number> {
-  const doc = readDoc("docs/TESTING.md");
-  if (!doc) return {};
-
-  const claims: Record<string, number> = {};
-
-  // Extract all AUTO-GEN markers
-  const markerRe = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
-  let match;
-  while ((match = markerRe.exec(doc)) !== null) {
-    const [, key, count] = match;
-    if (key && count && !(key in claims)) {
-      claims[key] = parseInt(count, 10);
-    }
-  }
-
-  return claims;
-}
-
 // ── Comparison & Reporting ───────────────────────────────────────────────────
 
 interface CheckResult {
@@ -319,8 +288,6 @@ function main(): void {
     pages: countPages(),
     tables: countTables(),
     migrations: countMigrations(),
-    vitestFiles: countTestFiles(),
-    e2eFiles: countE2EFiles(),
     settingsComponents: countSettingsComponents(),
     dashboardCards: countDashboardCards(),
     uiComponents: countUIComponents(),
@@ -338,7 +305,7 @@ function main(): void {
     console.log(
       "Mode: --update (replacing AUTO-GEN markers with actual counts)\n",
     );
-    const docs = ["docs/DESIGN.md", "docs/TESTING.md"];
+    const docs = ["docs/DESIGN.md"];
     let totalUpdated = 0;
     for (const doc of docs) {
       const { updated, path: docPath } = updateAutoGenMarkers(doc, actual);
@@ -358,9 +325,7 @@ function main(): void {
   }
 
   // Parse doc claims
-  const designClaims = parseDesignClaims();
-  const testingClaims = parseTestingClaims();
-  const claims = { ...designClaims, ...testingClaims };
+  const claims = parseDesignClaims();
 
   // Define checks with display names
   const checks: { key: string; label: string }[] = [
@@ -370,8 +335,6 @@ function main(): void {
     { key: "pages", label: "Pages" },
     { key: "tables", label: "DB tables" },
     { key: "migrations", label: "Migrations" },
-    { key: "vitestFiles", label: "Vitest files" },
-    { key: "e2eFiles", label: "E2E spec files" },
     { key: "settingsComponents", label: "Settings components" },
     { key: "dashboardCards", label: "Dashboard cards" },
     { key: "uiComponents", label: "UI components" },
@@ -452,7 +415,7 @@ function main(): void {
     console.log("Orphaned trackers (no marker found in docs):");
     for (const r of missing) {
       console.log(
-        `  [error] ${r.name}: ${r.actual} actual — add an <!-- AUTO-GEN:KEY -->${r.actual}<!-- /AUTO-GEN --> marker to DESIGN.md/TESTING.md, or remove the tracker from verify-docs.ts`,
+        `  [error] ${r.name}: ${r.actual} actual — add an <!-- AUTO-GEN:KEY -->${r.actual}<!-- /AUTO-GEN --> marker to DESIGN.md, or remove the tracker from verify-docs.ts`,
       );
     }
   }

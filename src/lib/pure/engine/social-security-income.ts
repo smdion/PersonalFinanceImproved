@@ -1,14 +1,7 @@
 /**
- * Social Security paid in a projection year — per person from each one's
- * own start age when the input has per-person entries, else the household
- * figure from the household start age. One computation for the year
- * handler (what it pays) and the spending strategies (what it covers).
- *
- * Amounts are entered in today's dollars and grow with general inflation
- * from the input's year: wage indexing up to claiming, approximated, and
- * the cost-of-living adjustment after — the same rate the tax brackets grow
- * and the UI deflates at, so in today's dollars a benefit stays as entered.
- * (A Simulation trial's rate is its `inflationRate`, so this follows it.)
+ * Social Security paid in a projection year: per person from each start age, else the household
+ * figure. Entered in today's dollars and grown with general inflation (a trial's `inflationRate`),
+ * so in today's dollars a benefit stays as entered.
  */
 import { ageInYear } from "../../utils/date";
 import { roundToCents } from "../../utils/math";

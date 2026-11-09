@@ -1,8 +1,6 @@
 /**
- * The Current Balances figures: the most accurate balance for each tracked
- * account (lib/pure/accounts/current-balances.ts), part by part, with the market day
- * each feed's data really is from (lib/pure/sync/feed-data-date.ts). Reads only
- * — nothing here is written to a snapshot or to Performance.
+ * Current Balances: the most accurate balance per tracked account, part by part, with the
+ * market day each feed's data is from. Read-only: nothing is written to a snapshot or Performance.
  */
 import { and, desc, eq, gte, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -73,15 +71,15 @@ const shared = new WeakMap<
   { at: number; result: ReturnType<typeof computeCurrentBalances> }
 >();
 
-export function loadCurrentBalances(db: Db) {
+export function loadCurrentBalances(db: Db, asOf: Date) {
   const hit = shared.get(db);
   const fresh = hit && Date.now() - hit.at < SHARE_MS;
-  const result = fresh ? hit.result : computeCurrentBalances(db);
+  const result = fresh ? hit.result : computeCurrentBalances(db, asOf);
   if (!fresh) shared.set(db, { at: Date.now(), result });
   return result.then(withNoHoldings);
 }
 
-async function computeCurrentBalances(db: Db) {
+async function computeCurrentBalances(db: Db, asOf: Date) {
   const f = schema.simplefinAccounts;
   const [context, accounts, holdings, reports, names, latestSnapshot, loose] =
     await Promise.all([
@@ -146,7 +144,7 @@ async function computeCurrentBalances(db: Db) {
     ...allFeeds.map((x) => valuationDateFor(seenAt(x))),
     ...(snapshotDay ? [snapshotDay] : []),
   ].sort()[0];
-  const today = valuationDateFor(new Date());
+  const today = valuationDateFor(asOf);
   const closesFrom = addDays(
     [earliest ?? today, addDays(today, -MOVEMENT_WINDOW_DAYS)].sort()[0]!,
     -CLOSE_WINDOW_DAYS,
@@ -164,7 +162,7 @@ async function computeCurrentBalances(db: Db) {
       await Promise.all(
         tickers.map(
           async (t) =>
-            [t, await getDailyMarketCloses(db, t, closesFrom)] as const,
+            [t, await getDailyMarketCloses(db, t, closesFrom, today)] as const,
         ),
       )
     ).flatMap(([t, c]) => (c ? ([[t, c]] as const) : [])),

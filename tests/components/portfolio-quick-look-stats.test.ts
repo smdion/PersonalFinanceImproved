@@ -80,7 +80,7 @@ describe("YTD change", () => {
     const result = derivePortfolioQuickLookStats(THREE_SNAPS, now)!;
     // current (2024-03-01, 105k) vs first-of-year (2024-01-01, 100k)
     expect(result.ytdDelta).toBeCloseTo(5_000);
-    expect(result.ytdPct).toBeCloseTo(5);
+    expect(result.ytdPercent).toBeCloseTo(5);
   });
 
   it("falls back to the overall first snapshot when no snap in current year", () => {
@@ -107,7 +107,7 @@ describe("52-week change", () => {
     ];
     const result = derivePortfolioQuickLookStats(snaps, now)!;
     expect(result.weekChange52).toBeNull();
-    expect(result.weekChange52Pct).toBeNull();
+    expect(result.weekChange52Percent).toBeNull();
   });
 
   it("picks the snapshot closest to exactly one year ago", () => {
@@ -120,7 +120,7 @@ describe("52-week change", () => {
     ];
     const result = derivePortfolioQuickLookStats(snaps, now)!;
     expect(result.weekChange52).toBeCloseTo(15_000);
-    expect(result.weekChange52Pct).toBeCloseTo((15_000 / 95_000) * 100);
+    expect(result.weekChange52Percent).toBeCloseTo((15_000 / 95_000) * 100);
   });
 });
 
@@ -139,10 +139,13 @@ describe("best and worst month", () => {
   it("identifies the best and worst months by percent", () => {
     const result = derivePortfolioQuickLookStats(THREE_SNAPS)!;
     // Feb: +10% of 100k; Mar: ~-4.55% of 110k
-    expect(result.bestMonthPct[0]).toBe("2024-02");
-    expect(result.bestMonthPct[1]).toBeCloseTo(10);
-    expect(result.worstMonthPct[0]).toBe("2024-03");
-    expect(result.worstMonthPct[1]).toBeCloseTo((-5_000 / 110_000) * 100, 1);
+    expect(result.bestMonthPercent[0]).toBe("2024-02");
+    expect(result.bestMonthPercent[1]).toBeCloseTo(10);
+    expect(result.worstMonthPercent[0]).toBe("2024-03");
+    expect(result.worstMonthPercent[1]).toBeCloseTo(
+      (-5_000 / 110_000) * 100,
+      1,
+    );
   });
 });
 
@@ -216,8 +219,8 @@ describe("sharpest gain/loss with no multi-day changes", () => {
     const result = derivePortfolioQuickLookStats(snaps)!;
     expect(result.sharpestGainDollar).toBeNull();
     expect(result.sharpestLossDollar).toBeNull();
-    expect(result.sharpestGainPct).toBeNull();
-    expect(result.sharpestLossPct).toBeNull();
+    expect(result.sharpestGainPercent).toBeNull();
+    expect(result.sharpestLossPercent).toBeNull();
   });
 
   it("returns non-null sharpest values when at least one change spans multiple days", () => {
@@ -237,12 +240,12 @@ describe("all-time growth", () => {
   it("computes growth vs first snapshot", () => {
     const result = derivePortfolioQuickLookStats(THREE_SNAPS)!;
     expect(result.allTimeGrowth).toBe(5_000); // 105k - 100k
-    expect(result.allTimeGrowthPct).toBeCloseTo(5);
+    expect(result.allTimeGrowthPercent).toBeCloseTo(5);
   });
 
   it("reports 0 growth pct when first snapshot total is 0", () => {
     const snaps = [snap(1, "2024-01-01", 0), snap(2, "2024-02-01", 10_000)];
     const result = derivePortfolioQuickLookStats(snaps)!;
-    expect(result.allTimeGrowthPct).toBe(0);
+    expect(result.allTimeGrowthPercent).toBe(0);
   });
 });

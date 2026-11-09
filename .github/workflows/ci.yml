@@ -88,6 +88,11 @@ jobs:
         if: env.RUN == 'true'
         run: pnpm check:file-size
 
+      # jscpd over src/: copied blocks and lines only fall (owner Q1).
+      - name: Duplicate code (copied blocks only fall)
+        if: env.RUN == 'true'
+        run: pnpm check:duplicates
+
       - name: Dead code (unused files, exports, dependencies)
         if: env.RUN == 'true'
         run: pnpm check:dead-code
@@ -231,6 +236,33 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # The date-heavy files again in a US time zone: the suite pins UTC
+  # (vitest.config.ts), where a date-only string's day never moves.
+  unit-tz:
+    runs-on: ubuntu-latest
+    needs: changes
+    env:
+      RUN: ${{ needs.changes.outputs.code }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: env.RUN == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.RUN == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.RUN == 'true'
+
+      - name: Date-heavy unit tests in America/Chicago
+        if: env.RUN == 'true'
+        run: pnpm test:tz
+
   coverage:
     runs-on: ubuntu-latest
     needs: [changes, unit]
@@ -307,9 +339,15 @@ jobs:
       - name: Benchmark tests, one group
         if: env.RUN == 'true'
         # Only the split file passes a name filter; an empty one is rejected.
-        run: pnpm test:benchmarks ${{ matrix.files }} ${FILTER:+"--testNamePattern=$FILTER"}
+        run: pnpm test:benchmarks ${{ matrix.files }} ${FILTER:+"--testNamePattern=$FILTER"} --reporter=default --reporter=json --outputFile.json=.vitest-reports/benchmarks.json
         env:
           FILTER: ${{ matrix.filter }}
+
+      # A timeout says nothing about the figure (a busy runner): listed
+      # apart from assertion failures, and rerun, never read as a pass.
+      - name: Benchmark failures, timeouts apart
+        if: failure() && env.RUN == 'true'
+        run: pnpm -s tsx scripts/vitest-failures.ts .vitest-reports/benchmarks.json >> "$GITHUB_STEP_SUMMARY" || true
 
   # Build → prerender check → bundle budgets → E2E, in Playwright's image
   # (browsers and their system libraries included, same version as
@@ -504,9 +542,10 @@ jobs:
   # hold on PostgreSQL (16, the version installs run): migrations from
   # empty, the demo profiles (PostgreSQL schemas), a fresh install, a
   # seeded router subset with the backup round trip (in three parts by
-  # household, SEEDED_SHARD), the router baseline, and the pins v0.10.3
-  # added (pins). Each part has its own throwaway service database; every
-  # test step drops and rebuilds it.
+  # household, SEEDED_SHARD), the router baseline, the pins v0.10.3
+  # added (pins), and the whole router suite's writes, updates, deletes and
+  # refusals (routers). Each part has its own throwaway service database;
+  # every test step drops and rebuilds it.
   postgres-suites:
     runs-on: ubuntu-latest
     needs: changes
@@ -514,7 +553,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [install, seeded-1, seeded-2, seeded-3, baseline, pins]
+        part: [install, seeded-1, seeded-2, seeded-3, baseline, pins, routers]
 
     env:
       RUN: ${{ needs.changes.outputs.code }}
@@ -602,6 +641,14 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'install')
         run: pnpm test tests/integration/backup-fence-postgres.test.ts
 
+      - name: Backup export snapshot on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/scripts/export-backup-snapshot-postgres.test.ts
+
+      - name: ENCRYPTION_KEY rotation on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'install')
+        run: pnpm test tests/scripts/rotate-encryption-key-postgres.test.ts
+
       - name: Seeded routers and backup round trip on PostgreSQL
         if: env.RUN == 'true' && (startsWith(matrix.part, 'seeded-'))
         run: pnpm test tests/routers/seeded-postgres.test.ts
@@ -619,6 +666,34 @@ jobs:
       - name: Added baseline pins on PostgreSQL (same figures as SQLite)
         if: env.RUN == 'true' && (matrix.part == 'pins')
         run: pnpm test tests/baseline/pins-postgres.test.ts
+
+      # tests/routers/ as the SQLite unit job runs it, with every caller on
+      # its own PostgreSQL database copied from a migrated template
+      # (tests/routers/postgres-router-db.ts). A failure must be on the
+      # known list, with its reason, and a listed test must still fail.
+      - name: Router suite on PostgreSQL (against its known failures)
+        if: env.RUN == 'true' && (matrix.part == 'routers')
+        run: pnpm tsx scripts/check-router-postgres.ts
+
+  # Known vulnerabilities in the production dependencies (owner Q5): a high
+  # or critical advisory fails a pull request into main; on a push it is
+  # only reported, since a new advisory isn't the pushed change's doing. The
+  # weekly dependency-audit.yml run fails while one stands.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Dependency audit (production, high and above)
+        continue-on-error: ${{ github.event_name == 'push' }}
+        run: pnpm audit --prod --audit-level=high
 
   # The required check `PostgreSQL`: every part above succeeded.
   postgres:
@@ -647,11 +722,13 @@ jobs:
         types,
         lint,
         unit,
+        unit-tz,
         coverage,
         benchmarks,
         e2e,
         image,
         postgres,
+        audit,
       ]
     if: always()
     steps:

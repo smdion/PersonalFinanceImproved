@@ -1,16 +1,7 @@
 /**
- * The one way Ledgr asks an outside service for something (YNAB, Actual,
- * SimpleFIN, Tiingo) and the one check every response passes before any
- * code reads it. SEC keeps its own paced, streamed transport (sec/client.ts)
- * and shares `fetchChecked`.
- *
- * - `fetchChecked`: the URL is checked before every request, the address
- *   connected at connect time, and a redirect followed only on its host.
- * - Timeout, typed `BudgetApiError`s and retries with backoff (Retry-After
- *   honoured) for every service, by the rules in SERVICE_RULES.
- * - Then the response is checked against the endpoint's schema
- *   (`parseExternal`): what a caller gets is what the schema says, never a
- *   cast.
+ * The one transport for outside services (YNAB, Actual, SimpleFIN, Tiingo; SEC
+ * shares `fetchChecked`): URL/address/redirect checks, timeouts and retries per
+ * SERVICE_RULES, and schema-checked responses (`parseExternal`), never casts.
  */
 import "server-only";
 import { Agent, type Dispatcher } from "undici";

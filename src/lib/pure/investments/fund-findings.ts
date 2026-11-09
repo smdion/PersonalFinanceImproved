@@ -1,19 +1,12 @@
 /**
- * Per-fund findings — judged once here; the tax-loss-harvesting and
- * cheaper-fund recommendations map them.
- *
- * Tax-loss harvesting: positions in taxable accounts (account-type config)
- * worth noticeably less than the institution's reported average cost.
- * Only where average cost is reported; wash-sale buys elsewhere (a 401(k)
- * reinvestment, a spouse's account) aren't visible, so the item says so.
- *
- * Cheaper equivalent fund: a single-class fund (one composition bucket
- * dominates) in an IRA or taxable account whose expense ratio sits well
- * above the low-cost line; the same class's index proxy is named and the
- * yearly saving is measured to that line (proxy fees aren't stored, so the
- * line — not a proxy figure — is what the saving is counted against).
+ * Per-fund findings for the recommendations: tax-loss harvesting (taxable
+ * positions well below reported average cost) and cheaper equivalents (single-class
+ * IRA/taxable funds well above the low-cost line; saving measured to that line).
  */
-import { isIraCategory, isTaxableCategory } from "@/lib/config/account-types";
+import {
+  hasOpenFundChoice,
+  isTaxableCategory,
+} from "@/lib/config/account-types";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
@@ -91,10 +84,7 @@ function singleClass(facts: EffectiveFacts): CompositionBucket | null {
 /** An account whose funds the household chooses freely (an IRA, a taxable
  *  account) — workplace-plan and HSA menus are fixed. */
 export function canSwitchFunds(accountType: string | null): boolean {
-  return (
-    accountType !== null &&
-    (isIraCategory(accountType) || isTaxableCategory(accountType))
-  );
+  return accountType !== null && hasOpenFundChoice(accountType);
 }
 
 export function judgeCheaperFunds(

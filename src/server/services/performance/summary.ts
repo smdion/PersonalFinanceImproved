@@ -5,7 +5,7 @@ import { getLatestSnapshot } from "@/server/data/snapshots";
 import { getAllPeople } from "@/server/data/people";
 import { accountDisplayName } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
-import { buildPerfAcctLookups } from "@/lib/pure/investments/annual-rollups";
+import { buildPerfAccountLookups } from "@/lib/pure/investments/annual-rollups";
 import { loadPerformanceChecks } from "@/server/services/performance/performance-checks";
 import {
   addRetirementRollup,
@@ -43,13 +43,9 @@ export async function computePerformanceSummary(ctx: { db: Db }) {
   );
 
   const peopleMap = new Map(people.map((p) => [p.id, p.name]));
-  const perfLookups = buildPerfAcctLookups(perfAccounts);
-  // Exact (account, owner, year) match — deliberately not the "current
-  // row per pair" fallback selectCurrentRothBasisRow()/buildCurrentRothBasisMap()
-  // use elsewhere: this table shows one column per historical year, so
-  // each year's cell must show that year's own finalized value, not a
-  // carried-forward guess. An account/year with no row is simply blank,
-  // same as an account with no roth_basis entry at all today.
+  const perfLookups = buildPerfAccountLookups(perfAccounts);
+  // Exact (account, owner, year) match, not the current-row fallback: each
+  // year's column shows that year's own finalized value; no row = blank.
   const basisByKey = new Map(
     basisRows.map((b) => [
       `${b.performanceAccountId}|${b.ownerPersonId}|${b.year}`,
@@ -63,12 +59,9 @@ export async function computePerformanceSummary(ctx: { db: Db }) {
     perfLookups,
   );
 
-  // Synthesize "Retirement" parent-category rollup rows.
-  // Retirement = all accounts where parentCategory === "Retirement".
-  // 401k/IRA and HSA are fully Retirement — use their annual rows (which have correct
-  // employer contributions from the spreadsheet even for older years where account rows don't).
-  // Brokerage is mixed — only some accounts are Retirement (e.g. Retirement Brokerage, ESPP).
-  // For the Brokerage portion, sum from account_performance rows filtered by parentCategory.
+  // Synthesize "Retirement" rollups: 401k/IRA and HSA use their annual rows
+  // (they carry employer contributions where account rows don't); Brokerage
+  // sums only its account_performance rows with parentCategory "Retirement".
   addRetirementRollup(annualRows, accounts, perfLookups, currentYear);
 
   // Categories available in the data (rebuild after synthesis)

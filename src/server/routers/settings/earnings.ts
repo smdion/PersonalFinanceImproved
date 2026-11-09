@@ -7,6 +7,7 @@ import {
   contributionProfileProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { firstRow } from "@/lib/utils/first-row";
 
 // Other pay on a job's checks — structural only (the per-check amount is
 // the Salary Profile entry's `otherEarnings`, like salary and bonus).
@@ -42,7 +43,7 @@ export const earningsProcedures = {
           .insert(schema.paycheckEarnings)
           .values(input)
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     update: contributionProfileProcedure
       .input(z.object({ id: z.number().int() }).and(earningInput))
@@ -52,10 +53,10 @@ export const earningsProcedures = {
           .set(data)
           .where(eq(schema.paycheckEarnings.id, id))
           .returning()
-          .then((r) => r[0]),
+          .then(firstRow),
       ),
     // Also drops its amount from every Salary Profile, so no profile keeps
-    // an amount for a line that no longer exists.
+    // an amount for a deleted line.
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>

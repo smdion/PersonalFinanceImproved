@@ -11,7 +11,7 @@ import { tipColorClass } from "./utils";
  */
 function renderLineItem(
   item: TooltipLineItem,
-  idx: number,
+  index: number,
   nested = false,
 ): React.ReactNode {
   const colorCls = item.color ? tipColorClass[item.color] : "";
@@ -40,7 +40,7 @@ function renderLineItem(
     });
   if (item.sub) allSub.push(...item.sub);
   return (
-    <div key={idx} className={nested ? "pl-2" : ""}>
+    <div key={index} className={nested ? "pl-2" : ""}>
       <div className="flex items-baseline justify-between gap-3">
         <span className={`font-medium ${colorCls}`}>
           {item.label}
@@ -75,10 +75,8 @@ function renderLineItem(
 }
 
 /**
- * Data-driven tooltip renderer — fixed visual order, call sites provide data only.
- * Renders 17 sections in a consistent order: header, meta, override note, items,
- * total, tax split, growth, contributions, withdrawals, year change, rate ceiling,
- * routing note, budget, IRS limit, pro-rate, balance, legend.
+ * Data-driven tooltip renderer: call sites provide data only and the 17
+ * sections (header … legend) always render in the same fixed order.
  */
 export function renderTooltip(data: TooltipData): React.ReactNode {
   if (data.kind === "info") {
@@ -119,6 +117,8 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
     d.growth && d.growth.amount >= 0 ? tipColorClass.blue : tipColorClass.red;
   const growthPrefix = d.growth && d.growth.amount >= 0 ? "+" : "";
 
+  // The group label shows once, above the first item of each group.
+  let lastGroup: string | undefined;
   return (
     <div className="space-y-0.5">
       {/* 1. HEADER */}
@@ -236,26 +236,23 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 5. ITEMS */}
       {d.items && d.items.length > 0 && (
         <div className="space-y-1">
-          {(() => {
-            let lastGroup: string | undefined;
-            return d.items.map((item, ii) => {
-              const showGroup = !!item.group && item.group !== lastGroup;
-              lastGroup = item.group;
-              return (
-                // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
-                <div key={`${ii}-${item.label}`}>
-                  {showGroup && (
-                    <div
-                      className={`text-caption tracking-wide uppercase ${tipColorClass.gray} mt-1.5 first:mt-0`}
-                    >
-                      {item.group}
-                    </div>
-                  )}
-                  {renderLineItem(item, ii)}
-                </div>
-              );
-            });
-          })()}
+          {d.items.map((item, ii) => {
+            const showGroup = !!item.group && item.group !== lastGroup;
+            lastGroup = item.group;
+            return (
+              // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
+              <div key={`${ii}-${item.label}`}>
+                {showGroup && (
+                  <div
+                    className={`text-caption tracking-wide uppercase ${tipColorClass.gray} mt-1.5 first:mt-0`}
+                  >
+                    {item.group}
+                  </div>
+                )}
+                {renderLineItem(item, ii)}
+              </div>
+            );
+          })}
         </div>
       )}
       {/* 6. TOTAL */}

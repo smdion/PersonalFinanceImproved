@@ -1,9 +1,6 @@
 /**
- * Spending Decline — Morningstar Method 4.
- *
- * Annual real spending declines by a fixed rate, reflecting reduced
- * consumption in later retirement per EBRI actual spending data.
- * SWR: 5.0% (40/60 portfolio, 90% success, 30 years).
+ * Spending Decline (Morningstar Method 4): real spending falls by a fixed rate (2% from EBRI
+ * data). SWR 5.0% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
 import type {
@@ -31,11 +28,9 @@ export function applySpendingDecline(
     };
   }
 
-  // spending = initialAmount × ((1 + CPI) × (1 - declineRate))^yearCount
-  // This produces a REAL decline: spending grows with CPI (maintaining purchasing
-  // power) but declines by the decline rate each year. With CPI=2.5% and rate=2%,
-  // nominal spending grows ~0.45%/yr while real spending declines 2%/yr — matching
-  // the EBRI data on actual retiree consumption patterns.
+  // spending = initialAmount × ((1 + CPI) × (1 - declineRate))^yearCount:
+  // grows with CPI but falls by declineRate in real terms each year (with
+  // CPI 2.5% and rate 2%, nominal grows ~0.45%/yr).
   const yearCount = crossYearState.decumulationYearCount;
   // In a trial, CPI varies by year: this year's rate raised to yearCount
   // would apply one year's inflation to every year since retirement.

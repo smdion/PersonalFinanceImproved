@@ -1,26 +1,12 @@
-// Social Security claiming-age rules — Full Retirement Age (FRA) by birth
-// year, and the early/delayed claiming adjustment formula.
-// Source: SSA "Retirement Age Calculator" / SSA Publication 05-10147.
-//
-// PIA (Primary Insurance Amount, the benefit at FRA) is a direct user input
-// in this app, not derived from an earnings history — see
-// .scratch/docs/plans/SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1.
-// This module only handles the claiming-age math layered on top of a known
-// PIA: FRA lookup and the early/delayed adjustment multiplier.
-//
-// Philosophy: Config declares, code executes. FRA and the adjustment rates
-// are fixed by law (unlike RMD/IRMAA/tax tables, they don't change yearly),
-// so this is a static constant module, not a versioned DB table.
+// Social Security claiming-age math on a user-entered PIA (benefit at FRA): FRA by birth year
+// and the early/delayed adjustment (SSA Publication 05-10147). Fixed by law, not yearly data,
+// so static constants rather than a versioned table.
 
 /** Full Retirement Age, in whole years + months, by birth year. */
 type FullRetirementAge = { years: number; months: number };
 
-/**
- * FRA by birth year. 65y0m for 1937 and earlier, sliding in 2-month
- * increments through the 1943-1954 plateau at 66y0m, to 67y0m for 1960
- * and later. Birth years 1938-1942 and 1955-1959 are the transition
- * years SSA's own table lists individually.
- */
+/** FRA by birth year: 65y0m through 1937, +2 months a year to the 1943-1954 plateau at
+ *  66y0m, then +2 months a year to 67y0m for 1960 and later. */
 export function getFullRetirementAge(birthYear: number): FullRetirementAge {
   if (birthYear <= 1937) return { years: 65, months: 0 };
   if (birthYear === 1938) return { years: 65, months: 2 };
@@ -42,18 +28,9 @@ export function fraToMonths(fra: FullRetirementAge): number {
   return fra.years * 12 + fra.months;
 }
 
-/**
- * The one canonical "has this person opted into PIA" check, used by every
- * layer that reads `retirement_profile_people.social_security_pia`
- * (build-engine-payload's payload assembly, the strategy optimizer's
- * claiming-age lever, and the client's PIA input field). `social_security_pia`
- * is a decimal column — Drizzle hands it back as a string (PG `decimal`,
- * SQLite `text`), so a bare `!= null` is NOT a safe check: an empty string
- * from a blank form field survives it and then NaNs out of `parseFloat`,
- * and `"0"` / `"0.00"` would read as "opted in with a $0 benefit" rather
- * than "not set." Returns the ANNUAL PIA (the stored value is monthly) or
- * `null` if not a usable positive amount.
- */
+/** The one "has this person set a PIA" check for `social_security_pia` (a decimal string, so
+ *  "" and "0" must read as not set). Returns the ANNUAL PIA (stored monthly), or null unless
+ *  a usable positive amount. */
 export function parseAnnualPia(
   raw: string | number | null | undefined,
 ): number | null {
@@ -78,13 +55,8 @@ const EARLY_REDUCTION_RATE_BEYOND_36 = 5 / 12 / 100;
 /** Delayed-claiming credit: 2/3 of 1% per month past FRA, up to age 70. */
 const DELAYED_CREDIT_RATE_PER_MONTH = 2 / 3 / 100;
 
-/**
- * Multiplier applied to PIA for claiming at `claimingAgeMonths` instead of
- * FRA. Returns 1 exactly at FRA, less than 1 for early claiming (as early as
- * age 62), more than 1 for delayed claiming (up to age 70). Clamps the input
- * to [62, 70] years — claiming outside that range isn't possible under
- * current law.
- */
+/** Multiplier on PIA for claiming at `claimingAgeMonths`: 1 at FRA, below 1 early, above 1
+ *  delayed. The age is clamped to [62, 70], the only claiming ages the law allows. */
 export function getClaimingAdjustmentMultiplier(
   fra: FullRetirementAge,
   claimingAgeMonths: number,
@@ -111,27 +83,18 @@ export function getClaimingAdjustmentMultiplier(
   return 1 + monthsDelayed * DELAYED_CREDIT_RATE_PER_MONTH;
 }
 
-/**
- * Spousal-benefit early-claiming reduction: 25/36 of 1% per month for the
- * first 36 months before FRA, then 5/12 of 1% per month beyond that — a
- * DIFFERENT rate than the worker's own reduction above (5/9%, not 25/36%).
- * Unlike a worker's own retirement benefit, a spousal benefit never earns
- * delayed-retirement credits past FRA — it's capped at 50% of the higher
- * earner's PIA no matter how long the spouse waits.
- */
+/** Spousal early-claiming reduction per month before FRA: 25/36 of 1% for the first 36 months,
+ *  5/12 of 1% beyond (unlike the worker's 5/9%). No delayed credits: capped at 50% of the
+ *  higher earner's PIA. */
 const SPOUSAL_REDUCTION_RATE_FIRST_36 = 25 / 36 / 100;
 const SPOUSAL_REDUCTION_RATE_BEYOND_36 = 5 / 12 / 100;
 
 /** Fraction of the higher earner's PIA a spousal benefit is based on. */
 export const SPOUSAL_BENEFIT_BASE_RATE = 0.5;
 
-/**
- * Multiplier applied to `SPOUSAL_BENEFIT_BASE_RATE * higherEarnerPia` for
- * claiming the spousal benefit at `claimingAgeMonths`. Returns 1 at (or
- * after) FRA — no delayed credit — less than 1 for early claiming. Clamped
- * to [62, FRA]: claiming a spousal benefit before 62 isn't possible, and
- * waiting past FRA earns nothing more.
- */
+/** Multiplier on `SPOUSAL_BENEFIT_BASE_RATE * higherEarnerPia` for claiming at
+ *  `claimingAgeMonths`: 1 at or after FRA (no delayed credit), below 1 early. Clamped to
+ *  [62, FRA]. */
 export function getSpousalAdjustmentMultiplier(
   fra: FullRetirementAge,
   claimingAgeMonths: number,

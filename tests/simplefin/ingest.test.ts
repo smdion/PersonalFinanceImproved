@@ -88,6 +88,7 @@ describe("ingestInvestmentData", () => {
       registry,
       windowStart: "2026-05-01",
       accountIdsWithErrors: new Set(accountIdsWithErrors),
+      now: new Date(),
     });
 
   const observations = (simplefinAccountId: number) =>
@@ -418,6 +419,7 @@ describe("ingestInvestmentData", () => {
         registry,
         windowStart,
         accountIdsWithErrors: new Set(),
+        now: new Date(),
       });
     await sync("2026-03-01");
     const summary = await sync("2026-05-01"); // later sync, narrower window, same old row sent again

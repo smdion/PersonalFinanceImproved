@@ -50,7 +50,7 @@ const loan = (build: (loanId: number) => unknown) => (ctx: ProcedureContext) =>
 const none = () => ({});
 
 /** The active Contribution and Salary Profiles, which every page sends
- *  (useEffectiveContribProfileId, useEffectiveSalaryProfileId). */
+ *  (useEffectiveContributionProfileId, useEffectiveSalaryProfileId). */
 const active = ({ ids }: ProcedureContext) => ({
   contributionProfileId: ids.contributionProfile,
   salaryProfileId: ids.salaryProfile,
@@ -70,8 +70,8 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "settings.contributionAccounts.list" },
   { path: "settings.earnings.list" },
   { path: "settings.deductions.list" },
-  { path: "settings.taxData.sectionSources" },
-  { path: "settings.taxData.status" },
+  { path: "settings.taxData.listSectionSources" },
+  { path: "settings.taxData.getStatus" },
   { path: "settings.contributionLimits.list" },
   { path: "settings.taxBrackets.list" },
   { path: "settings.ltcgBrackets.list" },
@@ -82,9 +82,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "settings.rbacGroups.get" },
   { path: "settings.scenarios.list" },
   { path: "settings.apiConnections.list" },
-  { path: "settings.isOnboardingComplete" },
-  { path: "settings.firstRunState" },
-  { path: "settings.taxDataSync.status" },
+  { path: "settings.getOnboardingStatus" },
+  { path: "settings.getFirstRunState" },
+  { path: "settings.taxDataSync.getStatus" },
   { path: "paycheck.computeSummary", input: active },
   // As an API caller without the page's ids gets it: no Contribution
   // Profile is applied (see the v0.10.0 report).
@@ -92,13 +92,13 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "budget.listProfiles" },
   { path: "budget.computeActiveSummary", input: none },
   {
-    path: "budget.mortgageItemChoices",
+    path: "budget.listMortgageItemChoices",
     input: loan((loanId) => ({ loanId })),
   },
   { path: "budget.listContribAccountsForLinking" },
   { path: "budget.listApiCategories", input: none },
   { path: "budget.listApiActuals", input: none },
-  { path: "contribution.highIncomeLine" },
+  { path: "contribution.computeHighIncomeLine" },
   { path: "contribution.computeSummary", input: active },
   { path: "mortgage.computeActiveSummary" },
   { path: "mortgage.mortgageLoans.list" },
@@ -122,7 +122,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   },
   { path: "networth.portfolioSnapshots.getLatest" },
   { path: "milestones.computeInputs", input: none },
-  { path: "milestones.firstReached" },
+  { path: "milestones.getFirstReached" },
   { path: "savings.computeSummary", input: none },
   { path: "savings.plannedTransactions.getSettlementSuggestions" },
   {
@@ -246,9 +246,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "utilities.listServices" },
   { path: "utilities.computeSummary" },
   { path: "utilities.listBudgetApiCategories" },
-  { path: "utilities.previewBudgetApiFeed" },
+  { path: "utilities.computeBudgetApiFeedPreview" },
   { path: "debts.list" },
-  { path: "debts.summary" },
+  { path: "debts.computeSummary" },
   { path: "version.list" },
   { path: "version.getRetention" },
   { path: "version.getSchedule" },
@@ -284,33 +284,33 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "simplefin.listLinkableLoans" },
   { path: "simplefin.listBalanceHistory", input: () => ({ days: 30 }) },
   { path: "tiingo.getStatus" },
-  { path: "investments.getHealth" },
+  { path: "investments.computeHealth" },
   {
-    path: "investments.getSnapshotFlows",
+    path: "investments.computeSnapshotFlows",
     input: () => ({ since: "2026-01-01" }),
   },
   {
-    path: "investments.getYearReturnRanges",
+    path: "investments.computeYearReturnRanges",
     input: () => ({ preset: "default", years: [2026, 2030, 2040] }),
   },
-  { path: "investments.getComparison", input: none },
+  { path: "investments.computeComparison", input: none },
   { path: "investments.getSimulationGlidePaths" },
   { path: "investments.getHoldingsOverview" },
   { path: "investments.suggestSnapshot" },
   {
-    path: "investments.suggestPerformance",
+    path: "investments.listPerformanceSuggestions",
     input: () => ({ year: 2026 }),
   },
-  { path: "investments.getSavingsThisYear" },
-  { path: "investments.suggestBasis", input: () => ({ year: 2026 }) },
-  { path: "investments.getAccountInsights" },
+  { path: "investments.computeSavingsThisYear" },
+  { path: "investments.listBasisSuggestions", input: () => ({ year: 2026 }) },
+  { path: "investments.computeAccountInsights" },
   { path: "investments.getLiveSinceSnapshot" },
   {
     path: "investments.getRothIraInputs",
     input: () => ({ taxYear: 2026 }),
   },
   { path: "investments.listHoldingPeriods" },
-  { path: "investments.getBuyingMonths" },
+  { path: "investments.computeBuyingMonths" },
   { path: "investments.getCurrentBalances" },
   { path: "sec.getStatus" },
   { path: "demo.listProfiles" },
@@ -319,9 +319,9 @@ export const PROCEDURES: BaselineProcedure[] = [
 
 /** Queries the baseline doesn't call, and why. */
 export const SKIPPED: Record<string, string> = {
-  "settings.testOidcConnection":
+  "settings.getOidcStatus":
     "external: fetches the OIDC issuer's discovery document",
-  "settings.taxDataSync.preview":
+  "settings.taxDataSync.computePreview":
     "external: fetches the published tax-data index",
   "sync.getPreview":
     "reads a budget connection's cached feed, which no household here has; part d pins it for both services after the recorded syncs (sync-writes.test.ts)",
@@ -331,8 +331,9 @@ export const SKIPPED: Record<string, string> = {
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",
   "version.getPreview": "needs a saved version; the baseline seeds none",
-  "version.restoreDataLoss": "needs a saved version; the baseline seeds none",
-  "version.importDataLoss":
+  "version.listRestoreDataLoss":
+    "needs a saved version; the baseline seeds none",
+  "version.listImportDataLoss":
     "compares a backup file being imported; the baseline imports none",
   "dataBrowser.listTables":
     "admin table browser: raw PostgreSQL SQL, echoes rows the seeder wrote",

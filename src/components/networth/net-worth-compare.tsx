@@ -5,8 +5,9 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
-import { localDateStr } from "@/lib/utils/date";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 
 type PresetKey = "1m" | "3m" | "6m" | "ytd" | "1y" | "yoy" | "custom";
 
@@ -24,7 +25,7 @@ function toDateStr(d: Date): string {
   // Local day — these strings are compared against `snapshot_date` (a
   // date-only column), so a UTC render would shift the preset range by a
   // day every evening in a US timezone.
-  return localDateStr(d);
+  return calendarDateOf(d);
 }
 
 function getPresetDates(preset: PresetKey): { from: string; to: string } {
@@ -107,7 +108,7 @@ export function NetWorthCompare({
         ? customTo
         : presetDates.to;
 
-  const { data, isLoading, error } = trpc.networth.computeComparison.useQuery(
+  const { data, ...comparison } = trpc.networth.computeComparison.useQuery(
     { dateFrom, dateTo, useMarketValue },
     { enabled: !!dateFrom && !!dateTo && dateFrom < dateTo },
   );
@@ -147,6 +148,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">From Year</label>
             <select
+              aria-label="From Year"
               value={yoyFrom}
               onChange={(e) => setYoyFrom(Number(e.target.value))}
               className="border-strong rounded border px-2 py-1 text-sm"
@@ -162,6 +164,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">To Year</label>
             <select
+              aria-label="To Year"
               value={yoyTo}
               onChange={(e) => setYoyTo(Number(e.target.value))}
               className="border-strong rounded border px-2 py-1 text-sm"
@@ -182,6 +185,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">From</label>
             <input
+              aria-label="From"
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
@@ -191,6 +195,7 @@ export function NetWorthCompare({
           <div className="flex items-center gap-1.5">
             <label className="text-muted text-xs">To</label>
             <input
+              aria-label="To"
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
@@ -200,17 +205,17 @@ export function NetWorthCompare({
         </div>
       )}
 
-      {/* Loading / error */}
-      {isLoading && (
-        <div className="space-y-2">
-          <Skeleton className="h-16" />
-          <Skeleton className="h-32" />
-        </div>
-      )}
-      {error && (
-        <p className="text-sm text-red-500">
-          Failed to load comparison: {error.message}
-        </p>
+      {queryPending(comparison) && (
+        <QueryBoundary
+          query={comparison}
+          what="the comparison"
+          fallback={
+            <div className="space-y-2">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-32" />
+            </div>
+          }
+        />
       )}
       {dateFrom >= dateTo && (
         <p className="text-sm text-yellow-600">

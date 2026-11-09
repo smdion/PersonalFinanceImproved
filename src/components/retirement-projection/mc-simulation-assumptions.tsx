@@ -53,8 +53,8 @@ export function SimulationAssumptions({
     setDraftGlidePath,
     editingInflation,
     setEditingInflation,
-    draftInflStdDev,
-    setDraftInflStdDev,
+    draftInflationStdDev,
+    setDraftInflationStdDev,
     editingClamps,
     setEditingClamps,
     draftClampMin,
@@ -94,12 +94,12 @@ export function SimulationAssumptions({
 
           {/* Key scenario inputs — 2 columns on mobile, 4 on desktop */}
           <ScenarioInputs
-            draftInflStdDev={draftInflStdDev}
+            draftInflationStdDev={draftInflationStdDev}
             editingInflation={editingInflation}
             inputs={inputs}
             numTrials={numTrials}
             onInflationRiskChange={onInflationRiskChange}
-            setDraftInflStdDev={setDraftInflStdDev}
+            setDraftInflationStdDev={setDraftInflationStdDev}
             setEditingInflation={setEditingInflation}
           />
 

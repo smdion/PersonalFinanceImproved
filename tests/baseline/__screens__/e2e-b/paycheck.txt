@@ -36,7 +36,7 @@ Net pay?
 $5,226.71
 Withholding (W-4)
 Filing status
-[Married jointly]
+[Married filing jointly]
 Extra withholding?
 —
 Multiple jobs or spouse works (Step 2c)
@@ -91,7 +91,7 @@ Take-home increases by $442.82/period after
 Social Security stops once your pay for the year passes $184,500.00; per-check figures average it over the year.
 Riley
 Fabrikam Health
-Semi-Monthly · Next: 2026-03-15 · 24 checks/yr
+Semimonthly · Next: 2026-03-15 · 24 checks/yr
 $70,000.00
 annual salary
 Pay stub (one check)
@@ -121,7 +121,7 @@ Net pay?
 $2,355.14
 Withholding (W-4)
 Filing status
-[Married jointly]
+[Married filing jointly]
 Extra withholding?
 —
 Multiple jobs or spouse works (Step 2c)
@@ -145,7 +145,7 @@ Bonus %
 Check against a pay stub
 Contribution Accounts?(1)
 Household Contribution Snapshot
-Per check
+Per paycheck
 Monthly
 Annual
 Account types:401k — employer-sponsored retirementIRA — individual retirementHSA — health savings (tax-free)Brokerage — taxable investmentESPP — employee stock purchase

@@ -21,10 +21,10 @@ export const milestonesRouter = createTRPCRouter({
   /** Year-end history mapped for the Milestones engine, plus the household's own goals and checklist. */
   computeInputs: protectedProcedure
     .input(zYearEndTargeting)
-    .query(({ ctx, input }) => loadMilestoneInputs(ctx.db, input)),
+    .query(({ ctx, input }) => loadMilestoneInputs(ctx, input)),
 
   /** When each milestone was first reached (null before any recording). */
-  firstReached: protectedProcedure.query(async ({ ctx }) => {
+  getFirstReached: protectedProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.db
       .select({ value: schema.appSettings.value })
       .from(schema.appSettings)
@@ -33,11 +33,8 @@ export const milestonesRouter = createTRPCRouter({
   }),
 
   /**
-   * Record milestones reached now that aren't recorded yet. Judged here, on
-   * the active profiles — never on what a page shows (it may be a What-If)
-   * or on ids a browser sends. Any signed-in viewer's visit can record;
-   * nothing goes to the change log (it's the app's own bookkeeping), and a
-   * demo never records.
+   * Record newly reached milestones, judged on the active profiles (never a page's What-If
+   * or browser-sent ids). Any signed-in visit can record; not change-logged; never in a demo.
    */
   recordReached: protectedProcedure.mutation(async ({ ctx }) => {
     if (ctx.demoSchema) return null;

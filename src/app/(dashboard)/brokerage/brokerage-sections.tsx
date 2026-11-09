@@ -207,7 +207,7 @@ export type BrokerageFundingPanelProps = {
   hasContextOverrides: boolean;
   portfolioAccounts: RouterOutputs["contribution"]["computeSummary"]["jointAccountTypes"];
   portfolioBrokerageAccounts: RouterOutputs["performance"]["performanceAccounts"]["list"];
-  totalDirectContrib: number;
+  totalDirectContribution: number;
   totalOverflow: number;
   updateCostBasis: ReturnType<
     typeof trpc.performance.updateCostBasis.useMutation
@@ -228,7 +228,7 @@ export function BrokerageFundingPanel({
   hasContextOverrides,
   portfolioAccounts,
   portfolioBrokerageAccounts,
-  totalDirectContrib,
+  totalDirectContribution,
   totalOverflow,
   updateCostBasis,
   upsertSetting,
@@ -264,7 +264,7 @@ export function BrokerageFundingPanel({
         {/* Funding Sources */}
         <Card title="Funding Sources" className="lg:col-span-1">
           <FundingSources
-            directContrib={totalDirectContrib}
+            directContribution={totalDirectContribution}
             overflow={totalOverflow}
             ramp={brokerageRamp}
             canEdit={canEdit}

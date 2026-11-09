@@ -1,14 +1,8 @@
 "use client";
 
 /**
- * Consolidated "Access Control" settings shell — Auth (Authentik OIDC
- * connection setup) and RBAC (mapping Authentik groups to app permissions)
- * used to be 2 separate admin-only Settings tabs. They're sequential steps
- * in the same setup flow (connect OIDC, then map its groups to
- * permissions), so this shell gives them one left-column sub-nav instead.
- * Unlike Tax Data's shell, there's no cross-cutting control to share
- * between them (no year axis here) — this is just navigation, so both
- * children render unmodified.
+ * "Access Control" settings shell: a sub-nav over Auth (Authentik OIDC setup) and RBAC (mapping
+ * Authentik groups to permissions), the two steps of one setup flow. Navigation only.
  */
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_SETTINGS_ACCESS_CONTROL_SECTION } from "@/lib/constants/settings-keys";

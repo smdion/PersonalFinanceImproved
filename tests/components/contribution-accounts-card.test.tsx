@@ -30,7 +30,9 @@ vi.mock("@/components/portfolio/contribution-accounts-contrib-row", () => ({
       <td>Contribution</td>
     </tr>
   ),
-  AddContribForm: () => <div data-testid="add-contrib-form">Add Contrib</div>,
+  AddContributionForm: () => (
+    <div data-testid="add-contrib-form">Add Contrib</div>
+  ),
 }));
 
 const baseAccount = {

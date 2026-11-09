@@ -1,15 +1,7 @@
 /**
- * Money Guy's "Always Be Buying" (config ALWAYS_BUYING_RULE), from two
- * sources:
- * - months: whether SimpleFIN saw a deposit into a counted feed. A month
- *   counts only when the feeds covered all of it — the first, partial
- *   month, months after the latest report and months no feed reported are
- *   "unknown" and never break the streak. Coverage is per feed: a month
- *   without a deposit breaks only when every feed that takes deposits
- *   reported through it — one feed going quiet can't hide its deposits
- *   behind another that kept reporting.
- * - down years: in each finalized year the household's investments lost
- *   money, whether its own contributions held up against the year before.
+ * Money Guy's "Always Be Buying" (ALWAYS_BUYING_RULE): months with a SimpleFIN
+ * deposit (a month breaks only when every deposit-taking feed covered it, else
+ * "unknown"), and down years where contributions held up against the year before.
  */
 import { ALWAYS_BUYING_RULE } from "@/lib/config/milestones";
 

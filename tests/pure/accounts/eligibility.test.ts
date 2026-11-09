@@ -47,8 +47,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 100000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 100000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -74,8 +74,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 100000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 100000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -100,8 +100,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 50000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 50000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -131,16 +131,16 @@ describe("computeWithdrawalEligibility", () => {
     });
     const lockedIn2030 = computeWithdrawalEligibility({
       year: 2030, // age 45 — not yet 55
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 80000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 80000]]),
       indKey,
     }).byKey.get(indKey(ia))!;
     expect(lockedIn2030.penaltyExposedAmount).toBe(80000);
 
     const eligibleIn2041 = computeWithdrawalEligibility({
       year: 2041, // age 56 — separating (projected) at 56, Rule of 55 met
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 80000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 80000]]),
       indKey,
     }).byKey.get(indKey(ia))!;
     expect(eligibleIn2041.penaltyExposedAmount).toBe(0);
@@ -168,8 +168,8 @@ describe("computeWithdrawalEligibility", () => {
       });
       const entry = computeWithdrawalEligibility({
         year: 2041, // age 56 -- would be eligible without the override
-        indAccts: [ia],
-        indBal: new Map([[indKey(ia), 80000]]),
+        indAccounts: [ia],
+        indBalance: new Map([[indKey(ia), 80000]]),
         indKey,
       }).byKey.get(indKey(ia))!;
       expect(entry.penaltyExposedAmount).toBe(80000);
@@ -197,8 +197,8 @@ describe("computeWithdrawalEligibility", () => {
       });
       const entry = computeWithdrawalEligibility({
         year: 2026,
-        indAccts: [ia],
-        indBal: new Map([[indKey(ia), 60000]]),
+        indAccounts: [ia],
+        indBalance: new Map([[indKey(ia), 60000]]),
         indKey,
       }).byKey.get(indKey(ia))!;
       expect(entry.penaltyExposedAmount).toBe(0);
@@ -225,14 +225,14 @@ describe("computeWithdrawalEligibility", () => {
       });
       const a = computeWithdrawalEligibility({
         year: 2041,
-        indAccts: [withoutOverride],
-        indBal: new Map([[indKey(withoutOverride), 80000]]),
+        indAccounts: [withoutOverride],
+        indBalance: new Map([[indKey(withoutOverride), 80000]]),
         indKey,
       }).byKey.get(indKey(withoutOverride))!;
       const b = computeWithdrawalEligibility({
         year: 2041,
-        indAccts: [withOverrideFalseish],
-        indBal: new Map([[indKey(withOverrideFalseish), 80000]]),
+        indAccounts: [withOverrideFalseish],
+        indBalance: new Map([[indKey(withOverrideFalseish), 80000]]),
         indKey,
       }).byKey.get(indKey(withOverrideFalseish))!;
       expect(a).toEqual(b);
@@ -249,8 +249,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const lockedResult = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [under],
-      indBal: new Map([[indKey(under), 40000]]),
+      indAccounts: [under],
+      indBalance: new Map([[indKey(under), 40000]]),
       indKey,
     }).byKey.get(indKey(under))!;
     expect(lockedResult.penaltyExposedAmount).toBe(40000);
@@ -263,8 +263,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const eligibleResult = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [older],
-      indBal: new Map([[indKey(older), 40000]]),
+      indAccounts: [older],
+      indBalance: new Map([[indKey(older), 40000]]),
       indKey,
     }).byKey.get(indKey(older))!;
     expect(eligibleResult.penaltyExposedAmount).toBe(0);
@@ -287,8 +287,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 25000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 25000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -316,8 +316,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 10000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 10000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
@@ -338,8 +338,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const lockedResult = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [young],
-      indBal: new Map([[indKey(young), 15000]]),
+      indAccounts: [young],
+      indBalance: new Map([[indKey(young), 15000]]),
       indKey,
     }).byKey.get(indKey(young))!;
     expect(lockedResult.penaltyExposedAmount).toBe(15000);
@@ -355,8 +355,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const eligibleResult = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [old],
-      indBal: new Map([[indKey(old), 15000]]),
+      indAccounts: [old],
+      indBalance: new Map([[indKey(old), 15000]]),
       indKey,
     }).byKey.get(indKey(old))!;
     expect(eligibleResult.penaltyExposedAmount).toBe(0);
@@ -374,8 +374,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 30000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 30000]]),
       indKey,
     });
     expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
@@ -394,8 +394,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 60000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 60000]]),
       indKey,
     });
     expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
@@ -417,8 +417,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[indKey(ia), 100000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[indKey(ia), 100000]]),
       indKey,
     });
     expect(record.totalPenaltyExposed).toBe(0);
@@ -454,8 +454,8 @@ describe("computeWithdrawalEligibility", () => {
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [a, b],
-      indBal: new Map([
+      indAccounts: [a, b],
+      indBalance: new Map([
         [indKey(a), 70000],
         [indKey(b), 15000],
       ]),
@@ -501,8 +501,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     ]);
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[key, 20000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[key, 20000]]),
       indKey,
       indBasis,
     });
@@ -536,8 +536,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     const key = indKey(ia);
     const withoutIndBasis = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[key, 20000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[key, 20000]]),
       indKey,
     }).byKey.get(key)!;
     expect(withoutIndBasis.basisRemaining).toBe(8000);
@@ -555,8 +555,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     const key = indKey(ia);
     const withBasis = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[key, 5000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[key, 5000]]),
       indKey,
       indBasis: new Map([
         [
@@ -578,8 +578,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     // withdrawal this same projected year, per drawFromBasis/applyBasisDraw).
     const basisExhausted = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [ia],
-      indBal: new Map([[key, 5000]]),
+      indAccounts: [ia],
+      indBalance: new Map([[key, 5000]]),
       indKey,
       indBasis: new Map([
         [
@@ -609,8 +609,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
       });
       const record = computeWithdrawalEligibility({
         year: 2026,
-        indAccts: [ia],
-        indBal: new Map([[indKey(ia), 100000]]),
+        indAccounts: [ia],
+        indBalance: new Map([[indKey(ia), 100000]]),
         indKey,
       });
       const entry = record.byKey.get(indKey(ia))!;
@@ -646,8 +646,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
       });
       const record = computeWithdrawalEligibility({
         year: 2026,
-        indAccts: [allowedAcct, disallowedAcct],
-        indBal: new Map([
+        indAccounts: [allowedAcct, disallowedAcct],
+        indBalance: new Map([
           [indKey(allowedAcct), 40000],
           [indKey(disallowedAcct), 60000],
         ]),
@@ -766,8 +766,8 @@ describe("computeWithdrawalEligibility — Portfolio-parented double-count guard
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [portfolio401k],
-      indBal: new Map([[indKey(portfolio401k), 500000]]),
+      indAccounts: [portfolio401k],
+      indBalance: new Map([[indKey(portfolio401k), 500000]]),
       indKey,
     });
     const entry = record.byKey.get(indKey(portfolio401k))!;
@@ -793,8 +793,8 @@ describe("computeWithdrawalEligibility — Portfolio-parented double-count guard
     });
     const record = computeWithdrawalEligibility({
       year: 2026,
-      indAccts: [portfolio401k],
-      indBal: new Map([[indKey(portfolio401k), 500000]]),
+      indAccounts: [portfolio401k],
+      indBalance: new Map([[indKey(portfolio401k), 500000]]),
       indKey,
     });
     // The per-account entry above shows $500,000 exposed -- but NONE of it

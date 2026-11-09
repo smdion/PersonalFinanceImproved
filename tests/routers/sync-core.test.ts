@@ -1363,7 +1363,7 @@ describe("sync core — computeExpenseComparison", () => {
   ) {
     const cached = {
       transactions: await client.getTransactions("2025-01-01"),
-      categories: await client.getCategories(),
+      categories: await client.getCategories(new Date()),
     };
     // Viewing the comparison asks the budget app for nothing.
     vi.unstubAllGlobals();

@@ -81,7 +81,7 @@ describe("debts router", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const d = await caller.debts.create(loan);
-      expect((await caller.debts.summary()).itemized).toBe(20000);
+      expect((await caller.debts.computeSummary()).itemized).toBe(20000);
       await caller.debts.markPaidOff({ id: d!.id, date: "2026-03-01" });
       const [after] = await caller.debts.list();
       expect(after).toMatchObject({
@@ -89,10 +89,10 @@ describe("debts router", () => {
         balance: 20000,
         paidOffDate: "2026-03-01",
       });
-      expect((await caller.debts.summary()).itemized).toBe(0);
+      expect((await caller.debts.computeSummary()).itemized).toBe(0);
       // Clearing the payoff date reopens it at that balance, not $0.
       await caller.debts.update({ id: d!.id, paidOffDate: null });
-      expect((await caller.debts.summary()).itemized).toBe(20000);
+      expect((await caller.debts.computeSummary()).itemized).toBe(20000);
     } finally {
       cleanup();
     }
@@ -144,7 +144,9 @@ describe("debts router", () => {
         itemized: 20000,
         creditCardMapped: 0,
       });
-      expect(await caller.debts.summary()).toMatchObject({ total: 21500 });
+      expect(await caller.debts.computeSummary()).toMatchObject({
+        total: 21500,
+      });
     } finally {
       cleanup();
     }
@@ -171,7 +173,9 @@ describe("debts router", () => {
         purchasePrice: 30000,
         termMonths: 36,
       });
-      expect(await caller.debts.summary()).toMatchObject({ itemized: 18000 });
+      expect(await caller.debts.computeSummary()).toMatchObject({
+        itemized: 18000,
+      });
     } finally {
       cleanup();
     }
@@ -186,7 +190,9 @@ describe("debts router", () => {
         .run();
       const [d] = await caller.debts.list();
       expect(d!.open).toBe(false);
-      expect(await caller.debts.summary()).toMatchObject({ itemized: 0 });
+      expect(await caller.debts.computeSummary()).toMatchObject({
+        itemized: 0,
+      });
     } finally {
       cleanup();
     }

@@ -103,10 +103,8 @@ export const irmaaBrackets = pgTable(
 );
 
 // ── ACA Federal Poverty Level ──────────────────────────────────
-//
-// One row per ACA COVERAGE year (not the HHS publication year, which is
-// one calendar year earlier — 26 CFR §1.36B-1(h)). `amounts` maps
-// household size "1".."8" to the annual FPL dollar figure.
+// One row per ACA coverage year (HHS publishes a year earlier; 26 CFR §1.36B-1(h)).
+// `amounts` maps household size "1".."8" to the annual FPL dollar figure.
 
 export const fplByHousehold = pgTable(
   "fpl_by_household",
@@ -120,16 +118,8 @@ export const fplByHousehold = pgTable(
 );
 
 // ── Tax-parameter vintage rows ─────────────────────────────────
-//
-// A thin per-year vintage marker. It carries NO figure values — the
-// existing `contribution_limits` / `tax_brackets` / `ltcg_brackets` /
-// `irmaa_brackets` / `fpl_by_household` tables remain the one and only value
-// store. `resolveTaxParams` maps a requested year to a resolved year via
-// these rows, then reads the value tables for that year. `version` is a
-// human-legible "Tax data: 2026, rev N" counter — cache coherence comes from
-// the resolved values themselves (already in the engine-input hash), not
-// from this column. Absent entirely (old-backup restore) ⇒ the resolver
-// falls back to the value tables' own MAX(tax_year), i.e. today's behaviour.
+// Per-year vintage markers, no figures: `resolveTaxParams` maps a year to a resolved year
+// here, then reads the value tables. With no rows it uses their MAX(tax_year).
 
 export const taxParams = pgTable(
   "tax_params",
@@ -145,10 +135,7 @@ export const taxParams = pgTable(
   },
   (table) => [
     uniqueIndex("tax_params_year_idx").on(table.taxYear),
-    // version is a monotonic
-    // "Tax data: 2026, rev N" revision counter — never meaningfully zero
-    // or negative. Cheap to enforce now, before any admin-facing mutation
-    // of this column ships.
+    // version is a "Tax data: 2026, rev N" revision counter, always positive.
     // prettier-ignore
     check(
       "tax_params_version_positive",
@@ -160,11 +147,9 @@ export const taxParams = pgTable(
 export type ApiConfig = Record<string, string | undefined>;
 
 export type AccountMapping = {
-  // "performance:{id}" | "asset:{id}" | "debt:{id}" | "mortgage:{loanId}:{type}" (legacy
-  // prefix format) | "cash" | "creditCard" (fixed pseudo-accounts — many
-  // mappings can share these two values, summed by getEffectiveCash /
-  // getEffectiveCreditCardDebt; never resolve to a single Ledgr row the
-  // way the others do, and applyPullMapping skips them on purpose).
+  // "performance:{id}" | "asset:{id}" | "debt:{id}" | "mortgage:{loanId}:{type}", or the
+  // pseudo-accounts "cash" | "creditCard" that many mappings share (summed by getEffectiveCash /
+  // getEffectiveCreditCardDebt; applyPullMapping skips them).
   localId?: string;
   localName: string; // Cached display name (UI only, not for resolution)
   remoteAccountId: string;

@@ -1,18 +1,9 @@
 "use client";
 
 /**
- * Drift + profile header section of the integrations preview panel.
- *
- * Renders two unrelated header pieces that share the "top of panel" region:
- *
- *   1. A name-drift banner with bulk "use API names" / "keep Ledgr names"
- *      reconciliation buttons. Only shown when at least one linked item has
- *      drifted.
- *   2. A profile + column selector (YNAB/Actual), only shown when the active
- *      service exposes multiple profiles.
- *
- * Mutations live in `useIntegrationDriftMutations` so that a pending flip here does not
- * re-render any of the other four sections.
+ * Top of the integrations preview panel: a name-drift banner (bulk "use API names"/"keep Ledgr
+ * names") when a linked item has drifted, and a profile + column selector when the service has
+ * several profiles. Mutations live in `useIntegrationDriftMutations`.
  */
 import { useId } from "react";
 import type { PreviewData, Service } from "../integrations-types";

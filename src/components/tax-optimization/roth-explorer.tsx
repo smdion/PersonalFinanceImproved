@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * Roth conversion explorer (roadmap #1). Two moves, both over the shared
- * `rothConversionWhatIf` procedure:
- *  - "Optimize" → the engine's own multi-year search for the lifetime-tax-
- *    minimizing bracket target (delegates to optimizeRothBracketTarget).
- *  - An explicit target-rate applied from a start year → before/after:
- *    lifetime tax with vs. without, break-even year, and a per-year
- *    conversion / tax / RMD-reduction table.
- *
- * "Simulation" wording, never "Monte Carlo" (this is the deterministic
- * run). Values the user sets are "adjusted", never "overridden".
+ * Roth conversion explorer over `rothConversionWhatIf`: "Optimize" (optimizeRothBracketTarget's
+ * lifetime-tax search) or a target rate from a start year, shown before/after with break-even year
+ * and a per-year table. User-set values are "adjusted", never "overridden".
  */
 import { useState, type ReactNode } from "react";
 import type { RouterInputs } from "@/lib/trpc";
@@ -23,7 +16,7 @@ type Selection = Partial<
 >;
 
 export function RothExplorer({ selection }: { selection: Selection }) {
-  const [targetPct, setTargetPct] = useState(22);
+  const [targetPercent, setTargetPercent] = useState(22);
   const [startYear, setStartYear] = useState<number | "">("");
 
   const optimize = trpc.projection.rothConversionWhatIf.useQuery(
@@ -44,7 +37,7 @@ export function RothExplorer({ selection }: { selection: Selection }) {
           ...selection,
           mode: "explicit" as const,
           conversionTargets: [
-            { year: Number(startYear), targetRate: targetPct / 100 },
+            { year: Number(startYear), targetRate: targetPercent / 100 },
           ],
         },
     { enabled: startYear !== "", placeholderData: (prev) => prev },
@@ -160,10 +153,10 @@ export function RothExplorer({ selection }: { selection: Selection }) {
                 min={0}
                 max={40}
                 step={1}
-                value={targetPct}
-                onChange={(e) => setTargetPct(Number(e.target.value))}
+                value={targetPercent}
+                onChange={(e) => setTargetPercent(Number(e.target.value))}
               />
-              <span className="w-10 tabular-nums">{targetPct}%</span>
+              <span className="w-10 tabular-nums">{targetPercent}%</span>
             </span>
           </label>
           <label className="flex flex-col gap-1">

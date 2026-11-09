@@ -1,12 +1,6 @@
 "use client";
 
-/**
- * Shared base hook for the integrations preview panel.
- *
- * Returns a memoized `invalidatePreview` callback that every per-section
- * mutation hook uses as its `onSuccess` handler. Centralizing invalidation
- * here avoids duplicating the cache-busting logic across the 5 section hooks.
- */
+/** Memoized `invalidatePreview`, the `onSuccess` handler of every integrations section hook. */
 import { useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 

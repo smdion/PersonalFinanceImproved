@@ -73,15 +73,15 @@ export type DeductionRowData =
       ficaExempt: boolean;
     };
 
-export type ContribCardProps = {
+export type ContributionCardProps = {
   contrib: RawContrib;
-  onUpdateContrib: (id: number, field: string, value: string) => void;
+  onUpdateContribution: (id: number, field: string, value: string) => void;
   onToggleAutoMax?: (
     id: number,
     value: boolean,
-    targetContribValue?: number,
+    targetContributionValue?: number,
   ) => void;
-  onDeleteContrib?: (id: number) => void;
+  onDeleteContribution?: (id: number) => void;
   onUpdateInstitution?: (
     id: number,
     performanceAccountId: number | null,
@@ -90,17 +90,15 @@ export type ContribCardProps = {
   salary?: number;
   periodsPerYear?: number;
   annualLimit?: number;
-  siblingAnnualContribs?: number; // other accounts sharing same IRS limit (e.g., trad 401k + roth 401k)
+  siblingAnnualContributions?: number; // other accounts sharing same IRS limit (e.g., trad 401k + roth 401k)
   employerMatchAnnual?: number; // this account's employer match annual amount
   /** Sandbox/preview mode — in-place editing is disabled and the delete
    *  action is omitted entirely rather than rendered inert. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — contributionValue writes into
-   *  the viewed Contribution Profile's active fields when unlocked (see
-   *  writeOverride in paycheck/paycheck-content.tsx), so only that one field gates on
-   *  it. Delete/toggle/institution edits are unrelated to the profile and
-   *  keep gating on `readOnly` alone. */
-  contribValueReadOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock for contributionValue only (it
+   *  writes the viewed Contribution Profile's active fields); other edits gate
+   *  on `readOnly` alone. */
+  contributionValueReadOnly?: boolean;
 };
 
 export type CreateDeductionData = {

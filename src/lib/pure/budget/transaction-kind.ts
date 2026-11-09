@@ -1,11 +1,6 @@
 /**
- * The kind a stored investment transaction is shown and counted as.
- *
- * Rows are stored as SimpleFIN sent them; their kind is worked out when read
- * (computed values aren't stored): a row ingest locked (`kind_override` —
- * redacted HSA card spending) keeps that kind, every other row goes through
- * the built-in institution rules (lib/config/simplefin-transaction-rules).
- * Pure — no DB or network.
+ * The kind a stored investment transaction is shown and counted as, worked out on read: a
+ * locked `kind_override` wins, else the institution rules. Pure.
  */
 import type { InvestmentTransactionKind } from "@/lib/config/enum-values";
 import { classifySimplefinTransaction } from "../sync/simplefin-transactions";
@@ -59,11 +54,8 @@ export function effectiveTransactionKind(
 }
 
 /**
- * The account balance used to judge "small" for a row posted on `day`: the
- * last balance on or before that day, so re-reading a row always gives the
- * same answer. Rows older than the first stored balance (the first sync
- * reaches back ~90 days) use the earliest one — also fixed once stored.
- * `history` is sorted by day, ascending.
+ * The balance judging "small" for a row posted on `day`: the last on or before it (else the
+ * earliest stored), so a row always reads the same. `history` is sorted by day, ascending.
  */
 export function balanceAsOf(
   history: readonly { day: string; balance: number }[],

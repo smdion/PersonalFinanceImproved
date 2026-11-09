@@ -193,7 +193,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     "first-run state says an admin is needed when there is none",
     async () => {
       const settings = (await fresh()).caller(null).settings;
-      const state = await settings.firstRunState();
+      const state = await settings.getFirstRunState();
       expect(state).toMatchObject({ adminNeeded: true });
     },
     timeout,

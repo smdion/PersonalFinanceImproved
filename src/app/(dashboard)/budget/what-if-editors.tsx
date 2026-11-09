@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The What-If tab's per-person editors: deductions and contribution
- * accounts, each live row pin-editable (WhatIfPinnedCell) plus hand-added
- * hypothetical rows that an admin can "make real". Nothing here writes
- * except "Make real", which the tab wires to the admin-gated create.
+ * What-If per-person editors (deductions, contribution accounts): live rows
+ * pin-editable, plus hypothetical rows. Only "Make real" writes (admin-gated).
  */
 import { useState, type ReactNode } from "react";
 import {
@@ -32,7 +30,7 @@ export type DeductionAddition = {
 
 /** A hand-added hypothetical contribution account — same localId contract
  *  as DeductionAddition. */
-export type ContribAddition = {
+export type ContributionAddition = {
   localId: number;
   personId: number;
   accountType: AccountCategory;
@@ -156,13 +154,8 @@ function AdditionActions({
 }
 
 /**
- * A numeric cell pre-filled with the live/resolved value that pins on
- * change — the SAME interaction the real Salary Profile tab uses
- * (`PinnedNumberCell` in salary-profile-manager.tsx), not a blank field
- * with a "live" placeholder. This app already killed the idea of an
- * unfilled "follows job" field once; a placeholder that says "live" is
- * that same idea wearing different clothes, and it's what a user actually
- * hit and got confused by.
+ * Numeric cell pre-filled with the live value that pins on change, like
+ * `PinnedNumberCell` on the Salary Profile tab (no blank "live" placeholder).
  */
 export function WhatIfPinnedCell({
   liveValue,
@@ -219,11 +212,8 @@ export function WhatIfPinnedCell({
 }
 
 /**
- * Per-person deductions editor — existing deductions pin-editable the same
- * way salary/bonus fields do (pre-filled with the real stored amount,
- * pinning on change); additions are new hypothetical rows with no DB row,
- * removable, feeding `sandboxDeductionAdditions`. Both flow into a REAL
- * `paycheck.computeSummary` recompute, not a client-side estimate.
+ * Per-person deductions: existing rows pin-editable, additions are removable
+ * hypothetical rows. Both feed a real `paycheck.computeSummary` recompute.
  */
 export function WhatIfDeductionsEditor({
   views,
@@ -288,8 +278,8 @@ export function WhatIfDeductionsEditor({
               </>
             }
           >
-            {v.rawDeductions.map((d, rowIdx) => (
-              <tr key={d.id} className={stripe(rowIdx)}>
+            {v.rawDeductions.map((d, rowIndex) => (
+              <tr key={d.id} className={stripe(rowIndex)}>
                 <td className="text-secondary py-1 pr-3 pl-4">
                   {d.deductionName}
                 </td>
@@ -310,10 +300,10 @@ export function WhatIfDeductionsEditor({
                 <td />
               </tr>
             ))}
-            {personAdditions.map((a, rowIdx) => (
+            {personAdditions.map((a, rowIndex) => (
               <tr
                 key={a.localId}
-                className={stripe(v.rawDeductions.length + rowIdx)}
+                className={stripe(v.rawDeductions.length + rowIndex)}
               >
                 <td className="py-1 pr-3 pl-4">
                   <input
@@ -383,14 +373,9 @@ export function WhatIfDeductionsEditor({
 }
 
 /**
- * Per-person contribution accounts editor — same pin-editable pattern as
- * salary/deductions: pre-filled with the resolved current value, pinning on
- * change, ↺ to reset. Feeds `sandboxContribActiveFields`, applied server-side
- * via the SAME `applyContribActiveFields` merge a Contribution Profile's own
- * active fields go through — one more layer, not a parallel mechanism. Value is
- * NOT percent/100 converted: `percent_of_salary` stores the raw percent
- * number (5 = 5%), matching how ContributionProfileManager already displays
- * it (`value%`), not a fraction like bonusPercent uses.
+ * Per-person contribution accounts, pin-editable; feeds `sandboxContribActiveFields`
+ * (merged server-side by `applyContribActiveFields`). `percent_of_salary` values
+ * are raw percents (5 = 5%), not fractions.
  */
 export function WhatIfContributionsEditor({
   views,
@@ -409,17 +394,17 @@ export function WhatIfContributionsEditor({
   activeFields: Map<number, string>;
   onEdit: (accountId: number, contributionValue: string) => void;
   onReset: (accountId: number) => void;
-  additions: ContribAddition[];
+  additions: ContributionAddition[];
   onAddAccount: (personId: number) => void;
   onUpdateAddition: (
     localId: number,
-    patch: Partial<Omit<ContribAddition, "localId" | "personId">>,
+    patch: Partial<Omit<ContributionAddition, "localId" | "personId">>,
   ) => void;
   onRemoveAddition: (localId: number) => void;
   /** `settings.contributionAccounts.create` is admin-gated — only admins
    *  see the "Make this real" affordance. */
   canManagePaycheck: boolean;
-  onMakeReal: (addition: ContribAddition) => void;
+  onMakeReal: (addition: ContributionAddition) => void;
   makeRealPendingId: number | null;
 }) {
   if (views.length === 0) return null;
@@ -464,11 +449,11 @@ export function WhatIfContributionsEditor({
               </>
             }
           >
-            {v.rawContribs.map((c, rowIdx) => {
+            {v.rawContribs.map((c, rowIndex) => {
               const isPercent = c.contributionMethod === "percent_of_salary";
               const activeField = activeFields.get(c.id);
               return (
-                <tr key={c.id} className={stripe(rowIdx)}>
+                <tr key={c.id} className={stripe(rowIndex)}>
                   <td className="text-secondary py-1 pr-3 pl-4">
                     {accountDisplayName(
                       { ...c, ownershipType: c.ownership },
@@ -497,12 +482,12 @@ export function WhatIfContributionsEditor({
                 </tr>
               );
             })}
-            {personAdditions.map((a, rowIdx) => {
+            {personAdditions.map((a, rowIndex) => {
               const isPercent = a.contributionMethod === "percent_of_salary";
               return (
                 <tr
                   key={a.localId}
-                  className={stripe(v.rawContribs.length + rowIdx)}
+                  className={stripe(v.rawContribs.length + rowIndex)}
                 >
                   <td className="py-1 pr-3 pl-4">
                     <div className="flex items-center gap-1">

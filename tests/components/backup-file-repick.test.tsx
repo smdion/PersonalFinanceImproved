@@ -52,7 +52,7 @@ beforeEach(() => {
   resetTrpcMock();
   setQuery("version.list", []);
   setQuery("version.getRetention", { retentionCount: 30 });
-  setQuery("settings.firstRunState", { adminNeeded: false });
+  setQuery("settings.getFirstRunState", { adminNeeded: false });
 });
 afterEach(() => vi.unstubAllGlobals());
 

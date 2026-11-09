@@ -141,7 +141,7 @@ describe("projection router — updateClampBounds", () => {
     const { caller: c, db, cleanup } = await createTestCaller();
     try {
       // Seed a custom mc_preset row so the update has a target
-      db.insert(schema.mcPresets)
+      db.insert(schema.simulationPresets)
         .values({
           key: "custom",
           label: "Custom",

@@ -1,6 +1,6 @@
 /**
  * Tiingo router integration tests — key validation before save, encrypted
- * storage, status never leaking the key, and sync-permission enforcement.
+ * storage, status never leaking the key, and admin-only key management.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
@@ -44,7 +44,7 @@ describe("tiingo router", () => {
 
   it("testConnection reports not configured without a stored key", async () => {
     const result = await caller.tiingo.testConnection();
-    expect(result.success).toBe(false);
+    expect(result.ok).toBe(false);
   });
 
   it("does not save a key that Tiingo rejects, and says so", async () => {
@@ -117,7 +117,7 @@ describe("tiingo router", () => {
 
     expect(testApiKey).toHaveBeenLastCalledWith("good-key-123");
     expect(result).toEqual({
-      success: true,
+      ok: true,
       ticker: "SPY",
       historyStart: "1993-01-29",
     });
@@ -128,7 +128,7 @@ describe("tiingo router", () => {
       serviceError("Tiingo", "Tiingo: /meta: x", "bad-response"),
     );
     expect(await caller.tiingo.testConnection()).toEqual({
-      success: false,
+      ok: false,
       error: "Tiingo sent something Ledgr doesn't understand.",
     });
   });
@@ -147,7 +147,7 @@ describe("tiingo router", () => {
     const result = await caller.tiingo.testConnection();
 
     expect(result).toEqual({
-      success: false,
+      ok: false,
       error:
         "The saved Tiingo key can't be decrypted (it was saved with a different ENCRYPTION_KEY) — enter the key again.",
     });
@@ -160,9 +160,9 @@ describe("tiingo router", () => {
     expect((await caller.tiingo.getStatus()).connected).toBe(false);
   });
 
-  describe("syncProcedure enforcement", () => {
-    it("rejects saveKey from a viewer without sync permission", async () => {
-      const session = createViewerSessionWithPermissions(["budget"]);
+  describe("admin-only", () => {
+    it("rejects saveKey from a viewer with sync permission", async () => {
+      const session = createViewerSessionWithPermissions(["sync"]);
       const { caller: viewer, cleanup: done } = await createTestCaller(session);
       try {
         await expect(viewer.tiingo.saveKey({ apiKey: "x" })).rejects.toThrow();
@@ -171,12 +171,13 @@ describe("tiingo router", () => {
       }
     });
 
-    it("allows testConnection for a viewer with sync permission", async () => {
+    it("rejects testConnection from a viewer with sync permission", async () => {
       const session = createViewerSessionWithPermissions(["sync"]);
       const { caller: viewer, cleanup: done } = await createTestCaller(session);
       try {
-        const result = await viewer.tiingo.testConnection();
-        expect(result.success).toBe(false);
+        await expect(viewer.tiingo.testConnection()).rejects.toMatchObject({
+          code: "FORBIDDEN",
+        });
       } finally {
         done();
       }

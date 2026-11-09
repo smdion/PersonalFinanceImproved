@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "@/server/data/people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
-import { accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/account-name";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { getLimitGroup } from "@/lib/config/account-types";
 import { applyContribActiveFields } from "./profile";
@@ -12,12 +12,10 @@ import type {
   JobSalaryRef,
 } from "@/lib/pure/contributions/contribution-rows";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import {
-  pickProfileSettingsRow,
-  resolveRetirementProfileIdFrom,
-} from "@/lib/pure/household/retirement-profile";
+import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
+import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
   type SalaryProfileActiveMap,
@@ -29,16 +27,14 @@ import {
   capEffectiveContribs,
   capForRequest,
   type CapPassHousehold,
+  type CapRequestHousehold,
   type CapPassRow,
   type CappedRowFields,
 } from "@/lib/pure/contributions/cap-pass";
 
 /**
- * The household's cap context for a request: who (birth years), the year's
- * limits, and this year's filing status (lib/pure/tax/filing-status.ts — a W-4
- * status is a withholding choice, only a last stand-in). The paycheck's
- * household tax and Roth IRA view read it from here too, so there is one
- * answer.
+ * The household's cap context for a request: birth years, the year's limits, `asOf`'s
+ * filing status (lib/pure/tax/filing-status.ts) and `asOf`; the one source for caps.
  */
 export async function loadCapHousehold(
   db: Db,
@@ -49,19 +45,15 @@ export async function loadCapHousehold(
   }[],
   /** The year's limits; null = load the tax year's contribution limits. */
   limits: Record<string, number> | null,
-  taxYear: number,
+  asOf: Date,
+  taxYear = asOf.getFullYear(),
   /** The request's Salary Profile (What-If included) for a W-4 stand-in. */
   salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<
-  CapPassHousehold & { filingStatusSource: FilingStatusSource | null }
+  CapRequestHousehold & { filingStatusSource: FilingStatusSource | null }
 > {
-  const [appSettings, retSettings, retProfiles, limitRows] = await Promise.all([
+  const [appSettings, limitRows] = await Promise.all([
     db.select().from(schema.appSettings),
-    db.select().from(schema.retirementSettings),
-    db
-      .select()
-      .from(schema.retirementProfiles)
-      .orderBy(asc(schema.retirementProfiles.id)),
     limits
       ? Promise.resolve([])
       : db
@@ -69,17 +61,17 @@ export async function loadCapHousehold(
           .from(schema.contributionLimits)
           .where(eq(schema.contributionLimits.taxYear, taxYear)),
   ]);
-  const settings = pickProfileSettingsRow(
-    retSettings,
-    resolveRetirementProfileIdFrom(appSettings, retProfiles),
+  const settings = await loadActiveRetirementSettings(
+    db,
+    appSettings,
     getPrimaryPerson([...people])?.id ?? null,
   );
-  // This year's return (server/services/tax/filing-status.ts); unknown —
-  // married rules off, never assumed.
+  // This year's return; unknown: married rules off, never assumed.
   const thisYear = await thisYearFilingStatus(db, {
     appSettings,
     profileStatus: settings?.filingStatus,
     people,
+    asOf,
     salaryProfileActiveMap,
   });
   return {
@@ -93,6 +85,7 @@ export async function loadCapHousehold(
     filingStatus: thisYear.status ?? "",
     filingStatusSource: thisYear.source,
     taxYear,
+    asOf,
   };
 }
 
@@ -143,18 +136,15 @@ async function activeContribProfileId(db: Db): Promise<number> {
 }
 
 /**
- * What a save leaves over its IRS limit, one line per touched row: before
- * and after go through the same cap pass on this year's limits and pay,
- * at the ages of the year asked for (this year unless a switch is judged
- * later), and a row counts when a person's limit group it touches ends up
- * further over than it was (so lowering an over-limit row always saves,
- * and an unrelated edit leaves the row showing its error). Each line
- * carries the most the row can be. Loads once; the judge runs per year.
+ * Per touched row, what a save leaves over its IRS limit: before and after run the same
+ * cap pass, and a row counts only when its limit group ends further over than before.
+ * Each line carries the row's maximum. Loads once; the judge runs per year.
  */
 async function irsLimitJudge(
   db: Db,
   check: ContribSaveCheck,
   judgedProfileId: number,
+  asOf: Date,
 ): Promise<(agesAsOf: number) => string[]> {
   const [allContribs, allJobs, people, salaryMap] = await Promise.all([
     db.select().from(schema.contributionAccounts),
@@ -170,18 +160,16 @@ async function irsLimitJudge(
           .from(schema.contributionProfiles)
           .where(eq(schema.contributionProfiles.id, judgedProfileId))
       : [];
-    profileFields =
-      (
-        judged?.contributionActiveFields as
-          { contributionAccounts?: AccountFields } | undefined
-      )?.contributionAccounts ?? {};
+    profileFields = judged
+      ? readContributionActiveFields(judged.contributionActiveFields, judged.id)
+          .contributionAccounts
+      : {};
   }
-  const taxYear = new Date().getFullYear();
-  const household = await loadCapHousehold(db, people, null, taxYear);
+  const household = await loadCapHousehold(db, people, null, asOf);
   if (Object.keys(household.limits).length === 0)
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `The ${taxYear} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
+      message: `The ${asOf.getFullYear()} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
     });
   const jobs = mergeSalaryProfileJobFields(allJobs, salaryMap);
   const nameOf = new Map(people.map((p) => [p.id, p.name]));
@@ -234,43 +222,36 @@ async function irsLimitJudge(
 }
 
 /**
- * Refuse a save that makes a contribution over its IRS limit, or more over
- * it — the household's rule: over the limit is an error to fix, never
- * modelled (irsLimitJudge). Only the active Contribution Profile is
- * refused; one used as a future switch gets a warning instead
- * (switchProfileLimitWarning).
+ * Refuse a save that leaves a contribution (further) over its IRS limit, for the active
+ * Contribution Profile only; a switch profile gets switchProfileLimitWarning instead.
  */
 export async function assertWithinIrsLimits(
   db: Db,
   check: ContribSaveCheck,
+  asOf: Date,
 ): Promise<void> {
   if (check.touched.length === 0) return;
   const activeId = await activeContribProfileId(db);
   if (check.profileId !== null && check.profileId !== activeId) return;
-  const problems = (await irsLimitJudge(db, check, activeId))(
-    new Date().getFullYear(),
-  );
+  const judge = await irsLimitJudge(db, check, activeId, asOf);
+  const problems = judge(asOf.getFullYear());
   if (problems.length > 0)
     throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
 }
 
 /**
- * A save to a Contribution Profile that isn't active but is a switch in
- * the Retirement settings ("Changes by year"): what it leaves over the IRS
- * limits in the years it's in effect, as a warning — it still saves. Each
- * year is judged at that year's ages on today's limits and pay, as the
- * projection caps it (buildProfileSwitches). A switch is in effect from its
- * year until the next Contribution Profile switch, through the last
- * working year. Null when the profile is active, not used as a switch, or
- * within the limits every year.
+ * Warning (the save still goes through) for a non-active profile used as a "Changes by
+ * year" switch: what it leaves over IRS limits in each year it's in effect, at that year's
+ * ages. Null when active, unused as a switch, or within limits every year.
  */
 export async function switchProfileLimitWarning(
   db: Db,
   check: ContribSaveCheck & { profileId: number },
+  asOf: Date,
 ): Promise<string | null> {
   if (check.touched.length === 0) return null;
   if (check.profileId === (await activeContribProfileId(db))) return null;
-  const thisYear = new Date().getFullYear();
+  const thisYear = asOf.getFullYear();
   const [switchRows, profiles, retirementYear] = await Promise.all([
     db
       .select({
@@ -281,7 +262,7 @@ export async function switchProfileLimitWarning(
     db
       .select({ id: schema.contributionProfiles.id })
       .from(schema.contributionProfiles),
-    householdRetirementYear(db),
+    householdRetirementYear(db, asOf),
   ]);
   const lastWorkingYear =
     retirementYear !== null ? retirementYear - 1 : thisYear;
@@ -304,7 +285,7 @@ export async function switchProfileLimitWarning(
       years.add(y);
   }
   if (years.size === 0) return null;
-  const judge = await irsLimitJudge(db, check, check.profileId);
+  const judge = await irsLimitJudge(db, check, check.profileId, asOf);
   const over = [...years]
     .sort((a, b) => a - b)
     .map((y) => ({ year: y, problems: judge(y) }))
@@ -324,8 +305,7 @@ export async function switchProfileLimitWarning(
   return `Over the IRS limits in ${when} at those years' ages (judged on today's limits and pay) — the projection cuts it to the limit then. ${first.year}: ${first.problems.join(" ")}`;
 }
 
-/** A ContribSaveCheck for helpers that can't import this module (it
- *  imports theirs) — they take it as a required argument. */
+/** The save check for helpers this module imports (they can't import it). */
 export type ContribSaveChecker = (
   db: Db,
   check: ContribSaveCheck,

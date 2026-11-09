@@ -10,33 +10,15 @@ export type BreakdownAccount = {
 };
 
 /**
- * Resolve which physical account (from one category's breakdown) a
- * contribution spec maps to, via a 6-tier precedence cascade — tightest
- * match first, loosening one facet at a time:
- *
- *   1. owner name + tax type + account type + parent category
- *   2. no owner        + tax type + account type + parent category
- *   3. owner name + tax type +              parent category   (drop account type)
- *   4. no owner        + tax type +              parent category
- *   5. owner name +                           parent category  (drop tax type)
- *   6. owner name OR no owner                                  (loosest)
- *
- * "No owner" (`ownerName === undefined`) means a joint/household account,
- * which any of that household's contributions may land in. A parent-category
- * criterion of `undefined` on the spec, or `undefined` on the account row,
- * is treated as "matches anything" (see `parentCatMatches`).
- *
- * Split out of `buildProfileContribData`'s inline `.map()` so the
- * cascade has a name, a doc, and isolated test coverage in a file that
- * was the site of an employer-match grouping bug; `tests/server/
- * match-account-for-contribution.test.ts` pins each tier.
+ * The account a contribution maps to, tightest match first: owner/joint + tax + type + parent;
+ * then owner/joint + tax + parent; owner + parent; any. No owner = joint, open to any member;
+ * an `undefined` parent category matches anything.
  */
 export function matchAccountForContribution(
-  catAccts: BreakdownAccount[],
+  catAccounts: BreakdownAccount[],
   criteria: {
-    // null and undefined behave identically here — both mean "no such
-    // constraint" for parentCat, and neither will `===` a real taxType /
-    // owner string (matching the pre-extraction inline behavior).
+    // null and undefined behave identically: "no constraint" for parentCat,
+    // and neither `===` a real taxType / owner string.
     contribOwner: string | null | undefined;
     matchTaxType: string | null | undefined;
     accountType: string | null | undefined;
@@ -55,30 +37,30 @@ export function matchAccountForContribution(
   };
 
   return (
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         exactOwner(a) &&
         a.taxType === matchTaxType &&
         a.accountType === accountType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         a.ownerName === undefined &&
         a.taxType === matchTaxType &&
         a.accountType === accountType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) => exactOwner(a) && a.taxType === matchTaxType && parentCatMatches(a),
     ) ??
-    catAccts.find(
+    catAccounts.find(
       (a) =>
         a.ownerName === undefined &&
         a.taxType === matchTaxType &&
         parentCatMatches(a),
     ) ??
-    catAccts.find((a) => exactOwner(a) && parentCatMatches(a)) ??
-    catAccts.find((a) => ownerMatch(a))
+    catAccounts.find((a) => exactOwner(a) && parentCatMatches(a)) ??
+    catAccounts.find((a) => ownerMatch(a))
   );
 }

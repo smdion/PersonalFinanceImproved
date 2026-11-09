@@ -16,13 +16,15 @@ import {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
+import { readCachedMonthBalances } from "@/lib/budget-api/cached-month";
 import { applyPullMapping } from "@/server/services/sync/apply-pull-mapping";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
 import { nothingChanged, userMessageFor } from "@/lib/budget-api/errors";
 import { toDecimalColumn } from "@/lib/utils/math";
+import { writeStamp } from "@/lib/utils/clock";
 
 export async function syncAll(
-  ctx: { db: Db },
+  ctx: { db: Db; scope: { asOf: Date } },
   input: { service: BudgetApiService },
 ) {
   const client = await getClientForService(ctx.db, input.service);
@@ -49,7 +51,7 @@ export async function syncAll(
     // If anything here throws, no local state changes.
     const [accounts, categories] = await Promise.all([
       client.getAccounts(),
-      client.getCategories(),
+      client.getCategories(ctx.scope.asOf),
     ]);
 
     const now = new Date(); // after the fetch
@@ -70,20 +72,15 @@ export async function syncAll(
     const { getApiAccountBalanceMapFromAccounts } =
       await import("@/server/services/sync/api-balance-resolution");
     const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
-    const currentYear = new Date().getFullYear(); // after the fetch
 
     // ── Drift detection ──
-    // Diff cached account list against new fetch. Surfaces broken
-    // mappings (deleted remote accounts), renames, and newly-added
-    // remote accounts. Result is attached to the sync response so
-    // the UI can render actionable callouts.
+    // Diff the cached account list against the new fetch (broken mappings,
+    // renames, new remote accounts) for the UI's callouts.
     const driftReport = detectDrift(cachedAccountsBefore, accounts, mappings);
 
     // ── Phase 2: Single-transaction commit ──
-    // Cache writes + lastSyncedAt + asset-pull loop share one
-    // transaction. If ANY asset write fails (unmapped type, DB
-    // constraint, missing row), the entire sync rolls back and the
-    // sync returns failure to the user.
+    // Cache writes, lastSyncedAt and the asset-pull loop share one transaction:
+    // any asset write failure rolls back the whole sync and reports failure.
     const assetsPulled = await ctx.db.transaction(async (tx) => {
       await cacheSet(tx, service, "accounts", accounts);
       await cacheSet(tx, service, "categories", categories);
@@ -92,7 +89,7 @@ export async function syncAll(
 
       await tx
         .update(schema.apiConnections)
-        .set({ lastSyncedAt: new Date() })
+        .set({ lastSyncedAt: writeStamp() })
         .where(eq(schema.apiConnections.service, service));
 
       // ── Record savings_monthly from budget category balances ─────────
@@ -153,10 +150,8 @@ export async function syncAll(
             });
         }
 
-        // Step 2: backfill prior months from cached month detail entries.
-        // Old months/YYYY-MM-01 entries accumulate in budget_api_cache from
-        // past syncs. We harvest them once into savings_monthly, then prune
-        // them in step 3. Only writes rows that don't already exist.
+        // Step 2: harvest prior months' cached month details into savings_monthly
+        // (only rows that don't exist yet); step 3 prunes them.
         const priorMonthCaches = await tx
           .select({
             cacheKey: schema.budgetApiCache.cacheKey,
@@ -175,19 +170,13 @@ export async function syncAll(
         for (const entry of priorMonthCaches) {
           // Cache key is "months/YYYY-MM-01" — extract the date portion.
           const monthDate = entry.cacheKey.replace("months/", "");
-          const detail = entry.data as {
-            categories?: { id: string; balance: number }[];
-          };
-          const priorCatMap = new Map<string, number>(
-            (detail.categories ?? [])
-              // A cached month from any version is cast, not parsed.
-              .filter((c) => c.id != null)
-              .map((c) => [c.id, c.balance]),
+          const priorCatMap = readCachedMonthBalances(
+            entry.cacheKey,
+            entry.data,
           );
           for (const goal of linkedGoals) {
             const balance = priorCatMap.get(goal.apiCategoryId!);
-            // An old cached month may hold no number where a figure was missing.
-            if (typeof balance !== "number") continue;
+            if (balance === undefined) continue;
             // Insert only — never overwrite an existing month's recorded balance.
             await tx
               .insert(schema.savingsMonthly)
@@ -204,10 +193,9 @@ export async function syncAll(
           }
         }
 
-        // Step 3: prune prior months/YYYY-MM-01 cache entries now that the
-        // data lives in savings_monthly. Current month is preserved — other
-        // code paths (budget actuals, getPreview) read it. Note: intentional
-        // policy — callers must not assume prior-month cache entries exist.
+        // Step 3: prune prior months' cache entries (now in savings_monthly); the
+        // current month stays for budget actuals and getPreview. Callers must not
+        // assume prior-month entries exist.
         if (harvested) {
           await tx
             .delete(schema.budgetApiCache)
@@ -232,7 +220,7 @@ export async function syncAll(
           mapping,
           apiBalance,
           service,
-          currentYear,
+          pulledAt: now,
         });
         if (result.applied) pulled++;
       }

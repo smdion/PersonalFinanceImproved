@@ -51,13 +51,9 @@ export function carPaymentShare(
 }
 
 /**
- * The salary a person's student loans are judged against: the first year
- * of pay at or after the earliest loan's year that's a full year, within
- * STUDENT_LOAN_RULE.maxYearsAfterLoan. A year is full when some job ran
- * through its January and some job through its December — a first job
- * starting after January makes that year partial (the next counts); a
- * second job taken mid-year, or one job following another, doesn't. Null
- * when there's none.
+ * Salary student loans are judged against: the first full year of pay (some job ran through its
+ * January and some through its December) at or after the earliest loan's year, within
+ * STUDENT_LOAN_RULE.maxYearsAfterLoan. Null when there's none.
  */
 export function firstFullSalary(
   salaries: readonly { year: number; salary: number }[],

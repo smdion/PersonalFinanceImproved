@@ -14,7 +14,7 @@ import { useProjectionQueries } from "./use-projection-queries";
 import { useProjectionDerived } from "./use-projection-derived";
 
 /** Contribution rate schedule entry derived from engine results, for relocation analysis. */
-export type EngineContribRate = { year: number; rate: number };
+export type EngineContributionRate = { year: number; rate: number };
 
 /** Per-category account breakdown with display names (for balance tooltips). */
 export type AccountBreakdown = {
@@ -29,7 +29,7 @@ export type AccountBreakdown = {
 
 export type UseProjectionStateProps = {
   people?: { id: number; name: string; birthYear: number }[];
-  onContributionRates?: (rates: EngineContribRate[]) => void;
+  onContributionRates?: (rates: EngineContributionRate[]) => void;
   withdrawalRate: number;
   accumulationBudgetProfileId?: number;
   accumulationBudgetColumn?: number;
@@ -106,12 +106,12 @@ export function useProjectionState(props: UseProjectionStateProps) {
     if (isNaN(year)) return;
 
     // Determine if this year is post-retirement (DRAW phase)
-    const retAge = derived.engineSettings?.retirementAge;
+    const retirementAge = derived.engineSettings?.retirementAge;
     const currentAge = derived.result?.projectionByYear[0]?.age;
     const baseYear = new Date().getFullYear();
     const retYear =
-      retAge != null && currentAge != null
-        ? baseYear + (retAge - currentAge)
+      retirementAge != null && currentAge != null
+        ? baseYear + (retirementAge - currentAge)
         : null;
     const isDrawPhase = retYear != null && year >= retYear;
 

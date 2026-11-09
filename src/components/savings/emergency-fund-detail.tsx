@@ -34,7 +34,7 @@ export function EmergencyFundDetail({
   onTargetMonthsChange,
   reimbursements,
   monthlyAllocation,
-  poolPct,
+  poolPercent,
   isApiSyncEnabled,
 }: {
   efund: EfundData;
@@ -44,7 +44,7 @@ export function EmergencyFundDetail({
   onTargetMonthsChange?: (months: number) => void;
   reimbursements?: ReimbursementData | null;
   monthlyAllocation?: number;
-  poolPct?: string;
+  poolPercent?: string;
   isApiSyncEnabled?: boolean;
 }) {
   const [showReimbursements, setShowReimbursements] = useState(false);
@@ -96,17 +96,7 @@ export function EmergencyFundDetail({
             Still Needed
             <HelpTip text="How much more you need to save to reach your target months of coverage, after subtracting outstanding self-loan repayment from the target. Pending reimbursements are shown separately below for reference." />
           </p>
-          {(() => {
-            const stillNeeded = efund.neededAfterRepay;
-            const funded = stillNeeded <= 0.005;
-            return (
-              <p
-                className={`text-lg font-semibold ${funded ? "text-green-600" : "text-red-600"}`}
-              >
-                {funded ? "Fully funded" : formatCurrency(stillNeeded)}
-              </p>
-            );
-          })()}
+          {renderStillNeeded(efund)}
         </div>
       </div>
 
@@ -139,7 +129,9 @@ export function EmergencyFundDetail({
           <span className="font-bold text-green-600 tabular-nums">
             {formatCurrency(monthlyAllocation)}/mo
           </span>
-          {poolPct && <span className="text-faint">({poolPct}% of pool)</span>}
+          {poolPercent && (
+            <span className="text-faint">({poolPercent}% of pool)</span>
+          )}
           {isApiSyncEnabled && (
             <span
               className="text-caption text-blue-600/70"
@@ -211,5 +203,18 @@ export function EmergencyFundDetail({
         </div>
       )}
     </Card>
+  );
+}
+
+/** What the emergency fund still needs, or that it's fully funded. */
+function renderStillNeeded(efund: EfundData) {
+  const stillNeeded = efund.neededAfterRepay;
+  const funded = stillNeeded <= 0.005;
+  return (
+    <p
+      className={`text-lg font-semibold ${funded ? "text-green-600" : "text-red-600"}`}
+    >
+      {funded ? "Fully funded" : formatCurrency(stillNeeded)}
+    </p>
   );
 }

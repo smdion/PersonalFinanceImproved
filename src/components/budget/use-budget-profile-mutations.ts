@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * Profile-level mutations for the budget page.
- *
- * Covers: set-active, create, delete, rename. All simple-invalidate
- * mutations (onSuccess → invalidate queries). setActiveProfile busts
- * both listProfiles + computeActiveSummary because the active-profile
- * flip ripples through the summary query.
+ * Budget profile mutations: each invalidates listProfiles on success;
+ * set-active also busts computeActiveSummary.
  */
 
 import { trpc } from "@/lib/trpc";
