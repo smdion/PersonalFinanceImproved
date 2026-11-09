@@ -5,11 +5,8 @@ import { inlineEditorCommits, useInlineEditorState } from "./use-inline-editor";
 import { AccountFieldHeaders } from "./account-fields";
 
 /**
- * Same fields as ProfileDetailPanel, rendered as inputs. There is no Save
- * button: each field commits on blur (checkboxes on change, since they have
- * no natural blur moment), sending only that field's patch — the same
- * commit-on-blur model as SavingsAllocationTable. Draft strings exist purely
- * so typing a multi-digit number doesn't fire a mutation per keystroke.
+ * ProfileDetailPanel's fields as inputs, no Save: each field commits its own patch on blur
+ * (checkboxes on change). Drafts keep multi-digit typing from firing a mutation per keystroke.
  */
 export function ProfileInlineEditor({
   profileId,
@@ -112,10 +109,8 @@ export function ProfileInlineEditor({
         </div>
       )}
 
-      {/* Deductions — no base value on the row any more (Stage B): each
-          deduction is either given an amountPerPeriod by this profile, or
-          it has none at all (same "not set" state as an unset contribution
-          value, no live fallback). */}
+      {/* Deductions: an amountPerPeriod comes only from this profile; absent
+          means "not set", with no live fallback. */}
       <InlineDeductions
         setAddingDeduction={setAddingDeduction}
         addingDeduction={addingDeduction}

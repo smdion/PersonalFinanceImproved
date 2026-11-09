@@ -1,13 +1,7 @@
 /**
- * At most one active contribution per (person, accountType) group holds
- * real employer match config (computeGroupedEmployerMatch enforces this) —
- * its match applies to the whole group, combining every active split's
- * contribution before capping. A sibling split with no config of its own
- * still earns a real, proportional share of that match — this groups
- * `accountDetails` so callers can say so instead of showing nothing.
- * Shared by the read-only summary table and the editable account table
- * (both render the same profile's accounts, previously duplicated this
- * grouping independently).
+ * Groups `accountDetails` by (person, accountType): one active split holds the employer match
+ * config and it applies to the group's combined contributions, so siblings without config
+ * still earn a proportional share. Shared by the summary and editable account tables.
  */
 export function groupSharedMatchAccounts<
   T extends {

@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Benchmarks' opening card — the same shape as Milestones' "Where you
- * stand" and Recommendations' "What to do": how your returns compare, and
- * the investing milestones (cost, mix, funds) with their status. Each
- * links to its milestone; what to do about one lives on Recommendations.
+ * Benchmarks' opening card: how your returns compare, and the investing milestones (cost,
+ * mix, funds) with status, each linking to its milestone. Actions live on Recommendations.
  */
 import Link from "next/link";
 import { Card } from "@/components/ui/card";

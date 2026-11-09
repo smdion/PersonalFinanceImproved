@@ -9,10 +9,9 @@ import { ACCOUNT_FIELDS } from "./account-fields";
 import { DETAIL_CELLS } from "./detail-cells";
 
 export function renderDetailAccountRows(profile: ProfileDetail) {
-  // A Roth/Traditional split of one account shares one match,
-  // entered on one row and applied to their combined
-  // contributions: every row in the group shows the same match
-  // text (when exactly one row holds the match; else per row).
+  // A Roth/Traditional split shares one match, entered on one row and applied
+  // to the combined contributions: every row in the group shows the same match
+  // text when exactly one row holds it (else per row).
   const { sharedMatchSource, combinedGroupIds } = groupSharedMatchAccounts(
     profile.accountDetails,
   );

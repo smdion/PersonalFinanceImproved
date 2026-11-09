@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Actual vs the plan, under the balance it measures: where the plan
- * expected the money by now, from the last finalized year (a starting point
- * the projection can't move). Only while the plan's first year follows that
- * finalized year and it's still saving — otherwise the two don't line up.
+ * Actual vs where the plan expected the money by now, from the last finalized year. Shown
+ * only while the plan's first year follows that year and it's still saving.
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";

@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * How the retirement projection treats this loan. The budget line that pays
- * it stops the year after payoff, once the household has said which line
- * that is; names don't say, so it's never guessed. A retirement budget typed
- * in as a figure has no lines, so it's left as entered.
+ * How the retirement projection treats this loan: its paying budget line stops the year after
+ * payoff once the household names that line (never guessed); a figure-only budget is as entered.
  */
 import { trpc } from "@/lib/trpc";
 

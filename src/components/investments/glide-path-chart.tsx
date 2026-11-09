@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The target mix by age — the glide path the Benchmarks targets come from —
- * stacked by asset class, with Vanguard Target Retirement's stock share
- * (shifted to the household's retirement age) as a dashed line on top of
- * the stock bands, and markers at today and at retirement.
+ * The target mix by age, stacked by asset class, with Vanguard Target Retirement's stock share
+ * (shifted to the retirement age) dashed on top and markers at today and at retirement.
  */
 import {
   Area,

@@ -6,11 +6,8 @@ type FormFieldProps = {
   label: string;
   /** Optional help text below the input. */
   help?: string;
-  /** Optional inline HelpTip icon immediately after the label — the
-   *  "label + inline HelpTip" convention used everywhere outside
-   *  components/forms/ (retirement/sections/, dashboard cards, etc.),
-   *  distinct from `help` (static text below the input). Purely additive
-   *  to the label span; does not touch the aria-wiring below. */
+  /** Optional inline HelpTip icon right after the label, distinct from `help`
+   *  (static text below the input). Doesn't affect the aria wiring. */
   tooltip?: string;
   /** Error message — renders in red below the input. */
   error?: string | null;
@@ -21,16 +18,8 @@ type FormFieldProps = {
 };
 
 /**
- * Form field wrapper: label + input + optional help text + optional error.
- *
- * Standardizes the label → input → error layout used across settings pages.
- * Automatically injects `aria-invalid` and `aria-describedby` on the child
- * input element when an error is present.
- *
- * @example
- * <FormField label="Name" error={errors.name}>
- *   <FormInput value={name} onChange={setName} />
- * </FormField>
+ * Form field wrapper: label + input + optional help text + optional error. Injects
+ * `aria-invalid` and `aria-describedby` on the child input when an error is present.
  */
 export function FormField({
   label,

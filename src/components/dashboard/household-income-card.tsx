@@ -40,14 +40,9 @@ function HouseholdIncomeCardImpl() {
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/pure/paycheck/paycheck.types").BlendedAnnualTotals
       | undefined;
-  // Every view uses the resolved bonus — the set (actual) bonus if there
-  // is one, else the formula — the same bonus the taxes below are figured
-  // on, so gross, net and tax reconcile. When a set bonus differs from the
-  // formula, the formula figure is shown beside it. YTD additionally
-  // distinguishes whether it's actually been paid yet
-  // (job.bonusMonth/bonusDayOfMonth has passed) vs. still pending, and only
-  // counts paid bonuses toward the YTD total so that total stays "money
-  // actually received."
+  // Every view uses the resolved bonus (set bonus, else the formula), the one the taxes
+  // use, so gross, net and tax reconcile. YTD counts only bonuses already paid
+  // (bonusMonth/bonusDayOfMonth passed) so it stays money actually received.
   const bonusEstimateFor = (d: (typeof people)[0]) => d.paycheck!.bonusEstimate;
   /** The formula bonus, when a set bonus is in use and differs from it. */
   const formulaBonusIfDifferent = (d: (typeof people)[0]) => {

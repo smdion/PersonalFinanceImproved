@@ -117,12 +117,9 @@ function SavingsGoalsCardImpl() {
       .filter((t: { amount: number }) => t.amount < 0)
       .reduce((s: number, t: { amount: number }) => s + Math.abs(t.amount), 0);
 
-    // If there are planned expenses, project month-by-month via the shared
-    // walk (applies to both fixed and ongoing) instead of a hand-rolled
-    // simulation — this also means recurring planned transactions are now
-    // correctly expanded here (previously only their base occurrence was
-    // considered), and API-linked goals get the same "don't double-count
-    // this month's contribution" guard the Savings page already applies.
+    // With planned expenses, project month-by-month via the shared walk: it expands
+    // recurring planned transactions and applies the Savings page's guard against
+    // double-counting this month's contribution for API-linked goals.
     if (totalPlannedExpenses > 0) {
       const lastTx = goalTxs[goalTxs.length - 1] as
         { transactionDate: string; amount: number } | undefined;

@@ -32,7 +32,7 @@ export function AssetsLiabilitiesCards({
   byTaxType: Map<string, number>;
   cash: number;
   cashSource: BudgetApiService | "manual";
-  /** Mapped cash accounts the budget app no longer lists. */
+  /** Mapped cash accounts missing from the budget app's account list. */
   cashMissingAccounts?: number;
   displayHomeValue: number;
   otherAssets: number;

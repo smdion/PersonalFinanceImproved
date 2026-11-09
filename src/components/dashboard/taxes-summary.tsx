@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * Household taxes for the selected view — two lines on the Household
- * Income card (the gap between gross and net pay); the breakdown and notes
- * are on the Taxes page. Projected / year-end use the
- * household-level tax (one standard deduction, SS capped per person); Actual
- * YTD uses paycheck withholding so far.
+ * Household taxes for the selected view, on the Household Income card. Projected / year-end
+ * use the household-level tax (one standard deduction, SS capped per person); Actual YTD
+ * uses paycheck withholding so far.
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

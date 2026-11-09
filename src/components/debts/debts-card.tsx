@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * Liabilities ▸ Other debts: every debt besides the mortgage — student and
- * car loans, cards carried month to month, personal and medical debt —
- * with its rate, monthly payment and payoff estimate; paid-off debts kept
- * below as history. Balances are as entered (with the date they're as of),
- * never moved forward on their own. The typed "other debts, not itemized"
- * figure and mapped credit cards are shown alongside (server/services/
- * debts/other-liabilities.ts sums all three).
+ * Liabilities ▸ Other debts: every non-mortgage debt with rate, payment and payoff estimate,
+ * paid-off debts below. Balances are as entered, never moved forward; the unitemized figure
+ * and mapped credit cards show alongside (summed in server/services/debts/other-liabilities.ts).
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";

@@ -46,10 +46,8 @@ const VIEW_MODES = [
 ] as const;
 
 /**
- * The header: one "Profiles" button (plus the Plan in use, when the active
- * profiles match one; the active profile of each kind in its tooltip) that
- * opens a panel to change them (each picker changes the active profile for the whole household;
- * applying a Plan changes all four), plus the view mode, which changes
+ * The header: a "Profiles" button (plus the matching Plan, if any) opening a panel that changes
+ * the household's active profiles (a Plan changes all four), plus the view mode, which changes
  * every page's numbers and so stays one click away.
  */
 export function ScenarioBar() {
@@ -119,10 +117,8 @@ export function ScenarioBar() {
   const [, setActiveSalaryId] = useActiveSalaryProfile();
   const [, setActiveRetirementId] = useActiveRetirementProfile();
 
-  // Every query that resolves "the active budget profile" server-side takes
-  // no budget-profile id as an argument, so React Query can't know those
-  // results are stale after a swap here — same invalidation set the
-  // profile managers use.
+  // Queries resolving the active budget profile server-side don't take its id,
+  // so React Query can't see a swap; invalidate the profile managers' set.
   const activateBudget = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => {
       utils.budget.invalidate();

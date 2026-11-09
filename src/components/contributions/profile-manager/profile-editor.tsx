@@ -10,10 +10,8 @@ import {
 import { useNewProfileSave } from "./use-new-profile-save";
 
 /**
- * Create-new form. The one place a batched Save survives: a profile row has
- * to exist before per-field edits have anywhere to write. Once created, the
- * profile is edited in place by ProfileInlineEditor (padlock-gated,
- * commit-on-blur) — there is no Save/Cancel/Reset for an existing profile.
+ * Create-new form, the only batched Save: a profile row must exist before
+ * per-field edits can write. Existing profiles use ProfileInlineEditor.
  */
 export function ProfileEditor({
   onCancel,
@@ -96,12 +94,8 @@ export function ProfileEditor({
           deductionValues={deductionValues}
           setDeductionValues={setDeductionValues}
         />
-        {/* The old "Employer & Bonus Handling" jobs active-fields section
-            was removed in the Stage B migration — that bucket
-            (contributionActiveFields.jobs) is retired entirely. Whether a
-            contribution is taken from bonus checks is each account's own
-            `fromBonus` (the row's checkbox above); employerName has no
-            profile-override mechanism at all any more. */}
+        {/* Bonus-check contributions are each account's own `fromBonus`
+            (the row checkbox above); employerName has no profile override. */}
       </div>
     </div>
   );

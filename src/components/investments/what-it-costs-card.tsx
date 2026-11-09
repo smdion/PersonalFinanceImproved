@@ -10,12 +10,9 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 
 /**
- * What investing costs, as two kinds that are never mixed: fund costs
- * (expense ratios, inside the funds' prices — a rate on today's balance)
- * and account fees (charged to the accounts — actual amounts recorded in
- * Performance). The headline adds a year of each. Fund costs also show
- * compounded: the growth today's balance gives up over 10–30 years at the
- * current mix's expected return.
+ * Investing costs, never mixed: fund costs (expense ratios, a rate on today's balance) and
+ * account fees (actual amounts from Performance); the headline adds a year of each. Fund costs
+ * also show compounded: growth given up over 10–30 years at the mix's expected return.
  */
 export function WhatItCostsCard({
   cost,

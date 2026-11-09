@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The household's high-income line, beside the employer-match switch it
- * drives: at or above it the match is left out of the savings rate by
- * default. Admins set it here; cleared, it goes back to the default by
- * filing status (lib/pure/paycheck/high-income-line.ts).
+ * Admin edit of the household's high-income line, at or above which the employer match is
+ * left out of the savings rate by default. Cleared, it uses the filing-status default.
  */
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";

@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * Under an HSA account in "What you hold now": its uninvested cash and the
- * cash buffer the HSA-cash recommendation keeps — the household setting
- * (admins edit it here), else the year's HDHP minimum deductible for the
- * owner's coverage.
+ * An HSA's uninvested cash and the buffer the HSA-cash recommendation keeps: the household
+ * setting (admins edit it here), else the year's HDHP minimum deductible for the coverage.
  */
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";

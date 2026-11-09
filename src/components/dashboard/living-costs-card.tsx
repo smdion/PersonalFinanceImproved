@@ -152,10 +152,8 @@ function LivingCostsCardImpl() {
     trpc.contribution.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
-  // Savings goal buckets (e-fund, house, vacation, etc.) — a distinct
-  // destination from Retirement/Portfolio contribution accounts above,
-  // doesn't take a Salary/Contribution Profile input (savings goals aren't
-  // profile-scoped the way contribution accounts are).
+  // Savings goal buckets: a destination distinct from contribution accounts and
+  // not profile-scoped, so no Salary/Contribution Profile input.
   const { data: savingsData, isLoading: isSavingsLoading } =
     trpc.savings.computeSummary.useQuery();
   const { data: extraPaycheckJobs, isLoading: isExtraPaycheckLoading } =
@@ -173,25 +171,9 @@ function LivingCostsCardImpl() {
 
   const budget = budgetData?.result;
 
-  // Always the full-year projected figure, regardless of the Paycheck
-  // page's Current Salary / Year-End Estimate / Actual YTD toggle. This
-  // card's whole premise is a % of income breakdown, and only income
-  // (netIncome/grossIncome) is capable of being scoped to "so far this
-  // year" (periodsElapsedYtd) — every other number on this card (budget
-  // spending, savings, retirement, portfolio, extra-paycheck routing) is
-  // this app's ANNUALIZED RATE for that thing (a monthly budget × 12, a
-  // contribution %, a goal's steady-state allocation), never a real
-  // posted-transaction YTD total. Scoping only the denominator to YTD while
-  // every numerator stays full-year is what produced percentages well over
-  // 100% in YTD mode — not a bug in any one number, but a structural
-  // mismatch between what this card can and can't actually measure. Genuine
-  // YTD support would need real per-category/contribution/goal actuals
-  // this app doesn't track uniformly; until then, this card intentionally
-  // always shows the full-year view (see the note rendered near the toggle
-  // below).
-  // Household annual income — salary + the resolved bonus, the same
-  // figure the Income card and the taxes use (the contribution totals
-  // below already include bonus-check contributions).
+  // Always full-year, whatever the Paycheck toggle: every figure but income is an annualized
+  // rate, so a YTD income base would skew the percentages. Household income = salary +
+  // resolved bonus, as on the Income card and in the taxes.
   const householdIncome = paycheckData?.householdIncome ?? null;
   const netIncome = householdIncome
     ? householdIncome.netRegular + householdIncome.netBonus
@@ -232,15 +214,9 @@ function LivingCostsCardImpl() {
     }
   }
 
-  // A budget item linked to a contribution account (rawItems[].
-  // contributionAccountId) resolves its dollar amount FROM that account —
-  // resolveLinkedBudgetItemAmounts, same mechanism the Budget page itself
-  // uses. That dollar figure is already counted once in the Portfolio/
-  // Retirement rows below (drawn straight from contribution.computeSummary)
-  // — leaving it in categoryTotals too would double-count it as BOTH budget
-  // spending and a contribution. Net it out here, at the source, so every
-  // downstream total (Ramsey rows, Unallocated) only ever sees each dollar
-  // once.
+  // A budget item linked to a contribution account takes its amount from that
+  // account, which the Portfolio/Retirement rows already count; net it out of
+  // categoryTotals here so every downstream total sees each dollar once.
   const linkedItems = budgetData.rawItems.filter(
     (i) => i.contributionAccountId != null,
   );
@@ -306,36 +282,12 @@ function LivingCostsCardImpl() {
     (r) => r.status === "on-target" || r.status === "below",
   ).length;
 
-  // Append taxes/retirement/portfolio/savings/other-budget-spending/
-  // unallocated to the SAME list the budget categories render in, in BOTH
-  // modes — budget categories alone never sum anywhere near 100% of either
-  // income base. No target range on these — Ramsey's ranges don't cover
-  // taxes/savings/debt.
-  //
-  // The two modes show genuinely different numbers, not just a rescaled
-  // percentage — and the axis that matters is isPayrollDeducted, NOT tax
-  // treatment. A Roth 401k is post-tax but still deducted from the
-  // paycheck before net pay is computed, exactly like a Traditional 401k —
-  // neither ever reaches net take-home pay. Only non-payroll contributions
-  // (IRA, manually-funded brokerage/HSA) are genuinely money that WAS net
-  // income before you moved it — see nonPayrollContrib/payrollDeductedContrib
-  // on AccountTypeSnapshot (services/contributions/summary.ts), which resolve
-  // this the same way the paycheck summary's calculator input does. Net
-  // mode counts only the non-payroll portion; Gross mode counts the full total (both), since
-  // both ultimately draw from gross. Employer match is excluded from both —
-  // it isn't part of YOUR income, so including it would push either
-  // allocation past 100%.
+  // Taxes, contributions, savings, other spending and unallocated join the category list in
+  // both modes. Net mode counts only non-payroll contributions (isPayrollDeducted, not tax
+  // treatment); Gross counts all of them. Employer match is excluded from both.
   const annualTaxes = paycheckData?.householdTax?.totalTax ?? 0;
-  // Health/dental/vision/etc. paycheck deductions — money that leaves gross
-  // pay before net pay is computed (see calculatePaycheck's preTaxDeductions/
-  // postTaxDeductions), same as taxes and payroll-deducted retirement, but
-  // with no row of its own until now. netIncome (above) already has these
-  // baked out, so omitting them here was silently overstating Gross-mode
-  // Unallocated by exactly this amount while Net mode stayed correct.
-  // rawDeductions is the profile-resolved paycheck_deductions rows (health
-  // insurance, etc.) BEFORE they're merged with contribution accounts into
-  // preTaxDeductions/postTaxDeductions server-side — using it (not those
-  // merged arrays) avoids double-counting the 401k/HSA contributions
+  // Non-contribution paycheck deductions (health insurance etc.) leave gross pay before net,
+  // so Gross mode needs them as a row. rawDeductions excludes contribution accounts, which
   // retirementTotal/portfolioTotal already cover.
   const otherDeductionsAnnual = paycheckData?.people
     ? sumBy(paycheckData.people, (p) =>
@@ -390,24 +342,9 @@ function LivingCostsCardImpl() {
   );
   const annualSavings =
     sumBy(savingsData?.savings.goals ?? [], (g) => g.monthlyAllocation) * 12;
-  // Extra-paycheck money currently set to go to savings (the Savings/Budget
-  // toggle — see extra-paycheck-rules-editor.tsx) isn't part of any goal's
-  // steady-state monthlyAllocation rate, so annualSavings above never sees
-  // it. Left out, this income shows as spuriously "unallocated" even though
-  // it's already spoken for.
-  //
-  // Computed from the real calendar (which months this year actually have
-  // a 3rd paycheck — job-specific, depends on anchorPayDate) times the
-  // CURRENT toggle setting, applied uniformly across the whole year — not
-  // from which months the materializer happened to already generate a real
-  // savings_planned_transactions row for. The two differ for a real reason:
-  // the materializer can't retroactively create a transaction for a month
-  // that already passed before a routing rule existed to cover it, so an
-  // actual-transactions count silently misses genuinely-Savings-mode months
-  // early in the year. For "what does this year look like under the
-  // current setting" (this card, not a ledger of what's already been
-  // physically transferred), the toggle's current answer should apply to
-  // every extra-paycheck month this year alike, past or future.
+  // Extra-paycheck money routed to savings isn't in any goal's monthlyAllocation, so add it.
+  // Counted from this year's 3rd-paycheck months times the current toggle, not from the
+  // materialized transactions, which miss months that passed before a rule existed.
   const yearStart = new Date(Date.UTC(new Date().getFullYear(), 0, 1));
   const extraPaycheckAllocatedThisYear = sumBy(extraPaycheckJobs ?? [], (j) => {
     if (j.payPeriod !== "biweekly" || !j.anchorPayDate) return 0;
@@ -424,9 +361,8 @@ function LivingCostsCardImpl() {
     ).filter((k) => k.startsWith(String(yearStart.getUTCFullYear())));
     return extraMonthsThisYear.length * netPayPerCheck;
   });
-  // Take-home of bonuses set to "extra spending" (their taxes and
-  // bonus-check contributions are already in the Taxes / Retirement /
-  // Portfolio bars) — same in both modes. Each job's Salary Profile entry
+  // Take-home of bonuses set to "extra spending" (their taxes and contributions
+  // are in the other bars); same in both modes. Each job's Salary Profile entry
   // says where its bonus goes.
   const bonusShown = bonusSpendingNet(
     (paycheckData?.people ?? []).map((p) => ({
@@ -477,17 +413,11 @@ function LivingCostsCardImpl() {
     { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
   ]
     .map((r) => ({ ...r, pct: safeDivide(r.annual, incomeBase, 0) }))
-    // A half-dollar floor, not `> 0` — floating-point subtraction upstream
-    // (categoryTotals nets out linked contribution-account items) can leave
-    // a sub-cent positive residue that would otherwise render as a
-    // confusing "0% ($0.00)" row.
+    // A half-dollar floor, not `> 0`: floating-point subtraction upstream can
+    // leave a sub-cent residue that would render as "0% ($0.00)".
     .filter((r) => r.annual > 0.5);
-  // Sanity-check display, not a separate computation: Unallocated is built
-  // to absorb whatever's left, so this should always land at (or very near)
-  // 100% — the one case it visibly won't is genuine over-allocation (taxes +
-  // contributions + savings + budget spending together exceed income),
-  // where Unallocated's floor at $0 makes the shown total undercount on
-  // purpose rather than display a negative "leftover."
+  // Display check: Unallocated absorbs the rest, so this lands near 100%, except under
+  // over-allocation, where Unallocated's $0 floor makes the total undercount on purpose.
   const totalPercent =
     sumBy(rows, (r) => r.pct) + sumBy(extraGrossRows, (r) => r.pct);
 

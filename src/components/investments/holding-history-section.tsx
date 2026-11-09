@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * Holding history (Portfolio): what each account held over time — per part
- * for an account whose feeds report each part separately (a joint IRA:
- * each person's Roth and Traditional), else for the whole account. Observed
- * periods come from daily SimpleFIN holdings and are read-only; for the
- * years before them — or an account with no feed — the household enters
- * periods (funds and %). The matched-mix comparison prices these. Shows
- * fund names and percentages only — no dollars or share counts.
+ * What each account held over time (funds and %, no dollars), per part when feeds report parts.
+ * Observed periods from SimpleFIN holdings are read-only; earlier years, or accounts without a
+ * feed, take household-entered periods. The matched-mix comparison prices these.
  */
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";

@@ -806,12 +806,6 @@
     }
   },
   "src/components/contributions/profile-manager/match-groups.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -832,30 +826,11 @@
   "src/components/contributions/profile-manager/profile-detail-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/contributions/profile-manager/profile-detail-rows.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/contributions/profile-manager/profile-editor.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/contributions/profile-manager/profile-inline-editor.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/contributions/profile-manager/profile-manager-parts.tsx": {
@@ -866,9 +841,6 @@
   "src/components/contributions/profile-manager/use-inline-editor.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/components/dashboard/contributions-card.tsx": {
@@ -890,19 +862,11 @@
       "count": 1
     }
   },
-  "src/components/dashboard/high-income-line-edit.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/dashboard/household-income-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -927,23 +891,12 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
   "src/components/dashboard/net-worth-card.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
-      "count": 1
-    }
-  },
-  "src/components/dashboard/plan-pace-line.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -971,32 +924,11 @@
       "count": 1
     }
   },
-  "src/components/dashboard/retirement-card.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/dashboard/savings-goals-card.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
-  "src/components/dashboard/savings-rate-breakdown.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/dashboard/taxes-summary.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -1007,9 +939,6 @@
   },
   "src/components/debts/debts-card.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-abbreviation": {
@@ -1054,11 +983,6 @@
       "count": 1
     }
   },
-  "src/components/debts/retirement-payoff-note.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/debts/what-if-section.tsx": {
     "max-lines-per-function": {
       "count": 1
@@ -1072,9 +996,6 @@
   },
   "src/components/forms/form-field.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/max-comment-lines": {
       "count": 2
     }
   },
@@ -1107,19 +1028,11 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     },
     "ratchet/no-raw-input": {
       "count": 4
-    }
-  },
-  "src/components/investments/benchmarks-summary.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/investments/comparison-section.tsx": {
@@ -1145,9 +1058,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 3
     },
@@ -1161,16 +1071,10 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/investments/holding-history-section.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-raw-button": {
@@ -1197,20 +1101,7 @@
       "count": 1
     }
   },
-  "src/components/investments/hsa-cash-buffer.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/components/investments/what-it-costs-card.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/components/layout/dashboard-layout.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }
@@ -1243,9 +1134,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 5
     },
@@ -1262,9 +1150,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 2
     },
     "ratchet/no-fixed-inset-overlay": {
       "count": 1
@@ -1318,9 +1203,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -1339,19 +1221,9 @@
       "count": 4
     }
   },
-  "src/components/networth/net-worth-composition.tsx": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/components/networth/spreadsheet/spreadsheet-controls.tsx": {
     "ratchet/no-raw-input": {
       "count": 3
-    }
-  },
-  "src/components/networth/spreadsheet/spreadsheet-tax-location.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/components/networth/spreadsheet/spreadsheet-view.tsx": {

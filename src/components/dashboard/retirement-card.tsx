@@ -51,10 +51,8 @@ function RetirementCardImpl() {
     engineInput,
     { staleTime: 60_000, enabled: ready },
   );
-  // Peek-only reads of the persistent projection cache — never trigger a
-  // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
-  // just surface whatever the Retirement page's last real run already
-  // computed, if the inputs still match. Null result = nothing cached yet.
+  // Peek-only reads of the projection cache: never start a simulation run (slow,
+  // rate-limited); show the last run if inputs still match. Null = nothing cached.
   const { data: simulationSummary } =
     trpc.projection.peekMonteCarloSummary.useQuery(
       engineInput,

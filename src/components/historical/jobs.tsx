@@ -33,12 +33,8 @@ function duration(start: string, end: string | null): string {
 }
 
 /**
- * Jobs settings — pure employment structure (employer, title, dates). A job
- * carries no salary, bonus, or payroll-config terms of its own: what someone
- * earned in the past lives on the Historical page (`historical_salaries`),
- * and what they earn now — plus payroll config like pay period and W-4
- * filing status — lives in the active Salary Profile. This component never
- * shows a dollar figure.
+ * Jobs settings: employment structure only (employer, title, dates), never a dollar figure.
+ * Past pay lives in `historical_salaries`; current pay and payroll config in the Salary Profile.
  */
 export function JobsSettings() {
   const user = useUser();
@@ -46,11 +42,8 @@ export function JobsSettings() {
   const utils = trpc.useUtils();
   const { data: people } = trpc.settings.people.list.useQuery();
   const { data: rawData, isLoading } = trpc.settings.jobs.list.useQuery();
-  // The auto-provisioned speculative job (a permanent peg for Salary
-  // Profile what-if scenarios, see server/data/jobs.ts's
-  // speculativeJobValues) isn't real employment history — it never
-  // appears in the Employment Timeline or Jobs table, only in the Salary
-  // Profile editor's job picker where it's actually used.
+  // The auto-provisioned speculative job (a peg for Salary Profile what-ifs) isn't
+  // employment history: it shows only in the Salary Profile editor's job picker.
   const data = useMemo(
     () => rawData?.filter((j: Job) => !j.isSpeculative),
     [rawData],

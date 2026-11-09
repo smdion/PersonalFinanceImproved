@@ -49,11 +49,9 @@ export function ProfileDetailPanel({ profileId }: { profileId: number }) {
         </table>
       </div>
 
-      {/* Deductions section — paycheck_deductions carries no amount of its
-          own any more (Stage B): amountPerPeriod resolves entirely through
-          this profile's deductions active-fields, the same "no base value,
-          absent = incomplete" rule contributionAccounts already uses (see
-          deductionActiveFieldsSchema / applyDeductionActiveFields). */}
+      {/* Deductions: amountPerPeriod resolves entirely through this profile's
+          deductions active-fields (absent = incomplete); see
+          applyDeductionActiveFields. */}
       {deductionRows && deductionRows.length > 0 && (
         <div className="mt-5">
           <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">

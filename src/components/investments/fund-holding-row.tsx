@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * One fund in an account: ticker, asset mix, yearly fee and value, where
- * each fact came from, and — when `editable` — the household's controls
- * for it: use or reject a suggested stand-in ("twin") fund, look for one
- * again, or enter the fund's own fee and mix. Editing lives on the
- * Portfolio page's account settings; Benchmarks shows it read-only.
+ * One fund in an account: ticker, asset mix, fee, value and each fact's source. When
+ * `editable`, controls to use/reject a stand-in ("twin") fund, search again, or enter the
+ * fund's own fee and mix (Portfolio account settings; Benchmarks is read-only).
  */
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { TickerLink } from "./ticker-link";

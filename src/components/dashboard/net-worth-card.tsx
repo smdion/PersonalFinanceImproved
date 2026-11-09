@@ -47,11 +47,8 @@ function NetWorthCardImpl() {
     ? data.homeValueEstimated
     : data.homeValueConservative;
 
-  // Freshness footer, matching the pattern established by the Linked
-  // Balance card. Snapshot half always shows when a snapshot exists;
-  // the budget-API half only shows when a budget API actually drives
-  // the cash figure (cashSource !== "manual") — otherwise there's
-  // nothing to report and showing a sync claim would be misleading.
+  // Freshness footer: the snapshot half shows when a snapshot exists; the
+  // budget-API half only when a budget API drives cash (cashSource !== "manual").
   const freshnessParts: string[] = [];
   if (data.snapshotDate) {
     freshnessParts.push(`Snapshot ${formatDate(data.snapshotDate, "medium")}`);
