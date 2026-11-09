@@ -31,10 +31,8 @@ import {
 } from "@/lib/constants/settings-keys";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 
-// Code-split the recharts-heavy chart row. Both
-// charts share a single chunk so the recharts payload is fetched once on
-// page mount instead of bundling into the page chunk. ssr:false because
-// Recharts isn't SSR-friendly.
+// Code-split the recharts chart row into one shared chunk loaded on mount.
+// ssr:false because Recharts isn't SSR-friendly.
 const BudgetVsActualBar = dynamic(
   () =>
     import("@/components/expenses/expenses-charts").then((m) => ({

@@ -174,14 +174,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 8
-    },
     "ratchet/no-abbreviation": {
       "count": 5
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/contributions/contributions-content.tsx": {
@@ -191,9 +185,6 @@
     "max-lines-per-function": {
       "count": 3
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-input": {
       "count": 1
     },
@@ -202,20 +193,7 @@
     }
   },
   "src/app/(dashboard)/contributions/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/app/(dashboard)/dashboard-content.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/app/(dashboard)/dashboard-shell.tsx": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -234,9 +212,6 @@
     }
   },
   "src/app/(dashboard)/data-browser/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -246,9 +221,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-guarded-division": {
@@ -262,9 +234,6 @@
     }
   },
   "src/app/(dashboard)/expenses/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -275,9 +244,6 @@
     },
     "max-lines-per-function": {
       "count": 3
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     },
     "ratchet/no-config-reach-through": {
       "count": 1
@@ -329,9 +295,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-jsx-iife": {
       "count": 1
     },
@@ -340,9 +303,6 @@
     }
   },
   "src/app/(dashboard)/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -354,9 +314,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
     "ratchet/no-abbreviation": {
       "count": 4
     },
@@ -365,9 +322,6 @@
     }
   },
   "src/app/(dashboard)/performance/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -379,14 +333,8 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 5
-    },
     "ratchet/no-abbreviation": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     },
     "ratchet/no-lint-violation-ok": {
       "count": 1
@@ -396,17 +344,11 @@
     }
   },
   "src/app/(dashboard)/portfolio/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/app/(dashboard)/portfolio/portfolio-sections.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 5
     }
@@ -417,9 +359,6 @@
     }
   },
   "src/app/(dashboard)/portfolio/snapshot-history.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 2
     },
@@ -436,22 +375,11 @@
     }
   },
   "src/app/(dashboard)/portfolio/snapshot-rows.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-raw-button": {
       "count": 2
     }
   },
-  "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/app/(dashboard)/profiles/page.tsx": {
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }

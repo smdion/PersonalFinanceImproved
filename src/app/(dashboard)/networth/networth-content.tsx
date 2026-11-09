@@ -22,11 +22,8 @@ import { MetricsRow } from "@/components/networth/metrics-row";
 import { YoYTable } from "@/components/networth/yoy-table";
 import { FinancialIndependenceCard } from "@/components/networth/financial-independence-card";
 
-// Code-split Recharts-heavy chart components into separate chunks. Each
-// chart is ~250KB of bundle when bundled into the
-// page bundle; lazy-loading them via next/dynamic moves them to dedicated
-// chunks that load only when the page mounts. ssr:false because Recharts
-// isn't SSR-friendly.
+// Code-split the Recharts charts (~250KB each) into chunks loaded on mount.
+// ssr:false because Recharts isn't SSR-friendly.
 const NetWorthLineChart = dynamic(
   () =>
     import("@/components/networth/net-worth-line-chart").then((m) => ({

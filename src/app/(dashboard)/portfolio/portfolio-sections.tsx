@@ -24,10 +24,8 @@ export function PortfolioSyncBanner({
 }: PortfolioSyncBannerProps) {
   return (
     <>
-      {/* Un-synced balance edits — persists across visits (localStorage)
-          so a closed tab mid-edit doesn't silently drift from the budget
-          API. Nothing syncs on its own; you push it here or in the
-          expanded snapshot row. */}
+      {/* Un-synced balance edits, persisted in localStorage; nothing syncs on
+          its own: push here or in the expanded snapshot row. */}
       {canEdit && syncPending && (
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
           <span className="font-medium">

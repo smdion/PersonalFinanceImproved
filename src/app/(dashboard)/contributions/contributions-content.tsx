@@ -53,11 +53,8 @@ export function ContributionsContent() {
   const [activeProfileId] = useActiveContributionProfile();
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  // the active profile — the primary summary below must stay
-  // in sync with Paycheck/Budget's resolution instead of always reading raw
-  // Live data (see docs/DESIGN.md "Profile Resolution"). This is distinct from
-  // selectedProfileId below, which is a "compare against a specific other
-  // profile" picker and deliberately stays local-only.
+  // The active profile, resolved like Paycheck/Budget (docs/DESIGN.md "Profile
+  // Resolution"). Separate from selectedProfileId, a local compare picker.
   const { profileId: effectiveActiveContributionProfileId } =
     useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
@@ -294,10 +291,8 @@ export function ContributionsContent() {
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <>
-          {/* The sentence, with what the savings rate counts at its
-                  right — a household setting (the Dashboard's too), so it
-                  sits with the rates it changes. The account tables below
-                  always show every account. */}
+          {/* The sentence, with the savings-rate "counts" setting beside
+                  it (household-wide); the account tables show every account. */}
           <div className="md:col-span-3">
             <PlainSummary
               aside={

@@ -1,42 +1,9 @@
 "use client";
 
 /**
- * The Budget page's What-If tab — an editable sandbox that walks the actual
- * workflow this page exists for: pick/edit a salary, see the resulting net
- * income, check it against an editable budget, see what's left over, and
- * allocate that leftover to savings. Nothing here writes to the database
- * except the two explicit save actions at the bottom (Duplicate Profile,
- * Save as Plan).
- *
- * Design rules this file exists to hold:
- *
- * 1. No forked display/compute path. The paycheck summary reuses
- *    `usePaycheckPersonViews` (the same hook the real Paycheck page uses);
- *    the budget table is the SAME `BudgetTable` the real Budget tab uses,
- *    wrapped in a local `BudgetPageContext.Provider`; the savings table is
- *    the SAME `SavingsAllocationPanel`/`SavingsAllocationTable`. Every
- *    number (net income, budget total, leftover) comes from ONE server
- *    computation (`budget.computeActiveSummary`), not a client re-derivation
- *    — see its `netMonthlyIncome` field.
- * 2. Nothing here can write except the two explicit save actions. Editing
- *    surfaces are neutralized two different ways depending on the
- *    component's shape:
- *      - `BudgetItemRow`'s `amountsOnly` prop: structurally omits every
- *        control that isn't the amount input (essential toggle, API link,
- *        move/delete/reorder/add), so passing `canEdit: true` to unlock
- *        amount editing can't also unlock anything else.
- *      - `SavingsAllocationTable`'s `sandbox`+`onLocalChange`: redirects
- *        the commit from `savings.goalProfileAllocations.upsert` to local
- *        state instead.
- *    Sandbox editing is NOT gated on `hasPermission(user, "budget")` — it
- *    writes nothing, so someone without budget-edit rights can still play.
- * 3. The three pickers are plain component state. They never write the
- *    active profiles — they start FROM them and diverge locally from there.
- * 4. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
- *    ids that only mean something for the CURRENTLY picked profile — they
- *    reset when that picker changes (see useSandboxState), and
- *    there is deliberately no `beforeunload` guard: this is a throwaway
- *    play area, not an in-progress save.
+ * What-If sandbox (salary → take-home → budget → leftover → savings) built from the real
+ * components; every figure comes from budget.computeActiveSummary. Only Duplicate Profile and
+ * Save as Plan write (`amountsOnly`, `sandbox`+`onLocalChange`); pickers and drafts stay local.
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -83,10 +50,8 @@ export function WhatIfTab({
    *  Budget page's own gate; settings.scenarios.create is scenarioProcedure,
    *  so a budget-only user must not see a button that would 403. */
   canCreatePlan: boolean;
-  /** `isAdmin(user)` — settings.deductions.create / settings.
-   *  contributionAccounts.create are adminProcedure, a stricter gate than
-   *  either permission above. Governs the "Make this real" affordance on
-   *  hand-added deductions/contribution accounts. */
+  /** `isAdmin(user)`: the deduction/contribution-account creates are
+   *  adminProcedure. Governs "Make this real" on hand-added rows. */
   canManagePaycheck: boolean;
 }) {
   const utils = trpc.useUtils();
@@ -178,13 +143,8 @@ export function WhatIfTab({
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
-  // Debounced: several of the sandbox editors below (deduction/contribution
-  // additions' name/amount/treatment fields) update on raw onChange, not
-  // blur — typing into a text field can otherwise re-key this query on
-  // every keystroke, each one making a REAL server round trip (which
-  // itself computes a paycheck summary too — see budget.ts's
-  // computeActiveSummary). Matches the debounce pattern
-  // use-projection-queries.ts already uses for the same reason.
+  // Debounced: some sandbox editors update on every keystroke, and each new
+  // input is a real server round trip (computeActiveSummary).
   const computeActiveSummaryInput = useDebouncedValue(
     {
       selectedColumn: activeColumn,
@@ -263,10 +223,8 @@ export function WhatIfTab({
     netMonthlyIncome != null && budgetTotal != null
       ? netMonthlyIncome - budgetTotal
       : null;
-  // Budget-mode extra-paycheck adjustment landing in the REAL current
-  // calendar month — independent of activeColumn/selectedColumn (see
-  // budget.computeActiveSummary's docblock). A separate, additively-labeled
-  // annotation only; never folded into netMonthlyIncome or `leftover`.
+  // Extra-paycheck adjustment for the real current month, independent of the
+  // selected column. A separate annotation; never folded into income or leftover.
   const budgetIncomeAdjustmentThisMonth =
     budgetData && "budgetIncomeAdjustmentThisMonth" in budgetData
       ? budgetData.budgetIncomeAdjustmentThisMonth
@@ -339,12 +297,8 @@ export function WhatIfTab({
   });
 
   // ── "Make this real" — graduate a sandbox addition into a genuine row.
-  // Deliberately minimal fields (see zSandboxDeductionAdditions/
-  // zSandboxContribAdditions docblocks) — everything else these mutations'
-  // own input schemas accept just takes its normal default, same as a
-  // freshly-created real row would before anyone edits it further. The
-  // rest (institution, label, employer match, sub-accounts) is finished on
-  // the real Contribution Profiles / Paycheck settings pages, not here.
+  // Minimal fields; the rest takes the mutations' defaults and is finished on
+  // the Contribution Profiles / Paycheck settings pages.
   const [deductionMakeRealPendingId, setDeductionMakeRealPendingId] = useState<
     number | null
   >(null);
@@ -363,10 +317,8 @@ export function WhatIfTab({
           `Added "${created?.deductionName ?? ""}" to the paycheck`,
         );
       };
-      // A deduction has no live amount of its own any more — the value the
-      // user was previewing gets carried into the currently-effective
-      // Contribution Profile's deductions active field, same "make real"
-      // pattern setContributionAccountActiveFields already uses above.
+      // A deduction has no amount of its own: the previewed value goes into the
+      // effective Contribution Profile's deductions active field.
       if (created && addition && contribId != null) {
         setDeductionActiveFields.mutate(
           {
@@ -401,11 +353,9 @@ export function WhatIfTab({
 
   const [contributionMakeRealPendingId, setContributionMakeRealPendingId] =
     useState<number | null>(null);
-  // Holds the sandbox addition being converted — its value/method are what
-  // the user was previewing, and get carried into the real account's active
-  // field in whichever profile is currently in effect (contribId below), so
-  // "Make real" doesn't quietly lose the number the user was testing. The
-  // account itself carries no value of its own (see applyContribActiveFields).
+  // The addition being converted: its previewed value/method go into the new
+  // account's active field in the effective profile (contribId), since the
+  // account holds no value itself (see applyContribActiveFields).
   const contributionMakeRealAdditionRef = useRef<ContributionAddition | null>(
     null,
   );
@@ -475,12 +425,8 @@ export function WhatIfTab({
   const salaryProfileName =
     salaryProfiles?.find((p) => p.id === salaryId)?.name ?? null;
 
-  // The Contribution Profile picker's effect was previously buried as two
-  // rows in the middle of WhatIfPaycheckSummary's table, with nothing
-  // connecting them back to the picker above — surfaced here as its own
-  // callout so "I picked a profile, is it doing anything" has a visible
-  // answer. Same figures the summary table already shows (perContribData
-  // is resolved once by usePaycheckPersonViews), not a second computation.
+  // Callout showing the picked Contribution Profile's effect, from the
+  // perContribData usePaycheckPersonViews already resolved.
   const contributionTotals = useMemo(() => {
     let annual = 0;
     let match = 0;

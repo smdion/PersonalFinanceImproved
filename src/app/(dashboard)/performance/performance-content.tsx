@@ -1,9 +1,7 @@
 "use client";
 
-/** Performance page client content — time-weighted returns across accounts
- *  and time periods. The default-export Page in performance/page.tsx is a
- *  thin server component that prefetches the heavy queries before rendering
- *  this. */
+/** Performance page client content: time-weighted returns across accounts and
+ *  periods. performance/page.tsx prefetches its queries. */
 
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -87,10 +85,8 @@ export function PerformanceContent() {
     false,
   );
 
-  // ── Custom account/year filtering (additive — CategoryTabs still work
-  // standalone; this is a separate, opt-in view). Persisted as string-
-  // encoded scalars since usePersistedSetting's generic is narrower than
-  // Set<number>/{start,end} — see plan doc section 3.
+  // ── Custom account/year filtering (opt-in, separate from CategoryTabs).
+  // Persisted as string-encoded scalars: usePersistedSetting can't hold Sets.
   const [useCustomFilter, setUseCustomFilter] = usePersistedSetting<boolean>(
     "performance_use_custom_filter",
     false,
@@ -229,16 +225,9 @@ export function PerformanceContent() {
 
   // ── Custom filter derived state ──
   const typedMasterAccounts = masterAccounts as MasterAccount[];
-  // The default/"everything" set must include INACTIVE accounts too — a
-  // closed/rolled-over account still had real balances in past years, and
-  // the router's own Portfolio/Retirement rollups don't filter by current
-  // isActive status when summing historical account_performance rows (see
-  // isInRetirementPerformanceRollup below). Restricting the default to active-only
-  // would make historical years permanently fail to match a whole-category
-  // selection, defeating the stored-data-preference logic. The account
-  // picker's own "Show inactive" toggle is a separate display concern —
-  // whether to show inactive accounts in the checkbox list — independent
-  // of whether they're included in the default selection.
+  // The default selection includes INACTIVE accounts: they hold past balances
+  // the category rollups count, so excluding them would break whole-category
+  // matches for history. "Show inactive" only affects the picker list.
   const allAccountIds = new Set(typedMasterAccounts.map((m) => m.id));
   // "" = never chosen (default to all); "none" = explicitly empty selection.
   const selectedAccountIds =
@@ -313,25 +302,14 @@ export function PerformanceContent() {
     rollovers: String(r.rollovers),
   }));
 
-  // A finalized annual row's stored values can differ from a fresh sum of
-  // account_performance rows (manual overrides at finalize time, historical
-  // spreadsheet-seeded data) — see plan doc addendum. When the current
-  // selection, restricted to accounts with data that year, exactly matches
-  // an existing category's accounts for that year, prefer the finalized
-  // annual row's stored values so this view agrees with the main table for
-  // the common "just filter to a whole category" case. Falls back to a live
-  // account-level sum for any selection that isn't a whole-category match
-  // (which is the common case for genuinely ad hoc subsets, and always the
-  // case for the current/non-finalized year, which the main table itself
-  // computes live too).
+  // Finalized annual rows can differ from a fresh account sum (finalize-time
+  // overrides, seeded history). A whole-category selection uses the stored
+  // annual row so it agrees with the main table; anything else sums live.
   function setsEqual(a: Set<number>, b: Set<number>): boolean {
     return a.size === b.size && [...a].every((x) => b.has(x));
   }
-  // Portfolio = grand total of every account-type category, unconditionally.
-  // Retirement's definition (401k/IRA + HSA regardless of parentCategory,
-  // plus only Brokerage-category accounts tagged parentCategory===
-  // "Retirement") is shared with the router via isInRetirementPerformanceRollup
-  // — single source of truth, not mirrored here (audit Batch 31 Finding 1).
+  // Portfolio = every account-type category. Retirement membership comes from
+  // the router's shared isInRetirementPerformanceRollup.
   function matchedCategoryForYear(year: number): string | null {
     const yearAccounts = (accountRows as AccountRow[]).filter(
       (r) => r.year === year,

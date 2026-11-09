@@ -873,11 +873,8 @@ function HistoricalTable({
                     />
                   </>
                 )}
-                {/* Salary — Historical is the source of truth: editing here
-                    writes a direct historical_salaries row for that
-                    person/year. The in-progress (current) year stays
-                    read-only/auto-computed (same isCurrent gate every other
-                    field here uses). */}
+                {/* Salary: editing writes a historical_salaries row for that
+                    person/year; the current year stays read-only (isCurrent). */}
                 {showSalary &&
                   peopleNames.map((name, index) => {
                     const personId = personIdByName[name];

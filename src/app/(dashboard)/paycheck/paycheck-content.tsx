@@ -56,10 +56,8 @@ export function PaycheckContent() {
   const [contributionProfileId] = useActiveContributionProfile();
   const utils = trpc.useUtils();
 
-  /** Same shared lock as the Budget page's four profile tabs and the
-   *  standalone Savings page — Salary/Contribution profile editing here is
-   *  the same underlying data, just from a different page, so locking it
-   *  anywhere locks it everywhere. */
+  /** Shared profile lock (Budget page tabs, Savings page): the same profile
+   *  data, so locking it anywhere locks it everywhere. */
   const [profileLocked, toggleProfileLock] = useEditLock(
     EDIT_LOCK_KEYS.profileEditLocked,
   );
@@ -93,16 +91,9 @@ export function PaycheckContent() {
       onSuccess: invalidateProfileWrite,
     });
 
-  // Helper: patch one or more fields on one entry in the active profile's
-  // active fields. The multi-field form exists for entity kinds whose write
-  // schema requires certain fields to be set together (or none) — a caller
-  // editing an independent field can keep passing a single field/value pair.
-  // A field whose value is `undefined` is unset (removed) rather than
-  // written. There is no more "jobs" entity kind here: that active-fields
-  // bucket (payPeriod/payWeek/anchorPayDate, W-4, bonus timing/flags) was
-  // retired in the Stage B migration — those fields now live on the
-  // Salary Profile entry instead (see patchSalaryEntry above), and
-  // the bonus flags became each account's own `fromBonus`.
+  // Patch fields on one entry in the active profile's active fields. Pass an
+  // object when the schema requires fields set together; `undefined` unsets a
+  // field. Pay schedule, W-4 and bonus terms live on the Salary Profile entry.
   function updateProfileActiveField(
     entityType: "contributionAccounts" | "deductions",
     entityId: number,
@@ -174,12 +165,9 @@ export function PaycheckContent() {
   });
 
   /**
-   * Save field edits to this job's entry in the displayed Salary Profile —
-   * a field-level patch on the server (salaryProfile.patchEntry), so two
-   * quick edits, or another tab, can't overwrite each other with a stale
-   * copy. Entries are complete/all-or-nothing: the first edit to a job
-   * with no entry yet sends `defaults` (that job's currently-resolved
-   * values) with it, so the entry it creates is complete.
+   * Field-level patch of this job's entry in the displayed Salary Profile
+   * (salaryProfile.patchEntry). Entries are all-or-nothing, so the first edit
+   * sends `defaults` (the job's resolved values) to create a complete entry.
    */
   function patchSalaryEntry(
     jobId: number,
@@ -210,12 +198,9 @@ export function PaycheckContent() {
       : [],
   );
 
-  // Get available tax years for the toggle. Sourced from contribution_limits
-  // alone, matching resolveTaxParams' candidateYears() — that's the only
-  // table `requireLimit()` reads, so it's the only one that can make a year
-  // safely selectable. Including tax_brackets here would let an admin's
-  // early bracket-only seed for a future year surface a picker option that
-  // then throws when selected.
+  // Tax years from contribution_limits only, like resolveTaxParams'
+  // candidateYears(): `requireLimit()` reads only that table, so a
+  // bracket-only year would throw when selected.
   const { data: contributionLimitsAll } =
     trpc.settings.contributionLimits.list.useQuery();
   const availableYears = (() => {
@@ -409,13 +394,9 @@ export function PaycheckContent() {
                       handlers: {
                         onUpdateJob: (field: string, value: string) => {
                           const job = d.job!;
-                          // A job has no salary, bonus, pay-schedule, or W-4
-                          // terms of its own any more — every edit to any of
-                          // those lands in the displayed Salary Profile as
-                          // part of that job's complete entry (see
-                          // resolveCompensation and SalaryEntry). Untouched
-                          // fields default to this job's currently-resolved
-                          // values.
+                          // Salary, bonus, pay schedule and W-4 edits land in
+                          // the displayed Salary Profile's entry for this job
+                          // (see SalaryEntry); untouched fields keep resolved values.
                           const salaryProfileEntryDefaults: SalaryEntry = {
                             salary: d.salary,
                             ...d.resolvedBonusTerms,
@@ -477,13 +458,9 @@ export function PaycheckContent() {
                           field: string,
                           value: string,
                         ) => {
-                          // amountPerPeriod is the only deduction field a
-                          // Contribution Profile can set — it goes through the
-                          // same profile writer contribution accounts use.
-                          // Structural fields (deductionName/isPretax/
-                          // ficaExempt) are never profile-settable and write
-                          // the database.
-                          // A preset sets both tax flags at once.
+                          // amountPerPeriod goes through the profile writer;
+                          // structural fields (name/isPretax/ficaExempt) write
+                          // the database. A preset sets both tax flags at once.
                           if (field === "taxTreatment") {
                             if (!lineEditable) return;
                             const preset = DEDUCTION_PRESETS.find(
@@ -599,17 +576,9 @@ export function PaycheckContent() {
                           // autoMaximize is a profile field — read-only
                           // without a profile edit in play (editTarget).
                           if (contributionEditsProfile) {
-                            // Set autoMaximize (and, when turning it on with a
-                            // known target, the resolved contributionValue) via
-                            // the field-level patch — the server merges onto the
-                            // freshest profile row. An entry can carry just
-                            // autoMaximize with no value; contributionValue/Method
-                            // are only required together (see
-                            // contribAccountActiveFieldsSchema), not whenever an
-                            // entry exists. `raw` only appears here if this account
-                            // already resolves under this profile, so a stored
-                            // method already survives the merge — raw's method is
-                            // just the fallback for the rare bare entry.
+                            // Field-level patch of autoMaximize (plus the
+                            // resolved contributionValue when turning it on);
+                            // value/method are only required together.
                             updateProfileActiveField(
                               "contributionAccounts",
                               id,
