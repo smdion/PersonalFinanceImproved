@@ -2131,9 +2131,6 @@
     "ratchet/max-comment-lines": {
       "count": 2
     },
-    "ratchet/no-jsx-iife": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     },
@@ -2712,9 +2709,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 5
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-hero-kpis.tsx": {
@@ -2732,9 +2726,6 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/projection-loader.tsx": {
@@ -2923,9 +2914,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/retirement-projection/types.ts": {
@@ -3104,9 +3092,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-jsx-iife": {
-      "count": 1
     }
   },
   "src/components/retirement/sections/per-phase-budget.tsx": {

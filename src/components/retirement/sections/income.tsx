@@ -89,27 +89,7 @@ export function IncomeSection({
             <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
           </span>
           <div className="font-medium">
-            {(() => {
-              const breakdown = (people ?? [])
-                .filter((p) => salaryByPerson?.[p.id])
-                .map((p) => ({ name: p.name, salary: salaryByPerson![p.id]! }));
-              const value =
-                combinedSalary != null ? formatCurrency(combinedSalary) : "—";
-              if (breakdown.length < 2) return value;
-              return (
-                <Tooltip
-                  lines={breakdown.map((b) => (
-                    <span key={b.name}>
-                      {b.name}: {formatCurrency(b.salary)}
-                    </span>
-                  ))}
-                >
-                  <span className="decoration-faint cursor-help underline decoration-dotted underline-offset-2">
-                    {value}
-                  </span>
-                </Tooltip>
-              );
-            })()}
+            {renderHouseholdSalary(combinedSalary, people, salaryByPerson)}
             <span className="text-caption text-faint ml-1 font-normal">
               from jobs
             </span>
@@ -236,5 +216,31 @@ export function IncomeSection({
         </div>
       </div>
     </div>
+  );
+}
+
+/** The household salary, with each person's share on hover. */
+function renderHouseholdSalary(
+  combinedSalary: Props["combinedSalary"],
+  people: Props["people"],
+  salaryByPerson: Props["salaryByPerson"],
+) {
+  const breakdown = (people ?? [])
+    .filter((p) => salaryByPerson?.[p.id])
+    .map((p) => ({ name: p.name, salary: salaryByPerson![p.id]! }));
+  const value = combinedSalary != null ? formatCurrency(combinedSalary) : "—";
+  if (breakdown.length < 2) return value;
+  return (
+    <Tooltip
+      lines={breakdown.map((b) => (
+        <span key={b.name}>
+          {b.name}: {formatCurrency(b.salary)}
+        </span>
+      ))}
+    >
+      <span className="decoration-faint cursor-help underline decoration-dotted underline-offset-2">
+        {value}
+      </span>
+    </Tooltip>
   );
 }

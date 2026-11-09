@@ -119,6 +119,8 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
     d.growth && d.growth.amount >= 0 ? tipColorClass.blue : tipColorClass.red;
   const growthPrefix = d.growth && d.growth.amount >= 0 ? "+" : "";
 
+  // The group label shows once, above the first item of each group.
+  let lastGroup: string | undefined;
   return (
     <div className="space-y-0.5">
       {/* 1. HEADER */}
@@ -236,26 +238,23 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 5. ITEMS */}
       {d.items && d.items.length > 0 && (
         <div className="space-y-1">
-          {(() => {
-            let lastGroup: string | undefined;
-            return d.items.map((item, ii) => {
-              const showGroup = !!item.group && item.group !== lastGroup;
-              lastGroup = item.group;
-              return (
-                // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
-                <div key={`${ii}-${item.label}`}>
-                  {showGroup && (
-                    <div
-                      className={`text-caption tracking-wide uppercase ${tipColorClass.gray} mt-1.5 first:mt-0`}
-                    >
-                      {item.group}
-                    </div>
-                  )}
-                  {renderLineItem(item, ii)}
-                </div>
-              );
-            });
-          })()}
+          {d.items.map((item, ii) => {
+            const showGroup = !!item.group && item.group !== lastGroup;
+            lastGroup = item.group;
+            return (
+              // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
+              <div key={`${ii}-${item.label}`}>
+                {showGroup && (
+                  <div
+                    className={`text-caption tracking-wide uppercase ${tipColorClass.gray} mt-1.5 first:mt-0`}
+                  >
+                    {item.group}
+                  </div>
+                )}
+                {renderLineItem(item, ii)}
+              </div>
+            );
+          })}
         </div>
       )}
       {/* 6. TOTAL */}

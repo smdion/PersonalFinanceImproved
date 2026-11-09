@@ -279,6 +279,16 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
           : `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
 
+    // when "vs strategy" trails Portfolio
+    // Survival by a real margin, something is forcing deviations
+    // from the strategy's own plan even though the money survives —
+    // worth flagging urgently. This is an MC-vs-MC comparison (both
+    // numbers come from the same run), unlike a deterministic
+    // unmet-need alert, which gets its own separate affordance
+    // rather than being grafted onto this MC statistic.
+    const strategyGapUrgent =
+      simulation.successRate - simulation.spendingStabilityRate >
+      SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD;
     return (
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {/* Card 1: Portfolio Survival */}
@@ -309,60 +319,43 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         </KpiCard>
 
         {/* Card 2: Lifetime Income Stability */}
-        {(() => {
-          // when "vs strategy" trails Portfolio
-          // Survival by a real margin, something is forcing deviations
-          // from the strategy's own plan even though the money survives —
-          // worth flagging urgently. This is an MC-vs-MC comparison (both
-          // numbers come from the same run), unlike a deterministic
-          // unmet-need alert, which gets its own separate affordance
-          // rather than being grafted onto this MC statistic.
-          const strategyGapUrgent =
-            simulation.successRate - simulation.spendingStabilityRate >
-            SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD;
-          return (
-            <KpiCard
-              label="Lifetime Income Stability"
-              tooltip={[
-                '% of simulated futures where income NEVER dropped below the 75% floor, in ANY year, across your entire retirement — a much stricter bar than "how does a typical year look," since it only takes one bad year, in one simulated future, to fail. See the Yearly Income Stability chart for the year-by-year detail behind this number.',
-                '"vs Strategy": compares against the strategy\'s own target for each year. Measures self-consistency.',
-                '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
-                "Fixed and Forgo track your Retirement budget, so the rings stay close; Guardrails and Spending Decline move away from it by design. Balance-based strategies (RMD-Based, Constant %, Endowment, Vanguard, VPW) follow the balance; the gap shows how often they cover your Retirement budget.",
-                ...(strategyGapUrgent
-                  ? [
-                      `⚠ Your money survives in ${(simulation.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(simulation.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((simulation.successRate - simulation.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
-                    ]
-                  : []),
-              ]}
-            >
-              <div className="flex flex-1 items-center justify-center gap-4">
-                <div className="flex flex-col items-center gap-1">
-                  <CompactRing
-                    rate={simulation.spendingStabilityRate}
-                    size={56}
-                  />
-                  <div
-                    className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "font-medium text-red-500" : "text-faint"}`}
-                  >
-                    {strategyGapUrgent && <span>⚠</span>}
-                    vs strategy
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <CompactRing
-                    rate={
-                      hasBudgetStability
-                        ? simulation.budgetStabilityRate!
-                        : simulation.spendingStabilityRate
-                    }
-                    size={56}
-                  />
-                  <div className="text-micro text-faint">vs budget</div>
-                </div>
+        <KpiCard
+          label="Lifetime Income Stability"
+          tooltip={[
+            '% of simulated futures where income NEVER dropped below the 75% floor, in ANY year, across your entire retirement — a much stricter bar than "how does a typical year look," since it only takes one bad year, in one simulated future, to fail. See the Yearly Income Stability chart for the year-by-year detail behind this number.',
+            '"vs Strategy": compares against the strategy\'s own target for each year. Measures self-consistency.',
+            '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
+            "Fixed and Forgo track your Retirement budget, so the rings stay close; Guardrails and Spending Decline move away from it by design. Balance-based strategies (RMD-Based, Constant %, Endowment, Vanguard, VPW) follow the balance; the gap shows how often they cover your Retirement budget.",
+            ...(strategyGapUrgent
+              ? [
+                  `⚠ Your money survives in ${(simulation.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(simulation.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year target the whole way through. In the other ${((simulation.successRate - simulation.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off target — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
+                ]
+              : []),
+          ]}
+        >
+          <div className="flex flex-1 items-center justify-center gap-4">
+            <div className="flex flex-col items-center gap-1">
+              <CompactRing rate={simulation.spendingStabilityRate} size={56} />
+              <div
+                className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "font-medium text-red-500" : "text-faint"}`}
+              >
+                {strategyGapUrgent && <span>⚠</span>}
+                vs strategy
               </div>
-            </KpiCard>
-          );
-        })()}
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <CompactRing
+                rate={
+                  hasBudgetStability
+                    ? simulation.budgetStabilityRate!
+                    : simulation.spendingStabilityRate
+                }
+                size={56}
+              />
+              <div className="text-micro text-faint">vs budget</div>
+            </div>
+          </div>
+        </KpiCard>
 
         {/* Card 3: Nest Egg at Retirement */}
         <KpiCard

@@ -472,6 +472,10 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 // reliable enough signal of "satisfied".
                 const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
                 const rmdSatisfiedNotably = !rmdShortfall;
+                const eventStyle =
+                  typeof d._strategyAction === "string"
+                    ? STRATEGY_EVENT_STYLE[d._strategyAction]
+                    : undefined;
                 return (
                   <div
                     className={`${TOOLTIP_SURFACE_CLASSES} max-w-xs text-xs`}
@@ -792,22 +796,15 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     {/* Strategy event detail — same data the chart's
                         ReferenceLine markers flag, now actually explained
                         on hover instead of just labeled. */}
-                    {(() => {
-                      const eventStyle =
-                        typeof d._strategyAction === "string"
-                          ? STRATEGY_EVENT_STYLE[d._strategyAction]
-                          : undefined;
-                      if (!eventStyle) return null;
-                      return (
-                        <div
-                          className="mt-1 flex justify-between gap-4 border-t border-white/10 pt-1 font-medium"
-                          style={{ color: eventStyle.color }}
-                        >
-                          <span>Strategy</span>
-                          <span>{eventStyle.tooltipText}</span>
-                        </div>
-                      );
-                    })()}
+                    {eventStyle ? (
+                      <div
+                        className="mt-1 flex justify-between gap-4 border-t border-white/10 pt-1 font-medium"
+                        style={{ color: eventStyle.color }}
+                      >
+                        <span>Strategy</span>
+                        <span>{eventStyle.tooltipText}</span>
+                      </div>
+                    ) : null}
                   </div>
                 );
               }}

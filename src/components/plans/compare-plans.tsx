@@ -148,18 +148,7 @@ function PlanColumn({
         </FieldRow>
         <FieldRow label="Money lasts">
           <span>
-            {result
-              ? (() => {
-                  const outcome = assessPlan(result);
-                  return outcome.succeeded
-                    ? "through the projection"
-                    : outcome.failureReason === "depleted"
-                      ? `to ${outcome.failureYear}`
-                      : `falls short in ${outcome.failureYear}`;
-                })()
-              : projection.isLoading
-                ? "…"
-                : "—"}
+            {result ? moneyLastsText(result) : projection.isLoading ? "…" : "—"}
           </span>
         </FieldRow>
         {onApply && !inUse && (
@@ -262,4 +251,14 @@ export function ComparePlans() {
       </div>
     </div>
   );
+}
+
+/** How long the money lasts under a plan's projection. */
+function moneyLastsText(result: Parameters<typeof assessPlan>[0]) {
+  const outcome = assessPlan(result);
+  return outcome.succeeded
+    ? "through the projection"
+    : outcome.failureReason === "depleted"
+      ? `to ${outcome.failureYear}`
+      : `falls short in ${outcome.failureYear}`;
 }
