@@ -19,6 +19,7 @@ const AS_OF = new Date("2025-01-01");
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       accountSplits: {
         "401k": 0.4,

@@ -67,6 +67,7 @@ export function makeRetiringMidyearInput(
     hsa: 0,
   };
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.1,
       accountOrder: ["401k"],

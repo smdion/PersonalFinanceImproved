@@ -135,7 +135,7 @@ export function runGapYearDraw(
   const typedFigure = [...ctx.budgetOverrideMap.keys()].some((y) => y <= year);
   const contributionLines = typedFigure
     ? 0
-    : (input.budgetContributionLines ?? 0) *
+    : input.budgetContributionLines *
       ctx.inflation.growth(year - input.asOfDate.getFullYear()) *
       fraction;
   const spending = Math.max(0, budget - contributionLines);

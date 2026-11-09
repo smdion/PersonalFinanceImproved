@@ -44,6 +44,7 @@ function makeInput(overrides: {
   retirementAge?: number;
 }): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {

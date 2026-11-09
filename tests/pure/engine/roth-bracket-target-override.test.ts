@@ -33,6 +33,7 @@ const MFJ_BRACKETS = [
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       accountSplits: {
         "401k": 0.4,

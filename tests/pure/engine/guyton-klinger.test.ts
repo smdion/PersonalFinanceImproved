@@ -186,6 +186,7 @@ describe("applyGuytonKlingerStrategy (wrapper)", () => {
       hasBudgetOverride: false,
       yearIndex: 0,
       age: 65,
+      ssIncome: 0,
       crossYearState: initialCrossYearState(),
     };
     const result = applyGuytonKlingerStrategy(DEFAULT_PARAMS, input);
@@ -202,6 +203,7 @@ describe("applyGuytonKlingerStrategy (wrapper)", () => {
       hasBudgetOverride: false,
       yearIndex: 1,
       age: 66,
+      ssIncome: 0,
       crossYearState: {
         ...initialCrossYearState(),
         initialWithdrawalRate: 0.05,

@@ -66,6 +66,7 @@ export function household(
     },
     accumulationOverrides: [],
     decumulationOverrides: [],
+    budgetContributionLines: 0,
     currentAge: 78,
     retirementYear: AS_OF.getFullYear() - 13,
     projectionEndYear: AS_OF.getFullYear() + 4,

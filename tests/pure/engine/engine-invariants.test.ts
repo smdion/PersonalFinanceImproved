@@ -56,6 +56,7 @@ function asAccumulation(y: EngineYearProjection): EngineAccumulationYear {
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.15,
         accountSplits: {

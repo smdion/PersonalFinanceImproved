@@ -239,7 +239,7 @@ export function applyGuytonKlingerStrategy(
     params: gkParams,
     projectedExpenses: input.projectedExpenses,
     portfolioBalance: input.portfolioBalance,
-    ssIncome: input.ssIncome ?? 0,
+    ssIncome: input.ssIncome,
     ssIncomeToday: input.ssIncomeToday,
     ssGrowthFactor: input.ssGrowthFactor,
     effectiveInflation: input.effectiveInflation,

@@ -92,6 +92,7 @@ export function makePureGrowthInput(
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0,
         accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
@@ -160,6 +161,7 @@ export function makeTrinityInput(
   const withdrawalRate = overrides.decumulationDefaults?.withdrawalRate ?? 0.04;
   const startingBalance = 1_000_000;
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
       accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
@@ -226,6 +228,7 @@ export function makeStandardInput(
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,

@@ -22,6 +22,7 @@ const AS_OF = new Date("2025-03-07");
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       accountSplits: {
         "401k": 0.4,

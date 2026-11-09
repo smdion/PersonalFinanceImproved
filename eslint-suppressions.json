@@ -4055,9 +4055,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 12
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/growth-application.ts": {
@@ -4306,9 +4303,6 @@
   },
   "src/lib/pure/engine/spending-strategies/guyton-klinger.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },

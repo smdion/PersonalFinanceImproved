@@ -261,6 +261,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
     };
     return withConsistentStart(
       withCapsAge({
+        budgetContributionLines: 0,
         accumulationDefaults: makeAccumulationDefaults({
           contributionRate: 0.2,
           accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },

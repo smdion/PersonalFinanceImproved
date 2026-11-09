@@ -30,6 +30,7 @@ const STOCK_BOND_CORRELATIONS = [
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.29,
       accountSplits: {

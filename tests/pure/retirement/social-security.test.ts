@@ -32,6 +32,7 @@ const AS_OF = new Date("2025-03-07");
  */
 function makeSingleHousehold(): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {

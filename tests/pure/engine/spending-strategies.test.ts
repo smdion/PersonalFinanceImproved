@@ -30,6 +30,7 @@ function makeInput(
     hasBudgetOverride: false,
     yearIndex: 1,
     age: 66,
+    ssIncome: 0,
     crossYearState: initialCrossYearState(),
     ...overrides,
   };

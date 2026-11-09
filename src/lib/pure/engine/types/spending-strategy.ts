@@ -31,7 +31,7 @@ export interface SpendingStrategyInput {
   /** The youngest person's age (VPW: a couple uses the younger spouse's). */
   youngestAge?: number;
   /** Social Security paid this year (what it covers of spending). */
-  ssIncome?: number;
+  ssIncome: number;
   /** The same benefits in today's dollars, and this year's growth since
    *  the input's year — Guyton-Klinger compares benefits in today's dollars
    *  so a cost-of-living raise never reads as a benefit starting. */

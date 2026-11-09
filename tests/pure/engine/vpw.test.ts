@@ -18,6 +18,7 @@ const input = (over: Partial<Parameters<typeof applyVpw>[1]> = {}) => ({
   hasBudgetOverride: false,
   yearIndex: 0,
   age: 65,
+  ssIncome: 0,
   crossYearState: initialCrossYearState(),
   ...over,
 });

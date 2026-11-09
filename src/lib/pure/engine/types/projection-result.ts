@@ -69,7 +69,7 @@ export type ProjectionInput = {
     socialSecurityWageBase: number;
   };
   /** The working budget's contribution lines, a year, in today's dollars. */
-  budgetContributionLines?: number;
+  budgetContributionLines: number;
   /** The projection's last year. */
   projectionEndYear: number;
   currentSalary: number;
