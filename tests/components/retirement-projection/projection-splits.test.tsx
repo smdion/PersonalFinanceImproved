@@ -165,7 +165,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     },
     coastFireMcResult: null,
     debouncedBaseInput: null,
-    scenarioView: "baseline",
+    projectionView: "baseline",
 
     // Derived
     result: null,

@@ -44,7 +44,7 @@ export type ReportGateFailure =
   | "mc-not-fresh";
 
 export interface ReportGateInput {
-  scenarioView: string;
+  projectionView: string;
   mcTaxMode: "simple" | "advanced";
   /** Deep-equal-able live query input (`ProjectionQueries.sharedInput`). */
   sharedInput: unknown;
@@ -79,7 +79,7 @@ function deepEqual(a: unknown, b: unknown): boolean {
 }
 
 export function checkReportGate(input: ReportGateInput): ReportGateResult {
-  if (input.scenarioView !== "baseline") {
+  if (input.projectionView !== "baseline") {
     return { ok: false, failure: "not-baseline-scenario" };
   }
   if (input.mcTaxMode === "simple") {

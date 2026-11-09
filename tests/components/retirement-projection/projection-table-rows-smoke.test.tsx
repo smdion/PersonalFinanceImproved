@@ -52,7 +52,7 @@ function stateFor(result: ProjectionResult): ProjectionState {
     showAllYears: true,
     personFilter: "all",
     isPersonFiltered: false,
-    scenarioView: "baseline",
+    projectionView: "baseline",
   } as unknown as ProjectionFormState;
   const { result: derived } = renderHook(() =>
     useProjectionDerived(form, queries, { withdrawalRate: 0.04, people }),

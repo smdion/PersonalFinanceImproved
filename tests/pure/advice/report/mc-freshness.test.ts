@@ -8,7 +8,7 @@ import {
 function baseInput(overrides: Partial<ReportGateInput> = {}): ReportGateInput {
   const sharedInput = { a: 1 };
   return {
-    scenarioView: "baseline",
+    projectionView: "baseline",
     mcTaxMode: "advanced",
     sharedInput,
     debouncedInput: sharedInput,
@@ -24,7 +24,7 @@ describe("checkReportGate", () => {
   });
 
   it("blocks a non-baseline scenario (Coast FIRE/Rate-Seeded source a different MC result and different deterministic projection than the baseline assumptions echo)", () => {
-    const result = checkReportGate(baseInput({ scenarioView: "coastFire" }));
+    const result = checkReportGate(baseInput({ projectionView: "coastFire" }));
     expect(result).toEqual({ ok: false, failure: "not-baseline-scenario" });
   });
 
@@ -88,7 +88,7 @@ describe("checkReportGate", () => {
   it("checks scenario and tax-mode before the freshness checks (cheap, deterministic conditions first)", () => {
     const result = checkReportGate(
       baseInput({
-        scenarioView: "rateSeeded",
+        projectionView: "rateSeeded",
         mcTaxMode: "simple",
         mcQuery: { isFetching: true, data: undefined },
       }),

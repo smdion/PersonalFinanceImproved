@@ -190,7 +190,7 @@ export function useProjectionFormState() {
   const [chartView, setChartView] = useState<"balance" | "strategy" | "budget">(
     "balance",
   );
-  const [scenarioView, setScenarioView] = useState<
+  const [projectionView, setProjectionView] = useState<
     | "baseline"
     | "coastFire"
     | "coastFireToday"
@@ -324,8 +324,8 @@ export function useProjectionFormState() {
     setContribView,
     chartView,
     setChartView,
-    scenarioView,
-    setScenarioView,
+    projectionView,
+    setProjectionView,
     coastFireCustomAge,
     setCoastFireCustomAge,
     coastFireCustomAgeDraft,

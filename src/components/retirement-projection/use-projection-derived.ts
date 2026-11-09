@@ -51,7 +51,7 @@ export function useProjectionDerived(
     showAllYears,
     personFilter,
     isPersonFiltered,
-    scenarioView,
+    projectionView,
   } = form;
 
   const {
@@ -89,17 +89,17 @@ export function useProjectionDerived(
     // baseline engineQuery, via the shared activeAltMcResult selector
     // (use-projection-queries.ts).
     if (
-      (scenarioView === "coastFire" ||
-        scenarioView === "coastFireToday" ||
-        scenarioView === "coastFireCustom" ||
-        scenarioView === "rateSeeded") &&
+      (projectionView === "coastFire" ||
+        projectionView === "coastFireToday" ||
+        projectionView === "coastFireCustom" ||
+        projectionView === "rateSeeded") &&
       activeAltMcResult?.deterministicProjection
     ) {
       return activeAltMcResult.deterministicProjection;
     }
     return engineData.result;
   }, [
-    scenarioView,
+    projectionView,
     activeAltMcResult?.deterministicProjection,
     engineData?.result,
   ]);

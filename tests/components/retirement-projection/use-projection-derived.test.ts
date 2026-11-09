@@ -198,7 +198,7 @@ function makeForm(
     showAllYears: false,
     personFilter: "all",
     isPersonFiltered: false,
-    scenarioView: "baseline",
+    projectionView: "baseline",
     ...overrides,
   } as unknown as ProjectionFormState;
 }
@@ -247,14 +247,14 @@ describe("useProjectionDerived", () => {
     expect(result.current.combinedSalary).toBe(150000);
   });
 
-  it("swaps rawResult to the Coast FIRE MC deterministic projection when scenarioView is coastFire", async () => {
+  it("swaps rawResult to the Coast FIRE MC deterministic projection when projectionView is coastFire", async () => {
     const useProjectionDerived = await importHook();
     const baselineYears = [makeAccumYear({ year: 2026 })];
     const coastYears = [makeAccumYear({ year: 2099 })];
     const engineData = makeEngineData(baselineYears);
     const { result } = renderHook(() =>
       useProjectionDerived(
-        makeForm({ scenarioView: "coastFire" }),
+        makeForm({ projectionView: "coastFire" }),
         makeQueries({
           engineQuery: {
             data: engineData,

@@ -135,7 +135,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     mcQuery,
     mcLoading,
     debouncedBaseInput,
-    scenarioView,
+    projectionView,
     coastFireMcQuery,
     activeAltMcResult,
     dollarMode,
@@ -184,9 +184,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   // null while the alt-scenario MC is loading — the existing
   // `!mc && mcLoading` skeleton branch below handles the loading state.
   const mc =
-    scenarioView === "coastFire" ||
-    scenarioView === "coastFireToday" ||
-    scenarioView === "rateSeeded"
+    projectionView === "coastFire" ||
+    projectionView === "coastFireToday" ||
+    projectionView === "rateSeeded"
       ? (activeAltMcResult ?? null)
       : mcQuery.data?.result && !mcLoading
         ? mcQuery.data.result

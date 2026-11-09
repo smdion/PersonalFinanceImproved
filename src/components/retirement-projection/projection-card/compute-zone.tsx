@@ -6,14 +6,14 @@ export function ScenarioPills({
   coastFireAvailable,
   state,
   coastFireAge,
-  scenarioView,
-  setScenarioView,
+  projectionView,
+  setProjectionView,
 }: {
   coastFireAvailable: boolean;
   state: ProjectionState;
   coastFireAge: number | null;
-  scenarioView: ProjectionState["scenarioView"];
-  setScenarioView: ProjectionState["setScenarioView"];
+  projectionView: ProjectionState["projectionView"];
+  setProjectionView: ProjectionState["setProjectionView"];
 }) {
   return (
     <LabeledPillGroup
@@ -37,16 +37,16 @@ export function ScenarioPills({
       <PillBtn
         size="lg"
         tone="compute"
-        active={scenarioView === "baseline"}
-        onClick={() => setScenarioView("baseline")}
+        active={projectionView === "baseline"}
+        onClick={() => setProjectionView("baseline")}
         label="Baseline"
       />
       <PillBtn
         size="lg"
         tone="compute"
-        active={scenarioView === "coastFire"}
+        active={projectionView === "coastFire"}
         onClick={() => {
-          if (coastFireAvailable) setScenarioView("coastFire");
+          if (coastFireAvailable) setProjectionView("coastFire");
         }}
         label={
           coastFireAvailable
@@ -58,9 +58,9 @@ export function ScenarioPills({
       <PillBtn
         size="lg"
         tone="compute"
-        active={scenarioView === "coastFireToday"}
+        active={projectionView === "coastFireToday"}
         onClick={() => {
-          if (coastFireAvailable) setScenarioView("coastFireToday");
+          if (coastFireAvailable) setProjectionView("coastFireToday");
         }}
         label="Coast FIRE (Today)"
         disabled={!coastFireAvailable}
@@ -68,15 +68,15 @@ export function ScenarioPills({
       <PillBtn
         size="lg"
         tone="compute"
-        active={scenarioView === "coastFireCustom"}
-        onClick={() => setScenarioView("coastFireCustom")}
+        active={projectionView === "coastFireCustom"}
+        onClick={() => setProjectionView("coastFireCustom")}
         label="Coast FIRE (Custom)"
       />
       <PillBtn
         size="lg"
         tone="compute"
-        active={scenarioView === "rateSeeded"}
-        onClick={() => setScenarioView("rateSeeded")}
+        active={projectionView === "rateSeeded"}
+        onClick={() => setProjectionView("rateSeeded")}
         label="Initial Rate"
       />
     </LabeledPillGroup>

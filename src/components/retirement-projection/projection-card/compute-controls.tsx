@@ -19,8 +19,8 @@ export function ComputeControls({
 }) {
   const {
     projectionMode,
-    scenarioView,
-    setScenarioView,
+    projectionView,
+    setProjectionView,
     coastFireMcQuery,
     coastFireAge: deterministicCoastFireAge,
   } = state;
@@ -42,10 +42,10 @@ export function ComputeControls({
         coastFireAvailable={coastFireAvailable}
         state={state}
         coastFireAge={coastFireAge}
-        scenarioView={scenarioView}
-        setScenarioView={setScenarioView}
+        projectionView={projectionView}
+        setProjectionView={setProjectionView}
       />
-      {scenarioView === "coastFireCustom" && (
+      {projectionView === "coastFireCustom" && (
         <CoastFireCustomAge
           state={state}
           result={result}

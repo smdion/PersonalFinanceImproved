@@ -56,7 +56,7 @@ export function useProjectionQueries(
     mcTaxMode,
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
-    scenarioView,
+    projectionView,
     coastFireCustomAge,
     dollarMode,
   } = form;
@@ -627,8 +627,8 @@ export function useProjectionQueries(
   // together).
   const coastFireMcQueryEnabled =
     coastFireMcAutoloadEnabled ||
-    scenarioView === "coastFire" ||
-    scenarioView === "coastFireToday";
+    projectionView === "coastFire" ||
+    projectionView === "coastFireToday";
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
     { ...debouncedBaseInput, runId: coastFireMcRunId },
     {
@@ -709,7 +709,7 @@ export function useProjectionQueries(
       { ...rateSeededMcQueryInput, runId: rateSeededMcRunId },
       {
         enabled:
-          scenarioView === "rateSeeded" &&
+          projectionView === "rateSeeded" &&
           engineQuery.isSuccess &&
           !engineQuery.isFetching,
         placeholderData: (prev) => prev,
@@ -767,9 +767,9 @@ export function useProjectionQueries(
   // (computeCoastFireMC already computes both internally), just different
   // fields of its response.
   const inCoastFireScenario =
-    scenarioView === "coastFire" || scenarioView === "coastFireToday";
+    projectionView === "coastFire" || projectionView === "coastFireToday";
   const activeCoastFireMcResult =
-    scenarioView === "coastFireToday"
+    projectionView === "coastFireToday"
       ? coastFireTodayMcResult
       : coastFireMcResult;
   // Generalized "which non-baseline scenario, if any, is active" — Coast
@@ -780,12 +780,12 @@ export function useProjectionQueries(
   // plain state, not a query — see checkCoastFireCustomAge above).
   const inAltScenario =
     inCoastFireScenario ||
-    scenarioView === "rateSeeded" ||
-    scenarioView === "coastFireCustom";
+    projectionView === "rateSeeded" ||
+    projectionView === "coastFireCustom";
   const activeAltMcResult =
-    scenarioView === "rateSeeded"
+    projectionView === "rateSeeded"
       ? rateSeededMcResult
-      : scenarioView === "coastFireCustom"
+      : projectionView === "coastFireCustom"
         ? // Without this guard, changing the
           // custom age (committing a new coastFireCustomAge) without
           // clicking "Check this age" again kept rendering the PREVIOUS
@@ -804,9 +804,9 @@ export function useProjectionQueries(
   const mcLoading =
     projectionMode === "monteCarlo" &&
     (isRerunning ||
-      (scenarioView === "rateSeeded"
+      (projectionView === "rateSeeded"
         ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
-        : scenarioView === "coastFireCustom"
+        : projectionView === "coastFireCustom"
           ? coastFireProbeLoading
           : inCoastFireScenario
             ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
