@@ -7942,7 +7942,7 @@
   },
   "src/server/routers/projection/relocation.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 7
     },
     "max-lines-per-function": {
       "count": 1
@@ -8369,9 +8369,6 @@
   },
   "src/server/services/budget/annual-expenses.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
@@ -8701,7 +8698,7 @@
   },
   "src/server/services/projection/engine-payload/budget-expenses.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 2
     },
     "ratchet/max-comment-lines": {
       "count": 2

@@ -177,10 +177,8 @@ export const relocationProjectionRouter = createTRPCRouter({
       // intentionally stale for contribution-linked items — reading it
       // directly here silently dropped every linked item's dollar amount,
       // diverging from what the Retirement page shows for the same profile.
-      const currentNumColumns =
-        (currentProfile.columnLabels as string[] | null)?.length ?? 1;
-      const relocNumColumns =
-        (relocProfile.columnLabels as string[] | null)?.length ?? 1;
+      const currentNumColumns = currentProfile.columnLabels.length;
+      const relocNumColumns = relocProfile.columnLabels.length;
       const resolvedCurrentItems =
         input.currentExpenseOverride !== null
           ? currentItems

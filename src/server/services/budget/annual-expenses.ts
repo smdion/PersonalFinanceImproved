@@ -46,7 +46,7 @@ export async function getAnnualExpensesFromBudget(
   const resolvedItems = await resolveLinkedBudgetItemAmounts(
     { db, scope: { asOf } },
     items,
-    (profile.columnLabels as string[] | null)?.length ?? 0,
+    profile.columnLabels.length,
     await resolveProfileSelection({ db }),
   );
 

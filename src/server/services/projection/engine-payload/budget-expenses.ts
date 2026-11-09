@@ -42,8 +42,7 @@ export async function resolvePhaseExpenses(
     (opts.accumulationBudgetProfileId
       ? allBudgetProfiles.find((p) => p.id === opts.accumulationBudgetProfileId)
       : undefined) ?? defaultProfile;
-  const accMaxCol =
-    Math.max(0, (accProfile?.columnLabels as string[] | null)?.length ?? 1) - 1;
+  const accMaxCol = Math.max(0, accProfile?.columnLabels.length ?? 1) - 1;
   const accCol = Math.min(
     Math.max(0, opts.accumulationBudgetColumn ?? globalActiveCol),
     accMaxCol,
@@ -57,7 +56,7 @@ export async function resolvePhaseExpenses(
       ? allBudgetProfiles.find((p) => p.id === opts.decumulationBudgetProfileId)
       : undefined) ?? defaultProfile;
   const decumulationMaxCol =
-    Math.max(0, (decProfile?.columnLabels as string[] | null)?.length ?? 1) - 1;
+    Math.max(0, decProfile?.columnLabels.length ?? 1) - 1;
   const decCol = Math.min(
     Math.max(0, opts.decumulationBudgetColumn ?? globalActiveCol),
     decumulationMaxCol,
@@ -74,10 +73,8 @@ export async function resolvePhaseExpenses(
   // than raw `amounts`, which is intentionally stale for contribution-linked
   // items — reading it directly here silently dropped every linked item's
   // dollar amount from accumulation/decumulation expenses.
-  const accNumColumns =
-    (accProfile?.columnLabels as string[] | null)?.length ?? 1;
-  const decumulationNumColumns =
-    (decProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const accNumColumns = accProfile?.columnLabels.length ?? 1;
+  const decumulationNumColumns = decProfile?.columnLabels.length ?? 1;
   const dated = { db, scope: { asOf: opts.asOf } };
   const resolvedAccItems = opts.accumulationExpenseOverride
     ? accItems
