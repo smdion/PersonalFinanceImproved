@@ -1,3 +1,4 @@
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import type {
   EngineAccumulationYear,
   EngineDecumulationYear,
@@ -23,4 +24,15 @@ export function gkAnchorRate(
   const carriedIn = years[i - 1]!.retirementBalance;
   const draw = first.projectedExpenses - first.ssIncome;
   return carriedIn > 0 && draw > 0 ? draw / carriedIn : null;
+}
+
+/** gkAnchorRate for a strategy whose config tracks an anchor rate (`tracksAnchorRate`), else
+ *  null; `strategy` is the stored key, so an unknown or missing one finds no config. */
+export function strategyAnchorRate(
+  strategy: string | undefined,
+  years: Parameters<typeof gkAnchorRate>[0],
+): number | null {
+  const tracks =
+    strategy !== undefined && storedStrategyConfig(strategy)?.tracksAnchorRate;
+  return tracks ? gkAnchorRate(years) : null;
 }

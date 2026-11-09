@@ -4,9 +4,7 @@
 
 import { DEFAULT_ENDOWMENT_ROLLING_YEARS } from "../constants";
 
-// ---------------------------------------------------------------------------
 // Param field descriptor — drives UI rendering
-// ---------------------------------------------------------------------------
 
 type ParamFieldType = "percent" | "number" | "boolean";
 
@@ -42,9 +40,7 @@ type ParamField = {
   lever?: ParamLever;
 };
 
-// ---------------------------------------------------------------------------
 // Strategy config shape
-// ---------------------------------------------------------------------------
 
 /** How the strategy determines annual spending — drives UI visibility of budget/rate controls. */
 type IncomeSource = "budget" | "rate" | "formula";
@@ -88,15 +84,17 @@ type WithdrawalStrategyConfig = {
    *  smooth deterministic projection never has; hides the deterministic bars on the Yearly
    *  Income Stability chart (spending-stability-chart.tsx). */
   reactsToVolatility: boolean;
+  /** Spending anchors on the first retirement year's rate (strategyAnchorRate). */
+  tracksAnchorRate?: true;
+  /** Appended to "driven by the Retirement Budget" in the reference-rate tip. */
+  referenceRateNote?: string;
   /** Which SpendingCrossYearState fields this strategy reads/writes. */
   crossYearStateKeys: readonly string[];
   /** Strategy guide content for the flyout panel. */
   guide: StrategyGuide;
 };
 
-// ---------------------------------------------------------------------------
 // THE CONFIG — one entry per withdrawal strategy
-// ---------------------------------------------------------------------------
 
 export const WITHDRAWAL_STRATEGY_CONFIG = {
   fixed: {
@@ -230,6 +228,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
     reactsToVolatility: true,
+    tracksAnchorRate: true,
+    referenceRateNote: ", adjusted by guardrails",
     paramFields: [
       {
         key: "upperGuardrail",
@@ -331,6 +331,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesWithdrawalRate: true,
     usesPostRetirementRaise: false,
     reactsToVolatility: false,
+    referenceRateNote: " and its own annual decline schedule",
     paramFields: [
       {
         key: "annualDeclineRate",
@@ -685,15 +686,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
   },
 } as const satisfies Record<string, WithdrawalStrategyConfig>;
 
-// ---------------------------------------------------------------------------
 // Derived type — auto-expands when you add a config entry
-// ---------------------------------------------------------------------------
 
 export type WithdrawalStrategyType = keyof typeof WITHDRAWAL_STRATEGY_CONFIG;
 
-// ---------------------------------------------------------------------------
 // Query helpers — all derived from config
-// ---------------------------------------------------------------------------
 
 /** All strategy keys as a Zod-compatible tuple. */
 export const WITHDRAWAL_STRATEGY_VALUES = Object.keys(

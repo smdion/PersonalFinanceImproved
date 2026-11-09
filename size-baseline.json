@@ -172,7 +172,7 @@
     "src/components/retirement-projection/projection-card/slide-panels.tsx": 124,
     "src/components/retirement-projection/projection-card/table-area.tsx": 42,
     "src/components/retirement-projection/projection-card/use-projection-report.ts": 82,
-    "src/components/retirement-projection/projection-chart.tsx": 1078,
+    "src/components/retirement-projection/projection-chart.tsx": 1075,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 462,
     "src/components/retirement-projection/projection-mc-results.tsx": 108,
     "src/components/retirement-projection/projection-table-accum-balances.model.ts": 235,
@@ -223,7 +223,7 @@
     "src/lib/budget-api/ynab-client.ts": 484,
     "src/lib/config/account-types.ts": 837,
     "src/lib/config/milestones.ts": 664,
-    "src/lib/config/withdrawal-strategies.ts": 757,
+    "src/lib/config/withdrawal-strategies.ts": 754,
     "src/lib/constants.ts": 349,
     "src/lib/db/backup/backup-transforms.ts": 986,
     "src/lib/db/backup/version-logic.ts": 557,
@@ -338,7 +338,7 @@
     "src/lib/pure/simulation/inflation-risk.ts": 23,
     "src/lib/pure/simulation/monte-carlo.ts": 304,
     "src/lib/pure/simulation/stress-test-run.ts": 108,
-    "src/lib/pure/simulation/trial-run.ts": 320,
+    "src/lib/pure/simulation/trial-run.ts": 317,
     "src/lib/pure/simulation/trial-summary.ts": 299,
     "src/lib/pure/sync/budget-preview.ts": 358,
     "src/lib/sec/facts-sync.ts": 576,
@@ -709,7 +709,7 @@
       "OverridesPanel.renderFields": 168
     },
     "src/components/retirement-projection/projection-chart.tsx": {
-      "ProjectionChart": 1019,
+      "ProjectionChart": 1016,
       "ProjectionChart.content": 339
     },
     "src/components/retirement-projection/projection-hero-kpis.tsx": {
@@ -994,7 +994,7 @@
       "calculateBrokerageGoals": 212
     },
     "src/lib/pure/simulation/trial-run.ts": {
-      "runTrials": 304
+      "runTrials": 301
     },
     "src/lib/sec/facts-sync.ts": {
       "refreshOne": 203

@@ -1,5 +1,5 @@
 /** The Simulation bar: what was run, its stat tiles and its run controls. */
-import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
+import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { ControlZone } from "./pill-btn";
@@ -58,11 +58,10 @@ export function SimulationBar({
     }
   }
 
-  // Guyton-Klinger's actual starting rate (see gkAnchorRate).
-  const gkImpliedRate =
-    si.withdrawalStrategy === "guyton_klinger" && result
-      ? gkAnchorRate(result.projectionByYear)
-      : null;
+  // The anchoring strategy's actual starting rate (see strategyAnchorRate).
+  const gkImpliedRate = result
+    ? strategyAnchorRate(si.withdrawalStrategy, result.projectionByYear)
+    : null;
 
   const presetBar: Record<
     string,

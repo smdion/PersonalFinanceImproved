@@ -1,7 +1,7 @@
 "use client";
 
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
-import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
+import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import {
   taxTypeLabel,
   categoryChartHex,
@@ -91,10 +91,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const postRetirementInflation = engineSettings.postRetirementInflation
     ? Number(engineSettings.postRetirementInflation)
     : generalInflation;
-  const gkAnchor =
-    engineSettings.withdrawalStrategy === "guyton_klinger"
-      ? gkAnchorRate(years)
-      : null;
+  const gkAnchor = strategyAnchorRate(engineSettings.withdrawalStrategy, years);
   const retirementIndex = years.findIndex((y) => y.phase === "decumulation");
   const retYear = years[retirementIndex]?.year ?? null;
   // Also pin the SS and RMD start years so milestone reference lines always

@@ -18,7 +18,7 @@ export function withdrawalRateRows(inputs: SimulationInputs) {
       ? `Reference rate only — ${cfg.label} computes withdrawals from the IRS RMD factor, not this rate.`
       : !isBudgetSeeded && cfg
         ? `Reference rate only — ${cfg.label} computes withdrawals as a percentage of your portfolio balance directly (see Strategy Params for its actual rate), not this field.`
-        : `Reference rate only — used to estimate the "years to FI" figure elsewhere. Your actual spending is driven by the Retirement Budget${strategy === "guyton_klinger" ? ", adjusted by guardrails" : strategy === "spending_decline" ? " and its own annual decline schedule" : ""}, not this rate.`;
+        : `Reference rate only — used to estimate the "years to FI" figure elsewhere. Your actual spending is driven by the Retirement Budget${cfg?.referenceRateNote ?? ""}, not this rate.`;
   return (
     <>
       <AssumptionRow
