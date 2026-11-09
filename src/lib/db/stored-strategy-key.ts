@@ -1,7 +1,7 @@
 /**
  * retirement_settings.withdrawal_strategy as read: a free varchar, checked
  * once against the strategy set; a key outside it is logged and read as
- * stored (any install loads, owner FQ8).
+ * stored, so any install loads.
  */
 import {
   WITHDRAWAL_STRATEGY_VALUES,
@@ -18,6 +18,6 @@ function isStrategyKey(key: string): key is WithdrawalStrategyType {
 export function readStoredStrategy(stored: string): WithdrawalStrategyType {
   if (isStrategyKey(stored)) return stored;
   logWarnOnce("withdrawal_strategy_unknown_key", stored, { stored });
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the one place an unknown stored key passes on as before (FQ8)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the one place an unknown stored key passes on as stored
   return stored as WithdrawalStrategyType;
 }

@@ -37,8 +37,7 @@ export interface RouteBracketInfo {
   standardDeduction?: number;
   /** See `RankWithdrawalTiersInput`'s field of the same
    *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
-
-   *  Undefined ⇒ "roth_first", matching all pre-existing behavior. */
+   *  Undefined ⇒ "roth_first". */
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 }
 

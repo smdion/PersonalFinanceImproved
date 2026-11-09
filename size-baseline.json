@@ -313,7 +313,7 @@
     "src/lib/pure/engine/withdrawal-routing/index.ts": 266,
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": 206,
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
-    "src/lib/pure/engine/withdrawal-routing/types.ts": 72,
+    "src/lib/pure/engine/withdrawal-routing/types.ts": 71,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
     "src/lib/pure/engine/withdrawal-solver.ts": 455,
     "src/lib/pure/household/compensation.ts": 327,

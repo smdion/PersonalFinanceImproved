@@ -176,8 +176,8 @@ export const strategyRouter = createTRPCRouter({
         distributionTaxRates,
       );
 
-      // Every strategy's lightweight Simulation uses fixed seed 42 (common random
-      // numbers for a fair comparison), so no seed needs persisting.
+      // Every strategy's lightweight Simulation uses a fixed `COMPARISON_SEED` (common
+      // random numbers for a fair comparison), so no seed needs persisting.
       type StrategyComparisonResult = {
         /** The Simulation preset behind the Success and Stability columns. */
         presetLabel: string;
