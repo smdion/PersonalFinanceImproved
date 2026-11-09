@@ -10,11 +10,8 @@ import { firstRow } from "@/lib/utils/first-row";
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
 /**
- * Group a profile's budget items (already sort_order-ordered) into ordered
- * category blocks, preserving both the categories' relative order and each
- * category's internal item order. Mirrors the client-side grouping in
- * useBudgetDerivedData's categoryMap (use-budget-derived-data.ts) — same
- * logic, server-side, used by the reorder mutations below.
+ * Group a profile's sort_order-ordered items into ordered category blocks, keeping both
+ * orders. Server-side mirror of useBudgetDerivedData's categoryMap, for the reorder mutations.
  */
 function groupItemsByCategory(
   items: BudgetItemRow[],
@@ -32,10 +29,8 @@ function groupItemsByCategory(
 }
 
 /**
- * Flatten ordered category blocks back into a single item list and write a
- * clean, gapless 0..N-1 sort_order sequence. Used after every reorder so
- * any pre-existing sort_order gaps/duplicates get cleaned up as a side
- * effect (self-healing) instead of accumulating drift over time.
+ * Flatten category blocks into one list and write a gapless 0..N-1 sort_order,
+ * which also repairs any existing gaps or duplicates.
  */
 async function renumberItems(
   db: DbOrTx,
@@ -155,10 +150,8 @@ export const itemProcedures = {
       return { ok: true };
     }),
 
-  /** Swap an item's position with an adjacent item within the same
-   *  category. No-ops at the category's first/last item boundary — moving
-   *  an item into a different category is the "Move..." dropdown's job
-   *  (moveItem above), not this. */
+  /** Swap an item with its neighbour in the same category; no-op at the category's
+   *  edge (moving across categories is moveItem's job). */
   reorderItem: budgetProcedure
     .input(
       z.object({

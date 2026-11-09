@@ -1,8 +1,6 @@
 /**
- * The household's sub-accounts as of the latest snapshot — what a SimpleFIN
- * account can link to. Sub-accounts exist only as snapshot rows (one
- * tracked account holds several: each owner's and each tax type's money;
- * DESIGN.md "Performance Accounts"), identified by snapshotAccountKey.
+ * The household's sub-accounts (snapshot rows keyed by snapshotAccountKey; DESIGN.md
+ * "Performance Accounts") as of the latest snapshot: what a SimpleFIN account links to.
  */
 import "server-only";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -105,11 +103,8 @@ export async function loadLatestSubAccounts(db: Db): Promise<SubAccount[]> {
 }
 
 /**
- * Every part the given accounts have had in any snapshot — closed or
- * missing from the latest one included — with each snapshot's part amounts
- * (ascending by date) and each part's label from its most recent row. For
- * holding history kept per part, whose parts can predate the latest
- * snapshot (e.g. money that passed through a Traditional part years ago).
+ * Every part the given accounts have had in any snapshot (closed ones included), with
+ * per-snapshot amounts ascending by date and each part's latest label.
  */
 export async function loadAccountPartHistory(
   db: Db,

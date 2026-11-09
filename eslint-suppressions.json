@@ -6270,19 +6270,8 @@
       "count": 1
     }
   },
-  "src/server/auth-mode.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/auth.config.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6290,33 +6279,12 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 7
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
-    }
-  },
-  "src/server/data/budget-profiles.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
-    }
-  },
-  "src/server/data/category-links.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 2
     }
   },
   "src/server/data/database-status.ts": {
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/data/first-run.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     }
   },
@@ -6326,9 +6294,6 @@
     }
   },
   "src/server/data/household-timezone.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -6336,31 +6301,10 @@
   "src/server/data/investments.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/data/jobs.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/server/data/lock-row.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/data/people.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
-  "src/server/data/salaries.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6368,18 +6312,12 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
   },
   "src/server/data/snapshots.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
@@ -6390,23 +6328,12 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 4
     },
-    "ratchet/max-comment-lines": {
-      "count": 2
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
   "src/server/local-admin-login.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
-      "count": 1
-    }
-  },
-  "src/server/mutation-events.ts": {
-    "ratchet/max-comment-lines": {
       "count": 1
     }
   },
@@ -6435,9 +6362,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 3
     }
@@ -6447,18 +6371,7 @@
       "count": 4
     }
   },
-  "src/server/routers/budget/item-amounts.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
-    }
-  },
   "src/server/routers/budget/item-links.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }
@@ -6467,9 +6380,6 @@
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 3
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     }
@@ -6477,9 +6387,6 @@
   "src/server/routers/budget/profiles.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/max-comment-lines": {
-      "count": 3
     }
   },
   "src/server/routers/budget/summary.ts": {

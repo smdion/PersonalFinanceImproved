@@ -127,10 +127,8 @@ export const itemLinkProcedures = {
       return { ok: true };
     }),
 
-  /** List non-payroll contribution accounts for the linking UI.
-   *  jobId === null means the contribution comes from take-home pay (IRA,
-   *  taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP)
-   *  are payroll-deducted and already on the paycheck. */
+  /** Non-payroll contribution accounts for the linking UI: jobId === null means take-home
+   *  pay funds it (IRA, brokerage); job-linked ones are already on the paycheck. */
   listContribAccountsForLinking: protectedProcedure.query(async ({ ctx }) => {
     const [contribs, people, perfAccounts] = await Promise.all([
       ctx.db
@@ -151,24 +149,13 @@ export const itemLinkProcedures = {
       const perf = c.performanceAccountId
         ? perfMap.get(c.performanceAccountId)
         : null;
-      // This account's own ownership (individual + personId) must win over
-      // the linked performance account's own ownershipType — a shared,
-      // jointly-tracked master (e.g. one Vanguard IRA both spouses
-      // contribute to separately) has ownershipType "joint", but each
-      // contribution_accounts row under it has its own real owner. Letting
-      // the master's "joint" win here made every such row render with the
-      // identical generic "Joint ..." label, with no way to tell which
-      // unlinked row belonged to which person when picking a budget item
-      // to link it to. See portfolioAccountLabel's identical precedence
-      // rule for the analogous portfolio-snapshot-row case.
+      // This row's own ownership wins over the linked performance account's: a
+      // joint master can hold contribution rows each with a real owner, and
+      // "Joint ..." would hide whose row it is (as in portfolioAccountLabel).
       const ownerPersonId = c.ownership === "individual" ? c.personId : null;
-      // Always pass a perf-shaped object, even with no linked performance
-      // account — falling back to `undefined` here would drop this
-      // account's own ownership (c.ownership) entirely, since
-      // portfolioAccountLabel's internal fallback only ever consults
-      // perf.ownershipType, never the caller's own row. A joint
-      // contribution account with no performance account linked yet (the
-      // normal pre-linking state) would silently lose its "Joint" prefix.
+      // Always pass a perf-shaped object: portfolioAccountLabel reads ownership
+      // only from perf.ownershipType, so `undefined` would drop an unlinked joint
+      // account's "Joint" prefix.
       const label = portfolioAccountLabel(
         {
           accountType: c.accountType,
@@ -190,14 +177,9 @@ export const itemLinkProcedures = {
         ownerPersonId,
         personMap,
       );
-      // Two of one person's own accounts (e.g. a Roth and a Traditional
-      // IRA) commonly share the same owner + institution + account type,
-      // so the label above alone doesn't distinguish them — always append
-      // tax treatment here rather than only on a detected collision, since
-      // a collision-only rule fails silently the moment a third account
-      // shares the same three fields. Matches how the Portfolio page
-      // always shows tax treatment as its own separate label, never
-      // conditionally.
+      // One person's accounts often share owner + institution + type (Roth and
+      // Traditional IRA), so tax treatment is always appended, as the Portfolio
+      // page always shows it, rather than only on a detected collision.
       const taxLabel = TAX_TREATMENT_LABELS[c.taxTreatment] ?? c.taxTreatment;
       return {
         id: c.id,

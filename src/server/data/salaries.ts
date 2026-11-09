@@ -23,11 +23,8 @@ export async function fetchSalaryProfile(
 }
 
 /**
- * Resolve just the id of the globally-active Salary Profile (the same
- * app_settings lookup loadEffectiveSalaryProfile does internally), for
- * callers that need the id itself to write back into that profile's row —
- * not just its resolved job map. See savings.ts's extraPaycheckRouting
- * sub-router, which reads/writes a single job's entry within this row.
+ * Just the id of the globally-active Salary Profile, for callers that write back into
+ * that profile's row (e.g. savings.ts's extraPaycheckRouting).
  */
 export async function resolveActiveSalaryProfileId(
   db: Db,

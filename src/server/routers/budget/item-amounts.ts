@@ -16,11 +16,8 @@ import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { firstRow } from "@/lib/utils/first-row";
 
 /**
- * Which Contribution Profile a budget-linked item edit writes into — the
- * one the page shows. Throws rather than silently writing nowhere:
- * contributionValue/Method have no account-level fallback (see
- * applyContribActiveFields), so an edit with no profile has nowhere
- * correct to go.
+ * The Contribution Profile a budget-linked item edit writes into (the one the page shows).
+ * Throws when none: contributionValue/Method have no account-level fallback.
  */
 async function resolveEffectiveContributionProfileIdForItem(
   db: DbOrTx,
@@ -60,19 +57,13 @@ export const itemAmountProcedures = {
       if (!item)
         throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
 
-      // Linked items: the amount IS the budget amount from the user's
-      // perspective, so budgetProcedure is intentionally allowed to write
-      // through to the linked contribution account rather than the dead
-      // budget_items.amounts field it would otherwise shadow. Writes into
-      // whichever Contribution Profile is currently in effect for this
-      // column — contributionValue/Method have no account-level fallback.
+      // A linked item's amount is its contribution account's amount, so this
+      // budget procedure writes through to the account in the Contribution
+      // Profile in effect (no account-level fallback), not to budget_items.amounts.
       if (item.contributionAccountId) {
         const accountId = item.contributionAccountId;
-        // Read-resolve-write in one transaction (matches
-        // patchProfileSubEntry's convention for the same class of
-        // read-merge-write-a-JSON-blob operation) — a bare SELECT then
-        // UPDATE with no transaction boundary at all, which this was
-        // before, is strictly worse than that convention for no reason.
+        // Read-resolve-write in one transaction, like patchProfileSubEntry's
+        // other read-merge-write-a-JSON-blob operations.
         await ctx.db.transaction(async (tx) => {
           const contributionProfileId =
             await resolveEffectiveContributionProfileIdForItem(
@@ -138,14 +129,9 @@ export const itemAmountProcedures = {
         .where(inArray(schema.budgetItems.id, ids));
       const itemById = new Map(items.map((it) => [it.id, it]));
 
-      // Sort the batch into "apply" and "skip". A since-deleted item or an
-      // out-of-range colIndex (stale client whose column count no longer
-      // matches the server) is skipped, not fatal — but it's now reported
-      // back in `skipped` instead of vanishing silently, so a caller can
-      // surface "3 of 50 cells couldn't be saved". A non-finite amount is a
-      // client bug, not stale state — belt-and-braces since `z.number()`
-      // in the input schema already rejects NaN and plain JSON can't carry
-      // Infinity, but kept for any direct server-side caller.
+      // Sort the batch into "apply" and "skip": a deleted item or an out-of-range
+      // colIndex (stale client) is reported in `skipped`, not fatal. A non-finite
+      // amount throws, for direct server callers (the input schema rejects NaN).
       type SkipReason = "deleted" | "column-out-of-range";
       const skipped: { id: number; colIndex: number; reason: SkipReason }[] =
         [];
@@ -161,10 +147,8 @@ export const itemAmountProcedures = {
             skipped.push({ id, colIndex: c.colIndex, reason: "deleted" });
           continue;
         }
-        // `amounts` tracks the profile's column count for linked items too
-        // (add/removeColumn rewrite every item's array), so it's a valid
-        // bound for both — a linked item that escapes this check would
-        // otherwise write a real amount into the globally-active
+        // `amounts` tracks the profile's column count for linked items too, so it
+        // bounds both; an unchecked linked item would write into the active
         // Contribution Profile via the tier fallback, unreported.
         const amounts = budgetAmountsSchema.parse(item.amounts);
         const valid = changes.filter((c) => {
@@ -195,10 +179,8 @@ export const itemAmountProcedures = {
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
       await ctx.db.transaction(async (tx) => {
-        // Linked items are collected instead of applied inline so
-        // applyContributionAccountEditsBatch can fold every edit landing
-        // on the SAME contribution profile through one read-merge-write,
-        // instead of running that cycle once per account.
+        // Linked items are collected so applyContributionAccountEditsBatch folds
+        // every edit on the same contribution profile into one read-merge-write.
         const contributionEdits: {
           contributionAccountId: number;
           monthlyAmount: number;
@@ -208,10 +190,8 @@ export const itemAmountProcedures = {
         for (const { id, amounts, changes } of toApply) {
           const item = itemById.get(id)!;
 
-          // Linked items: write through to the contribution account instead
-          // of the dead budget_items.amounts field (see updateItemAmount for
-          // the permission-scope rationale). If a batch carries more than
-          // one distinct amount for the same linked item, last one wins.
+          // Linked items write through to the contribution account (see
+          // updateItemAmount). Several amounts for one linked item: last one wins.
           if (item.contributionAccountId) {
             const lastChange = changes[changes.length - 1]!;
             const contributionProfileId =

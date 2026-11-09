@@ -439,11 +439,9 @@ export async function loadClassifiedTransactions(
 const TRANSFER_MARGIN_DAYS = 7;
 
 /**
- * Each SimpleFIN account's holdings on the latest date it reported them,
- * with fund details. Only positions reported on that account's latest day
- * count: institutions often drop a sold fund from the list instead of
- * reporting it once at 0 shares, so a fund's own latest row can be days
- * stale. Rows at 0 shares on that day are left out too.
+ * Each SimpleFIN account's nonzero holdings on its latest reported date, with fund
+ * details. Institutions often drop a sold fund instead of reporting 0 shares, so a
+ * fund's own latest row can be stale; only that account's latest day counts.
  */
 export async function loadLatestHoldings(db: Db) {
   const h = schema.holdingObservations;

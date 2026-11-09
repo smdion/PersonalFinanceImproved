@@ -77,31 +77,17 @@ export const profileProcedures = {
     }),
 
   /**
-   * Clone a budget profile — its columns, its items, and its savings
-   * allocations — under a new name. Field-by-field on purpose, not a blanket
-   * row copy:
-   *
-   * - Copied: column labels/months and each item's amounts/category/subcategory/essential flag/sort order.
-   * - NOT copied: every API-linking field (`apiCategoryId`,
-   *   `apiCategoryName`, `apiSyncDirection`, `apiLastSyncedAt`) and
-   *   `contributionAccountId`. Two profiles both linked to push at the same
-   *   external YNAB category (or write through to the same contribution
-   *   account) is a live external-write hazard, and a copy is exactly how
-   *   you'd create one by accident.
-   * - Forced: `isActive: false`. Duplicating is not activating.
-   *
-   * Same `budget` permission gate as createProfile.
+   * Clone a profile's columns, items and savings allocations under a new name, inactive.
+   * No API-link fields or `contributionAccountId` are copied: two profiles pushing to one
+   * YNAB category or contribution account is an external-write hazard. `budget` permission.
    */
   duplicateProfile: budgetProcedure
     .input(
       z.object({
         sourceProfileId: z.number().int(),
         name: z.string().trim().min(1),
-        /** The What-If tab's hand-edited item amounts, keyed by the SOURCE
-         *  profile's item ids — baked into the copy in the SAME transaction
-         *  as the rest of the clone, so a mid-copy failure can't leave a
-         *  half-edited profile behind (a copy-then-separate-batch-update
-         *  would have exactly that window). */
+        /** The What-If tab's edited item amounts, keyed by SOURCE item id; applied in
+         *  the clone's transaction so a failure can't leave a half-edited copy. */
         itemAmountActiveFields: zItemAmountActiveFields,
       }),
     )
@@ -262,10 +248,8 @@ export const profileProcedures = {
       return { ok: true };
     }),
 
-  /** Set a profile as the active one (deactivate all others). Transactional
-   *  — an error between the deactivate-all and activate-one writes must
-   *  not be able to leave zero active profiles (every downstream reader
-   *  of getActiveBudgetProfile silently treats that as "no profile"). */
+  /** Make a profile the only active one, in one transaction: zero active profiles
+   *  would read as "no profile" to every getActiveBudgetProfile caller. */
   setActiveProfile: budgetProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {

@@ -1,17 +1,7 @@
 /**
- * Per-service budget API category link helpers.
- *
- * budget_items and savings_goals used to store exactly ONE budget-API
- * category link each (apiCategoryId/apiCategoryName/... columns), but
- * BudgetApiService is "ynab" | "actual" — a household with BOTH services
- * connected could only hold one service's link at a time, so re-linking to
- * the second service silently clobbered the first. budget_item_category_
- * links and savings_goal_category_links (schema-pg.ts) hold one row per
- * (item/goal, service[, role]) instead. These helpers are the only place
- * that should read or write those two tables — see docs/RULES.md.
- *
- * The old raw columns stay on budget_items/savings_goals, dead-but-present
- * for now (cleanup deferred to a future schema squash).
+ * The only readers/writers of budget_item_category_links and savings_goal_category_links:
+ * one budget-API category link per (item/goal, service[, role]), so YNAB and Actual
+ * links coexist. The raw apiCategory* columns on budget_items/savings_goals are unused.
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -77,14 +67,9 @@ export async function setBudgetItemLink(
 ): Promise<void> {
   const { budgetItemId, service, categoryId, categoryName = null } = params;
 
-  // syncDirection/lastSyncedAt: omitting the field means "leave whatever is
-  // already there" — NOT "clear it to null". Several callers (rename/
-  // name-sync paths) only ever touch categoryId/categoryName and must not
-  // silently wipe an existing link's syncDirection or reset its
-  // lastSyncedAt on every pass. Only a caller that explicitly passes the
-  // field (including an explicit `null`, e.g. to intentionally reset it)
-  // overwrites the stored value; the insert-branch (no existing row to
-  // preserve) still defaults an omitted field to null.
+  // Omitting syncDirection/lastSyncedAt keeps the stored value (rename/name-sync
+  // callers touch only the category); passing a value, even null, overwrites it.
+  // An insert defaults an omitted field to null.
   const syncDirectionProvided = "syncDirection" in params;
   const lastSyncedAtProvided = "lastSyncedAt" in params;
   const syncDirection = params.syncDirection ?? null;

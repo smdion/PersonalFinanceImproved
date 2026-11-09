@@ -155,10 +155,8 @@ export const apiSyncProcedures = {
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
-      // Same connection-configured column getPreview derives its
-      // `ledgrAmount` from (src/server/routers/sync/preview.ts) — pushing a
-      // different, client-supplied column would push a number the preview
-      // never showed the user.
+      // The connection's column, the same one getPreview's `ledgrAmount` uses
+      // (sync/preview.ts), so the push matches what the preview showed.
       const colIndex = conn?.linkedColumnIndex ?? 0;
 
       const pushItemRows = await ctx.db

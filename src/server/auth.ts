@@ -10,18 +10,9 @@ import { authorizeLocalAdmin } from "./local-admin-login";
 import { PERMISSIONS, type Permission } from "@/lib/config/permissions";
 
 /*
- * ── NextAuth v5 Beta Notice ──
- *
- * This project uses NextAuth v5 (currently pinned at 5.0.0-beta.30 in
- * package.json). The v5 API is **not yet stable** — expect breaking
- * changes on upgrade.
- *
- * Before bumping the next-auth version:
- *   1. Check the release notes at https://github.com/nextauthjs/next-auth
- *   2. Audit auth.config.ts, this file, and the middleware for API changes
- *   3. Keep the version pinned (exact, no caret) until a stable v5 ships
- *
- * Monitor: https://github.com/nextauthjs/next-auth/releases
+ * NextAuth v5 is a beta (pinned exact in package.json; its API is not stable).
+ * Before bumping it, read the release notes and audit auth.config.ts, this file
+ * and the middleware; keep it pinned exact until a stable v5 ships.
  */
 
 /** Default Authentik group names per permission. */
@@ -45,12 +36,8 @@ export const RBAC_SETTINGS_PREFIX = "rbac_group_";
 export const RBAC_ADMIN_GROUP_KEY = "rbac_admin_group";
 
 /**
- * Build the group→permission mapping from DB overrides + defaults.
- * Reads app_settings keys: rbac_admin_group, rbac_group_scenario, etc.
- *
- * Exported so tests can call it directly with a mocked db (the file's
- * top-level NextAuth init makes the rest of the module hard to import
- * in a unit-test environment).
+ * Build the group→permission mapping from app_settings overrides (rbac_admin_group,
+ * rbac_group_*) + defaults. Exported so tests can call it with a mocked db.
  */
 export async function loadPermissionGroups(): Promise<{
   adminGroup: string;
@@ -131,15 +118,9 @@ const localAdminProvider = Credentials({
 });
 
 /**
- * Pure logic for the JWT callback's role + permission assignment.
- * Exported so tests can drive every branch without spinning up NextAuth.
- *
- * Mutates and returns the token, or returns null to reject it (NextAuth
- * then clears the session). A token is only ever accepted with the
- * `authMethod` a known provider stamped on it at sign-in: the NextAuth
- * secret is shared with the demo, so a token signed anywhere else (the
- * demo's Dev Login, say) must not become a session here. Takes loadGroups
- * as a dependency so tests can inject a mock instead of hitting the real db.
+ * JWT callback's role + permission assignment; mutates and returns the token, or null
+ * to reject it. Only tokens a known provider stamped with `authMethod` are accepted:
+ * the secret is shared with the demo. loadGroups is injected so tests can mock it.
  */
 export async function assignRoleAndPermissions(
   token: Record<string, unknown>,
@@ -213,11 +194,9 @@ const fullAuthConfig: NextAuthConfig = {
       : [...authConfig.providers, localAdminProvider],
   session: {
     strategy: "jwt",
-    // 4 hours — explicit expiry instead of NextAuth default (30 days).
-    // Authentik group changes (added/removed permissions) won't take effect until
-    // the user's JWT expires and they re-auth. 4h is a deliberate compromise:
-    // tighter than 24h (the previous value), looser than 1h (which would force
-    // constant re-login). Adjust if RBAC propagation lag matters more or less.
+    // 4 hours instead of the 30-day default: Authentik group changes take effect
+    // only when the JWT expires, so this bounds RBAC propagation lag without
+    // forcing constant re-login.
     maxAge: 4 * 60 * 60,
   },
   callbacks: {
