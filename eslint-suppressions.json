@@ -14,9 +14,6 @@
     }
   },
   "src/app/(dashboard)/assets/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -37,9 +34,6 @@
     }
   },
   "src/app/(dashboard)/brokerage/brokerage-funding.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-lint-violation-ok": {
       "count": 1
     },
@@ -67,9 +61,6 @@
     }
   },
   "src/app/(dashboard)/brokerage/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }
@@ -82,9 +73,6 @@
   "src/app/(dashboard)/brokerage/use-brokerage-page.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/budget/budget-content.tsx": {
@@ -93,26 +81,14 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 6
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/budget/budget-detail-panel.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   },
   "src/app/(dashboard)/budget/page.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -124,9 +100,6 @@
     "max-lines-per-function": {
       "count": 1
     },
-    "ratchet/max-comment-lines": {
-      "count": 9
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 1
     }
@@ -137,19 +110,10 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "ratchet/max-comment-lines": {
       "count": 1
     },
     "ratchet/no-abbreviation": {
@@ -173,9 +137,6 @@
     "max-lines-per-function": {
       "count": 2
     },
-    "ratchet/max-comment-lines": {
-      "count": 4
-    },
     "ratchet/no-raw-button": {
       "count": 6
     },
@@ -188,19 +149,9 @@
       "count": 1
     }
   },
-  "src/app/(dashboard)/budget/what-if-paycheck-summary.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/app/(dashboard)/budget/what-if-pickers.tsx": {
     "ratchet/no-raw-button": {
       "count": 2
-    }
-  },
-  "src/app/(dashboard)/budget/what-if-salary-editor.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
     }
   },
   "src/app/(dashboard)/budget/what-if-save-actions.tsx": {
@@ -211,15 +162,7 @@
       "count": 2
     }
   },
-  "src/app/(dashboard)/budget/what-if-savings-step.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/app/(dashboard)/budget/what-if-step.tsx": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    },
     "ratchet/no-raw-button": {
       "count": 1
     }

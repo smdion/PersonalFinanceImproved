@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * Net take-home callout for the What-If tab's Paycheck step — deliberately
- * NOT a full pay-stub breakdown. The itemized version (Gross/Bonus/Pre-Tax/
- * Federal/FICA/Post-Tax) was cut: it just restated numbers the salary and
- * deductions editors right above it already show or imply, without helping
- * anyone decide anything. The one number that actually feeds a decision
- * here is take-home pay — it's what Step 3 (Budget) checks against — so
- * that's the one this shows, prominently, per person and household.
- *
- * Same source as before: `paycheck`, already resolved once by
- * `usePaycheckPersonViews`. No new computation.
+ * Net take-home callout for the What-If Paycheck step, per person and
+ * household: the figure the Budget step checks against. Reads the `paycheck`
+ * already resolved by `usePaycheckPersonViews`.
  */
 
 import { formatCurrency } from "@/lib/utils/format";

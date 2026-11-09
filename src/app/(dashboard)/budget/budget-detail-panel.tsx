@@ -1,15 +1,8 @@
 "use client";
 
 /**
- * BudgetDetailPanel — right side of the master-detail grid in BudgetContent.
- * Split out of budget-content.tsx to meet the ≤400 line target.
- *
- * The edit padlock lives once, in the tab bar above (budget-content.tsx) —
- * not here — so its position stays fixed across all four profile tabs.
- *
- * Consumes BudgetPageContext (cols, activeColumn, canEdit, editMode,
- * apiService, apiLinkedProfileId, apiLinkedColumnIndex) and receives the
- * remaining page-specific props from BudgetContent.
+ * BudgetDetailPanel: right side of the budget master-detail grid. Reads
+ * BudgetPageContext; the edit padlock lives in the tab bar above, not here.
  */
 
 import React from "react";

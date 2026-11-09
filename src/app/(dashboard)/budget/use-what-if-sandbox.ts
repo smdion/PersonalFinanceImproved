@@ -8,12 +8,8 @@ import {
 import { type SandboxSalaryEntry } from "./what-if-salary-editor";
 
 /**
- * Sandbox-local edit state: salary/bonus entries, deduction edits/
- * additions, and budget item amount drafts. None of it is ever persisted —
- * see what-if-tab.tsx's docblock point 4 for why the profile-scoped pieces (salary
- * entries, budget drafts) reset when their owning picker changes. Deduction
- * edits/additions are keyed by real deduction id / personId, which don't
- * change when a picker changes, so they persist until "Reset sandbox."
+ * Sandbox-local edits, never persisted. Salary entries and budget drafts reset
+ * when their picker changes; deduction edits (keyed by id) last until reset.
  */
 export function useSandboxState(
   salaryId: number | null,

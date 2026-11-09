@@ -66,10 +66,8 @@ export function useBrokeragePage() {
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [brokerageLumpSums]);
 
-  // The household's saved Changes by year still apply: sending only the
-  // lump sums would replace them (an omitted list = the saved rows, a sent
-  // one = exactly that list). Merge by year — the saved row keeps its
-  // fields, and the year's lump sums are both lists'.
+  // Sending only the lump sums would replace the saved Changes by year, so
+  // merge by year: the saved row keeps its fields, lump sums come from both.
   const savedAccumQuery = trpc.retirement.projectionOverrides.get.useQuery({
     overrideType: "accumulation",
   });

@@ -13,11 +13,9 @@ import { sumBy } from "@/lib/utils/math";
 
 // --- Sub-components ---
 
-/** Cost basis for Portfolio-category brokerage accounts — the accounts Tax
- *  Buckets deliberately excludes (its scope is Retirement-category holdings
- *  only), so this is their one home for basis editing. Reuses
- *  performance.updateCostBasis, the same mutation the Performance page's
- *  inline account-table editor calls. */
+/** Cost basis editor for Portfolio-category brokerage accounts (Tax Buckets
+ *  covers Retirement-category holdings only). Calls
+ *  performance.updateCostBasis, like the Performance page's editor. */
 export function CostBasisEditor({
   accounts,
   canEdit,

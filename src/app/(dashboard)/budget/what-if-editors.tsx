@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * The What-If tab's per-person editors: deductions and contribution
- * accounts, each live row pin-editable (WhatIfPinnedCell) plus hand-added
- * hypothetical rows that an admin can "make real". Nothing here writes
- * except "Make real", which the tab wires to the admin-gated create.
+ * What-If per-person editors (deductions, contribution accounts): live rows
+ * pin-editable, plus hypothetical rows. Only "Make real" writes (admin-gated).
  */
 import { useState, type ReactNode } from "react";
 import {
@@ -156,13 +154,8 @@ function AdditionActions({
 }
 
 /**
- * A numeric cell pre-filled with the live/resolved value that pins on
- * change — the SAME interaction the real Salary Profile tab uses
- * (`PinnedNumberCell` in salary-profile-manager.tsx), not a blank field
- * with a "live" placeholder. This app already killed the idea of an
- * unfilled "follows job" field once; a placeholder that says "live" is
- * that same idea wearing different clothes, and it's what a user actually
- * hit and got confused by.
+ * Numeric cell pre-filled with the live value that pins on change, like
+ * `PinnedNumberCell` on the Salary Profile tab (no blank "live" placeholder).
  */
 export function WhatIfPinnedCell({
   liveValue,
@@ -219,11 +212,8 @@ export function WhatIfPinnedCell({
 }
 
 /**
- * Per-person deductions editor — existing deductions pin-editable the same
- * way salary/bonus fields do (pre-filled with the real stored amount,
- * pinning on change); additions are new hypothetical rows with no DB row,
- * removable, feeding `sandboxDeductionAdditions`. Both flow into a REAL
- * `paycheck.computeSummary` recompute, not a client-side estimate.
+ * Per-person deductions: existing rows pin-editable, additions are removable
+ * hypothetical rows. Both feed a real `paycheck.computeSummary` recompute.
  */
 export function WhatIfDeductionsEditor({
   views,
@@ -383,14 +373,9 @@ export function WhatIfDeductionsEditor({
 }
 
 /**
- * Per-person contribution accounts editor — same pin-editable pattern as
- * salary/deductions: pre-filled with the resolved current value, pinning on
- * change, ↺ to reset. Feeds `sandboxContribActiveFields`, applied server-side
- * via the SAME `applyContribActiveFields` merge a Contribution Profile's own
- * active fields go through — one more layer, not a parallel mechanism. Value is
- * NOT percent/100 converted: `percent_of_salary` stores the raw percent
- * number (5 = 5%), matching how ContributionProfileManager already displays
- * it (`value%`), not a fraction like bonusPercent uses.
+ * Per-person contribution accounts, pin-editable; feeds `sandboxContribActiveFields`
+ * (merged server-side by `applyContribActiveFields`). `percent_of_salary` values
+ * are raw percents (5 = 5%), not fractions.
  */
 export function WhatIfContributionsEditor({
   views,

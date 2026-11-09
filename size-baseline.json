@@ -3,26 +3,26 @@
     "src/app/(dashboard)/assets/assets-content.tsx": 429,
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 131,
     "src/app/(dashboard)/brokerage/brokerage-figures.ts": 86,
-    "src/app/(dashboard)/brokerage/brokerage-funding.tsx": 291,
+    "src/app/(dashboard)/brokerage/brokerage-funding.tsx": 289,
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
     "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 291,
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
-    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 143,
-    "src/app/(dashboard)/budget/budget-content.tsx": 657,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 388,
-    "src/app/(dashboard)/budget/use-what-if-sandbox.ts": 255,
+    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 141,
+    "src/app/(dashboard)/budget/budget-content.tsx": 637,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 354,
+    "src/app/(dashboard)/budget/use-what-if-sandbox.ts": 251,
     "src/app/(dashboard)/budget/what-if-budget-step.tsx": 171,
     "src/app/(dashboard)/budget/what-if-contributions-step.tsx": 93,
-    "src/app/(dashboard)/budget/what-if-editors.tsx": 574,
+    "src/app/(dashboard)/budget/what-if-editors.tsx": 559,
     "src/app/(dashboard)/budget/what-if-make-real-panel.tsx": 59,
     "src/app/(dashboard)/budget/what-if-pickers.tsx": 98,
     "src/app/(dashboard)/budget/what-if-profile-picker.tsx": 36,
-    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 112,
+    "src/app/(dashboard)/budget/what-if-salary-editor.tsx": 109,
     "src/app/(dashboard)/budget/what-if-salary-step.tsx": 55,
     "src/app/(dashboard)/budget/what-if-save-actions.tsx": 140,
-    "src/app/(dashboard)/budget/what-if-savings-step.tsx": 49,
-    "src/app/(dashboard)/budget/what-if-step.tsx": 67,
+    "src/app/(dashboard)/budget/what-if-savings-step.tsx": 46,
+    "src/app/(dashboard)/budget/what-if-step.tsx": 59,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 626,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 949,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 807,
@@ -428,13 +428,13 @@
       "MethodologyPage": 200
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 577
+      "BudgetContent": 565
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 320
+      "useBudgetDerivedData": 291
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
-      "useBudgetPageState": 207
+      "useBudgetPageState": 200
     },
     "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
       "useSandboxState": 238

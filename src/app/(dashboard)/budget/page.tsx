@@ -1,17 +1,7 @@
 /**
- * Budget server page.
- *
- * Server-side prefetches the two heavy queries the budget client needs
- * on first paint:
- *   - budget.listProfiles      (drives the profile sidebar rail)
- *   - budget.computeActiveSummary (drives the main budget table +
- *     summary bar + payroll breakdown; uses default column 0 + no
- *     profileId override because we don't know the user's
- *     persisted activeColumn selection on the server)
- *
- * Prefetch failures don't block rendering — wrapped in try/catch so
- * the client falls back to its own fetch on error. Matches the
- * portfolio / retirement prefetch-shell pattern.
+ * Budget server page: prefetches budget.listProfiles and
+ * budget.computeActiveSummary (column 0, no profileId: the persisted column is
+ * unknown on the server). Prefetch errors fall back to the client fetch.
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";

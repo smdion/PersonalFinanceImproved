@@ -4,12 +4,9 @@ import {
 } from "@/lib/hooks/use-paycheck-person-views";
 import { WhatIfPinnedCell } from "./what-if-editors";
 
-/** Editable salary/bonus fields per person — writes into the sandbox's
- *  SandboxSalaryEntries, feeding a REAL server recompute (paycheck/
- *  contribution.computeSummary's sandboxSalaryEntries input), not a
- *  client-side estimate. Each cell pre-fills with what the picked Salary
- *  Profile currently resolves to for that person; leaving it alone writes
- *  nothing (stays live), changing it pins that field for this preview. */
+/** Per-person salary/bonus fields feeding the server recompute's
+ *  sandboxSalaryEntries. Cells pre-fill with the picked Salary Profile's value;
+ *  an untouched cell stays live, a changed one pins that field. */
 export function WhatIfSalaryEditor({
   views,
   entries,
