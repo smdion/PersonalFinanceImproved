@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { getLatestSnapshotId } from "@/server/data/latest-snapshot";
+import { getLatestSnapshotId } from "@/server/data/snapshots";
 import type { AccountMapping } from "@/lib/db/schema";
 import { getApiConnection } from "@/lib/budget-api";
 import { requireBudgetClient } from "@/server/services/budget/budget-client";

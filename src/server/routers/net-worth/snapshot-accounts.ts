@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { getLatestSnapshotId } from "@/server/data/latest-snapshot";
+import { getLatestSnapshotId } from "@/server/data/snapshots";
 import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zDecimal } from "@/lib/utils/zod-fields";
