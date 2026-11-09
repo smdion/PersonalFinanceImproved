@@ -5691,11 +5691,6 @@
       "count": 1
     }
   },
-  "src/server/services/projection/projection-run.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/server/services/projection/relocation-analysis.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3
@@ -5711,14 +5706,11 @@
     }
   },
   "src/server/services/projection/relocation-projection.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
-    },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-unregistered-fallback": {
       "count": 3
@@ -5726,7 +5718,7 @@
   },
   "src/server/services/projection/strategy-analysis.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 5
     },
     "max-lines-per-function": {
       "count": 2

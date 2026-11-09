@@ -111,7 +111,7 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
   "projection_overrides.overrides": {
     reader:
       "server/services/projection/projection-run.ts#resolveProjectionOverrides",
-    note: "parsed by override_type; a row that fails reads as none",
+    note: "parsed by override_type; a set that fails is dropped, logged once",
   },
   "relocation_scenarios.params": {
     shape: `${SCHEMAS}#relocationScenarioParamsSchema`,

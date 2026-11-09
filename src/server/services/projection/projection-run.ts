@@ -7,6 +7,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
 import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import { readStoredValue } from "@/lib/db/stored-setting";
+import { readStoredShape, storedValueLog } from "@/lib/db/stored-shape";
 import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   accountCategoryEnum,
@@ -86,46 +87,46 @@ export const accumulationOverrideArraySchema = z.array(
   }),
 );
 
-type ResolvedProjectionOverrides = {
-  accumulationOverrides: z.infer<typeof accumulationOverrideArraySchema>;
-  decumulationOverrides: z.infer<typeof decumulationOverrideArraySchema>;
-};
+/** The household's saved set of one kind, parsed: a set its schema refuses
+ *  (the save path stores any records) is dropped, logged once (FALLBACKS). */
+async function savedOverrides<S extends z.ZodType>(
+  db: Db,
+  overrideType: "accumulation" | "decumulation",
+  shape: S,
+): Promise<z.output<S> | []> {
+  const rows = await db
+    .select({ overrides: schema.projectionOverrides.overrides })
+    .from(schema.projectionOverrides)
+    .where(eq(schema.projectionOverrides.overrideType, overrideType));
+  const read = readStoredShape(
+    rows[0]?.overrides ?? [],
+    shape,
+    storedValueLog(`projection_overrides.${overrideType}`),
+  );
+  // The parsed copy (unnamed keys stripped), as the engine has always had.
+  return read.fits ? shape.parse(read.value) : [];
+}
 
-/** The "Changes by year" a projection runs with: what the caller sent, or
- *  — when it sent none — the household's saved rows (validated through the
- *  same schemas; an unreadable saved row set counts as none). */
+/** The "Changes by year" every projection runs with (relocation and the
+ *  strategy comparison too), as engine types: what the caller sent, else
+ *  the household's saved sets (`savedOverrides`). */
 export async function resolveProjectionOverrides(
   db: Db,
   input: {
-    accumulationOverrides?: ResolvedProjectionOverrides["accumulationOverrides"];
-    decumulationOverrides?: ResolvedProjectionOverrides["decumulationOverrides"];
+    accumulationOverrides?: z.infer<typeof accumulationOverrideArraySchema>;
+    decumulationOverrides?: z.infer<typeof decumulationOverrideArraySchema>;
   },
-): Promise<ResolvedProjectionOverrides> {
-  const saved = async <T>(
-    overrideType: "accumulation" | "decumulation",
-    parse: (v: unknown) => { success: boolean; data?: T },
-  ): Promise<T | undefined> => {
-    const rows = await db
-      .select({ overrides: schema.projectionOverrides.overrides })
-      .from(schema.projectionOverrides)
-      .where(eq(schema.projectionOverrides.overrideType, overrideType));
-    const parsed = parse(rows[0]?.overrides ?? []);
-    return parsed.success ? parsed.data : undefined;
-  };
+): Promise<{
+  accumulationOverrides: AccumulationOverride[];
+  decumulationOverrides: DecumulationOverride[];
+}> {
   const [accumulationOverrides, decumulationOverrides] = await Promise.all([
     input.accumulationOverrides ??
-      saved("accumulation", (v) =>
-        accumulationOverrideArraySchema.safeParse(v),
-      ),
+      savedOverrides(db, "accumulation", accumulationOverrideArraySchema),
     input.decumulationOverrides ??
-      saved("decumulation", (v) =>
-        decumulationOverrideArraySchema.safeParse(v),
-      ),
+      savedOverrides(db, "decumulation", decumulationOverrideArraySchema),
   ]);
-  return {
-    accumulationOverrides: accumulationOverrides ?? [],
-    decumulationOverrides: decumulationOverrides ?? [],
-  };
+  return { accumulationOverrides, decumulationOverrides };
 }
 
 /** retirement_settings' withdrawal routing, as its writer stores it. */
@@ -209,9 +210,6 @@ export async function prepareEngineInput<Base extends object>(
       input.decumulationDefaults,
       payload.distributionTaxRates,
     ),
-    ...((await resolveProjectionOverrides(db, input)) as {
-      accumulationOverrides: AccumulationOverride[];
-      decumulationOverrides: DecumulationOverride[];
-    }),
+    ...(await resolveProjectionOverrides(db, input)),
   };
 }

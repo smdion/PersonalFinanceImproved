@@ -3,14 +3,16 @@ import type { RequestScope } from "@/server/data/request-scope";
 import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household/household-timeline";
 import { ageStepAt } from "@/server/services/projection/engine-payload/profile-switches";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
-import { eq } from "drizzle-orm";
 import { calculateProjection } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
-import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
+import {
+  buildDecumulationDefaults,
+  resolveProjectionOverrides,
+} from "@/server/services/projection/projection-run";
 import { safeDivide } from "@/lib/utils/math";
 import {
   precomputePurchases,
@@ -18,11 +20,6 @@ import {
   steadyStateMonthly,
   type RelocationPurchaseInput,
 } from "@/lib/pure/retirement/relocation";
-import * as schema from "@/lib/db/schema";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 
 /** Converts the router's nullable large-purchase input to `RelocationPurchaseInput` once,
  *  so every call site shares lib/pure/retirement/relocation.ts's precomputed data. */
@@ -74,19 +71,10 @@ export async function computeRelocationFiProjection(
 
   // The Retirement page's saved accumulation overrides, so the current scenario's
   // balances match that page's projection.
-  const accumOverrideRows = await ctx.db
-    .select()
-    .from(schema.projectionOverrides)
-    .where(eq(schema.projectionOverrides.overrideType, "accumulation"));
-  const dbAccumulationOverrides = ((accumOverrideRows[0]?.overrides as
-    Record<string, unknown>[] | undefined) ?? []) as AccumulationOverride[];
-
-  const deaccumOverrideRows = await ctx.db
-    .select()
-    .from(schema.projectionOverrides)
-    .where(eq(schema.projectionOverrides.overrideType, "decumulation"));
-  const dbDecumulationOverrides = ((deaccumOverrideRows[0]?.overrides as
-    Record<string, unknown>[] | undefined) ?? []) as DecumulationOverride[];
+  const {
+    accumulationOverrides: dbAccumulationOverrides,
+    decumulationOverrides: dbDecumulationOverrides,
+  } = await resolveProjectionOverrides(ctx.db, {});
 
   const currentProfile = data.allBudgetProfiles.find(
     (p) => p.id === input.currentProfileId,

@@ -6,12 +6,13 @@
  * sent, or the household's saved rows when it sent none, in that key order.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller } from "./setup";
 import { shippedTaxTables } from "../helpers/tax-data";
 import {
   buildDecumulationDefaults,
   prepareEngineInput,
+  resolveProjectionOverrides,
 } from "@/server/services/projection/projection-run";
 
 const SETTINGS = {
@@ -121,6 +122,40 @@ describe('the saved "Changes by year" with per-category fields', () => {
       expect(out.accumulationOverrides).toEqual(accumulation);
       expect(out.decumulationOverrides).toEqual(decumulation);
     } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+describe("resolveProjectionOverrides", () => {
+  it("drops a saved set its schema refuses, with one warning (owner W4)", async () => {
+    const ctx = await createTestCaller();
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await ctx.caller.retirement.projectionOverrides.save({
+        overrideType: "decumulation",
+        overrides: [{ year: "2040", withdrawalRoutingMode: "waterfall" }],
+      });
+      await ctx.caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: SAVED,
+      });
+      const first = await resolveProjectionOverrides(ctx.rawDb, {});
+      await resolveProjectionOverrides(ctx.rawDb, {});
+      expect(first).toEqual({
+        accumulationOverrides: SAVED,
+        decumulationOverrides: [],
+      });
+      const warnings = logged.mock.calls
+        .map((c) => JSON.parse(String(c[0])) as Record<string, unknown>)
+        .filter((e) => e.event === "stored_value_unexpected_shape");
+      expect(warnings).toEqual([
+        expect.objectContaining({
+          source: "projection_overrides.decumulation",
+        }),
+      ]);
+    } finally {
+      logged.mockRestore();
       ctx.cleanup();
     }
   });

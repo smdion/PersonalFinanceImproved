@@ -43,10 +43,6 @@ import {
   resolveSsStartAgeBaseline,
 } from "@/lib/pure/retirement/projection-settings";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
-import type {
-  AccumulationOverride,
-  DecumulationOverride,
-} from "@/lib/pure/engine/types";
 import {
   hashEngineInput,
   readProjectionCache,
@@ -77,10 +73,7 @@ export async function computeStrategyComparison(
 ) {
   // The household's saved "Changes by year" apply to every strategy
   // (D6) — a comparison without them describes a different plan.
-  const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
-    accumulationOverrides: AccumulationOverride[];
-    decumulationOverrides: DecumulationOverride[];
-  };
+  const saved = await resolveProjectionOverrides(ctx.db, {});
   const [
     { payload },
     {
@@ -314,10 +307,7 @@ export async function analyzeStrategy(
 ) {
   // The household's saved "Changes by year" apply to every strategy
   // (D6) — a comparison without them describes a different plan.
-  const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
-    accumulationOverrides: AccumulationOverride[];
-    decumulationOverrides: DecumulationOverride[];
-  };
+  const saved = await resolveProjectionOverrides(ctx.db, {});
   const [
     { profiles, data, payload },
     {
