@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { useFocusTrap } from "@/components/ui/use-focus-trap";
 
 export function SlidePanel({
   isOpen,

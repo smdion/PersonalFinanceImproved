@@ -11,7 +11,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { focusInto, useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { focusInto, useFocusTrap } from "@/components/ui/use-focus-trap";
 
 /** Open modals, by render order, with their layer's rank. */
 const openModals = new Map<number, number>();
