@@ -11,3 +11,6 @@
 -- Joint person ids: a joint contribution account naming a person is
 -- cleared of it; one with no job that a profile sets to a percent of
 -- salary refuses the start (ids only), and nothing is changed.
+-- Cached months: every budget_api_cache months/ entry of the active budget
+-- app gives its linked active goals a savings_monthly month not yet held;
+-- then every cached month is purged (the next sync caches the current one).

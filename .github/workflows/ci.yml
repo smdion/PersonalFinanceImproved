@@ -635,7 +635,7 @@ jobs:
 
       - name: Data migrations on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
-        run: pnpm test tests/db/converter-lists-postgres.test.ts tests/db/migration-refusal-postgres.test.ts tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts tests/db/migration-v0106-money-postgres.test.ts tests/db/migration-v0106-credentials-postgres.test.ts tests/db/migration-v0106-joint-person-ids-postgres.test.ts tests/routers/match-rate-writes-postgres.test.ts
+        run: pnpm test tests/db/converter-lists-postgres.test.ts tests/db/migration-refusal-postgres.test.ts tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts tests/db/migration-v0106-money-postgres.test.ts tests/db/migration-v0106-credentials-postgres.test.ts tests/db/migration-v0106-joint-person-ids-postgres.test.ts tests/db/migration-v0106-cached-months-postgres.test.ts tests/routers/match-rate-writes-postgres.test.ts
 
       - name: Backup connections fence on PostgreSQL
         if: env.RUN == 'true' && (matrix.part == 'install')
