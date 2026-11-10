@@ -61,20 +61,17 @@ export function keyRotationCases(
       "tiingo",
       encryptStringWithKey(keys.oldKey, TIINGO),
     );
-    await db.addConnection(3, "sec", LEGACY);
     await db.addVersion(1, [
       {
         id: 1,
         service: "ynab",
         config: versionConfig(encryptStringWithKey(keys.oldKey, YNAB)),
       },
-      { id: 3, service: "sec", config: versionConfig(LEGACY) },
     ]);
 
     expect(await db.rotate(keys, false)).toEqual({
       connections: 2,
       versionCredentials: 1,
-      plaintext: 1,
       alreadyNew: 0,
     });
 
@@ -82,11 +79,30 @@ export function keyRotationCases(
     expect(open(keys.newKey, configs[1])).toBe(YNAB);
     expect(open(keys.newKey, configs[2])).toBe(TIINGO);
     expect(() => open(keys.oldKey, configs[1])).toThrow();
-    expect(configs[3]).toEqual(LEGACY);
-    const [ynabRow, secRow] = await db.versionRows();
+    const [ynabRow] = await db.versionRows();
     expect(open(keys.newKey, ynabRow!.config)).toBe(YNAB);
     expect(typeof ynabRow!.config).toBe(typeof versionConfig({}));
-    expect(secRow!.config).toEqual(versionConfig(LEGACY));
+  });
+
+  it(`${label}: a plaintext credential (stored before the credentials migration) changes nothing`, async () => {
+    const keys = { oldKey: newKey(), newKey: newKey() };
+    const db = await fresh();
+    await db.addConnection(1, "ynab", encryptStringWithKey(keys.oldKey, YNAB));
+    await db.addVersion(1, [
+      { id: 3, service: "sec", config: versionConfig(LEGACY) },
+    ]);
+    const before = {
+      configs: await db.configs(),
+      rows: await db.versionRows(),
+    };
+
+    await expect(db.rotate(keys, false)).rejects.toThrow(
+      /1 stored credential\(s\) are not encrypted: stored version 1, api_connections row id 3\. Nothing was changed/,
+    );
+    expect({
+      configs: await db.configs(),
+      rows: await db.versionRows(),
+    }).toEqual(before);
   });
 
   it(`${label}: a dry run counts and changes nothing`, async () => {
@@ -108,7 +124,6 @@ export function keyRotationCases(
     expect(await db.rotate(keys, true)).toEqual({
       connections: 1,
       versionCredentials: 1,
-      plaintext: 0,
       alreadyNew: 0,
     });
     expect({
@@ -141,7 +156,6 @@ export function keyRotationCases(
     expect(await db.rotate(keys, false)).toEqual({
       connections: 0,
       versionCredentials: 0,
-      plaintext: 0,
       alreadyNew: 1,
     });
     expect(await db.configs()).toEqual(after);
@@ -172,7 +186,6 @@ export function keyRotationCases(
     expect(await db.rotate(keys, false)).toEqual({
       connections: 1,
       versionCredentials: 1,
-      plaintext: 0,
       alreadyNew: 2,
     });
     const configs = await db.configs();

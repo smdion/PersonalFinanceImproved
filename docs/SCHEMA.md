@@ -1117,7 +1117,7 @@ erDiagram
 | server_knowledge     | integer                  |          |         |             |
 | last_synced_at       | timestamp with time zone |          |         |             |
 
-- `config`: type `ApiConfig`; shape `apiConfigSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `readMaybeEncrypted` (lib/crypto.ts); an encrypted envelope; the credentials migration encrypts plaintext; **old shapes still read (FALLBACKS)**
+- `config`: type `ApiConfig`; shape `apiConfigSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `decryptJson` (lib/crypto.ts); an encrypted envelope, since the credentials migration
 - `account_mappings`: type `AccountMapping[]`; shape `accountMappingsSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; **old shapes still read (FALLBACKS)**
 - `skipped_category_ids`: type `string[]`; shape `skippedCategoryIdsSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere
 

@@ -9,8 +9,8 @@ import { YnabClient } from "./ynab-client";
 import { ActualClient } from "./actual-client";
 
 interface BudgetProvider {
-  /** The client for a stored `api_connections.config` (plaintext or
-   *  encrypted), or null when a field is missing; a refused config is logged. */
+  /** The client for a stored `api_connections.config` (an encrypted
+   *  envelope), or null when a field is missing; a refused config is logged. */
   createClient(storedConfig: unknown): BudgetAPIClient | null;
 }
 

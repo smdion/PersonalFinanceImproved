@@ -7,7 +7,7 @@ import "server-only";
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
+import { encryptJson, decryptJson } from "@/lib/crypto";
 import type { Db } from "@/lib/db";
 
 const TIINGO_SERVICE = "tiingo";
@@ -32,7 +32,7 @@ export async function getTiingoApiKey(db: Db): Promise<string | null> {
   if (!conn) return null;
   // A saved config may lack the field (logged, read as stored).
   return (
-    readMaybeEncrypted(
+    decryptJson(
       conn.config,
       "api_connections.config (tiingo)",
       tiingoConfigShape,

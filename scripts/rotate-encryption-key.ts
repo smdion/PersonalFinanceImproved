@@ -31,8 +31,6 @@ export interface RotationCounts {
   connections: number;
   /** Credentials re-encrypted inside stored versions. */
   versionCredentials: number;
-  /** Plaintext configs (stored before encryption), left for the app's next write. */
-  plaintext: number;
   /** Credentials already under the new key (a re-run finishing a mixed state). */
   alreadyNew: number;
 }
@@ -55,7 +53,7 @@ interface RotationPlan {
   counts: RotationCounts;
 }
 
-/** Thrown when a credential decrypts with neither key; nothing is written. */
+/** Thrown when a credential decrypts with neither key, or isn't encrypted; nothing is written. */
 export class RotationRefused extends Error {}
 
 type Rotated =
@@ -112,15 +110,16 @@ function planRotation(
   keys: RotationKeys,
 ): RotationPlan {
   const refusals: string[] = [];
+  const plaintext: string[] = [];
   const counts: RotationCounts = {
     connections: 0,
     versionCredentials: 0,
-    plaintext: 0,
     alreadyNew: 0,
   };
   const rotate = (value: unknown, where: string): Rotated => {
     const result = rotateValue(value, keys);
     if (result.kind === "refused") refusals.push(where);
+    else if (result.kind === "plaintext") plaintext.push(where);
     else if (result.kind === "alreadyNew") counts.alreadyNew++;
     return result;
   };
@@ -133,7 +132,6 @@ function planRotation(
     );
     if (result.kind === "rotated")
       rotatedConnections.push({ ...conn, config: result.value });
-    else if (result.kind === "plaintext") counts.plaintext++;
   }
   counts.connections = rotatedConnections.length;
 
@@ -159,6 +157,11 @@ function planRotation(
   if (refusals.length > 0) {
     throw new RotationRefused(
       `${refusals.length} stored credential(s) decrypt with neither ENCRYPTION_KEY nor ENCRYPTION_KEY_NEW: ${refusals.join("; ")}. Nothing was changed.`,
+    );
+  }
+  if (plaintext.length > 0) {
+    throw new RotationRefused(
+      `${plaintext.length} stored credential(s) are not encrypted: ${plaintext.join("; ")}. Nothing was changed. Start Ledgr once with ENCRYPTION_KEY so its migration encrypts them, then rotate.`,
     );
   }
   return {
@@ -313,7 +316,7 @@ async function run() {
 
   const verb = dryRun ? "Would re-encrypt" : "Re-encrypted";
   console.error(
-    `${verb} ${counts.connections} integration credential(s) and ${counts.versionCredentials} in stored versions; ${counts.alreadyNew} already under the new key; ${counts.plaintext} plaintext config(s) left for Ledgr to encrypt on its next save.`,
+    `${verb} ${counts.connections} integration credential(s) and ${counts.versionCredentials} in stored versions; ${counts.alreadyNew} already under the new key.`,
   );
   if (dryRun) console.error("No changes made (--dry-run).");
   else

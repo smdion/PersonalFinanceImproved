@@ -3256,11 +3256,6 @@
       "count": 1
     }
   },
-  "src/lib/budget-api/stored-config.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
-    }
-  },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 9
@@ -4799,9 +4794,6 @@
   "src/lib/sec/connection.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/sec/parsers.ts": {
@@ -4846,9 +4838,6 @@
   "src/lib/tiingo/connection.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/utils/account-name.ts": {
@@ -5815,11 +5804,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 10
-    }
-  },
-  "src/server/services/sync/simplefin/config.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/server/services/sync/simplefin/ingest.ts": {

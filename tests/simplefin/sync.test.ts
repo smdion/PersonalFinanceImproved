@@ -26,7 +26,7 @@ vi.mock("@/server/services/sync/loan-feed", async (importOriginal) => {
 });
 
 // ENCRYPTION_KEY must be set before crypto.ts is imported (transitively via
-// sync.ts) so encryptJson/readMaybeEncrypted have a real key to work with.
+// sync.ts) so encryptJson/decryptJson have a real key to work with.
 const TEST_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 let originalKey: string | undefined;
 beforeAll(() => {

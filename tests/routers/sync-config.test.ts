@@ -8,6 +8,7 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, seedBudgetProfile } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
+import { encryptJson } from "@/lib/crypto";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -265,12 +266,12 @@ describe("sync config router — getActiveBudgetApiLink", () => {
       await import("@/lib/budget-api");
     vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
     vi.mocked(getApiConnection).mockResolvedValueOnce({
-      config: {
+      config: encryptJson({
         serverUrl: "http://10.0.0.5:5006",
         apiKey: "ak",
         budgetSyncId: "sync-1",
         externalUrl: "https://actual.mydomain.com",
-      },
+      }),
     } as unknown as Awaited<ReturnType<typeof getApiConnection>>);
 
     const result = await caller.sync.getActiveBudgetApiLink();
@@ -285,11 +286,11 @@ describe("sync config router — getActiveBudgetApiLink", () => {
       await import("@/lib/budget-api");
     vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
     vi.mocked(getApiConnection).mockResolvedValueOnce({
-      config: {
+      config: encryptJson({
         serverUrl: "http://10.0.0.5:5006",
         apiKey: "ak",
         budgetSyncId: "sync-1",
-      },
+      }),
     } as unknown as Awaited<ReturnType<typeof getApiConnection>>);
 
     const result = await caller.sync.getActiveBudgetApiLink();

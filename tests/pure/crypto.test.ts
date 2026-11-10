@@ -12,7 +12,6 @@ import {
   decryptString,
   encryptJson,
   decryptJson,
-  readMaybeEncrypted,
 } from "@/lib/crypto";
 import { isEncryptedEnvelope } from "@/lib/crypto-envelope";
 
@@ -133,36 +132,38 @@ describe("isEncryptedEnvelope", () => {
   });
 });
 
-describe("readMaybeEncrypted (legacy compatibility)", () => {
+describe("decryptJson reads only an envelope", () => {
   it("decrypts an envelope", () => {
     const config = { accessToken: "encrypted-tok", budgetId: "abc" };
     const env = encryptJson(config);
-    expect(readMaybeEncrypted(env, "test_config", anything)).toEqual(config);
+    expect(decryptJson(env, "test_config", anything)).toEqual(config);
   });
 
-  it("returns plaintext as-is (legacy v4 api_connections.config)", () => {
-    const legacy = { accessToken: "plain-tok", budgetId: "abc" };
-    expect(readMaybeEncrypted(legacy, "test_legacy", anything)).toEqual(legacy);
-  });
-
-  it("preserves null/undefined", () => {
-    expect(readMaybeEncrypted(null, "test_null", anything)).toBeNull();
-    expect(
-      readMaybeEncrypted(undefined, "test_undefined", anything),
-    ).toBeUndefined();
+  it("throws on anything else, naming the source and never the value", () => {
+    const plain = { accessToken: "plain-tok", budgetId: "abc" };
+    for (const stored of [plain, null, undefined, JSON.stringify(plain)]) {
+      expect(() => decryptJson(stored, "test_plain", anything)).toThrow(
+        /^test_plain is not an encrypted envelope/,
+      );
+      try {
+        decryptJson(stored, "test_plain", anything);
+      } catch (e) {
+        expect(String(e)).not.toContain("plain-tok");
+      }
+    }
   });
 });
 
-describe("readMaybeEncrypted checks the config against its shape", () => {
-  it("reads a refused config (plaintext or encrypted) as stored and warns once", () => {
+describe("decryptJson checks the config against its shape", () => {
+  it("reads a refused config as stored and warns once", () => {
     const logged = vi.spyOn(console, "log").mockImplementation(() => {});
     try {
       const partial = { accessToken: "tok" };
-      expect(readMaybeEncrypted(partial, "test_partial", tokenConfig)).toBe(
-        partial,
-      );
       expect(
-        readMaybeEncrypted(encryptJson(partial), "test_partial", tokenConfig),
+        decryptJson(encryptJson(partial), "test_partial", tokenConfig),
+      ).toEqual(partial);
+      expect(
+        decryptJson(encryptJson(partial), "test_partial", tokenConfig),
       ).toEqual(partial);
       expect(logged).toHaveBeenCalledTimes(1);
       expect(JSON.parse(String(logged.mock.calls[0]?.[0]))).toMatchObject({

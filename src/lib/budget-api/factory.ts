@@ -53,7 +53,7 @@ export async function getClientForService(
   const conn = connections[0];
   if (!conn) return null;
 
-  // conn.config may be plaintext or an encrypted envelope; each provider's
+  // conn.config is an encrypted envelope; each provider's
   // createClient reads it (stored-config.ts).
   return BUDGET_PROVIDERS[service].createClient(conn.config);
 }

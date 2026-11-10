@@ -1,6 +1,6 @@
 /** AES-256-GCM at-rest encryption for secrets with ENCRYPTION_KEY (32 bytes, base64; envelope
- *  format in crypto-envelope.ts). Plaintext values still read. Defends against backup leaks,
- *  not against code execution in the running app. */
+ *  format in crypto-envelope.ts). Defends against backup leaks, not against code execution in
+ *  the running app. */
 
 import "server-only";
 import type { z } from "zod/v4";
@@ -43,28 +43,20 @@ export function encryptJson(jsonPayload: unknown): EncryptedEnvelope {
 }
 
 /**
- * Decrypt + JSON.parse, checked against `shape` (`readStoredConfig`). Throws if
- * the input isn't a valid envelope; isEncryptedEnvelope() detects plaintext.
+ * A stored config decrypted and parsed, checked against `shape` (`readStoredConfig`). Every
+ * stored config is an envelope (writers store one; the credentials migration converts any
+ * other), so anything else throws, naming `source` and never the value.
  */
 export function decryptJson<S extends z.ZodType>(
-  envelope: EncryptedEnvelope,
+  stored: unknown,
   source: string,
   shape: S,
 ): z.output<S> {
-  return readStoredConfig(source, JSON.parse(decryptString(envelope)), shape);
-}
-
-/** Read a config value stored as plaintext (returned as-is) or as an encrypted envelope
- *  (decrypted and parsed), checked against `shape` (`readStoredConfig`). Writes always go
- *  through encryptJson(). */
-export function readMaybeEncrypted<S extends z.ZodType>(
-  storedValue: unknown,
-  source: string,
-  shape: S,
-): z.output<S> {
-  if (isEncryptedEnvelope(storedValue))
-    return decryptJson(storedValue, source, shape);
-  return readStoredConfig(source, storedValue, shape);
+  if (!isEncryptedEnvelope(stored))
+    throw new Error(
+      `${source} is not an encrypted envelope; re-save the connection.`,
+    );
+  return readStoredConfig(source, JSON.parse(decryptString(stored)), shape);
 }
 
 /** A config value as read: a refused one is logged once per source and
