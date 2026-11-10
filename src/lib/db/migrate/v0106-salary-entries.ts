@@ -8,6 +8,7 @@ import {
   PAY_WEEK_VALUES,
 } from "../../config/enum-values";
 import { W4_FILING_STATUS_VALUES } from "../../config/filing-status";
+import { isCalendarDate } from "../../utils/date";
 import { ConverterRefusal } from "./converter-refusal";
 import { withoutSnapshots } from "./v0106-net-pay-snapshot";
 import { isRow, parsedJson, type Row, type Update } from "./converter-rows";
@@ -47,16 +48,9 @@ const RETIRED_KEYS: readonly string[] = [
   "includeBonusInContributions",
 ];
 
-/** isCalendarDate as of this tag: YYYY-MM-DD, a real day, 1900-2100. */
-function isCalendarDate(value: unknown): boolean {
-  if (typeof value !== "string") return false;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!m) return false;
-  const [y, month, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  if (y < 1900 || y > 2100) return false;
-  const date = new Date(Date.UTC(y, month - 1, d));
-  return date.getUTCMonth() === month - 1 && date.getUTCDate() === d;
-}
+/** A stored date the entry schema takes: its own check, read live. */
+const isStoredDate = (value: unknown) =>
+  typeof value === "string" && isCalendarDate(value);
 
 const atLeastZero = numberIn(0);
 const split = objectOf(
@@ -119,7 +113,7 @@ export const SALARY_ENTRY_FIELDS: Fields = {
   bonusOverride: { check: nullable(atLeastZero) },
   payPeriod: { check: oneOf(PAY_PERIODS) },
   payWeek: { check: oneOf(PAY_WEEKS) },
-  anchorPayDate: { check: nullable(isCalendarDate) },
+  anchorPayDate: { check: nullable(isStoredDate) },
   budgetPeriodsPerMonth: {
     check: nullable((v) => isNumber(v) && Number(v) > 0),
   },

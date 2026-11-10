@@ -58,6 +58,7 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/frozen-shape.ts",
         "src/lib/db/backup/version-tables.ts",
         "src/lib/utils/match-rate.ts",
+        "src/lib/utils/date.ts",
         "src/lib/crypto-envelope.ts",
         "src/lib/config/budget-apps.ts",
         "src/lib/config/enum-values.ts",
