@@ -31,6 +31,7 @@ beforeEach(() => {
   setQuery("settings.getFirstRunState", { adminNeeded: true });
   // A fresh install has one baseline Salary Profile with no entries.
   setQuery("salaryProfile.list", [{ id: 1, name: "Baseline", salaries: {} }]);
+  setQuery("settings.appSettings.list", []);
   let nextPersonId = 41;
   setMutationResult("settings.people.create", () => ({ id: nextPersonId++ }));
   let nextJobId = 51;
@@ -149,5 +150,32 @@ describe("OnboardingWizard smoke", () => {
       { enabled: true },
     ]);
     expect(mutationCalls("settings.completeOnboarding")).toHaveLength(1);
+  });
+
+  it("each new job's W-4 box starts from the filing status the household gave", async () => {
+    setQuery("settings.getFirstRunState", { adminNeeded: false });
+    setQuery("settings.appSettings.list", [
+      { id: 1, key: "tax_filing_status", value: "Single" },
+    ]);
+    render(<OnboardingWizard onComplete={onComplete} />);
+    fireEvent.click(screen.getByRole("button", { name: "Get Started" }));
+    await waitFor(() =>
+      expect(screen.getByText("Step 2 of 5")).toBeInTheDocument(),
+    );
+    next(); // OIDC
+    addPerson("Robin", "1984");
+    next(); // People
+    addJob("0", "Northwind Clinic", "98000");
+    next(); // Income
+    fireEvent.click(screen.getByRole("button", { name: /dashboard/i }));
+    await waitFor(() => expect(onComplete).toHaveBeenCalled());
+    expect(mutationCalls("salaryProfile.update")).toEqual([
+      {
+        id: 1,
+        salaries: {
+          "51": expect.objectContaining({ w4FilingStatus: "Single" }),
+        },
+      },
+    ]);
   });
 });

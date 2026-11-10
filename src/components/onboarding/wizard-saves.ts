@@ -6,6 +6,8 @@ import { type SetStateAction, type Dispatch } from "react";
 import { trpc } from "@/lib/trpc";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { type PersonDraft, type JobDraft } from "./wizard-state";
+import { taxFilingStatusSetting } from "@/lib/pure/tax/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 
 /** Saves the household the wizard collected, then completes first run. */
 export function finishSetup(
@@ -30,16 +32,13 @@ export function finishSetup(
     setIsSaving(true);
     setError(null);
     try {
-      // Create all people and collect their IDs
       const createdPeopleIds: number[] = [];
       for (const person of people) {
         const created = await createPerson.mutateAsync(person);
         createdPeopleIds.push(created!.id);
       }
 
-      // Create all jobs, mapping personIndex to the real person ID. A job
-      // carries no salary of its own — each one's annualSalary from the
-      // Income step goes into the household's Salary Profile below instead.
+      // Jobs carry no salary: each one's goes into the Salary Profile below.
       const today = calendarDateOf(new Date());
       const jobEntries: Record<
         string,
@@ -61,12 +60,14 @@ export function finishSetup(
         }
       }
 
-      // Give each new job a complete entry in the baseline Salary Profile
-      // (migrations always leave exactly one active profile behind, even on
-      // a fresh install) — no bonus assumed, plain on-target terms.
+      // Each new job's Salary Profile entry: no bonus, W-4 box = return status.
       if (Object.keys(jobEntries).length > 0) {
         const profiles = await utils.salaryProfile.list.fetch();
         const baseline = profiles[0];
+        const settings = await utils.settings.appSettings.list.fetch();
+        const filing: FilingStatusKey | null = taxFilingStatusSetting(
+          settings.map((r) => ({ key: r.key, value: r.value })),
+        );
         if (baseline) {
           const salaries = { ...baseline.salaries } as Record<
             string,
@@ -77,6 +78,7 @@ export function finishSetup(
               ...BLANK_SALARY_ENTRY,
               salary: entry.salary,
               payPeriod: entry.payPeriod,
+              ...(filing ? { w4FilingStatus: filing } : {}),
             };
           }
           await updateSalaryProfile.mutateAsync({
@@ -87,7 +89,6 @@ export function finishSetup(
       }
 
       await setTaxDataSyncEnabled.mutateAsync({ enabled: taxDataSync });
-      // Mark onboarding complete
       await completeOnboarding.mutateAsync();
       onComplete();
     } catch (e) {
@@ -141,7 +142,6 @@ export function restoreFromBackup(
         // No API connection configured or sync failed — not critical
       }
 
-      // Full page reload to pick up all imported data
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to restore backup");
