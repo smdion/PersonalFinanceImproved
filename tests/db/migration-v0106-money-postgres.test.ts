@@ -5,7 +5,8 @@
  * retirement-people-cases.ts, as a pending migration and in a squash
  * replay, twice over; every reader reads each person as before; run twice
  * more over its own output, the converters write nothing; every budget
- * item's amounts get one number per column (budget-amounts-cases.ts). Only when
+ * item's amounts get one number per column (budget-amounts-cases.ts); an
+ * unread rule snapshot goes, and one still paid refuses the start. Only when
  * TEST_DATABASE_URL names a throwaway database (CI's PostgreSQL job): it
  * drops the database's schemas.
  */
@@ -26,6 +27,15 @@ import {
   RETIREMENT_PEOPLE_CONVERTER,
 } from "@/lib/db/migrate/v0106-retirement-people";
 import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
+import { NET_PAY_SNAPSHOT_CONVERTER } from "@/lib/db/migrate/v0106-net-pay-snapshot";
+import {
+  JOBS,
+  PROFILES as SALARY_PROFILES,
+  REFUSED,
+  SPECULATIVE_JOB,
+  profileReads,
+  type ProfileCase,
+} from "./net-pay-snapshot-cases";
 import { expectPgReplaySafe } from "./converter-replay";
 import {
   ITEMS,
@@ -100,7 +110,9 @@ describe.skipIf(skipWithoutPostgres)(
 
     /** An empty database migrated to just before the money tag, holding
      *  the cases' rows; the journal is then the shipped one. */
-    async function installBefore() {
+    async function installBefore(
+      salaryProfiles: readonly ProfileCase[] = SALARY_PROFILES,
+    ) {
       await dropAllSchemas(client);
       const shipped = fs.readFileSync(
         path.join(REPO, "drizzle", "meta", "_journal.json"),
@@ -164,6 +176,23 @@ describe.skipIf(skipWithoutPostgres)(
           "INSERT INTO budget_items (id, profile_id, category, subcategory, amounts) VALUES ($1, $2, 'Invented', $3, $4::jsonb)",
           [c.id, c.profile_id, `Item ${c.id}`, JSON.stringify(c.before)],
         );
+      for (const j of [...JOBS, SPECULATIVE_JOB])
+        await client.query(
+          "INSERT INTO jobs (id, person_id, employer_name, start_date, end_date, is_speculative) VALUES ($1, $2, $3, $4, $5, $6)",
+          [
+            j.id,
+            j.person_id,
+            j.employer_name,
+            j.start_date,
+            j.end_date,
+            j.is_speculative,
+          ],
+        );
+      for (const c of salaryProfiles)
+        await client.query(
+          "INSERT INTO salary_profiles (id, name, salaries) VALUES ($1, $2, $3::jsonb)",
+          [c.id, `Invented ${c.id}`, JSON.stringify(c.before)],
+        );
       // Explicit ids leave the sequence behind; the app's own restore resets it.
       await client.query(
         "SELECT setval(pg_get_serial_sequence('retirement_profile_people', 'id'), (SELECT max(id) FROM retirement_profile_people))",
@@ -198,6 +227,11 @@ describe.skipIf(skipWithoutPostgres)(
         ).rows,
         retirement_profile_people: rows,
       };
+      const salaries = (
+        await client.query<{ salaries: unknown }>(
+          "SELECT salaries FROM salary_profiles WHERE name LIKE 'Invented %' ORDER BY id",
+        )
+      ).rows.map((r) => r.salaries);
       const items = (
         await client.query<{ profile_id: number; amounts: unknown[] }>(
           "SELECT profile_id, amounts FROM budget_items ORDER BY id",
@@ -208,6 +242,7 @@ describe.skipIf(skipWithoutPostgres)(
         reads: read(tables),
         amounts: items.map((i) => i.amounts),
         budget: budgetReads(budgetView(items)),
+        salaries,
       };
     };
 
@@ -230,6 +265,10 @@ describe.skipIf(skipWithoutPostgres)(
       expect(first.reads).toEqual(before.reads);
       expect(first.amounts).toEqual(ITEMS.map((c) => c.after));
       expect(first.budget).toEqual(before.budget);
+      expect(first.salaries).toEqual(SALARY_PROFILES.map((c) => c.after));
+      expect(first.salaries.map(profileReads)).toEqual(
+        before.salaries.map(profileReads),
+      );
       migrate();
       expect(await state()).toEqual(first);
     });
@@ -248,6 +287,7 @@ describe.skipIf(skipWithoutPostgres)(
         const added = await state();
         expect(added.rows).toEqual(expected);
         expect(added.amounts).toEqual(ITEMS.map((c) => c.after));
+        expect(added.salaries).toEqual(SALARY_PROFILES.map((c) => c.after));
         for (let run = 0; run < 2; run++) {
           await client.query(damage);
           migrate();
@@ -262,7 +302,22 @@ describe.skipIf(skipWithoutPostgres)(
       await expectPgReplaySafe(client, [
         RETIREMENT_PEOPLE_CONVERTER,
         BUDGET_AMOUNTS_CONVERTER,
+        NET_PAY_SNAPSHOT_CONVERTER,
       ]);
+    });
+
+    it("a routing that still pays from its snapshot refuses the start, and the whole tag rolls back", async () => {
+      await installBefore([...SALARY_PROFILES, ...REFUSED]);
+      const before = await state(
+        (t) => reads(t, settingsBeforeTag),
+        asReadBeforeTag,
+      );
+      expect(() => migrate()).toThrow(
+        /salary_profiles 107, 108, 109; jobs 21, 22, 31/,
+      );
+      expect(
+        await state((t) => reads(t, settingsBeforeTag), asReadBeforeTag),
+      ).toEqual(before);
     });
   },
 );

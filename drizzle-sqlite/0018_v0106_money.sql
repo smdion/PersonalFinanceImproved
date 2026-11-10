@@ -7,3 +7,6 @@
 -- Budget amounts: an item's amounts get one number per column of its
 -- profile, a missing or null column as 0; never truncated. A replay pads
 -- nothing: the array is then whole.
+-- Extra-paycheck routing: a rule's saved net pay goes where nothing reads
+-- it (the routing has a base pay, or is in Budget mode); a Savings-mode
+-- routing that still pays from it refuses the start, naming ids only.

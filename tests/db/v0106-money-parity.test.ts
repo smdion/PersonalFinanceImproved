@@ -12,12 +12,18 @@ import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
 import { RETIREMENT_PEOPLE_CONVERTER } from "@/lib/db/migrate/v0106-retirement-people";
 import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
+import { NET_PAY_SNAPSHOT_CONVERTER } from "@/lib/db/migrate/v0106-net-pay-snapshot";
 import {
   expectRegistryReplaySafe,
   expectRestoreMatchesSqlite,
 } from "./converter-replay";
 import { HELD, PEOPLE, PROFILES, SETTINGS } from "./retirement-people-cases";
 import { ITEMS, PROFILES as BUDGETS } from "./budget-amounts-cases";
+import {
+  JOBS,
+  PROFILES as SALARY_PROFILES,
+  SPECULATIVE_JOB,
+} from "./net-pay-snapshot-cases";
 
 const REPO = process.cwd();
 
@@ -50,8 +56,22 @@ const budgetRows = (): Fixture => ({
   })),
 });
 
+/** The extra-paycheck snapshot cases it converts (a refused one stops it). */
+const salaryRows = (): Fixture => ({
+  jobs: [...JOBS, SPECULATIVE_JOB].map((j) => ({ ...j })),
+  salary_profiles: SALARY_PROFILES.map((c) => ({
+    id: c.id,
+    name: `Invented ${c.id}`,
+    salaries: c.before,
+  })),
+});
+
 /** Every shape's rows, for the registry at the head. */
-const allRows = (): Fixture => ({ ...retirementRows(), ...budgetRows() });
+const allRows = (): Fixture => ({
+  ...retirementRows(),
+  ...budgetRows(),
+  ...salaryRows(),
+});
 
 describe("the money tag's shapes at the journal head", () => {
   let dir: string;
@@ -107,6 +127,13 @@ describe("the money tag's shapes at the journal head", () => {
 
   it("budget amounts: the restore step gives SQLite's rows", () => {
     expectRestoreMatchesSqlite(db, BUDGET_AMOUNTS_CONVERTER, budgetRows());
+  });
+
+  it("extra-paycheck snapshots: the restore step gives SQLite's rows", () => {
+    expectRestoreMatchesSqlite(db, NET_PAY_SNAPSHOT_CONVERTER, {
+      people: retirementRows()["people"]!,
+      ...salaryRows(),
+    });
   });
 
   it("the whole registry over every shape's rows writes nothing the second time", () => {

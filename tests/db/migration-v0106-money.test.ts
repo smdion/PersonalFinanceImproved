@@ -3,8 +3,10 @@
  * the tag before it gets the per-person retirement rows of
  * retirement-people-cases.ts, exactly as the restore step gives them, as a
  * pending migration and in either squash replay, twice over; every reader
- * reads each person as before; and every budget item's amounts get one
- * number per column (budget-amounts-cases.ts), read as before.
+ * reads each person as before; every budget item's amounts get one
+ * number per column (budget-amounts-cases.ts), and every unread rule
+ * snapshot goes (net-pay-snapshot-cases.ts), each read as before; a
+ * routing that still pays from its snapshot refuses, and nothing changes.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
@@ -17,6 +19,16 @@ import {
   RETIREMENT_PEOPLE_CONVERTER,
 } from "@/lib/db/migrate/v0106-retirement-people";
 import { BUDGET_AMOUNTS_CONVERTER } from "@/lib/db/migrate/v0106-budget-amounts";
+import { NET_PAY_SNAPSHOT_CONVERTER } from "@/lib/db/migrate/v0106-net-pay-snapshot";
+import { MigrationRefusal } from "@/lib/db/migrate/converter-refusal";
+import {
+  JOBS,
+  PROFILES as SALARY_PROFILES,
+  REFUSED,
+  SPECULATIVE_JOB,
+  profileReads,
+  type ProfileCase,
+} from "./net-pay-snapshot-cases";
 import { expectSqliteReplaySafe } from "./converter-replay";
 import {
   ITEMS,
@@ -86,7 +98,9 @@ describe("the money tag through the real migrator (SQLite)", () => {
 
   /** An install migrated to just before the money tag, holding the cases'
    *  rows; the journal is then the shipped one, so the tag is pending. */
-  function installBefore() {
+  function installBefore(
+    salaryProfiles: readonly ProfileCase[] = SALARY_PROFILES,
+  ) {
     const shipped = fs.readFileSync(journalPath(), "utf8");
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     const at = journal.entries.findIndex((e) => e.tag === MONEY_TAG);
@@ -145,6 +159,23 @@ describe("the money tag through the real migrator (SQLite)", () => {
     );
     for (const c of ITEMS)
       item.run(c.id, c.profile_id, `Item ${c.id}`, JSON.stringify(c.before));
+    const job = db.prepare(
+      "INSERT INTO jobs (id, person_id, employer_name, start_date, end_date, is_speculative) VALUES (?, ?, ?, ?, ?, ?)",
+    );
+    for (const j of [...JOBS, SPECULATIVE_JOB])
+      job.run(
+        j.id,
+        j.person_id,
+        j.employer_name,
+        j.start_date,
+        j.end_date,
+        j.is_speculative ? 1 : 0,
+      );
+    const salary = db.prepare(
+      "INSERT INTO salary_profiles (id, name, salaries) VALUES (?, ?, ?)",
+    );
+    for (const c of salaryProfiles)
+      salary.run(c.id, `Invented ${c.id}`, JSON.stringify(c.before));
     db.close();
     fs.writeFileSync(journalPath(), shipped);
   }
@@ -169,12 +200,22 @@ describe("the money tag through the real migrator (SQLite)", () => {
       profile_id: r.profile_id,
       amounts: JSON.parse(r.amounts) as unknown[],
     }));
+    const salaries = (
+      db
+        .prepare(
+          "SELECT salaries FROM salary_profiles WHERE name LIKE 'Invented %' ORDER BY id",
+        )
+        .all() as {
+        salaries: string;
+      }[]
+    ).map((r): unknown => JSON.parse(r.salaries));
     db.close();
     return {
       rows: tables.retirement_profile_people,
       reads: read(tables),
       amounts: items.map((i) => i.amounts),
       budget: budgetReads(budgetView(items)),
+      salaries,
     };
   };
 
@@ -184,6 +225,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
       ...ADDED.map((r, i) => ({ ...r, id: HELD.length + 1 + i })),
     ]);
     expect(s.amounts).toEqual(ITEMS.map((c) => c.after));
+    expect(s.salaries).toEqual(SALARY_PROFILES.map((c) => c.after));
   }
 
   it("adds the rows as a pending migration, reads as before, and a later start adds none", () => {
@@ -194,6 +236,9 @@ describe("the money tag through the real migrator (SQLite)", () => {
     expectAdded(first);
     expect(first.reads).toEqual(before.reads);
     expect(first.budget).toEqual(before.budget);
+    expect(first.salaries.map(profileReads)).toEqual(
+      before.salaries.map(profileReads),
+    );
     runSQLite();
     expect(state()).toEqual(first);
   });
@@ -225,7 +270,28 @@ describe("the money tag through the real migrator (SQLite)", () => {
     expectSqliteReplaySafe(db, [
       RETIREMENT_PEOPLE_CONVERTER,
       BUDGET_AMOUNTS_CONVERTER,
+      NET_PAY_SNAPSHOT_CONVERTER,
     ]);
     db.close();
+  });
+
+  it("a routing that still pays from its snapshot refuses the start, and the whole tag rolls back", () => {
+    installBefore([...SALARY_PROFILES, ...REFUSED]);
+    const before = state((t) => reads(t, settingsBeforeTag), asReadBeforeTag);
+    expect(() => runSQLite()).toThrow(MigrationRefusal);
+    expect(() => runSQLite()).toThrow(
+      /salary_profiles 107, 108, 109; jobs 21, 22, 31/,
+    );
+    const db = open();
+    const recorded = db
+      .prepare("SELECT count(*) AS n FROM __drizzle_migrations")
+      .get() as { n: number };
+    db.close();
+    const shipped = JSON.parse(fs.readFileSync(journalPath(), "utf8")) as {
+      entries: unknown[];
+    };
+    expect(recorded.n).toBe(shipped.entries.length - 1);
+    const after = state((t) => reads(t, settingsBeforeTag), asReadBeforeTag);
+    expect(after).toEqual(before);
   });
 });
