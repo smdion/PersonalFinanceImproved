@@ -4,6 +4,7 @@
  * the Tools page's saved relocation scenarios.
  */
 import { z } from "zod/v4";
+import { zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
 import { eq, desc } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -27,32 +28,31 @@ export const relocationProjectionRouter = createTRPCRouter({
       z.object({
         currentProfileId: z.number().int(),
         currentBudgetColumn: z.number().int().min(0),
-        currentExpenseOverride: z.number().min(0).nullable().default(null),
+        currentExpenseOverride: zMoneyNumber.min(0).nullable().default(null),
         currentContributionProfileId: z.number().int().nullable().default(null),
         relocationProfileId: z.number().int(),
         relocationBudgetColumn: z.number().int().min(0),
-        relocationExpenseOverride: z.number().min(0).nullable().default(null),
+        relocationExpenseOverride: zMoneyNumber.min(0).nullable().default(null),
         relocationContributionProfileId: z
           .number()
           .int()
           .nullable()
           .default(null),
-        // One Salary Profile for both scenarios (stay vs move, one income path).
-        // Null: the globally-active Salary Profile, as in every engine endpoint.
+        // One Salary Profile for both scenarios; null: the active one.
         salaryProfileId: z.number().int().nullable().default(null),
         yearAdjustments: z
           .array(
             z.object({
-              year: z.number().int(),
-              monthlyExpenses: z.number().min(0),
+              year: zYear,
+              monthlyExpenses: zMoneyNumber.min(0),
             }),
           )
           .default([]),
         largePurchases: z
           .array(
             z.object({
-              purchaseYear: z.number().int(),
-              purchasePrice: z.number().min(0),
+              purchaseYear: zYear,
+              purchasePrice: zMoneyNumber.min(0),
               downPaymentPercent: z
                 .number()
                 .min(0)
@@ -61,12 +61,12 @@ export const relocationProjectionRouter = createTRPCRouter({
                 .default(null),
               loanRate: z.number().min(0).nullable().default(null),
               loanTermYears: z.number().int().min(0).nullable().default(null),
-              ongoingMonthlyCost: z.number().min(0).nullable().default(null),
-              saleProceeds: z.number().min(0).nullable().default(null),
+              ongoingMonthlyCost: zMoneyNumber.min(0).nullable().default(null),
+              saleProceeds: zMoneyNumber.min(0).nullable().default(null),
             }),
           )
           .default([]),
-        moveYear: z.number().int().min(1900).max(2100).nullable().default(null),
+        moveYear: zYear.nullable().default(null),
       }),
     )
     .query(({ ctx, input }) => computeRelocationFiProjection(ctx, input)),
