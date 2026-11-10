@@ -28,7 +28,9 @@ async function peopleExist(db: DbOrTx): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** Onboarding is complete once the wizard finished or a person exists. */
+/** Onboarding is complete once the wizard finished or a person exists. Is the
+ *  wizard done, not is the gate closed: with the flag false and people, this says
+ *  done while onboardingClosesGate (firstRunState's rule) keeps the gate open. */
 export async function onboardingWizardDone(db: DbOrTx): Promise<boolean> {
   return (await onboardingFlag(db)) === true || peopleExist(db);
 }
