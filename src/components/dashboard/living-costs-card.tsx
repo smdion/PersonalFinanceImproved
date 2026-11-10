@@ -346,7 +346,6 @@ function LivingCostsCardImpl() {
   // Extra-paycheck money routed to savings isn't in any goal's monthlyAllocation, so add it.
   // Counted from this year's 3rd-paycheck months times the current toggle, not from the
   // materialized transactions, which miss months that passed before a rule existed.
-  const thisYear = new Date().getFullYear();
   const extraPaycheckAllocatedThisYear = sumBy(extraPaycheckJobs ?? [], (j) => {
     if (j.payPeriod !== "biweekly" || !j.anchorPayDate) return 0;
     const routing = j.extraPaycheckRouting;
@@ -357,7 +356,7 @@ function LivingCostsCardImpl() {
     const extraMonthsThisYear = getExtraPaycheckMonthKeys(
       anchor,
       j.payPeriod,
-      monthKey(new Date(thisYear, 0, 1)),
+      monthKey(new Date(new Date().getFullYear(), 0, 1)),
       12,
     );
     return extraMonthsThisYear.length * netPayPerCheck;

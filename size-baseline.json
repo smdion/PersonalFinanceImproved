@@ -201,7 +201,7 @@
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 231,
     "src/components/savings/extra-paycheck-month-overrides.tsx": 263,
-    "src/components/savings/extra-paycheck-rules-editor.tsx": 639,
+    "src/components/savings/extra-paycheck-rules-editor.tsx": 634,
     "src/components/savings/extra-paycheck-rules.tsx": 385,
     "src/components/savings/fund-card-menu.tsx": 143,
     "src/components/savings/fund-card-progress.tsx": 305,
@@ -331,7 +331,7 @@
     "src/lib/pure/net-worth/year-end-metrics.ts": 133,
     "src/lib/pure/net-worth/year-end-rows.ts": 525,
     "src/lib/pure/paycheck/bonus.ts": 243,
-    "src/lib/pure/paycheck/extra-paycheck-months.ts": 124,
+    "src/lib/pure/paycheck/extra-paycheck-months.ts": 115,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 258,
     "src/lib/pure/paycheck/paystub-check.ts": 439,
     "src/lib/pure/paycheck/per-check.ts": 329,
@@ -567,7 +567,7 @@
       "LinkedBalanceCardImpl": 171
     },
     "src/components/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 511
+      "LivingCostsCardImpl": 510
     },
     "src/components/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 384
@@ -806,7 +806,7 @@
       "EmergencyFundDetail": 179
     },
     "src/components/savings/extra-paycheck-rules-editor.tsx": {
-      "ExtraPaycheckJobPanel": 414
+      "ExtraPaycheckJobPanel": 408
     },
     "src/components/savings/fund-card.tsx": {
       "FundCard": 364
