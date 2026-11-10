@@ -149,8 +149,8 @@ describe("notes and estimated marks", () => {
     seedSnapshot(t.db, "2032-06-30", [
       { performanceAccountId: acct, amount: "1100" },
     ]);
-    await t.db.transaction((tx) =>
-      refreshSnapshotYearDerivatives(tx as never, "2032-06-30", [
+    await t.rawDb.transaction((tx) =>
+      refreshSnapshotYearDerivatives(tx, "2032-06-30", [
         { performanceAccountId: acct, amount: "1100" },
       ]),
     );

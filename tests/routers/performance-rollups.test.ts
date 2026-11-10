@@ -271,8 +271,8 @@ describe("an open year is rebuilt from its account rows", () => {
 
 describe("snapshots set ending balances only when they're the year's latest", () => {
   const sync = (date: string, amount: string) =>
-    t.db.transaction((tx) =>
-      refreshSnapshotYearDerivatives(tx as never, date, [
+    t.rawDb.transaction((tx) =>
+      refreshSnapshotYearDerivatives(tx, date, [
         { performanceAccountId: brokerage, amount },
       ]),
     );
