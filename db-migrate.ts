@@ -1470,33 +1470,97 @@ const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
     sqlite.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[]
   ).map((c) => c.name);
 
+/** What a replayed recreate of `table` at journal entry `idx` may drop and
+ *  how a database before that entry looks: the columns its own entry drops,
+ *  every column any snapshot of the journal gives the table, and the
+ *  columns later entries add to it. */
+type RecreateShape = {
+  tag: string;
+  ownDrops: ReadonlySet<string>;
+  known: ReadonlySet<string>;
+  laterAdds: ReadonlySet<string>;
+};
+
+function recreateShape(
+  journal: Journal,
+  migrationsFolder: string,
+  entry: { idx: number; tag: string },
+  table: string,
+): RecreateShape {
+  const columnsAt = (idx: number) =>
+    snapshotColumns(migrationsFolder, idx).get(table) ?? [];
+  const own = new Set(columnsAt(entry.idx));
+  const later = journal.entries
+    .filter((e) => e.idx > entry.idx)
+    .flatMap((e) => columnsAt(e.idx));
+  return {
+    tag: entry.tag,
+    ownDrops: new Set(
+      entry.idx > 0 ? columnsAt(entry.idx - 1).filter((c) => !own.has(c)) : [],
+    ),
+    known: new Set(journal.entries.flatMap((e) => columnsAt(e.idx))),
+    laterAdds: new Set(later.filter((c) => !own.has(c))),
+  };
+}
+
+/** Squash replay only: a recreate skipped over a column no snapshot knows
+ *  (a hand edit) on a database provably not past the entry (it still holds
+ *  a column the entry drops, or lacks every column later entries add)
+ *  would record a change it never made, so the replay is refused. */
+function refuseUnknownColumnSkip(
+  table: string,
+  present: readonly string[],
+  lost: readonly string[],
+  shape: RecreateShape,
+): string[] {
+  const unknown = lost.filter((c) => !shape.known.has(c));
+  if (unknown.length === 0) return unknown;
+  const has = new Set(present);
+  const beforeEntry =
+    [...shape.ownDrops].some((c) => has.has(c)) ||
+    (shape.laterAdds.size > 0 &&
+      [...shape.laterAdds].every((c) => !has.has(c)));
+  if (beforeEntry)
+    throw new UpgradePathError(
+      `Table ${table} has column(s) no Ledgr release made (${unknown.join(", ")}), and this database is before ${shape.tag}, whose change to ${table} can't be applied over them. Remove the column(s) or restore a backup, then start again. Nothing has been changed.`,
+    );
+  return unknown;
+}
+
 /** Squash replay only: a table recreate runs as a unit under a savepoint
- *  and drops only the columns its own journal entry drops (`ownDrops`). It
- *  is skipped whole when a statement is already done or X has another
- *  column `__new_X` lacks; any other error stops the replay. */
+ *  and drops only the columns its own journal entry drops. It is skipped
+ *  whole when a statement is already done or X has another column
+ *  `__new_X` lacks (a warning when no snapshot knows that column); any
+ *  other error, or refuseUnknownColumnSkip, stops the replay. */
 function replayRecreateSqlite(
   sqlite: SqliteDb,
   table: string,
   statements: string[],
-  ownDrops: ReadonlySet<string>,
+  shape: RecreateShape,
 ): void {
   sqlite.exec("SAVEPOINT replay_recreate");
   let skipped: string | null = null;
+  let unknown: string[] = [];
   try {
     sqlite.exec(statements[0]!);
     const kept = new Set(sqliteColumnNames(sqlite, `__new_${table}`));
-    const lost = sqliteColumnNames(sqlite, table).filter(
-      (c) => !kept.has(c) && !ownDrops.has(c),
-    );
-    if (lost.length > 0) skipped = `would drop ${lost.join(", ")}`;
-    else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
+    const present = sqliteColumnNames(sqlite, table);
+    const lost = present.filter((c) => !kept.has(c) && !shape.ownDrops.has(c));
+    if (lost.length > 0) {
+      unknown = refuseUnknownColumnSkip(table, present, lost, shape);
+      skipped = `would drop ${lost.join(", ")}`;
+    } else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
   } catch (err) {
     if (!isIgnorableSqliteError(err)) throw err; // the replay rolls back
     skipped = (err as Error).message;
   }
   if (skipped !== null) {
     sqlite.exec("ROLLBACK TO SAVEPOINT replay_recreate");
-    log("info", "squash_recreate_skipped", { table, reason: skipped });
+    log(unknown.length > 0 ? "warn" : "info", "squash_recreate_skipped", {
+      table,
+      reason: skipped,
+      ...(unknown.length > 0 ? { unknownColumns: unknown } : {}),
+    });
   }
   sqlite.exec("RELEASE SAVEPOINT replay_recreate");
 }
@@ -1508,8 +1572,9 @@ function replayRecreateSqlite(
 function replayStatementsSqlite(
   sqlite: SqliteDb,
   sql: string,
+  journal: Journal,
   migrationsFolder: string,
-  idx: number,
+  entry: { idx: number; tag: string },
 ): void {
   const statements = sql
     .split("--> statement-breakpoint")
@@ -1527,21 +1592,11 @@ function replayStatementsSqlite(
         )
       : -1;
     if (table && end > i) {
-      // What this entry drops from the table: its snapshot's columns
-      // against the previous entry's.
-      const own = new Set(snapshotColumns(migrationsFolder, idx).get(table));
-      const ownDrops = new Set(
-        idx > 0
-          ? (
-              snapshotColumns(migrationsFolder, idx - 1).get(table) ?? []
-            ).filter((c) => !own.has(c))
-          : [],
-      );
       replayRecreateSqlite(
         sqlite,
         table,
         statements.slice(i, end + 1),
-        ownDrops,
+        recreateShape(journal, migrationsFolder, entry, table),
       );
       i = end;
     } else
@@ -1702,7 +1757,7 @@ function handleSQLiteSquashUpgrade(
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
         convertSqlite(sqlite, entry.tag, "beforeSql");
-        replayStatementsSqlite(sqlite, sql, migrationsFolder, entry.idx);
+        replayStatementsSqlite(sqlite, sql, journal, migrationsFolder, entry);
         convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(

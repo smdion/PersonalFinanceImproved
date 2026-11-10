@@ -3,7 +3,8 @@
  * this process so the registry can hold invented converters): the tag's
  * earlier converter and every pending tag roll back, nothing is recorded,
  * and the message names ids, never a value; a converter asking for a
- * missing ENCRYPTION_KEY refuses the same way. Only when TEST_DATABASE_URL
+ * missing ENCRYPTION_KEY refuses the same way. A hand-added column never
+ * makes the replay skip a change (PostgreSQL has no table recreate). Only when TEST_DATABASE_URL
  * names a throwaway database (CI's PostgreSQL job): it drops its schemas.
  */
 // First: its mocks must be in place before any app module loads.
@@ -100,6 +101,36 @@ describe.skipIf(skipWithoutPostgres)(
       fs.writeFileSync(journalPath(), shipped);
       return journal.entries.length;
     }
+
+    it("a cleared journal before 0005 with a hand-added retirement_settings column replays 0005 and keeps the column", async () => {
+      await dropAllSchemas(client);
+      const shipped = fs.readFileSync(journalPath(), "utf8");
+      const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
+      journal.entries.splice(
+        journal.entries.findIndex((e) => e.tag.startsWith("0005")),
+      );
+      fs.writeFileSync(journalPath(), JSON.stringify(journal, null, 2));
+      await runPostgres();
+      fs.writeFileSync(journalPath(), shipped);
+      await client.query(
+        "ALTER TABLE retirement_settings ADD COLUMN hand_col text",
+      );
+      await client.query("DELETE FROM drizzle.__drizzle_migrations");
+      await runPostgres();
+      const columns = (
+        await client.query<{ name: string; nullable: string }>(
+          "SELECT column_name AS name, is_nullable AS nullable FROM information_schema.columns WHERE table_name = 'retirement_settings'",
+        )
+      ).rows;
+      expect(columns).toContainEqual({ name: "hand_col", nullable: "YES" });
+      expect(columns).toContainEqual({
+        name: "filing_status",
+        nullable: "YES",
+      });
+      expect((await state()).recorded).toBe(
+        (JSON.parse(shipped) as { entries: unknown[] }).entries.length,
+      );
+    });
 
     it("rolls back the tag's earlier converter and every pending tag", async () => {
       const applied = await installBehind();

@@ -8,7 +8,9 @@
  * - every legitimate replay is unchanged: each recreate in the journal,
  *   replayed from the entry before it and from every later entry, keeps
  *   every value of every column it keeps, drops only its own columns and,
- *   from before its entry, is never skipped.
+ *   from before its entry, is never skipped;
+ * - a recreate skipped over a column no snapshot knows is refused when the
+ *   database is provably before its entry, and warned about past it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
@@ -261,4 +263,54 @@ describe("every legitimate recreate replay is unchanged", () => {
       db2.close();
     },
   );
+});
+
+describe("a recreate skipped over a hand-added column", () => {
+  const entryOf = (tag: string) =>
+    journal.entries.find((e) => e.tag.startsWith(tag))!.idx;
+
+  /** A database at `idx` on a cleared journal with a column no snapshot
+   *  knows added to `table`. */
+  function handAdded(idx: number, table: string) {
+    const db = atEntry(idx, []);
+    db.pragma("foreign_keys = OFF");
+    fill(db, table);
+    db.exec(`ALTER TABLE "${table}" ADD COLUMN hand_col TEXT`);
+    db.close();
+  }
+
+  it.each([
+    ["the baseline", 0, "retirement_settings", "0005_v092_filing_status_auto"],
+    [
+      "0004",
+      entryOf("0004"),
+      "retirement_settings",
+      "0005_v092_filing_status_auto",
+    ],
+    ["0014", entryOf("0014"), "holding_observations", "0015_v0102_dead_data"],
+  ] as const)(
+    "before its entry (%s, %s) is refused, naming the column, with nothing changed",
+    (_at, idx, table, tag) => {
+      handAdded(idx, table);
+      const before = rowOf(table);
+      expect(() => runSQLite()).toThrow(
+        `Table ${table} has column(s) no Ledgr release made (hand_col), and this database is before ${tag}, whose change to ${table} can't be applied over them. Remove the column(s) or restore a backup, then start again. Nothing has been changed.`,
+      );
+      expect(rowOf(table)).toEqual(before);
+    },
+  );
+
+  it("past its entry it is skipped with a warning naming the column", () => {
+    handAdded(entryOf("0014"), "retirement_settings");
+    const events = logged(() => runSQLite());
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        level: "warn",
+        event: "squash_recreate_skipped",
+        table: "retirement_settings",
+        unknownColumns: ["hand_col"],
+      }),
+    );
+    expect(rowOf("retirement_settings").hashes).toEqual(allHashes);
+  });
 });
