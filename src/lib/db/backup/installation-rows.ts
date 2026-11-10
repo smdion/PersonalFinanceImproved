@@ -1,6 +1,6 @@
 /** The rows a restore or import writes to the tables of access and credentials:
- *  `version` manages household data, not access (RULES § Known Gaps), so anyone
- *  but an admin keeps today's, with the backup's links and sync state. */
+ *  `version` manages household data, not access (RULES § Permission & Security
+ *  Gates, rule 4): a non-admin keeps today's, and today's links where they hold. */
 import { sql } from "drizzle-orm";
 import { queryRaw } from "../compat";
 import { VERSION_TABLES } from "./version-tables";
@@ -9,27 +9,37 @@ import { rowsInSourceForm } from "./restored-values";
 import { SK_ONBOARDING_COMPLETED } from "@/lib/constants/settings-keys";
 import { onboardingClosesGate } from "../onboarding-gate";
 import {
+  MATCHED_LINK_COLUMNS,
+  matchedLinks,
+  targetRows,
+  type TargetRows,
+} from "./connection-links";
+import {
   RBAC_ADMIN_GROUP_KEY,
   RBAC_SETTINGS_PREFIX,
 } from "@/lib/config/permissions";
 
 type Row = Record<string, unknown>;
 
-/** Each installation table's columns, every one on exactly one side: kept
- *  from today (`key` matches a today row to the backup's), or taken from the
- *  backup with the household rows they name or follow (null when it lacks the row). */
+/** Each installation table's columns, every one on exactly one list: kept from
+ *  today (`key` matches a today row to the backup's), matched (today's where they
+ *  name the same restored row: connection-links.ts), or taken from the backup. */
 export const INSTALLATION_COLUMNS: Record<
   string,
-  { key: string; kept: readonly string[]; fromBackup: readonly string[] }
+  {
+    key: string;
+    kept: readonly string[];
+    matched: readonly string[];
+    fromBackup: readonly string[];
+  }
 > = {
   api_connections: {
     key: "service",
     kept: ["id", "service", "config", "server_knowledge"],
+    matched: MATCHED_LINK_COLUMNS,
     fromBackup: [
-      "account_mappings",
+      // The budget service's own category ids: no restored row to match.
       "skipped_category_ids",
-      "linked_profile_id",
-      "linked_column_index",
       // SimpleFIN's next fetch starts here: it follows the restored history.
       "last_synced_at",
     ],
@@ -49,19 +59,21 @@ const rowsOf = (rows: unknown): Row[] =>
     ? rows.filter((r): r is Row => typeof r === "object" && r !== null)
     : [];
 
-/** Today's rows, each with the backup's `fromBackup` columns for its key, or
- *  null ones when the backup has no such row. A row only the backup has isn't
- *  added: only an admin creates a connection. */
+/** Today's rows, each with its matched links and the backup's `fromBackup`
+ *  columns for its key (null when the backup has no such row). A row only the
+ *  backup has isn't added: only an admin creates a connection. */
 function withBackupColumns(
   today: Row[],
   backup: unknown,
   { key, fromBackup }: (typeof INSTALLATION_COLUMNS)[string],
+  targets: { today: TargetRows; restored: TargetRows },
 ): Row[] {
   const rows = rowsOf(backup);
   return today.map((row) => {
     const theirs = rows.find((b) => b[key] === row[key]);
     const taken = fromBackup.map((c) => [c, theirs?.[c] ?? null]);
-    return { ...row, ...Object.fromEntries(taken) };
+    const links = matchedLinks(row, theirs, targets.today, targets.restored);
+    return { ...row, ...links, ...Object.fromEntries(taken) };
   });
 }
 
@@ -141,7 +153,16 @@ export async function withInstallationRows(
     if (scope !== "installation" || !keepAccess) continue;
     const columns = INSTALLATION_COLUMNS[name];
     if (!columns) throw new Error(`${name}: no installation columns listed`);
-    out[name] = withBackupColumns(await today(name), tables[name], columns);
+    const targets = {
+      today: await targetRows(today),
+      restored: await targetRows(async (t) => rowsOf(tables[t])),
+    };
+    out[name] = withBackupColumns(
+      await today(name),
+      tables[name],
+      columns,
+      targets,
+    );
   }
   const settings = await today("app_settings");
   const kept = keepAccess
@@ -166,7 +187,7 @@ export async function withInstallationRows(
 }
 
 /** An export for someone who isn't an admin: no logins or access settings,
- *  and each installation table only its `key` and `fromBackup` columns. */
+ *  and each installation table only its `key`, matched and `fromBackup` columns. */
 export function householdOnlyTables(
   tables: Record<string, unknown[]>,
 ): Record<string, unknown[]> {
@@ -179,7 +200,7 @@ export function householdOnlyTables(
     }
     const columns = INSTALLATION_COLUMNS[name];
     if (!columns) throw new Error(`${name}: no installation columns listed`);
-    const shown = [columns.key, ...columns.fromBackup];
+    const shown = [columns.key, ...columns.matched, ...columns.fromBackup];
     out[name] = rowsOf(tables[name]).map((row) =>
       Object.fromEntries(shown.map((c) => [c, row[c]])),
     );

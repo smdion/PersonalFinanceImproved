@@ -751,7 +751,86 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     }
   });
 
-  it("every column of each installation table is kept or taken from the backup, never both", async () => {
+  it("a non-admin restore keeps today's mappings and linked column where they name the same restored row, and takes the version's elsewhere", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, createVersion, restoreVersion } = await app();
+      const { assetId, profileId } = await household(db, "Kept", ["ynab"]);
+      await db
+        .update(schema.budgetProfiles)
+        .set({ columnLabels: ["Standard", "Lean"] })
+        .where(eq(schema.budgetProfiles.id, profileId));
+      const [renamed] = await db
+        .insert(schema.otherAssetItems)
+        .values({ name: "Old name", year: 2026, value: "1.00" })
+        .returning();
+      const version = await createVersion(db, {
+        name: "before",
+        type: "manual",
+        createdBy: "test",
+      });
+
+      // Today: the same asset mapped both ways, Cash mapped, the Lean column
+      // linked, and the second asset renamed (so it isn't the same row).
+      await db
+        .update(schema.otherAssetItems)
+        .set({ name: "New name" })
+        .where(eq(schema.otherAssetItems.id, renamed!.id));
+      await db
+        .update(schema.apiConnections)
+        .set({
+          accountMappings: [
+            {
+              localName: "Kept asset",
+              remoteAccountId: "Kept-remote",
+              syncDirection: "both",
+              assetId,
+            },
+            {
+              localId: "cash",
+              localName: "Cash",
+              remoteAccountId: "checking",
+              syncDirection: "pull",
+            },
+            {
+              localName: "New name",
+              remoteAccountId: "renamed-remote",
+              syncDirection: "pull",
+              assetId: renamed!.id,
+            },
+          ],
+          linkedColumnIndex: 1,
+        })
+        .where(eq(schema.apiConnections.service, "ynab"));
+
+      await restoreVersion(db, version.id, notAdmin);
+      const [after] = await connections(db);
+      expect(
+        (after!.accountMappings ?? []).map((m) => [
+          m.remoteAccountId,
+          m.syncDirection,
+        ]),
+      ).toEqual([
+        ["Kept-remote", "both"],
+        ["checking", "pull"],
+      ]);
+      expect(after!.linkedProfileId).toBe(profileId);
+      expect(after!.linkedColumnIndex).toBe(1);
+
+      // A column whose label changed since is not the same column.
+      await db
+        .update(schema.budgetProfiles)
+        .set({ columnLabels: ["Standard", "Renamed"] })
+        .where(eq(schema.budgetProfiles.id, profileId));
+      await restoreVersion(db, version.id, notAdmin);
+      const [again] = await connections(db);
+      expect(again!.linkedColumnIndex).toBe(0);
+    } finally {
+      await done();
+    }
+  });
+
+  it("every column of each installation table is kept, matched or taken from the backup, on one list only", async () => {
     const { columns, done } = await fresh();
     try {
       const { VERSION_TABLES } = await import("@/lib/db/backup/version-tables");
@@ -762,7 +841,11 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
       for (const { name } of tables) {
         const listed = INSTALLATION_COLUMNS[name];
         expect(listed, name).toBeDefined();
-        const sides = [...listed!.kept, ...listed!.fromBackup];
+        const sides = [
+          ...listed!.kept,
+          ...listed!.matched,
+          ...listed!.fromBackup,
+        ];
         expect(new Set(sides).size, `${name}: a column on both lists`).toBe(
           sides.length,
         );
