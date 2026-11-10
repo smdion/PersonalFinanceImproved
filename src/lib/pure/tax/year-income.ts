@@ -4,6 +4,7 @@
  * Security; MAGI is a reading of these streams, never a hand sum.
  */
 import { MAGI_DEFINITIONS, type MagiRule } from "../../config/magi-definitions";
+import { roundToCents } from "../../utils/math";
 
 export type YearIncome = {
   readonly traditionalDraws: number;
@@ -29,17 +30,18 @@ export type MagiIncome<R extends MagiRule> = Omit<
   >;
 };
 
-/** The year's MAGI under `rule`. */
+/** The year's MAGI under `rule`, to the cent: the edges it meets (IRMAA
+ *  tiers, the ACA cliff) are cent-exact, so a sum's term order can't decide. */
 export function yearMagi<R extends MagiRule>(
   income: MagiIncome<R>,
   rule: R,
 ): number {
   const reading: SocialSecurityFor<R> = MAGI_DEFINITIONS[rule].socialSecurity;
-  return (
+  return roundToCents(
     income.traditionalDraws +
-    income.rothTaxableGrowth +
-    income.rothConversions +
-    income.realizedGains +
-    income.socialSecurity[reading]
+      income.rothTaxableGrowth +
+      income.rothConversions +
+      income.realizedGains +
+      income.socialSecurity[reading],
   );
 }

@@ -276,7 +276,7 @@
     "src/lib/pure/contributions/ytd-actuals.ts": 146,
     "src/lib/pure/debts/debt-balance.ts": 28,
     "src/lib/pure/debts/mortgage.ts": 387,
-    "src/lib/pure/engine/aca-check.ts": 78,
+    "src/lib/pure/engine/aca-check.ts": 72,
     "src/lib/pure/engine/contribution-routing.ts": 613,
     "src/lib/pure/engine/individual-accounts/contributions.ts": 440,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 147,
