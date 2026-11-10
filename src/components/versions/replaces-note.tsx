@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 
 /** "This will replace all current data …", saying for someone who isn't an
- *  admin that each integration keeps its credentials and Server URL. */
+ *  admin what stays (installation-rows.ts, connection-links.ts). */
 export function ReplacesNote({
   className,
   children,
@@ -20,7 +20,7 @@ export function ReplacesNote({
       This will replace <strong>all current data</strong>
       {admin
         ? ""
-        : " (each integration keeps its credentials and Server URL)"}{" "}
+        : " (sign-ins, access settings and each integration's credentials stay as they are, and so do its account links where they still name the same accounts)"}{" "}
       {children}
     </p>
   );

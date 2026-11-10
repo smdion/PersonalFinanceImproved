@@ -1,7 +1,7 @@
 /**
  * The restore and import confirmations say what they replace: all current
- * data, and for someone who isn't an admin, that each integration keeps its
- * credentials and Server URL (the restore keeps them).
+ * data, and for someone who isn't an admin, what the restore keeps: sign-ins,
+ * access settings, credentials, and the account links that still match.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
@@ -28,9 +28,9 @@ describe("ReplacesNote", () => {
     );
   });
 
-  it("tells anyone else that each integration keeps its credentials", () => {
+  it("tells anyone else what stays: sign-ins, access settings, credentials, and links that still match", () => {
     expect(renderAs("viewer")).toBe(
-      "This will replace all current data (each integration keeps its credentials and Server URL) with the contents of:",
+      "This will replace all current data (sign-ins, access settings and each integration's credentials stay as they are, and so do its account links where they still name the same accounts) with the contents of:",
     );
   });
 });
