@@ -84,7 +84,10 @@ describe("HSA money paid outside payroll, over the § 223(b) limit", () => {
       taxYearOverride: 2026,
     });
     const income = s.householdIncome!;
-    // The payroll HSA is the job's only pre-tax money.
+    // The payroll HSA (3,000 asked, at most) is the job's only pre-tax money:
+    // the seed has no other contribution and no deduction.
+    expect(income.preTaxFederal).toBeGreaterThan(0);
+    expect(income.preTaxFederal).toBeLessThanOrEqual(3_000);
     expect(income.hsaOutsidePayroll).toBeGreaterThan(0);
     expect(income.preTaxFederal + income.hsaOutsidePayroll).toBeLessThanOrEqual(
       SELF_ONLY_LIMIT + 0.01,
