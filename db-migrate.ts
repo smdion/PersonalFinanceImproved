@@ -850,12 +850,27 @@ async function convertPg(
   if (run) log("info", "migration_conversion", { tag, ...run });
 }
 
+/** The migration table drizzle's migrator keeps, made if absent. */
+async function createPgMigrationsTable(
+  client: Pick<import("pg").PoolClient, "query">,
+): Promise<void> {
+  await client.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
+  await client.query(
+    `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+      id serial PRIMARY KEY,
+      hash text NOT NULL,
+      created_at bigint
+    )`,
+  );
+}
+
 /**
  * Handle a migration squash: when the database has more applied migrations
- * than the journal has entries (or none recorded but tables present, or
- * recorded hashes that don't match the journal's), the migrations were
- * squashed since it last ran. assertSupportedUpgradePathPg has already
- * established the database is at the baseline's schema or past it. This:
+ * than the journal has entries (or none recorded, or no migration table,
+ * but tables present, or recorded hashes that don't match the journal's),
+ * the migrations were squashed since it last ran.
+ * assertSupportedUpgradePathPg has already established the database is at
+ * the baseline's schema or past it. This:
  * 1. writes a pre-upgrade backup (always — none means stop),
  * 2. in ONE transaction: clears __drizzle_migrations, replays every journal
  *    entry idempotently (savepoints, ignorable errors skipped), records each
@@ -877,8 +892,13 @@ async function handleSquashUpgrade(
         WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations'
       ) AS exists`,
     );
-    if (!tableCheck[0]?.exists)
-      return { backupPath: null, schemaVersion: null, wasSquash: false };
+    const actual = await pgColumns(client);
+    if (!tableCheck[0]?.exists) {
+      if (!actual.has("people"))
+        return { backupPath: null, schemaVersion: null, wasSquash: false };
+      // An install whose migration table was dropped: a cleared journal.
+      await createPgMigrationsTable(client);
+    }
 
     const recordedHashes = await pgRecordedHashes(client);
     const { rows: countRows } = await client.query(
@@ -888,7 +908,6 @@ async function handleSquashUpgrade(
     const journal = readJournal(migrationsFolder);
     const journalCount = journal.entries.length;
     const crypto = await import("crypto");
-    const actual = await pgColumns(client);
 
     // Squash detection. Three cases trigger recovery:
     //   1. appliedCount > journalCount — a squash collapsed N migrations
@@ -1069,14 +1088,7 @@ export async function runPostgres() {
     try {
       // Ensure drizzle schema + migrations table exist (migrate() normally does
       // this, but we need it before our pre-apply step).
-      await preClient.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
-      await preClient.query(
-        `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
-          id serial PRIMARY KEY,
-          hash text NOT NULL,
-          created_at bigint
-        )`,
-      );
+      await createPgMigrationsTable(preClient);
 
       const { rows: recorded } = await preClient.query(
         "SELECT hash FROM drizzle.__drizzle_migrations",
@@ -1692,6 +1704,10 @@ function sqliteIndexes(sqlite: SqliteDb): Set<string> {
   );
 }
 
+/** The migration table drizzle's migrator keeps, made if absent. */
+const CREATE_SQLITE_MIGRATIONS_TABLE =
+  "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)";
+
 /**
  * SQLite twin of handleSquashUpgrade (see its docblock): same detection,
  * backup first (an exact VACUUM INTO copy), then clear + replay + record +
@@ -1706,7 +1722,12 @@ function handleSQLiteSquashUpgrade(
       "SELECT 1 FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
     )
     .get();
-  if (!tableExists) return null;
+  const actual = sqliteColumns(sqlite);
+  if (!tableExists) {
+    if (!actual.has("people")) return null;
+    // An install whose migration table was dropped: a cleared journal.
+    sqlite.exec(CREATE_SQLITE_MIGRATIONS_TABLE);
+  }
 
   const recordedHashes = sqliteRecordedHashes(sqlite);
   const appliedCount = (
@@ -1718,7 +1739,6 @@ function handleSQLiteSquashUpgrade(
   const journalCount = journal.entries.length;
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require in SQLite dialect
   const crypto = require("crypto") as typeof import("crypto");
-  const actual = sqliteColumns(sqlite);
 
   // The same three cases as handleSquashUpgrade.
   const needsRecovery =
@@ -1836,9 +1856,7 @@ export function runSQLite() {
         "utf-8",
       ),
     );
-    sqlite.exec(
-      "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
-    );
+    sqlite.exec(CREATE_SQLITE_MIGRATIONS_TABLE);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require("crypto") as typeof import("crypto");
     const appliedHashes = new Set(

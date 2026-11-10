@@ -4,8 +4,10 @@
  * earlier converter and every pending tag roll back, nothing is recorded,
  * and the message names ids, never a value; a converter asking for a
  * missing ENCRYPTION_KEY refuses the same way. A hand-added column never
- * makes the replay skip a change (PostgreSQL has no table recreate). Only when TEST_DATABASE_URL
- * names a throwaway database (CI's PostgreSQL job): it drops its schemas.
+ * makes the replay skip a change (PostgreSQL has no table recreate), and a
+ * dropped migration table replays as a cleared journal. Only when
+ * TEST_DATABASE_URL names a throwaway database (CI's PostgreSQL job): it
+ * drops its schemas.
  */
 // First: its mocks must be in place before any app module loads.
 import {
@@ -130,6 +132,17 @@ describe.skipIf(skipWithoutPostgres)(
       expect((await state()).recorded).toBe(
         (JSON.parse(shipped) as { entries: unknown[] }).entries.length,
       );
+    });
+
+    it("a dropped migration table is a cleared journal: the first start replays", async () => {
+      await dropAllSchemas(client);
+      await runPostgres();
+      await client.query("DROP SCHEMA drizzle CASCADE");
+      await runPostgres();
+      const journal = JSON.parse(fs.readFileSync(journalPath(), "utf8")) as {
+        entries: unknown[];
+      };
+      expect((await state()).recorded).toBe(journal.entries.length);
     });
 
     it("rolls back the tag's earlier converter and every pending tag", async () => {
