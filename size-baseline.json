@@ -337,7 +337,7 @@
     "src/lib/pure/paycheck/per-check.ts": 323,
     "src/lib/pure/paycheck/person-paycheck.ts": 187,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
-    "src/lib/pure/paycheck/year-schedule.ts": 326,
+    "src/lib/pure/paycheck/year-schedule.ts": 319,
     "src/lib/pure/retirement/relocation.ts": 469,
     "src/lib/pure/simulation/inflation-risk.ts": 23,
     "src/lib/pure/simulation/monte-carlo.ts": 304,

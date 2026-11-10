@@ -132,7 +132,6 @@ export function buildYearSchedule(
       ? bonusEstimate.bonusFederalWithholding
       : 0;
 
-    // FICA base for this period includes the bonus's FICA wages
     const periodBonusFicaWages = isBonus ? bonusEstimate.bonusFicaWages : 0;
     const periodFicaBase = ficaBase + periodBonusFicaWages;
     ytdFicaBase += periodFicaBase;
@@ -159,7 +158,6 @@ export function buildYearSchedule(
           ),
         );
 
-    // Split FICA between regular and bonus portions for display
     const regularFicaBase = ficaBase;
     const bonusFicaBase = periodBonusFicaWages;
     const totalFicaThisPeriod = periodSS + periodMed;
@@ -202,10 +200,6 @@ export function buildYearSchedule(
 
   return schedule;
 }
-
-// ---------------------------------------------------------------------------
-// Blended Annual Calculator
-// ---------------------------------------------------------------------------
 
 /** A salary segment with a pre-computed paycheck at that salary rate. */
 export type SalarySegment = {
@@ -295,7 +289,6 @@ export function calculateBlendedAnnual(
     totalFicaMedicare -
     totalPostTax;
 
-  // Weighted average salary
   const totalPeriods = sumBy(
     segments,
     (seg) => seg.endPeriod - seg.startPeriod + 1,
