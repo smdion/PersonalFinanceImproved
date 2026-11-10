@@ -1486,11 +1486,12 @@ const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
  *  how a database before that entry looks: the columns its own entry drops,
  *  every column any snapshot of the journal gives the table, and the
  *  columns later entries add to it. */
-type RecreateShape = {
+export type RecreateShape = {
   tag: string;
   ownDrops: ReadonlySet<string>;
   known: ReadonlySet<string>;
-  laterAdds: ReadonlySet<string>;
+  /** Per later entry, the columns its snapshot has beyond this entry's. */
+  laterAdds: readonly ReadonlySet<string>[];
 };
 
 function recreateShape(
@@ -1502,24 +1503,24 @@ function recreateShape(
   const columnsAt = (idx: number) =>
     snapshotColumns(migrationsFolder, idx).get(table) ?? [];
   const own = new Set(columnsAt(entry.idx));
-  const later = journal.entries
-    .filter((e) => e.idx > entry.idx)
-    .flatMap((e) => columnsAt(e.idx));
   return {
     tag: entry.tag,
     ownDrops: new Set(
       entry.idx > 0 ? columnsAt(entry.idx - 1).filter((c) => !own.has(c)) : [],
     ),
     known: new Set(journal.entries.flatMap((e) => columnsAt(e.idx))),
-    laterAdds: new Set(later.filter((c) => !own.has(c))),
+    laterAdds: journal.entries
+      .filter((e) => e.idx > entry.idx)
+      .map((e) => new Set(columnsAt(e.idx).filter((c) => !own.has(c)))),
   };
 }
 
 /** Squash replay only: a recreate skipped over a column no snapshot knows
  *  (a hand edit) on a database provably not past the entry (it still holds
- *  a column the entry drops, or lacks every column later entries add)
- *  would record a change it never made, so the replay is refused. */
-function refuseUnknownColumnSkip(
+ *  a column the entry drops, or holds no later entry's added columns, each
+ *  later entry adding some) would record a change it never made, so the
+ *  replay is refused. */
+export function refuseUnknownColumnSkip(
   table: string,
   present: readonly string[],
   lost: readonly string[],
@@ -1530,8 +1531,10 @@ function refuseUnknownColumnSkip(
   const has = new Set(present);
   const beforeEntry =
     [...shape.ownDrops].some((c) => has.has(c)) ||
-    (shape.laterAdds.size > 0 &&
-      [...shape.laterAdds].every((c) => !has.has(c)));
+    (shape.laterAdds.length > 0 &&
+      shape.laterAdds.every(
+        (adds) => adds.size > 0 && [...adds].some((c) => !has.has(c)),
+      ));
   if (beforeEntry)
     throw new UpgradePathError(
       `Table ${table} has column(s) no Ledgr release made (${unknown.join(", ")}), and this database is before ${shape.tag}, whose change to ${table} can't be applied over them. Remove the column(s) or restore a backup, then start again. Nothing has been changed.`,

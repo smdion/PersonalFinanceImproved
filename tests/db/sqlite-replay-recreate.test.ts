@@ -18,7 +18,12 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
-import { runSQLite, snapshotColumns } from "../../db-migrate";
+import {
+  refuseUnknownColumnSkip,
+  runSQLite,
+  snapshotColumns,
+  type RecreateShape,
+} from "../../db-migrate";
 import { sampleJournalPoints } from "../helpers/journal-sample";
 
 const FOLDER = "drizzle-sqlite";
@@ -312,5 +317,37 @@ describe("a recreate skipped over a hand-added column", () => {
       }),
     );
     expect(rowOf("retirement_settings").hashes).toEqual(allHashes);
+  });
+});
+
+describe("when a skip over an unknown column is provably before its entry", () => {
+  const shape = (laterAdds: string[][]): RecreateShape => ({
+    tag: "0099_invented",
+    ownDrops: new Set(["dropped_col"]),
+    known: new Set(["a", "dropped_col", "x", "y"]),
+    laterAdds: laterAdds.map((c) => new Set(c)),
+  });
+  const skip = (present: string[], laterAdds: string[][]) => () =>
+    refuseUnknownColumnSkip(
+      "t",
+      ["a", "hand_col", ...present],
+      ["hand_col"],
+      shape(laterAdds),
+    );
+
+  it("still holding a column the entry drops: refused", () => {
+    expect(skip(["dropped_col"], [])).toThrow(/before 0099_invented/);
+  });
+
+  it("holding no later entry's added columns, each adding some: refused", () => {
+    expect(skip([], [["x"], ["x", "y"]])).toThrow(/before 0099_invented/);
+  });
+
+  it("holding every column one later entry adds: past it, so only warned", () => {
+    expect(skip(["x"], [["x"], ["x", "y"]])()).toEqual(["hand_col"]);
+  });
+
+  it("a later entry that adds nothing (a column added, then dropped again) proves nothing: only warned", () => {
+    expect(skip([], [["x"], []])()).toEqual(["hand_col"]);
   });
 });
