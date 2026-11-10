@@ -4,3 +4,7 @@
 -- Credentials: every api_connections.config (and its copies in stored
 -- versions) not held as an encrypted envelope is encrypted with
 -- ENCRYPTION_KEY; one held as text is unwrapped, never encrypted twice.
+-- Mapping ids: a budget-app account mapping that names its Ledgr account
+-- only by an id prefix (localId, or localName without one) gets its typed
+-- id; a plain asset name gets the latest year's asset of that name. An
+-- unmatched name or a malformed id is left and reported.

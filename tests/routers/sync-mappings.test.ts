@@ -114,6 +114,23 @@ describe("sync mappings — basic operations", () => {
       expect(result).toEqual({ ok: true });
     });
 
+    it("refuses a mapping that names no Ledgr account by id (a name alone)", async () => {
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localName: "Invented boat",
+              remoteAccountId: "remote-boat",
+              syncDirection: "pull",
+            },
+          ],
+        }),
+      ).rejects.toThrow(
+        "Invented boat names no Ledgr account — pick one for it",
+      );
+    });
+
     it("refuses a budget account pulled into two places (it would count twice)", async () => {
       await expect(
         caller.sync.updateAccountMappings({
@@ -224,6 +241,7 @@ describe("sync mappings — basic operations", () => {
           assetId: 10,
         },
         {
+          localId: "performance:3",
           localName: "Investment",
           remoteAccountId: "remote-acct-2",
           syncDirection: "push" as const,
@@ -249,6 +267,7 @@ describe("sync mappings — basic operations", () => {
         service: "ynab",
         mappings: [
           {
+            localId: "asset:12",
             localName: "Only One",
             remoteAccountId: "r-1",
             syncDirection: "both",

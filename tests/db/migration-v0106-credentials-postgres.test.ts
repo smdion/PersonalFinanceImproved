@@ -35,6 +35,8 @@ import {
   expectConverted,
   expectCopiesConverted,
 } from "./credentials-cases";
+import { AFTER, ASSETS, CONNECTIONS as MAPPED } from "./mapping-ids-cases";
+import { MAPPING_IDS_CONVERTER } from "@/lib/db/migrate/v0106-mapping-ids";
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -112,6 +114,16 @@ describe.skipIf(skipWithoutPostgres)(
           "INSERT INTO api_connections (id, service, config) VALUES ($1, $2, $3::jsonb)",
           [c.id, c.service, JSON.stringify(c.stored)],
         );
+      for (const c of MAPPED)
+        await client.query(
+          "UPDATE api_connections SET account_mappings = $1::jsonb WHERE id = $2",
+          [c.mappings && JSON.stringify(c.mappings), c.id],
+        );
+      for (const a of ASSETS)
+        await client.query(
+          "INSERT INTO other_asset_items (id, name, year, value) VALUES ($1, $2, $3, $4)",
+          [a.id, a.name, a.year, a.value],
+        );
       for (const id of [1, 2])
         await client.query(
           "INSERT INTO state_versions (id, name, version_type, schema_version, table_count, total_rows, created_by) VALUES ($1, 'Invented', 'manual', '0017_v0102_match_value', 2, 5, 'invented')",
@@ -131,12 +143,16 @@ describe.skipIf(skipWithoutPostgres)(
 
     /** Each config and version copy as the app reads it (node-pg's value). */
     const state = async () => {
-      const configs = new Map(
-        (
-          await client.query<{ id: number; config: unknown }>(
-            "SELECT id, config FROM api_connections",
-          )
-        ).rows.map((r) => [r.id, r.config]),
+      const connections = (
+        await client.query<{
+          id: number;
+          config: unknown;
+          account_mappings: unknown;
+        }>("SELECT id, config, account_mappings FROM api_connections")
+      ).rows;
+      const configs = new Map(connections.map((r) => [r.id, r.config]));
+      const mappings = new Map(
+        connections.map((r) => [r.id, r.account_mappings]),
       );
       const versions = (
         await client.query<{ id: number; data: unknown[] }>(
@@ -150,11 +166,14 @@ describe.skipIf(skipWithoutPostgres)(
           )
         ).rows[0]!.n,
       );
-      return { configs, versions, recorded };
+      return { configs, mappings, versions, recorded };
     };
 
     function expectAllConverted(s: Awaited<ReturnType<typeof state>>) {
       expectConverted(s.configs);
+      expect(s.mappings.get(1)).toEqual(AFTER);
+      expect(s.mappings.get(2)).toBeNull();
+      expect(s.mappings.get(3)).toEqual([]);
       const [first, other, second] = s.versions;
       expectCopiesConverted(first!.data);
       expectCopiesConverted(second!.data);
@@ -192,6 +211,7 @@ describe.skipIf(skipWithoutPostgres)(
           migrated();
           const after = await state();
           expect(after.configs).toEqual(converted.configs);
+          expect(after.mappings).toEqual(converted.mappings);
           expect(after.versions).toEqual(converted.versions);
         }
       },
@@ -200,7 +220,10 @@ describe.skipIf(skipWithoutPostgres)(
     it("run twice more over its own output, it writes nothing", async () => {
       await installBefore();
       migrated();
-      await expectPgReplaySafe(client, [CREDENTIALS_CONVERTER]);
+      await expectPgReplaySafe(client, [
+        CREDENTIALS_CONVERTER,
+        MAPPING_IDS_CONVERTER,
+      ]);
     });
 
     it("without ENCRYPTION_KEY the start is refused, naming no value, and nothing changes", async () => {

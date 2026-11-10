@@ -24,6 +24,14 @@ import { serviceEnum } from "./_shared";
 import { toDecimalColumn } from "@/lib/utils/math";
 import { firstRow } from "@/lib/utils/first-row";
 
+/** A mapping names its Ledgr account: a `localId`, or a typed id. */
+const namesTarget = (m: AccountMapping) =>
+  !!m.localId ||
+  m.performanceAccountId != null ||
+  m.assetId != null ||
+  m.debtId != null ||
+  m.loanId != null;
+
 /** Why a mapping's direction isn't allowed for its target, or null when it
  *  is. Names the account by its localName, never a raw id. */
 function disallowedDirectionMessage(m: AccountMapping): string | null {
@@ -45,6 +53,12 @@ export const syncMappingsRouter = createTRPCRouter({
             const message = disallowedDirectionMessage(m);
             if (message) c.addIssue({ code: "custom", message });
           }
+          // Each names its Ledgr account by id (a name alone is no target).
+          for (const m of mappings.filter((m) => !namesTarget(m)))
+            c.addIssue({
+              code: "custom",
+              message: `${m.localName} names no Ledgr account — pick one for it`,
+            });
           // One pulled balance per budget account: pulled into two places
           // (a credit card and a debt, say) it would count twice.
           for (const remote of remotesPulledTwice(mappings)) {

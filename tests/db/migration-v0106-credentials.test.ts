@@ -18,6 +18,7 @@ import {
   CREDENTIALS_CONVERTER,
   CREDENTIALS_TAG,
 } from "@/lib/db/migrate/v0106-credentials";
+import { MAPPING_IDS_CONVERTER } from "@/lib/db/migrate/v0106-mapping-ids";
 import { MigrationRefusal } from "@/lib/db/migrate/converter-refusal";
 import {
   expectRegistryReplaySafe,
@@ -33,6 +34,7 @@ import {
   expectConverted,
   expectCopiesConverted,
 } from "./credentials-cases";
+import { AFTER, ASSETS, CONNECTIONS as MAPPED } from "./mapping-ids-cases";
 
 vi.mock("node:crypto", async (importOriginal) => ({
   ...(await importOriginal<typeof import("node:crypto")>()),
@@ -83,6 +85,15 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
     );
     for (const c of CONNECTIONS)
       connection.run(c.id, c.service, JSON.stringify(c.stored));
+    const mapped = db.prepare(
+      "UPDATE api_connections SET account_mappings = ? WHERE id = ?",
+    );
+    for (const c of MAPPED)
+      mapped.run(c.mappings && JSON.stringify(c.mappings), c.id);
+    const asset = db.prepare(
+      "INSERT INTO other_asset_items (id, name, year, value) VALUES (?, ?, ?, ?)",
+    );
+    for (const a of ASSETS) asset.run(a.id, a.name, a.year, a.value);
     const version = db.prepare(
       "INSERT INTO state_versions (id, name, version_type, schema_version, table_count, total_rows, created_by) VALUES (?, 'Invented', 'manual', '0017_v0102_match_value', 2, 5, 'invented')",
     );
@@ -102,13 +113,21 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
   /** Each config and version copy as the app reads it (JSON text parsed). */
   const state = () => {
     const db = open();
+    const connections = db
+      .prepare("SELECT id, config, account_mappings FROM api_connections")
+      .all() as {
+      id: number;
+      config: string;
+      account_mappings: string | null;
+    }[];
     const configs = new Map(
-      (
-        db.prepare("SELECT id, config FROM api_connections").all() as {
-          id: number;
-          config: string;
-        }[]
-      ).map((r): [number, unknown] => [r.id, JSON.parse(r.config)]),
+      connections.map((r): [number, unknown] => [r.id, JSON.parse(r.config)]),
+    );
+    const mappings = new Map(
+      connections.map((r): [number, unknown] => [
+        r.id,
+        r.account_mappings === null ? null : JSON.parse(r.account_mappings),
+      ]),
     );
     const versions = (
       db
@@ -123,11 +142,14 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
       }
     ).n;
     db.close();
-    return { configs, versions, recorded };
+    return { configs, mappings, versions, recorded };
   };
 
   function expectAllConverted(s: ReturnType<typeof state>) {
     expectConverted(s.configs);
+    expect(s.mappings.get(1)).toEqual(AFTER);
+    expect(s.mappings.get(2)).toBeNull();
+    expect(s.mappings.get(3)).toEqual([]);
     const [first, other, second] = s.versions;
     expectCopiesConverted(first!.data);
     expectCopiesConverted(second!.data);
@@ -161,6 +183,7 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
       runSQLite();
       const after = state();
       expect(after.configs).toEqual(converted.configs);
+      expect(after.mappings).toEqual(converted.mappings);
       expect(after.versions).toEqual(converted.versions);
     }
   });
@@ -169,7 +192,7 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
     installBefore();
     runSQLite();
     const db = open();
-    expectSqliteReplaySafe(db, [CREDENTIALS_CONVERTER]);
+    expectSqliteReplaySafe(db, [CREDENTIALS_CONVERTER, MAPPING_IDS_CONVERTER]);
     db.close();
   });
 
@@ -184,33 +207,40 @@ describe("the credentials tag through the real migrator (SQLite)", () => {
   it("the restore step gives the rows SQLite gives", () => {
     runSQLite();
     const db = open();
-    expectRestoreMatchesSqlite(db, [CREDENTIALS_CONVERTER], {
-      api_connections: CONNECTIONS.map((c) => ({
-        id: c.id,
-        service: c.service,
-        config: JSON.stringify(c.stored),
-      })),
-      state_versions: [1, 2].map((id) => ({
-        id,
-        name: "Invented",
-        version_type: "manual",
-        schema_version: "0017_v0102_match_value",
-        table_count: 2,
-        total_rows: 5,
-        created_by: "invented",
-      })),
-      state_version_tables: [
-        [1, 1, "api_connections", Object.values(VERSION_COPIES)],
-        [2, 1, "people", OTHER_TABLE_ROWS],
-        [3, 2, "api_connections", Object.values(VERSION_COPIES)],
-      ].map(([id, versionId, table, data]) => ({
-        id,
-        version_id: versionId,
-        table_name: table,
-        row_count: 4,
-        data: JSON.stringify(data),
-      })),
-    });
+    const mappings = new Map(MAPPED.map((c) => [c.id, c.mappings]));
+    expectRestoreMatchesSqlite(
+      db,
+      [CREDENTIALS_CONVERTER, MAPPING_IDS_CONVERTER],
+      {
+        other_asset_items: ASSETS.map((a) => ({ ...a })),
+        api_connections: CONNECTIONS.map((c) => ({
+          id: c.id,
+          service: c.service,
+          config: JSON.stringify(c.stored),
+          account_mappings: mappings.get(c.id) ?? null,
+        })),
+        state_versions: [1, 2].map((id) => ({
+          id,
+          name: "Invented",
+          version_type: "manual",
+          schema_version: "0017_v0102_match_value",
+          table_count: 2,
+          total_rows: 5,
+          created_by: "invented",
+        })),
+        state_version_tables: [
+          [1, 1, "api_connections", Object.values(VERSION_COPIES)],
+          [2, 1, "people", OTHER_TABLE_ROWS],
+          [3, 2, "api_connections", Object.values(VERSION_COPIES)],
+        ].map(([id, versionId, table, data]) => ({
+          id,
+          version_id: versionId,
+          table_name: table,
+          row_count: 4,
+          data: JSON.stringify(data),
+        })),
+      },
+    );
     db.close();
   });
 

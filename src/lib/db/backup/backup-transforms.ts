@@ -6,8 +6,7 @@
 
 import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "../migrate/v0810-profile-sets";
-import { renameDisplayNameActive } from "../migrate/v0102-display-name-custom";
-import { dropDeadHoldingLinkAndSettings } from "../migrate/v0102-dead-data";
+import { restoreLinks } from "./restore-links";
 import { convertRestoredBackup } from "./restore-conversions";
 import pgJournal from "../../../../drizzle/meta/_journal.json";
 import { writeStamp } from "@/lib/utils/clock";
@@ -967,8 +966,7 @@ export function transformBackupToCurrentSchema(
   dropPreReleaseV085Fields(cloned);
   transformV0810ProfileSets(cloned);
   transformV095SsInAmount(cloned);
-  renameDisplayNameActive(cloned);
-  dropDeadHoldingLinkAndSettings(cloned);
+  restoreLinks(cloned, schemaVersion);
   convertRestoredBackup(cloned);
 
   log("info", "backup_transform_complete", {
