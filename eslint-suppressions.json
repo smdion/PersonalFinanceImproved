@@ -634,7 +634,7 @@
       "count": 2
     }
   },
-  "src/components/brokerage/brokerage-goals.tsx": {
+  "src/app/(dashboard)/brokerage/brokerage-goals.tsx": {
     "max-lines-per-function": {
       "count": 1
     },

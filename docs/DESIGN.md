@@ -467,7 +467,7 @@ brokerage_goals → engine input (brokerageGoals)
 
 **Schema:** `brokerage_goals` (name, target amount, year, priority, active, notes). Basis lives on `performance_accounts.cost_basis`.
 
-**UI:** `components/brokerage/brokerage-goals.tsx` (cards + summary figures).
+**UI:** `app/(dashboard)/brokerage/brokerage-goals.tsx` (cards + summary figures).
 
 ---
 

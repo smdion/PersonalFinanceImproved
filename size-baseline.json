@@ -441,6 +441,9 @@
     "src/app/(dashboard)/benchmarks/methodology/page.tsx": {
       "MethodologyPage": 200
     },
+    "src/app/(dashboard)/brokerage/brokerage-goals.tsx": {
+      "BrokerageGoalsSection": 293
+    },
     "src/app/(dashboard)/budget/budget-content.tsx": {
       "BudgetContent": 565
     },
@@ -506,9 +509,6 @@
     },
     "src/app/login/login-form.tsx": {
       "LoginForm": 162
-    },
-    "src/components/brokerage/brokerage-goals.tsx": {
-      "BrokerageGoalsSection": 293
     },
     "src/components/budget/api-category-picker.tsx": {
       "ApiCategoryPicker": 156
