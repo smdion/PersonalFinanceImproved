@@ -22,10 +22,8 @@ import {
   setBalance,
   setBasis,
 } from "../accounts/account-balance";
-import {
-  getNextIrmaaCliff,
-  type IrmaaBracket,
-} from "../../config/irmaa-tables";
+import type { IrmaaBracket } from "../../config/irmaa-tables";
+import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
@@ -229,27 +227,22 @@ export function performRothConversion(
     Math.min(conversionRoom, Math.max(0, retirementOnlyPreTax)),
   );
 
-  // IRMAA-aware cap (#38): reduce conversion to stay below next IRMAA cliff.
+  // IRMAA-aware cap: the conversion stays below the next IRMAA cliff.
   if (input.irmaaAwareRothConversions && input.filingStatus && conversion > 0) {
-    // Today's term order (float ties at a cliff); yearMagi once it rounds to cents.
-    const magiWithoutConversion =
-      totalTraditionalWithdrawal +
-      input.brokerageGainsPortion +
-      taxableSS +
-      rothTaxableGrowth;
-    const nextCliff = getNextIrmaaCliff(
-      magiWithoutConversion,
+    const maxConversionForCliff = irmaaConversionHeadroom(
+      {
+        traditionalDraws: totalTraditionalWithdrawal,
+        rothConversions: 0,
+        rothTaxableGrowth,
+        realizedGains: input.brokerageGainsPortion,
+        socialSecurity: { taxable: taxableSS },
+      },
       input.filingStatus,
       input.irmaaBrackets,
     );
-    if (nextCliff != null) {
-      const maxConversionForCliff = roundToCents(
-        Math.max(0, nextCliff - magiWithoutConversion),
-      );
-      if (maxConversionForCliff < conversion) {
-        conversion = maxConversionForCliff;
-        irmaaCapped = true;
-      }
+    if (maxConversionForCliff != null && maxConversionForCliff < conversion) {
+      conversion = maxConversionForCliff;
+      irmaaCapped = true;
     }
   }
 
