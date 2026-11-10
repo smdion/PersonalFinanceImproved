@@ -667,6 +667,14 @@ jobs:
         if: env.RUN == 'true' && (matrix.part == 'pins')
         run: pnpm test tests/baseline/pins-postgres.test.ts
 
+      # Every released backup restored on PostgreSQL, through the restore's
+      # foreign-key check (the routers part already builds the templates).
+      - name: Frozen backups restored on PostgreSQL
+        if: env.RUN == 'true' && (matrix.part == 'routers')
+        env:
+          LEDGR_ROUTER_DIALECT: postgres
+        run: pnpm test tests/integration/frozen-backups.test.ts
+
       # tests/routers/ as the SQLite unit job runs it, with every caller on
       # its own PostgreSQL database copied from a migrated template
       # (tests/routers/postgres-router-db.ts). A failure must be on the

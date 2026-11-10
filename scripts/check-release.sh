@@ -44,6 +44,7 @@ if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
     tests/baseline/router-baseline-postgres.test.ts tests/baseline/pins-postgres.test.ts; do
     step "PostgreSQL: $t" pnpm -s test "$t"
   done
+  step "PostgreSQL: frozen backups restored" env LEDGR_ROUTER_DIALECT=postgres pnpm -s test tests/integration/frozen-backups.test.ts
   step "PostgreSQL: the router suite against its known failures" pnpm -s tsx scripts/check-router-postgres.ts
 else
   echo "== PostgreSQL suites"

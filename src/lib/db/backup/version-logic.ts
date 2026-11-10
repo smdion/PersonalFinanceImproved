@@ -11,6 +11,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../schema";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
+import { ONE_SNAPSHOT, readVersionTables } from "./version-snapshot";
 import { assertReferencesHold } from "./restore-references-pg";
 import {
   jsonColumnsFor,
@@ -23,7 +24,6 @@ import {
   resetSequences,
   tablesWithIdColumn,
   validateColumns,
-  queryRaw,
   execRaw,
 } from "../compat";
 import { reconcileReferenceData } from "../migrate/reference-data";
@@ -98,30 +98,11 @@ export async function createVersion(
   database: NodePgDatabase<typeof schema>,
   input: CreateVersionInput,
 ): Promise<VersionResult> {
-  // Read all tables + write version in a single transaction for consistency
+  // Read all tables from one snapshot + write the version in one transaction
   const result = await database.transaction(async (tx) => {
-    const tableData: {
-      tableName: string;
-      rows: unknown[];
-      rowCount: number;
-    }[] = [];
-
-    for (const tableName of VERSION_TABLE_NAMES) {
-      try {
-        const rows = await queryRaw(
-          tx,
-          sql.raw(`SELECT * FROM "${tableName}"`),
-        );
-        tableData.push({
-          tableName,
-          rows,
-          rowCount: rows.length,
-        });
-      } catch {
-        // Table doesn't exist yet (migration pending) — skip
-        tableData.push({ tableName, rows: [], rowCount: 0 });
-      }
-    }
+    const tableData = Object.entries(await readVersionTables(tx)).map(
+      ([tableName, rows]) => ({ tableName, rows, rowCount: rows.length }),
+    );
 
     const totalRows = tableData.reduce((sum, t) => sum + t.rowCount, 0);
     const jsonStr = JSON.stringify(tableData.map((t) => t.rows));
@@ -155,7 +136,7 @@ export async function createVersion(
     }
 
     return version;
-  });
+  }, ONE_SNAPSHOT);
 
   // Post-commit: clean up old auto versions beyond retention
   await cleanupAutoVersions(database);
@@ -339,19 +320,10 @@ export type BackupData = {
 export async function exportBackup(
   database: NodePgDatabase<typeof schema>,
 ): Promise<BackupData> {
-  const tables: Record<string, unknown[]> = {};
-
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = await queryRaw(
-        database,
-        sql.raw(`SELECT * FROM "${tableName}"`),
-      );
-    } catch {
-      // Table doesn't exist yet (migration pending) — export empty
-      tables[tableName] = [];
-    }
-  }
+  const tables = await database.transaction(readVersionTables, {
+    ...ONE_SNAPSHOT,
+    accessMode: "read only",
+  });
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
