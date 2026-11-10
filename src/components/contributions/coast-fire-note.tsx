@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { planAgeLabel } from "@/lib/pure/household/household-timeline";
+import { RETIRED_PLAN_FAILS } from "@/components/dashboard/coast-fire-label";
 
 export function CoastFireNote() {
   const { input, ready } = usePlanEngineInput();
@@ -37,7 +38,9 @@ export function CoastFireNote() {
       ? "In your projection, contributions could stop today and retirement would still work"
       : r.status === "found"
         ? `In your projection, contributions could stop in ${stopLabel} and retirement would still work`
-        : "Your projection needs contributions all the way to retirement";
+        : r.retired
+          ? RETIRED_PLAN_FAILS
+          : "Your projection needs contributions all the way to retirement";
   return (
     <p className="text-caption text-muted -mt-2 mb-3">
       {text}, on average returns (the Simulation can be stricter) —{" "}

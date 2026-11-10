@@ -173,12 +173,12 @@ export async function computeCoastFireSimulation(
 
   const passes = (rate: number): boolean => rate >= CONFIDENCE;
 
-  // Edge case: already past retirement.
   if (engineInput.currentAge >= planRetirementAgeOf(engineInput)) {
     const fullResult = await probeSimulation(engineInput.currentAge);
+    const retiredPasses = passes(fullResult.successRate);
     const result: CoastFireSimulationResult = {
-      coastFireAge: engineInput.currentAge,
-      status: "already_coast" as const,
+      coastFireAge: retiredPasses ? engineInput.currentAge : null,
+      status: retiredPasses ? "already_coast" : "unreachable",
       successRate: fullResult.successRate,
       stopNowSuccessRate: fullResult.successRate,
       stopNowPenaltyAvoidedShortfallRate:

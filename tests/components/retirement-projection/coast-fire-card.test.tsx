@@ -54,6 +54,26 @@ describe("CoastFireCard", () => {
       <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
     );
     expect(screen.getByText("Not reachable")).toBeInTheDocument();
+    expect(
+      screen.getByText("Needs contributions through retirement."),
+    ).toBeInTheDocument();
+  });
+
+  it("says a retiree's 'Not reachable' is the plan failing", () => {
+    setDeterministic({
+      coastFireAge: null,
+      status: "unreachable",
+      sustainableWithdrawalToday: 0,
+      projectedExpensesAtRetirementToday: 0,
+      retired: true,
+    });
+    render(
+      <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
+    );
+    expect(screen.getByText("Not reachable")).toBeInTheDocument();
+    expect(
+      screen.getByText("Already retired: the plan doesn't pass."),
+    ).toBeInTheDocument();
   });
 
   it("renders 'Already ✓' when deterministic status is already_coast", () => {
@@ -111,6 +131,38 @@ describe("CoastFireCard", () => {
     expect(screen.getByText("Age 55")).toBeInTheDocument();
     // Simulated detail line renders the stop-now success rate.
     expect(screen.getByText(/60% simulated/)).toBeInTheDocument();
+  });
+
+  it("a retiree whose plan passes at fixed returns but fails simulated says so, not 'the plan doesn't pass'", () => {
+    setDeterministic({
+      coastFireAge: 70,
+      status: "already_coast",
+      sustainableWithdrawalToday: 60000,
+      projectedExpensesAtRetirementToday: 50000,
+      retired: true,
+    });
+    render(
+      <CoastFireCard
+        ageLabel={(age) => `Age ${age}`}
+        input={baseInput}
+        coastFireMcResult={{
+          coastFireAge: null,
+          status: "unreachable",
+          successRate: 0.6,
+          stopNowSuccessRate: 0.6,
+          spendingStabilityRate: 0.8,
+          confidenceThreshold: 0.9,
+          warning: null,
+          stopNowPenaltyAvoidedShortfallRate: 0,
+          stopNowMedianPenaltyAvoidedShortfallPV: 0,
+        }}
+      />,
+    );
+    expect(screen.getByText("Not reachable")).toBeInTheDocument();
+    expect(
+      screen.getByText("Baseline says reachable but simulated outcomes fail."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Already retired/)).not.toBeInTheDocument();
   });
 
   it("shows the loading indicator while the MC result is still fetching", () => {

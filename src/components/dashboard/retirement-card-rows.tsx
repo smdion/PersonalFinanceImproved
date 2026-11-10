@@ -1,5 +1,6 @@
 /** The retirement card's estimate rows: the baseline withdrawal, Coast FIRE
  *  and when the simulation last ran. */
+import { coastFireLabel } from "./coast-fire-label";
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { focusHref } from "@/lib/config/focus-topics";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -76,11 +77,7 @@ export function renderCoastFireRow(
         focus={{ topic: "planHealth" }}
         className="text-primary hover:underline"
       >
-        {coastFireData.result.status === "unreachable"
-          ? "Not reachable"
-          : coastFireData.result.status === "already_coast"
-            ? "Already Coast"
-            : ageLabel(coastFireData.result.coastFireAge ?? 0)}
+        {coastFireLabel(coastFireData.result, ageLabel)}
         <span className="text-caption text-faint ml-1">
           {simLabel
             ? `(simulated: ${simLabel})`

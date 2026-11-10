@@ -1,7 +1,8 @@
 {
  "projection.computeCoastFire": {
   "result": {
-   "status": "already_coast"
+   "retired": true,
+   "status": "unreachable"
   }
  },
  "projection.computeCoastFireMC": {

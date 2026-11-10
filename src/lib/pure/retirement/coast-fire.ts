@@ -29,6 +29,9 @@ type CoastFireResult = {
   sustainableWithdrawal: number;
   /** Projected expenses at the first decumulation year (nominal, inflated). */
   projectedExpensesAtRetirement: number;
+  /** At or past retirement age: nothing is left to stop, so "unreachable"
+   *  means the plan itself fails. */
+  retired: boolean;
 };
 
 /** Dollars of rounding slack in the no-stated-need fallback check (see passes()). */
@@ -40,12 +43,14 @@ const UNREACHABLE: CoastFireResult = {
   endRetirementBalance: 0,
   sustainableWithdrawal: 0,
   projectedExpensesAtRetirement: 0,
+  retired: false,
 };
 
 function resultFrom(
   coastFireAge: number,
   status: CoastFireStatus,
   projection: ProjectionResult,
+  retired: boolean,
 ): CoastFireResult {
   const retirementYear = firstRetirementYear(projection);
   const finalYear =
@@ -60,6 +65,7 @@ function resultFrom(
     projectedExpensesAtRetirement: retirementYear
       ? strategySpending(retirementYear)
       : 0,
+    retired,
   };
 }
 
@@ -112,10 +118,16 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   const { currentAge } = input;
   const retirementAge = planRetirementAge(input);
 
-  // Edge case: user is already at or past retirement age. Coast FIRE is
-  // undefined in this case — just return the current projection's outcome.
+  // Already retired: nothing left to stop, so "already" only when the plan
+  // itself passes; otherwise it isn't reachable.
   if (currentAge >= retirementAge) {
-    return resultFrom(currentAge, "already_coast", calculateProjection(input));
+    const projection = calculateProjection(input);
+    return passes(projection)
+      ? resultFrom(currentAge, "already_coast", projection, true)
+      : {
+          ...resultFrom(currentAge, "unreachable", projection, true),
+          coastFireAge: null,
+        };
   }
 
   // Helper: run the projection with contributions and employer match
@@ -129,7 +141,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   // If stopping today passes, user is already Coast FIRE.
   const stopNow = probeAt(currentAge);
   if (passes(stopNow)) {
-    return resultFrom(currentAge, "already_coast", stopNow);
+    return resultFrom(currentAge, "already_coast", stopNow, false);
   }
 
   // If stopping the year before retirement doesn't pass, unreachable.
@@ -151,7 +163,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
     }
   }
 
-  return resultFrom(lo, "found", probeAt(lo));
+  return resultFrom(lo, "found", probeAt(lo), false);
 }
 
 /**

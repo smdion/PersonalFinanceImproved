@@ -168,6 +168,42 @@ describe("findCoastFireAge", () => {
     );
   });
 
+  it("a retiree whose plan runs out isn't already Coast FIRE: unreachable", () => {
+    // Retired at 65, now 70, $100,000 left and $60,000 a year to spend
+    // (Social Security $36,000 from 67): the money runs out in a few years,
+    // so "already Coast FIRE" would be false. The plan judge fails it.
+    const input = makeInput({
+      currentAge: 70,
+      retirementYear: AS_OF.getFullYear() - 5,
+      currentSalary: 0,
+      startingBalances: {
+        preTax: 100_000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 100_000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      annualExpenses: 60_000,
+    });
+
+    const result = findCoastFireAge(input);
+
+    expect(result.status).toBe("unreachable");
+    expect(result.coastFireAge).toBeNull();
+    expect(result.retired).toBe(true);
+  });
+
   it("returns unreachable when even full contributions won't fund the plan", () => {
     // Near-zero portfolio + near-zero salary but large expenses — no path works.
     const input = makeInput({

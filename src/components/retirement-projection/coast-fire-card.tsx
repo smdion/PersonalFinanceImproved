@@ -12,6 +12,7 @@ import {
   formatPercent,
   formatRelativeTime,
 } from "@/lib/utils/format";
+import { RETIRED_PLAN_FAILS } from "@/components/dashboard/coast-fire-label";
 import { KpiCard } from "./kpi-card";
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
@@ -49,12 +50,9 @@ function hasCoastFireGapAmount(simulation: CoastFireSimulationResult): boolean {
   );
 }
 
-type DeterministicResult = {
-  coastFireAge: number | null;
-  status: "already_coast" | "found" | "unreachable";
-  sustainableWithdrawalToday: number;
-  projectedExpensesAtRetirementToday: number;
-};
+type DeterministicResult = NonNullable<
+  RouterOutputs["projection"]["computeCoastFire"]["result"]
+>;
 
 interface CoastFireCardProps {
   input: CoastFireInput;
@@ -160,7 +158,6 @@ function CombinedStatus({
   mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
-  // If baseline hasn't loaded, fall back to simulated-only headline.
   if (!det) {
     return <SimulatedOnlyStatus mc={mc} ageLabel={ageLabel} />;
   }
@@ -173,9 +170,11 @@ function CombinedStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          {mc.status === "unreachable" && det.status !== "unreachable"
-            ? "Baseline says reachable but simulated outcomes fail."
-            : "Needs contributions through retirement."}
+          {det.retired && det.status === "unreachable"
+            ? `${RETIRED_PLAN_FAILS}.`
+            : mc.status === "unreachable" && det.status !== "unreachable"
+              ? "Baseline says reachable but simulated outcomes fail."
+              : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -298,7 +297,9 @@ function DeterministicStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          Needs contributions through retirement.
+          {result.retired
+            ? `${RETIRED_PLAN_FAILS}.`
+            : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -357,7 +358,6 @@ function SimulatedDetail({
       ? "text-yellow-500"
       : "text-red-500";
 
-  // Build the tail message based on status.
   let tail: string;
   if (mc.status === "unreachable") {
     tail = `— not reachable`;

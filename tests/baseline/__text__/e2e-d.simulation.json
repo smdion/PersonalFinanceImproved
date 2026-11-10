@@ -1,7 +1,8 @@
 {
  "projection.computeCoastFire": {
   "result": {
-   "status": "already_coast"
+   "retired": true,
+   "status": "unreachable"
   }
  },
  "projection.computeCoastFireMC": {
@@ -8884,7 +8885,7 @@
      ]
     }
    },
-   "status": "already_coast"
+   "status": "unreachable"
   }
  },
  "projection.computeMonteCarloProjection": {

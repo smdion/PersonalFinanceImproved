@@ -535,13 +535,11 @@ export function useProjectionQueries(
   const coastFireMcResult = coastFireMcQuery.data?.result?.mcResult as
     MonteCarloResult | undefined;
   // "Coast FIRE (Today)": contributions stop at the CURRENT age; the router
-  // returns it as `stopNowMcResult`. Null under already_coast, where mcResult
-  // already covers "today", so fall back to it.
-  const coastFireTodayMcResult = (
-    coastFireMcQuery.data?.result?.status === "already_coast"
-      ? coastFireMcQuery.data.result.mcResult
-      : coastFireMcQuery.data?.result?.stopNowMcResult
-  ) as MonteCarloResult | undefined;
+  // returns it as `stopNowMcResult`. Null when mcResult already is "today"
+  // (already_coast, or a retiree's failing plan), so fall back to it.
+  const coastFireTodayMcResult = (coastFireMcQuery.data?.result
+    ?.stopNowMcResult ?? coastFireMcQuery.data?.result?.mcResult) as
+    MonteCarloResult | undefined;
 
   // Rate-Seeded scenario: computeMonteCarloProjection with the
   // rateSeededDecumulationYear1 flag (full MonteCarloResult incl.
