@@ -92,7 +92,7 @@ export async function syncAll(
       // ── Record savings_monthly from budget category balances ─────────
       // Only runs for the active service — a non-active service's category
       // balances should not overwrite savings history.
-      const activeService = await getActiveBudgetApi(ctx.db);
+      const activeService = await getActiveBudgetApi(tx);
       if (service === activeService) {
         // Fetch all savings goals with a primary link for THIS service.
         const activeGoalRows = await tx

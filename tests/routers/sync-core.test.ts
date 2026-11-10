@@ -162,6 +162,29 @@ describe("sync core — syncAll", () => {
     expect(mockCacheSet).toHaveBeenCalledTimes(4);
   });
 
+  it("reads the active budget app through the sync's transaction, not the outer connection", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      getAccounts: vi.fn().mockResolvedValue([]),
+      getCategories: vi.fn().mockResolvedValue([]),
+      getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
+      getTransactions: vi.fn().mockResolvedValue([]),
+    });
+    mockGetApiConnection.mockResolvedValue({ accountMappings: [] });
+    const readers: unknown[] = [];
+    mockCacheSet.mockImplementation((tx: unknown) => {
+      readers.push(tx);
+      return Promise.resolve();
+    });
+
+    const result = await caller.sync.syncAll({ service: "ynab" });
+    expect(result.ok).toBe(true);
+    const transaction = readers[0];
+    expect(transaction).toBeDefined();
+    expect(transaction).not.toBe(db);
+    expect(mockGetActiveBudgetApi.mock.calls.at(-1)?.[0]).toBe(transaction);
+  });
+
   it("pulls asset values from tracking accounts during sync", async () => {
     // Insert an asset for pull mapping
     db.insert(schema.otherAssetItems)
