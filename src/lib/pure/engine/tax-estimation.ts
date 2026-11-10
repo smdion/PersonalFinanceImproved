@@ -153,7 +153,6 @@ export function computeTaxableSS(
   if (ssIncome <= 0) return 0;
 
   const thresholds = ssTaxThresholdsFor(filingStatus);
-  if (!thresholds) return ssIncome * SS_TAX_TIER2_INCLUSION_RATE; // fallback
 
   // IRS Pub 915: provisional income includes tax-exempt interest (e.g. municipal bonds)
   const provisionalIncome =

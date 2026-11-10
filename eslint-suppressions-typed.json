@@ -239,11 +239,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/tax-estimation.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2

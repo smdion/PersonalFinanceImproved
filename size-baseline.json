@@ -305,7 +305,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 86,
     "src/lib/pure/engine/rmd-enforcement.ts": 431,
     "src/lib/pure/engine/roth-conversion.ts": 457,
-    "src/lib/pure/engine/tax-estimation.ts": 404,
+    "src/lib/pure/engine/tax-estimation.ts": 403,
     "src/lib/pure/engine/types/accumulation.ts": 121,
     "src/lib/pure/engine/types/contribution-spec.ts": 92,
     "src/lib/pure/engine/types/decumulation.ts": 228,
