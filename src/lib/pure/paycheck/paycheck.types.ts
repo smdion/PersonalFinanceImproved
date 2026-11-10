@@ -96,6 +96,7 @@ export type BonusEstimate = {
   bonusGross: number;
   bonusNet: number;
   bonusFederalWithholding: number;
+  /** Social Security and Medicare, Additional Medicare included, as if paid after the regular checks. */
   bonusFica: number;
   bonusContributions: number;
   /** The bonus's FICA wages: bonusGross less FICA-exempt payroll contributions the bonus check takes. */

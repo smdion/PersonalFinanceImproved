@@ -39,8 +39,8 @@
  * - C18, HW-H2b, C52, C53: blocked, below as `it.todo`.
  * - C48's bonus-check split (a $20,000 bonus after regular pay used the
  *   whole base): written below on its year totals only (owner,
- *   2026-11-03). The bonus's own FICA and net (spec 380.00
- *   and 15,220.00, today 290.00 and 15,310.00) wait on an N8 ruling: a
+ *   2026-11-03). The bonus's own FICA and net on its check (spec
+ *   380.00 and 15,220.00) wait on an N8 ruling: a
  *   bonus dated onto check 26 shares that check's last 1,807.75 of base
  *   pro rata.
  * - The December per-check split of C47 (spec $372 / $1,767, Ledgr

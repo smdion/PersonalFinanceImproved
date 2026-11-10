@@ -10,6 +10,7 @@ import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { bonusCheckNumber } from "./bonus-check";
 import { yearTotals } from "./year-totals";
+import { additionalMedicareWithheld } from "./additional-medicare";
 
 /**
  * Social Security withholding for one pay period, given the wage base cap.
@@ -139,14 +140,11 @@ export function buildYearSchedule(
     // employer's wages only, which ytdFicaBase counts.
     const periodMed =
       periodFicaBase * medRate +
-      input.taxBrackets.medicareAdditionalRate *
-        Math.max(
-          0,
-          Math.min(
-            periodFicaBase,
-            ytdFicaBase - input.taxBrackets.medicareAdditionalThreshold,
-          ),
-        );
+      additionalMedicareWithheld(
+        input.taxBrackets,
+        periodFicaBase,
+        ytdFicaBase,
+      );
 
     const regularFicaBase = ficaBase;
     const bonusFicaBase = periodBonusFicaWages;

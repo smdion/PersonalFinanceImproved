@@ -79,11 +79,11 @@ Federal (supplemental)?
 at 22%
 -$6,600.00
 Social Security + Medicare
--$435.00
+-$576.30
 No contributions are taken from this bonus. Turn on “Also taken from bonus checks” on an account under Contributions.
 Net
-76.5% take-home
-$22,965.00
+76.1% take-home
+$22,823.70
 Check against a pay stub
 Contribution Accounts?(2)
 SS wage base cap hit at period 23 of 26(bonus in period 5 accelerates this)

@@ -9,6 +9,7 @@ import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { bonusCheckNet } from "./year-totals";
+import { additionalMedicareWithheld } from "./additional-medicare";
 
 /**
  * Whether a contribution account is paid through payroll: its own
@@ -76,29 +77,19 @@ export function calculateBonus(
   /** Regular pay's FICA wages for the year — what has used the SS wage base before the bonus. */
   regularFicaWagesAnnual: number,
 ): BonusEstimate {
-  if (input.bonusPercent <= 0 && input.bonusOverride === null) {
-    return {
-      bonusGross: 0,
-      bonusNet: 0,
-      bonusFederalWithholding: 0,
-      bonusFica: 0,
-      bonusContributions: 0,
-      bonusFicaWages: 0,
-      bonusFederalTaxable: 0,
-      bonusLines: [],
-    };
-  }
-
-  // The set bonus, else salary × bonus% × multiplier × (months in bonus year / 12).
+  // The set bonus, else salary × bonus% × multiplier × (months in bonus year / 12);
+  // no bonus percent and no set amount: $0.
   const bonusGross =
     input.bonusOverride !== null
       ? roundToCents(input.bonusOverride)
-      : roundToCents(
-          input.annualSalary *
-            input.bonusPercent *
-            input.bonusMultiplier *
-            (input.monthsInBonusYear / 12),
-        );
+      : input.bonusPercent > 0
+        ? roundToCents(
+            input.annualSalary *
+              input.bonusPercent *
+              input.bonusMultiplier *
+              (input.monthsInBonusYear / 12),
+          )
+        : 0;
 
   // What the bonus check takes, per bonusCheckContribution.
   const bonusLines: DeductionLine[] = input.contributionAccounts.flatMap(
@@ -157,7 +148,15 @@ export function calculateBonus(
   const bonusSsTaxable = Math.min(bonusFicaWages, ssCapRoom);
   const bonusFicaSS = roundToCents(bonusSsTaxable * ssRate);
   const bonusFicaMed = roundToCents(bonusFicaWages * medRate);
-  const bonusFica = bonusFicaSS + bonusFicaMed;
+  // Additional Medicare on the part past this employer's threshold, after regular pay.
+  const bonusAdditionalMedicare = roundToCents(
+    additionalMedicareWithheld(
+      input.taxBrackets,
+      bonusFicaWages,
+      regularFicaWagesAnnual + bonusFicaWages,
+    ),
+  );
+  const bonusFica = bonusFicaSS + bonusFicaMed + bonusAdditionalMedicare;
 
   const bonusContributions = sumBy(bonusLines, (l) => l.amount);
 
