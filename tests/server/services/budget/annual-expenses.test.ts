@@ -100,5 +100,12 @@ describe("getAnnualExpensesFromBudget", () => {
     const result = await getAnnualExpensesFromBudget(ctx.rawDb, new Date());
     // Column 1: (2500 + 600) × 12 = 37200
     expect(result).toBe(37200);
+
+    // Stored as a digit string (an older PostgreSQL write): still column 1,
+    // not column 0's (2000 + 500) × 12 = 30000.
+    ctx.db.update(ctx.schema.appSettings).set({ value: "1" }).run();
+    expect(await getAnnualExpensesFromBudget(ctx.rawDb, new Date())).toBe(
+      37200,
+    );
   });
 });

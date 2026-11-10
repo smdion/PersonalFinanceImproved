@@ -3,6 +3,7 @@
  * plus the computed values the retirement routers expose. Callers add their own
  * accumulation/decumulation overrides and decumulation defaults.
  */
+import { storedInteger } from "@/lib/utils/stored-integer";
 import { calendarYear } from "@/lib/utils/date";
 import { loadExpenseEndings } from "./expense-endings";
 import {
@@ -413,8 +414,7 @@ export async function buildEnginePayload(
   // Expenses — phase-based budget columns
   const selectedScenario = retScenarios.find((s) => s.isSelected);
   const globalColSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
-  const globalActiveCol =
-    typeof globalColSetting === "number" ? globalColSetting : 0;
+  const globalActiveCol = storedInteger(globalColSetting, 0);
   const {
     accProfile,
     accCol,

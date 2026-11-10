@@ -5,7 +5,10 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
+import {
+  useIntegerSetting,
+  useProfileIdSetting,
+} from "@/lib/hooks/use-profile-id-setting";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import {
   mutationCalls,
@@ -43,5 +46,22 @@ describe("useProfileIdSetting", () => {
     const { result } = renderHook(() => useActiveRetirementProfile());
     expect(result.current[0]).toBe(2);
     expect(mutationCalls("settings.appSettings.upsert")).toEqual([]);
+  });
+});
+
+describe("useIntegerSetting", () => {
+  it.each([
+    [1, 1],
+    ["1", 1],
+    ["one", 0],
+    [null, 0],
+  ])("reads a budget column stored as %j as %j", (stored, column) => {
+    setQuery("settings.appSettings.list", [
+      { key: "budget_active_column", value: stored },
+    ]);
+    expect(
+      renderHook(() => useIntegerSetting("budget_active_column", 0)).result
+        .current[0],
+    ).toBe(column);
   });
 });

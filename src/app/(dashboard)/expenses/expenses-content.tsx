@@ -11,8 +11,10 @@ import { ProgressBar } from "@/components/ui/card";
 import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
+import {
+  useIntegerSetting,
+  useProfileIdSetting,
+} from "@/lib/hooks/use-profile-id-setting";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/dashboard/utils";
 // From config, never @/lib/budget-api: the barrel and the YNAB client are
@@ -83,10 +85,7 @@ export function ExpensesContent() {
   const [activeContributionProfileId] = useProfileIdSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
   );
-  const [activeColumn] = usePersistedSetting<number>(
-    SK_BUDGET_ACTIVE_COLUMN,
-    0,
-  );
+  const [activeColumn] = useIntegerSetting(SK_BUDGET_ACTIVE_COLUMN, 0);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // ── Data queries ──

@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
 import { sumBy } from "@/lib/utils/math";
 import { parseLocalDateOnly } from "@/lib/utils/date";
 import {
@@ -19,7 +19,7 @@ import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 import { renderEfundNeeded } from "./savings-goals-card-efund";
 
 function SavingsGoalsCardImpl() {
-  const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
+  const [efundBudgetColumn, setEfundBudgetColumn] = useIntegerSetting(
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );

@@ -6,7 +6,7 @@
  */
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc, type RouterError } from "@/lib/trpc";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
@@ -50,10 +50,7 @@ export function useMilestones(): {
   const withHoldings = hasPermission(user, "portfolio");
   const withBrokerageGoals = hasPermission(user, "brokerage");
   const contributionInput = useContributionSummaryInput();
-  const [efundBudgetColumn] = usePersistedSetting<number>(
-    SK_EFUND_BUDGET_COLUMN,
-    -1,
-  );
+  const [efundBudgetColumn] = useIntegerSetting(SK_EFUND_BUDGET_COLUMN, -1);
   const highIncome = useHighIncomeLine();
   const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   const yearEndTargeting = useYearEndTargetingInput();

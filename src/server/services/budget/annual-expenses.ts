@@ -1,3 +1,4 @@
+import { storedInteger } from "@/lib/utils/stored-integer";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
@@ -28,10 +29,9 @@ export async function getAnnualExpensesFromBudget(
   );
 
   // Use the shared budget_active_column setting (same as budget page, savings page, dashboard)
-  const columnSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
   const column =
     targeting?.budgetColumn ??
-    (typeof columnSetting === "number" ? columnSetting : 0);
+    storedInteger(settingsMap.get(SK_BUDGET_ACTIVE_COLUMN), 0);
 
   const profile = await resolveTargetBudgetProfile(
     db,

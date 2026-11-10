@@ -13,7 +13,7 @@ import {
   shareScaleMax,
   shareScaleTicks,
 } from "@/lib/utils/math";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
 import { bonusSpendingNet } from "@/lib/pure/household/household-income";
 import {
   RAMSEY_RANGES,
@@ -95,10 +95,7 @@ function BudgetSummary({
 
 function LivingCostsCardImpl() {
   const fullYearNote = useFullYearNote();
-  const [budgetColumn] = usePersistedSetting<number>(
-    SK_BUDGET_ACTIVE_COLUMN,
-    0,
-  );
+  const [budgetColumn] = useIntegerSetting(SK_BUDGET_ACTIVE_COLUMN, 0);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [storedActiveSalaryProfileId] = useActiveSalaryProfile();

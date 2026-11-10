@@ -3,17 +3,38 @@
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { storedInteger } from "@/lib/utils/stored-integer";
 
-/** A profile-id setting read however it was stored (a number, or the
- *  numeric string an older PostgreSQL write left); null when unset or not an
- *  id, so `p.id === id` holds for either form. */
-export function useProfileIdSetting(
+type Write<T> = { writeVia?: (value: T) => Promise<unknown> };
+
+/** An integer setting (a profile id, a budget column, a snapshot id) read
+ *  however it was stored (storedInteger): a stored "1" reads as 1; `unset`
+ *  (null when not given) when absent or not an integer. */
+export function useIntegerSetting(
   key: string,
-  options?: { writeVia?: (value: number | null) => Promise<unknown> },
-): [number | null, (value: number | null) => void, boolean] {
+  unset?: null,
+  options?: Write<number | null>,
+): [number | null, (value: number | null) => void, boolean];
+export function useIntegerSetting(
+  key: string,
+  unset: number,
+): [number, (value: number) => void, boolean];
+export function useIntegerSetting(
+  key: string,
+  unset: number | null = null,
+  options?: Write<number | null>,
+): [number | null, (value: number) => void, boolean] {
   const [value, setValue, loaded] = usePersistedSetting<number | null>(
     key,
-    null,
+    unset,
     options,
   );
-  return [storedInteger(value, null), setValue, loaded];
+  return [storedInteger(value, unset), setValue, loaded];
+}
+
+/** A profile-id setting: an integer setting, null when unset, so
+ *  `p.id === id` holds for either stored form. */
+export function useProfileIdSetting(
+  key: string,
+  options?: Write<number | null>,
+): [number | null, (value: number | null) => void, boolean] {
+  return useIntegerSetting(key, null, options);
 }

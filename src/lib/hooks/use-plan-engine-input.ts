@@ -9,7 +9,10 @@ import { useMemo } from "react";
 import type { BoundaryQuery } from "@/components/ui/query-boundary";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
+import {
+  useIntegerSetting,
+  useProfileIdSetting,
+} from "@/lib/hooks/use-profile-id-setting";
 import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
@@ -79,15 +82,16 @@ export function usePlanEngineInput(): {
   );
   const [decumulationBudgetProfileId, , budgetProfileLoaded] =
     useProfileIdSetting(SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID);
-  const [decumulationBudgetColumn, , budgetColumnLoaded] = usePersistedSetting<
-    number | null
-  >(SK_RETIREMENT_DECUMULATION_BUDGET_COL, null);
+  const [decumulationBudgetColumn, , budgetColumnLoaded] = useIntegerSetting(
+    SK_RETIREMENT_DECUMULATION_BUDGET_COL,
+    null,
+  );
   const [decumulationExpenseOverride, , expenseOverrideLoaded] =
     usePersistedSetting<string | null>(
       SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE,
       null,
     );
-  const [snapshotId, , snapshotLoaded] = usePersistedSetting<number | null>(
+  const [snapshotId, , snapshotLoaded] = useIntegerSetting(
     "retirement_snapshot_id",
     null,
   );

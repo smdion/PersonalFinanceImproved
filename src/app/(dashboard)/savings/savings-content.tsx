@@ -16,7 +16,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
+import {
+  useIntegerSetting,
+  useProfileIdSetting,
+} from "@/lib/hooks/use-profile-id-setting";
 import { useLocalStorageSet } from "@/app/(dashboard)/savings/use-local-storage-set";
 import { SummaryCards } from "@/components/savings/summary-cards";
 import { NewFundFormCard } from "@/components/savings/new-fund-form-card";
@@ -94,14 +97,11 @@ export function SavingsContent() {
     useEditLock(EDIT_LOCK_KEYS.profileEditLocked);
 
   // ── Persisted settings ──
-  const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
+  const [efundBudgetColumn, setEfundBudgetColumn] = useIntegerSetting(
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const [budgetColumn] = usePersistedSetting<number>(
-    SK_BUDGET_ACTIVE_COLUMN,
-    0,
-  );
+  const [budgetColumn] = useIntegerSetting(SK_BUDGET_ACTIVE_COLUMN, 0);
   const [projectionYears, setProjectionYears] = usePersistedSetting<number>(
     SK_SAVINGS_PROJECTION_YEARS,
     3,

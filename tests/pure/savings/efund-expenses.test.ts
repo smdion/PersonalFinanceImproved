@@ -59,9 +59,14 @@ describe("resolveEfundTierIndex", () => {
     expect(resolveEfundTierIndex(settings(2), 0, 3)).toBe(0);
   });
 
-  it("falls to the budget page's column when the e-fund's isn't a number", () => {
-    expect(resolveEfundTierIndex(settings("2"), undefined, 3)).toBe(1);
+  it("reads a column stored as a digit string as that column (an older PostgreSQL write)", () => {
+    expect(resolveEfundTierIndex(settings("2"), undefined, 3)).toBe(2);
+    expect(resolveEfundTierIndex(settings(-1, "2"), undefined, 3)).toBe(2);
+  });
+
+  it("falls to the budget page's column when the e-fund's isn't an integer", () => {
     expect(resolveEfundTierIndex(settings(null), undefined, 3)).toBe(1);
+    expect(resolveEfundTierIndex(settings("two"), undefined, 3)).toBe(1);
   });
 
   it("falls to the budget page's column when the e-fund's is negative", () => {
@@ -70,7 +75,7 @@ describe("resolveEfundTierIndex", () => {
 
   it("falls to column 0 when neither column is saved", () => {
     expect(resolveEfundTierIndex([], undefined, 3)).toBe(0);
-    expect(resolveEfundTierIndex(settings(-1, "1"), undefined, 3)).toBe(0);
+    expect(resolveEfundTierIndex(settings(-1, "one"), undefined, 3)).toBe(0);
   });
 
   it("clamps a saved column past the end of a profile with fewer columns", () => {

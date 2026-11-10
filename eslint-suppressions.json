@@ -4639,11 +4639,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/savings/efund-expenses.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    }
-  },
   "src/lib/pure/savings/savings-capacity.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 1

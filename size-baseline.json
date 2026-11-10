@@ -12,7 +12,7 @@
     "src/app/(dashboard)/budget/budget-content.tsx": 636,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 351,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 944,
-    "src/app/(dashboard)/expenses/expenses-content.tsx": 805,
+    "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
     "src/app/(dashboard)/historical/historical-content.tsx": 932,
     "src/app/(dashboard)/house/house-content.tsx": 739,
     "src/app/(dashboard)/networth/networth-content.tsx": 418,
@@ -51,7 +51,7 @@
     "src/components/contributions/contributions-section.tsx": 421,
     "src/components/dashboard/contributions-card.tsx": 585,
     "src/components/dashboard/linked-balance-card.tsx": 432,
-    "src/components/dashboard/living-costs-card.tsx": 607,
+    "src/components/dashboard/living-costs-card.tsx": 604,
     "src/components/dashboard/retirement-card-figures.ts": 131,
     "src/components/dashboard/retirement-card-plan-rows.tsx": 52,
     "src/components/dashboard/retirement-card-rows.tsx": 115,
@@ -462,7 +462,7 @@
       "DataBrowserContent": 250
     },
     "src/app/(dashboard)/expenses/expenses-content.tsx": {
-      "ExpensesContent": 582
+      "ExpensesContent": 579
     },
     "src/app/(dashboard)/historical/historical-content.tsx": {
       "HistoricalContent": 189,
@@ -495,7 +495,7 @@
       "RetirementContent": 301
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
-      "SavingsContent": 785
+      "SavingsContent": 782
     },
     "src/app/(dashboard)/tools/tools-content.tsx": {
       "ToolsContent": 531
@@ -567,7 +567,7 @@
       "LinkedBalanceCardImpl": 171
     },
     "src/components/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 510
+      "LivingCostsCardImpl": 507
     },
     "src/components/dashboard/savings-goals-card.tsx": {
       "SavingsGoalsCardImpl": 384
@@ -703,7 +703,7 @@
       "RetirementProfileManager": 261
     },
     "src/components/profiles/retirement/retirement-profile-tab.tsx": {
-      "RetirementProfileTab": 448
+      "RetirementProfileTab": 445
     },
     "src/components/profiles/savings/savings-allocation-panel.tsx": {
       "SavingsAllocationTable": 273
@@ -1065,7 +1065,7 @@
       "computeCoastFireSimulation": 231
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 769
+      "buildEnginePayload": 768
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 170
