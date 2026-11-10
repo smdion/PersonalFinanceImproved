@@ -30,6 +30,11 @@ import {
   REFUSED as REFUSED_FIELDS,
   type ActiveFieldsCase,
 } from "./active-fields-cases";
+import {
+  PERFORMANCE_ACCOUNTS,
+  YEARS,
+  yearRows,
+} from "./performance-category-cases";
 
 const REPO = process.cwd();
 const FOLDER = "drizzle-sqlite";
@@ -95,6 +100,15 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     );
     for (const c of contributions)
       profile.run(c.id, `Invented ${c.id}`, JSON.stringify(c.before));
+    for (const row of [
+      ...PERFORMANCE_ACCOUNTS.map((a) => ["performance_accounts", a] as const),
+      ...yearRows().map((y) => ["account_performance", y] as const),
+    ]) {
+      const cols = Object.keys(row[1]);
+      db.prepare(
+        `INSERT INTO ${row[0]} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
+      ).run(...Object.values(row[1]));
+    }
     db.close();
     fs.writeFileSync(journalPath(), shipped);
   }
@@ -123,6 +137,18 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     return rows.map((r): unknown => JSON.parse(r.f));
   };
 
+  /** Each invented account-year's category as stored. */
+  const categories = () => {
+    const db = open();
+    const rows = db
+      .prepare(
+        "SELECT parent_category AS c FROM account_performance WHERE institution = 'Invented Bank' ORDER BY id",
+      )
+      .all() as { c: string }[];
+    db.close();
+    return rows.map((r) => r.c);
+  };
+
   const readable = PROFILES.flatMap((c, i) =>
     typeof c.before === "string" ? [] : [i],
   );
@@ -146,6 +172,14 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     expect(first).toEqual(CONTRIBUTION_PROFILES.map((c) => c.after));
     runSQLite();
     expect(activeRoots()).toEqual(first);
+  });
+
+  it("gives each account-year its account's category as a pending migration, and a later start writes nothing", () => {
+    installBefore();
+    runSQLite();
+    expect(categories()).toEqual(YEARS.map((y) => y.after));
+    runSQLite();
+    expect(categories()).toEqual(YEARS.map((y) => y.after));
   });
 
   it("a refused active-fields row refuses the start, and nothing changes", () => {

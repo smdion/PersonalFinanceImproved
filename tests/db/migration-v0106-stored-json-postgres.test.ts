@@ -38,6 +38,11 @@ import {
   REFUSED as REFUSED_FIELDS,
   type ActiveFieldsCase,
 } from "./active-fields-cases";
+import {
+  PERFORMANCE_ACCOUNTS,
+  YEARS,
+  yearRows,
+} from "./performance-category-cases";
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -129,6 +134,19 @@ describe.skipIf(skipWithoutPostgres)(
           Object.values(a),
         );
       }
+      for (const [table, row] of [
+        ...PERFORMANCE_ACCOUNTS.map(
+          (a) => ["performance_accounts", a] as const,
+        ),
+        ...yearRows().map((y) => ["account_performance", y] as const),
+      ]) {
+        const cols = Object.keys(row);
+        const params = cols.map((_, i) => "$" + String(i + 1));
+        await client.query(
+          `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${params.join(", ")})`,
+          Object.values(row),
+        );
+      }
       for (const c of contributions)
         await client.query(
           "INSERT INTO contribution_profiles (id, name, contribution_active_fields) VALUES ($1, $2, $3::jsonb)",
@@ -150,6 +168,13 @@ describe.skipIf(skipWithoutPostgres)(
           "SELECT contribution_active_fields AS f FROM contribution_profiles WHERE name LIKE 'Invented %' ORDER BY id",
         )
       ).rows.map((r) => r.f);
+
+    const categories = async () =>
+      (
+        await client.query<{ c: string }>(
+          "SELECT parent_category AS c FROM account_performance WHERE institution = 'Invented Bank' ORDER BY id",
+        )
+      ).rows.map((r) => r.c);
 
     const readable = PROFILES.flatMap((c, i) =>
       typeof c.before === "string" ? [] : [i],
@@ -178,6 +203,14 @@ describe.skipIf(skipWithoutPostgres)(
       expect(first).toEqual(CONTRIBUTION_PROFILES.map((c) => c.after));
       migrate();
       expect(await activeRoots()).toEqual(first);
+    });
+
+    it("gives each account-year its account's category as a pending migration, and a later start writes nothing", async () => {
+      await installBefore();
+      migrate();
+      expect(await categories()).toEqual(YEARS.map((y) => y.after));
+      migrate();
+      expect(await categories()).toEqual(YEARS.map((y) => y.after));
     });
 
     it("a refused active-fields row refuses the start, and nothing changes", async () => {
