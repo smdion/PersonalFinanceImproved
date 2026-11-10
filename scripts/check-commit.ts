@@ -34,7 +34,8 @@ import ts from "typescript";
 import { codeOf } from "./engine-hash";
 import {
   isShapeFile,
-  storedAndResponseKeys,
+  routerOutputKeys,
+  storedKeys,
 } from "./gen-abbreviation-carve-outs";
 
 export const SUBJECT_PREFIX =
@@ -3560,19 +3561,41 @@ function isKey(id: ts.Node): boolean {
 const ZOD_SHAPE =
   /^z\.(object|strictObject|looseObject)$|\.(extend|safeExtend|pick|omit|partial|required)$/;
 
+type KeySet = { has: (name: string) => boolean };
+
+/**
+ * Why a key renamed `from` → `to` reaches a stored, external or response
+ * shape. Stored and external keys go by the old name; a response key per
+ * symbol (todo:533): the new name is a key a router's output type reaches
+ * in the renamed tree, so an internal type that shares a response key's
+ * name renames, and one that flows into an answer doesn't.
+ */
+function keyNameProblem(
+  from: string,
+  to: string,
+  shapes: { keys: KeySet; responseKeys?: KeySet },
+): string | undefined {
+  if (shapes.keys.has(from))
+    return `${from} is a stored or external key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+  if (shapes.responseKeys?.has(to))
+    return `${to} is a key of a router's answer: the rename reaches a response (or meets one of its keys)`;
+  return undefined;
+}
+
 /** Why a key renamed at `id` changes a stored, external or response shape. */
 function shapeKeyProblem(
   id: ts.Node,
   file: string,
   from: string,
   shapes: {
-    keys: { has: (name: string) => boolean };
+    keys: KeySet;
+    responseKeys?: KeySet;
     isShapeFile: (file: string) => boolean;
   },
 ): string | undefined {
   if (!isKey(id)) return undefined;
-  if (shapes.keys.has(from))
-    return `${from} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+  const named = keyNameProblem(from, id.getText(), shapes);
+  if (named) return named;
   if (shapes.isShapeFile(file)) return `${file} defines a stored shape`;
   const literalKey =
     ts.isPropertyAssignment(id.parent) ||
@@ -3642,8 +3665,8 @@ function codeRenameProblem(
     if (typeKey) {
       if (map.get(typeKey[0]) !== typeKey[1])
         return `${at(y, now)}: "${typeKey[0]}" → "${typeKey[1]}" is not in the ${RENAME}: list`;
-      if (shapes.keys.has(typeKey[0]))
-        return `${at(y, now)}: "${typeKey[0]}" as a key: ${typeKey[0]} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+      const named = keyNameProblem(typeKey[0], typeKey[1], shapes);
+      if (named) return `${at(y, now)}: "${typeKey[0]}" as a key: ${named}`;
       used.add(typeKey[0]);
       continue;
     }
@@ -3760,11 +3783,14 @@ export function mechanicalProblem(
   diff: string,
 ): string | undefined {
   if (trailerValues(raw, RENAME).length === 0) return notAMove(numstat, diff);
-  let keys: Set<string> | undefined;
+  let [keys, responseKeys]: (Set<string> | undefined)[] = [];
   return notARename(numstat, diff, raw, {
     // Read only when a renamed name stands as a key: reading the router
-    // output types builds the program.
-    keys: { has: (name) => (keys ??= storedAndResponseKeys()).has(name) },
+    // output types builds the program (of the tree as it stands: renamed).
+    keys: { has: (name) => (keys ??= storedKeys()).has(name) },
+    responseKeys: {
+      has: (name) => (responseKeys ??= routerOutputKeys()).has(name),
+    },
     isShapeFile,
   });
 }
