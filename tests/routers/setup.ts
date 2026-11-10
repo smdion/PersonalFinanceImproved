@@ -186,7 +186,7 @@ async function createPostgresTestCaller(
   // eslint-disable-next-line no-restricted-syntax -- the app's db type; node-postgres drizzle with the PostgreSQL schema
   const rawDb = pgTest.db as unknown as DbType;
   const caller = _callerFactory({ db: rawDb, session, demoSchema: null });
-  setTopLevelTestDb(rawDb);
+  setTopLevelTestDb(rawDb, pgTest.pool);
   const cleanup = () => {
     releaseTopLevelTestDb(rawDb);
     pgTest.drop();
