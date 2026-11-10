@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
 import { db } from "@/lib/db";
 import { appSettings } from "@/lib/db/schema";
-import { authConfig } from "./auth.config";
+import { authConfig, capSessionAge } from "./auth.config";
 import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 import { authorizeLocalAdmin } from "./local-admin-login";
@@ -197,17 +197,14 @@ const fullAuthConfig: NextAuthConfig = {
     process.env.DEMO_ONLY === "true"
       ? authConfig.providers
       : [...authConfig.providers, localAdminProvider],
-  session: {
-    strategy: "jwt",
-    // 4 hours instead of the 30-day default: Authentik group changes take effect
-    // only when the JWT expires, so this bounds RBAC propagation lag without
-    // forcing constant re-login.
-    maxAge: 4 * 60 * 60,
-  },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      // Sessions end 4 hours after sign-in (authConfig: the same cap the proxy applies).
+      const signingIn = trigger === "signIn" || trigger === "signUp";
+      const capped = capSessionAge(token, signingIn);
+      if (!capped) return null;
       return (await assignRoleAndPermissions(
-        token as Record<string, unknown>,
+        capped,
         user,
         account,
       )) as typeof token;

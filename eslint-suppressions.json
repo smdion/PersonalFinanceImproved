@@ -4808,7 +4808,7 @@
   },
   "src/server/auth.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 6
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
