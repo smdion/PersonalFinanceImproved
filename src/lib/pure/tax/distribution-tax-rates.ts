@@ -96,9 +96,9 @@ export function buildDistributionTaxRates({
     if (estimatedRate > 0) {
       effectiveTraditionalRate = estimatedRate;
     }
-    // LTCG fallback: the real LTCG bracket rate at this income (DB brackets when seeded, else
-    // 2026 federal defaults). Only used when a caller lacks filingStatus; the primary path
-    // prices with scheduleDGainsTax directly.
+    // The LTCG rate at retirement spending, no deduction taken off. Brokerage goal draws price
+    // their gains at it (goal-draws.ts), as does a year without a filing status; a year's draws
+    // with one are priced by scheduleDGainsTax.
     effectiveBrokerageRate = filingStatus
       ? getLtcgRate(retirementIncome, filingStatus, ltcgBracketData)
       : dbBrokerageRate;

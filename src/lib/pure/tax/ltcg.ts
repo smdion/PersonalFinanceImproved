@@ -4,17 +4,31 @@
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 
-/** Gross ordinary income against the standard deduction (senior additions
- *  included; undefined subtracts nothing): the ordinary taxable income gains
- *  stack on, and the deduction it leaves unused. Every stacking site reads it. */
+/** Gross ordinary income against the standard deduction (undefined subtracts
+ *  nothing): the ordinary taxable income gains stack on, the deduction left
+ *  unused, the gains it leaves taxed, and the stack's top. */
 export function ltcgStackBase(
   grossOrdinaryIncome: number,
   standardDeduction: number | undefined,
-): { ordinaryTaxable: number; unusedDeduction: number } {
+  gains = 0,
+): {
+  ordinaryTaxable: number;
+  unusedDeduction: number;
+  taxedGains: number;
+  top: number;
+} {
   const deduction = standardDeduction ?? 0;
+  const ordinaryTaxable = Math.max(0, grossOrdinaryIncome - deduction);
+  const unusedDeduction = Math.max(
+    0,
+    deduction - Math.max(0, grossOrdinaryIncome),
+  );
+  const taxedGains = Math.max(0, gains - unusedDeduction);
   return {
-    ordinaryTaxable: Math.max(0, grossOrdinaryIncome - deduction),
-    unusedDeduction: Math.max(0, deduction - Math.max(0, grossOrdinaryIncome)),
+    ordinaryTaxable,
+    unusedDeduction,
+    taxedGains,
+    top: ordinaryTaxable + taxedGains,
   };
 }
 
@@ -127,10 +141,14 @@ export function scheduleDGainsTax<Bracket>(
     standardDeduction?: number,
   ) => number,
 ): number {
-  const base = ltcgStackBase(grossOrdinaryIncome, taxRates.standardDeduction);
+  const base = ltcgStackBase(
+    grossOrdinaryIncome,
+    taxRates.standardDeduction,
+    gains,
+  );
   const stacked = computeLtcgTax(
     base.ordinaryTaxable,
-    Math.max(0, gains - base.unusedDeduction),
+    base.taxedGains,
     filingStatus,
     taxRates.ltcgBrackets,
   );

@@ -39,6 +39,18 @@ describe("ltcgStackBase", () => {
     expect(ltcgStackBase(0, undefined).unusedDeduction).toBe(0);
   });
 
+  it("taxes only the gains the unused deduction leaves, stacked on ordinary taxable income", () => {
+    expect(ltcgStackBase(10000, 32200, 50000)).toEqual({
+      ordinaryTaxable: 0,
+      unusedDeduction: 22200,
+      taxedGains: 27800,
+      top: 27800,
+    });
+    expect(ltcgStackBase(10000, 32200, 15000).taxedGains).toBe(0);
+    expect(ltcgStackBase(120100, 32200, 40000).top).toBe(127900);
+    expect(ltcgStackBase(120100, 32200).taxedGains).toBe(0);
+  });
+
   it("undefined standardDeduction ⇒ subtracts 0 (pre-fix behavior, not a throw)", () => {
     expect(ltcgStackBase(120100, undefined).ordinaryTaxable).toBe(120100);
   });

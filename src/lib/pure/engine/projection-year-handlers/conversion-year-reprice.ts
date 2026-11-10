@@ -36,11 +36,10 @@ export function repriceConversionYear(
   const revised = ltcgStackBase(
     actualTaxableIncome + rothConversionAmount,
     grownStandardDeduction,
+    brokerageGainsPortion,
   );
   const revisedOrdinary = revised.ordinaryTaxable;
-  const stackTop =
-    revisedOrdinary +
-    Math.max(0, brokerageGainsPortion - revised.unusedDeduction);
+  const stackTop = revised.top;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
       scheduleDGainsTax(
