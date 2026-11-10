@@ -130,8 +130,24 @@ export function parseMessage(raw: string): ParsedMessage {
   return { raw, subject, body: bodyLines.join("\n").trim(), trailers };
 }
 
-/** git revert's own body line: it says what was reverted, not why. */
-const REVERT_BOILERPLATE = /^This reverts commit [0-9a-f]{7,40}\b.*$/;
+/** git revert's own body lines (`-m` adds the second): what, not why. */
+const REVERT_BOILERPLATE =
+  /^(This reverts commit [0-9a-f]{7,40}\b.*|changes made to [0-9a-f]{7,40}\.)$/;
+/** Trailers a tool reads: none of them says why a revert is made. */
+const MACHINE_TRAILERS = new Set([
+  "Co-Authored-By",
+  "Signed-off-by",
+  "Mechanical",
+  "Rename",
+  "Comments-only",
+  "Ratchet-raise",
+  "Known-renamed",
+  "Baseline-rerecord",
+  "Layers-renamed",
+  "Concept",
+  "Advisor",
+  "Visible",
+]);
 
 /** A `revert:` subject, or git's default `Revert "…"` one. */
 export function isRevertSubject(subject: string): boolean {
@@ -140,14 +156,21 @@ export function isRevertSubject(subject: string): boolean {
   );
 }
 
-/** A revert's reason: its body without git's boilerplate line, or a `Why:`/`Reason:` line. */
+/**
+ * A revert's reason: its body without git's boilerplate lines, or a line
+ * written as a trailer (`Why:`, `Cause:`, `Regression:`, …) that no tool
+ * reads.
+ */
 export function revertReason(message: ParsedMessage): string {
   const own = message.body
     .split("\n")
     .filter((line) => !REVERT_BOILERPLATE.test(line.trim()))
     .join("\n")
     .trim();
-  return own || message.trailers.Why || message.trailers.Reason || "";
+  const said = Object.entries(message.trailers).find(
+    ([key]) => !MACHINE_TRAILERS.has(key),
+  );
+  return own || said?.[1] || "";
 }
 
 export function isFixSubject(subject: string): boolean {
@@ -4061,7 +4084,7 @@ export function checkCommit(facts: CommitFacts): Warning[] {
   ) {
     warnings.push({
       rule: "revert-reason",
-      text: 'a revert says why: "This reverts commit …" alone gives no reason',
+      text: 'a revert says why: "This reverts commit …" alone gives no reason (write a sentence, or a Why: line)',
     });
   }
   warnings.push(
