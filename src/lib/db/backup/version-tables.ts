@@ -147,6 +147,15 @@ export function tablesFromBackup(names: string[], by: { asAdmin: boolean }) {
   );
 }
 
+/** How many of a backup's versioned tables a restore or import takes from it. */
+export function tablesTakenCount(
+  tables: Record<string, unknown>,
+  by: { asAdmin: boolean },
+): number {
+  const present = VERSION_TABLE_NAMES.filter((n) => n in tables);
+  return tablesFromBackup(present, by).length;
+}
+
 /** Excluded from versioning (audit/version tables + ephemeral caches). */
 export const EXCLUDED_TABLES = [
   "change_log",

@@ -830,6 +830,34 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     }
   });
 
+  it("an import's restoredTables counts the tables it takes from the backup", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      const { VERSION_TABLE_NAMES } =
+        await import("@/lib/db/backup/version-tables");
+      await access(db, "ours");
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      const whole = await importBackup(db, backup, admin);
+      expect(whole.restoredTables).toBe(VERSION_TABLE_NAMES.length);
+      // Not the local admins or the connections, kept from today.
+      const fenced = await importBackup(db, backup, notAdmin);
+      expect(fenced.restoredTables).toBe(whole.restoredTables - 2);
+      // A backup lacking a table doesn't count it.
+      delete backup.tables.securities;
+      const partial = await importBackup(db, backup, admin);
+      expect(partial.restoredTables).toBe(whole.restoredTables - 1);
+      // Nor the local admins it lacks, kept from today.
+      delete backup.tables.local_admins;
+      const noAdmins = await importBackup(db, backup, admin);
+      expect(noAdmins.restoredTables).toBe(whole.restoredTables - 2);
+    } finally {
+      await done();
+    }
+  });
+
   it("every column of each installation table is kept, matched or taken from the backup, on one list only", async () => {
     const { columns, done } = await fresh();
     try {

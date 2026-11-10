@@ -31,6 +31,7 @@ import {
   VERSION_TABLE_NAMES,
   VERSION_TABLES,
   tablesFromBackup,
+  tablesTakenCount,
 } from "./version-tables";
 import { householdOnlyTables, withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
@@ -108,7 +109,6 @@ export async function createVersion(
     const jsonStr = JSON.stringify(tableData.map((t) => t.rows));
     const sizeEstimate = Buffer.byteLength(jsonStr, "utf8");
 
-    // Insert version metadata
     const rows = await tx
       .insert(schema.stateVersions)
       .values({
@@ -125,7 +125,6 @@ export async function createVersion(
 
     const version = rows[0]!;
 
-    // Insert per-table data
     for (const td of tableData) {
       await tx.insert(schema.stateVersionTables).values({
         versionId: version.id,
@@ -377,14 +376,16 @@ export async function importBackup(
     : await importBackupSqlite(database, transformedBackup, by.user);
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
-  return { ...result, valueNotes: checked.valueNotes };
+  const taken = { asAdmin: by.asAdmin && backup.householdOnly !== true };
+  const restoredTables = tablesTakenCount(transformedTables, taken);
+  return { ...result, restoredTables, valueNotes: checked.valueNotes };
 }
 
 async function importBackupPg(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
   user: string,
-): Promise<{ restoredTables: number; restoredRows: number }> {
+): Promise<{ restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
   const { pool } = await import("../index");
@@ -470,7 +471,7 @@ async function importBackupPg(
       // Non-critical
     }
 
-    return { restoredTables: sortedTables.length, restoredRows };
+    return { restoredRows };
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     await client
@@ -486,7 +487,7 @@ async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
   user: string,
-): Promise<{ restoredTables: number; restoredRows: number }> {
+): Promise<{ restoredRows: number }> {
   const source = backup.sourceDialect;
   let restoredRows = 0;
   const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
@@ -519,5 +520,5 @@ async function importBackupSqlite(
     }
   });
 
-  return { restoredTables: sortedTables.length, restoredRows };
+  return { restoredRows };
 }
