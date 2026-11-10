@@ -1,6 +1,7 @@
 import { auth } from "@/server/auth";
 import type { Permission } from "@/lib/config/permissions";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { HydrationBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -30,6 +31,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Rendered per request in every build: DEMO_ONLY and `next dev` skip
+  // auth(), which alone would make it dynamic, and a prerendered copy shows
+  // the build machine's "Database Unavailable" (scripts/check-prerender.ts).
+  await connection();
   // The same rule as every request's session (auth-mode.ts): only `next dev`
   // skips sign-in; any other build signs in, Authentik configured or not.
   const bypass = devBypass();
