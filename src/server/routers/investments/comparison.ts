@@ -3,6 +3,7 @@
  * (portfolioProcedure — balances and returns).
  */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -144,7 +145,7 @@ export const investmentComparisonRouter = createTRPCRouter({
     .input(
       z.object({
         preset: z.enum(SIMULATION_PRESET_KEYS),
-        years: z.array(z.number().int()).max(100),
+        years: z.array(zYear).max(100),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -177,7 +178,7 @@ export const investmentComparisonRouter = createTRPCRouter({
     }),
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
   computeComparison: portfolioProcedure
-    .input(z.object({ fromYear: z.number().int().optional() }))
+    .input(z.object({ fromYear: zYear.optional() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.accountPerformance);
       const allYears = yearlyResultsFrom(

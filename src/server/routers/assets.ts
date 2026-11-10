@@ -3,6 +3,7 @@ import { calendarYear } from "@/lib/utils/date";
 import { desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { upsertHistoricalNote } from "@/server/data/historical-notes";
@@ -24,7 +25,7 @@ export const assetsRouter = createTRPCRouter({
   updateAsset: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         fields: z.object({
           cash: z.number().optional(),
           houseValue: z.number().optional(),
@@ -65,7 +66,7 @@ export const assetsRouter = createTRPCRouter({
   addHomeImprovement: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         description: z.string().min(1),
         cost: z.number(),
         note: z.string().optional(),
@@ -121,7 +122,7 @@ export const assetsRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1),
-        year: z.number(),
+        year: zYear,
         value: z.number(),
         note: z.string().optional(),
       }),
@@ -209,7 +210,7 @@ export const assetsRouter = createTRPCRouter({
     .input(
       z.object({
         loanId: z.number(),
-        year: z.number(),
+        year: zYear,
         assessedValue: z.number().nullable().optional(),
         taxAmount: z.number(),
         note: z.string().nullable().optional(),
@@ -253,7 +254,7 @@ export const assetsRouter = createTRPCRouter({
   upsertNote: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         field: z.string().min(1),
         note: z.string(),
       }),

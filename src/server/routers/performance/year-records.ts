@@ -22,7 +22,7 @@ import {
   perfFieldSchema,
   PERF_NOTE_MAX,
 } from "@/lib/pure/investments/performance-annotations";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import type { DbOrTx } from "@/lib/db";
 import { stampPerformanceUpdated } from "@/server/services/performance/last-updated";
@@ -61,7 +61,7 @@ const accountUpdateInput = z.object({
 });
 
 const accountCreateInput = z.object({
-  year: z.number().int(),
+  year: zYear,
   performanceAccountId: z.number().int(),
   beginningBalance: zDecimal,
   totalContributions: zDecimal,

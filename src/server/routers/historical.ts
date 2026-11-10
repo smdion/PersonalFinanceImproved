@@ -3,6 +3,7 @@ import { calendarYear } from "@/lib/utils/date";
 import { and, asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { upsertHistoricalNote } from "@/server/data/historical-notes";
@@ -120,7 +121,7 @@ export const historicalRouter = createTRPCRouter({
   update: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         fields: z.object({
           grossIncome: z.number().optional(),
           combinedAgi: z.number().optional(),
@@ -172,7 +173,7 @@ export const historicalRouter = createTRPCRouter({
     .input(
       z.object({
         personId: z.number().int(),
-        year: z.number().int().min(1900).max(2100),
+        year: zYear,
         salary: z.number().optional(),
         bonus: z.number().optional(),
       }),
@@ -225,7 +226,7 @@ export const historicalRouter = createTRPCRouter({
   upsertNote: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         field: z.string().min(1),
         note: z.string(),
       }),

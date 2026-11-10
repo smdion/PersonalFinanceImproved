@@ -12,7 +12,7 @@ import {
   employerMatchTypeSchema,
 } from "@/lib/config/enum-values.schema";
 import { ROTH_IRA_ROUTE_VALUES } from "@/lib/config/enum-values";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { w4FilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 
@@ -158,7 +158,7 @@ export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
 // ── relocation_scenarios ────────────────────────────────────────
 
 const yearAdjustmentSchema = z.object({
-  year: z.number(),
+  year: zYear,
   monthlyExpenses: z.number(),
   profileId: z.number().optional(),
   budgetColumn: z.number().optional(),
@@ -173,10 +173,11 @@ const largePurchaseSchema = z.object({
   loanTermYears: z.number().optional(),
   ongoingMonthlyCost: z.number().optional(),
   saleProceeds: z.number().optional(),
-  purchaseYear: z.number(),
+  purchaseYear: zYear,
 });
 
-/** relocation_scenarios.params */
+/** relocation_scenarios.params, as the save request sends it (request
+ *  fields, so zYear years); nothing parses stored rows through it. */
 export const relocationScenarioParamsSchema = z.object({
   currentProfileId: z.number(),
   currentBudgetColumn: z.number(),
@@ -188,7 +189,7 @@ export const relocationScenarioParamsSchema = z.object({
   largePurchases: z.array(largePurchaseSchema),
   currentContributionProfileId: z.number().nullable(),
   relocationContributionProfileId: z.number().nullable(),
-  moveYear: z.number().nullable().optional().default(null),
+  moveYear: zYear.nullable().optional().default(null),
 });
 
 // ── extra-paycheck routing (nested inside a salary entry) ───────

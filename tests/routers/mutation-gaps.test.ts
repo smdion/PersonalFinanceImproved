@@ -54,6 +54,11 @@ describe("mutations no other router test calls", () => {
     await expect(
       ctx.caller.assets.updateAsset({ year: 2019, fields: { cash: 1 } }),
     ).rejects.toThrow(/No year-end history found for 2019/);
+    // A year outside 1900–2100, or not whole, is refused before any read.
+    for (const year of [2200, 2025.5])
+      await expect(
+        ctx.caller.assets.updateAsset({ year, fields: { cash: 1 } }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("budget.setMortgageItem links one budget line to a loan, and null clears it", async () => {

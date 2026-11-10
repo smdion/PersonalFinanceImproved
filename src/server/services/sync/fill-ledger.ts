@@ -3,6 +3,7 @@
  * per scope and year, each row's baseline day (fixed at its first fill) and counted ids with how.
  */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/utils/date";
@@ -29,7 +30,7 @@ const day = z.iso.date();
 
 /** What a form sends back with a save made from a fill. */
 export const zFillRecord = z.object({
-  year: z.number().int(),
+  year: zYear,
   baselines: z.record(z.string(), day),
   counted: z.record(
     z.string(),

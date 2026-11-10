@@ -8,7 +8,7 @@ import {
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
@@ -49,7 +49,7 @@ export const overrideProcedures = {
       .input(
         z.object({
           personId: z.number().int(),
-          projectionYear: z.number().int().min(1900).max(2100),
+          projectionYear: zYear,
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
           salaryProfileId: z.number().int().nullable().optional(),
@@ -68,7 +68,7 @@ export const overrideProcedures = {
         z.object({
           id: z.number().int(),
           personId: z.number().int(),
-          projectionYear: z.number().int().min(1900).max(2100),
+          projectionYear: zYear,
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
           salaryProfileId: z.number().int().nullable().optional(),
@@ -106,7 +106,7 @@ export const overrideProcedures = {
       .input(
         z.object({
           personId: z.number().int(),
-          projectionYear: z.number().int().min(1900).max(2100),
+          projectionYear: zYear,
           overrideMonthlyBudget: zDecimal,
           notes: z.string().nullable().optional(),
         }),
@@ -123,7 +123,7 @@ export const overrideProcedures = {
         z.object({
           id: z.number().int(),
           personId: z.number().int(),
-          projectionYear: z.number().int().min(1900).max(2100),
+          projectionYear: zYear,
           overrideMonthlyBudget: zDecimal,
           notes: z.string().nullable().optional(),
         }),

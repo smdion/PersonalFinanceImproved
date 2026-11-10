@@ -8,7 +8,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
-import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zDecimal, zMonthKey } from "@/lib/utils/zod-fields";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
 import type { DbOrTx } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
@@ -210,7 +210,7 @@ export const plannedTransactionProcedures = {
       .input(
         z.object({
           plannedTxId: z.number().int(),
-          occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
+          occurrenceMonth: zMonthKey,
         }),
       )
       .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
@@ -223,7 +223,7 @@ export const plannedTransactionProcedures = {
           occurrences: z.array(
             z.object({
               plannedTxId: z.number().int(),
-              occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
+              occurrenceMonth: zMonthKey,
             }),
           ),
         }),

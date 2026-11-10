@@ -13,7 +13,7 @@ import {
   resolveAccountBalance,
 } from "@/server/services/sync/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
 import { listBrokerageGoals } from "@/server/data/brokerage-goals";
 
@@ -31,7 +31,7 @@ export const brokerageRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1),
         targetAmount: zPositiveDecimal,
-        targetYear: z.number().int().min(new Date().getFullYear()),
+        targetYear: zYear.min(new Date().getFullYear()),
         priority: z.number().int().default(0),
         notes: z.string().nullable().optional(),
       }),
@@ -56,7 +56,7 @@ export const brokerageRouter = createTRPCRouter({
         id: z.number().int(),
         name: z.string().min(1).optional(),
         targetAmount: zPositiveDecimal.optional(),
-        targetYear: z.number().int().optional(),
+        targetYear: zYear.optional(),
         priority: z.number().int().optional(),
         isActive: z.boolean().optional(),
         notes: z.string().nullable().optional(),

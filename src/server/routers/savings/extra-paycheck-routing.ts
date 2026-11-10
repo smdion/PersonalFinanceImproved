@@ -1,5 +1,6 @@
 import { eq, asc, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
+import { zMonthKey } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -101,11 +102,8 @@ export const extraPaycheckRoutingProcedures = {
           jobId: z.number().int(),
           rules: z.array(
             z.object({
-              from: z.string().regex(/^\d{4}-\d{2}$/),
-              to: z
-                .string()
-                .regex(/^\d{4}-\d{2}$/)
-                .nullable(),
+              from: zMonthKey,
+              to: zMonthKey.nullable(),
               splits: z.array(
                 z.object({
                   goalId: z.number().int(),
@@ -266,7 +264,7 @@ export const extraPaycheckRoutingProcedures = {
       .input(
         z.object({
           jobId: z.number().int(),
-          month: z.string().regex(/^\d{4}-\d{2}$/),
+          month: zMonthKey,
           splits: z
             .array(
               z.object({

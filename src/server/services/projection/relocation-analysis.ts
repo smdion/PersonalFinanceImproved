@@ -1,6 +1,7 @@
 /** The relocation analysis (retirement.computeRelocationAnalysis): its
  *  input, the two budget and contribution scenarios being compared. */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import type { RequestScope } from "@/server/data/request-scope";
 import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
@@ -56,7 +57,7 @@ export const zRelocationAnalysisInput = z.object({
   yearAdjustments: z
     .array(
       z.object({
-        year: z.number().int(),
+        year: zYear,
         monthlyExpenses: z.number(),
         profileId: z.number().int().optional(),
         budgetColumn: z.number().int().min(0).optional(),
@@ -68,7 +69,7 @@ export const zRelocationAnalysisInput = z.object({
   contributionOverrides: z
     .array(
       z.object({
-        year: z.number().int(),
+        year: zYear,
         rate: z.number().min(0).max(1),
         notes: z.string().optional(),
       }),
@@ -85,7 +86,7 @@ export const zRelocationAnalysisInput = z.object({
         loanTermYears: z.number().int().min(0).optional(),
         ongoingMonthlyCost: z.number().min(0).optional(),
         saleProceeds: z.number().min(0).optional(),
-        purchaseYear: z.number().int(),
+        purchaseYear: zYear,
       }),
     )
     .default([]),
