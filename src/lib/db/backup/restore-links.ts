@@ -6,6 +6,7 @@ import { dropDeadHoldingLinkAndSettings } from "../migrate/v0102-dead-data";
 import { CREDENTIALS_TAG } from "../migrate/v0106-credentials";
 import { isRow, jsonArray, type Row } from "../migrate/converter-rows";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
+import { getDisplayConfig } from "@/lib/config/account-types";
 import { log } from "@/lib/logger";
 import pgJournal from "../../../../drizzle/meta/_journal.json";
 
@@ -108,12 +109,50 @@ function linkMappingLabels(tables: Tables): number {
   return linked;
 }
 
+/** The start-up backfill's match, once (later releases leave a row
+ *  unlinked): the first performance account whose label holds the type's
+ *  label and whose owner is the row's person, or whose label holds its name. */
+function linkContributionPerformanceIds(tables: Tables): number {
+  const performanceAccounts = rows(tables, "performance_accounts");
+  if (performanceAccounts.length === 0) return 0;
+  const people = new Map(
+    rows(tables, "people").map((p) => [id(p["id"]), text(p["name"])]),
+  );
+  let linked = 0;
+  for (const c of rows(tables, "contribution_accounts")) {
+    if (id(c["performance_account_id"]) !== null) continue;
+    const personId = id(c["person_id"]);
+    const personName =
+      (personId === null ? null : people.get(personId))?.toLowerCase() ?? "";
+    const typeLabel = getDisplayConfig(
+      String(c["account_type"]),
+      text(c["sub_type"]),
+    ).displayLabel.toLowerCase();
+    const match = performanceAccounts.find((p) => {
+      const label = String(p["account_label"]).toLowerCase();
+      return (
+        label.includes(typeLabel) &&
+        (id(p["owner_person_id"]) === personId ||
+          (personName !== "" && label.includes(personName)))
+      );
+    });
+    if (!match) continue;
+    c["performance_account_id"] = id(match["id"]);
+    linked++;
+  }
+  return linked;
+}
+
 /** Every step, in order, on a backup at `schemaVersion`. */
 export function restoreLinks(tables: Tables, schemaVersion: string): void {
   renameDisplayNameActive(tables);
   dropDeadHoldingLinkAndSettings(tables);
   if (SINCE_LINKS.has(schemaVersion)) return;
+  const contributions = linkContributionPerformanceIds(tables);
   const mappings = linkMappingLabels(tables);
-  if (mappings > 0)
-    log("info", "backup_restore_links", { mappingsByLabel: mappings });
+  if (contributions > 0 || mappings > 0)
+    log("info", "backup_restore_links", {
+      contributionPerformanceIds: contributions,
+      mappingsByLabel: mappings,
+    });
 }
