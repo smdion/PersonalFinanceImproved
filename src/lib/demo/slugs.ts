@@ -23,3 +23,6 @@ export function isDemoProfileSlug(slug: string): slug is DemoProfileSlug {
 export function demoSchemaName(slug: string): string | null {
   return isDemoProfileSlug(slug) ? `demo_${slug.replace(/-/g, "_")}` : null;
 }
+
+/** The HttpOnly cookie that holds the active demo profile's slug. */
+export const DEMO_COOKIE = "demo_active_profile";

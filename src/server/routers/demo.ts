@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { cookies } from "next/headers";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { getDemoProfileList, isDemoProfileSlug } from "@/lib/demo";
+import { DEMO_COOKIE, getDemoProfileList, isDemoProfileSlug } from "@/lib/demo";
 import { isPostgres } from "@/lib/db/dialect";
 import { buildDemoSchema } from "@/server/services/demo/demo-schema";
 
@@ -54,7 +54,7 @@ export const demoRouter = createTRPCRouter({
 
       // Set HttpOnly cookie server-side so it's not accessible to JavaScript
       const cookieStore = await cookies();
-      cookieStore.set("demo_active_profile", input.slug, {
+      cookieStore.set(DEMO_COOKIE, input.slug, {
         path: "/",
         maxAge: 86400,
         sameSite: "strict",
@@ -69,7 +69,7 @@ export const demoRouter = createTRPCRouter({
    *  (RULES.md § Permission & Security Gates rule 3 exception). */
   deactivateDemo: protectedProcedure.mutation(async () => {
     const cookieStore = await cookies();
-    cookieStore.set("demo_active_profile", "", {
+    cookieStore.set(DEMO_COOKIE, "", {
       path: "/",
       maxAge: 0,
       httpOnly: true,

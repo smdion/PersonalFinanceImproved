@@ -19,7 +19,7 @@ import { clientAddress } from "@/lib/client-address";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
-import { demoSchemaName } from "@/lib/demo/slugs";
+import { DEMO_COOKIE, demoSchemaName } from "@/lib/demo/slugs";
 import {
   notifyMutationSucceeded,
   onMutationSucceeded,
@@ -100,7 +100,7 @@ export async function createContext(): Promise<Context> {
   let demoSchema: string | null = null;
   try {
     const cookieStore = await cookies();
-    const demoSlug = cookieStore.get("demo_active_profile")?.value;
+    const demoSlug = cookieStore.get(DEMO_COOKIE)?.value;
     if (demoSlug) demoSchema = demoSchemaName(demoSlug);
   } catch {
     // cookies() may throw outside request context (e.g. during build)

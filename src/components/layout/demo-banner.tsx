@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { DEMO_COOKIE } from "@/lib/demo/slugs";
 
 export function DemoBanner({
   profileName,
@@ -26,7 +27,7 @@ export function DemoBanner({
             router.push("/demo");
           } else {
             // In normal mode, exit demo and return to real data
-            document.cookie = "demo_active_profile=;path=/;max-age=0";
+            document.cookie = `${DEMO_COOKIE}=;path=/;max-age=0`;
             await utils.invalidate();
             router.push("/");
             router.refresh();

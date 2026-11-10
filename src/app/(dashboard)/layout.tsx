@@ -12,6 +12,7 @@ import { PrivacyProvider } from "@/lib/context/privacy-context";
 import { PRIVACY_COOKIE } from "@/lib/utils/privacy-mode";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { getDemoProfile } from "@/lib/demo";
+import { DEMO_COOKIE } from "@/lib/demo/slugs";
 import { databaseStatus } from "@/server/data/database-status";
 import { devBypass } from "@/server/auth-mode";
 import { prefetchForShell } from "@/server/trpc-server";
@@ -88,7 +89,7 @@ export default async function DashboardLayout({
 
   // Check for active demo mode
   const cookieStore = await cookies();
-  const demoSlug = cookieStore.get("demo_active_profile")?.value;
+  const demoSlug = cookieStore.get(DEMO_COOKIE)?.value;
   const demoProfile = demoSlug ? getDemoProfile(demoSlug) : null;
   const privacy = cookieStore.get(PRIVACY_COOKIE)?.value === "1";
 
