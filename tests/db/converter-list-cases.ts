@@ -26,6 +26,7 @@ export const over = (
 ): DataConverter => ({
   tables: ["app_settings"],
   runs,
+  rowCounts: { grows: ["app_settings"], shrinks: ["app_settings"] },
   convert: (t) => ({ ...make(settingsOf(t)), notes: [] }),
 });
 

@@ -974,6 +974,11 @@ SQLite and PostgreSQL).
   `pg_constraint`, SQLite's from `pragma_foreign_key_list`, the restore
   step's from the schema): the converter deletes the children first. The
   restore step checks every write of a result before the first lands.
+  A converter inserts only into the tables its `rowCounts.grows` names
+  and deletes only from its `rowCounts.shrinks` (the runners refuse any
+  other; the release gate's row-count check reads the same lists), and an
+  insert names every column but `id`: a restore writes NULL, not the
+  column's default, for one it leaves out.
   The tag logs one line per phase with the counts.
 - **Refusing the start:** rows a converter can't convert without changing
   what they read as make it throw `ConverterRefusal` with a code it

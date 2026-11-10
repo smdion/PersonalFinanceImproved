@@ -206,6 +206,37 @@ describe("a tag's converter list", () => {
   });
 });
 
+describe("a converter inserts and deletes only where it declares", () => {
+  it.each([
+    [
+      "an insert into a table not in rowCounts.grows",
+      { grows: [], shrinks: ["app_settings"] },
+      "Converter insert into app_settings: the table isn't in its rowCounts.grows",
+    ],
+    [
+      "a delete from a table not in rowCounts.shrinks",
+      { grows: ["app_settings"] },
+      "Converter delete app_settings id 2: the table isn't in its rowCounts.shrinks",
+    ],
+  ])("refuses %s, on every path", (_, rowCounts, message) => {
+    const both: DataConverter = {
+      ...over(() => ({
+        updates: [],
+        inserts: [{ table: "app_settings", row: { key: "k", value: "v" } }],
+        deletes: [{ table: "app_settings", id: 2 }],
+      })),
+      rowCounts,
+    };
+    const db = settingsDb();
+    expect(() =>
+      runConverterSqlite(db, { [TAG]: both }, TAG, "afterSql"),
+    ).toThrow(message);
+    expect(keysIn(db)).toEqual(keysIn(settingsDb()));
+    const tables = { app_settings: [{ id: 2, key: "k", value: "v" }] };
+    expect(() => convertBackup(tables, { [TAG]: both }, TAG)).toThrow(message);
+  });
+});
+
 describe("a refused write names no value", () => {
   it("SQLite: a driver error comes back as the statement and its code only", () => {
     const db = settingsDb();

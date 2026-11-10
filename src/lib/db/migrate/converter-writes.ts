@@ -9,7 +9,8 @@ export type RowUpdate = {
   readonly set: Readonly<Record<string, unknown>>;
 };
 
-/** A new row's column values; the database numbers it. */
+/** A new row's values, every column but `id` named: the database numbers
+ *  it, and a restore writes NULL, not the default, for a column left out. */
 export type RowInsert = {
   readonly table: string;
   readonly row: Readonly<Record<string, unknown>>;

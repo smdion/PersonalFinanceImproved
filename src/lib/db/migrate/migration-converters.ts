@@ -41,8 +41,8 @@ export type DataConverter = {
   /** Before the tag's SQL (it drops what the converter reads) or after it
    *  (it adds what the converter writes). */
   readonly runs: "beforeSql" | "afterSql";
-  /** Tables whose row count its writes may raise or lower: the only ones
-   *  scripts/test-migration.sh lets change (besides reference tables). */
+  /** The tables it may insert into (grows) or delete from (shrinks): the
+   *  runners refuse any other, and scripts/test-migration.sh allows these. */
   readonly rowCounts?: {
     readonly grows?: readonly string[];
     readonly shrinks?: readonly string[];
@@ -72,19 +72,32 @@ export const MIGRATION_CONVERTERS: Readonly<Record<string, TagConverters>> = {
 
 type Phase = DataConverter["runs"];
 
-/** A converter run with the key for its path; a refusal it throws comes
- *  out in its declared words. */
+/** A converter run with the key for its path: a refusal comes out in its
+ *  declared words, and it may insert or delete only where it declares. */
 function convertWith(
   c: DataConverter,
   tables: ConverterTables,
   path: RefusalPath,
 ): ConverterResult {
+  let result: ConverterResult;
   try {
-    return c.convert(tables, keyContext(path));
+    result = c.convert(tables, keyContext(path));
   } catch (e) {
     if (e instanceof ConverterRefusal) throw declaredRefusal(c, e, path);
     throw e;
   }
+  const { grows = [], shrinks = [] } = c.rowCounts ?? {};
+  for (const i of result.inserts ?? [])
+    if (!grows.includes(i.table))
+      throw new Error(
+        `Converter insert into ${i.table}: the table isn't in its rowCounts.grows`,
+      );
+  for (const d of result.deletes ?? [])
+    if (!shrinks.includes(d.table))
+      throw new Error(
+        `Converter delete ${d.table} id ${d.id}: the table isn't in its rowCounts.shrinks`,
+      );
+  return result;
 }
 
 /** What one tag's converters did at one phase, for its one log line;
