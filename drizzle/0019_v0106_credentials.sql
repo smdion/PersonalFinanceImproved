@@ -8,3 +8,6 @@
 -- only by an id prefix (localId, or localName without one) gets its typed
 -- id; a plain asset name gets the latest year's asset of that name. An
 -- unmatched name or a malformed id is left and reported.
+-- Joint person ids: a joint contribution account naming a person is
+-- cleared of it; one with no job that a profile sets to a percent of
+-- salary refuses the start (ids only), and nothing is changed.
