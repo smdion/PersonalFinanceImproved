@@ -19,6 +19,7 @@ import pg from "pg";
 import type { Session } from "next-auth";
 import { eq } from "drizzle-orm";
 import type { AppRouter } from "@/server/routers";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import { runMigrator } from "./fresh-install-cases";
 
 const adminSession: Session = {
@@ -113,7 +114,10 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
 
   it("overlapping entry removals on one Salary Profile each land", async () => {
     const salaries = Object.fromEntries(
-      Array.from({ length: OVERLAPPING }, (_, i) => [String(1000 + i), {}]),
+      Array.from({ length: OVERLAPPING }, (_, i) => [
+        String(1000 + i),
+        BLANK_SALARY_ENTRY,
+      ]),
     );
     const { id } = await one(
       "INSERT INTO salary_profiles (name, salaries) VALUES ('Invented overlap', $1::jsonb) RETURNING id",
