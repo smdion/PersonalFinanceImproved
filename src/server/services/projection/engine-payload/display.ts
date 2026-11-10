@@ -2,6 +2,7 @@
 import type { Db } from "@/lib/db";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import { budgetColumnSum } from "@/lib/pure/budget/item-amount";
 import type { fetchRetirementData } from "./load";
 
 /**
@@ -39,7 +40,7 @@ export async function budgetSummaries(
         },
       );
       const totals = labels.map((_: string, colIndex: number) =>
-        sumBy(resolvedItems, (item) => item.amounts[colIndex] ?? 0),
+        budgetColumnSum(resolvedItems, colIndex, numColumns),
       );
       const weightedAnnualTotal = months
         ? roundToCents(

@@ -121,7 +121,7 @@ export async function computeRelocationFiProjection(
       : computeBudgetAnnualTotal(
           resolvedCurrentItems,
           input.currentBudgetColumn,
-          currentProfile.columnMonths,
+          currentProfile,
         );
   const relocationAnnualExpenses =
     input.relocationExpenseOverride !== null
@@ -129,7 +129,7 @@ export async function computeRelocationFiProjection(
       : computeBudgetAnnualTotal(
           resolvedRelocItems,
           input.relocationBudgetColumn,
-          relocProfile.columnMonths,
+          relocProfile,
         );
 
   // Build engine payloads — each scenario applies its own contribution

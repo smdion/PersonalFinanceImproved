@@ -143,6 +143,7 @@ export async function computeSyncPreview(
     apiSyncDirection: "pull" | "push" | "both" | null;
     contributionAccountId: number | null;
   }> = [];
+  const columns = activeProfile ? activeProfile.columnLabels.length : 0;
   if (activeProfile) {
     const rawBudgetItemRows = await ctx.db
       .select({
@@ -170,12 +171,11 @@ export async function computeSyncPreview(
     });
     // Contribution-linked items freeze `amounts` on edit, so resolve them to
     // show what syncBudgetToApi would push.
-    const previewNumColumns = activeProfile.columnLabels.length;
     const activeProfiles = await resolveProfileSelection(ctx.scope);
     budgetItemRows = await resolveLinkedBudgetItemAmounts(
       ctx,
       linkedRows,
-      previewNumColumns,
+      columns,
       activeProfiles,
     );
   }
@@ -187,7 +187,7 @@ export async function computeSyncPreview(
   const { usedApiIds, budgetMatches } = matchBudgetItems(
     budgetItemRows,
     apiCats,
-    colIndex,
+    { index: colIndex, of: columns },
     normalize,
   );
 

@@ -433,16 +433,14 @@ export async function buildEnginePayload(
   const expenseEndings = await loadExpenseEndings(db, {
     items: allBudgetItems,
     accumulation: {
-      profileId: accProfile?.id,
+      profile: accProfile,
       column: accCol,
-      months: (accProfile?.columnMonths as number[] | null) ?? null,
       annual: accumulationExpenses,
       typed: !!opts.accumulationExpenseOverride,
     },
     decumulation: {
-      profileId: decProfile?.id,
+      profile: decProfile,
       column: decCol,
-      months: (decProfile?.columnMonths as number[] | null) ?? null,
       annual: decumulationExpenses,
       typed: !!opts.decumulationExpenseOverride,
     },

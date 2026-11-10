@@ -80,7 +80,10 @@ export function reads(
         total: r.totalMonthly,
         essential: r.essentialTotal,
         items: r.categories.flatMap((c) => c.items.map((i) => i.amount)),
-        annual: computeBudgetAnnualTotal(own, col, null),
+        annual: computeBudgetAnnualTotal(own, col, {
+          columnLabels: p.column_labels,
+          columnMonths: null,
+        }),
       };
     });
   });

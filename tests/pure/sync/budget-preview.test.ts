@@ -172,7 +172,7 @@ describe("matching budget items and savings goals", () => {
         item(4, "Pets", null),
       ],
       apiCats,
-      1,
+      { index: 1, of: 2 },
       normalize,
     );
     expect(budgetMatches.map((m) => [m.budgetItemId, m.status])).toEqual([
@@ -194,7 +194,7 @@ describe("matching budget items and savings goals", () => {
     const { usedApiIds } = matchBudgetItems(
       [item(1, "Rent", "c1")],
       apiCats,
-      0,
+      { index: 0, of: 2 },
       normalize,
     );
     const goal = (id: number, name: string) => ({

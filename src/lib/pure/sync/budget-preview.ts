@@ -1,5 +1,6 @@
 import type { ApiSyncDirection } from "@/lib/config/enum-values";
 import type { BudgetInput } from "@/lib/pure/budget/budget.types";
+import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 
 export function previewCash(
   conn: {
@@ -106,7 +107,8 @@ export function matchBudgetItems(
     contributionAccountId: number | null;
   }[],
   apiCats: ReturnType<typeof previewApiCategories>["apiCats"],
-  colIndex: number,
+  /** The linked column `index` of the profile's `of` columns (past them: $0). */
+  column: { index: number; of: number },
   normalize: (s: string) => string,
 ) {
   type BudgetMatch = {
@@ -128,6 +130,12 @@ export function matchBudgetItems(
 
   const usedApiIds = new Set<string>();
   const budgetMatches: BudgetMatch[] = [];
+  const ledgr = (item: (typeof budgetItemRows)[number]) => ({
+    budgetItemId: item.id,
+    ledgrName: item.subcategory,
+    ledgrCategory: item.category,
+    ledgrAmount: budgetItemAmount(item.amounts, column.index, column.of),
+  });
 
   // First pass: already linked items
   for (const item of budgetItemRows) {
@@ -140,10 +148,7 @@ export function matchBudgetItems(
         // rebuilt upstream, which regenerates ids): "orphaned", so the UI offers
         // a re-link rather than a push that would write nowhere.
         budgetMatches.push({
-          budgetItemId: item.id,
-          ledgrName: item.subcategory,
-          ledgrCategory: item.category,
-          ledgrAmount: item.amounts[colIndex] ?? 0,
+          ...ledgr(item),
           status: "orphaned",
           apiCategoryId: item.apiCategoryId,
           apiCategoryName: currentApiName,
@@ -156,10 +161,7 @@ export function matchBudgetItems(
         continue;
       }
       budgetMatches.push({
-        budgetItemId: item.id,
-        ledgrName: item.subcategory,
-        ledgrCategory: item.category,
-        ledgrAmount: item.amounts[colIndex] ?? 0,
+        ...ledgr(item),
         status: "linked",
         apiCategoryId: item.apiCategoryId,
         apiCategoryName: currentApiName,
@@ -185,10 +187,7 @@ export function matchBudgetItems(
     if (match) {
       usedApiIds.add(match.id);
       budgetMatches.push({
-        budgetItemId: item.id,
-        ledgrName: item.subcategory,
-        ledgrCategory: item.category,
-        ledgrAmount: item.amounts[colIndex] ?? 0,
+        ...ledgr(item),
         status: "suggested",
         apiCategoryId: match.id,
         apiCategoryName: match.name,
@@ -200,10 +199,7 @@ export function matchBudgetItems(
       });
     } else {
       budgetMatches.push({
-        budgetItemId: item.id,
-        ledgrName: item.subcategory,
-        ledgrCategory: item.category,
-        ledgrAmount: item.amounts[colIndex] ?? 0,
+        ...ledgr(item),
         status: "unmatched",
         apiCategoryId: null,
         apiCategoryName: null,

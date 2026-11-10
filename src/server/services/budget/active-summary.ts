@@ -242,7 +242,7 @@ export async function computeBudgetActiveSummary(
   const weightedAnnualTotal = computeBudgetAnnualTotal(
     budgetItems.map((i) => ({ amounts: i.amounts })),
     selectedColumn,
-    columnMonths,
+    activeProfile,
   );
 
   // Monthly take-home under the pair in use (with sandboxSalaryEntries), via the same

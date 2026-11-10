@@ -13,6 +13,7 @@ import {
   netMonthlyTakeHome,
   zBudgetActiveSummaryInput,
 } from "@/server/services/budget/active-summary";
+import { budgetColumnSum } from "@/lib/pure/budget/item-amount";
 
 export const summaryProcedures = {
   /**
@@ -96,7 +97,7 @@ export const summaryProcedures = {
         activeProfiles,
       );
       const colTotals = labels.map((_: string, ci: number) =>
-        resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
+        budgetColumnSum(resolvedItems, ci, numColumns),
       );
       const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
       // Annual: weighted if months set, otherwise column 0 * 12, plus

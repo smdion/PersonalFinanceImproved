@@ -24,6 +24,7 @@ import { log } from "@/lib/logger";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
+import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 
 export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
   const active = await requireActiveBudgetApi(ctx.db);
@@ -191,7 +192,11 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
     if (item.apiSyncDirection !== "push" && item.apiSyncDirection !== "both")
       continue;
 
-    const amount = item.amounts[Math.min(colIndex, numColumns - 1)] ?? 0;
+    const amount = budgetItemAmount(
+      item.amounts,
+      Math.min(colIndex, numColumns - 1),
+      numColumns,
+    );
 
     // Push as a goal target (plan-level, not month-specific)
     try {

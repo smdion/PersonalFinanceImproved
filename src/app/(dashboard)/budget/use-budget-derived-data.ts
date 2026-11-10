@@ -7,6 +7,7 @@
  */
 
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
+import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
@@ -228,7 +229,7 @@ export function useBudgetDerivedData({
             it.contribAmounts?.[col] ??
             (it.contribAmount != null
               ? it.contribAmount
-              : (it.amounts[col] ?? 0));
+              : budgetItemAmount(it.amounts, col, numCols));
           const val = editMode ? getDraft(it.id, col, resolved) : resolved;
           return s + val;
         }, 0),
@@ -289,9 +290,9 @@ export function useBudgetDerivedData({
         continue;
       // Contribution-linked items keep `amounts` stale (see
       // resolveLinkedBudgetItemAmounts); the pushed figure is `contribAmounts`.
-      const amounts = (item.contribAmounts ?? item.amounts) as number[];
-      const colIndex = Math.min(activeColumn, amounts.length - 1);
-      const newValue = amounts[colIndex] ?? 0;
+      const amounts = item.contribAmounts ?? item.amounts;
+      const colIndex = Math.min(activeColumn, numCols - 1);
+      const newValue = budgetItemAmount(amounts, colIndex, numCols);
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
@@ -312,9 +313,8 @@ export function useBudgetDerivedData({
       if (!item.apiCategoryId) continue;
       if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
         continue;
-      const amounts = item.amounts as number[];
-      const colIndex = Math.min(activeColumn, amounts.length - 1);
-      const currentValue = amounts[colIndex] ?? 0;
+      const colIndex = Math.min(activeColumn, numCols - 1);
+      const currentValue = budgetItemAmount(item.amounts, colIndex, numCols);
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,

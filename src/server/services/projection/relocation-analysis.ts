@@ -36,6 +36,7 @@ import {
 } from "@/lib/config/account-types";
 import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import { budgetColumnSum } from "@/lib/pure/budget/item-amount";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import type { Db } from "@/lib/db";
@@ -169,10 +170,7 @@ export async function computeRelocationAnalysis(
         activeProfiles,
       );
       const totals = labels.map((_: string, colIndex: number) =>
-        resolvedItems.reduce(
-          (sum: number, item) => sum + (item.amounts[colIndex] ?? 0),
-          0,
-        ),
+        budgetColumnSum(resolvedItems, colIndex, numColumns),
       );
       const weightedAnnualTotal = months
         ? roundToCents(

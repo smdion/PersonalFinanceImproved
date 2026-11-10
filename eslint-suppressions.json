@@ -106,7 +106,7 @@
   },
   "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 5
     },
     "max-lines-per-function": {
       "count": 1
@@ -3722,7 +3722,7 @@
   },
   "src/lib/pure/budget/annual-total.ts": {
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/pure/budget/budget.types.ts": {
@@ -4728,7 +4728,7 @@
       "count": 5
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 7
+      "count": 3
     }
   },
   "src/lib/pure/sync/simplefin-holdings.ts": {
@@ -4976,7 +4976,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/routers/contribution-profiles.ts": {
@@ -5247,11 +5247,6 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 2
-    }
-  },
-  "src/server/services/budget/annual-expenses.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
     }
   },
   "src/server/services/budget/extra-paycheck-materializer.ts": {
@@ -5532,16 +5527,13 @@
     }
   },
   "src/server/services/projection/engine-payload/budget-expenses.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/no-abbreviation": {
       "count": 4
     }
   },
   "src/server/services/projection/engine-payload/build-engine-payload.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
+      "count": 3
     },
     "max-lines-per-function": {
       "count": 1
@@ -5569,7 +5561,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 2
+      "count": 1
     }
   },
   "src/server/services/projection/engine-payload/expense-endings.ts": {
@@ -5653,7 +5645,7 @@
       "count": 3
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/services/projection/relocation-projection.ts": {
@@ -5727,7 +5719,7 @@
       "count": 1
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/sync/budget-api-push.ts": {

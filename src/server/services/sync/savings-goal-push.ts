@@ -85,9 +85,8 @@ export async function pushContributionsToApi(
           isEssential: boolean;
           amounts: number[];
         }[],
-        activeProfile.id,
+        activeProfile,
         efundTierIndex,
-        activeProfile.columnMonths ?? null,
       )
     : 0;
 

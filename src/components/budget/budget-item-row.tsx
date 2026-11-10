@@ -6,6 +6,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { asButton } from "@/components/ui/as-button";
 import { ApiCategoryPicker } from "./api-category-picker";
 import type { RawItem } from "./types";
+import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
 import {
   CONTRIB_RESOLUTION_LABELS,
@@ -246,7 +247,7 @@ export function BudgetItemRow({
           item.contribAmounts?.[col] ??
           (item.contribAmount != null
             ? item.contribAmount
-            : (item.amounts[col] ?? 0));
+            : budgetItemAmount(item.amounts, col, numCols));
         // Editable only when unlocked (editMode) AND permitted (canEdit); else
         // static text. Sandbox (amountsOnly) needs editMode only: it writes
         // nothing, and its other controls are omitted.

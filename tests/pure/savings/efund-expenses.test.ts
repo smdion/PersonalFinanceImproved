@@ -17,19 +17,31 @@ const budgetItems = [
   { profileId: 2, isEssential: true, amounts: [9000, 9000, 9000] },
 ];
 
+const profile = {
+  id: 1,
+  columnLabels: ["Lean", "Normal", "Comfortable"],
+  columnMonths: null,
+};
+
 describe("getEssentialExpenses", () => {
   it("sums one column of the profile's essential items, monthly", () => {
-    expect(getEssentialExpenses(budgetItems, 1, 0, null)).toBe(1900);
-    expect(getEssentialExpenses(budgetItems, 1, 2, null)).toBe(3000);
+    expect(getEssentialExpenses(budgetItems, profile, 0)).toBe(1900);
+    expect(getEssentialExpenses(budgetItems, profile, 2)).toBe(3000);
   });
 
   it("weighs every column by its months on a weighted profile", () => {
     // (1,900 × 6 + 2,400 × 4 + 3,000 × 2) / 12 = 2,250 a month
-    expect(getEssentialExpenses(budgetItems, 1, 0, [6, 4, 2])).toBe(2250);
+    expect(
+      getEssentialExpenses(
+        budgetItems,
+        { ...profile, columnMonths: [6, 4, 2] },
+        0,
+      ),
+    ).toBe(2250);
   });
 
-  it("reads $0 for a column past an item's amounts", () => {
-    expect(getEssentialExpenses(budgetItems, 1, 5, null)).toBe(0);
+  it("reads $0 for a column past the profile's columns", () => {
+    expect(getEssentialExpenses(budgetItems, profile, 5)).toBe(0);
   });
 });
 

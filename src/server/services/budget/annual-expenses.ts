@@ -50,9 +50,5 @@ export async function getAnnualExpensesFromBudget(
     await resolveProfileSelection({ db }),
   );
 
-  return computeBudgetAnnualTotal(
-    resolvedItems,
-    column,
-    profile.columnMonths as number[] | null,
-  );
+  return computeBudgetAnnualTotal(resolvedItems, column, profile);
 }

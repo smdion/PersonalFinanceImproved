@@ -152,9 +152,8 @@ export async function computeSavingsSummary(
         isEssential: boolean;
         amounts: number[];
       }[],
-      activeProfile.id,
+      activeProfile,
       efundTierIndex,
-      activeProfile.columnMonths ?? null,
     );
   }
 

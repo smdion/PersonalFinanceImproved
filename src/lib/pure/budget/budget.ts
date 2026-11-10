@@ -5,21 +5,7 @@
  */
 import type { BudgetInput, BudgetResult } from "./budget.types";
 import { roundToCents, sumBy } from "../../utils/math";
-
-/** An item's amount in a column of the list; an item without one breaks
- *  the one-amount-per-column rule, so it stops the read. */
-function amountAt(
-  item: BudgetInput["items"][number],
-  col: number,
-  columns: number,
-) {
-  const amount = item.amounts[col];
-  if (amount === undefined)
-    throw new Error(
-      `A budget item holds ${item.amounts.length} amounts for ${columns} columns`,
-    );
-  return amount;
-}
+import { budgetItemAmount } from "./item-amount";
 
 const NO_BUDGET = {
   totalMonthly: 0,
@@ -51,7 +37,7 @@ export function calculateBudget(input: BudgetInput): BudgetResult {
   >();
 
   for (const item of input.items) {
-    const amount = amountAt(item, col, columns);
+    const amount = budgetItemAmount(item.amounts, col, columns);
     if (!categoryMap.has(item.category)) {
       categoryMap.set(item.category, []);
     }
@@ -78,7 +64,7 @@ export function calculateBudget(input: BudgetInput): BudgetResult {
   const essentialTotal = roundToCents(
     sumBy(
       input.items.filter((i) => i.isEssential),
-      (i) => roundToCents(amountAt(i, col, columns)),
+      (i) => roundToCents(budgetItemAmount(i.amounts, col, columns)),
     ),
   );
   const discretionaryTotal = roundToCents(totalMonthly - essentialTotal);

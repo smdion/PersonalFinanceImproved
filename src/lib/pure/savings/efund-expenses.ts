@@ -1,4 +1,5 @@
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
+import type { BudgetColumns } from "@/lib/pure/budget/item-amount";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_EFUND_BUDGET_COLUMN,
@@ -7,18 +8,13 @@ import {
 /** Sum essential budget items for a given tier/column, returning monthly. */
 export function getEssentialExpenses(
   budgetItems: { profileId: number; isEssential: boolean; amounts: number[] }[],
-  profileId: number,
+  profile: BudgetColumns & { id: number },
   tierIndex: number,
-  columnMonths: number[] | null,
 ): number {
   const essentials = budgetItems.filter(
-    (i) => i.profileId === profileId && i.isEssential,
+    (i) => i.profileId === profile.id && i.isEssential,
   );
-  const annualTotal = computeBudgetAnnualTotal(
-    essentials,
-    tierIndex,
-    columnMonths,
-  );
+  const annualTotal = computeBudgetAnnualTotal(essentials, tierIndex, profile);
   return annualTotal / 12;
 }
 

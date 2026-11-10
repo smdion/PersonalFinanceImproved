@@ -127,6 +127,7 @@ describe("BudgetCategoryRow — linked items use their own amount, not the fuzzy
     const unlinked = makeItem({
       id: 4,
       subcategory: "Misc",
+      amounts: [0, 0, 0],
       contributionAccountId: null,
     });
     const matchContrib = vi.fn().mockReturnValue(null);
