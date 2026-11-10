@@ -42,7 +42,9 @@ export function renderSimulationCell(
   if (!simulationBandsByYear) return null;
   const band = simulationBandsByYear.get(yearRow.year);
   if (!band) return <td className="text-faint px-2 py-1.5 text-right">---</td>;
-  const simulationP50 = deflate(band.p50, yearRow.year);
+  // Bands arrive in the view's dollars (simulationDollars: today's are
+  // deflated per trial); deflating them here would do it twice.
+  const simulationP50 = band.p50;
   const showDelta = !isPersonFiltered && !parentCategoryFilter;
   const delta = simulationP50 - detBalance;
   const deltaColor = delta >= 0 ? "text-green-600" : "text-red-500";
@@ -95,20 +97,20 @@ export function renderSimulationCell(
         items: [
           {
             label: "95th",
-            amount: deflate(band.p95, yearRow.year),
+            amount: band.p95,
           },
           {
             label: "75th",
-            amount: deflate(band.p75, yearRow.year),
+            amount: band.p75,
           },
           { label: "Median", amount: simulationP50 },
           {
             label: "25th",
-            amount: deflate(band.p25, yearRow.year),
+            amount: band.p25,
           },
           {
             label: "5th",
-            amount: deflate(band.p5, yearRow.year),
+            amount: band.p5,
           },
         ],
         ...(isPersonFiltered || proofNote
