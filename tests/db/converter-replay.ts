@@ -1,10 +1,11 @@
 /**
  * The replay-twice proof any converter's test calls (DESIGN § Data-
- * converting migrations): run again over its own output, a tag's converters
- * write nothing, every row stays byte-identical and no note quotes the
- * fixture's text. One helper per path the
- * converters run on: a backup's tables (the restore step), a SQLite
- * database, and PostgreSQL inside a test's own connection.
+ * converting migrations): run again over its own output, a tag's
+ * converters write nothing, every row stays byte-identical and no note
+ * quotes the fixture's text. One helper per path the converters run on (a
+ * backup's tables, SQLite, PostgreSQL inside a test's own connection),
+ * plus the whole registry replayed at the journal head, and the restore
+ * step and SQLite giving the same rows for one fixture.
  */
 import { expect } from "vitest";
 import type Database from "better-sqlite3";
@@ -13,6 +14,7 @@ import {
   convertBackup,
   runConverterPg,
   runConverterSqlite,
+  MIGRATION_CONVERTERS,
   type ConversionRun,
   type TagConverters,
 } from "@/lib/db/migrate/migration-converters";
@@ -148,5 +150,98 @@ export async function expectPgReplaySafe(
   for (let pass = 0; pass < 2; pass++) {
     for (const r of await run()) expectNoWrites(r);
     expect(sortedRows(await pgTables(client))).toEqual(once);
+  }
+}
+
+/** Every registered converter at the journal head, then again: the second
+ *  pass writes nothing and leaves every row as the first pass left it. */
+export function expectRegistryReplaySafe(
+  db: Database.Database,
+  converters: Readonly<Record<string, TagConverters>> = MIGRATION_CONVERTERS,
+): void {
+  const run = () =>
+    Object.keys(converters).flatMap((tag) =>
+      (["beforeSql", "afterSql"] as const).map((phase) =>
+        runConverterSqlite(db, converters, tag, phase),
+      ),
+    );
+  run();
+  const once = sortedRows(sqliteTables(db));
+  for (const r of run()) expectNoWrites(r);
+  expect(sortedRows(sqliteTables(db))).toEqual(once);
+}
+
+/** A cell as both paths can compare it: JSON text parsed, numeric text and
+ *  1/0 as numbers, true/false as 1/0. */
+function comparable(v: unknown): unknown {
+  if (typeof v === "boolean") return v ? 1 : 0;
+  if (typeof v === "string") {
+    if (v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+    try {
+      const parsed: unknown = JSON.parse(v);
+      if (typeof parsed === "object" && parsed !== null) return parsed;
+    } catch {
+      // plain text
+    }
+  }
+  return v;
+}
+
+const asParam = (v: unknown) =>
+  typeof v === "boolean"
+    ? Number(v)
+    : typeof v === "object" && v !== null
+      ? JSON.stringify(v)
+      : v;
+
+/** Each table's rows, ids aside, on the columns the restored rows hold (a
+ *  column a row lacks reads NULL, as the restore writes it). */
+function projected(rows: readonly unknown[], columns: readonly string[]) {
+  return rows
+    .map((r) =>
+      JSON.stringify(
+        Object.fromEntries(
+          columns.map((c) => [
+            c,
+            comparable((r as Record<string, unknown>)[c] ?? null),
+          ]),
+        ),
+      ),
+    )
+    .sort();
+}
+
+/** The same fixture through the restore step and through `db` (its tables
+ *  made, the fixture's ids free) gives the same rows, ids aside; rows `db`
+ *  held before are left out. */
+export function expectRestoreMatchesSqlite(
+  db: Database.Database,
+  converters: TagConverters,
+  fixture: Record<string, Record<string, unknown>[]>,
+): void {
+  const registry = { [TAG]: converters };
+  const before = sqliteTables(db);
+  const earlier = (table: string, row: unknown) =>
+    (before[table] ?? []).some(
+      (r) => (r as { id?: unknown }).id === (row as { id?: unknown }).id,
+    );
+  for (const [table, rows] of Object.entries(fixture))
+    for (const row of rows) {
+      const cols = Object.keys(row);
+      db.prepare(
+        `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
+      ).run(...cols.map((c) => asParam(row[c])));
+    }
+  for (const phase of ["beforeSql", "afterSql"] as const)
+    runConverterSqlite(db, registry, TAG, phase);
+  const restored: Record<string, unknown[]> = structuredClone(fixture);
+  convertBackup(restored, registry, TAG);
+  const live = sqliteTables(db);
+  for (const [table, rows] of Object.entries(restored)) {
+    const columns = [
+      ...new Set(rows.flatMap((r) => Object.keys(r as object))),
+    ].filter((c) => c !== "id");
+    const ours = (live[table] ?? []).filter((r) => !earlier(table, r));
+    expect(projected(ours, columns), table).toEqual(projected(rows, columns));
   }
 }
