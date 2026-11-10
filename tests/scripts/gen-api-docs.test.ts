@@ -94,6 +94,13 @@ export const flatRouter = createTRPCRouter({
   // First line,
   // second line.
   slashes: protectedProcedure.query(() => 1),
+  // ══ SECTION ══
+  bannered: protectedProcedure.query(() => 1),
+  // ══ SECTION ══
+  // Below the banner.
+  underBanner: protectedProcedure.query(() => 1),
+  /** ${"A long description. ".repeat(15).trim()} */
+  wordy: protectedProcedure.query(() => 1),
   bare: protectedProcedure.query(() => 1), /* not a doc */
   after: protectedProcedure.query(() => 1),
 });`,
@@ -106,6 +113,9 @@ export const flatRouter = createTRPCRouter({
       "flat.opened": "Opens here, goes on here.",
       "flat.long": "One. Two. Three. Four. Five.",
       "flat.slashes": "First line, second line.",
+      "flat.bannered": "",
+      "flat.underBanner": "Below the banner.",
+      "flat.wordy": "A long description. ".repeat(15).trim(),
       "flat.bare": "",
       "flat.after": "",
     });
@@ -123,6 +133,22 @@ export const groupRouter = createTRPCRouter({
     expect(() => readRouterCatalog(d)).toThrow(
       /group\.stray is written in an index\.ts/,
     );
+  });
+
+  it("prints a description whole, past 200 characters", () => {
+    const long = "A long description. ".repeat(15).trim();
+    const d = routers({
+      "index.ts": `
+import { notesRouter } from "./notes";
+export const appRouter = createTRPCRouter({ notes: notesRouter });`,
+      "notes.ts": `
+export const notesRouter = createTRPCRouter({
+  /** ${long} */
+  list: protectedProcedure.query(() => []),
+});`,
+    });
+    expect(long.length).toBeGreaterThan(200);
+    expect(buildRouterCatalog(d, null)).toContain(`| ${long} |`);
   });
 
   it("prints the Description column only for a router with a doc comment", () => {
