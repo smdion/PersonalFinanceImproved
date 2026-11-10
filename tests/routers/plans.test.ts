@@ -169,9 +169,9 @@ describe("Plans", () => {
       "budget",
       "contributionProfile",
     ]).user;
-    await expect(applyPlan(ctx.db as never, viewer, plan!.id)).rejects.toThrow(
-      /retirement/,
-    );
+    await expect(
+      applyPlan(ctx.db as never, viewer, plan!.id, "Viewer"),
+    ).rejects.toThrow(/retirement/);
     expect(setting(ctx.db, SK_ACTIVE_SALARY_PROFILE_ID)).not.toBe(
       ids.salaryProfileId,
     );
@@ -203,7 +203,7 @@ describe("Plans", () => {
       "budget",
       "contributionProfile",
     ]).user;
-    await applyPlan(ctx.db as never, viewer, plan!.id);
+    await applyPlan(ctx.db as never, viewer, plan!.id, "Viewer");
     expect(setting(ctx.db, SK_ACTIVE_SALARY_PROFILE_ID)).toBe(
       ids.salaryProfileId,
     );

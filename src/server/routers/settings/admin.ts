@@ -15,6 +15,7 @@ import {
   protectedProcedure,
   adminProcedure,
   scenarioProcedure,
+  getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -60,8 +61,6 @@ import { mergeSettingAtomically, upsertSetting } from "@/server/data/settings";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
-
-// --- Zod schemas ---
 
 const appSettingInput = z.object({
   key: z.string().min(1),
@@ -365,7 +364,8 @@ export const adminProcedures = {
     activate: protectedProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
-        await applyPlan(ctx.db, ctx.session.user, input.id);
+        const changedBy = getSessionUserLabel(ctx.session);
+        await applyPlan(ctx.db, ctx.session.user, input.id, changedBy);
         await invalidateYearEndCache();
         return { ok: true };
       }),
