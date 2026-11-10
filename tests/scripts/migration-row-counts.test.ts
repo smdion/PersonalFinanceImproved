@@ -1,7 +1,8 @@
 /**
  * scripts/migration-row-counts.ts: the row-count changes test-migration.sh
  * allows come from the converters of the tags the database hasn't
- * recorded, as each declares them, and from no other tag.
+ * recorded, as each declares them, and from no other tag; the pending
+ * tags and the conversion log lines each must leave come from the same.
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { createHash } from "node:crypto";
@@ -9,11 +10,18 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import type { DataConverter } from "@/lib/db/migrate/migration-converters";
-import { rowCountAllowances } from "../../scripts/migration-row-counts";
+import {
+  expectedConversions,
+  pendingTags,
+  rowCountAllowances,
+} from "../../scripts/migration-row-counts";
 
-const converter = (rowCounts: DataConverter["rowCounts"]): DataConverter => ({
+const converter = (
+  rowCounts: DataConverter["rowCounts"],
+  runs: DataConverter["runs"] = "afterSql",
+): DataConverter => ({
   tables: [],
-  runs: "afterSql",
+  runs,
   rowCounts,
   convert: () => ({ updates: [], notes: [] }),
 });
@@ -64,5 +72,24 @@ describe("rowCountAllowances", () => {
       rowCountAllowances(folder, new Set([hash("0001_a")]), registry),
     ).toEqual([]);
     expect(rowCountAllowances(folder, new Set(), {})).toEqual([]);
+  });
+
+  it("lists the pending tags, and the conversion lines each with converters logs", () => {
+    const folder = journal(["0001_a", "0002_b", "0003_c", "0004_d"]);
+    const registry = {
+      "0001_a": converter(undefined),
+      "0002_b": [converter(undefined, "beforeSql"), converter(undefined)],
+      "0003_c": converter(undefined),
+    };
+    const recorded = new Set([hash("0001_a")]);
+    expect(pendingTags(folder, recorded)).toEqual([
+      "0002_b",
+      "0003_c",
+      "0004_d",
+    ]);
+    expect(expectedConversions(folder, recorded, registry)).toEqual([
+      "0002_b|2",
+      "0003_c|1",
+    ]);
   });
 });

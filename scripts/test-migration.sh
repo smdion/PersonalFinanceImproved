@@ -12,15 +12,19 @@
 #     the squash completed);
 #   - __drizzle_migrations holds exactly the journal's file hashes;
 #   - every table and column of the latest drizzle snapshot exists;
-#   - row counts are unchanged, apart from app_settings, the reference
-#     tables (the tax-data reconcile may add rows) and the tables a pending
-#     migration's converters declare they grow or shrink
-#     (DataConverter.rowCounts, read by scripts/migration-row-counts.ts).
+#   - something was pending (else it tests nothing; --allow-nothing-pending
+#     to check an up-to-date copy anyway), and each pending tag with
+#     converters logged its migration_conversion lines (one per phase);
+#   - row counts are unchanged, apart from the reference tables (the
+#     tax-data reconcile may add rows), app_settings' one upgrade-backup
+#     flag row, and the tables a pending migration's converters declare
+#     they grow or shrink (DataConverter.rowCounts, read by
+#     scripts/migration-row-counts.ts), each printed before → after.
 #
 # The source must be v0.8.14 or later (v0.9.0 refuses older databases).
 #
 # Usage:
-#   ENCRYPTION_KEY=... ./scripts/test-migration.sh <source> [target-database-url]
+#   ENCRYPTION_KEY=... ./scripts/test-migration.sh [--allow-nothing-pending] <source> [target-database-url]
 #   SOURCE_DATABASE_URL=postgresql://... ENCRYPTION_KEY=... ./scripts/test-migration.sh
 #
 # <source> is a postgresql:// URL or a SQLite database file. ENCRYPTION_KEY
@@ -52,6 +56,11 @@ ok()   { echo -e "${GREEN}✓ $*${NC}"; }
 warn() { echo -e "${YELLOW}! $*${NC}"; }
 err()  { echo -e "${RED}✗ $*${NC}" >&2; }
 
+ALLOW_NOTHING_PENDING=false
+if [[ "${1:-}" == --allow-nothing-pending ]]; then
+  ALLOW_NOTHING_PENDING=true
+  shift
+fi
 SOURCE_URL="${1:-${SOURCE_DATABASE_URL:-}}"
 TARGET_URL="${2:-}"
 if [[ -z "$SOURCE_URL" ]]; then
@@ -230,19 +239,34 @@ else
   TABLES_SQL="SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' AND name NOT IN ('app_settings', '__drizzle_migrations')"
   MIGRATIONS_TABLE="__drizzle_migrations"
 fi
+# app_settings counts without the flag row a pre-upgrade backup adds,
+# which is checked on its own.
+FLAG="key = 'pre_upgrade_backup'"
 row_counts() {
   local t
-  for t in $(query "$TABLES_SQL" | sort); do
-    echo "$t|$(query "SELECT count(*) FROM \"$t\"")"
-  done
+  {
+    for t in $(query "$TABLES_SQL"); do
+      echo "$t|$(query "SELECT count(*) FROM \"$t\"")"
+    done
+    echo "app_settings|$(query "SELECT count(*) FROM app_settings WHERE NOT ($FLAG)")"
+  } | sort
 }
 COUNTS_BEFORE="$(row_counts)"
 RECORDED_BEFORE="$(query "SELECT hash FROM $MIGRATIONS_TABLE" 2>/dev/null || true)"
 ROWS_BEFORE=$(echo -n "$RECORDED_BEFORE" | grep -c . || true)
-if ! ALLOWED="$(cd "$REPO" && echo "$RECORDED_BEFORE" | node_modules/.bin/tsx scripts/migration-row-counts.ts "$FOLDER")"; then
-  err "Reading the converters' row-count allowances failed"
+expected() {
+  (cd "$REPO" && echo "$RECORDED_BEFORE" | node_modules/.bin/tsx scripts/migration-row-counts.ts "$FOLDER" "$@")
+}
+if ! ALLOWED="$(expected)" || ! PENDING="$(expected --pending)" || ! CONVERSIONS="$(expected --conversions)"; then
+  err "Reading the pending tags and their converters' allowances failed"
   exit 1
 fi
+if [[ -z "$PENDING" ]] && ! $ALLOW_NOTHING_PENDING; then
+  err "Nothing is pending on this copy, so the migration test tests nothing"
+  err "(pass --allow-nothing-pending to check an up-to-date copy anyway)"
+  exit 1
+fi
+FLAGS_BEFORE=$(query "SELECT count(*) FROM app_settings WHERE $FLAG")
 
 # ── 4. Run the bundled migrator against the copy ─────────────────────
 
@@ -279,7 +303,15 @@ if (( ROWS_BEFORE > JOURNAL_ENTRIES )) && ! grep -q '"squash_upgrade_complete"\|
   err "Source had $ROWS_BEFORE journal rows (> $JOURNAL_ENTRIES entries) but no squash completed"
   exit 1
 fi
-ok "Migration completed"
+while IFS='|' read -r tag lines; do
+  [[ -z "$tag" ]] && continue
+  logged=$(grep -c "\"event\":\"migration_conversion\",\"tag\":\"$tag\"" /tmp/ledgr-migrate.log || true)
+  if [[ "$logged" != "$lines" ]]; then
+    err "$tag has converters at $lines phase(s) but logged $logged migration_conversion line(s)"
+    exit 1
+  fi
+done <<< "$CONVERSIONS"
+ok "Migration completed: $(echo "$PENDING" | grep -c . || true) pending tag(s), every conversion logged"
 
 # ── 5. Journal = the files ───────────────────────────────────────────
 
@@ -327,7 +359,12 @@ ok "$(echo "$EXPECTED_COLS" | wc -l) columns present"
 
 step "Verifying row counts"
 
-[[ -n "$ALLOWED" ]] && warn "Allowed by the pending converters: $(echo "$ALLOWED" | tr '\n' ' ')"
+COUNTS_AFTER="$(row_counts)"
+count_of() { grep "^$1|" <<< "$2" | cut -d'|' -f2; }
+while IFS='|' read -r t way; do
+  [[ -z "$t" ]] && continue
+  warn "$t ($way, allowed by a pending converter): $(count_of "$t" "$COUNTS_BEFORE") → $(count_of "$t" "$COUNTS_AFTER")"
+done <<< "$ALLOWED"
 CHANGED=$(awk -F'|' -v refs=" $REFERENCE_TABLES " '
   FILENAME == ARGV[1] { allow[$1 "|" $2] = 1; next }
   FILENAME == ARGV[2] { before[$1] = $2; next }
@@ -341,13 +378,18 @@ CHANGED=$(awk -F'|' -v refs=" $REFERENCE_TABLES " '
       if (a < b && allow[t "|shrinks"]) continue
       print t ": " b " → " a
     }
-  }' <(echo "$ALLOWED") <(echo "$COUNTS_BEFORE") <(row_counts))
+  }' <(echo "$ALLOWED") <(echo "$COUNTS_BEFORE") <(echo "$COUNTS_AFTER"))
 if [[ -n "$CHANGED" ]]; then
   err "Row counts changed where nothing allows it (see /tmp/ledgr-migrate.log):"
   echo "$CHANGED" >&2
   exit 1
 fi
-ok "Row counts unchanged, apart from app_settings, reference tables gaining rows and the allowed changes"
+FLAGS_AFTER=$(query "SELECT count(*) FROM app_settings WHERE $FLAG")
+if (( FLAGS_AFTER > 1 || FLAGS_AFTER < FLAGS_BEFORE )); then
+  err "app_settings holds $FLAGS_AFTER upgrade-backup flag rows (before: $FLAGS_BEFORE); the migrator writes at most one"
+  exit 1
+fi
+ok "Row counts unchanged, apart from reference tables gaining rows, app_settings' upgrade-backup flag and the allowed changes above"
 
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"

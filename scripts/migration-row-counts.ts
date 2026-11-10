@@ -1,12 +1,14 @@
 /**
- * The row counts scripts/test-migration.sh lets a migration change: each
- * pending tag's converters declare the tables they may grow or shrink
- * (DataConverter.rowCounts). A tag is pending when the database hasn't
- * recorded its file's hash.
+ * What scripts/test-migration.sh expects of a migration, from the tags the
+ * copy hasn't recorded (a tag is pending when its file's hash isn't):
+ * the row counts each pending tag's converters may change
+ * (DataConverter.rowCounts), and the conversion log lines it must see.
  *
  * Usage: tsx scripts/migration-row-counts.ts <drizzle | drizzle-sqlite>
- * with the recorded hashes on stdin, one per line. Prints one `table|grows`
- * or `table|shrinks` line per allowance.
+ *   [--pending | --conversions], with the recorded hashes on stdin. Prints
+ * `table|grows` / `table|shrinks` lines, or with --pending one pending tag
+ * per line, or with --conversions `tag|n`: the migration_conversion lines
+ * a pending tag with converters logs (one per phase it has converters at).
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -17,32 +19,59 @@ import {
   tagConverters,
 } from "../src/lib/db/migrate/migration-converters";
 
-/** `table|grows` and `table|shrinks` for every tag of `folder`'s journal
- *  whose file hash `recorded` lacks, sorted. */
+/** `folder`'s journal tags whose file hash `recorded` lacks, in order. */
+export function pendingTags(
+  folder: string,
+  recorded: ReadonlySet<string>,
+): string[] {
+  const journal = JSON.parse(
+    readFileSync(`${folder}/meta/_journal.json`, "utf8"),
+  ) as { entries: { tag: string }[] };
+  return journal.entries
+    .map((e) => e.tag)
+    .filter((tag) => {
+      const sql = readFileSync(`${folder}/${tag}.sql`, "utf8");
+      return !recorded.has(createHash("sha256").update(sql).digest("hex"));
+    });
+}
+
+/** `table|grows` and `table|shrinks` for every pending tag, sorted. */
 export function rowCountAllowances(
   folder: string,
   recorded: ReadonlySet<string>,
   converters = MIGRATION_CONVERTERS,
 ): string[] {
-  const journal = JSON.parse(
-    readFileSync(`${folder}/meta/_journal.json`, "utf8"),
-  ) as { entries: { tag: string }[] };
   const allowed = new Set<string>();
-  for (const { tag } of journal.entries) {
-    const sql = readFileSync(`${folder}/${tag}.sql`, "utf8");
-    if (recorded.has(createHash("sha256").update(sql).digest("hex"))) continue;
+  for (const tag of pendingTags(folder, recorded))
     for (const c of tagConverters(tag, converters))
       for (const way of ["grows", "shrinks"] as const)
         for (const table of c.rowCounts?.[way] ?? [])
           allowed.add(`${table}|${way}`);
-  }
   return [...allowed].sort();
 }
 
+/** `tag|n` for every pending tag with converters: n is how many phases
+ *  (beforeSql, afterSql) it has converters at, one log line each. */
+export function expectedConversions(
+  folder: string,
+  recorded: ReadonlySet<string>,
+  converters = MIGRATION_CONVERTERS,
+): string[] {
+  return pendingTags(folder, recorded).flatMap((tag) => {
+    const phases = new Set(tagConverters(tag, converters).map((c) => c.runs));
+    return phases.size > 0 ? [`${tag}|${phases.size}`] : [];
+  });
+}
+
 function main() {
-  const folder = process.argv[2];
-  if (folder !== "drizzle" && folder !== "drizzle-sqlite") {
-    console.error("Usage: migration-row-counts.ts <drizzle | drizzle-sqlite>");
+  const [folder, mode] = process.argv.slice(2);
+  if (
+    (folder !== "drizzle" && folder !== "drizzle-sqlite") ||
+    (mode !== undefined && mode !== "--pending" && mode !== "--conversions")
+  ) {
+    console.error(
+      "Usage: migration-row-counts.ts <drizzle | drizzle-sqlite> [--pending | --conversions]",
+    );
     process.exit(1);
   }
   const recorded = new Set(
@@ -51,7 +80,13 @@ function main() {
       .map((line) => line.trim())
       .filter(Boolean),
   );
-  for (const line of rowCountAllowances(folder, recorded)) console.log(line);
+  const lines =
+    mode === "--pending"
+      ? pendingTags(folder, recorded)
+      : mode === "--conversions"
+        ? expectedConversions(folder, recorded)
+        : rowCountAllowances(folder, recorded);
+  for (const line of lines) console.log(line);
 }
 
 if (
