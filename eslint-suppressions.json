@@ -4993,7 +4993,7 @@
       "count": 5
     },
     "ratchet/no-abbreviation": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/routers/investments/account-insights.ts": {
@@ -5313,7 +5313,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/contributions/profile.ts": {

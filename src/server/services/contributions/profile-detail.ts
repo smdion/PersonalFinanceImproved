@@ -7,7 +7,7 @@ import * as schema from "@/lib/db/schema";
 import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
-import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
+import { contributionAccountName } from "@/server/services/contributions/account-name";
 
 export async function loadContributionProfileDetail(
   ctx: { db: Db; scope: RequestScope },
@@ -29,7 +29,7 @@ export async function loadContributionProfileDetail(
     perfAccountMap,
     salaryProfileActiveMap,
   } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
-  // portfolioAccountLabel wants id → name; peopleMap here is id → full row.
+  // contributionAccountName wants id → name; peopleMap here is id → full row.
   const nameMap = new Map(
     Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
   );
@@ -53,36 +53,9 @@ export async function loadContributionProfileDetail(
   const accountDetails = rawContribRows.map((row) => {
     const activeFields = accountActiveFields[String(row.id)];
 
-    // Resolve linked performance account via explicit FK (primary path)
-    const perfAccount = row.performanceAccountId
-      ? (perfAccountMap.get(row.performanceAccountId) ?? null)
-      : null;
-
-    // Derive institution: perf account link → person's job employer → fallback empty
-    const institution =
-      perfAccount?.institution ??
-      jobs.find(
-        (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
-      )?.employerName ??
-      "";
-
-    // A row with its own personId gets its owner's label even under a jointly
-    // tracked account (as in compareData; rule in portfolio-labels.ts).
-    const accountName = portfolioAccountLabel(
-      {
-        accountType: row.accountType,
-        subType: row.subType,
-        label: row.label,
-        institution,
-      },
-      perfAccount
-        ? {
-            displayName: perfAccount.displayName,
-            accountLabel: perfAccount.accountLabel,
-            ownershipType: perfAccount.ownershipType,
-          }
-        : undefined,
-      row.personId,
+    const accountName = contributionAccountName(
+      row,
+      { perfAccountMap, jobs },
       nameMap,
     );
 
