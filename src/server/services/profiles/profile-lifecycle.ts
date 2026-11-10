@@ -121,7 +121,7 @@ export async function createProfile(
   }
   const salaries = input.salaries ?? {};
   return db.transaction(async (tx) => {
-    await refuseEntriesWithoutJobs(tx, salaries);
+    await refuseEntriesWithoutJobs(tx, Object.keys(salaries));
     const rows = await tx
       .insert(schema.salaryProfiles)
       .values({
@@ -201,7 +201,7 @@ export async function duplicateProfile(
         { ...entry, extraPaycheckRouting: null },
       ]),
     );
-    await refuseEntriesWithoutJobs(tx, salaries);
+    await refuseEntriesWithoutJobs(tx, Object.keys(salaries));
 
     const rows = await tx
       .insert(schema.salaryProfiles)

@@ -109,43 +109,60 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
     expect(await second).toEqual({ held: true });
   });
 
-  it("a job delete racing a Salary Profile write leaves no entry for the gone job", async () => {
-    const { db, schema } = app;
-    const { existingJobKeys } =
-      await import("@/server/services/profiles/salary-entry-writes");
-    const { deleteJobsAndEntries } = await import("@/server/data/delete-jobs");
-    const { id: personId } = await one(
-      "INSERT INTO people (name, date_of_birth) VALUES ('Invented Racer', '1980-01-01') RETURNING id",
-    );
-    const { id: jobId } = await one(
-      "INSERT INTO jobs (person_id, employer_name, start_date) VALUES ($1, 'Invented Co', '2020-01-01') RETURNING id",
-      [personId],
-    );
-    let release!: () => void;
-    const held = new Promise<void>((r) => (release = r));
-    let checked!: () => void;
-    const checking = new Promise<void>((r) => (checked = r));
-    const writer = db.transaction(async (tx) => {
-      expect(await existingJobKeys(tx, [String(jobId)])).toEqual(
-        new Set([String(jobId)]),
+  it.each([
+    ["a new profile", false],
+    ["an existing profile it holds locked", true],
+  ])(
+    "a job delete racing a Salary Profile write (%s) neither deadlocks nor leaves an entry for the gone job",
+    async (_, existing) => {
+      const { db, schema, lockedRow } = app;
+      const { refuseEntriesWithoutJobs } =
+        await import("@/server/services/profiles/salary-entry-writes");
+      const { deleteJobsAndEntries } =
+        await import("@/server/data/delete-jobs");
+      const { id: personId } = await one(
+        "INSERT INTO people (name, date_of_birth) VALUES ('Invented Racer', '1980-01-01') RETURNING id",
       );
-      checked();
-      await held;
-      await tx.insert(schema.salaryProfiles).values({
-        name: "Invented raced",
-        salaries: { [String(jobId)]: BLANK_SALARY_ENTRY } as never,
+      const { id: jobId } = await one(
+        "INSERT INTO jobs (person_id, employer_name, start_date) VALUES ($1, 'Invented Co', '2020-01-01') RETURNING id",
+        [personId],
+      );
+      const key = String(jobId);
+      const name = `Invented raced ${String(existing)}`;
+      const { id: profileId } = await one(
+        "INSERT INTO salary_profiles (name, salaries) VALUES ($1, '{}'::jsonb) RETURNING id",
+        [existing ? name : `${name} (other)`],
+      );
+      let release!: () => void;
+      const held = new Promise<void>((r) => (release = r));
+      let locked!: () => void;
+      const locking = new Promise<void>((r) => (locked = r));
+      // The writers' order: the job's key-share lock, then the profile's lock.
+      const writer = db.transaction(async (tx) => {
+        await refuseEntriesWithoutJobs(tx, [key]);
+        if (existing)
+          await lockedRow(tx, schema.salaryProfiles, Number(profileId));
+        locked();
+        await held;
+        const salaries = { [key]: BLANK_SALARY_ENTRY } as never;
+        if (existing)
+          await tx
+            .update(schema.salaryProfiles)
+            .set({ salaries })
+            .where(eq(schema.salaryProfiles.id, Number(profileId)));
+        else await tx.insert(schema.salaryProfiles).values({ name, salaries });
       });
-    });
-    await checking;
-    const deleting = deleteJobsAndEntries(db, [Number(jobId)]);
-    setTimeout(release, 50);
-    await writer;
-    await deleting;
-    const after = await one(
-      "SELECT salaries FROM salary_profiles WHERE name = 'Invented raced'",
-    );
-    expect(after["salaries"]).toEqual({});
-  });
+      await locking;
+      const deleting = deleteJobsAndEntries(db, [Number(jobId)]);
+      setTimeout(release, 50);
+      await Promise.all([writer, deleting]);
+      const after = await one(
+        "SELECT salaries FROM salary_profiles WHERE name = $1",
+        [name],
+      );
+      expect(after["salaries"]).toEqual({});
+    },
+  );
 
   it("overlapping entry removals on one Salary Profile each land", async () => {
     const salaries = Object.fromEntries(

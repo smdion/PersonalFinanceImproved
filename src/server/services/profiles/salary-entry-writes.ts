@@ -10,10 +10,12 @@ import { lockedRow } from "@/server/data/lock-row";
 
 type SalaryProfileRow = typeof schema.salaryProfiles.$inferSelect;
 
-/** The ids of the jobs that exist, as Salary Profile keys, held until the transaction ends. */
-export async function existingJobKeys(
+/** The ids of the jobs that exist, as Salary Profile keys; `keyShare` (PostgreSQL) holds
+ *  them until the transaction ends, so a checked job can't be deleted before it commits. */
+async function jobKeys(
   tx: DbOrTx,
   keys: readonly string[],
+  keyShare: boolean,
 ): Promise<Set<string>> {
   const ids = keys.map(Number).filter(Number.isSafeInteger);
   if (ids.length === 0) return new Set();
@@ -21,18 +23,27 @@ export async function existingJobKeys(
     .select({ id: schema.jobs.id })
     .from(schema.jobs)
     .where(inArray(schema.jobs.id, ids));
-  // PostgreSQL: a key-share lock, so a job can't be deleted until this write commits.
-  const rows = await (isPostgres() ? query.for("key share") : query);
+  const rows = await (keyShare && isPostgres()
+    ? query.for("key share")
+    : query);
   return new Set(rows.map((r) => String(r.id)));
 }
 
-/** BAD_REQUEST naming each entry key whose job doesn't exist. */
+/** The jobs that exist among `keys`, read without a lock. */
+export function existingJobKeys(
+  tx: DbOrTx,
+  keys: readonly string[],
+): Promise<Set<string>> {
+  return jobKeys(tx, keys, false);
+}
+
+/** BAD_REQUEST naming each key whose job doesn't exist; the rest stay key-share locked.
+ *  Called before any profile lock (lock order: job, then salary profile). */
 export async function refuseEntriesWithoutJobs(
   tx: DbOrTx,
-  salaries: SalaryEntryMap,
+  keys: readonly string[],
 ): Promise<void> {
-  const keys = Object.keys(salaries);
-  const jobs = await existingJobKeys(tx, keys);
+  const jobs = await jobKeys(tx, keys, true);
   const missing = keys.filter((k) => !jobs.has(k));
   if (missing.length > 0)
     throw new TRPCError({
@@ -48,9 +59,10 @@ export function updateSalaryProfile(
   updates: Partial<typeof schema.salaryProfiles.$inferInsert>,
 ): Promise<SalaryProfileRow> {
   return db.transaction(async (tx) => {
+    if (updates.salaries)
+      await refuseEntriesWithoutJobs(tx, Object.keys(updates.salaries));
     if (!(await lockedRow(tx, schema.salaryProfiles, id)))
       throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
-    if (updates.salaries) await refuseEntriesWithoutJobs(tx, updates.salaries);
     const [row] = await tx
       .update(schema.salaryProfiles)
       .set(updates)

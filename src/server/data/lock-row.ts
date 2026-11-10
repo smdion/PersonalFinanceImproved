@@ -1,7 +1,7 @@
 /**
- * Locks held until the transaction ends, so read-merge-writes run one at a time. PostgreSQL only
- * (SQLite's transactions are serial). Order inside one transaction: salary profile, budget
- * profile, contribution profiles, performance years ascending; never an earlier kind after a later.
+ * Locks held to the transaction's end, so read-merge-writes run one at a time (PostgreSQL;
+ * SQLite is serial). Order: job (key share), salary profile, budget profile, contribution
+ * profiles, performance years ascending; never an earlier kind after a later.
  */
 import { eq, sql, type SQL } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";

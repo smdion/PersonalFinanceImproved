@@ -261,6 +261,8 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.transaction(async (tx) => {
+        const key = String(input.jobId);
+        await refuseEntriesWithoutJobs(tx, [key]);
         const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
         if (!profile)
           throw new TRPCError({
@@ -269,7 +271,6 @@ export const salaryProfileRouter = createTRPCRouter({
           });
 
         const salaries = checkSalaryEntries(profile).salaries;
-        const key = String(input.jobId);
         const mergedEntry: Record<string, unknown> = { ...salaries[key] };
         for (const field of input.unset ?? []) delete mergedEntry[field];
         Object.assign(mergedEntry, input.fields);
@@ -286,7 +287,6 @@ export const salaryProfileRouter = createTRPCRouter({
         }
 
         const nextSalaries = { ...salaries, [key]: parsed.data };
-        await refuseEntriesWithoutJobs(tx, { [key]: parsed.data });
         await assertSalaryEntryTaxBracketsExist(
           { db: tx, scope: ctx.scope },
           { [key]: parsed.data },
