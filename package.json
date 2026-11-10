@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage --project='!benchmarks'",
     "test:benchmarks": "vitest run --project=benchmarks",
     "test:tz": "LEDGR_TEST_TZ=America/Chicago vitest run --project='!benchmarks' tests/utils/date.test.ts tests/utils/date-keys.test.ts tests/pure/household/age.test.ts tests/pure/household/household-timeline.test.ts tests/pure/accounts/balance-dates.test.ts tests/pure/net-worth tests/pure/paycheck tests/config/pay-periods.test.ts tests/pure/sync/feed-data-date.test.ts tests/server/services/net-worth/year-end-history.test.ts",
+    "test:year-end": "LEDGR_TEST_NOW=2025-12-31T23:30:00-06:00 pnpm -s test:tz && LEDGR_TEST_NOW=2026-01-01T00:30:00-06:00 pnpm -s test:tz",
     "test:stress": "FAST_CHECK_NUM_RUNS=200 vitest run tests/pure/engine/engine-invariants.test.ts tests/benchmarks/monte-carlo-properties.test.ts",
     "test:e2e": "playwright test",
     "engine-hash": "tsx scripts/engine-hash.ts",
