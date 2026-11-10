@@ -133,8 +133,7 @@ export const profileAllocationProcedures = {
         }),
       );
     }),
-    /** Manual edit: sets (goalId, profileId)'s funding as given, unlike
-     *  recalculateAllocation/lockInAllocationPercent, which derive it from the live pool. */
+    /** Sets (goalId, profileId)'s funding as given (recalculate/lock-in derive it from the pool). */
     upsert: savingsProcedure
       .input(
         z.object({

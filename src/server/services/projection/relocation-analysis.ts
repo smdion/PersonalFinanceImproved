@@ -1,5 +1,4 @@
-/** The relocation analysis (retirement.computeRelocationAnalysis): its
- *  input, the two budget and contribution scenarios being compared. */
+/** computeRelocationAnalysis's input: the two budget/contribution scenarios. */
 import { z } from "zod/v4";
 import { zYear } from "@/lib/utils/zod-fields";
 import type { RequestScope } from "@/server/data/request-scope";

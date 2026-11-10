@@ -13,10 +13,8 @@ import { dropMappingsTo } from "@/server/data/delete-references";
 import { computeAssetSummary } from "@/server/services/net-worth/year-assets";
 
 export const assetsRouter = createTRPCRouter({
-  /**
-   * Asset-focused summary: current state + year-over-year history.
-   * Includes API sync status per item so the UI can show sync badges.
-   */
+  /** Current assets and year-over-year history, with each item's API sync
+   *  status (the sync badges). */
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
     .query(({ ctx, input }) => computeAssetSummary(ctx, input)),

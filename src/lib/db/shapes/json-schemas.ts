@@ -176,8 +176,7 @@ const largePurchaseSchema = z.object({
   purchaseYear: zYear,
 });
 
-/** relocation_scenarios.params, as the save request sends it (request
- *  fields, so zYear years); nothing parses stored rows through it. */
+/** relocation_scenarios.params as the save request sends it (no stored reads). */
 export const relocationScenarioParamsSchema = z.object({
   currentProfileId: z.number(),
   currentBudgetColumn: z.number(),

@@ -5,10 +5,8 @@ import { PERF_CATEGORY_DISPLAY_ORDER } from "@/lib/config/display-labels";
 import { finalizePerformanceYear } from "@/server/services/performance/finalize-year";
 
 export const finalizeYearProcedures = {
-  /**
-   * Finalize a year: marks all account_performance and annual_performance rows
-   * for that year as finalized, then auto-creates next year's rows for active accounts.
-   */
+  /** Finalize a year's account and annual performance rows, then create next
+   *  year's rows for active accounts. */
   finalizeYear: performanceProcedure
     .input(
       z.object({
