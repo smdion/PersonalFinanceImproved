@@ -9,7 +9,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import { mergeSalaryEntries } from "@/server/services/profiles/salary-entry-writes";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
@@ -18,8 +18,8 @@ import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay
 
 /**
  * Write a job's extraPaycheckRouting into the globally-ACTIVE Salary Profile only, so
- * comparing profiles never rewrites materialized transactions. Throws
- * PRECONDITION_FAILED when there's no active profile or the job has no entry in it.
+ * comparing profiles never rewrites materialized transactions. PRECONDITION_FAILED with
+ * no active profile or no entry for the job; NOT_FOUND when the active profile is gone.
  */
 async function writeJobExtraPaycheckRouting(
   db: DbOrTx,
@@ -34,34 +34,17 @@ async function writeJobExtraPaycheckRouting(
         "No Salary Profile is active — activate one before configuring extra-paycheck routing.",
     });
   }
-  const [row] = await db
-    .select()
-    .from(schema.salaryProfiles)
-    .where(eq(schema.salaryProfiles.id, activeId));
-  if (!row) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "The active Salary Profile no longer exists.",
-    });
-  }
-  const { salaries } = checkSalaryEntries(row);
-  const key = String(jobId);
-  const entry = salaries[key];
-  if (!entry) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: `Job ${jobId} has no entry in the active Salary Profile — add one before configuring extra-paycheck routing.`,
-    });
-  }
-  await db
-    .update(schema.salaryProfiles)
-    .set({
-      salaries: {
-        ...salaries,
-        [key]: { ...entry, extraPaycheckRouting: routing },
-      },
-    })
-    .where(eq(schema.salaryProfiles.id, activeId));
+  // Read under the profile's lock: a concurrent edit or job delete isn't overwritten.
+  await mergeSalaryEntries(db, activeId, (salaries) => {
+    const key = String(jobId);
+    const entry = salaries[key];
+    if (!entry)
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: `Job ${jobId} has no entry in the active Salary Profile — add one before configuring extra-paycheck routing.`,
+      });
+    return { ...salaries, [key]: { ...entry, extraPaycheckRouting: routing } };
+  });
 }
 
 export const extraPaycheckRoutingProcedures = {

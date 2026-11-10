@@ -8,6 +8,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { firstRow } from "@/lib/utils/first-row";
+import { mergeSalaryEntries } from "@/server/services/profiles/salary-entry-writes";
 
 // Other pay on a job's checks — structural only (the per-check amount is
 // the Salary Profile entry's `otherEarnings`, like salary and bonus).
@@ -66,25 +67,25 @@ export const earningsProcedures = {
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
         ctx.db.transaction(async (tx) => {
-          const profiles = await tx.select().from(schema.salaryProfiles);
-          for (const p of profiles) {
-            let changed = false;
-            const salaries = Object.fromEntries(
-              Object.entries(p.salaries).map(([jobId, entry]) => {
-                const amounts = entry.otherEarnings;
-                if (!amounts || !(String(input.id) in amounts))
-                  return [jobId, entry];
-                changed = true;
-                const { [String(input.id)]: _drop, ...rest } = amounts;
-                return [jobId, { ...entry, otherEarnings: rest }];
-              }),
-            );
-            if (changed /* set inside the map callback above */)
-              await tx
-                .update(schema.salaryProfiles)
-                .set({ salaries })
-                .where(eq(schema.salaryProfiles.id, p.id));
-          }
+          const profiles = await tx
+            .select({ id: schema.salaryProfiles.id })
+            .from(schema.salaryProfiles)
+            .orderBy(asc(schema.salaryProfiles.id));
+          for (const p of profiles)
+            await mergeSalaryEntries(tx, p.id, (salaries) => {
+              const key = String(input.id);
+              const held = Object.entries(salaries).filter(
+                ([, entry]) =>
+                  entry.otherEarnings && key in entry.otherEarnings,
+              );
+              if (held.length === 0) return null;
+              const next = { ...salaries };
+              for (const [jobId, entry] of held) {
+                const { [key]: _drop, ...rest } = entry.otherEarnings!;
+                next[jobId] = { ...entry, otherEarnings: rest };
+              }
+              return next;
+            });
           await tx
             .delete(schema.paycheckEarnings)
             .where(eq(schema.paycheckEarnings.id, input.id));
