@@ -18,6 +18,9 @@ type TaxEarnings = {
   federalWages: number;
   /** Social Security / Medicare wages: gross less Section 125 deductions and FICA-exempt payroll contributions, plus FICA-taxable benefits. */
   ficaWages: number;
+  /** HSA money paid in outside payroll: an above-the-line deduction (Form
+   *  8889; Schedule 1 line 13), off AGI but not off FICA wages. */
+  hsaOutsidePayroll: number;
 };
 
 type HouseholdTaxInput = {
@@ -38,8 +41,12 @@ type HouseholdTaxInput = {
 };
 
 type HouseholdTaxResult = {
-  /** Σ federal wages: the AGI the tax is figured on (wages only — no investment income). */
+  /** Line 11 for wage income: Σ federal wages less the above-the-line
+   *  adjustments (no investment income). */
   wageAgi: number;
+  /** The above-the-line adjustments taken off wages: HSA money paid in
+   *  outside payroll (Schedule 1 line 13). */
+  aboveTheLineAdjustments: number;
   taxableIncome: number;
   federalTax: number;
   marginalRate: number;
@@ -62,7 +69,9 @@ export function calculateHouseholdTax(
 
   // ── Federal: combined income, one return's deductions ──
   // Itemized deductions are not modelled.
-  const wageAgi = sumBy(people, (p) => p.federalWages);
+  const aboveTheLineAdjustments = sumBy(people, (p) => p.hsaOutsidePayroll);
+  const wageAgi =
+    sumBy(people, (p) => p.federalWages) - aboveTheLineAdjustments;
   const { ageDeductions } = input;
   const { standardDeduction, seniorDeduction } = returnDeductions({
     terms: { ...ageDeductions.terms, basic: taxBrackets.standardDeduction },
@@ -128,6 +137,7 @@ export function calculateHouseholdTax(
   const totalTax = roundToCents(federalTax + ficaSS + ficaMedicare);
   return {
     wageAgi: roundToCents(wageAgi),
+    aboveTheLineAdjustments: roundToCents(aboveTheLineAdjustments),
     taxableIncome: roundToCents(taxableIncome),
     federalTax,
     marginalRate: bracketResult.marginalRate,

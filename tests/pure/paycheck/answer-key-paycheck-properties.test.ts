@@ -222,7 +222,11 @@ describe("paycheck PW-10 properties", () => {
           const owed = (people: number[]) =>
             calculateHouseholdTax({
               ageDeductions: NO_ONE_65,
-              people: people.map((w) => ({ federalWages: w, ficaWages: w })),
+              people: people.map((w) => ({
+                federalWages: w,
+                ficaWages: w,
+                hsaOutsidePayroll: 0,
+              })),
               taxBrackets: liabilityInput("Single"),
               medicareLiabilityThreshold: limit(
                 2026,

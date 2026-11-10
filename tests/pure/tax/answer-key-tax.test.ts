@@ -285,7 +285,11 @@ function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
 function householdTax(status: ReturnFilingStatus, jobs: number[]) {
   return calculateHouseholdTax({
     ageDeductions: NO_ONE_65,
-    people: jobs.map((w) => ({ federalWages: w, ficaWages: w })),
+    people: jobs.map((w) => ({
+      federalWages: w,
+      ficaWages: w,
+      hsaOutsidePayroll: 0,
+    })),
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(
       2026,

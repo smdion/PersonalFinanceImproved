@@ -19,6 +19,7 @@ const SINGLE: TaxBracketInput = { ...B, filingStatus: "Single" };
 const wages = (gross: number, preTaxFederal = 0, ficaWages = gross) => ({
   federalWages: gross - preTaxFederal,
   ficaWages,
+  hsaOutsidePayroll: 0,
 });
 
 describe("calculateHouseholdTax", () => {

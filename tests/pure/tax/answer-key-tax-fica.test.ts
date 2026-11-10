@@ -24,7 +24,11 @@ import { NO_ONE_65 } from "./tax-helpers";
 function household(status: ReturnFilingStatus, wages: number[]) {
   return calculateHouseholdTax({
     ageDeductions: NO_ONE_65,
-    people: wages.map((w) => ({ federalWages: w, ficaWages: w })),
+    people: wages.map((w) => ({
+      federalWages: w,
+      ficaWages: w,
+      hsaOutsidePayroll: 0,
+    })),
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(
       2026,

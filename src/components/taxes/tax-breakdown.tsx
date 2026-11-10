@@ -72,6 +72,13 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
           value={`−${formatCurrency(income.preTaxFederal)}`}
           help="Pre-tax 401(k), payroll HSA and pre-tax deductions, including what the bonus check takes."
         />
+        {tax.aboveTheLineAdjustments > 0 && (
+          <Row
+            label="HSA paid outside payroll"
+            value={`−${formatCurrency(tax.aboveTheLineAdjustments)}`}
+            help="HSA money you put in yourself, not through payroll: deducted above the line (Form 8889, Schedule 1 line 13)."
+          />
+        )}
         <Row label="AGI (wages)" value={formatCurrency(tax.wageAgi)} />
         <FilingStatusRow
           status={data.filingStatus}

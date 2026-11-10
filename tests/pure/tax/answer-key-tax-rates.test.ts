@@ -26,7 +26,7 @@
  *           bases 1,770 | 7,740 | 16,155 | 39,207 | 56,631 | 191,171
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import {
   account,
   deduction,
@@ -117,36 +117,32 @@ describe("answer key: wage AGI", () => {
   // (IRC 62(a)(19), 223(a)), so line 10 is 4,400 and line 11 AGI is
   // 89,700 − 4,400 = 85,300. Line 15: 85,300 − 16,100 = 69,200. RP25
   // Single: 5,800 + 22% × (69,200 − 50,400) = 5,800 + 4,136 = 9,936.00.
-  // Today wage AGI keeps the 4,400 (the HSA money is carried as
-  // `hsaOutsidePayroll`, which only the Roth IRA MAGI subtracts), so AGI
-  // reads 89,700 and the tax 10,904.00: $968 high, 22% × 4,400.
-  xfail({
-    id: "tax/TAX02-2 [TAX-02]",
-    todo: 'v0.11 Tax "HSA money paid outside payroll lowers AGI" (new, v0.10.5 answer key)',
-    run: () => {
-      const hsa = {
-        ...account({
-          name: "HSA",
-          perCheck: 0,
-          checks: 26,
-          treatment: "hsa",
-          annual: 4_400,
-        }),
-        isPayrollDeducted: false,
-      };
-      const tax = yearTax(
-        job({
-          salary: 104_000,
-          period: "biweekly",
-          accounts: [...accounts, hsa],
-          deductions,
-        }),
-        "Single",
-      );
-      return { agi: tax.wageAgi, tax: tax.federalTax };
-    },
-    expected: { agi: 85_300, tax: 9_936 },
-    today: { agi: 89_700, tax: 10_904 },
+  it("tax/TAX02-2 [TAX-02] an HSA paid outside payroll comes off AGI: 85,300", () => {
+    cents(
+      (() => {
+        const hsa = {
+          ...account({
+            name: "HSA",
+            perCheck: 0,
+            checks: 26,
+            treatment: "hsa",
+            annual: 4_400,
+          }),
+          isPayrollDeducted: false,
+        };
+        const tax = yearTax(
+          job({
+            salary: 104_000,
+            period: "biweekly",
+            accounts: [...accounts, hsa],
+            deductions,
+          }),
+          "Single",
+        );
+        return { agi: tax.wageAgi, tax: tax.federalTax };
+      })(),
+      { agi: 85_300, tax: 9_936 },
+    );
   });
 });
 

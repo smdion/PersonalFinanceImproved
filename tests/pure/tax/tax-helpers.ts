@@ -26,6 +26,7 @@ export function taxForOnePerson(input: OnePersonTaxInput) {
       {
         federalWages: input.annualGross - input.preTaxDeductionsAnnual,
         ficaWages: input.ficaWagesAnnual ?? input.annualGross,
+        hsaOutsidePayroll: 0,
       },
     ],
     taxBrackets: input.taxBrackets,

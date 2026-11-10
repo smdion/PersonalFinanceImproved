@@ -52,7 +52,6 @@ export function useRothIra(): {
       ? buildRothIraView({
           rothIra: data.rothIra,
           wageAgi: data.householdTax.wageAgi,
-          hsaOutsidePayroll: data.householdIncome.hsaOutsidePayroll,
           investmentIncome: inputs.data.investmentIncome.estimate,
           preTaxIraByPerson: inputs.data.preTaxIraByPerson,
           pendingConversionByPerson: inputs.data.pendingConversionByPerson,

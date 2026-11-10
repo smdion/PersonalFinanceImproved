@@ -40,7 +40,7 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
           <span className="inline-flex items-center">
             AGI from wages (est.)
             <HelpTip
-              text="Salary plus bonus, minus the money that comes out before tax (pre-tax 401k, payroll HSA, health insurance). Investment income isn't included here, so treat it as a floor for things like Roth IRA limits."
+              text="Salary plus bonus, minus the money that comes out before tax (pre-tax 401k, payroll HSA, health insurance) and HSA money you pay in yourself. Investment income isn't included here, so treat it as a floor for things like Roth IRA limits."
               maxWidth={280}
             />
           </span>
@@ -89,7 +89,7 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
           <span className="inline-flex items-center">
             Roth IRA MAGI (est.)
             <HelpTip
-              text={`Salary + bonus − pre-tax payroll money (${formatCurrency(view.parts.wageAgi)}), − HSA money paid outside payroll (${formatCurrency(view.parts.hsaOutsidePayroll)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${notCounted()}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
+              text={`AGI: salary + bonus − pre-tax payroll money − HSA money paid outside payroll (${formatCurrency(view.parts.wageAgi)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${notCounted()}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
               maxWidth={320}
             />
           </span>

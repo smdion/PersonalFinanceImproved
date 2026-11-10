@@ -713,6 +713,7 @@ describe("paycheck/HW-H1–H4: the CPA hand worksheet", () => {
         {
           federalWages: ea.federalWages + eb.federalWages,
           ficaWages: ea.ficaWages + eb.ficaWages,
+          hsaOutsidePayroll: ea.hsaOutsidePayroll + eb.hsaOutsidePayroll,
         },
       ],
       taxBrackets: liabilityInput("Single"),

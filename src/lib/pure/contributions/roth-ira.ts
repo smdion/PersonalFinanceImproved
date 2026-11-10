@@ -190,18 +190,15 @@ export function preTaxIraByPerson(
 
 /** What the Roth IRA MAGI is built from — shown beside the figure. */
 type RothIraMagiParts = {
-  /** Salary + bonus − pre-tax payroll money (the tax's AGI). */
+  /** The tax's AGI: salary + bonus − pre-tax payroll money − HSA money
+   *  paid in outside payroll. */
   wageAgi: number;
-  /** HSA money paid in outside payroll — above-the-line. */
-  hsaOutsidePayroll: number;
   /** Taxable investment income for the year (estimate). */
   investmentIncome: number;
 };
 
 function rothIraMagi(parts: RothIraMagiParts): number {
-  return Math.round(
-    parts.wageAgi - parts.hsaOutsidePayroll + parts.investmentIncome,
-  );
+  return Math.round(parts.wageAgi + parts.investmentIncome);
 }
 
 export type RothIraView = {
@@ -234,7 +231,6 @@ export type RothIraView = {
 export function buildRothIraView(args: {
   rothIra: RothIraSummary;
   wageAgi: number;
-  hsaOutsidePayroll: number;
   investmentIncome: number;
   preTaxIraByPerson: readonly { personId: number; amount: number }[];
   /** Each person's traditional-IRA deposit waiting to be converted. */
@@ -243,7 +239,6 @@ export function buildRothIraView(args: {
 }): RothIraView {
   const parts: RothIraMagiParts = {
     wageAgi: args.wageAgi,
-    hsaOutsidePayroll: args.hsaOutsidePayroll,
     investmentIncome: args.investmentIncome,
   };
   const magi = rothIraMagi(parts);

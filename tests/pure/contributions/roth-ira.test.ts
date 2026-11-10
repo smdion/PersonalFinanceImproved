@@ -150,7 +150,7 @@ describe("preTaxIraByPerson", () => {
 });
 
 describe("buildRothIraView", () => {
-  it("MAGI = wage AGI − HSA outside payroll + investment income; MFJ uses combined pay", () => {
+  it("MAGI = AGI (HSA outside payroll already off) + investment income; MFJ uses combined pay", () => {
     const v = buildRothIraView({
       rothIra: {
         filingStatus: "MFJ",
@@ -176,8 +176,8 @@ describe("buildRothIraView", () => {
           },
         ],
       },
-      wageAgi: 190_000,
-      hsaOutsidePayroll: 1_000,
+      // Wages 190,000 less 1,000 paid into an HSA outside payroll.
+      wageAgi: 189_000,
       investmentIncome: 16_000,
       preTaxIraByPerson: [{ personId: 1, amount: 1234 }],
       marginOverride: null,
@@ -296,7 +296,6 @@ describe("pro-rata materiality", () => {
         ],
       },
       wageAgi: 220_000,
-      hsaOutsidePayroll: 0,
       investmentIncome: 0,
       preTaxIraByPerson: [{ personId: 1, amount }],
       marginOverride: null,
@@ -349,7 +348,6 @@ describe("Roth IRA route", () => {
           ],
         },
         wageAgi: verdictMagi,
-        hsaOutsidePayroll: 0,
         investmentIncome: 0,
         preTaxIraByPerson: [],
         marginOverride: null,
