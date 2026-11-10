@@ -40,7 +40,7 @@ describe("performance summary annual rows", () => {
     expect(portfolio?.lifetimeGains).toBe(80);
     expect(portfolio?.lifetimeContributions).toBe(100);
     expect(portfolio?.lifetimeMatch).toBe(10);
-    // The account rows' parentCategory comes from the master record.
+    // The account rows' parentCategory, as stored, is the master's.
     expect(accounts.map((a) => a.parentCategory)).toEqual([
       "Retirement",
       "Portfolio",

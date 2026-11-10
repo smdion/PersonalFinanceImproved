@@ -325,7 +325,7 @@
     "src/lib/pure/investments/finalize-year.ts": 194,
     "src/lib/pure/investments/holding-periods.ts": 408,
     "src/lib/pure/investments/performance-account-rows.ts": 207,
-    "src/lib/pure/investments/performance-annual-rows.ts": 489,
+    "src/lib/pure/investments/performance-annual-rows.ts": 483,
     "src/lib/pure/investments/returns.ts": 562,
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 133,
@@ -993,7 +993,7 @@
       "evaluateCost": 155
     },
     "src/lib/pure/investments/performance-annual-rows.ts": {
-      "performanceAnnualRows": 323
+      "performanceAnnualRows": 317
     },
     "src/lib/pure/paycheck/paystub-check.ts": {
       "checkPaystub": 162
