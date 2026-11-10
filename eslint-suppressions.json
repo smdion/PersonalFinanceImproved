@@ -3346,11 +3346,6 @@
       "count": 1
     }
   },
-  "src/lib/db/migrate/backfill-joint-person-id.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/lib/db/migrate/converter-rows.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 1

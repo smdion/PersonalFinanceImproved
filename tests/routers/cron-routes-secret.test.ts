@@ -1,5 +1,5 @@
 /**
- * The five `X-Cron-Secret` routes run `cronRoute`, after their own
+ * The four `X-Cron-Secret` routes run `cronRoute`, after their own
  * DEMO_ONLY check. Each answers, in this order:
  *   - DEMO_ONLY set → 403, whatever the secret
  *   - CRON_SECRET missing or under 32 characters → 500 "Server
@@ -17,7 +17,6 @@ const m = vi.hoisted(() => ({
   checkForTaxDataUpdate: vi.fn(),
   createVersion: vi.fn(),
   syncSecurityFacts: vi.fn(),
-  backfillJointPersonId: vi.fn(),
 }));
 
 // versions/daily reads app settings, then looks for today's auto version.
@@ -54,9 +53,6 @@ vi.mock("@/server/services/investments/sec-facts", () => ({
   secFactsRefreshDue: vi.fn().mockResolvedValue(true),
   syncSecurityFacts: m.syncSecurityFacts,
 }));
-vi.mock("@/lib/db/migrate/backfill-joint-person-id", () => ({
-  backfillJointPersonId: m.backfillJointPersonId,
-}));
 
 type Route = {
   name: string;
@@ -90,12 +86,6 @@ const ROUTES: Route[] = [
     load: () => import("@/app/api/sec/weekly/route"),
     work: m.syncSecurityFacts,
   },
-  {
-    name: "startup",
-    path: "/api/startup",
-    load: () => import("@/app/api/startup/route"),
-    work: m.backfillJointPersonId,
-  },
 ];
 
 const ORIGINAL_ENV = { ...process.env };
@@ -120,7 +110,6 @@ beforeEach(() => {
   m.checkForTaxDataUpdate.mockResolvedValue({});
   m.createVersion.mockResolvedValue({ id: 1 });
   m.syncSecurityFacts.mockResolvedValue({});
-  m.backfillJointPersonId.mockResolvedValue(undefined);
 });
 
 afterEach(() => {

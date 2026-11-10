@@ -833,7 +833,7 @@ function findDirectCronSecretReadViolations(): Violation[] {
 // Rule 22: an API route under src/app/api/ that writes to the DB with no
 // DEMO_ONLY guard. M5 found one cron route missing the guard every sibling
 // write route had; while scoping this rule, the same gap turned up
-// independently in two MORE sibling routes (startup/route.ts,
+// independently in two MORE sibling routes (a start-up route since deleted,
 // simplefin/daily/route.ts) that the original review never flagged — fixed
 // alongside adding this rule. Detecting "does this route write" precisely
 // would need semantic analysis (writes often happen via an imported helper,
