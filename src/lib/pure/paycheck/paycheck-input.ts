@@ -74,7 +74,6 @@ export function buildPaycheckInputForJob(
     earnings: resolved.earnings,
     taxBrackets: resolved.taxBrackets,
     limits: resolved.limitsRecord,
-    ytdGrossEarnings: 0,
     bonusPercent: toNumber(resolved.bonusTerms.bonusPercent),
     bonusMultiplier:
       resolved.bonusTerms.bonusMultiplier === null

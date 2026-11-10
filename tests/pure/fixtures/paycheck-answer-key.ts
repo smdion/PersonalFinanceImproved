@@ -110,7 +110,6 @@ export function job(c: {
     earnings: [],
     taxBrackets: withholdingInput(year, c.status ?? "Single", c.checkbox),
     limits: {},
-    ytdGrossEarnings: 0,
     bonusPercent: c.bonusPercent ?? 0,
     bonusMultiplier: 1,
     bonusOverride: c.bonus ?? null,

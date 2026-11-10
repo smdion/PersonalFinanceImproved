@@ -121,7 +121,6 @@ export type PaycheckInput = {
   earnings: EarningLine[];
   taxBrackets: TaxBracketInput;
   limits: Record<string, number>;
-  ytdGrossEarnings: number;
   bonusPercent: number;
   bonusMultiplier: number;
   bonusOverride: number | null; // if set, use this value as gross bonus instead of calculating

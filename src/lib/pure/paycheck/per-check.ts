@@ -196,17 +196,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     ficaSS = ficaBase * ssRate;
   } else {
     // Wage base reached during the year: per-check SS is the year's SS spread evenly, so
-    // per-check net × periods is true take-home (the year schedule shows timing). A check
-    // already past the base (YTD) gets its real figure.
-    if (input.ytdGrossEarnings > 0 && input.ytdGrossEarnings >= ssWageBase) {
-      ficaSS = 0;
-      warnings.push("SS wage base exceeded for this period");
-    } else {
-      ficaSS = (ssWageBase * ssRate) / periodsPerYear;
-      warnings.push(
-        `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
-      );
-    }
+    // per-check net × periods is true take-home (the year schedule shows timing).
+    ficaSS = (ssWageBase * ssRate) / periodsPerYear;
+    warnings.push(
+      `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
+    );
   }
 
   // Medicare on the FICA base, no cap. Additional Medicare past the threshold is averaged
