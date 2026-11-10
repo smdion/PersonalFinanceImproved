@@ -19,6 +19,7 @@ import {
 } from "@/lib/pure/contributions/irs-limits";
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import type { PlanEmployer } from "./annual-additions";
 
 export type CapRow = {
   id: number;
@@ -30,13 +31,13 @@ export type CapRow = {
   regularAnnual: number;
   /** Employee money from bonus checks over the tax year. */
   bonusAnnual: number;
-  /** Employer money over the tax year at the configured contribution
-   *  (counts toward the limit when the type's `matchCountsTowardLimit`);
-   *  CapContext.employerAt, when given, says how it changes with a cut. */
+  /** Employer money over the year at the configured contribution (counts toward the limit when
+   *  `matchCountsTowardLimit`); CapContext.employerAt, when given, says how it moves with a cut. */
   employerAnnual: number;
-  /** Pre-tax payroll money — comes off the person's taxable compensation
-   *  (W-2 box 1), which bounds an IRA. */
+  /** Pre-tax payroll money: off the person's W-2 box 1 pay, which bounds an IRA. */
   reducesCompensation: boolean;
+  /** The plan's employer and its gross pay; none = no employer known. */
+  employer?: PlanEmployer;
 };
 
 export type CapPerson = {
@@ -52,8 +53,7 @@ export type CapPerson = {
 export type CapContext = {
   taxYear: number;
   filingStatus: string;
-  /** Every IRS limit key for the year (base, catch-up, super catch-up,
-   *  coverage variants) — for a projected year, the grown figures. */
+  /** Every IRS limit key for the year (base, catch-ups, coverage variants); a projected year's grown. */
   limits: Record<string, number>;
   people: readonly CapPerson[];
   /**

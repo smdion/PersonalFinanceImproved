@@ -1,5 +1,4 @@
-/** The IRS-limit cap pass: each row keeps its configured `contributionValue`
- *  and gains `cappedValue` (what every calculation reads) and `cap` (the verdict). */
+/** The IRS-limit cap pass: a row keeps `contributionValue` and gains `cappedValue` (what every figure reads) and `cap`. */
 import {
   type CapPassed,
   capContributionsByLimitGroup,
@@ -11,6 +10,7 @@ import {
 } from "@/lib/config/account-types";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { sumBy } from "@/lib/utils/math";
+import { jobPay, planEmployer } from "./annual-additions";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
   type JobRef,
@@ -29,8 +29,7 @@ export type CappedRowFields = CapPassed;
 
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
-  /** Each job's pay; `totalComp` = salary + bonus (W-2 taxable pay before
-   *  pre-tax money) bounds an IRA. */
+  /** Each job's pay; `totalComp` = salary + bonus (W-2 pay before pre-tax money) bounds an IRA. */
   jobSalaries: readonly (JobSalaryRef & { totalComp?: number })[];
   people: readonly { id: number; birthYear: number | null }[];
   limits: Record<string, number>;
@@ -134,6 +133,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
       regularAnnual: annualById.get(c.id)!,
       bonusAnnual: 0,
       employerAnnual: matchAt1.get(c.id)!.matchAnnual,
+      employer: planEmployer(c.jobId, ctx.jobSalaries),
       // Pre-tax and HSA payroll money is left out of W-2 wages.
       reducesCompensation:
         isPaidThroughPayroll(c) &&
@@ -148,7 +148,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
         ...p,
         wages: sumBy(
           ctx.jobSalaries.filter((js) => js.job.personId === p.id),
-          (js) => js.totalComp ?? js.salary,
+          jobPay,
         ),
       })),
       // A match figured on the contribution moves with the cut.
