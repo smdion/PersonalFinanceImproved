@@ -547,13 +547,10 @@
   },
   "src/app/api/health/detailed/route.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 1
     }
   },
   "src/app/api/health/route.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }

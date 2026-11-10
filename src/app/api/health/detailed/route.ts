@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, pool, isPostgres } from "@/lib/db";
+import { queryRaw } from "@/lib/db/compat";
 import { sql } from "drizzle-orm";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { log } from "@/lib/logger";
@@ -22,14 +23,7 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    // PG: async .execute(). SQLite (better-sqlite3): synchronous .all().
-    // db is typed as NodePgDatabase but may be BetterSQLite3Database at runtime.
-    if (isPostgres()) {
-      await db.execute(sql`SELECT 1`);
-    } else {
-      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-      (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
-    }
+    await queryRaw(db, sql`SELECT 1`);
     status.database = "connected";
     if (isPostgres() && pool) {
       status.pool = {

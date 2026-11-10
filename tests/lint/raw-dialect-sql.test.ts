@@ -32,10 +32,6 @@ const DATABASE_LAYER = [
 const RUNS_RAW_SQL: Record<string, string> = {
   "server/services/demo/demo-schema.ts":
     "demo schemas exist only on PostgreSQL (DEMO_ONLY installs)",
-  "app/api/health/route.ts":
-    "branches on the dialect for SELECT 1; could use queryRaw (todo)",
-  "app/api/health/detailed/route.ts":
-    "branches on the dialect for SELECT 1; could use queryRaw (todo)",
 };
 
 const RUNS_RAW = /\.execute\(|\.(?:all|run|get)\(\s*sql[`.]/;
