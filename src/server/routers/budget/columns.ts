@@ -11,7 +11,7 @@ import {
   budgetAmountsSchema,
 } from "@/lib/db/shapes/json-schemas";
 import { requireBudgetProfile } from "@/server/services/budget/budget-client";
-import { lockedBudgetProfile } from "@/server/data/locked-budget-profile";
+import { lockedRow } from "@/server/data/lock-row";
 import type { Db, DbOrTx } from "@/lib/db";
 
 type BudgetProfileRow = typeof schema.budgetProfiles.$inferSelect;
@@ -25,7 +25,7 @@ async function editLockedProfile(
 ): Promise<{ ok: true }> {
   const target = await requireBudgetProfile(db, profileId);
   await db.transaction(async (tx) => {
-    const profile = await lockedBudgetProfile(tx, target.id);
+    const profile = await lockedRow(tx, schema.budgetProfiles, target.id);
     if (!profile)
       throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
     await edit(tx, profile);

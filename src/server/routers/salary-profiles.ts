@@ -25,8 +25,7 @@ import {
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
 import { loadSalaryProfileDetail } from "@/server/services/profiles/salary-profile";
-import { lockRow } from "@/server/data/lock-row";
-import type { DbOrTx } from "@/lib/db";
+import { lockedRow } from "@/server/data/lock-row";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -35,18 +34,6 @@ function summarizeEntries(salaries: SalaryEntryMap) {
     pinnedCount: entries.length,
     pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
   };
-}
-
-/** The profile's row, locked for a read-merge-write in `tx`; NOT_FOUND when absent. */
-async function lockedProfile(tx: DbOrTx, id: number) {
-  await lockRow(tx, schema.salaryProfiles, id);
-  const [profile] = await tx
-    .select()
-    .from(schema.salaryProfiles)
-    .where(eq(schema.salaryProfiles.id, id));
-  if (!profile)
-    throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
-  return profile;
 }
 
 /**
@@ -65,12 +52,7 @@ async function refreshExtraPaycheckRoutingIfActive(
     // Re-read the row in its own transaction: a caller's in-memory `salaries`
     // could clobber a concurrent patch to another job on the same profile.
     const refreshedRow = await db.transaction(async (tx) => {
-      await lockRow(tx, schema.salaryProfiles, profileId);
-      const rows = await tx
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, profileId));
-      const profile = rows[0];
+      const profile = await lockedRow(tx, schema.salaryProfiles, profileId);
       if (!profile) return undefined;
 
       const salaries = { ...checkSalaryEntries(profile).salaries };
@@ -283,7 +265,12 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.transaction(async (tx) => {
-        const profile = await lockedProfile(tx, input.id);
+        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
+        if (!profile)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Profile not found",
+          });
 
         const salaries = checkSalaryEntries(profile).salaries;
         const key = String(input.jobId);
@@ -337,7 +324,12 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.transaction(async (tx) => {
-        const profile = await lockedProfile(tx, input.id);
+        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
+        if (!profile)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Profile not found",
+          });
 
         const salaries = { ...checkSalaryEntries(profile).salaries };
         delete salaries[String(input.jobId)];

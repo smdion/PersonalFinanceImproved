@@ -1,9 +1,10 @@
 /**
  * Locks held until the transaction ends, so read-merge-writes run one at a time. PostgreSQL only
  * (SQLite's transactions are serial). Order inside one transaction: salary profile, budget
- * profile, performance years ascending; a transaction never takes an earlier kind after a later.
+ * profile, contribution profiles, performance years ascending; never an earlier kind after a later.
  */
-import { sql, type Column, type SQL, type Table } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { isPostgres } from "@/lib/db/dialect";
 import { execRaw } from "@/lib/db/compat";
 import type { DbOrTx } from "@/lib/db";
@@ -26,14 +27,22 @@ export function lockForTransaction(tx: DbOrTx, name: string): Promise<void> {
   );
 }
 
-/** Locks one row (`SELECT … FOR UPDATE`): call before reading the row to merge into it. */
-export function lockRow(
+/** A row about to be merged into, read under its lock (`SELECT … FOR UPDATE`): a row's
+ *  stored JSON changes only through this read. Undefined when the row is gone. */
+export async function lockedRow<T extends PgTable & { id: PgColumn }>(
   tx: DbOrTx,
-  table: Table & { id: Column },
+  table: T,
   id: number,
-): Promise<void> {
-  return holdLock(
+): Promise<T["$inferSelect"] | undefined> {
+  await holdLock(
     tx,
     sql`SELECT 1 FROM ${table} WHERE ${table.id} = ${id} FOR UPDATE`,
   );
+  const rows = await tx
+    .select()
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- drizzle's from() takes no generic table; the rows are T's select shape (below)
+    .from(table as PgTable)
+    .where(eq(table.id, id));
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- a select of all of T's columns is T's select shape
+  return (rows as T["$inferSelect"][])[0];
 }

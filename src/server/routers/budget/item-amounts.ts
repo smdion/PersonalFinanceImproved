@@ -14,7 +14,7 @@ import {
 } from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { firstRow } from "@/lib/utils/first-row";
-import { lockRow } from "@/server/data/lock-row";
+import { lockedRow } from "@/server/data/lock-row";
 
 /**
  * The Contribution Profile a budget-linked item edit writes into (the one the page shows).
@@ -84,7 +84,7 @@ export const itemAmountProcedures = {
 
       // Under the profile's lock (column edits rewrite every item's amounts).
       return ctx.db.transaction(async (tx) => {
-        await lockRow(tx, schema.budgetProfiles, item.profileId);
+        await lockedRow(tx, schema.budgetProfiles, item.profileId);
         const current = await tx
           .select()
           .from(schema.budgetItems)
@@ -147,7 +147,7 @@ export const itemAmountProcedures = {
       // of it does (a mid-loop failure must not leave half a paste saved).
       const { skipped, toApply } = await ctx.db.transaction(async (tx) => {
         for (const profileId of profileIds)
-          await lockRow(tx, schema.budgetProfiles, profileId);
+          await lockedRow(tx, schema.budgetProfiles, profileId);
         // One fetch, not one-per-item, under the lock of every profile it
         // touches (ascending), so a column edit can't interleave.
         const items = await tx

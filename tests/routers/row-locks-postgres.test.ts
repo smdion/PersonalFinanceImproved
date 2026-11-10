@@ -41,7 +41,7 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
   let app: {
     db: typeof import("@/lib/db").db;
     schema: typeof import("@/lib/db/schema");
-    lockRow: typeof import("@/server/data/lock-row").lockRow;
+    lockedRow: typeof import("@/server/data/lock-row").lockedRow;
     caller: ReturnType<AppRouter["createCaller"]>;
   };
   const one = async (sql: string, params: unknown[] = []) =>
@@ -63,7 +63,7 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
     app = {
       db,
       schema: await import("@/lib/db/schema"),
-      lockRow: (await import("@/server/data/lock-row")).lockRow,
+      lockedRow: (await import("@/server/data/lock-row")).lockedRow,
       caller: createCallerFactory(appRouter)({
         db,
         session: adminSession,
@@ -81,7 +81,7 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
   });
 
   it("a transaction waiting on a held row lock reads the holder's committed write", async () => {
-    const { db, schema, lockRow } = app;
+    const { db, schema, lockedRow } = app;
     const { id } = await one(
       "INSERT INTO salary_profiles (name, salaries) VALUES ('Invented locks', '{}'::jsonb) RETURNING id",
     );
@@ -90,7 +90,7 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
     let locked!: () => void;
     const holding = new Promise<void>((r) => (locked = r));
     const first = db.transaction(async (tx) => {
-      await lockRow(tx, schema.salaryProfiles, Number(id));
+      await lockedRow(tx, schema.salaryProfiles, Number(id));
       locked();
       await held;
       await tx
@@ -99,14 +99,10 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
         .where(eq(schema.salaryProfiles.id, Number(id)));
     });
     await holding;
-    const second = db.transaction(async (tx) => {
-      await lockRow(tx, schema.salaryProfiles, Number(id));
-      const [row] = await tx
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, Number(id)));
-      return row!.salaries;
-    });
+    const second = db.transaction(
+      async (tx) =>
+        (await lockedRow(tx, schema.salaryProfiles, Number(id)))?.salaries,
+    );
     setTimeout(release, 50);
     await first;
     expect(await second).toEqual({ held: true });
