@@ -1,10 +1,13 @@
 /**
  * Validate that all Drizzle migrations apply cleanly to a fresh SQLite database.
- * Catches broken migrations, syntax errors, and ordering issues.
+ * Catches broken migrations, syntax errors, and ordering issues. Then
+ * `drizzle-kit check` on both dialects' folders: the snapshot chain and the
+ * journal agree.
  *
  * Run: tsx scripts/check-migrations.ts
  */
 import Database from "better-sqlite3";
+import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -128,6 +131,18 @@ db.close();
 console.log(
   `\n${applied} applied, ${errors} failed out of ${entries.length} total.`,
 );
+
+for (const config of ["drizzle.config.ts", "drizzle-sqlite.config.ts"]) {
+  const kit = spawnSync(
+    path.join(process.cwd(), "node_modules", ".bin", "drizzle-kit"),
+    ["check", "--config", config],
+    { stdio: "inherit" },
+  );
+  if (kit.status !== 0) {
+    console.error(`  FAIL drizzle-kit check --config ${config}`);
+    errors++;
+  }
+}
 
 if (errors > 0) {
   console.log("Migration safety check FAILED.");
