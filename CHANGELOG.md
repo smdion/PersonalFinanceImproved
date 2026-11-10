@@ -8,6 +8,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.10
 
+## [0.10.6] - 2026-11-10
+
+v0.10.6 finishes the structure work and converts the stored data older versions left behind. Code sits in the layer it belongs to: long router procedures moved whole into services, sync and projection plumbing out of the wrong layers, calculations out of config, and the UI's catch-all folders split by concept, all proven moved token for token. Three data migrations convert the old stored shapes every install may still hold (money, credentials and syncs, stored JSON), so the readers that tolerated them are gone; where a stored value has no exact equivalent, the upgrade stops before changing anything and says which rows to fix. PostgreSQL now reads stored text as text, as SQLite always did. `docs/SCHEMA.md` shows every table's real columns and stored JSON shapes, and every API procedure that does more than its name says is described. A migration test on a copy of the maintainer's data upgraded 0017 → 0020 in one start with no refusal. Every one of the 131 read procedures compared on that data answers exactly as v0.10.5 did.
+
+### Upgrading
+
+- **This release changes the database: back up first.** Three migrations run on start: 0018 (money), 0019 (credentials, syncs and links), 0020 (stored JSON). **Set `ENCRYPTION_KEY` to this install's key before upgrading**: the credentials migration needs it if any credential is stored unencrypted. A rollback is the pre-upgrade backup plus the older image, never the image alone.
+- **The upgrade may stop and name rows to fix.** Each migration converts what it can convert exactly and otherwise stops before writing anything, naming row ids and field names (never values). The fix is always done in the version you are upgrading from:
+  - **Extra-paycheck routing (M6):** routing still paying from a rule's saved net pay (saved before v0.6.2, in Savings mode, never reopened) stops the upgrade, naming the Salary Profile and job ids: start the previous version, make that profile active, and for each listed job clear its end date if it has one, open its extra-paycheck routing on the Savings page (which saves its base pay), then put the end date back; then upgrade again. Routings on deleted or speculative jobs are dropped (nothing read them).
+  - **Salary Profiles (M14):** a Salary Profile stored with no entries as `null` is stored as `{}`, two retired bonus switches are removed from its entries, and one whose entries were stored as text is read as those entries: its salaries count where they read as $0 before, and an extra-paycheck routing inside it follows the same rule as above. If any entry holds a value Ledgr can't read, the upgrade stops and names the Salary Profile ids and fields: start the previous version, remove that job's pay in the listed profile and add it again, then upgrade.
+  - **Joint contribution accounts (M4):** a joint contribution account no longer names a person. If a joint account has no job and a Contribution Profile sets it to a percent of salary, the upgrade stops with a message listing its ids and changes nothing: start the previous version, give each listed account a job or another contribution method, and upgrade again.
+  - **Contribution Profiles (M15):** settings nothing reads, and copies of an account's own settings, are dropped. If a profile holds a setting that differs from its account, or a value outside the allowed choices, the upgrade stops and names the profile and fields: set those fields again in the previous version, then upgrade.
+- **Credentials (M1):** every stored integration credential is encrypted at start-up; without `ENCRYPTION_KEY` the upgrade stops and changes nothing.
+- **Budget-app account links (M3):** links that named a Ledgr account only by an old id form now carry its id, and a performance account linked that way is now also pushed to the budget app, which gains its transactions. A link naming an asset no asset matches, or holding a malformed id, is listed in the upgrade log by connection and position, and the sync skips it: re-map those rows on the Integrations page. Saving a link list that still holds such a row asks you to re-map it first.
+- **Contribution account links (M2):** a contribution account with no linked performance account is no longer re-linked automatically at each start, and the Contribution Profile editor shows it under its own name; link it in Settings. Backups from older versions are linked once when restored.
+- **Cached budget months (M13):** cached budget months are saved into savings history once and cleared, including any cached by a budget app that isn't the active one (switching to it later records history from its next sync). Until the first sync after upgrading, the budget page shows no budget-app actuals and "Sync from the budget app" asks you to sync first.
+- **Performance categories (M8):** each account-year's stored category now matches its account; nothing you see changes.
+- **Tax limits (M9):** the Roth IRA MAGI limit rows older versions saved, which nothing used, are deleted; limits you added yourself stay. Settings now refuses a limit key Ledgr doesn't know, and "Copy year" copies only the limits Ledgr uses.
+- **After-tax deductions (M11):** a paycheck deduction saved before v0.9.0 as after-tax and FICA-exempt is no longer marked FICA-exempt: the paycheck math never applied it. Its box in the deduction editor shows unchecked, and a paystub check now counts it among the wages subject to Social Security and Medicare. No paycheck figure changes.
+- **Operators:** `/api/health/detailed` no longer lists a `startup_tasks` job (the start-up route is gone).
+- **Budget items saved short (M12):** budget items saved with fewer amounts than their profile's columns (by older versions or a restored backup) now hold $0 for each missing column, so every budget figure stays as it was. For such an item the budget sync's push and pull previews now show that column's own amount instead of the last stored one, and pulling a goal target writes it into the linked column itself.
+- **Per-person retirement rows (M5):** a person with retirement settings in a Retirement Profile but no per-person row (from a restored older backup) gets one copied from their settings; nothing they see changes.
+- **"Changes by year" caps:** if you set caps in "Changes by year" before this version, re-check them: the editor used to save every cap you left blank as $0. Caps already stored are kept as they are.
+- **The first projection after upgrading recomputes, once** (the engine's cache key changed).
+- **API:** on PostgreSQL, `settings.appSettings.list` and `upsert` (and any response carrying a stored JSON value) return a stored string as a string: `upsert({ value: "42" })` answers `"42"`, not `42`, as on SQLite. A value an earlier version wrote back as a number still reads as a number. `budget` active summary's `selectedColumn` must be a whole number of 0 or more.
+
+### Changed
+
+- **The Paycheck page's auto-max suggestion says "/paycheck"** for a per-paycheck amount, as the rest of the app does.
+- **`docs/SCHEMA.md` lists every table's real columns,** each JSON column's shape and status, and the schema version; **`docs/API_ROUTERS.md` describes 362 of 396 procedures** (the rest are single-row writes their names describe).
+- **Tax data:** the check and publish scripts refuse a file every install would refuse; a fetched or stored tax-data file is checked before use.
+- **Settings → Contribution & Tax Limits:** a limit is saved only under a name Ledgr uses; "Copy year" copies only those, and a household's own rows stay in their year under "Not used by Ledgr".
+- **Integrations:** a budget-app link list that still holds a row the upgrade couldn't map asks you to re-map it before saving; a performance account linked by an old id now also pushes to the budget app.
+
+### Fixed
+
+- **Saved "Changes by year" that set only some categories are applied.** A saved year with one tax split or one withdrawal tax preference (or only some accounts' splits or caps) was silently ignored by the projection; it now applies, and relocation reads the same saved years the same way. The editor now saves only the caps you enter.
+- **PostgreSQL reads a stored string once,** as SQLite does: turning auto-sync off now sticks, a single selected account on Performance stays selected, and a PostgreSQL version restore puts string settings back as they were (it could fail on one). Deleting a Contribution or Salary Profile that is active is refused even when its id was stored as text (both databases).
+
+### Smoke test
+
+One line per change the release lets you see; everything else should look as before. Run on prod after the deploy.
+
+- [ ] Retirement → "Changes by year": save a row with only one tax split (e.g. 401k Roth 50%) or one withdrawal tax preference; reload; the projection reflects it. Edit such a row without saving: the projection updates instead of failing. Save a row capping one account (e.g. IRA $3,000): the other accounts keep contributing (or withdrawing).
+- [ ] Paycheck → a fixed-per-paycheck 401k contribution, auto-max off: "→ $X/paycheck"; the amber box reads "Current: $X/paycheck ($Y/yr)" / "Auto-max: $X/paycheck ($Y/yr)"; auto-max on: "Set to $X/paycheck ($Y/yr toward $Z limit)".
+- [ ] (PostgreSQL installs) Integrations → turn auto-sync off, reload: it stays off. Performance → pick one account, reload: it stays selected.
+- [ ] Budget → sync previews on an item: amounts unchanged.
+- [ ] After upgrading: each budget app, SimpleFIN, Tiingo and SEC connection still connects and syncs (credentials re-encrypted only if any were plain). Run a budget sync: actuals return and savings history keeps every past month.
+- [ ] Settings → Contribution & Tax Limits → Copy from a year holding a "Not used by Ledgr" row: every Ledgr limit copies; the household's own row stays only in the source year.
+- [ ] Paycheck: figures unchanged; a pre-v0.9.0 after-tax FICA-exempt deduction (if any) shows its box unchecked and the paystub-check SS/Medicare note counts it.
+- [ ] `/api/health/detailed` (admin): no `startup_tasks` job listed.
+
+### Under the hood
+
+**Counts (v0.10.5 → v0.10.6, at the release tip):** 155 commits over v0.10.5; `src/` 550 files, +10,508 / −7,709. Unregistered fallbacks 394 → 364; type assertions 820 → 792; impossible-state guards (typed lint) 181 → 179; copied code 27 blocks / 578 lines → 25 / 529; known layer breaks 43 → 29; PostgreSQL router known failures 88 → 7; undocumented procedures 135 → 34 (new count); abbreviations 339 → 1,387 (the W8 set's 1,064 newly counted, the rest fell by 16); owner-question ids in comments 12 → 8 (new count). Routers: procedures over 100 lines 27 → 11.
+
+- Structure: 13 long router procedures moved whole into services; the projection pipeline, SimpleFIN/tax-data/SEC sync and the pure builders in their layers; `lib/db` sorted into `shapes/`, `migrate/`, `backup/`; NIIT, Social Security multipliers, balance accessors and `resolveTaxParams` out of config; one name per folder (`net-worth`, `debts`, `tax-buckets`); homes for the Profiles and contribution UI; the projection components split into `simulation/`, `overrides/`, `table/`. Known layer breaks 43 → 29.
+- Readers: one stored-shape reader; credentials, budget cache, tax-data files and "Changes by year" read through their shapes, not casts.
+- Checks: `Comments-only:` commits proven by code tokens; renames may change comments by exactly their names; owner-question ids and a second abbreviation set counted; undocumented procedures counted; the PostgreSQL router suite compares decimals by value (known list 88 → 11 → 7); the engine invariants run on a fixed seed.
+- Page budgets re-set once on the combined build (owner W9): budgets are each page's measured size + 2 KB. 3 rise by 1 KB (Contributions 291, not-found 188, demo 189), 13 fall (Tax Buckets 252 → 232, Dashboard 336 → 331, Brokerage 246 → 243, and ten by 1 KB), 22 unchanged.
+
 ## [0.10.5] - 2026-11-09
 
 v0.10.5 tightens what the code says and how it is checked, without changing what Ledgr shows, with one owner-approved correction. Every request now reads the date once and passes it down; every place that asked "is this an HSA or an IRA?" now asks what the account type does; the per-person contribution and paycheck stages moved into pure code; and the words on screen settle on one word per meaning ("Projection", "Retirement budget", "Baseline", "Goals"). Only an admin can now set up an integration, matching the admin-only Integrations page. New checks hold the line: copied code, abbreviations, clock reads, fallbacks, query names and page budgets in bytes each have a count that only falls. A real-data comparison against v0.10.4 found 131 of 131 procedures identical on the release tip, 19 of them compared across a rename.
