@@ -44,7 +44,6 @@ import {
 /** Gross-up convergence, carried into the tax (see the header). */
 const GROSS_UP = 1;
 
-const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
 const SAME_YEAR_MAGI = `v0.11 Tax "Senior deduction must use same-year MAGI in every year"`;
 const ONE_RETURN_DEDUCTIONS = `v0.11 Tax "One returnDeductions()"`;
 const GAP_YEARS = `v0.11 Tax "Gap years have no 65+ deductions"`;
@@ -86,25 +85,24 @@ describe("answer key: gains in an engine year", () => {
     // from 0: tax = 15% × (W − 98,900) (key: 3,165 at W 120,000); W =
     // 120,000 + 0.15W − 14,835 → W = 105,165 / 0.85 = 123,723.53, tax
     // 3,723.53.
-    xfail({
-      id: "tax/G2-MFJ [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () => {
-        const r = retiredYear(
-          {
-            status: "MFJ",
-            people: [{ birthYear: 1970 }, { birthYear: 1970 }],
-            brokerage: { balance: 5_000_000, basis: 0 },
-            spending: 120_000,
-            endYear: 2028,
-          },
-          2026,
-        );
-        return { withdrawal: r.totalWithdrawal, tax: r.taxCost };
-      },
-      expected: { withdrawal: 120_000, tax: 0 },
-      today: { withdrawal: 123_723.53, tax: 3_723.53 },
-      tolerance: GROSS_UP,
+    it("tax/G2-MFJ [TAX-16]", () => {
+      cents(
+        (() => {
+          const r = retiredYear(
+            {
+              status: "MFJ",
+              people: [{ birthYear: 1970 }, { birthYear: 1970 }],
+              brokerage: { balance: 5_000_000, basis: 0 },
+              spending: 120_000,
+              endYear: 2028,
+            },
+            2026,
+          );
+          return { withdrawal: r.totalWithdrawal, tax: r.taxCost };
+        })(),
+        { withdrawal: 120_000, tax: 0 },
+        GROSS_UP,
+      );
     });
   });
 });

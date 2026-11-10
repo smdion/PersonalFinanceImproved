@@ -33,10 +33,14 @@ export function repriceConversionYear(
   // LTCG bracket: the gains are re-priced on the revised ordinary income, and
   // the shown rate reads it as taxable income.
   let postConversionLtcgRate: number;
-  const revisedOrdinary = ltcgStackBase(
+  const revised = ltcgStackBase(
     actualTaxableIncome + rothConversionAmount,
     grownStandardDeduction,
-  ).ordinaryTaxable;
+  );
+  const revisedOrdinary = revised.ordinaryTaxable;
+  const stackTop =
+    revisedOrdinary +
+    Math.max(0, brokerageGainsPortion - revised.unusedDeduction);
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
       scheduleDGainsTax(
@@ -53,7 +57,7 @@ export function repriceConversionYear(
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
     postConversionLtcgRate = getLtcgRate(
-      revisedOrdinary + brokerageGainsPortion,
+      stackTop,
       filingStatus,
       grownLtcgBrackets,
     );
@@ -64,11 +68,7 @@ export function repriceConversionYear(
     // No tax is actually computed from this value.
     postConversionLtcgRate =
       brokerageGainsPortion > 0 && filingStatus
-        ? getLtcgRate(
-            revisedOrdinary + brokerageGainsPortion,
-            filingStatus,
-            grownLtcgBrackets,
-          )
+        ? getLtcgRate(stackTop, filingStatus, grownLtcgBrackets)
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus

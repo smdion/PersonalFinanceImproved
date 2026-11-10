@@ -42,7 +42,7 @@
  *   list additions". P25's blindness half stays below as `it.todo`.
  */
 import { describe, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import { retiredYear } from "../../fixtures/answer-key-household";
 import { readTaxData, taxDataLimitMap } from "../../helpers/tax-data";
 import {
@@ -314,8 +314,6 @@ function additionalMedicare(status: ReturnFilingStatus, jobs: number[]) {
   return { liability: r.additionalMedicare, balance };
 }
 
-const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
-
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
 // L8 provisional income = other + ½ benefits (+ tax-exempt interest).
 // Base (line 9): 25,000 Single/HOH, 32,000 MFJ. Line 11: 9,000 / 12,000.
@@ -540,19 +538,18 @@ describe("answer key: long-term gains", () => {
     // 16,100 = 48,900; L5 0; L9 = min(48,900, 49,450) = 48,900: all at
     // 0%. Today: ordinary clamped to 0, all 60,000 gains stacked from 0:
     // (60,000 − 49,450) × 15% = 1,582.50 (key "Today").
-    xfail({
-      id: "tax/L2 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 5_000,
-          gains: 60_000,
-          deductions: 16_100,
-        }),
-      expected: 0,
-      today: 1_582.5,
+    it("tax/L2 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "Single",
+            ordinary: 5_000,
+            gains: 60_000,
+            deductions: 16_100,
+          }))(),
+        0,
+      );
     });
   });
 
@@ -560,38 +557,36 @@ describe("answer key: long-term gains", () => {
     // 2026 MFJ: no other income, G 131,100, deduction 32,200. T = 98,900,
     // exactly the 0% top: all at 0% (spec LT-7). Today: (131,100 −
     // 98,900) × 15% = 4,830.00 (worked here; the key says "3,165-type").
-    xfail({
-      id: "tax/L3 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "MFJ",
-          ordinary: 0,
-          gains: 131_100,
-          deductions: 32_200,
-        }),
-      expected: 0,
-      today: 4_830,
+    it("tax/L3 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "MFJ",
+            ordinary: 0,
+            gains: 131_100,
+            deductions: 32_200,
+          }))(),
+        0,
+      );
     });
   });
 
   describe("tax/L4 [TAX-16]", () => {
     // Same, G 131,101: T 98,901; L9 98,900, L17 1 × 15% = 0.15. Today:
     // 32,201 × 15% = 4,830.15 (worked here; the key says "clamped").
-    xfail({
-      id: "tax/L4 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "MFJ",
-          ordinary: 0,
-          gains: 131_101,
-          deductions: 32_200,
-        }),
-      expected: 0.15,
-      today: 4_830.15,
+    it("tax/L4 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "MFJ",
+            ordinary: 0,
+            gains: 131_101,
+            deductions: 32_200,
+          }))(),
+        0.15,
+      );
     });
   });
 
@@ -599,19 +594,18 @@ describe("answer key: long-term gains", () => {
     // 2025 Single: no other income, G 64,100, deduction 15,750. T =
     // 48,350, the 2025 0% top: 0. Today: (64,100 − 48,350) × 15% =
     // 2,362.50 (worked here; the key says "clamped").
-    xfail({
-      id: "tax/L5 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2025,
-          status: "Single",
-          ordinary: 0,
-          gains: 64_100,
-          deductions: 15_750,
-        }),
-      expected: 0,
-      today: 2_362.5,
+    it("tax/L5 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2025,
+            status: "Single",
+            ordinary: 0,
+            gains: 64_100,
+            deductions: 15_750,
+          }))(),
+        0,
+      );
     });
   });
 
@@ -657,24 +651,23 @@ describe("answer key: long-term gains", () => {
     // Schedule 1-A) = 46,700. T = 73,300; L5 = max(0, 73,300 − 100,000)
     // = 0; L9 = 73,300 under 96,700: 0. Today: ordinary clamped to 0,
     // gains from 0: (100,000 − 96,700) × 15% = 495 (key).
-    xfail({
-      id: "tax/X3 [TAX-16] {return 2025 MFJ}",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2025,
-          status: "MFJ",
-          ordinary: 20_000,
-          gains: 100_000,
-          deductions: deductions({
+    it("tax/X3 [TAX-16] {return 2025 MFJ}", () => {
+      cents(
+        (() =>
+          yearTax({
             year: 2025,
             status: "MFJ",
-            seniors: 2,
-            magi: 120_000,
-          }),
-        }),
-      expected: 0,
-      today: 495,
+            ordinary: 20_000,
+            gains: 100_000,
+            deductions: deductions({
+              year: 2025,
+              status: "MFJ",
+              seniors: 2,
+              magi: 120_000,
+            }),
+          }))(),
+        0,
+      );
     });
   });
 });

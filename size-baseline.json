@@ -311,7 +311,7 @@
     "src/lib/pure/engine/types/decumulation.ts": 228,
     "src/lib/pure/engine/types/projection-result.ts": 574,
     "src/lib/pure/engine/types/routing.ts": 82,
-    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 370,
+    "src/lib/pure/engine/withdrawal-cost-ranking.ts": 365,
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 460,
     "src/lib/pure/engine/withdrawal-routing/caps.ts": 64,
     "src/lib/pure/engine/withdrawal-routing/index.ts": 270,
@@ -981,7 +981,7 @@
       "performRothConversion": 356
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
-      "rankWithdrawalTiers": 222
+      "rankWithdrawalTiers": 217
     },
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
       "routeWithdrawalsBracketFilling": 432
