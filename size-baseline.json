@@ -375,7 +375,7 @@
     "src/server/routers/projection/strategy.ts": 85,
     "src/server/routers/projection/tax-optimization.ts": 450,
     "src/server/routers/retirement/index.ts": 17,
-    "src/server/routers/salary-profiles.ts": 378,
+    "src/server/routers/salary-profiles.ts": 375,
     "src/server/routers/savings/api-sync.ts": 14,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 359,
@@ -1058,8 +1058,8 @@
       "computePaycheckSummary.results.map()": 203
     },
     "src/server/services/performance/finalize-year.ts": {
-      "finalizePerformanceYear": 394,
-      "finalizePerformanceYear.transaction()": 370
+      "finalizePerformanceYear": 393,
+      "finalizePerformanceYear.transaction()": 369
     },
     "src/server/services/projection/coast-fire.ts": {
       "computeCoastFireSimulation": 231

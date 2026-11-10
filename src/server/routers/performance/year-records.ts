@@ -325,9 +325,11 @@ export const yearRecordProcedures = {
               schema.accountPerformance.id,
               input.accounts.map((a) => a.id),
             ),
-          );
+          )
+          .orderBy(schema.accountPerformance.year);
         const before = [];
-        // One query at a time on the transaction's connection.
+        // One at a time on the transaction's connection, years ascending
+        // (each capture takes its year's lock).
         for (const { year } of years)
           before.push(await captureYearRollups(tx, year));
         for (const account of input.accounts) {

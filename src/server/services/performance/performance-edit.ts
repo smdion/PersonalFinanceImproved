@@ -10,6 +10,7 @@ import { computeGainLoss } from "@/lib/pure/investments/returns";
 import type { PerfCheck } from "@/lib/pure/investments/performance-checks";
 import {
   captureYearRollups,
+  lockPerformanceYear,
   syncYearRollups,
 } from "@/server/services/performance/performance-rollups";
 import { loadPerformanceChecks } from "@/server/services/performance/performance-checks";
@@ -98,6 +99,14 @@ export async function editAccountRow(
   edit: AccountEdit,
   opts: { chainNextYear?: boolean } = {},
 ): Promise<EditPreview | null> {
+  const [located] = await tx
+    .select({ year: schema.accountPerformance.year })
+    .from(schema.accountPerformance)
+    .where(eq(schema.accountPerformance.id, id));
+  if (!located) return null;
+  // Its year's and the next year's locks before any read the edit merges into.
+  for (const year of [located.year, located.year + 1])
+    await lockPerformanceYear(tx, year);
   const [row] = await tx
     .select()
     .from(schema.accountPerformance)

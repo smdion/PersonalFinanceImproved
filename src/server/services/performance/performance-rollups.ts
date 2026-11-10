@@ -20,6 +20,7 @@ import {
 } from "@/lib/pure/investments/returns";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import type { DbOrTx } from "@/lib/db";
+import { lockForTransaction } from "@/server/data/lock-row";
 import {
   buildPerfAccountLookups,
   getEffectiveCategory,
@@ -31,13 +32,21 @@ import {
 
 type AnnualRow = typeof schema.annualPerformance.$inferSelect;
 
+/** One performance year's lock: callers take several years in ascending order. */
+export function lockPerformanceYear(tx: DbOrTx, year: number): Promise<void> {
+  return lockForTransaction(tx, `performance-year:${year}`);
+}
+
 /** A year's per-category sums, taken before an edit. */
 type YearRollups = { year: number; byCategory: Map<string, Rollup> };
 
+/** Takes the year's lock first (held to the transaction's end), so two edits to
+ *  one year can't both carry their change into a finalized year's rollups. */
 export async function captureYearRollups(
   tx: DbOrTx,
   year: number,
 ): Promise<YearRollups> {
+  await lockPerformanceYear(tx, year);
   // One query at a time: `tx` is usually a transaction's single connection.
   const rows = await tx
     .select()
