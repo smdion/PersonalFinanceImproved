@@ -1991,7 +1991,7 @@ erDiagram
 | salaries    | jsonb                    | yes      | `{}`    | shape below |
 | created_at  | timestamp with time zone | yes      | `now()` |             |
 
-- `salaries`: type `Record<string, SalaryEntry>`; shape `salaryEntriesSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; read through `checkSalaryEntries` (lib/db/stored-salary-entries.ts); **old shapes still read (FALLBACKS)**
+- `salaries`: type `Record<string, SalaryEntry>`; shape `salaryEntriesSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; read through `checkSalaryEntries` (lib/db/stored-salary-entries.ts)
 
 ### savings_allocation_overrides
 

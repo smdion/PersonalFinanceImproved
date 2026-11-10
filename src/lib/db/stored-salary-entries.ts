@@ -1,17 +1,18 @@
 /**
  * salary_profiles.salaries as read: checked once against the entry schema;
- * a row the check refuses is logged and read as stored (any install loads).
+ * the stored-JSON migration converts or refuses every row, so a row the
+ * check refuses (a hand edit since) throws, naming the profile.
  */
 import { salaryEntriesSchema } from "@/lib/db/shapes/json-schemas";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
-import { passOnAsStored, readStoredShape } from "@/lib/db/stored-shape";
+import { readStoredShape } from "@/lib/db/stored-shape";
 
 type SalaryProfileRow = {
   id: number;
-  salaries: Record<string, SalaryEntry> | null;
+  salaries: Record<string, SalaryEntry>;
 };
 
-/** The row with its entries checked: `{}` when it holds none. */
+/** The row with its entries checked; throws on entries of another shape. */
 export function checkSalaryEntries<R extends SalaryProfileRow>(
   row: R,
 ): Omit<R, "salaries"> & { salaries: Record<string, SalaryEntry> } {
@@ -20,8 +21,9 @@ export function checkSalaryEntries<R extends SalaryProfileRow>(
     key: (issues) => `${row.id}|${issues.slice(0, 10)}`,
     data: (issues) => ({ profileId: row.id, issues: issues.slice(0, 10) }),
   });
-  // A JSON-null root (no writer stores one) reads as no entries.
-  const salaries =
-    read.fits || read.asStored != null ? passOnAsStored(read) : {};
-  return { ...row, salaries };
+  if (!read.fits)
+    throw new Error(
+      `Salary Profile ${row.id}: its stored entries don't fit their shape`,
+    );
+  return { ...row, salaries: read.value };
 }

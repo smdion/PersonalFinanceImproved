@@ -130,7 +130,6 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
     shape: `${SCHEMAS}#salaryEntriesSchema`,
     parsed: "read and write",
     reader: "lib/db/stored-salary-entries.ts#checkSalaryEntries",
-    fallbacks: "lib/db/stored-salary-entries.ts",
   },
   "state_version_tables.data": {
     shape: `${SCHEMAS}#stateVersionDataSchema`,
