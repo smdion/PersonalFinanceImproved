@@ -32,6 +32,12 @@ import {
   profileReadsBeforeTag,
   type SalaryCase,
 } from "./salary-entries-cases";
+import {
+  ACCOUNTS,
+  PROFILES as CONTRIBUTION_PROFILES,
+  REFUSED as REFUSED_FIELDS,
+  type ActiveFieldsCase,
+} from "./active-fields-cases";
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -86,7 +92,10 @@ describe.skipIf(skipWithoutPostgres)(
 
     /** An empty database migrated to just before the tag, holding the
      *  cases' rows; the journal is then the shipped one. */
-    async function installBefore(cases: readonly SalaryCase[] = PROFILES) {
+    async function installBefore(
+      cases: readonly SalaryCase[] = PROFILES,
+      contributions: readonly ActiveFieldsCase[] = CONTRIBUTION_PROFILES,
+    ) {
       await dropAllSchemas(client);
       const shipped = fs.readFileSync(
         path.join(REPO, "drizzle", "meta", "_journal.json"),
@@ -112,6 +121,19 @@ describe.skipIf(skipWithoutPostgres)(
           "INSERT INTO salary_profiles (id, name, salaries) VALUES ($1, $2, $3::jsonb)",
           [c.id, `Invented ${c.id}`, JSON.stringify(c.before)],
         );
+      for (const a of ACCOUNTS) {
+        const cols = Object.keys(a);
+        const params = cols.map((_, i) => "$" + String(i + 1));
+        await client.query(
+          `INSERT INTO contribution_accounts (${cols.join(", ")}) VALUES (${params.join(", ")})`,
+          Object.values(a),
+        );
+      }
+      for (const c of contributions)
+        await client.query(
+          "INSERT INTO contribution_profiles (id, name, contribution_active_fields) VALUES ($1, $2, $3::jsonb)",
+          [c.id, `Invented ${c.id}`, JSON.stringify(c.before)],
+        );
       fs.writeFileSync(journalPath(), shipped);
     }
 
@@ -121,6 +143,13 @@ describe.skipIf(skipWithoutPostgres)(
           "SELECT salaries FROM salary_profiles WHERE name LIKE 'Invented %' ORDER BY id",
         )
       ).rows.map((r) => r.salaries);
+
+    const activeRoots = async () =>
+      (
+        await client.query<{ f: unknown }>(
+          "SELECT contribution_active_fields AS f FROM contribution_profiles WHERE name LIKE 'Invented %' ORDER BY id",
+        )
+      ).rows.map((r) => r.f);
 
     const readable = PROFILES.flatMap((c, i) =>
       typeof c.before === "string" ? [] : [i],
@@ -142,6 +171,27 @@ describe.skipIf(skipWithoutPostgres)(
       expect(await roots()).toEqual(first);
     });
 
+    it("converts the contribution active fields as a pending migration, and a later start writes nothing", async () => {
+      await installBefore();
+      migrate();
+      const first = await activeRoots();
+      expect(first).toEqual(CONTRIBUTION_PROFILES.map((c) => c.after));
+      migrate();
+      expect(await activeRoots()).toEqual(first);
+    });
+
+    it("a refused active-fields row refuses the start, and nothing changes", async () => {
+      await installBefore(PROFILES, [
+        ...CONTRIBUTION_PROFILES,
+        ...REFUSED_FIELDS,
+      ]);
+      const before = [await roots(), await activeRoots()];
+      expect(() => migrate()).toThrow(
+        /contribution_profiles 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512/,
+      );
+      expect([await roots(), await activeRoots()]).toEqual(before);
+    });
+
     it.each([
       [
         "a recorded hash that no longer matches",
@@ -159,6 +209,9 @@ describe.skipIf(skipWithoutPostgres)(
           await client.query(damage);
           migrate();
           expect(await roots()).toEqual(converted);
+          expect(await activeRoots()).toEqual(
+            CONTRIBUTION_PROFILES.map((c) => c.after),
+          );
         }
       },
     );

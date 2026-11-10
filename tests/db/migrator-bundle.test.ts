@@ -50,6 +50,7 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/v0106-joint-person-ids.ts",
         "src/lib/db/migrate/v0106-cached-months.ts",
         "src/lib/db/migrate/v0106-salary-entries.ts",
+        "src/lib/db/migrate/v0106-active-fields.ts",
         "src/lib/db/migrate/v0106-stored-json.ts",
         "src/lib/db/migrate/frozen-shape.ts",
         "src/lib/db/backup/version-tables.ts",

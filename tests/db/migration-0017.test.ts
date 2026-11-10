@@ -6,7 +6,9 @@
  * at 0015 with 0016 and 0017 both pending ends where the restore ladder
  * ends for the same rows.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { journalBefore } from "./journal-before";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -17,6 +19,13 @@ import { MATCH_VALUE_TAG } from "@/lib/db/migrate/v0102-match-value";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
+
+// These cases hold shapes the stored-JSON tag refuses by design (tested in
+// its own files): the restore here runs the converters before it.
+vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
+  ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
+  STORED_JSON_CONVERTERS: {},
+}));
 
 const REPO = process.cwd();
 const FOLDER = "drizzle-sqlite";
@@ -46,9 +55,12 @@ describe("migration 0017 through the real migrator (SQLite)", () => {
   });
 
   /** An install migrated to just before `tag`, holding `seed`'s rows; the
-   *  journal is then back to the shipped one, so `tag` on is pending. */
+   *  journal is then the shipped one before the stored-JSON tag, so `tag` on is pending. */
   function installBefore(tag: string, seed: (db: Database.Database) => void) {
-    const shipped = fs.readFileSync(journalPath(), "utf8");
+    const shipped = journalBefore(
+      fs.readFileSync(journalPath(), "utf8"),
+      STORED_JSON_TAG,
+    );
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     const at = journal.entries.findIndex((e) => e.tag === tag);
     expect(at).toBeGreaterThan(0);

@@ -4,6 +4,8 @@
  * step does for an older backup, and a second run changes nothing. The
  * PostgreSQL file runs the same cases in migration-0014-postgres.test.ts.
  */
+import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { journalBefore } from "./journal-before";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import * as fs from "node:fs";
@@ -131,7 +133,10 @@ describe("migration 0014 through the real migrator (SQLite)", () => {
 
   it("converts a v0.10.1 install's profiles as a pending migration", () => {
     // Install at 0013 (v0.10.1): the journal up to 0014.
-    const shipped = fs.readFileSync(journalPath(), "utf8");
+    const shipped = journalBefore(
+      fs.readFileSync(journalPath(), "utf8"),
+      STORED_JSON_TAG,
+    );
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     const shippedCount = journal.entries.length;
     const at = journal.entries.findIndex((e) => e.tag === TAG);

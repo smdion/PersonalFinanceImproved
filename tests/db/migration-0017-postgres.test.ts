@@ -8,12 +8,14 @@
  * PostgreSQL job): it drops the database's schemas.
  */
 // First: its mocks must be in place before any app module loads.
+import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { journalBefore } from "./journal-before";
 import {
   dropAllSchemas,
   pointAtTestDatabase,
   skipWithoutPostgres,
 } from "../routers/setup-postgres";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import pg from "pg";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -24,6 +26,13 @@ import { MATCH_VALUE_TAG } from "@/lib/db/migrate/v0102-match-value";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
+
+// These cases hold shapes the stored-JSON tag refuses by design (tested in
+// its own files): the restore here runs the converters before it.
+vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
+  ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
+  STORED_JSON_CONVERTERS: {},
+}));
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -89,12 +98,15 @@ describe.skipIf(skipWithoutPostgres)(
     }
 
     /** An empty database migrated to just before `tag`, seeded; the journal
-     *  is then the shipped one, so `tag` on is pending. */
+     *  is then the shipped one before the stored-JSON tag. */
     async function installBefore(tag: string, seed: () => Promise<void>) {
       await dropAllSchemas(client);
-      const shipped = fs.readFileSync(
-        path.join(REPO, "drizzle", "meta", "_journal.json"),
-        "utf8",
+      const shipped = journalBefore(
+        fs.readFileSync(
+          path.join(REPO, "drizzle", "meta", "_journal.json"),
+          "utf8",
+        ),
+        STORED_JSON_TAG,
       );
       const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
       journal.entries.splice(journal.entries.findIndex((e) => e.tag === tag));

@@ -27,6 +27,13 @@ import pgJournal from "../../drizzle/meta/_journal.json";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
 
+// These cases hold shapes the stored-JSON tag refuses by design (tested in
+// its own files): the restore here runs the converters before it.
+vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
+  ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
+  STORED_JSON_CONVERTERS: {},
+}));
+
 // applyContribActiveFields' module loads the app's schema with a runtime
 // require only the app's bundler resolves; the merge itself never reads it.
 vi.mock("@/lib/db/schema", () => ({}));

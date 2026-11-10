@@ -65,13 +65,16 @@ export const ACCOUNT_CASES = [
 export const UNDECIDABLE = account(6, "joint", 2, null);
 
 /** Profiles: row 2 at a fixed amount, row 6 (and the individual row 5) at a
- *  percent of salary in the second profile only. */
+ *  percent of salary in the second profile only; each value paired with its
+ *  method, as the stored-JSON tag requires. */
 export const PROFILES = [
   {
     id: 101,
     name: "Invented A",
     contribution_active_fields: {
-      contributionAccounts: { "2": { contributionMethod: "fixed_monthly" } },
+      contributionAccounts: {
+        "2": { contributionValue: "100", contributionMethod: "fixed_monthly" },
+      },
     },
   },
   {
@@ -79,8 +82,14 @@ export const PROFILES = [
     name: "Invented B",
     contribution_active_fields: {
       contributionAccounts: {
-        "5": { contributionMethod: "percent_of_salary" },
-        "6": { contributionMethod: "percent_of_salary" },
+        "5": {
+          contributionValue: "5",
+          contributionMethod: "percent_of_salary",
+        },
+        "6": {
+          contributionValue: "5",
+          contributionMethod: "percent_of_salary",
+        },
       },
     },
   },

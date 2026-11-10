@@ -4,7 +4,7 @@
  * a second pass changes nothing. The live migration runs the same cases in
  * migration-0016.test.ts (SQLite) and migration-0016-postgres.test.ts.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   MATCH_RATE_CONVERTER,
   MATCH_RATE_TAG,
@@ -20,6 +20,13 @@ import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transform
 import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { ACCOUNT_CASES, PROFILE_CASES, NOT_JSON } from "./match-rate-cases";
+
+// These cases hold shapes the stored-JSON tag refuses by design (tested in
+// its own files): the restore here runs the converters before it.
+vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
+  ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
+  STORED_JSON_CONVERTERS: {},
+}));
 
 const CURRENT = pgJournal.entries.at(-1)!.tag;
 

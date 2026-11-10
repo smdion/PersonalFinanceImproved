@@ -12,6 +12,9 @@ import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
 import { MATCH_RATE_CONVERTER } from "@/lib/db/migrate/v0102-match-rate";
 import { MATCH_VALUE_CONVERTER } from "@/lib/db/migrate/v0102-match-value";
+import { ACTIVE_FIELDS_CONVERTER } from "@/lib/db/migrate/v0106-active-fields";
+import { convertBackup } from "@/lib/db/migrate/migration-converters";
+import { MigrationRefusal } from "@/lib/db/migrate/converter-refusal";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
 import {
   expectRegistryReplaySafe,
@@ -40,6 +43,27 @@ const fixture = () => ({
   })),
 });
 
+/** The fixture's profiles the stored-JSON tag takes after 0016 and 0017:
+ *  the ones it refuses stop the start (tested with that tag). */
+function takenByEveryTag() {
+  const all = fixture();
+  return {
+    ...all,
+    contribution_profiles: all.contribution_profiles.filter((p) => {
+      const tables = structuredClone({ ...all, contribution_profiles: [p] });
+      const list = [MATCH_RATE_CONVERTER, MATCH_VALUE_CONVERTER];
+      convertBackup(tables, { t: list }, "t");
+      try {
+        convertBackup(tables, { t: ACTIVE_FIELDS_CONVERTER }, "t");
+        return true;
+      } catch (e) {
+        if (e instanceof MigrationRefusal) return false;
+        throw e;
+      }
+    }),
+  };
+}
+
 describe("the converter registry at the journal head", () => {
   let dir: string;
   const env = { ...process.env };
@@ -66,7 +90,7 @@ describe("the converter registry at the journal head", () => {
 
   it("run twice over older-shaped rows, writes nothing the second time", () => {
     const db = new Database(process.env.SQLITE_PATH!);
-    for (const [table, rows] of Object.entries(fixture()))
+    for (const [table, rows] of Object.entries(takenByEveryTag()))
       for (const row of rows) {
         const cols = Object.keys(row);
         db.prepare(

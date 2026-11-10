@@ -11,6 +11,7 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { runSQLite } from "../../db-migrate";
 import { SALARY_ENTRIES_CONVERTER } from "@/lib/db/migrate/v0106-salary-entries";
+import { ACTIVE_FIELDS_CONVERTER } from "@/lib/db/migrate/v0106-active-fields";
 import {
   expectRegistryReplaySafe,
   expectRestoreMatchesSqlite,
@@ -20,6 +21,10 @@ import {
   PROFILES as SALARY_PROFILES,
   SNAPSHOT_PERSON,
 } from "./salary-entries-cases";
+import {
+  ACCOUNTS,
+  PROFILES as CONTRIBUTION_PROFILES,
+} from "./active-fields-cases";
 
 const REPO = process.cwd();
 
@@ -42,8 +47,18 @@ const salaryRows = (): Fixture => ({
   })),
 });
 
+/** The active fields' cases it converts, over their accounts. */
+const activeFieldsRows = (): Fixture => ({
+  contribution_accounts: ACCOUNTS.map((a) => ({ ...a })),
+  contribution_profiles: CONTRIBUTION_PROFILES.map((c) => ({
+    id: c.id,
+    name: `Invented ${c.id}`,
+    contribution_active_fields: JSON.stringify(c.before),
+  })),
+});
+
 /** Every shape's rows, for the registry at the head. */
-const allRows = (): Fixture => ({ ...salaryRows() });
+const allRows = (): Fixture => ({ ...salaryRows(), ...activeFieldsRows() });
 
 describe("the stored-JSON tag's shapes at the journal head", () => {
   let dir: string;
@@ -91,6 +106,10 @@ describe("the stored-JSON tag's shapes at the journal head", () => {
 
   it("salary entries: the restore step gives SQLite's rows", () => {
     expectRestoreMatchesSqlite(db, SALARY_ENTRIES_CONVERTER, salaryRows());
+  });
+
+  it("contribution active fields: the restore step gives SQLite's rows", () => {
+    expectRestoreMatchesSqlite(db, ACTIVE_FIELDS_CONVERTER, activeFieldsRows());
   });
 
   it("the whole registry over every shape's rows writes nothing the second time", () => {

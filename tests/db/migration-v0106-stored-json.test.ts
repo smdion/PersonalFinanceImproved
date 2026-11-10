@@ -24,6 +24,12 @@ import {
   profileReadsBeforeTag,
   type SalaryCase,
 } from "./salary-entries-cases";
+import {
+  ACCOUNTS,
+  PROFILES as CONTRIBUTION_PROFILES,
+  REFUSED as REFUSED_FIELDS,
+  type ActiveFieldsCase,
+} from "./active-fields-cases";
 
 const REPO = process.cwd();
 const FOLDER = "drizzle-sqlite";
@@ -54,7 +60,10 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
 
   /** An install migrated to just before the tag, holding the cases' rows;
    *  the journal is then the shipped one, so the tag is pending. */
-  function installBefore(cases: readonly SalaryCase[] = PROFILES) {
+  function installBefore(
+    cases: readonly SalaryCase[] = PROFILES,
+    contributions: readonly ActiveFieldsCase[] = CONTRIBUTION_PROFILES,
+  ) {
     const shipped = fs.readFileSync(journalPath(), "utf8");
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     const at = journal.entries.findIndex((e) => e.tag === STORED_JSON_TAG);
@@ -75,6 +84,17 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     );
     for (const c of cases)
       salary.run(c.id, `Invented ${c.id}`, JSON.stringify(c.before));
+    for (const a of ACCOUNTS) {
+      const cols = Object.keys(a);
+      db.prepare(
+        `INSERT INTO contribution_accounts (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
+      ).run(...Object.values(a).map((v) => (typeof v === "boolean" ? 1 : v)));
+    }
+    const profile = db.prepare(
+      "INSERT INTO contribution_profiles (id, name, contribution_active_fields) VALUES (?, ?, ?)",
+    );
+    for (const c of contributions)
+      profile.run(c.id, `Invented ${c.id}`, JSON.stringify(c.before));
     db.close();
     fs.writeFileSync(journalPath(), shipped);
   }
@@ -89,6 +109,18 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
       .all() as { salaries: string }[];
     db.close();
     return rows.map((r): unknown => JSON.parse(r.salaries));
+  };
+
+  /** Each invented Contribution Profile's root as stored. */
+  const activeRoots = () => {
+    const db = open();
+    const rows = db
+      .prepare(
+        "SELECT contribution_active_fields AS f FROM contribution_profiles WHERE name LIKE 'Invented %' ORDER BY id",
+      )
+      .all() as { f: string }[];
+    db.close();
+    return rows.map((r): unknown => JSON.parse(r.f));
   };
 
   const readable = PROFILES.flatMap((c, i) =>
@@ -107,6 +139,24 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     expect(roots()).toEqual(first);
   });
 
+  it("converts the contribution active fields as a pending migration, and a later start writes nothing", () => {
+    installBefore();
+    runSQLite();
+    const first = activeRoots();
+    expect(first).toEqual(CONTRIBUTION_PROFILES.map((c) => c.after));
+    runSQLite();
+    expect(activeRoots()).toEqual(first);
+  });
+
+  it("a refused active-fields row refuses the start, and nothing changes", () => {
+    installBefore(PROFILES, [...CONTRIBUTION_PROFILES, ...REFUSED_FIELDS]);
+    const before = [roots(), activeRoots()];
+    expect(() => runSQLite()).toThrow(
+      /contribution_profiles 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512/,
+    );
+    expect([roots(), activeRoots()]).toEqual(before);
+  });
+
   it.each([
     [
       "a recorded hash that no longer matches",
@@ -123,6 +173,7 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
       db.close();
       runSQLite();
       expect(roots()).toEqual(converted);
+      expect(activeRoots()).toEqual(CONTRIBUTION_PROFILES.map((c) => c.after));
     }
   });
 
