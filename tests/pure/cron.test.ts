@@ -1,8 +1,8 @@
 /**
  * T3 — src/lib/auth/cron.ts had zero direct test coverage despite being the
  * shared auth primitive for every cron/internal-endpoint route
- * (startup, versions/daily, simplefin/daily, tax-data/weekly, sec/weekly,
- * health/detailed). All six routes are unauthenticated-by-default except
+ * (versions/daily, simplefin/daily, tax-data/weekly, sec/weekly,
+ * health/detailed). All five routes are unauthenticated-by-default except
  * for this header check, so a bug here is a real auth-bypass surface, not
  * just a missing-test nit.
  */

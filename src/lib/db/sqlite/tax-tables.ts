@@ -154,7 +154,7 @@ export type AccountMapping = {
   localName: string; // Cached display name (UI only, not for resolution)
   remoteAccountId: string;
   syncDirection: "pull" | "push" | "both";
-  // Typed ID fields — preferred over parsing localId prefix strings
+  // Typed ids: what a mapping resolves by (the credentials migration filled them from localId)
   assetId?: number; // Direct reference to otherAssetItems.id
   loanId?: number; // Direct reference to mortgageLoans.id
   loanMapType?: "propertyValue" | "loanBalance"; // What the mortgage mapping controls
