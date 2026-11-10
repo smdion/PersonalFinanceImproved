@@ -5,7 +5,8 @@
  * and the message names ids, never a value; a converter asking for a
  * missing ENCRYPTION_KEY refuses the same way. A hand-added column never
  * makes the replay skip a change (PostgreSQL has no table recreate), and a
- * dropped migration table replays as a cleared journal. Only when
+ * dropped migration table replays as a cleared journal; a pre-upgrade
+ * backup keeps each date's day east of UTC. Only when
  * TEST_DATABASE_URL names a throwaway database (CI's PostgreSQL job): it
  * drops its schemas.
  */
@@ -143,6 +144,33 @@ describe.skipIf(skipWithoutPostgres)(
         entries: unknown[];
       };
       expect((await state()).recorded).toBe(journal.entries.length);
+    });
+
+    it("a pre-upgrade backup written east of UTC keeps each date's day", async () => {
+      const saved = process.env.TZ;
+      process.env.TZ = "Pacific/Kiritimati";
+      try {
+        await dropAllSchemas(client);
+        await runPostgres();
+        await client.query(
+          "INSERT INTO people (name, date_of_birth) VALUES ('Invented Dated', '1980-06-15')",
+        );
+        await client.query("DELETE FROM drizzle.__drizzle_migrations");
+        const before = new Set(fs.readdirSync(testDb.backupDir));
+        await runPostgres();
+        const file = fs
+          .readdirSync(testDb.backupDir)
+          .find((f) => !before.has(f) && f.endsWith(".json"))!;
+        const backup = JSON.parse(
+          fs.readFileSync(path.join(testDb.backupDir, file), "utf8"),
+        ) as { tables: { people: { date_of_birth: unknown }[] } };
+        expect(backup.tables.people.map((p) => p.date_of_birth)).toEqual([
+          "1980-06-15",
+        ]);
+      } finally {
+        if (saved === undefined) delete process.env.TZ;
+        else process.env.TZ = saved;
+      }
     });
 
     it("rolls back the tag's earlier converter and every pending tag", async () => {

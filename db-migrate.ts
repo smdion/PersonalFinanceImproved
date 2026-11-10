@@ -344,6 +344,20 @@ function warnIfEphemeral(backupPath: string): void {
   });
 }
 
+/** The pre-upgrade backup's read: a `date` column (OID 1082) as its stored
+ *  "YYYY-MM-DD" text, never a Date node-pg parsed at local midnight, which
+ *  JSON writes as the day before east of UTC. */
+export function backupColumnTypes(
+  types: typeof import("pg").types,
+): import("pg").CustomTypesConfig {
+  return {
+    getTypeParser: ((oid: number, format?: "text" | "binary") =>
+      oid === 1082
+        ? (value: string) => value
+        : types.getTypeParser(oid, format)) as typeof types.getTypeParser,
+  };
+}
+
 /**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
  * disk — the safety net before any schema change (squash or normal
@@ -359,6 +373,7 @@ async function writePreMigrationBackupPg(
   schemaVersion: string,
 ): Promise<string | null> {
   const tables: Record<string, unknown[]> = {};
+  const columnTypes = backupColumnTypes((await import("pg")).types);
   try {
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
     const { rows: existing } = await client.query<{ tablename: string }>(
@@ -370,7 +385,10 @@ async function writePreMigrationBackupPg(
         tables[tableName] = [];
         continue;
       }
-      const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+      const { rows } = await client.query({
+        text: `SELECT * FROM "${tableName}"`,
+        types: columnTypes,
+      });
       tables[tableName] = rows;
     }
     await client.query("COMMIT");
