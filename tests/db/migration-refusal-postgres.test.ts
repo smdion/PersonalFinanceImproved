@@ -19,7 +19,7 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 import type { DataConverter } from "@/lib/db/migrate/migration-converters";
 import { MigrationRefusal } from "@/lib/db/migrate/converter-refusal";
-import { encrypts, over, renames } from "./converter-list-cases";
+import { encrypts, refuses, renames } from "./converter-list-cases";
 
 const hook = vi.hoisted(() => ({
   converters: {} as Record<string, DataConverter | DataConverter[]>,
@@ -34,17 +34,6 @@ import { runPostgres } from "../../db-migrate";
 const REPO = process.cwd();
 const TAG = "0015_v0102_dead_data";
 const SECRET = "invented-secret-value";
-
-const refuses = over((rows) => {
-  const ids = rows.filter((r) => r.key.startsWith("retired_")).map((r) => r.id);
-  if (ids.length > 0)
-    throw new MigrationRefusal({
-      problem: "Invented rows can't be converted",
-      refused: { app_settings: ids },
-      fix: "Change them in the previous version, then upgrade again.",
-    });
-  return { updates: [] };
-});
 
 describe.skipIf(skipWithoutPostgres)(
   "a refusal in the real migrator (PostgreSQL)",
@@ -137,7 +126,7 @@ describe.skipIf(skipWithoutPostgres)(
       hook.converters[TAG] = [renames, encrypts];
       try {
         await expect(runPostgres()).rejects.toThrow(
-          /^ENCRYPTION_KEY is required to encrypt 1 invented credential\(s\)/,
+          /^Stored credentials must be encrypted, and ENCRYPTION_KEY is missing/,
         );
       } finally {
         process.env.ENCRYPTION_KEY = key;

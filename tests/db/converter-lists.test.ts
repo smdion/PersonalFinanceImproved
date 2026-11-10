@@ -206,6 +206,59 @@ describe("a tag's converter list", () => {
   });
 });
 
+describe("a refused write names no value", () => {
+  it("SQLite: a driver error comes back as the statement and its code only", () => {
+    const db = settingsDb();
+    db.exec("CREATE UNIQUE INDEX settings_key ON app_settings (key)");
+    const clash = over(() => ({
+      updates: [],
+      inserts: [
+        {
+          table: "app_settings",
+          row: { key: "invented_a", value: "invented-secret-value" },
+        },
+      ],
+    }));
+    expect(() =>
+      runConverterSqlite(db, { [TAG]: clash }, TAG, "afterSql"),
+    ).toThrow(
+      /^Converter insert into app_settings failed \(SQLITE_CONSTRAINT_UNIQUE\)$/,
+    );
+  });
+
+  it("PostgreSQL: the same, from the driver's SQLSTATE", async () => {
+    const client = {
+      query: async (sql: string) => {
+        if (sql.startsWith("INSERT"))
+          throw Object.assign(
+            new Error("duplicate key value (key)=(invented-secret-value)"),
+            { code: "23505" },
+          );
+        return { rows: [{ present: true }], rowCount: 1 };
+      },
+    };
+    const clash = over(() => ({
+      updates: [],
+      inserts: [{ table: "app_settings", row: { key: "k" } }],
+    }));
+    await expect(
+      runConverterPg(client, { [TAG]: clash }, TAG, "afterSql"),
+    ).rejects.toThrow(/^Converter insert into app_settings failed \(23505\)$/);
+  });
+
+  it("an unwritable value is named by its kind", () => {
+    const db = settingsDb();
+    const nan = over(() => ({
+      updates: [{ table: "app_settings", id: 1, set: { value: Number.NaN } }],
+    }));
+    expect(() =>
+      runConverterSqlite(db, { [TAG]: nan }, TAG, "afterSql"),
+    ).toThrow(
+      "Converter update app_settings id 1: value can't be written (a number that isn't finite)",
+    );
+  });
+});
+
 describe("the replay-twice helper", () => {
   it("passes a projection and a list that inserts and deletes once", () => {
     expectRestoreReplaySafe([renames, counts, purges], {

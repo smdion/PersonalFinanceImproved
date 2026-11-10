@@ -976,15 +976,21 @@ SQLite and PostgreSQL).
   restore step checks every write of a result before the first lands.
   The tag logs one line per phase with the counts.
 - **Refusing the start:** rows a converter can't convert without changing
-  what they read as make it throw `MigrationRefusal`
-  (`src/lib/db/migrate/converter-refusal.ts`). Its message names each
-  table's row ids and field names, never a value, says nothing was
-  changed and gives the fix. The migration's one transaction (every
-  pending tag) rolls back, the migrator logs `migration_failed` with the
-  ids and exits non-zero, so the container doesn't start and the previous
-  image still runs. On restore it fails the restore before any write.
+  what they read as make it throw `ConverterRefusal` with a code it
+  declares in `refusals` (`src/lib/db/migrate/converter-refusal.ts`):
+  the problem, the way out on an upgrade and on a restore, and the field
+  names it may name. The runner checks the code, that each refused table
+  is one the converter reads and each field is declared, and turns it into
+  `MigrationRefusal`: the declared words, row ids and field names, never a
+  value. The migration's one transaction (every pending tag) rolls back,
+  the migrator logs `migration_failed` with the ids and exits non-zero, so
+  the container doesn't start and the previous image still runs. On
+  restore it fails the restore before any write, in the restore's words.
+  For the same reason a value a converter can't write is named by its
+  kind, and a statement the driver refuses by its label and the driver's
+  code, never the driver's message.
 - **The encryption key:** a converter gets its tables and a context
-  whose `encryptionKey(purpose)` reads `ENCRYPTION_KEY` when the converter
+  whose `encryptionKey()` reads `ENCRYPTION_KEY` when the converter
   asks, after `db-migrate.ts` has loaded `.env` (and from the app's
   environment on restore), through `src/lib/crypto-envelope.ts`, the
   server-free half of the encryption, which the migrator bundle may

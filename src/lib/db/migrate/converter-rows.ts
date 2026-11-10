@@ -36,5 +36,5 @@ export function asBool(value: unknown): boolean | null {
 /** What a converter gets besides its tables: the encryption key, read only
  *  when it asks, so an install with nothing to encrypt starts without one. */
 export type ConverterContext = {
-  readonly encryptionKey: (purpose: string) => Buffer;
+  readonly encryptionKey: () => Buffer;
 };

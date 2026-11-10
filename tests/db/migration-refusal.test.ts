@@ -1,9 +1,12 @@
 /**
- * A converter's refusal to start (MigrationRefusal): its message names row
- * ids and field names, never a value, and says nothing was changed; thrown
- * by the second converter of a tag, it rolls back the first one's writes
- * and every other pending tag in the real SQLite migrator, stops the
- * PostgreSQL runner before that converter writes, and fails a restore.
+ * A converter's refusal to start: it throws a declared code
+ * (ConverterRefusal), and the household gets that code's declared words
+ * for the path (an upgrade or a restore), row ids and declared field
+ * names, never a value. An undeclared code, a table the converter doesn't
+ * read or an undeclared field is a converter bug. Thrown by the second
+ * converter of a tag, it rolls back the first one's writes and every
+ * other pending tag in the real SQLite migrator, stops the PostgreSQL
+ * runner before that converter writes, and fails a restore.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
@@ -11,8 +14,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import type { DataConverter } from "@/lib/db/migrate/migration-converters";
-import { MigrationRefusal } from "@/lib/db/migrate/converter-refusal";
-import { over, renames } from "./converter-list-cases";
+import {
+  ConverterRefusal,
+  MigrationRefusal,
+  type RefusalText,
+} from "@/lib/db/migrate/converter-refusal";
+import { refuses, renames } from "./converter-list-cases";
+import { expectNoCellText } from "./converter-replay";
 
 const hook = vi.hoisted(() => ({
   converters: {} as Record<string, DataConverter | DataConverter[]>,
@@ -25,66 +33,88 @@ vi.mock("@/lib/db/migrate/migration-converters", async (importOriginal) => ({
 import {
   convertBackupInOrder,
   runConverterPg,
+  runConverterSqlite,
 } from "@/lib/db/migrate/migration-converters";
 import { runSQLite } from "../../db-migrate";
 
 const TAG = "0015_v0102_dead_data";
 const SECRET = "invented-secret-value";
-
-/** Refuses every `retired_*` row, naming its id and one field. */
-const refuses = over((rows) => {
-  const ids = rows.filter((r) => r.key.startsWith("retired_")).map((r) => r.id);
-  if (ids.length > 0)
-    throw new MigrationRefusal({
-      problem: "Invented rows can't be converted",
-      refused: { app_settings: ids },
-      fields: ["value"],
-      fix: "Change them in the previous version, then upgrade again.",
-    });
-  return { updates: [] };
-});
+const TEXT: RefusalText = {
+  problem: "Invented rows can't be converted",
+  upgradeFix: "Re-save them in the previous version.",
+  restoreFix: "Restore a newer backup.",
+  fields: ["allocationPriority"],
+};
 
 describe("MigrationRefusal's message", () => {
-  it("names sorted ids per table and field names, then the way out", () => {
-    const e = new MigrationRefusal({
-      problem: "Invented rows can't be converted",
-      refused: { salary_profiles: [5, 3, 5], jobs: [2], empty: [] },
-      fields: ["allocationPriority", SECRET, "has space", "allocationPriority"],
-      fix: "Re-save them in the previous version.",
-    });
+  it("upgrade: names sorted ids per table and the fields, then the way out", () => {
+    const e = new MigrationRefusal(
+      TEXT,
+      "upgrade",
+      { salary_profiles: [5, 3, 5], jobs: [2], empty: [] },
+      ["allocationPriority", "allocationPriority"],
+    );
     expect(e.message).toBe(
       "Invented rows can't be converted (rows: salary_profiles 3, 5; jobs 2; fields: allocationPriority). Nothing was changed. Re-save them in the previous version.",
     );
-    expect(e.refused).toEqual({
-      salary_profiles: [5, 3, 5],
-      jobs: [2],
-      empty: [],
-    });
-    expect(e.fields).toEqual(["allocationPriority"]);
+  });
+
+  it("restore: its own words, never the upgrade's", () => {
+    const e = new MigrationRefusal(TEXT, "restore", { jobs: [2] });
+    expect(e.message).toBe(
+      "This backup can't be restored as it is: Invented rows can't be converted (rows: jobs 2). Nothing was restored. Restore a newer backup.",
+    );
   });
 
   it("counts ids past fifty, and takes no row ids but integers", () => {
     const ids = Array.from({ length: 53 }, (_, i) => i + 1);
-    const e = new MigrationRefusal({
-      problem: "Too many",
-      refused: { t: ids },
-      fix: "Fix them.",
-    });
-    expect(e.message).toContain("49, 50 and 3 more)");
-    expect(
-      () =>
-        new MigrationRefusal({
-          problem: "p",
-          refused: { t: [1.5] },
-          fix: "f",
-        }),
-    ).toThrow(/row ids only/);
+    expect(new MigrationRefusal(TEXT, "upgrade", { t: ids }).message).toContain(
+      "49, 50 and 3 more)",
+    );
+    expect(() => new MigrationRefusal(TEXT, "upgrade", { t: [1.5] })).toThrow(
+      /row ids only/,
+    );
+  });
+});
+
+describe("what a converter may refuse with", () => {
+  const db = () => {
+    const d = new Database(":memory:");
+    d.exec(
+      "CREATE TABLE app_settings (id INTEGER PRIMARY KEY, key TEXT, value TEXT)",
+    );
+    d.exec("INSERT INTO app_settings VALUES (1, 'retired_a', 'x')");
+    return d;
+  };
+  const throwing = (e: ConverterRefusal): DataConverter => ({
+    ...refuses,
+    convert: () => {
+      throw e;
+    },
   });
 
-  it("with no rows, says only the problem and the way out", () => {
-    expect(
-      new MigrationRefusal({ problem: "No key", fix: "Set it." }).message,
-    ).toBe("No key. Nothing was changed. Set it.");
+  it.each([
+    ["an undeclared code", new ConverterRefusal("other", {}), /isn't declared/],
+    [
+      "a table it doesn't read",
+      new ConverterRefusal("retired", { people: [1] }),
+      /names a table its converter doesn't read/,
+    ],
+    [
+      "an undeclared field",
+      new ConverterRefusal("retired", { app_settings: [1] }, [SECRET]),
+      /names a field it doesn't declare/,
+    ],
+  ])("refuses %s, naming no value", (_, e, message) => {
+    let thrown: unknown;
+    try {
+      runConverterSqlite(db(), { [TAG]: throwing(e) }, TAG, "afterSql");
+    } catch (x) {
+      thrown = x;
+    }
+    expect(thrown).not.toBeInstanceOf(MigrationRefusal);
+    expect((thrown as Error).message).toMatch(message);
+    expect((thrown as Error).message).not.toContain(SECRET);
   });
 });
 
@@ -127,7 +157,16 @@ describe("a refusal stops the run before the refusing converter writes", () => {
     const restore = () =>
       convertBackupInOrder(tables, { [TAG]: [renames, refuses] });
     expect(restore).toThrow(MigrationRefusal);
-    expect(restore).not.toThrow(new RegExp(SECRET));
+    expect(restore).toThrow(
+      /^This backup can't be restored as it is: Invented rows can't be converted \(rows: app_settings 2; fields: value\)\. Nothing was restored\. Restore a newer backup\.$/,
+    );
+    let thrown: unknown;
+    try {
+      restore();
+    } catch (e) {
+      thrown = e;
+    }
+    expectNoCellText([(thrown as Error).message], tables);
   });
 });
 

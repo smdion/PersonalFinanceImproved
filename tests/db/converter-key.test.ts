@@ -112,7 +112,7 @@ describe("a converter's encryption key", () => {
     const e = refusal();
     expect(e).toBeInstanceOf(MigrationRefusal);
     expect((e as Error).message).toMatch(
-      /^ENCRYPTION_KEY is required to encrypt 1 invented credential\(s\): ENCRYPTION_KEY env var is not set\b.*\. Nothing was changed\. /,
+      /^Stored credentials must be encrypted, and ENCRYPTION_KEY is missing or isn't a base64 32-byte key\. Nothing was changed\. Set the key this install uses and start again\.$/,
     );
     expect(settings()).toEqual(before);
   });
@@ -124,7 +124,7 @@ describe("a converter's encryption key", () => {
     hook.converters[TAG] = encrypts;
     const e = refusal();
     expect(e).toBeInstanceOf(MigrationRefusal);
-    expect((e as Error).message).toContain("must decode to exactly 32 bytes");
+    expect((e as Error).message).toContain("isn't a base64 32-byte key");
     expect((e as Error).message).not.toContain(MALFORMED);
     expect(settings()).toEqual(before);
   });
@@ -161,7 +161,7 @@ describe("a converter's encryption key", () => {
       app_settings: [{ id: 1, key: "secret_a", value: '"invented"' }],
     };
     expect(() => convertBackup(tables, { [TAG]: encrypts }, TAG)).toThrow(
-      MigrationRefusal,
+      /^This backup can't be restored as it is: Stored credentials must be encrypted.*Nothing was restored\. Set the key this install uses, restart Ledgr and restore again\.$/,
     );
     expect(tables.app_settings[0]!.value).toBe('"invented"');
   });

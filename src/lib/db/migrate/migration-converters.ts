@@ -3,12 +3,19 @@
  *  replays, in the migration's transaction) and the restore step. */
 
 import { isRow, type ConverterContext } from "./converter-rows";
-import { ENV_CONTEXT } from "./converter-refusal";
+import {
+  ConverterRefusal,
+  declaredRefusal,
+  keyContext,
+  type RefusalPath,
+  type RefusalText,
+} from "./converter-refusal";
 import {
   applyToBackup,
   assertOneRow,
   quoted,
   referencedError,
+  statementFailed,
   statements,
   type ConverterResult,
   type Reference,
@@ -47,6 +54,8 @@ export type DataConverter = {
     tables: ConverterTables,
     context: ConverterContext,
   ) => ConverterResult;
+  /** The refusals it may throw (ConverterRefusal), by code. */
+  readonly refusals?: Readonly<Record<string, RefusalText>>;
 };
 
 /** A tag's converter, or several that run in order, each over a fresh read
@@ -62,6 +71,21 @@ export const MIGRATION_CONVERTERS: Readonly<Record<string, TagConverters>> = {
 };
 
 type Phase = DataConverter["runs"];
+
+/** A converter run with the key for its path; a refusal it throws comes
+ *  out in its declared words. */
+function convertWith(
+  c: DataConverter,
+  tables: ConverterTables,
+  path: RefusalPath,
+): ConverterResult {
+  try {
+    return c.convert(tables, keyContext(path));
+  } catch (e) {
+    if (e instanceof ConverterRefusal) throw declaredRefusal(c, e, path);
+    throw e;
+  }
+}
 
 /** What one tag's converters did at one phase, for its one log line;
  *  `inserts` and `deletes` only when there were any. */
@@ -214,10 +238,13 @@ export async function runConverterPg(
       if (rows[0]?.["present"])
         tables[table] = frozenCopy(await selectPg(client, table));
     }
-    const result = c.convert(tables, ENV_CONTEXT);
+    const result = convertWith(c, tables, "upgrade");
     for (const s of statements(result, (i) => `$${i}`, false)) {
       if (s.deleted) await refuseReferencedPg(client, s.deleted);
-      assertOneRow(s.label, (await client.query(s.sql, s.params)).rowCount);
+      const done = await client.query(s.sql, s.params).catch((e: unknown) => {
+        throw statementFailed(s.label, e);
+      });
+      assertOneRow(s.label, done.rowCount);
     }
     results.push(result);
   }
@@ -281,10 +308,16 @@ export function runConverterSqlite(
         tables[table] = frozenCopy(
           sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all(),
         );
-    const result = c.convert(tables, ENV_CONTEXT);
+    const result = convertWith(c, tables, "upgrade");
     for (const s of statements(result, () => "?", true)) {
       if (s.deleted) refuseReferencedSqlite(sqlite, s.deleted);
-      assertOneRow(s.label, sqlite.prepare(s.sql).run(...s.params).changes);
+      let changed: number;
+      try {
+        changed = sqlite.prepare(s.sql).run(...s.params).changes;
+      } catch (e) {
+        throw statementFailed(s.label, e);
+      }
+      assertOneRow(s.label, changed);
     }
     return result;
   });
@@ -307,7 +340,7 @@ export function convertBackup(
       const rows = tables[table];
       read[table] = rows && frozenCopy(rows);
     }
-    const result = c.convert(read, ENV_CONTEXT);
+    const result = convertWith(c, read, "restore");
     applyToBackup(tables, result, references);
     return result;
   });

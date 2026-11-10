@@ -1,13 +1,15 @@
 /**
  * Invented converters over app_settings for the converter-list tests on
  * both dialects: three idempotent ones that update, insert and delete, one
- * that changes its own output, and one that asks for the encryption key.
+ * that changes its own output, one that asks for the encryption key and
+ * one that refuses.
  */
 import type {
   ConverterResult,
   ConverterTables,
   DataConverter,
 } from "@/lib/db/migrate/migration-converters";
+import { ConverterRefusal } from "@/lib/db/migrate/converter-refusal";
 import {
   encryptStringWithKey,
   isEncryptedEnvelope,
@@ -81,9 +83,7 @@ export const encrypts: DataConverter = {
         !isEncryptedEnvelope(JSON.parse(r.value)),
     );
     if (plain.length === 0) return { updates: [], notes: [] };
-    const key = context.encryptionKey(
-      `encrypt ${plain.length} invented credential(s)`,
-    );
+    const key = context.encryptionKey();
     return {
       updates: plain.map((r) => ({
         table: "app_settings",
@@ -92,5 +92,26 @@ export const encrypts: DataConverter = {
       })),
       notes: [],
     };
+  },
+};
+
+/** Refuses every `retired_*` row by its declared code, naming its id and
+ *  the declared field. */
+export const refuses: DataConverter = {
+  ...over((rows) => {
+    const ids = rows
+      .filter((r) => r.key.startsWith("retired_"))
+      .map((r) => r.id);
+    if (ids.length > 0)
+      throw new ConverterRefusal("retired", { app_settings: ids }, ["value"]);
+    return { updates: [] };
+  }),
+  refusals: {
+    retired: {
+      problem: "Invented rows can't be converted",
+      upgradeFix: "Change them in the previous version, then upgrade again.",
+      restoreFix: "Restore a newer backup.",
+      fields: ["value"],
+    },
   },
 };

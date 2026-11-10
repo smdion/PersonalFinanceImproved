@@ -51,8 +51,27 @@ const deleteLabel = (d: RowDelete) => `Converter delete ${d.table} id ${d.id}`;
  *  migration rather than reach the database as something else. */
 function checked(label: string, column: string, value: unknown): unknown {
   if (!writable(value))
-    throw new Error(`${label}: ${column} can't be written (${String(value)})`);
+    throw new Error(`${label}: ${column} can't be written (${kind(value)})`);
   return value;
+}
+
+/** What a refused value is, never the value itself. */
+function kind(value: unknown): string {
+  if (typeof value === "number") return "a number that isn't finite";
+  if (value instanceof Date) return "a Date";
+  if (typeof value === "object" && value !== null)
+    return "an object holding a value that isn't JSON";
+  return typeof value;
+}
+
+/** A statement the driver refused: its label and the driver's code, never
+ *  its message, which can quote the values. */
+export function statementFailed(label: string, e: unknown): Error {
+  const code =
+    typeof e === "object" && e !== null && "code" in e ? e.code : undefined;
+  return new Error(
+    `${label} failed (${typeof code === "string" && /^[A-Z0-9_]+$/.test(code) ? code : "no driver code"})`,
+  );
 }
 
 /** A value as a statement parameter: objects and arrays as JSON text, a

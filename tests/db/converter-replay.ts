@@ -1,7 +1,8 @@
 /**
  * The replay-twice proof any converter's test calls (DESIGN § Data-
  * converting migrations): run again over its own output, a tag's converters
- * write nothing and every row stays byte-identical. One helper per path the
+ * write nothing, every row stays byte-identical and no note quotes the
+ * fixture's text. One helper per path the
  * converters run on: a backup's tables (the restore step), a SQLite
  * database, and PostgreSQL inside a test's own connection.
  */
@@ -34,19 +35,54 @@ const sortedRows = (tables: Record<string, readonly unknown[]>) =>
     ]),
   );
 
+/** A fixture's stored text: every string cell (and string inside a JSON
+ *  cell) of four characters or more, so a short code can't match by chance. */
+function cellTexts(tables: Record<string, readonly unknown[]>): string[] {
+  const out = new Set<string>();
+  const walk = (v: unknown) => {
+    if (typeof v === "string") {
+      if (v.length >= 4) out.add(v);
+      try {
+        const parsed: unknown = JSON.parse(v);
+        if (typeof parsed === "object") walk(parsed);
+      } catch {
+        // not JSON text
+      }
+    } else if (typeof v === "object" && v !== null)
+      for (const x of Object.values(v)) walk(x);
+  };
+  for (const rows of Object.values(tables)) walk(rows);
+  return [...out];
+}
+
+/** No note or refusal quotes the fixture's stored text: they name counts,
+ *  ids and fields only. */
+export function expectNoCellText(
+  texts: readonly string[],
+  tables: Record<string, readonly unknown[]>,
+): void {
+  const cells = cellTexts(tables);
+  for (const text of texts)
+    for (const cell of cells) expect(text).not.toContain(cell);
+}
+
 /** The restore path: converts `tables` in place, then twice more over its
- *  own output. Returns the converted tables. */
+ *  own output, no note quoting the fixture. Returns the converted tables. */
 export function expectRestoreReplaySafe(
   converters: TagConverters,
   tables: Record<string, unknown[]>,
 ): Record<string, unknown[]> {
   const registry = { [TAG]: converters };
-  convertBackup(tables, registry, TAG);
+  const fixture = structuredClone(tables);
+  const notes = [...(convertBackup(tables, registry, TAG)?.notes ?? [])];
   const once = sortedRows(tables);
   for (let pass = 0; pass < 2; pass++) {
-    expectNoWrites(convertBackup(tables, registry, TAG));
+    const run = convertBackup(tables, registry, TAG);
+    expectNoWrites(run);
+    notes.push(...(run?.notes ?? []));
     expect(sortedRows(tables)).toEqual(once);
   }
+  expectNoCellText(notes, fixture);
   return tables;
 }
 
