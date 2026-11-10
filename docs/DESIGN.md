@@ -908,7 +908,9 @@ drops what it reads, after it when that adds what it writes) and on an older bac
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
 `transformV0810ProfileSets`; the registered converters all run there in one
 loop, in registry order, which is journal order, and a tag stays registered
-after a squash drops it from the journal). `db-migrate.ts` imports the converter from
+after a squash drops it from the journal: a squash carries every converter
+forward, or its baseline refuses installs older than the newest converter's
+tag). `db-migrate.ts` imports the converter from
 `src/` (esbuild bundles it into `db-migrate.js`, so the image needs neither
 `src/` nor the Next build): **one copy** serves both paths, as the
 reference-data reconcile, the demo-schema stamp and the versioned table list
@@ -934,10 +936,15 @@ migration's transaction runs with foreign keys off (a file's own
 recreate's `DROP TABLE` of a parent neither fails nor cascades, and
 `foreign_key_check` refuses any reference it broke before commit; for the
 same reason no cascade or set-null fires in a migration or converter, so
-it deletes children itself. A replay runs a recreate as a unit: skipped
-whole when a statement is already done or moved past, or when the table has
-a column a later migration adds that the recreate would drop (the database
-is past it); any other error stops the replay.
+it deletes children itself. A replay runs a recreate as a unit and drops
+only the columns its own entry drops: skipped whole when a statement is
+already done or moved past, or when the table has another column the
+recreate would drop (the database is past it). A column no snapshot of the
+journal knows (a hand edit) on a database provably before the entry (it
+still holds a column the entry drops, or lacks every column later entries
+add) refuses the replay, naming the column; past the entry the skip is a
+warning. Any other error stops the replay. A dropped migration table on an
+existing install replays as a cleared journal.
 
 **What a converter may decide by.** A converter reruns on every squash
 replay and every restore, with no signal of what it is past, so each one is
