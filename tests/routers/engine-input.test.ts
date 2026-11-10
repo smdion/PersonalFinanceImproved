@@ -7,6 +7,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller } from "./setup";
 import { shippedTaxTables } from "../helpers/tax-data";
 import {
@@ -132,10 +133,14 @@ describe("resolveProjectionOverrides", () => {
     const ctx = await createTestCaller();
     const logged = vi.spyOn(console, "log").mockImplementation(() => {});
     try {
-      await ctx.caller.retirement.projectionOverrides.save({
-        overrideType: "decumulation",
-        overrides: [{ year: "2040", withdrawalRoutingMode: "waterfall" }],
-      });
+      // Stored by an older version: the save path refuses this set now.
+      ctx.db
+        .insert(schema.projectionOverrides)
+        .values({
+          overrideType: "decumulation",
+          overrides: [{ year: "2040", withdrawalRoutingMode: "waterfall" }],
+        })
+        .run();
       await ctx.caller.retirement.projectionOverrides.save({
         overrideType: "accumulation",
         overrides: SAVED,
@@ -156,6 +161,57 @@ describe("resolveProjectionOverrides", () => {
       ]);
     } finally {
       logged.mockRestore();
+      ctx.cleanup();
+    }
+  });
+});
+
+describe("projectionOverrides.save", () => {
+  it("refuses a set its kind's shape refuses, and stores a set as sent", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const save = ctx.caller.retirement.projectionOverrides.save;
+      await expect(
+        save({
+          overrideType: "decumulation",
+          overrides: [{ year: "2040", withdrawalRoutingMode: "waterfall" }],
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(
+        save({
+          overrideType: "brokerage",
+          overrides: [{ id: "a", year: 2030, amount: "500" }],
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      // A key the engine doesn't read (the editor's personName) is kept.
+      const sent = [
+        { year: 2030, personName: "Invented", contributionRate: 0.1 },
+      ];
+      await save({ overrideType: "accumulation", overrides: sent });
+      expect(
+        await ctx.caller.retirement.projectionOverrides.get({
+          overrideType: "accumulation",
+        }),
+      ).toEqual(sent);
+      const events = [
+        {
+          id: "e1",
+          year: "2030",
+          amount: "-1000",
+          targetAccount: "brokerage",
+          targetAccountName: "",
+          targetOwnerName: "",
+          taxType: "",
+          label: "Invented withdrawal",
+        },
+      ];
+      await save({ overrideType: "brokerage", overrides: events });
+      expect(
+        await ctx.caller.retirement.projectionOverrides.get({
+          overrideType: "brokerage",
+        }),
+      ).toEqual(events);
+    } finally {
       ctx.cleanup();
     }
   });

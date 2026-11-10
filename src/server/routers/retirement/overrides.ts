@@ -10,6 +10,29 @@ import {
 import * as schema from "@/lib/db/schema";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
+import { accountCategoryEnum } from "@/lib/config/account-types";
+import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
+import { accumulationOverrideArraySchema } from "@/server/services/projection/projection-run";
+
+/** What each kind's saved set reads as: the projection's override shapes
+ *  (resolveProjectionOverrides) and the Brokerage page's planned events
+ *  (built on call: the account types are read at call time). */
+function savedSetShape(kind: "accumulation" | "decumulation" | "brokerage") {
+  if (kind === "accumulation") return accumulationOverrideArraySchema;
+  if (kind === "decumulation") return decumulationOverrideArraySchema;
+  return z.array(
+    z.object({
+      id: z.string(),
+      year: z.string(),
+      amount: z.string(),
+      targetAccount: z.enum(accountCategoryEnum()),
+      targetAccountName: z.string(),
+      targetOwnerName: z.string(),
+      taxType: z.enum(["traditional", "roth", ""]),
+      label: z.string(),
+    }),
+  );
+}
 
 export const overrideProcedures = {
   retirementSalaryOverrides: createTRPCRouter({
@@ -142,14 +165,25 @@ export const overrideProcedures = {
           .then((r) => r[0]?.overrides ?? []),
       ),
     /**
-     * Replace one kind's saved changes by year, at the brokerage permission for every kind.
+     * Replace one kind's saved changes by year, at the brokerage permission for every kind;
+     * a set its kind's shape refuses is refused, and a set is stored as sent.
      */
     save: brokerageProcedure
       .input(
-        z.object({
-          overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
-          overrides: z.array(z.record(z.string(), z.unknown())),
-        }),
+        z
+          .object({
+            overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
+            overrides: z.array(z.record(z.string(), z.unknown())),
+          })
+          .superRefine(({ overrideType, overrides }, check) => {
+            const refused = savedSetShape(overrideType).safeParse(overrides);
+            for (const issue of refused.error?.issues ?? [])
+              check.addIssue({
+                code: "custom",
+                path: ["overrides", ...issue.path],
+                message: issue.message,
+              });
+          }),
       )
       .mutation(({ ctx, input }) =>
         ctx.db
