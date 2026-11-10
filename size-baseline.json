@@ -394,7 +394,7 @@
     "src/server/services/contributions/account-edits.ts": 215,
     "src/server/services/contributions/caps.ts": 326,
     "src/server/services/contributions/live-data.ts": 85,
-    "src/server/services/contributions/profile-detail.ts": 184,
+    "src/server/services/contributions/profile-detail.ts": 156,
     "src/server/services/contributions/profile.ts": 310,
     "src/server/services/contributions/summary.ts": 719,
     "src/server/services/debts/other-liabilities.ts": 54,
@@ -1027,9 +1027,6 @@
     },
     "src/server/services/contributions/contribution-mix.ts": {
       "loadContributionMix": 182
-    },
-    "src/server/services/contributions/profile-detail.ts": {
-      "loadContributionProfileDetail": 172
     },
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 633,

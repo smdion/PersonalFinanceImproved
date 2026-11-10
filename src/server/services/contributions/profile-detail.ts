@@ -8,7 +8,6 @@ import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
-import { getDisplayConfig } from "@/lib/config/account-types";
 
 export async function loadContributionProfileDetail(
   ctx: { db: Db; scope: RequestScope },
@@ -30,8 +29,7 @@ export async function loadContributionProfileDetail(
     perfAccountMap,
     salaryProfileActiveMap,
   } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
-  // portfolioAccountLabel wants id → name; peopleMap here is id → full
-  // person row (still needed below for the fuzzy-suggestion matcher).
+  // portfolioAccountLabel wants id → name; peopleMap here is id → full row.
   const nameMap = new Map(
     Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
   );
@@ -51,44 +49,18 @@ export async function loadContributionProfileDetail(
     profile.contributionActiveFields,
     profile.id,
   );
-  // Convert perfAccountMap to array for fallback matching
-  const allPerfAccounts = Array.from(perfAccountMap.values());
 
   const accountDetails = rawContribRows.map((row) => {
     const activeFields = accountActiveFields[String(row.id)];
-    const person =
-      row.personId != null ? peopleMap.get(row.personId) : undefined;
 
     // Resolve linked performance account via explicit FK (primary path)
     const perfAccount = row.performanceAccountId
       ? (perfAccountMap.get(row.performanceAccountId) ?? null)
       : null;
 
-    // DEPRECATED: fuzzy match by person + type — used as a display hint only (not for data operations).
-    // Will be removed once all contribution accounts are backfilled with performanceAccountId
-    // via settings.backfillPerformanceAccountIds.
-    let suggestedPerfAccount: typeof perfAccount = null;
-    if (!perfAccount) {
-      const display = getDisplayConfig(row.accountType, row.subType);
-      const typeLabel = display.displayLabel.toLowerCase();
-      const personName = person?.name.toLowerCase() ?? "";
-      suggestedPerfAccount =
-        allPerfAccounts.find((pa) => {
-          const labelLower = pa.accountLabel.toLowerCase();
-          return (
-            labelLower.includes(typeLabel) &&
-            (pa.ownerPersonId === row.personId ||
-              labelLower.includes(personName))
-          );
-        }) ?? null;
-    }
-
-    // For display purposes, use the explicit link; fall back to fuzzy suggestion for name rendering only
-    const displayPerfAccount = perfAccount ?? suggestedPerfAccount;
-
     // Derive institution: perf account link → person's job employer → fallback empty
     const institution =
-      displayPerfAccount?.institution ??
+      perfAccount?.institution ??
       jobs.find(
         (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
       )?.employerName ??
@@ -103,11 +75,11 @@ export async function loadContributionProfileDetail(
         label: row.label,
         institution,
       },
-      displayPerfAccount
+      perfAccount
         ? {
-            displayName: displayPerfAccount.displayName,
-            accountLabel: displayPerfAccount.accountLabel,
-            ownershipType: displayPerfAccount.ownershipType,
+            displayName: perfAccount.displayName,
+            accountLabel: perfAccount.accountLabel,
+            ownershipType: perfAccount.ownershipType,
           }
         : undefined,
       row.personId,

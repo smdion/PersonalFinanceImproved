@@ -17,7 +17,7 @@ const m = vi.hoisted(() => ({
   checkForTaxDataUpdate: vi.fn(),
   createVersion: vi.fn(),
   syncSecurityFacts: vi.fn(),
-  backfillPerformanceAccountIds: vi.fn(),
+  backfillJointPersonId: vi.fn(),
 }));
 
 // versions/daily reads app settings, then looks for today's auto version.
@@ -54,11 +54,8 @@ vi.mock("@/server/services/investments/sec-facts", () => ({
   secFactsRefreshDue: vi.fn().mockResolvedValue(true),
   syncSecurityFacts: m.syncSecurityFacts,
 }));
-vi.mock("@/lib/db/migrate/backfill-perf-ids", () => ({
-  backfillPerformanceAccountIds: m.backfillPerformanceAccountIds,
-}));
 vi.mock("@/lib/db/migrate/backfill-joint-person-id", () => ({
-  backfillJointPersonId: vi.fn().mockResolvedValue(undefined),
+  backfillJointPersonId: m.backfillJointPersonId,
 }));
 
 type Route = {
@@ -97,7 +94,7 @@ const ROUTES: Route[] = [
     name: "startup",
     path: "/api/startup",
     load: () => import("@/app/api/startup/route"),
-    work: m.backfillPerformanceAccountIds,
+    work: m.backfillJointPersonId,
   },
 ];
 
@@ -123,7 +120,7 @@ beforeEach(() => {
   m.checkForTaxDataUpdate.mockResolvedValue({});
   m.createVersion.mockResolvedValue({ id: 1 });
   m.syncSecurityFacts.mockResolvedValue({});
-  m.backfillPerformanceAccountIds.mockResolvedValue(undefined);
+  m.backfillJointPersonId.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
