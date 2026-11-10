@@ -19,7 +19,7 @@ import { RefinanceCalculator } from "@/components/debts/refinance-calculator";
 import { RefinanceHistory } from "@/components/debts/refinance-history";
 import { RefinanceImpact } from "@/components/debts/refinance-impact";
 import { WhatIfSection } from "@/components/debts/what-if-section";
-import { SyncBadge } from "@/components/ui/sync-badge";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
 
 export function LiabilitiesContent() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);

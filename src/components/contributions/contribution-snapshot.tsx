@@ -20,7 +20,7 @@ import {
   getPeriodSuffix,
   householdPeriodsPerYear,
   type ContributionPeriod,
-} from "@/components/ui/contrib-period-toggle";
+} from "@/components/contributions/contrib-period-toggle";
 import { FundingBar } from "../paycheck/funding-bar";
 import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import {

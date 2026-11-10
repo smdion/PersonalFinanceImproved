@@ -2,7 +2,7 @@
 
 import { safeDivide } from "@/lib/utils/math";
 import { CONTRIBUTION_PERIOD_TEXT } from "@/lib/config/display-labels";
-import { SegmentedControl, type SegmentedLook } from "./segmented-control";
+import { SegmentedControl, type SegmentedLook } from "../ui/segmented-control";
 
 export type ContributionPeriod = keyof typeof CONTRIBUTION_PERIOD_TEXT;
 

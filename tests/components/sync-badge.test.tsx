@@ -1,7 +1,7 @@
 /** The badge names the budget app actually connected. */
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SyncBadge } from "@/components/ui/sync-badge";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
 
 describe("SyncBadge", () => {
   it.each([

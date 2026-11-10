@@ -17,7 +17,7 @@ import {
   householdPeriodsPerYear,
   toContributionPeriod,
   type ContributionPeriod,
-} from "@/components/ui/contrib-period-toggle";
+} from "@/components/contributions/contrib-period-toggle";
 import { ContributionsQueryBoundary } from "./contributions-query-boundary";
 import { queryPending } from "@/components/ui/query-boundary";
 import {

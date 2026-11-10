@@ -26,7 +26,7 @@ import {
   getPeriodSuffix,
   householdPeriodsPerYear,
   type ContributionPeriod,
-} from "@/components/ui/contrib-period-toggle";
+} from "@/components/contributions/contrib-period-toggle";
 import {
   getAllCategories,
   getAccountTypeConfig,

@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
-import { SyncBadge } from "@/components/ui/sync-badge";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import Link from "next/link";
 

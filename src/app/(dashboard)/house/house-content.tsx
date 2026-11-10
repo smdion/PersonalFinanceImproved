@@ -16,7 +16,7 @@ import { formatCurrency, formatPercent, formatDate } from "@/lib/utils/format";
 import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
-import { SyncBadge } from "@/components/ui/sync-badge";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
