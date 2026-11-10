@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
+import { firstBreakEvenYear } from "@/lib/pure/retirement/conversion-break-even";
 import type {
   DecumulationOverride,
   RoutingMode,
@@ -413,7 +414,6 @@ export const taxOptimizationRouter = createTRPCRouter({
 
       let cumWith = 0;
       let cumOff = 0;
-      let breakEvenYear: number | null = null;
       const perYear = withYears.map((y) => {
         const off = offByYear.get(y.year);
         // `taxCost` already includes NIIT — see the projectTaxYears loop.
@@ -421,7 +421,6 @@ export const taxOptimizationRouter = createTRPCRouter({
         cumOff += off
           ? off.taxCost + off.irmaaCost + off.rothConversionTaxCost
           : 0;
-        if (breakEvenYear === null && cumWith < cumOff) breakEvenYear = y.year;
         return {
           year: y.year,
           age: y.age,
@@ -441,7 +440,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         mode: "explicit" as const,
         result: {
           perYear,
-          breakEvenYear,
+          breakEvenYear: firstBreakEvenYear(perYear),
           lifetimeTaxWith: lifetimeTax(withYears),
           lifetimeTaxWithout: lifetimeTax(offYears),
         },
