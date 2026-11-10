@@ -3,6 +3,7 @@
 
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 5. Brokerage goals
@@ -13,7 +14,7 @@ export const brokerageGoals = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
-    targetAmount: text("target_amount").notNull(),
+    targetAmount: decimalText("target_amount").notNull(),
     targetYear: integer("target_year").notNull(),
     priority: integer("priority").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
@@ -33,7 +34,7 @@ export const brokeragePlannedTransactions = sqliteTable(
       .notNull()
       .references(() => brokerageGoals.id, { onDelete: "cascade" }),
     transactionDate: text("transaction_date").notNull(),
-    amount: text("amount").notNull(), // positive = deposit, negative = withdrawal
+    amount: decimalText("amount").notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
     isRecurring: integer("is_recurring", { mode: "boolean" })
       .notNull()

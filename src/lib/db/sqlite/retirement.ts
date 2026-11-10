@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
@@ -31,11 +32,11 @@ export const retirementSettings = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     retirementAge: integer("retirement_age").notNull(),
     endAge: integer("end_age").notNull(),
-    returnAfterRetirement: text("return_after_retirement").notNull(),
-    annualInflation: text("annual_inflation").notNull(),
-    postRetirementInflation: text("post_retirement_inflation"),
-    salaryAnnualIncrease: text("salary_annual_increase").notNull(),
-    salaryCap: text("salary_cap"),
+    returnAfterRetirement: decimalText("return_after_retirement").notNull(),
+    annualInflation: decimalText("annual_inflation").notNull(),
+    postRetirementInflation: decimalText("post_retirement_inflation"),
+    salaryAnnualIncrease: decimalText("salary_annual_increase").notNull(),
+    salaryCap: decimalText("salary_cap"),
     raisesDuringRetirement: integer("raises_during_retirement", {
       mode: "boolean",
     })
@@ -47,17 +48,17 @@ export const retirementSettings = sqliteTable(
     ruleOf55Override: integer("rule_of_55_override", { mode: "boolean" })
       .notNull()
       .default(true),
-    withdrawalRate: text("withdrawal_rate")
+    withdrawalRate: decimalText("withdrawal_rate")
       .notNull()
       .default(DEFAULT_WITHDRAWAL_RATE.toString()),
-    taxMultiplier: text("tax_multiplier").notNull().default("1.0"),
+    taxMultiplier: decimalText("tax_multiplier").notNull().default("1.0"),
     grossUpForTaxes: integer("gross_up_for_taxes", { mode: "boolean" })
       .notNull()
       .default(true),
     /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket). Null = disabled. */
-    rothBracketTarget: text("roth_bracket_target").default("0.12"),
+    rothBracketTarget: decimalText("roth_bracket_target").default("0.12"),
     /** Monthly Social Security benefit estimate in today's dollars. */
-    socialSecurityMonthly: text("social_security_monthly")
+    socialSecurityMonthly: decimalText("social_security_monthly")
       .notNull()
       .default("2500"),
     /** Age at which Social Security income begins. */
@@ -69,7 +70,7 @@ export const retirementSettings = sqliteTable(
       .notNull()
       .default(false),
     /** Target marginal rate for Roth conversions (null = inherit from rothBracketTarget). */
-    rothConversionTarget: text("roth_conversion_target"),
+    rothConversionTarget: decimalText("roth_conversion_target"),
     /** Withdrawal/spending strategy (see withdrawal-strategies.ts registry). */
     withdrawalStrategy: text("withdrawal_strategy").notNull().default("fixed"),
     /** Within the cost-ranked tier, whether Roth basis or brokerage 0%-LTCG room drains first.
@@ -97,13 +98,13 @@ export const retirementSettings = sqliteTable(
       Record<string, number>
     >(),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
-    gkUpperGuardrail: text("gk_upper_guardrail").default("0.80"),
+    gkUpperGuardrail: decimalText("gk_upper_guardrail").default("0.80"),
     /** G-K: lower guardrail — if currentRate > initialRate × this, decrease spending (e.g. 1.20). */
-    gkLowerGuardrail: text("gk_lower_guardrail").default("1.20"),
+    gkLowerGuardrail: decimalText("gk_lower_guardrail").default("1.20"),
     /** G-K: spending increase percentage when upper guardrail triggers (e.g. 0.10 = 10%). */
-    gkIncreasePct: text("gk_increase_pct").default("0.10"),
+    gkIncreasePct: decimalText("gk_increase_pct").default("0.10"),
     /** G-K: spending decrease percentage when lower guardrail triggers (e.g. 0.10 = 10%). */
-    gkDecreasePct: text("gk_decrease_pct").default("0.10"),
+    gkDecreasePct: decimalText("gk_decrease_pct").default("0.10"),
     /** G-K: skip inflation adjustment in years following a portfolio loss. */
     gkSkipInflationAfterLoss: integer("gk_skip_inflation_after_loss", {
       mode: "boolean",
@@ -111,27 +112,27 @@ export const retirementSettings = sqliteTable(
       .notNull()
       .default(true),
     /** Spending Decline: annual real decline rate (e.g. 0.02 = 2%). */
-    sdAnnualDeclineRate: text("sd_annual_decline_rate").default("0.02"),
+    sdAnnualDeclineRate: decimalText("sd_annual_decline_rate").default("0.02"),
     /** Constant Percentage: withdrawal % of current balance. */
-    cpWithdrawalPercent: text("cp_withdrawal_percent").default("0.05"),
+    cpWithdrawalPercent: decimalText("cp_withdrawal_percent").default("0.05"),
     /** Constant Percentage: floor as % of initial withdrawal. */
-    cpFloorPercent: text("cp_floor_percent").default("0.90"),
+    cpFloorPercent: decimalText("cp_floor_percent").default("0.90"),
     /** Endowment: withdrawal % of rolling average balance. */
-    enWithdrawalPercent: text("en_withdrawal_percent").default("0.05"),
+    enWithdrawalPercent: decimalText("en_withdrawal_percent").default("0.05"),
     /** Endowment: rolling window in years. */
     enRollingYears: integer("en_rolling_years").default(10),
     /** Endowment: floor as % of initial withdrawal. */
-    enFloorPercent: text("en_floor_percent").default("0.90"),
+    enFloorPercent: decimalText("en_floor_percent").default("0.90"),
     /** Vanguard Dynamic: base withdrawal %. */
-    vdBasePercent: text("vd_base_percent").default("0.05"),
+    vdBasePercent: decimalText("vd_base_percent").default("0.05"),
     /** Vanguard Dynamic: max YoY spending increase. */
-    vdCeilingPercent: text("vd_ceiling_percent").default("0.05"),
+    vdCeilingPercent: decimalText("vd_ceiling_percent").default("0.05"),
     /** Vanguard Dynamic: max YoY spending decrease. */
-    vdFloorPercent: text("vd_floor_percent").default("0.025"),
+    vdFloorPercent: decimalText("vd_floor_percent").default("0.025"),
     /** RMD Spending: multiplier on IRS RMD amount. */
-    rmdMultiplier: text("rmd_multiplier").default("1.0"),
+    rmdMultiplier: decimalText("rmd_multiplier").default("1.0"),
     /** VPW: the most the yearly percentage reaches (null = config default). */
-    vpwCap: text("vpw_cap"),
+    vpwCap: decimalText("vpw_cap"),
     /** VPW: the age the table runs to (null = config default). */
     vpwEndAge: integer("vpw_end_age"),
     /**
@@ -168,7 +169,9 @@ export const retirementSettings = sqliteTable(
     /** How far smoothing may raise the effective conversion target above `rothBracketTarget` /
      *  `rothConversionTarget`; never lowers it. Null = not set: the UI seeds it from the current
      *  `rothBracketTarget`, not a hardcoded value. */
-    rmdSmoothingMaxBracketTarget: text("rmd_smoothing_max_bracket_target"),
+    rmdSmoothingMaxBracketTarget: decimalText(
+      "rmd_smoothing_max_bracket_target",
+    ),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
       .notNull()
@@ -210,10 +213,14 @@ export const retirementSettings = sqliteTable(
     /** Distribution tax rates, household-grain (same on every person's row). Nullable on
      *  purpose: null = never set and reads as 0 (`!= null ? rate : 0`), kept distinct from a
      *  chosen 0%. */
-    distributionTaxRateTraditional: text("distribution_tax_rate_traditional"),
-    distributionTaxRateRoth: text("distribution_tax_rate_roth"),
-    distributionTaxRateHsa: text("distribution_tax_rate_hsa"),
-    distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage"),
+    distributionTaxRateTraditional: decimalText(
+      "distribution_tax_rate_traditional",
+    ),
+    distributionTaxRateRoth: decimalText("distribution_tax_rate_roth"),
+    distributionTaxRateHsa: decimalText("distribution_tax_rate_hsa"),
+    distributionTaxRateBrokerage: decimalText(
+      "distribution_tax_rate_brokerage",
+    ),
   },
   (table) => [
     index("retirement_settings_person_id_idx").on(table.personId),
@@ -266,14 +273,14 @@ export const retirementProfilePeople = sqliteTable(
       .references(() => people.id, { onDelete: "cascade" }),
     retirementAge: integer("retirement_age").notNull(),
     endAge: integer("end_age").notNull(),
-    socialSecurityMonthly: text("social_security_monthly"),
+    socialSecurityMonthly: decimalText("social_security_monthly"),
     /** PIA (monthly benefit at Full Retirement Age), entered by the user;
      *  the claiming-age optimizer computes from it. Opt-in and independent
      *  of socialSecurityMonthly: null until the household fills it in. */
-    socialSecurityPia: text("social_security_pia"),
+    socialSecurityPia: decimalText("social_security_pia"),
     ssStartAge: integer("ss_start_age"),
     ruleOf55Override: integer("rule_of_55_override", { mode: "boolean" }),
-    salaryAnnualIncrease: text("salary_annual_increase"),
+    salaryAnnualIncrease: decimalText("salary_annual_increase"),
   },
   (table) => [
     uniqueIndex("retirement_profile_people_profile_person_unq").on(
@@ -293,7 +300,7 @@ export const retirementSalaryOverrides = sqliteTable(
       .notNull()
       .references(() => people.id, { onDelete: "restrict" }),
     projectionYear: integer("projection_year").notNull(),
-    overrideSalary: text("override_salary").notNull(),
+    overrideSalary: decimalText("override_salary").notNull(),
     /** Contribution Profile this year switches to (contribution side only). */
     contributionProfileId: integer("contribution_profile_id").references(
       () => contributionProfiles.id,
@@ -333,7 +340,7 @@ export const retirementBudgetOverrides = sqliteTable(
       .notNull()
       .references(() => people.id, { onDelete: "restrict" }),
     projectionYear: integer("projection_year").notNull(),
-    overrideMonthlyBudget: text("override_monthly_budget").notNull(),
+    overrideMonthlyBudget: decimalText("override_monthly_budget").notNull(),
     notes: text("notes"),
     createdBy: text("created_by"),
     updatedBy: text("updated_by"),
@@ -366,25 +373,27 @@ export const projectionOverrides = sqliteTable(
 export const retirementScenarios = sqliteTable("retirement_scenarios", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  withdrawalRate: text("withdrawal_rate").notNull(),
-  targetAnnualIncome: text("target_annual_income").notNull(),
-  annualInflation: text("annual_inflation").notNull(),
-  distributionTaxRateTraditional: text("distribution_tax_rate_traditional")
+  withdrawalRate: decimalText("withdrawal_rate").notNull(),
+  targetAnnualIncome: decimalText("target_annual_income").notNull(),
+  annualInflation: decimalText("annual_inflation").notNull(),
+  distributionTaxRateTraditional: decimalText(
+    "distribution_tax_rate_traditional",
+  )
     .notNull()
     .default("0.22"),
-  distributionTaxRateRoth: text("distribution_tax_rate_roth")
+  distributionTaxRateRoth: decimalText("distribution_tax_rate_roth")
     .notNull()
     .default("0"),
-  distributionTaxRateHsa: text("distribution_tax_rate_hsa")
+  distributionTaxRateHsa: decimalText("distribution_tax_rate_hsa")
     .notNull()
     .default("0"),
-  distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage")
+  distributionTaxRateBrokerage: decimalText("distribution_tax_rate_brokerage")
     .notNull()
     .default("0.15"),
   isLtBrokerageEnabled: integer("is_lt_brokerage_enabled", { mode: "boolean" })
     .notNull()
     .default(true),
-  ltBrokerageAnnualContribution: text("lt_brokerage_annual_contribution")
+  ltBrokerageAnnualContribution: decimalText("lt_brokerage_annual_contribution")
     .notNull()
     .default("0"),
   isSelected: integer("is_selected", { mode: "boolean" })

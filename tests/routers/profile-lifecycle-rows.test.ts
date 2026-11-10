@@ -16,7 +16,7 @@
  *
  * The pinned outcomes are what the code did when this was recorded, refusals
  * and all; a step that looks wrong is a finding to report, not to re-pin.
- * Decimal text compares by value (decimalText), so the pins hold on
+ * Decimal text has one form on both databases, so the pins hold on
  * PostgreSQL too.
  */
 import "./setup-mocks";
@@ -41,7 +41,6 @@ import {
   seedSalaryProfile,
 } from "./setup";
 import EXPECTED from "../fixtures/profile-lifecycle-rows.json";
-import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -352,7 +351,7 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.contribution));
+    expect(r.steps).toEqual(EXPECTED.contribution);
   });
 
   it("Salary Profiles write the same rows", async () => {
@@ -461,7 +460,7 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.salary));
+    expect(r.steps).toEqual(EXPECTED.salary);
   });
 
   it("Retirement Profiles write the same rows", async () => {
@@ -561,6 +560,6 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.retirement));
+    expect(r.steps).toEqual(EXPECTED.retirement);
   });
 });

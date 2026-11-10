@@ -15,7 +15,6 @@ import {
   seedRetirementProfile,
   seedRetirementProfilePerson,
 } from "./setup";
-import { decimalText } from "./decimal-text";
 
 describe("retirementProfilePeople.upsertPerson — socialSecurityPia", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -45,7 +44,7 @@ describe("retirementProfilePeople.upsertPerson — socialSecurityPia", () => {
         socialSecurityPia: "4000",
       },
     );
-    expect(decimalText(result!.socialSecurityPia)).toBe("4000");
+    expect(result!.socialSecurityPia).toBe("4000");
   });
 
   it("leaves socialSecurityMonthly untouched when only socialSecurityPia is sent — the two fields are independent", async () => {
@@ -60,8 +59,8 @@ describe("retirementProfilePeople.upsertPerson — socialSecurityPia", () => {
         personId,
         socialSecurityPia: "4200",
       });
-    expect(decimalText(withMonthly!.socialSecurityPia)).toBe("4200");
-    expect(decimalText(withMonthly!.socialSecurityMonthly)).toBe("2500");
+    expect(withMonthly!.socialSecurityPia).toBe("4200");
+    expect(withMonthly!.socialSecurityMonthly).toBe("2500");
   });
 
   it("can be cleared back to null (opt-out)", async () => {

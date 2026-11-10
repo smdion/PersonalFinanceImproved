@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type {
   InvestmentTransactionKind,
@@ -114,7 +115,7 @@ export const simplefinBalanceSnapshots = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     snapshotDate: text("snapshot_date").notNull().unique(),
-    totalBalance: text("total_balance").notNull(),
+    totalBalance: decimalText("total_balance").notNull(),
     accountCount: integer("account_count").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
@@ -139,9 +140,9 @@ export const marketCloses = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     ticker: text("ticker").notNull(),
     date: text("date").notNull(),
-    close: text("close").notNull(),
-    divCash: text("div_cash").notNull().default("0"),
-    splitFactor: text("split_factor").notNull().default("1"),
+    close: decimalText("close").notNull(),
+    divCash: decimalText("div_cash").notNull().default("0"),
+    splitFactor: decimalText("split_factor").notNull().default("1"),
     fetchedAt: integer("fetched_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -198,15 +199,15 @@ export const securities = sqliteTable(
 
 /** Composition columns shared by security_facts and sec_filing_cache: fractions of the fund, long positions only, normalised to sum to 1. */
 const compositionColumns = {
-  usEquityPct: text("us_equity_pct"),
-  intlEquityPct: text("intl_equity_pct"),
-  usBondPct: text("us_bond_pct"),
-  intlBondPct: text("intl_bond_pct"),
-  tipsPct: text("tips_pct"),
-  cashPct: text("cash_pct"),
-  otherPct: text("other_pct"),
+  usEquityPct: decimalText("us_equity_pct"),
+  intlEquityPct: decimalText("intl_equity_pct"),
+  usBondPct: decimalText("us_bond_pct"),
+  intlBondPct: decimalText("intl_bond_pct"),
+  tipsPct: decimalText("tips_pct"),
+  cashPct: decimalText("cash_pct"),
+  otherPct: decimalText("other_pct"),
   /** Share of the fund's holdings that could be classified (the rest is unresolved). */
-  coverage: text("coverage"),
+  coverage: decimalText("coverage"),
 };
 
 /**
@@ -227,7 +228,7 @@ export const securityFacts = sqliteTable(
     secSeriesId: text("sec_series_id"),
     accession: text("accession"),
     /** Annual expense ratio as a fraction (0.0008 = 0.08%). */
-    expenseRatio: text("expense_ratio"),
+    expenseRatio: decimalText("expense_ratio"),
     ...compositionColumns,
     fetchedAt: integer("fetched_at", { mode: "timestamp" })
       .notNull()
@@ -289,7 +290,7 @@ export const simplefinAccountBalances = sqliteTable(
       .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
     /** SimpleFIN `balance-date`, as sent (UTC). */
     balanceDate: integer("balance_date", { mode: "timestamp" }).notNull(),
-    balance: text("balance").notNull(),
+    balance: decimalText("balance").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -323,10 +324,10 @@ export const holdingObservations = sqliteTable(
      *  close the data really reflects is worked out on read
      *  (lib/pure/sync/feed-data-date.ts), since a feed's lag is learned. */
     asOf: text("as_of").notNull(),
-    shares: text("shares").notNull(),
+    shares: decimalText("shares").notNull(),
     /** As reported — evidence only, never summed as a balance. */
-    reportedMarketValue: text("reported_market_value"),
-    avgCostPerShare: text("avg_cost_per_share"),
+    reportedMarketValue: decimalText("reported_market_value"),
+    avgCostPerShare: decimalText("avg_cost_per_share"),
     source: text("source").$type<HoldingSource>().notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
@@ -368,7 +369,7 @@ export const holdingPeriods = sqliteTable(
     endDate: text("end_date"),
     basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
     /** For an inferred period: how well it explains the account's returns (0–1). */
-    fitQuality: text("fit_quality"),
+    fitQuality: decimalText("fit_quality"),
     notes: text("notes"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
@@ -398,7 +399,7 @@ export const holdingPeriodWeights = sqliteTable(
     securityId: integer("security_id")
       .notNull()
       .references(() => securities.id, { onDelete: "restrict" }),
-    weight: text("weight").notNull(),
+    weight: decimalText("weight").notNull(),
   },
   (table) => [
     uniqueIndex("holding_period_weights_period_security_idx").on(
@@ -425,7 +426,7 @@ export const investmentTransactions = sqliteTable(
     /** Institution posting date (UTC date of SimpleFIN `posted`). */
     posted: text("posted").notNull(),
     transacted: text("transacted"),
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     description: text("description").notNull(),
     pending: integer("pending", { mode: "boolean" }).notNull().default(false),
     /**
@@ -482,7 +483,7 @@ export const simplefinAccounts = sqliteTable(
     externalAccountId: text("external_account_id").notNull().unique(),
     orgName: text("org_name").notNull(),
     accountName: text("account_name").notNull(),
-    lastBalance: text("last_balance").notNull(),
+    lastBalance: decimalText("last_balance").notNull(),
     /** The institution's as-of time for lastBalance (SimpleFIN `balance-date`); null when not reported. */
     lastBalanceDate: integer("last_balance_date", { mode: "timestamp" }),
     isIncluded: integer("is_included", { mode: "boolean" })

@@ -159,7 +159,7 @@ describe("notes and estimated marks", () => {
       .from(schema.accountPerformance)
       .where(eq(schema.accountPerformance.id, id))
       .get()!;
-    expect(stored.endingBalance).toBe("1100.00");
+    expect(stored.endingBalance).toBe("1100");
     expect(stored.estimatedFields).toEqual(["employeeContrib"]);
   });
 });

@@ -8,9 +8,9 @@ import {
   boolean,
   date,
   timestamp,
-  decimal,
   index,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 5. Brokerage goals

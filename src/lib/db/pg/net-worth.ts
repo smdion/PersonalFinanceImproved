@@ -6,9 +6,9 @@ import {
   text,
   integer,
   date,
-  decimal,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { jsonb } from "../pg-jsonb";
 import { people } from "./people";
 

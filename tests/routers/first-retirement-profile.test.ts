@@ -15,7 +15,6 @@ import {
   adoptFirstRetirementProfile,
   FIRST_RETIREMENT_PROFILE_NAME,
 } from "@/server/services/profiles/first-retirement-profile";
-import { decimalText } from "./decimal-text";
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 
@@ -187,14 +186,10 @@ describe("first Retirement profile", () => {
       salaryAnnualIncrease: "0.045",
     });
     expect(
-      decimalText(
-        settings().find((r) => r.personId === partner)?.salaryAnnualIncrease,
-      ),
+      settings().find((r) => r.personId === partner)?.salaryAnnualIncrease,
     ).toBe("0.045");
     expect(
-      decimalText(
-        settings().find((r) => r.personId === primary)?.salaryAnnualIncrease,
-      ),
+      settings().find((r) => r.personId === primary)?.salaryAnnualIncrease,
     ).toBe("0.03");
   });
 

@@ -23,7 +23,6 @@ import {
   matchRateWriteCases,
   type MatchRateDb,
 } from "./match-rate-writes-cases";
-import { decimalText } from "./decimal-text";
 
 // Not imported from ./setup: that module loads the db module (as SQLite)
 // before this file can point DATABASE_URL at PostgreSQL.
@@ -90,8 +89,8 @@ describe.skipIf(skipWithoutPostgres)("match writes (PostgreSQL)", () => {
         )!;
         return {
           ...r,
-          employerMatchValue: decimalText(r.employerMatchValue),
-          employerMatchRate: decimalText(r.employerMatchRate),
+          employerMatchValue: r.employerMatchValue,
+          employerMatchRate: r.employerMatchRate,
         };
       },
       entries: async (id) => {

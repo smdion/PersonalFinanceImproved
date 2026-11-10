@@ -25,7 +25,6 @@ import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
-import { decimalText } from "./decimal-text";
 
 // ── Empty DB ──────────────────────────────────────────────────────────────────
 
@@ -766,7 +765,7 @@ describe("settings.contributionAccounts CRUD", () => {
       employerMaxMatchPct: "0.06",
     });
     // A percent match is stored as its rate (decision 13), with no value.
-    expect(decimalText(updated)).toMatchObject({
+    expect(updated).toMatchObject({
       employerMatchValue: null,
       employerMatchRate: "0.01",
     });
@@ -819,10 +818,10 @@ describe("settings.contributionAccounts CRUD", () => {
     expect(acct!.label).toBe("Family HSA");
     expect(acct!.performanceAccountId).toBe(perfAcctId);
     expect(acct!.hsaCoverageType).toBe("family");
-    expect(decimalText(acct!.employerMatchValue)).toBe("500");
-    expect(decimalText(acct!.employerMaxMatchPct)).toBe("0.05");
+    expect(acct!.employerMatchValue).toBe("500");
+    expect(acct!.employerMaxMatchPct).toBe("0.05");
     expect(acct!.autoMaximize).toBe(true);
-    expect(decimalText(acct!.targetAnnual)).toBe("8000");
+    expect(acct!.targetAnnual).toBe("8000");
     expect(acct!.allocationPriority).toBe(2);
     expect(acct!.notes).toBe("Full-field creation smoke test");
     expect(acct!.isPayrollDeducted).toBe(true);
@@ -1376,7 +1375,7 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       employerMatchType: "none",
       priorYearContribAmount: "3000",
     });
-    expect(decimalText(updated!.priorYearContribAmount)).toBe("3000");
+    expect(updated!.priorYearContribAmount).toBe("3000");
   });
 });
 
@@ -1541,7 +1540,7 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       });
 
     expect(result).toBeDefined();
-    expect(decimalText(result!.priorYearContribAmount)).toBe("2500");
+    expect(result!.priorYearContribAmount).toBe("2500");
     expect(result!.priorYearContribYear).toBe(new Date().getFullYear() - 1);
   });
 
@@ -1559,7 +1558,7 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
         priorYearContribAmount: "1000",
       });
 
-    expect(decimalText(result!.priorYearContribAmount)).toBe("1000");
+    expect(result!.priorYearContribAmount).toBe("1000");
   });
 
   it("throws for 401k (unsupported prior year)", async () => {

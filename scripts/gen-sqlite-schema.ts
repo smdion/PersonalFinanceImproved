@@ -7,7 +7,7 @@
  *
  * Column type mappings:
  *   serial("id").primaryKey()          → integer("id", { mode: "number" }).primaryKey({ autoIncrement: true })
- *   decimal("col", { ... })            → text("col")     (preserves string type for precision)
+ *   decimal("col", { ... }) (../pg-decimal) → decimalText("col") (../sqlite-decimal: text, read in one form)
  *   boolean("col")                     → integer("col", { mode: "boolean" })
  *   date("col")                        → text("col")     (ISO date strings)
  *   timestamp("col", { ... })          → integer("col", { mode: "timestamp" })  (unix seconds → Date)
@@ -77,6 +77,8 @@ function transform(src: string): string {
     .replace(/import \{ sql \} from "drizzle-orm";\n/, "")
     // The PostgreSQL jsonb column (read once); SQLite's json text needs none.
     .replace(/import \{ jsonb \} from "\.\.\/pg-jsonb";\n/, "")
+    // The PostgreSQL numeric read as decimal text; SQLite's is decimalText.
+    .replace(/import \{ decimal \} from "\.\.\/pg-decimal";\n/, "")
     .replace(
       /^\/\/ Part of the Drizzle schema \(PostgreSQL\)/m,
       "// AUTO-GENERATED from ../pg/ by scripts/gen-sqlite-schema.ts — do not edit.\n// Part of the Drizzle schema (SQLite)",
@@ -107,7 +109,7 @@ function transform(src: string): string {
     'integer("$1", { mode: "timestamp" })',
   );
 
-  // --- decimal("col", { precision: X, scale: Y }) → text("col") ---
+  // --- decimal("col", { precision: X, scale: Y }) → decimalText("col") ---
   // Handle multi-line decimal declarations, including the form Prettier wraps
   // a long column name into — decimal(\n  "col",\n  { ... },\n) — where the
   // string literal itself sits on its own line rather than immediately after
@@ -119,7 +121,7 @@ function transform(src: string): string {
   // produce silently. `[\s\S]` (not `.`) so it matches across the newlines.
   out = out.replace(
     /decimal\(\s*"([^"]+)",\s*\{[\s\S]*?\}\s*,?\s*\)/g,
-    'text("$1")',
+    'decimalText("$1")',
   );
 
   // --- jsonb("col") → text("col", { mode: "json" }) ---
@@ -174,6 +176,9 @@ function transform(src: string): string {
         ]
       : []),
     ...(/\bsql`/.test(code) ? ['import { sql } from "drizzle-orm";'] : []),
+    ...(/\bdecimalText\(/.test(code)
+      ? ['import { decimalText } from "../sqlite-decimal";']
+      : []),
   ];
   if (!imports.length) return out;
   // After the leading comment lines.

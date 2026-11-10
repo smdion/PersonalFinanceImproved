@@ -21,7 +21,6 @@ import {
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { decimalText } from "./decimal-text";
 
 // budget-api is mocked inline when needed by the router
 
@@ -380,7 +379,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
   it("snapshot accounts include the correct amount", async () => {
     const result = await caller.networth.portfolioSnapshots.getLatest();
     expect(result).not.toBeNull();
-    expect(decimalText(result!.accounts[0]!.amount)).toBe("50000");
+    expect(result!.accounts[0]!.amount).toBe("50000");
   });
 
   it("returns the most recent snapshot when multiple exist", async () => {
@@ -449,7 +448,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
     });
     expect(result).toBeDefined();
     expect(result.institution).toBe("Schwab");
-    expect(decimalText(result.amount)).toBe("25000");
+    expect(result.amount).toBe("25000");
     expect(result.isActive).toBe(true);
     createdAcctId = result.id;
   });
@@ -761,8 +760,8 @@ describe("portfolioSnapshots.create", () => {
       // The row for a closed account still exists (not omitted — omitting
       // it would break period conservation), but its amount is zeroed.
       expect(closedRow).toBeDefined();
-      expect(decimalText(closedRow?.amount)).toBe("0");
-      expect(decimalText(openRow?.amount)).toBe("20000");
+      expect(closedRow?.amount).toBe("0");
+      expect(openRow?.amount).toBe("20000");
 
       // account_performance's ending balance reflects the same zeroed
       // total — not a second, independently-derived number.
@@ -818,7 +817,7 @@ describe("portfolioSnapshots.create", () => {
         .select()
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, historicalSnapId));
-      expect(decimalText(historicalAccounts[0]?.amount)).toBe("50000");
+      expect(historicalAccounts[0]?.amount).toBe("50000");
     } finally {
       ctx.cleanup();
     }
@@ -881,7 +880,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .select()
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.id, row!.id));
-      expect(decimalText(after!.amount)).toBe("62500");
+      expect(after!.amount).toBe("62500");
 
       const [perf] = await ctx.db
         .select()
@@ -964,12 +963,12 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .select()
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.id, row!.id));
-      expect(decimalText(after!.amount)).toBe("25000");
+      expect(after!.amount).toBe("25000");
       const [locked] = await ctx.db
         .select()
         .from(schema.annualPerformance)
         .where(eq(schema.annualPerformance.year, 2024));
-      expect(decimalText(locked!.endingBalance)).toBe("20000");
+      expect(locked!.endingBalance).toBe("20000");
     } finally {
       ctx.cleanup();
     }

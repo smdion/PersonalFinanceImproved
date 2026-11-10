@@ -8,11 +8,11 @@ import {
   boolean,
   date,
   timestamp,
-  decimal,
   uniqueIndex,
   index,
   check,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {

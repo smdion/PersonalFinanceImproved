@@ -8,6 +8,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type {
   ReturnFilingStatus,
@@ -22,7 +23,7 @@ import { referenceOriginColumns } from "./contributions";
 export const returnRateTable = sqliteTable("return_rate_table", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   age: integer("age").notNull().unique(),
-  rateOfReturn: text("rate_of_return").notNull(),
+  rateOfReturn: decimalText("rate_of_return").notNull(),
 });
 
 export type TaxBracketEntry = {

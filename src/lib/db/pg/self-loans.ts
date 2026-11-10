@@ -1,13 +1,7 @@
 // Part of the Drizzle schema (PostgreSQL) — see schema-pg.ts.
 
-import {
-  pgTable,
-  serial,
-  integer,
-  date,
-  decimal,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, date, index } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { savingsGoals } from "./savings";
 
 // ────────────────────────────────────────────────────────────────────────────

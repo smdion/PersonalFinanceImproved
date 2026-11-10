@@ -8,11 +8,11 @@ import {
   boolean,
   date,
   timestamp,
-  decimal,
   uniqueIndex,
   index,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { budgetProfiles } from "./budget";
 import { jobs } from "./people";

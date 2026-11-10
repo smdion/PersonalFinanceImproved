@@ -7,10 +7,10 @@ import {
   integer,
   boolean,
   timestamp,
-  decimal,
   uniqueIndex,
   check,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {
