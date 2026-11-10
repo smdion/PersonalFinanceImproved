@@ -6,12 +6,12 @@
  * by hand from IRC 415(c), 414(v), 219 and Notice 2025-67, never read from
  * `src/`.
  *
- * Each case runs on 2026-04-14, a person born in January, so today's age
- * and the Dec 31 age agree (the router reads today's age in places,
- * v0.11 Limits "Catch-up limits on Paycheck/Contributions use today's age").
+ * Each case runs on 2026-04-14, inside the Jan 1–Apr 15 window for last
+ * year's IRA and HSA money. Every limit reads the age at Dec 31 of its
+ * tax year (IRC 219(b)(5)(B), 414(v)(5)); the AGE cases pin that.
  */
 import "./setup-mocks";
-import { afterAll, beforeAll, describe, vi } from "vitest";
+import { afterAll, beforeAll, describe, it, vi } from "vitest";
 import {
   createTestCaller,
   seedContributionAccount,
@@ -21,7 +21,7 @@ import {
 } from "./setup";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema-sqlite";
-import { xfail } from "../fixtures/answer-key";
+import { cents, xfail } from "../fixtures/answer-key";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");
 
@@ -260,5 +260,73 @@ describe("limits/IRA-2JOB: all current jobs count toward pay", () => {
         ),
     expected: 0,
     today: 1,
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The age a limit reads: at Dec 31 of its tax year (IRC 219(b)(5)(B), 414(v)(5))
+// ---------------------------------------------------------------------------
+
+/** A traditional IRA of the person's own, 1,000 a year outside payroll
+ *  (a job, so the person has a Contributions row). */
+function iraHousehold(birthDate: string) {
+  let t: TestCaller;
+  let personId = 0;
+  let profileId = 0;
+  beforeAll(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    t = await createTestCaller();
+    personId = await seedPerson(t.db, "Robin", birthDate);
+    seedJob(t.db, personId, { annualSalary: "90000" });
+    seedSingleFiler(t, personId);
+    const accountId = seedContributionAccount(t.db, {
+      personId,
+      jobId: null,
+      accountType: "ira",
+      parentCategory: "Retirement",
+      taxTreatment: "pre_tax",
+    });
+    profileId = seedContributionProfile(t.db, {
+      name: "IRA",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [String(accountId)]: {
+            contributionValue: "1000",
+            contributionMethod: "fixed_annual",
+          },
+        },
+      },
+    });
+    activate(t, profileId);
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+    t.cleanup();
+  });
+  return async () => {
+    const ira = await summaryFor(t, profileId, personId, "ira");
+    return { limit: ira.limit, priorYearLimit: ira.priorYear?.limit ?? NaN };
+  };
+}
+
+describe("last year's IRA room for someone 50 at last Dec 31", () => {
+  // Born 1975-08-01; on 2026-04-14 (inside the Jan 1–Apr 15 window for
+  // 2025 money) 50 today and 50 at Dec 31 2025, so 2025's catch-up
+  // applies: 7,000 + 1,000 = 8,000 (IRC 219(b)(5)(B); Notice 2024-80).
+  // 2026: 51 at Dec 31, 7,500 + 1,100 = 8,600 (Notice 2025-67).
+  const run = iraHousehold("1975-08-01");
+  it("limits/AGE-PY50 [LIM-05] 2025 room 8,000 (50 at Dec 31 2025)", async () => {
+    cents(await run(), { limit: 8_600, priorYearLimit: 8_000 });
+  });
+});
+
+describe("this year's IRA room for someone 50 by Dec 31", () => {
+  // Born 1976-08-01: 49 on 2026-04-14 but 50 at Dec 31 2026, so 2026's
+  // catch-up applies all year: 7,500 + 1,100 = 8,600 (Notice 2025-67).
+  // 2025: 49 at Dec 31, 7,000 alone (Notice 2024-80).
+  const run = iraHousehold("1976-08-01");
+  it("limits/AGE-CY50 [LIM-05] 2026 room 8,600 all year (50 at Dec 31 2026)", async () => {
+    cents(await run(), { limit: 8_600, priorYearLimit: 7_000 });
   });
 });

@@ -120,8 +120,8 @@ export function payrollFicaExemptCap(
 }
 
 /**
- * Resolve prior-year IRS limit for an account type.
- * Uses prior-year age (one year younger) and prior-year limits record.
+ * Resolve prior-year IRS limit for an account type. `age` is this tax
+ * year's Dec 31 age (`limitAge`), so last year's is one less.
  */
 export function resolvePriorYearLimit(
   accountType: string,
