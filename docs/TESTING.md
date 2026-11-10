@@ -33,7 +33,8 @@ Tests mirror the source layout; to see what covers a module, look in the matchin
 
 ## Suites worth knowing
 
-- **`pure/engine/engine-snapshot.test.ts`** — ~70 fixtures; each pins key figures (`toBe`) and a metrics snapshot. A failure reads "sustainable withdrawal changed from X to Y". Every fixture must have consistent starting money (see below).
+- **`pure/engine/engine-snapshot.test.ts`** — ~70 regression pins: what the code produced when each was written, not reviewed answers; each pins key figures (`toBe`) and a metrics snapshot. A failure reads "sustainable withdrawal changed from X to Y". Every fixture must have consistent starting money (see below).
+- **`pure/engine/engine-golden.test.ts`** — the engine's golden fixtures: whole projections worked by hand year by year. Each review is recorded in `pure/engine/reviewed.json`, keyed by the sha256 of the fixture's engine input; a changed input fails until its figures are re-derived and the new hash recorded (no date check).
 - **`pure/engine/unreached-paths.test.ts`** — invented-household cases for engine paths no baseline household reaches (RMD excess with a Social Security surplus, per-owner RMD rows, QCD, IRMAA on top, a conversion year with NIIT, the rate ceiling, a gap year 0, the rarer eligibility reasons); each proves it reached its branch, then pins the year and every account's draw in `pure/engine/__pins__/` (`LEDGR_BASELINE_WRITE=1` writes it).
 - **`pure/engine/engine-invariants.test.ts`** — property-based ([fast-check](https://github.com/dubzzz/fast-check)): balance conservation, limits never exceeded, phases never reverse, non-negative tax, generated inputs consistent with themselves. 20 runs by default; `FAST_CHECK_NUM_RUNS` for more.
 - **`pure/retirement/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
@@ -79,7 +80,7 @@ When engine output changes on purpose:
 pnpm vitest run tests/pure/engine/engine-snapshot.test.ts -u
 ```
 
-The pinned `toBe` figures don't update with `-u` — change them from the failure messages. Review the snapshot diff and explain the change in the commit.
+The pinned `toBe` figures don't update with `-u` — change them from the failure messages. Review the snapshot diff and explain the change in the commit. A golden fixture (`engine-golden.test.ts`) never updates this way: its figures change only when re-derived by hand.
 
 When the behavior baseline is rewritten on purpose (`LEDGR_BASELINE_WRITE=1`, v0.11's figure fixes), `pnpm tsx scripts/baseline-diff.ts [<rev>]` prints what moved, one line per figure: `household H, procedure P, field F: $A → $B` (`--limit N`, default 200). Put its last line and the figures that matter in the commit body: check-commit requires it on a figure commit (CONTRIBUTING § Commit rules, Figure commits).
 

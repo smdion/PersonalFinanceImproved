@@ -1,0 +1,35 @@
+{
+  "$comment": "Engine golden fixtures' reviews, keyed by the sha256 of each fixture's engine input (tests/pure/engine/engine-golden.test.ts). A changed input drops out of this file and fails the test until its figures are re-derived by hand and its new hash recorded here.",
+  "inputs": {
+    "6cb64479f03e7912c9cdf1878eca88817b8b01c9efeabde59f70f3fedf803fe1": {
+      "fixture": "engine/GOLD-1",
+      "reviewed": "2026-11-10",
+      "checked": "every year's balance and draw, the 2031 depletion: (start \u2212 40,000) \u00d7 1.05 by hand; gains under the 0% band"
+    },
+    "b7536da97c40bbf21b5910f17d0d6a39950b6905ce5059d19ab8267a5c235502": {
+      "fixture": "engine/GOLD-2",
+      "reviewed": "2026-11-10",
+      "checked": "spending inflated 3% a year from 2026; balances (start \u2212 spending) \u00d7 1.04 by hand"
+    },
+    "9ae85a82874aabd6784d71c751615f82f44aacbdb2ef468998d42f1e3f2b2e89": {
+      "fixture": "engine/GOLD-3",
+      "reviewed": "2026-11-10",
+      "checked": "two working years (start + 10,000) \u00d7 1.05, then draws of 60,000 and the 2029 depletion, by hand"
+    },
+    "653127da4e4ba6d6186136aaf17373b41fb5f99c8f3fe2d21ccfab693c507c91": {
+      "fixture": "engine/GOLD-4",
+      "reviewed": "2026-11-10",
+      "checked": "draw = spending \u2212 Social Security (16,000); provisional income under $25,000 so no tax; by hand"
+    },
+    "1fd2f0171d28b84cb29e2babd5eeaa44fb887961192f1992c8ac555495da0b5a": {
+      "fixture": "engine/GOLD-5",
+      "reviewed": "2026-11-10",
+      "checked": "the IRA gross-up W = 42,977.27 from the 2026 Single standard deduction and 10%/12% bands; balances by hand"
+    },
+    "eb8c82db99747f5520a73e3bb070bff13ca238db4b3b5304a1e3987e1154f5ad": {
+      "fixture": "engine/GOLD-6",
+      "reviewed": "2026-11-10",
+      "checked": "the $2,000-a-month budget from 2028 sticks forward; balances by hand at 0% return"
+    }
+  }
+}
