@@ -21,10 +21,10 @@ import { enforceYearRmd, qcdStep } from "./rmd-step";
 import {
   priceYearTax,
   pricedYearParts,
-  repriceConversionYear,
   settleYearDraws,
   yearRothConversion,
 } from "./tax-year-settlement";
+import { repriceConversionYear } from "./conversion-year-reprice";
 import { fundingShortfallForYear } from "./funding-shortfall";
 import { distributeYearDraws, routeYearDraw } from "./year-draws";
 import { yearNeed } from "./year-need";

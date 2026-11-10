@@ -295,7 +295,7 @@
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 477,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 245,
-    "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 463,
+    "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 375,
     "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 192,
