@@ -49,9 +49,15 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/v0106-mapping-ids.ts",
         "src/lib/db/migrate/v0106-joint-person-ids.ts",
         "src/lib/db/migrate/v0106-cached-months.ts",
+        "src/lib/db/migrate/v0106-salary-entries.ts",
+        "src/lib/db/migrate/v0106-stored-json.ts",
+        "src/lib/db/migrate/frozen-shape.ts",
         "src/lib/db/backup/version-tables.ts",
         "src/lib/utils/match-rate.ts",
         "src/lib/crypto-envelope.ts",
+        "src/lib/config/budget-apps.ts",
+        "src/lib/config/enum-values.ts",
+        "src/lib/config/filing-status.ts",
       ].sort(),
     );
     expect(

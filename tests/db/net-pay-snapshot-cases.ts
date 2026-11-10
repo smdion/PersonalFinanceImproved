@@ -6,6 +6,7 @@
  */
 import { projectedNetPay } from "@/lib/pure/paycheck/net-pay-growth";
 import { isExtraPaycheckBudgetMode } from "@/lib/pure/paycheck/extra-paycheck-months";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 
 type Routing = Record<string, unknown>;
 const rule = (from: string, to: string | null, snapshot?: number) => ({
@@ -14,7 +15,9 @@ const rule = (from: string, to: string | null, snapshot?: number) => ({
   splits: [{ goalId: 1, pct: 100 }],
   ...(snapshot === undefined ? {} : { netPaySnapshot: snapshot }),
 });
+/** A complete entry (the stored-JSON tag refuses a partial one). */
 const entry = (routing?: Routing) => ({
+  ...BLANK_SALARY_ENTRY,
   salary: 90000,
   bonusPercent: 0,
   ...(routing ? { extraPaycheckRouting: routing } : {}),

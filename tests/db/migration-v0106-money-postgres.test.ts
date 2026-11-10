@@ -11,6 +11,8 @@
  * drops the database's schemas.
  */
 // First: its mocks must be in place before any app module loads.
+import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { journalBefore } from "./journal-before";
 import {
   dropAllSchemas,
   pointAtTestDatabase,
@@ -114,9 +116,12 @@ describe.skipIf(skipWithoutPostgres)(
       salaryProfiles: readonly ProfileCase[] = SALARY_PROFILES,
     ) {
       await dropAllSchemas(client);
-      const shipped = fs.readFileSync(
-        path.join(REPO, "drizzle", "meta", "_journal.json"),
-        "utf8",
+      const shipped = journalBefore(
+        fs.readFileSync(
+          path.join(REPO, "drizzle", "meta", "_journal.json"),
+          "utf8",
+        ),
+        STORED_JSON_TAG,
       );
       const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
       journal.entries.splice(

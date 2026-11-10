@@ -11,7 +11,7 @@ export const isEmpty = (v: unknown) => v === null || v === undefined;
 
 /** A JSON column in either dialect's form, parsed; undefined for text
  *  that isn't JSON. */
-function parsedJson(value: unknown): unknown {
+export function parsedJson(value: unknown): unknown {
   if (typeof value !== "string") return value;
   try {
     return JSON.parse(value);

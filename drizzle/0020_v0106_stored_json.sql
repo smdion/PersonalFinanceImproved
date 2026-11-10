@@ -1,0 +1,7 @@
+-- v0.10.6 stored-JSON shapes (tag 0020). No
+-- schema change: the converters in src/lib/db/migrate/v0106-*.ts run after
+-- this SQL, as restore runs them on an older backup.
+-- Salary Profile entries: a JSON-null root becomes {}, a root stored as a
+-- JSON string holding an object becomes that object, and retired keys go;
+-- an entry the entry schema refuses refuses the start, naming ids and
+-- field names only. A replay finds nothing: the root is then an object.

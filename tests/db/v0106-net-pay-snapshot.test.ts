@@ -4,7 +4,7 @@
  * reads it, every routing reads as before, a replay writes nothing; a
  * Savings-mode routing without a base pay refuses, naming ids only.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { MONEY_TAG } from "@/lib/db/migrate/v0106-retirement-people";
 import { NET_PAY_SNAPSHOT_CONVERTER } from "@/lib/db/migrate/v0106-net-pay-snapshot";
 import {
@@ -28,6 +28,14 @@ import {
   profileReads,
   type ProfileCase,
 } from "./net-pay-snapshot-cases";
+
+// These cases hold entries for jobs the install doesn't have, which the
+// stored-JSON tag drops by design (tested there): the restore here runs the
+// converters before it.
+vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
+  ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
+  STORED_JSON_CONVERTERS: {},
+}));
 
 type Tables = Record<string, Record<string, unknown>[]>;
 const TAGS = pgJournal.entries.map((e) => e.tag);

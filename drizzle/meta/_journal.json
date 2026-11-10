@@ -141,6 +141,13 @@
       "when": 1794269620329,
       "tag": "0019_v0106_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794283864072,
+      "tag": "0020_v0106_stored_json",
+      "breakpoints": true
     }
   ]
 }

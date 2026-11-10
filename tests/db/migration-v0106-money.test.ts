@@ -8,6 +8,8 @@
  * snapshot goes (net-pay-snapshot-cases.ts), each read as before; a
  * routing that still pays from its snapshot refuses, and nothing changes.
  */
+import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { journalBefore } from "./journal-before";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import * as fs from "node:fs";
@@ -101,7 +103,10 @@ describe("the money tag through the real migrator (SQLite)", () => {
   function installBefore(
     salaryProfiles: readonly ProfileCase[] = SALARY_PROFILES,
   ) {
-    const shipped = fs.readFileSync(journalPath(), "utf8");
+    const shipped = journalBefore(
+      fs.readFileSync(journalPath(), "utf8"),
+      STORED_JSON_TAG,
+    );
     const journal = JSON.parse(shipped) as { entries: { tag: string }[] };
     const at = journal.entries.findIndex((e) => e.tag === MONEY_TAG);
     expect(at).toBeGreaterThan(0);

@@ -408,6 +408,9 @@ function findHardcodedClosedSetArrayViolations(): Violation[] {
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
     const code = codeOnly(lines);
+    // A tag's converter keeps its own copy of each set as of its tag (DESIGN
+    // § Data-converting migrations: Frozen), beside the config's.
+    if (rel.startsWith("src/lib/db/migrate/v")) continue;
     for (const set of CLOSED_SETS) {
       if (rel === set.definedIn) continue;
       for (const m of code.matchAll(closedSetArrayPattern(set))) {

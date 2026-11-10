@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0019_v0106_credentials`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0020_v0106_stored_json`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -30,6 +30,7 @@
 | 0017 | v0102_match_value         | yes        | yes    |
 | 0018 | v0106_money               | yes        | yes    |
 | 0019 | v0106_credentials         | yes        | yes    |
+| 0020 | v0106_stored_json         | yes        | yes    |
 
 ## Relations
 

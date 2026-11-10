@@ -35,7 +35,7 @@ const holdsSnapshot = (routing: Row) =>
   rulesOf(routing).some((r) => Object.hasOwn(r, SNAPSHOT));
 
 /** Each rule without the key; every other part as stored. */
-function withoutSnapshots(routing: Row): Row {
+export function withoutSnapshots(routing: Row): Row {
   const rules = Array.isArray(routing["rules"]) ? routing["rules"] : [];
   return {
     ...routing,
