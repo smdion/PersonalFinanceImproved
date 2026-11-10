@@ -8,7 +8,7 @@ import { log } from "@/lib/logger";
 import { convertV0810ProfileSets } from "../migrate/v0810-profile-sets";
 import { renameDisplayNameActive } from "../migrate/v0102-display-name-custom";
 import { dropDeadHoldingLinkAndSettings } from "../migrate/v0102-dead-data";
-import { convertBackupInOrder } from "../migrate/migration-converters";
+import { convertRestoredBackup } from "./restore-conversions";
 import pgJournal from "../../../../drizzle/meta/_journal.json";
 import { writeStamp } from "@/lib/utils/clock";
 
@@ -969,8 +969,7 @@ export function transformBackupToCurrentSchema(
   transformV095SsInAmount(cloned);
   renameDisplayNameActive(cloned);
   dropDeadHoldingLinkAndSettings(cloned);
-  for (const { tag, run } of convertBackupInOrder(cloned))
-    log("info", "backup_conversion", { tag, ...run });
+  convertRestoredBackup(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

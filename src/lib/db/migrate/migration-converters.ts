@@ -2,14 +2,17 @@
  *  serves the live migration (db-migrate.ts: pending loop and both squash
  *  replays, in the migration's transaction) and the restore step. */
 
-import type { ConverterContext } from "./converter-rows";
+import { isRow, type ConverterContext } from "./converter-rows";
 import { ENV_CONTEXT } from "./converter-refusal";
 import {
   applyToBackup,
   assertOneRow,
   quoted,
+  referencedError,
   statements,
   type ConverterResult,
+  type Reference,
+  type RowDelete,
 } from "./converter-writes";
 import { MATCH_RATE_CONVERTER, MATCH_RATE_TAG } from "./v0102-match-rate";
 import { MATCH_VALUE_CONVERTER, MATCH_VALUE_TAG } from "./v0102-match-value";
@@ -19,6 +22,7 @@ export type ConverterTables = Record<string, readonly unknown[] | undefined>;
 
 export type {
   ConverterResult,
+  Reference,
   RowDelete,
   RowInsert,
   RowUpdate,
@@ -165,6 +169,29 @@ async function selectPg(client: PgClient, table: string) {
   });
 }
 
+/** The foreign keys into a table, as the DELETE resolves its name; the
+ *  child as `regclass` text, quoted where it needs to be. */
+const PG_REFERENCES = `SELECT c.conrelid::regclass::text AS child, a.attname AS "column"
+  FROM pg_constraint c
+  JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+  WHERE c.contype = 'f' AND c.confrelid = to_regclass($1)`;
+
+async function refuseReferencedPg(client: PgClient, d: RowDelete) {
+  const { rows } = await client.query(PG_REFERENCES, [d.table]);
+  for (const r of rows) {
+    const ref: Reference = {
+      child: String(r["child"]),
+      column: String(r["column"]),
+      parent: d.table,
+    };
+    const found = await client.query(
+      `SELECT 1 FROM ${ref.child} WHERE ${quoted(ref.column)} = $1 LIMIT 1`,
+      [d.id],
+    );
+    if (found.rows.length > 0) throw referencedError(d, ref);
+  }
+}
+
 /** Run `tag`'s converters for `phase` on PostgreSQL, inside the caller's
  *  transaction. Null when it has none; else what they did, for the caller
  *  to log in one line. */
@@ -188,8 +215,10 @@ export async function runConverterPg(
         tables[table] = frozenCopy(await selectPg(client, table));
     }
     const result = c.convert(tables, ENV_CONTEXT);
-    for (const s of statements(result, (i) => `$${i}`, false))
+    for (const s of statements(result, (i) => `$${i}`, false)) {
+      if (s.deleted) await refuseReferencedPg(client, s.deleted);
       assertOneRow(s.label, (await client.query(s.sql, s.params)).rowCount);
+    }
     results.push(result);
   }
   return tally(results);
@@ -202,6 +231,32 @@ type SqliteDb = {
     run(...params: unknown[]): { changes: number };
   };
 };
+
+/** SQLite's foreign keys into a table (its checks are off in a migration,
+ *  so the runner looks itself). */
+function refuseReferencedSqlite(sqlite: SqliteDb, d: RowDelete) {
+  const refs = sqlite
+    .prepare(
+      `SELECT m.name AS child, f."from" AS "column" FROM sqlite_master m
+       JOIN pragma_foreign_key_list(m.name) f
+       WHERE m.type = 'table' AND f."table" = ?`,
+    )
+    .all(d.table)
+    .filter(isRow);
+  for (const r of refs) {
+    const ref: Reference = {
+      child: String(r["child"]),
+      column: String(r["column"]),
+      parent: d.table,
+    };
+    const found = sqlite
+      .prepare(
+        `SELECT 1 FROM ${quoted(ref.child)} WHERE ${quoted(ref.column)} = ? LIMIT 1`,
+      )
+      .get(d.id);
+    if (found) throw referencedError(d, ref);
+  }
+}
 
 /** The SQLite twin of runConverterPg (synchronous, so it runs inside a
  *  better-sqlite3 transaction). */
@@ -227,8 +282,10 @@ export function runConverterSqlite(
           sqlite.prepare(`SELECT * FROM ${quoted(table)}`).all(),
         );
     const result = c.convert(tables, ENV_CONTEXT);
-    for (const s of statements(result, () => "?", true))
+    for (const s of statements(result, () => "?", true)) {
+      if (s.deleted) refuseReferencedSqlite(sqlite, s.deleted);
       assertOneRow(s.label, sqlite.prepare(s.sql).run(...s.params).changes);
+    }
     return result;
   });
   return tally(results);
@@ -240,6 +297,7 @@ export function convertBackup(
   tables: Record<string, unknown[]>,
   converters: Readonly<Record<string, TagConverters>>,
   tag: string,
+  references: readonly Reference[] = [],
 ): ConversionRun | null {
   const list = convertersAt(converters, tag, "restore");
   if (list.length === 0) return null;
@@ -250,7 +308,7 @@ export function convertBackup(
       read[table] = rows && frozenCopy(rows);
     }
     const result = c.convert(read, ENV_CONTEXT);
-    applyToBackup(tables, result);
+    applyToBackup(tables, result, references);
     return result;
   });
   return tally(results);
@@ -261,10 +319,11 @@ export function convertBackup(
 export function convertBackupInOrder(
   tables: Record<string, unknown[]>,
   converters: Readonly<Record<string, TagConverters>> = MIGRATION_CONVERTERS,
+  references: readonly Reference[] = [],
 ): { tag: string; run: ConversionRun }[] {
   const runs: { tag: string; run: ConversionRun }[] = [];
   for (const tag of Object.keys(converters)) {
-    const run = convertBackup(tables, converters, tag);
+    const run = convertBackup(tables, converters, tag, references);
     if (run) runs.push({ tag, run });
   }
   return runs;

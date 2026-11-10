@@ -70,7 +70,14 @@ function param(
     : value;
 }
 
-type Statement = { label: string; sql: string; params: unknown[] };
+/** `deleted`: the row a DELETE removes, which the runner first checks no
+ *  row still references. */
+type Statement = {
+  label: string;
+  sql: string;
+  params: unknown[];
+  deleted?: RowDelete;
+};
 type Placeholder = (i: number) => string;
 
 function updateSql(u: RowUpdate, at: Placeholder, sqlite: boolean): Statement {
@@ -111,6 +118,7 @@ function deleteSql(d: RowDelete, at: Placeholder): Statement {
     label,
     sql: `DELETE FROM ${quoted(d.table)} WHERE "id" = ${at(1)}`,
     params: [d.id],
+    deleted: d,
   };
 }
 
@@ -137,6 +145,21 @@ export function assertOneRow(
     throw new Error(`${label} changed ${String(changed)} rows, not 1`);
 }
 
+/** A foreign key: `child.column` holds a `parent` row's id. */
+export type Reference = {
+  readonly child: string;
+  readonly column: string;
+  readonly parent: string;
+};
+
+/** No cascade or set-null runs for a converter (SQLite's are off during a
+ *  migration), so a delete that would orphan rows is refused on every path. */
+export function referencedError(d: RowDelete, ref: Reference): Error {
+  return new Error(
+    `${deleteLabel(d)}: ${ref.child}.${ref.column} still references it; a converter deletes those rows first`,
+  );
+}
+
 type BackupRow = Record<string, unknown>;
 const isBackupRow = (r: unknown): r is BackupRow =>
   typeof r === "object" && r !== null;
@@ -153,27 +176,42 @@ function rowsWithId(
 }
 
 /** A converter's result applied to a backup's rows in place (a JSON column
- *  keeps the object); an inserted row takes the table's next id. */
+ *  keeps the object; an inserted row takes the table's next id), once
+ *  every write is checked: a refused one leaves the rows as they were. */
 export function applyToBackup(
   tables: Record<string, unknown[]>,
   r: ConverterResult,
+  references: readonly Reference[] = [],
 ) {
-  for (const d of r.deletes ?? []) {
-    const rows = rowsWithId(tables, d.table, d.id);
+  const gone = new Set<BackupRow>();
+  const live = (table: string, id: number) =>
+    rowsWithId(tables, table, id).filter((x) => !gone.has(x));
+  const deleted = (r.deletes ?? []).map((d) => {
+    const rows = live(d.table, d.id);
     assertOneRow(deleteLabel(d), rows.length);
-    const list = tables[d.table]!;
-    list.splice(list.indexOf(rows[0]), 1);
-  }
-  for (const u of r.updates) {
-    const rows = rowsWithId(tables, u.table, u.id);
+    for (const ref of references.filter((x) => x.parent === d.table))
+      if (
+        (tables[ref.child] ?? []).some(
+          (c) => isBackupRow(c) && !gone.has(c) && c[ref.column] === d.id,
+        )
+      )
+        throw referencedError(d, ref);
+    gone.add(rows[0]!);
+    return { list: tables[d.table]!, row: rows[0]! };
+  });
+  const updated = r.updates.map((u) => {
+    const rows = live(u.table, u.id);
     assertOneRow(updateLabel(u), rows.length);
-    for (const column of Object.keys(u.set))
-      rows[0]![column] = structuredClone(
-        checked(updateLabel(u), column, u.set[column]),
-      );
-  }
+    const set = Object.keys(u.set).map(
+      (c) => [c, checked(updateLabel(u), c, u.set[c])] as const,
+    );
+    return { row: rows[0]!, set };
+  });
+  for (const i of r.inserts ?? []) insertSql(i, () => "?", false);
+  for (const { list, row } of deleted) list.splice(list.indexOf(row), 1);
+  for (const { row, set } of updated)
+    for (const [column, value] of set) row[column] = structuredClone(value);
   for (const i of r.inserts ?? []) {
-    insertSql(i, () => "?", false); // the same checks as the database's
     const list = (tables[i.table] ??= []);
     const last = list.reduce<number>((max, x) => {
       const id = isBackupRow(x) ? x["id"] : undefined;

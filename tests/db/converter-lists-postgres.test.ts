@@ -1,8 +1,8 @@
 /**
  * A converter list on PostgreSQL: each converter reads after the one
  * before wrote, dates and timestamps read as text, inserts take the
- * table's sequence, deletes remove one row
- * each, and the replay-twice helper passes them and fails a converter that
+ * table's sequence, deletes remove one row each (never one other rows
+ * still reference), and the replay-twice helper passes them and fails a converter that
  * changes its own output. Only when TEST_DATABASE_URL names a throwaway
  * database (CI's PostgreSQL job): it drops the database's schemas.
  */
@@ -91,6 +91,46 @@ describe.skipIf(skipWithoutPostgres)("converter lists (PostgreSQL)", () => {
     expect(seen[0]!["invented_dates"]).toEqual([
       { id: 1, day: "2026-01-31", at: "2026-01-31T12:30:00.000Z" },
     ]);
+  });
+
+  it("refuses a delete other rows still reference, and passes once the children go first", async () => {
+    await client.query(`
+      CREATE TABLE parents (id serial PRIMARY KEY);
+      CREATE TABLE kids (id serial PRIMARY KEY, parent_id integer REFERENCES parents(id) ON DELETE CASCADE);
+      INSERT INTO parents DEFAULT VALUES;
+      INSERT INTO kids (parent_id) VALUES (1);
+    `);
+    const deleting = (deletes: { table: string; id: number }[]) => ({
+      [TAG]: {
+        tables: ["parents", "kids"],
+        runs: "afterSql" as const,
+        rowCounts: { shrinks: ["parents", "kids"] },
+        convert: () => ({ updates: [], deletes, notes: [] }),
+      },
+    });
+    await expect(
+      runConverterPg(
+        client,
+        deleting([{ table: "parents", id: 1 }]),
+        TAG,
+        "afterSql",
+      ),
+    ).rejects.toThrow(
+      "Converter delete parents id 1: kids.parent_id still references it",
+    );
+    expect((await client.query("SELECT id FROM kids")).rows).toEqual([
+      { id: 1 },
+    ]);
+    await runConverterPg(
+      client,
+      deleting([
+        { table: "kids", id: 1 },
+        { table: "parents", id: 1 },
+      ]),
+      TAG,
+      "afterSql",
+    );
+    expect((await client.query("SELECT id FROM parents")).rows).toEqual([]);
   });
 
   it("the replay-twice helper passes the list and fails a converter that isn't idempotent", async () => {

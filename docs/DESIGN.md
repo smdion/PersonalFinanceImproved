@@ -968,7 +968,12 @@ SQLite and PostgreSQL).
   order, runs them in the live order. A converter returns row updates, inserts
   (the database numbers the row; a restore gives it the table's next id)
   and deletes, all by `id`; they apply as deletes, then updates, then
-  inserts, and each must change exactly one row or the migration stops.
+  inserts, and each must change exactly one row or the migration stops. No cascade or
+  set-null runs for a converter, so a delete of a row other rows still
+  reference is refused on every path (PostgreSQL's foreign keys from
+  `pg_constraint`, SQLite's from `pragma_foreign_key_list`, the restore
+  step's from the schema): the converter deletes the children first. The
+  restore step checks every write of a result before the first lands.
   The tag logs one line per phase with the counts.
 - **Refusing the start:** rows a converter can't convert without changing
   what they read as make it throw `MigrationRefusal`
