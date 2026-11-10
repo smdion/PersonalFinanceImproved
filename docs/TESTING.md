@@ -81,7 +81,7 @@ pnpm vitest run tests/pure/engine/engine-snapshot.test.ts -u
 
 The pinned `toBe` figures don't update with `-u` — change them from the failure messages. Review the snapshot diff and explain the change in the commit.
 
-When the behavior baseline is rewritten on purpose (`LEDGR_BASELINE_WRITE=1`, v0.11's figure fixes), `pnpm tsx scripts/baseline-diff.ts [<rev>]` prints what moved, one line per figure: `household H, procedure P, field F: $A → $B` (`--limit N`, default 200). Put its output, or its last line and the figures that matter, in the commit body. check-commit doesn't require it yet; wired, it would run on a commit whose staged files include `tests/baseline/__baseline__/` and require a `Baseline-rerecord:` trailer plus the summary's figure count in the body.
+When the behavior baseline is rewritten on purpose (`LEDGR_BASELINE_WRITE=1`, v0.11's figure fixes), `pnpm tsx scripts/baseline-diff.ts [<rev>]` prints what moved, one line per figure: `household H, procedure P, field F: $A → $B` (`--limit N`, default 200). Put its last line and the figures that matter in the commit body: check-commit requires it on a figure commit (CONTRIBUTING § Commit rules, Figure commits).
 
 ## Time zone, sampled sweeps and benchmarks
 

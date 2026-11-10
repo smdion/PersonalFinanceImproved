@@ -23,7 +23,8 @@
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
  * revert says why in its own words: git's "This reverts commit …" line
- * alone isn't a reason.
+ * alone isn't a reason. A commit that re-records a pinned figure names its
+ * item, each moved figure and baseline-diff.ts's count (v0.11 G1).
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -57,6 +58,8 @@ const ENGINE_OR_TAX = [
 ];
 
 export type ParsedMessage = {
+  /** The whole message, for trailers that repeat (trailerValues). */
+  raw: string;
   subject: string;
   body: string;
   trailers: Record<string, string>;
@@ -119,7 +122,7 @@ export function parseMessage(raw: string): ParsedMessage {
     if (trailer) trailers[trailer.key] = trailer.value;
     else bodyLines.push(line);
   }
-  return { subject, body: bodyLines.join("\n").trim(), trailers };
+  return { raw, subject, body: bodyLines.join("\n").trim(), trailers };
 }
 
 /** git revert's own body line: it says what was reverted, not why. */
@@ -3797,6 +3800,102 @@ export function notCommentsOnly(
   return undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Figure commits (v0.11 G1)
+// ---------------------------------------------------------------------------
+
+export const RERECORD = "Baseline-rerecord";
+const FIGURE_CHANGE = "Figure-change";
+
+/**
+ * Pinned figures: the behavior, sync, text and screens baselines, the engine
+ * and Simulation snapshots, the answer key, and the pinned expected-rows
+ * fixtures (`tests/fixtures/*-rows.json`).
+ */
+const PINNED_FIGURES = [
+  /^tests\/baseline\/__(baseline|sync|text|screens)__\//,
+  /^tests\/pure\/(engine|simulation)\/__snapshots__\//,
+  /^tests\/(.+\/)?answer-key[^/]*\.test\.tsx?$/,
+  /^tests\/fixtures\/answer-key[^/]*\.ts$/,
+  /^tests\/fixtures\/[^/]+-rows\.json$/,
+];
+
+/** `<case or field>: … $A → $B …, <cause>` */
+const FIGURE_LINE = /^.+?: .*\S ?→ ?\S.*, \S/;
+/** scripts/baseline-diff.ts's last line. */
+const BASELINE_COUNT =
+  /\b\d+ figure\(s\) moved in \d+ baseline file\(s\) since \S+/;
+
+/**
+ * Pinned-figure files whose lines change or go: a new pin, file or case
+ * only adds lines, so it moves no figure.
+ */
+export function rerecordedFiles(files: FileChange[]): string[] {
+  return files
+    .filter((c) => c.deleted > 0 && PINNED_FIGURES.some((p) => p.test(c.file)))
+    .map((c) => c.file);
+}
+
+/** check-ratchets' `<glob> — <reason>`; the reason starts with the item id. */
+const RERECORD_FORM = /^\S.*?\s+(?:—|--)\s+(\S.*)$/;
+/** A scope item id (`Q1`, `TX5`, `AR13`, `PY4b`), or `none,` when no figure moved. */
+const ITEM_ID = /^(?:[A-Z]+\d+[a-z]?|none)(?=[\s,(]|$)/;
+
+/**
+ * Each `Baseline-rerecord:` line's item: the id its reason starts with
+ * (`none` when no figure moves), or undefined for a line not in the form.
+ */
+export function rerecordItems(message: ParsedMessage): (string | undefined)[] {
+  return trailerValues(message.raw, RERECORD).map(
+    (value) => ITEM_ID.exec(RERECORD_FORM.exec(value)?.[1] ?? "")?.[0],
+  );
+}
+
+/**
+ * A commit that re-records a pinned figure names its item and says what
+ * moved: `Baseline-rerecord: <glob> — <item id>, <reason>`, a
+ * `Figure-change:` line per figure class, and baseline-diff.ts's count line.
+ */
+function figureWarnings(
+  message: ParsedMessage,
+  files: FileChange[],
+): Warning[] {
+  const touched = rerecordedFiles(files);
+  const items = rerecordItems(message);
+  const form = `"${RERECORD}: <glob> — <item id>, <reason>" (or "<glob> — none, <reason>" when no figure moves)`;
+  if (items.length === 0) {
+    if (touched.length === 0) return [];
+    return [
+      {
+        rule: "figure-rerecord",
+        text: `re-records pinned figures (${touched.slice(0, 3).join(", ")}${touched.length > 3 ? ", …" : ""}): add ${form} with its ${FIGURE_CHANGE}: lines`,
+      },
+    ];
+  }
+  if (items.includes(undefined))
+    return [{ rule: "figure-rerecord", text: `write ${form}` }];
+  const item = items.find((id) => id !== "none");
+  if (item === undefined) return [];
+  const warnings: Warning[] = [];
+  const lines = trailerValues(message.raw, FIGURE_CHANGE);
+  if (lines.length === 0)
+    warnings.push({
+      rule: "figure-change",
+      text: `${RERECORD}: ${item} needs a "${FIGURE_CHANGE}: <case or field>: $A → $B, <cause>" line per moved figure class`,
+    });
+  for (const line of lines.filter((l) => !FIGURE_LINE.test(l)))
+    warnings.push({
+      rule: "figure-change",
+      text: `"${FIGURE_CHANGE}: ${line}": write <case or field>: $A → $B, <cause>`,
+    });
+  if (!BASELINE_COUNT.test(message.raw))
+    warnings.push({
+      rule: "figure-count",
+      text: `${RERECORD}: ${item} needs scripts/baseline-diff.ts's count line ("N figure(s) moved in M baseline file(s) since <rev>.") in the body`,
+    });
+  return warnings;
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
@@ -3837,6 +3936,7 @@ export function checkCommit(facts: CommitFacts): Warning[] {
       text: 'a revert says why: "This reverts commit …" alone gives no reason',
     });
   }
+  warnings.push(...figureWarnings(message, files));
   const srcLines = srcLinesChanged(files);
   if (srcLines > MAX_SRC_LINES && !exempt) {
     warnings.push({

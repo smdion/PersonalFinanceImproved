@@ -66,6 +66,7 @@ import {
 } from "./ratchets/code-limits";
 import {
   RENAME,
+  RERECORD,
   commitsIn,
   gitIn,
   mechanicalProblem,
@@ -99,7 +100,6 @@ export const BASELINE_DIRS = [
 // ---------------------------------------------------------------------------
 
 export type Commit = { sha: string; message: string; files: string[] };
-export const RERECORD = "Baseline-rerecord";
 
 /** `Key: a, b — reason` lines; a line with no reason is reported. */
 export function trailerScopes(
