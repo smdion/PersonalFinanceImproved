@@ -1,6 +1,6 @@
-/** Rows as the data converters read them (migration-converters.ts): snake_
- *  case, JSON as an object (PostgreSQL) or text (SQLite), the rest through
- *  the helpers below. No import from migration-converters.ts. */
+/** Rows as data converters read them (no import from migration-converters
+ *  .ts): snake_case; JSON an object (PostgreSQL) or text (SQLite); a timestamp
+ *  ISO text or epoch seconds, so its first writer adds a helper for both. */
 
 export type Row = Record<string, unknown>;
 export type Update = { table: string; id: number; set: Row };

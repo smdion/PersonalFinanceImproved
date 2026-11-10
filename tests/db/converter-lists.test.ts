@@ -17,6 +17,7 @@ import { MATCH_VALUE_CONVERTER } from "@/lib/db/migrate/v0102-match-value";
 import { VALUE_ACCOUNTS, VALUE_PROFILES } from "./match-value-cases";
 import { ACCOUNT_CASES, PROFILE_CASES } from "./match-rate-cases";
 import {
+  expectRestoreMatchesSqlite,
   expectRestoreReplaySafe,
   expectSqliteReplaySafe,
 } from "./converter-replay";
@@ -419,5 +420,49 @@ describe("a converter list in the real SQLite migrator", () => {
     db.close();
     runSQLite();
     expect(invented()).toEqual(once);
+  });
+});
+
+describe("the restore-vs-SQLite helper", () => {
+  const thingsDb = () => {
+    const db = new Database(":memory:");
+    db.exec(
+      "CREATE TABLE things (id INTEGER PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'plain')",
+    );
+    return db;
+  };
+  /** Adds one `added` row, once. */
+  const adds = (row: Record<string, unknown>): DataConverter => ({
+    tables: ["things"],
+    runs: "afterSql",
+    rowCounts: { grows: ["things"] },
+    convert: (t) => ({
+      updates: [],
+      inserts: (t["things"] ?? []).some(
+        (r) => (r as { name: string }).name === "added",
+      )
+        ? []
+        : [{ table: "things", row }],
+      notes: [],
+    }),
+  });
+  const fixture = () => ({ things: [{ id: 1, name: "a", kind: "x" }] });
+
+  it("passes an insert that names every column", () => {
+    expectRestoreMatchesSqlite(
+      thingsDb(),
+      adds({ name: "added", kind: "plain" }),
+      fixture(),
+    );
+  });
+
+  it("catches an insert that leaves a defaulted column out", () => {
+    expect(() =>
+      expectRestoreMatchesSqlite(
+        thingsDb(),
+        adds({ name: "added" }),
+        fixture(),
+      ),
+    ).toThrow();
   });
 });

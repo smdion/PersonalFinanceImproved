@@ -19,6 +19,10 @@ export type RefusalText = {
   readonly fields?: readonly string[];
 };
 
+/** A refusal code as a message may show it: an identifier, never text. */
+const shownCode = (code: string) =>
+  /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(code) ? code : "(not an identifier)";
+
 /** What a converter throws: which declared refusal, and the rows (and
  *  declared fields) it names. Its own message is only the code. */
 export class ConverterRefusal extends Error {
@@ -27,7 +31,7 @@ export class ConverterRefusal extends Error {
     readonly refused: Refused,
     readonly fields: readonly string[] = [],
   ) {
-    super(`Converter refusal ${code}`);
+    super(`Converter refusal ${shownCode(code)}`);
     this.name = "ConverterRefusal";
   }
 }
@@ -91,14 +95,15 @@ export function declaredRefusal(
 ): MigrationRefusal {
   const declared = converter.refusals ?? {};
   const text = Object.hasOwn(declared, e.code) ? declared[e.code] : undefined;
-  if (!text) throw new Error(`Converter refusal ${e.code} isn't declared`);
+  if (!text)
+    throw new Error(`Converter refusal ${shownCode(e.code)} isn't declared`);
   if (Object.keys(e.refused).some((t) => !converter.tables.includes(t)))
     throw new Error(
-      `Converter refusal ${e.code} names a table its converter doesn't read`,
+      `Converter refusal ${shownCode(e.code)} names a table its converter doesn't read`,
     );
   if (e.fields.some((f) => !(text.fields ?? []).includes(f)))
     throw new Error(
-      `Converter refusal ${e.code} names a field it doesn't declare`,
+      `Converter refusal ${shownCode(e.code)} names a field it doesn't declare`,
     );
   return new MigrationRefusal(text, path, e.refused, e.fields);
 }

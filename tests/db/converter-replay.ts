@@ -194,8 +194,8 @@ const asParam = (v: unknown) =>
       ? JSON.stringify(v)
       : v;
 
-/** Each table's rows, ids aside, on the columns the restored rows hold (a
- *  column a row lacks reads NULL, as the restore writes it). */
+/** Each table's rows, ids aside, on the given columns (a column a row
+ *  lacks reads NULL, as the restore writes it). */
 function projected(rows: readonly unknown[], columns: readonly string[]) {
   return rows
     .map((r) =>
@@ -211,20 +211,15 @@ function projected(rows: readonly unknown[], columns: readonly string[]) {
     .sort();
 }
 
-/** The same fixture through the restore step and through `db` (its tables
- *  made, the fixture's ids free) gives the same rows, ids aside; rows `db`
- *  held before are left out. */
+/** One fixture through SQLite and through the restore step: it goes into
+ *  `db`, a copy of every table then is the backup (each column, defaults
+ *  filled), and both give the same rows on every column, ids aside. */
 export function expectRestoreMatchesSqlite(
   db: Database.Database,
   converters: TagConverters,
   fixture: Record<string, Record<string, unknown>[]>,
 ): void {
   const registry = { [TAG]: converters };
-  const before = sqliteTables(db);
-  const earlier = (table: string, row: unknown) =>
-    (before[table] ?? []).some(
-      (r) => (r as { id?: unknown }).id === (row as { id?: unknown }).id,
-    );
   for (const [table, rows] of Object.entries(fixture))
     for (const row of rows) {
       const cols = Object.keys(row);
@@ -232,16 +227,21 @@ export function expectRestoreMatchesSqlite(
         `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
       ).run(...cols.map((c) => asParam(row[c])));
     }
+  const backup: Record<string, unknown[]> = structuredClone(sqliteTables(db));
   for (const phase of ["beforeSql", "afterSql"] as const)
     runConverterSqlite(db, registry, TAG, phase);
-  const restored: Record<string, unknown[]> = structuredClone(fixture);
-  convertBackup(restored, registry, TAG);
+  convertBackup(backup, registry, TAG);
   const live = sqliteTables(db);
-  for (const [table, rows] of Object.entries(restored)) {
-    const columns = [
-      ...new Set(rows.flatMap((r) => Object.keys(r as object))),
-    ].filter((c) => c !== "id");
-    const ours = (live[table] ?? []).filter((r) => !earlier(table, r));
-    expect(projected(ours, columns), table).toEqual(projected(rows, columns));
+  for (const [table, rows] of Object.entries(live)) {
+    const columns = (
+      db.prepare(`SELECT name FROM pragma_table_info(?)`).all(table) as {
+        name: string;
+      }[]
+    )
+      .map((c) => c.name)
+      .filter((c) => c !== "id");
+    expect(projected(rows, columns), table).toEqual(
+      projected(backup[table] ?? [], columns),
+    );
   }
 }

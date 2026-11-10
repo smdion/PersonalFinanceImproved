@@ -96,6 +96,11 @@ describe("what a converter may refuse with", () => {
   it.each([
     ["an undeclared code", new ConverterRefusal("other", {}), /isn't declared/],
     [
+      "an undeclared code that isn't an identifier",
+      new ConverterRefusal(SECRET, {}),
+      /^Converter refusal \(not an identifier\) isn't declared$/,
+    ],
+    [
       "a table it doesn't read",
       new ConverterRefusal("retired", { people: [1] }),
       /names a table its converter doesn't read/,
