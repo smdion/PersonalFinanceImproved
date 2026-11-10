@@ -1335,7 +1335,7 @@ erDiagram
 | contribution_active_fields | jsonb                    | yes      | `{}`    | shape below |
 | created_at                 | timestamp with time zone | yes      | `now()` |             |
 
-- `contribution_active_fields`: type `EntityFieldMap`; shape `contributionActiveFieldsSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; read through `readContributionActiveFields` (lib/db/stored-active-fields.ts); **old shapes still read (FALLBACKS)**
+- `contribution_active_fields`: type `EntityFieldMap`; shape `contributionActiveFieldsSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; read through `readContributionActiveFields` (lib/db/stored-active-fields.ts)
 
 ### debts
 

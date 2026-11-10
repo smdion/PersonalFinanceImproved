@@ -1714,7 +1714,6 @@ describe("projection router — computeProjection edge cases", () => {
               contributionMethod: "percent_of_salary",
             },
           },
-          jobs: {},
         },
       });
 

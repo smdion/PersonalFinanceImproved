@@ -1206,7 +1206,6 @@ describe("paycheck router — joint contributions", () => {
             contributionMethod: "fixed_monthly",
           },
         },
-        jobs: {},
       },
     });
   });

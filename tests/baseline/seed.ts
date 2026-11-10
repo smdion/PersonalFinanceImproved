@@ -11,6 +11,7 @@ import type { inferRouterInputs } from "@trpc/server";
 import type { AppRouter } from "@/server/routers";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
+import type { ContributionMethod } from "@/lib/config/enum-values";
 
 type Inputs = inferRouterInputs<AppRouter>;
 type ContribInput = Inputs["settings"]["contributionAccounts"]["create"];
@@ -67,7 +68,7 @@ export interface Household {
       job: string | null;
       person: string | null;
       value: string;
-      method: string;
+      method: ContributionMethod;
     })[];
   }[];
   cash: number;
@@ -180,7 +181,11 @@ export async function seedHousehold(
   const contrib: number[] = [];
   const contributionAccounts: Record<
     string,
-    { contributionValue: string; contributionMethod: string; isActive: true }
+    {
+      contributionValue: string;
+      contributionMethod: ContributionMethod;
+      isActive: true;
+    }
   > = {};
   for (const a of h.accounts) {
     const { owner, ...perfInput } = a.perf;

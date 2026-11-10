@@ -61,7 +61,6 @@ async function seedContribAccount(
           contributionMethod: contributionMethod ?? "fixed_annual",
         },
       },
-      jobs: {},
     },
   });
 

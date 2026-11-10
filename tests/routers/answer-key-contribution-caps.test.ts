@@ -109,7 +109,6 @@ function d2Household(birthDate: string) {
             contributionMethod: "fixed_annual",
           },
         },
-        jobs: {},
       },
     });
     activate(t, profileId);
@@ -213,7 +212,6 @@ describe("limits/IRA-2JOB: all current jobs count toward pay", () => {
           contributionMethod: "fixed_annual",
         },
       },
-      jobs: {},
     });
     // The summary reads a profile with the IRA at 7,500; the save is
     // judged on the active profile, where the IRA starts at 0.

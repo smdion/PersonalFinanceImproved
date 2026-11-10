@@ -196,7 +196,6 @@ async function seedContributionAccount(
             contributionMethod: contributionMethod ?? "percent_of_salary",
           },
         },
-        jobs: {},
       },
     })
     .returning({ id: schema.contributionProfiles.id })
@@ -1162,7 +1161,10 @@ describe("retirement router -- contribution profiles", () => {
         name: "High Salary Profile",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contribAcct.id)]: { contributionValue: "0.15" },
+            [String(contribAcct.id)]: {
+              contributionValue: "0.15",
+              contributionMethod: "percent_of_salary",
+            },
           },
         },
       })
@@ -1752,7 +1754,6 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
                 contributionMethod: "fixed_per_period",
               },
             },
-            jobs: {},
           },
         })
         .returning({ id: schema.contributionProfiles.id })

@@ -624,7 +624,7 @@ describe("projection.relocation — move-year handoff", () => {
         await seedRelocationDataset(db);
       const otherProfile = seedContributionProfile(db, {
         name: "Relocation",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       const moveYear = new Date().getFullYear() + 2;
       spy.mockClear();

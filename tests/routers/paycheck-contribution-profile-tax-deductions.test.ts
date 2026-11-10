@@ -239,7 +239,6 @@ describe("paycheck.computeSummary — deduction active fields", () => {
         name: "Deduction Baseline Profile",
         contributionActiveFields: {
           contributionAccounts: {},
-          jobs: {},
           deductions: { [String(deductionId)]: { amountPerPeriod: "20" } },
         },
       });
@@ -247,7 +246,6 @@ describe("paycheck.computeSummary — deduction active fields", () => {
         name: "Deduction Profile",
         contributionActiveFields: {
           contributionAccounts: {},
-          jobs: {},
           deductions: { [String(deductionId)]: { amountPerPeriod: "75" } },
         },
       });
@@ -291,7 +289,6 @@ describe("paycheck.computeSummary — deduction active fields", () => {
         name: "Zero Deduction Profile",
         contributionActiveFields: {
           contributionAccounts: {},
-          jobs: {},
           deductions: { [String(deductionId)]: { amountPerPeriod: "0" } },
         },
       });
@@ -320,7 +317,6 @@ describe("paycheck.computeSummary — deduction active fields", () => {
         name: "Sandbox Layer Profile",
         contributionActiveFields: {
           contributionAccounts: {},
-          jobs: {},
           deductions: { [String(deductionId)]: { amountPerPeriod: "75" } },
         },
       });

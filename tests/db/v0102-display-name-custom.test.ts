@@ -20,7 +20,10 @@ describe("renameDisplayNameActive", () => {
             contributionAccounts: {
               "1": { displayNameActive: "Old", isActive: true },
               "2": { displayNameActive: "Old", displayNameCustom: "New" },
-              "3": { contributionValue: "100", contributionMethod: "percent" },
+              "3": {
+                contributionValue: "100",
+                contributionMethod: "percent_of_salary",
+              },
             },
             deductions: {},
           },
@@ -33,7 +36,10 @@ describe("renameDisplayNameActive", () => {
         contributionAccounts: {
           "1": { displayNameCustom: "Old", isActive: true },
           "2": { displayNameCustom: "New" },
-          "3": { contributionValue: "100", contributionMethod: "percent" },
+          "3": {
+            contributionValue: "100",
+            contributionMethod: "percent_of_salary",
+          },
         },
         deductions: {},
       },

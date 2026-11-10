@@ -70,7 +70,7 @@ describe("contribution router", () => {
     cleanup = ctx.cleanup;
     defaultProfileId = seedContributionProfile(db, {
       name: "Default Test Profile",
-      contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      contributionActiveFields: { contributionAccounts: {} },
     });
   });
 
@@ -941,7 +941,6 @@ describe("contribution router", () => {
               contributionMethod: "percent_of_salary",
             },
           },
-          jobs: {},
         },
       });
       salaryProfileId = seedSalaryProfile(db, {

@@ -409,7 +409,10 @@ describe("contributionActiveFieldsSchema", () => {
           contributionMethod: "fixed_annual",
           isActive: true,
         },
-        "12": { contributionMethod: "percent_gross", contributionValue: 500 },
+        "12": {
+          contributionMethod: "percent_of_salary",
+          contributionValue: 500,
+        },
       },
       deductions: {
         "1": { amountPerPeriod: "12.50" },

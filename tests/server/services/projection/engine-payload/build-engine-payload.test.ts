@@ -156,7 +156,7 @@ async function seedContributionProfileForAccounts(
     .insert(schema.contributionProfiles)
     .values({
       name: "Test Contrib Profile",
-      contributionActiveFields: { contributionAccounts, jobs: {} },
+      contributionActiveFields: { contributionAccounts },
     })
     .returning({ id: schema.contributionProfiles.id })
     .get();

@@ -320,7 +320,7 @@ describe("contributionProfiles router", () => {
           contributionAccounts: {
             "999": {
               contributionValue: "5000",
-              contributionMethod: "dollar_amount",
+              contributionMethod: "fixed_annual",
               isActive: true,
             },
           },
@@ -386,7 +386,7 @@ function seedContribProfile(
     .insert(sqliteSchema.contributionProfiles)
     .values({
       name: "Test What-If",
-      contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      contributionActiveFields: { contributionAccounts: {} },
       ...overrides,
     })
     .returning({ id: sqliteSchema.contributionProfiles.id })
@@ -428,9 +428,11 @@ describe("contributionProfiles coverage", () => {
           name: "WithActiveFields",
           contributionActiveFields: {
             contributionAccounts: {
-              [String(acctId)]: { contributionValue: "0.15" },
+              [String(acctId)]: {
+                contributionValue: "0.15",
+                contributionMethod: "percent_of_salary",
+              },
             },
-            jobs: {},
           },
         });
 
@@ -502,7 +504,6 @@ describe("contributionProfiles coverage", () => {
                 displayNameCustom: "My Custom Name",
               },
             },
-            jobs: {},
           },
         });
 
@@ -1107,7 +1108,6 @@ describe("contributionProfiles coverage", () => {
                 contributionMethod: "fixed_annual",
               },
             },
-            jobs: {},
           },
         });
         const listed = (await caller.contributionProfile.list()).find(
@@ -1367,7 +1367,6 @@ describe("contributionProfiles coverage", () => {
                 contributionMethod: "percent_of_salary",
               },
             },
-            jobs: {},
           },
         });
 
@@ -1475,7 +1474,7 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {
               [String(accountId)]: {
                 contributionValue: "5000",
-                contributionMethod: "dollar_amount",
+                contributionMethod: "fixed_annual",
                 isActive: true,
               },
             },
@@ -1494,7 +1493,7 @@ describe("contributionProfiles coverage", () => {
         const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
         const fields = detail.activeFields as Record<string, unknown>;
         expect(fields.contributionValue).toBe("5000");
-        expect(fields.contributionMethod).toBe("dollar_amount");
+        expect(fields.contributionMethod).toBe("fixed_annual");
         expect(fields.isActive).toBe(false);
       } finally {
         cleanup();
@@ -1511,7 +1510,7 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {
               [String(accountId)]: {
                 contributionValue: "5000",
-                contributionMethod: "dollar_amount",
+                contributionMethod: "fixed_annual",
                 isActive: false,
               },
             },

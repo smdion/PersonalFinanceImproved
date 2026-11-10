@@ -8,6 +8,8 @@ import {
   payPeriodSchema,
   payWeekSchema,
   bonusDestinationSchema,
+  contributionMethodSchema,
+  employerMatchTypeSchema,
 } from "@/lib/config/enum-values.schema";
 import { ROTH_IRA_ROUTE_VALUES } from "@/lib/config/enum-values";
 import { zDecimal } from "@/lib/utils/zod-fields";
@@ -292,21 +294,19 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 export const contribAccountActiveFieldsPatchSchema = z
   .object({
     contributionValue: z.union([z.string(), z.number()]).optional(),
-    contributionMethod: z.string().optional(),
-    employerMatchType: z.string().optional(),
+    contributionMethod: contributionMethodSchema.optional(),
+    employerMatchType: employerMatchTypeSchema.optional(),
     employerMatchValue: z.union([z.string(), z.number()]).optional(),
     /** A percent match's rate, a fraction: what is read (0017 drops the value). */
     employerMatchRate: z.union([z.string(), z.number()]).optional(),
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
-    /** Also taken from bonus checks (bonusCheckContribution — the one
-     *  gate). Absent = no. */
+    /** Also taken from bonus checks (bonusCheckContribution). Absent = no. */
     fromBonus: z.boolean().optional(),
     /** A Roth IRA account's route (ROTH_IRA_ROUTE_VALUES). Absent = direct. */
     rothRoute: z.enum(ROTH_IRA_ROUTE_VALUES).optional(),
-    /** A custom display label for this account within this profile,
-     *  cosmetic only (see contrib-profile-diff.ts). */
+    /** This profile's display label for the account; cosmetic only. */
     displayNameCustom: z.string().optional(),
   })
   .strict();

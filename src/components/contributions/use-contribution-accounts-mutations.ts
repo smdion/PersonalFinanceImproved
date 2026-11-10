@@ -181,7 +181,7 @@ export function useContributionAccountsMutations({
       personId: number | null;
       jobId: number | null;
       taxTreatment: string;
-      employerMatchType: string;
+      employerMatchType: EmployerMatchType;
       employerMatchValue: string | null;
       employerMaxMatchPct: string | null;
       employerMatchTaxTreatment: string;
@@ -206,7 +206,7 @@ export function useContributionAccountsMutations({
       // Match %) is dropped here, and not written to the raw row either, which
       // the profile would shadow.
       const profileFields: Partial<{
-        employerMatchType: string;
+        employerMatchType: EmployerMatchType;
         employerMatchValue: string | number;
         employerMaxMatchPct: string | number;
         autoMaximize: boolean;

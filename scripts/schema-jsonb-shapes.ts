@@ -92,7 +92,6 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
     shape: `${SCHEMAS}#contributionActiveFieldsSchema`,
     parsed: "read and write",
     reader: "lib/db/stored-active-fields.ts#readContributionActiveFields",
-    fallbacks: "lib/db/stored-active-fields.ts",
   },
   "fpl_by_household.amounts": {
     shape: `${SCHEMAS}#fplByHouseholdAmountsSchema`,

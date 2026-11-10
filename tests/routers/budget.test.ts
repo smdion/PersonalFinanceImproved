@@ -1324,7 +1324,6 @@ describe("budget router", () => {
               contributionMethod,
             },
           },
-          jobs: {},
         },
       });
       const itemId = seedBudgetItem(db, profileId, {
@@ -1423,7 +1422,6 @@ describe("budget router", () => {
               contributionMethod: "fixed_monthly",
             },
           },
-          jobs: {},
         },
       });
       const itemA = seedBudgetItem(db, profileId, {

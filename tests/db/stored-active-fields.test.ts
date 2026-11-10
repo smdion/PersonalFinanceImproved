@@ -1,6 +1,6 @@
 /**
- * contribution_active_fields is checked once on read and keeps today's
- * reading for a row the schema refuses (an older install's shape).
+ * contribution_active_fields is checked once on read; a row of another
+ * shape throws, naming the profile.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
@@ -32,7 +32,7 @@ describe("readContributionActiveFields", () => {
   it.each([
     ["a value outside a closed set", { employerMatchType: "retired_kind" }],
     [
-      "a retired field",
+      "a key outside the shape",
       {
         contributionValue: "5",
         contributionMethod: "fixed_annual",
@@ -40,13 +40,17 @@ describe("readContributionActiveFields", () => {
       },
     ],
     ["a value without its method", { contributionValue: "5" }],
-  ])("warns on %s and still reads the row as stored", (_, entry) => {
+  ])("throws on %s, naming the profile, and logs it once", (_, entry) => {
     const logged = vi.spyOn(console, "log").mockImplementation(() => {});
-    const read = readContributionActiveFields(
-      { contributionAccounts: { "9": entry } },
-      3,
-    );
-    expect(read.contributionAccounts["9"]).toBe(entry);
+    for (let i = 0; i < 2; i++)
+      expect(() =>
+        readContributionActiveFields(
+          { contributionAccounts: { "9": entry } },
+          3,
+        ),
+      ).toThrow(
+        "Contribution Profile 3: its stored active fields don't fit their shape",
+      );
     expect(logged).toHaveBeenCalledTimes(1);
     const line = JSON.parse(String(logged.mock.calls[0]![0])) as {
       event: string;
@@ -58,24 +62,15 @@ describe("readContributionActiveFields", () => {
     });
   });
 
-  it("reads a root that isn't an object (a hand-edited JSON null) as empty", () => {
-    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
-    for (const root of [null, [], "x"])
-      expect(
-        readContributionActiveFields(JSON.parse(JSON.stringify(root)), 41),
-      ).toEqual({ contributionAccounts: {}, deductions: {} });
-    expect(logged).toHaveBeenCalledTimes(1);
-  });
-
-  it("logs a refused row once per profile and issue, not on every read", () => {
-    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
-    const stored = {
-      contributionAccounts: { "4": { contributionValue: "7" } },
-    };
-    readContributionActiveFields(stored, 42);
-    readContributionActiveFields(stored, 42);
-    expect(logged).toHaveBeenCalledTimes(1);
-    readContributionActiveFields(stored, 43);
-    expect(logged).toHaveBeenCalledTimes(2);
+  it.each([
+    ["a JSON null", null],
+    ["an array", []],
+    ["a scalar", 42],
+    ["a double-encoded string", JSON.stringify({ contributionAccounts: {} })],
+  ])("throws on a root that is %s", (_, root) => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    expect(() => readContributionActiveFields(root, 41)).toThrow(
+      "Contribution Profile 41",
+    );
   });
 });

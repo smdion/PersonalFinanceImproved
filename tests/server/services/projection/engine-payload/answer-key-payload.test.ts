@@ -178,7 +178,7 @@ function fixedContributions(
   );
   return seedContributionProfile(db, {
     name: "Answer key",
-    contributionActiveFields: { contributionAccounts, jobs: {} },
+    contributionActiveFields: { contributionAccounts },
   });
 }
 
