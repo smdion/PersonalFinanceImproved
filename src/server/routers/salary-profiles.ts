@@ -66,7 +66,7 @@ async function refreshExtraPaycheckRoutingIfActive(
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
         if (!routing?.rules?.length) continue; // a refused entry is read as stored
-        // One entry whose job is gone (a write that raced its delete) can't stop the rest.
+        // One entry whose job is gone (a same-version restore, or a raced write) can't stop the rest.
         if (!jobs.has(jobIdStr)) {
           log("warn", "salary_entry_without_job", { profileId, jobIdStr });
           continue;

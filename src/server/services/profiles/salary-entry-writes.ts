@@ -3,24 +3,26 @@
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
-import type { DbOrTx } from "@/lib/db";
+import { isPostgres, type DbOrTx } from "@/lib/db";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { lockedRow } from "@/server/data/lock-row";
 
 type SalaryProfileRow = typeof schema.salaryProfiles.$inferSelect;
 
-/** The ids of the jobs that exist, as Salary Profile keys. */
+/** The ids of the jobs that exist, as Salary Profile keys, held until the transaction ends. */
 export async function existingJobKeys(
   tx: DbOrTx,
   keys: readonly string[],
 ): Promise<Set<string>> {
   const ids = keys.map(Number).filter(Number.isSafeInteger);
   if (ids.length === 0) return new Set();
-  const rows = await tx
+  const query = tx
     .select({ id: schema.jobs.id })
     .from(schema.jobs)
     .where(inArray(schema.jobs.id, ids));
+  // PostgreSQL: a key-share lock, so a job can't be deleted until this write commits.
+  const rows = await (isPostgres() ? query.for("key share") : query);
   return new Set(rows.map((r) => String(r.id)));
 }
 

@@ -186,30 +186,33 @@ export async function duplicateProfile(
     return rows[0]!;
   }
 
-  const source = await db
-    .select()
-    .from(schema.salaryProfiles)
-    .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
-    .then(firstRow);
-  if (!source) throw sourceNotFound();
+  return db.transaction(async (tx) => {
+    const source = await tx
+      .select()
+      .from(schema.salaryProfiles)
+      .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
+      .then(firstRow);
+    if (!source) throw sourceNotFound();
 
-  const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
-  const salaries: SalaryEntryMap = Object.fromEntries(
-    Object.entries(sourceSalaries).map(([jobId, entry]) => [
-      jobId,
-      { ...entry, extraPaycheckRouting: null },
-    ]),
-  );
+    const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
+    const salaries: SalaryEntryMap = Object.fromEntries(
+      Object.entries(sourceSalaries).map(([jobId, entry]) => [
+        jobId,
+        { ...entry, extraPaycheckRouting: null },
+      ]),
+    );
+    await refuseEntriesWithoutJobs(tx, salaries);
 
-  const rows = await db
-    .insert(schema.salaryProfiles)
-    .values({
-      name: input.name,
-      description: source.description,
-      salaries,
-    })
-    .returning();
-  return rows[0]!;
+    const rows = await tx
+      .insert(schema.salaryProfiles)
+      .values({
+        name: input.name,
+        description: source.description,
+        salaries,
+      })
+      .returning();
+    return rows[0]!;
+  });
 }
 
 /** A stored JSON `null` reads back as null although the column is NOT NULL. */

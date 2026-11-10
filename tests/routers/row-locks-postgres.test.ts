@@ -1,7 +1,8 @@
 /**
  * Read-merge-writes hold their row's lock on PostgreSQL: overlapping saves
- * to one Salary Profile or one budget profile each land, none lost, and a
- * transaction waiting on a held row lock reads the holder's committed write.
+ * to one Salary Profile or one budget profile each land, none lost, a
+ * transaction waiting on a held row lock reads the holder's committed write,
+ * and a job delete racing a Salary Profile write leaves no entry for it.
  *
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
  * must end in `_test`): the test drops and rebuilds its schemas. CI runs it
@@ -106,6 +107,44 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
     setTimeout(release, 50);
     await first;
     expect(await second).toEqual({ held: true });
+  });
+
+  it("a job delete racing a Salary Profile write leaves no entry for the gone job", async () => {
+    const { db, schema } = app;
+    const { existingJobKeys } =
+      await import("@/server/services/profiles/salary-entry-writes");
+    const { deleteJobsAndEntries } = await import("@/server/data/delete-jobs");
+    const { id: personId } = await one(
+      "INSERT INTO people (name, date_of_birth) VALUES ('Invented Racer', '1980-01-01') RETURNING id",
+    );
+    const { id: jobId } = await one(
+      "INSERT INTO jobs (person_id, employer_name, start_date) VALUES ($1, 'Invented Co', '2020-01-01') RETURNING id",
+      [personId],
+    );
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    let checked!: () => void;
+    const checking = new Promise<void>((r) => (checked = r));
+    const writer = db.transaction(async (tx) => {
+      expect(await existingJobKeys(tx, [String(jobId)])).toEqual(
+        new Set([String(jobId)]),
+      );
+      checked();
+      await held;
+      await tx.insert(schema.salaryProfiles).values({
+        name: "Invented raced",
+        salaries: { [String(jobId)]: BLANK_SALARY_ENTRY } as never,
+      });
+    });
+    await checking;
+    const deleting = deleteJobsAndEntries(db, [Number(jobId)]);
+    setTimeout(release, 50);
+    await writer;
+    await deleting;
+    const after = await one(
+      "SELECT salaries FROM salary_profiles WHERE name = 'Invented raced'",
+    );
+    expect(after["salaries"]).toEqual({});
   });
 
   it("overlapping entry removals on one Salary Profile each land", async () => {

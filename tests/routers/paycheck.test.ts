@@ -666,6 +666,20 @@ describe("deleting a job removes its Salary Profile entries", () => {
       }),
     ).rejects.toThrow(`No job ${missing}`);
     expect(Object.keys(salariesOf(id))).toEqual([String(job)]);
+    const withGone = db
+      .insert(schema.salaryProfiles)
+      .values({
+        name: "Invented source",
+        salaries: { [missing]: BLANK_SALARY_ENTRY },
+      })
+      .returning()
+      .get().id;
+    await expect(
+      caller.salaryProfile.duplicate({
+        sourceProfileId: withGone,
+        name: "Invented copy",
+      }),
+    ).rejects.toThrow(`No job ${missing}`);
   });
 
   it("people.delete drops the speculative job's entries with it", async () => {

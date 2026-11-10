@@ -14,6 +14,8 @@ export async function deleteJobsAndEntries(
   if (jobIds.length === 0) return;
   const gone = new Set(jobIds.map(String));
   await db.transaction(async (tx) => {
+    // Jobs first: a writer holding a job's key-share lock commits before the profiles are read.
+    await tx.delete(schema.jobs).where(inArray(schema.jobs.id, [...jobIds]));
     const profiles = await tx
       .select({ id: schema.salaryProfiles.id })
       .from(schema.salaryProfiles)
@@ -29,6 +31,5 @@ export async function deleteJobsAndEntries(
           .set({ salaries: Object.fromEntries(kept) })
           .where(eq(schema.salaryProfiles.id, id));
     }
-    await tx.delete(schema.jobs).where(inArray(schema.jobs.id, [...jobIds]));
   });
 }
