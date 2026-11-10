@@ -623,6 +623,134 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     }
   });
 
+  it("a gate closed only because people exist (no flag) stays closed through a backup holding false and no people, with no settle", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      const { firstRunState } = await import("@/server/data/first-run");
+      await db.delete(schema.localAdmins); // an Authentik-only install
+      await db
+        .insert(schema.appSettings)
+        .values({ key: "onboarding_completed", value: false });
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await db
+        .delete(schema.appSettings)
+        .where(eq(schema.appSettings.key, "onboarding_completed"));
+      await db
+        .insert(schema.people)
+        .values({ name: "Robin", dateOfBirth: "1990-06-15" });
+      expect(await firstRunState(db as never)).toEqual({ adminNeeded: false });
+
+      for (const by of [admin, notAdmin]) {
+        await importBackup(db, backup, by);
+        expect(await firstRunState(db as never)).toEqual({
+          adminNeeded: false,
+        });
+      }
+    } finally {
+      await done();
+    }
+  });
+
+  it("a gate open on purpose (flag false) isn't closed by a restore", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      const { firstRunState } = await import("@/server/data/first-run");
+      await db.delete(schema.localAdmins);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await db
+        .insert(schema.people)
+        .values({ name: "Robin", dateOfBirth: "1990-06-15" });
+      await db
+        .insert(schema.appSettings)
+        .values({ key: "onboarding_completed", value: false });
+      await importBackup(db, backup, admin);
+      expect(await firstRunState(db as never)).toEqual({ adminNeeded: true });
+    } finally {
+      await done();
+    }
+  });
+
+  it("settings kept from today take fresh ids, so a backup from another install whose ids overlap still imports", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      await access(db, "ours");
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      // The other install's settings reuse today's access rows' ids.
+      const ids = (await db.select().from(schema.appSettings))
+        .filter((r) => r.key.startsWith("rbac_"))
+        .map((r) => r.id);
+      backup.tables.app_settings = ids.map((id: number, i: number) => ({
+        ...backup.tables.app_settings.find(
+          (r: { key: string }) => r.key === "access_test_household_note",
+        ),
+        id,
+        key: `other_install_${i}`,
+      }));
+      await importBackup(db, backup, notAdmin);
+      expect(await accessNow(db)).toMatchObject({
+        adminGroup: "ours-admins",
+        budgetGroup: "ours-budget",
+      });
+    } finally {
+      await done();
+    }
+  });
+
+  it("a finished onboarding stays finished through any backup, so even the CLI (which settles no gate) can't reopen the first-admin gate", async () => {
+    const { db, done } = await fresh();
+    try {
+      const {
+        schema,
+        exportBackup,
+        importBackup,
+        createVersion,
+        restoreVersion,
+      } = await app();
+      const { firstRunState } = await import("@/server/data/first-run");
+      const setOnboarding = async (value: boolean) => {
+        await db
+          .delete(schema.appSettings)
+          .where(eq(schema.appSettings.key, "onboarding_completed"));
+        await db
+          .insert(schema.appSettings)
+          .values({ key: "onboarding_completed", value });
+      };
+      await db.delete(schema.localAdmins); // an Authentik-only install
+      await setOnboarding(false);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      const version = await createVersion(db, {
+        name: "before onboarding",
+        type: "manual",
+        createdBy: "test",
+      });
+      await setOnboarding(true);
+
+      for (const by of [admin, notAdmin]) {
+        await importBackup(db, backup, by);
+        expect(await firstRunState(db as never)).toEqual({
+          adminNeeded: false,
+        });
+        await restoreVersion(db, version.id, by);
+        expect(await firstRunState(db as never)).toEqual({
+          adminNeeded: false,
+        });
+      }
+    } finally {
+      await done();
+    }
+  });
+
   it("every column of each installation table is kept or taken from the backup, never both", async () => {
     const { columns, done } = await fresh();
     try {

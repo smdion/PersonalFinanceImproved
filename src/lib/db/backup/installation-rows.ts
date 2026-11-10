@@ -4,7 +4,10 @@
 import { sql } from "drizzle-orm";
 import { queryRaw } from "../compat";
 import { VERSION_TABLES } from "./version-tables";
+import { isPostgres } from "../dialect";
 import { rowsInSourceForm } from "./restored-values";
+import { SK_ONBOARDING_COMPLETED } from "@/lib/constants/settings-keys";
+import { onboardingClosesGate } from "../onboarding-gate";
 import {
   RBAC_ADMIN_GROUP_KEY,
   RBAC_SETTINGS_PREFIX,
@@ -70,6 +73,45 @@ export type RestoreScope = {
   sourceDialect?: "postgres" | "sqlite";
 };
 
+/** A settings row's onboarding flag; jsonb as read: parsed (PostgreSQL) or
+ *  JSON text (SQLite). */
+function onboardingFlagIn(settings: Row[]): boolean | null {
+  const value = settings.find((r) => r.key === SK_ONBOARDING_COMPLETED)?.value;
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return null;
+}
+
+/** A true onboarding flag row when onboarding keeps the first-admin gate
+ *  closed today but wouldn't with the backup's rows; else null. */
+async function finishedOnboarding(
+  settings: Row[],
+  tables: Record<string, unknown[]>,
+  today: (name: string) => Promise<Row[]>,
+  sourceDialect: RestoreScope["sourceDialect"],
+): Promise<Row | null> {
+  const flag = onboardingFlagIn(settings);
+  const people = flag === null && (await today("people")).length > 0;
+  if (!onboardingClosesGate(flag, people)) return null;
+  const theirFlag = onboardingFlagIn(rowsOf(tables["app_settings"]));
+  const theirPeople = rowsOf(tables["people"]).length > 0;
+  if (onboardingClosesGate(theirFlag, theirPeople)) return null;
+  // The backup's form: JSON text for a SQLite source, parsed for PostgreSQL's.
+  const asText = isPostgres()
+    ? sourceDialect === "sqlite"
+    : sourceDialect !== "postgres";
+  return { key: SK_ONBOARDING_COMPLETED, value: asText ? "true" : true };
+}
+
+/** The backup's settings with today's `kept` rows in place of theirs by key,
+ *  each kept row on a fresh id past the backup's (ids name nothing else). */
+function withTodaySettings(backup: Row[], kept: Row[]): Row[] {
+  const keys = new Set(kept.map((r) => r.key));
+  const rest = backup.filter((r) => !keys.has(r.key));
+  const top = Math.max(0, ...rest.map((r) => Number(r["id"]) || 0));
+  return [...rest, ...kept.map((r, i) => ({ ...r, id: top + i + 1 }))];
+}
+
 /** Today's rows of `name` in the form the backup's rows have: they merge
  *  with the backup's and are written by its dialect's rule. */
 async function todayRows(
@@ -83,8 +125,8 @@ async function todayRows(
 }
 
 /** The backup's tables as a restore or import writes them: whole for an admin's
- *  full backup, but one with no local admin keeps today's (the first-admin gate
- *  never reopens through a backup); otherwise today's access and credentials. */
+ *  full backup, else with today's access and credentials; either way today's local
+ *  admins when it has none and a finished onboarding (the first-admin gate holds). */
 export async function withInstallationRows(
   database: Parameters<typeof queryRaw>[0],
   tables: Record<string, unknown[]>,
@@ -101,13 +143,25 @@ export async function withInstallationRows(
     if (!columns) throw new Error(`${name}: no installation columns listed`);
     out[name] = withBackupColumns(await today(name), tables[name], columns);
   }
-  if (keepAccess)
-    out["app_settings"] = [
-      ...rowsOf(tables["app_settings"]).filter(
-        (r) => !isAccessSettingKey(r.key),
-      ),
-      ...(await today("app_settings")).filter((r) => isAccessSettingKey(r.key)),
-    ];
+  const settings = await today("app_settings");
+  const kept = keepAccess
+    ? settings.filter((r) => isAccessSettingKey(r.key))
+    : [];
+  // A gate onboarding closes today stays closed for every caller, the CLI
+  // included, which settles no gate: it never reopens through a backup.
+  const finished = await finishedOnboarding(
+    settings,
+    tables,
+    today,
+    by.sourceDialect,
+  );
+  if (finished) kept.push(finished);
+  out["app_settings"] = withTodaySettings(
+    rowsOf(tables["app_settings"]).filter(
+      (r) => !(keepAccess && isAccessSettingKey(r.key)),
+    ),
+    kept,
+  );
   return out;
 }
 
