@@ -1,6 +1,6 @@
 import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
-import { asc, sql, lt } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/pure/savings/savings";
@@ -36,10 +36,7 @@ export async function computeSavingsSummary(
       .select()
       .from(schema.savingsGoals)
       .orderBy(asc(schema.savingsGoals.priority)),
-    ctx.db
-      .select()
-      .from(schema.selfLoans)
-      .where(lt(schema.selfLoans.repaidAmount, schema.selfLoans.amount)),
+    ctx.db.select().from(schema.selfLoans),
     getActiveBudgetProfile(ctx.db),
     ctx.db.select().from(schema.budgetItems),
     ctx.db
@@ -198,7 +195,9 @@ export async function computeSavingsSummary(
       outstandingSelfLoans = selfLoans
         .filter((l) => l.fromGoalId === efundGoal.id)
         .reduce(
-          (s, l) => s + (toNumber(l.amount) - toNumber(l.repaidAmount)),
+          // A loan repaid in full (or past it) has nothing outstanding.
+          (s, l) =>
+            s + Math.max(0, toNumber(l.amount) - toNumber(l.repaidAmount)),
           0,
         );
     }

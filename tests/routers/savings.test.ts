@@ -1462,6 +1462,43 @@ describe("savings.computeSummary", () => {
   });
 });
 
+describe("savings.computeSummary: self-loans", () => {
+  it("keeps a partly repaid self-loan outstanding ($1,000 with $500 repaid)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sqliteClient = (ctx.db as any).$client as {
+        prepare: (sql: string) => { all: (...params: unknown[]) => unknown[] };
+      };
+      patchExecute(
+        ctx.rawDb as unknown as Record<string, unknown>,
+        sqliteClient,
+      );
+      seedStandardDataset(ctx.db);
+      const efund = seedSavingsGoal(ctx.db, {
+        name: "Invented reserve",
+        targetAmount: "15000",
+        isEmergencyFund: true,
+      });
+      // Stored at scale, as the writers store it: "500.00" < "1000.00" is
+      // false as text and true as numbers.
+      ctx.db
+        .insert(sqliteTables.selfLoans)
+        .values({
+          fromGoalId: efund,
+          amount: "1000.00",
+          repaidAmount: "500.00",
+          loanDate: "2026-01-15",
+        })
+        .run();
+      const result = await ctx.caller.savings.computeSummary();
+      expect(result.efund?.outstandingSelfLoans).toBe(500);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
 // ══════════════════════════════════════════════════════════════════════════════
 // savings.computeSummary — currentMonthBudgeted (the double-count fix,
 // 2026-09-01). Both `balance` and `budgeted` must come from the SAME

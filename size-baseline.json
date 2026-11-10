@@ -421,7 +421,7 @@
     "src/server/services/projection/relocation-analysis.ts": 454,
     "src/server/services/projection/relocation-projection.ts": 484,
     "src/server/services/projection/strategy-analysis.ts": 682,
-    "src/server/services/savings/summary.ts": 330,
+    "src/server/services/savings/summary.ts": 329,
     "src/server/services/simulation/mc-inputs.ts": 113,
     "src/server/services/simulation/monte-carlo-projection.ts": 338,
     "src/server/services/sync/budget-api-push.ts": 409,
@@ -1084,7 +1084,7 @@
       "computeStrategyComparison": 234
     },
     "src/server/services/savings/summary.ts": {
-      "computeSavingsSummary": 310
+      "computeSavingsSummary": 309
     },
     "src/server/services/simulation/monte-carlo-projection.ts": {
       "computeMonteCarloProjection": 289
