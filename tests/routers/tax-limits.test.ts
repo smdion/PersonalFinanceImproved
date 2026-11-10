@@ -43,12 +43,12 @@ describe("settings.contributionLimits", () => {
     try {
       const result = await caller.settings.contributionLimits.create({
         taxYear: 2099,
-        limitType: "test_limit_type",
+        limitType: "ira_limit",
         value: "23500",
       });
       expect(result).toBeDefined();
       expect(result!.taxYear).toBe(2099);
-      expect(result!.limitType).toBe("test_limit_type");
+      expect(result!.limitType).toBe("ira_limit");
       expect(decimalText(result!.value)).toBe("23500");
     } finally {
       cleanup();
@@ -60,7 +60,7 @@ describe("settings.contributionLimits", () => {
     try {
       const created = await caller.settings.contributionLimits.create({
         taxYear: 2098,
-        limitType: "unique_type",
+        limitType: "ira_limit",
         value: "5000",
       });
       const rows = await caller.settings.contributionLimits.list();
@@ -77,7 +77,7 @@ describe("settings.contributionLimits", () => {
     try {
       const result = await caller.settings.contributionLimits.create({
         taxYear: 2099,
-        limitType: "ira_traditional",
+        limitType: "ira_catchup_limit",
         value: "7000",
         notes: "Standard IRA limit",
       });
@@ -92,13 +92,13 @@ describe("settings.contributionLimits", () => {
     try {
       const created = await caller.settings.contributionLimits.create({
         taxYear: 2099,
-        limitType: "hsa_update_test",
+        limitType: "hsa_individual_limit",
         value: "8300",
       });
       const updated = await caller.settings.contributionLimits.update({
         id: created!.id,
         taxYear: 2099,
-        limitType: "hsa_update_test",
+        limitType: "hsa_individual_limit",
         value: "8550",
       });
       expect(decimalText(updated!.value)).toBe("8550");
@@ -112,7 +112,7 @@ describe("settings.contributionLimits", () => {
     try {
       const created = await caller.settings.contributionLimits.create({
         taxYear: 2099,
-        limitType: "delete_me",
+        limitType: "401k_catchup_limit",
         value: "999",
       });
       await caller.settings.contributionLimits.delete({ id: created!.id });
@@ -124,13 +124,41 @@ describe("settings.contributionLimits", () => {
     }
   });
 
+  it("refuses a key Ledgr doesn't know, on create and on update", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await expect(
+        caller.settings.contributionLimits.create({
+          taxYear: 2099,
+          limitType: "household_own_cap",
+          value: "1000",
+        }),
+      ).rejects.toThrow(/Not a limit Ledgr knows/);
+      const row = await caller.settings.contributionLimits.create({
+        taxYear: 2099,
+        limitType: "ira_limit",
+        value: "7000",
+      });
+      await expect(
+        caller.settings.contributionLimits.update({
+          id: row!.id,
+          taxYear: 2099,
+          limitType: "roth_ira_magi_limit_mfj",
+          value: "7000",
+        }),
+      ).rejects.toThrow(/Not a limit Ledgr knows/);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("rejects invalid taxYear below 2000", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       await expect(
         caller.settings.contributionLimits.create({
           taxYear: 1999,
-          limitType: "test",
+          limitType: "ira_limit",
           value: "100",
         }),
       ).rejects.toThrow();
@@ -145,7 +173,7 @@ describe("settings.contributionLimits", () => {
       await expect(
         caller.settings.contributionLimits.create({
           taxYear: 2099,
-          limitType: "test",
+          limitType: "ira_limit",
           value: "abc",
         }),
       ).rejects.toThrow();
@@ -656,9 +684,9 @@ describe("settings.contributionLimits — provenance", () => {
         caller.settings.contributionLimits.delete({ id: row.id }),
       ).rejects.toThrow(/Reset to shipped/);
       const own = await caller.settings.contributionLimits.create({
-        taxYear: 2026,
-        limitType: "roth_ira_magi_limit_mfj",
-        value: "236000",
+        taxYear: 2099,
+        limitType: "ira_limit",
+        value: "7000",
       });
       await caller.settings.contributionLimits.delete({ id: own!.id });
     } finally {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Smoke tests for src/components/settings/contribution-limits.tsx — IRS
 // contribution limit / FICA / standard-deduction editor. Part of closing
@@ -147,5 +147,34 @@ describe("ContributionLimitsSettings smoke", () => {
         value: "180000",
       }),
     );
+  });
+
+  it("copies a year's limits Ledgr knows, leaving a key it doesn't know behind", async () => {
+    setQuery("settings.contributionLimits.list", [
+      ...mockLimits2025,
+      {
+        id: 9,
+        taxYear: 2025,
+        limitType: "household_own_cap",
+        value: "1000",
+        notes: null,
+        shippedSources: [],
+      },
+    ]);
+    render(<ContributionLimitsSettings year={2026} />);
+    fireEvent.change(screen.getByLabelText("Copy from:"), {
+      target: { value: "2025" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    await waitFor(() =>
+      expect(mutationCalls("settings.contributionLimits.create")).toHaveLength(
+        mockLimits2025.length,
+      ),
+    );
+    expect(
+      mutationCalls("settings.contributionLimits.create").map(
+        (c) => (c as { limitType: string }).limitType,
+      ),
+    ).toEqual(mockLimits2025.map((l) => l.limitType));
   });
 });

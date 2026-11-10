@@ -23,7 +23,7 @@ import {
   readTaxDataFile,
   reconcileReferenceData,
 } from "@/lib/db/migrate/reference-data";
-import { taxLimitKey } from "@/lib/config/tax-limit-keys";
+import { isTaxLimitKey, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import * as filing from "@/lib/config/filing-status.schema";
 import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax/data-status";
@@ -196,7 +196,7 @@ const createProvenance = (carried: boolean | undefined) =>
 
 const contributionLimitInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  limitType: z.string().min(1),
+  limitType: z.string().refine(isTaxLimitKey, "Not a limit Ledgr knows"),
   value: zDecimal,
   notes: z.string().nullable().optional(),
 });
