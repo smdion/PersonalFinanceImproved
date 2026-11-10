@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
-import { DEMO_COOKIE } from "@/lib/demo/slugs";
 
 export function DemoBanner({
   profileName,
@@ -13,6 +12,7 @@ export function DemoBanner({
 }) {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const deactivateDemo = trpc.demo.deactivateDemo.useMutation();
 
   return (
     <div className="flex items-center justify-center gap-3 bg-amber-600 px-4 py-1.5 text-center text-sm text-white">
@@ -26,8 +26,9 @@ export function DemoBanner({
             await utils.invalidate();
             router.push("/demo");
           } else {
-            // In normal mode, exit demo and return to real data
-            document.cookie = `${DEMO_COOKIE}=;path=/;max-age=0`;
+            // In normal mode, exit demo and return to real data. The
+            // cookie is HttpOnly: only the server can clear it.
+            await deactivateDemo.mutateAsync();
             await utils.invalidate();
             router.push("/");
             router.refresh();
