@@ -9,6 +9,7 @@ import type {
 import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { findBonusPeriod } from "./bonus";
+import { yearTotals } from "./year-totals";
 
 /**
  * Social Security withholding for one pay period, given the wage base cap.
@@ -39,11 +40,8 @@ export function withheldThroughPeriod(
   schedule: readonly PeriodBreakdown[],
   periods: number,
 ): { federal: number; fica: number } {
-  const done = schedule.slice(0, Math.max(0, periods));
-  return {
-    federal: roundToCents(sumBy(done, (p) => p.federalWithholding)),
-    fica: roundToCents(sumBy(done, (p) => p.ficaSS + p.ficaMedicare)),
-  };
+  const { federal, fica } = yearTotals(schedule, 1, periods);
+  return { federal, fica };
 }
 
 /**

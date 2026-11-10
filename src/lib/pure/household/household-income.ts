@@ -9,6 +9,7 @@ import type {
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
@@ -103,15 +104,11 @@ export function computeAnnualEarnings(args: {
     // The year schedule's own checks (Social Security stops at the wage
     // base, Additional Medicare starts above its threshold) — this job's,
     // from its first check this year.
-    netRegular: roundToCents(
-      sumBy(
-        paycheck.yearSchedule.slice(
-          paycheck.periodsBeforeStart,
-          paycheck.periodsBeforeStart + checks,
-        ),
-        (p) => p.netPay,
-      ),
-    ),
+    netRegular: yearTotals(
+      paycheck.yearSchedule,
+      paycheck.periodsBeforeStart + 1,
+      paycheck.periodsBeforeStart + checks,
+    ).net,
     netBonus: bonusPaid ? bonusEstimate.bonusNet : 0,
     hsaOutsidePayroll: roundToCents(
       sumBy(
