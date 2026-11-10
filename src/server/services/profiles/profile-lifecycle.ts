@@ -20,6 +20,7 @@ import {
   assertNoPlanUses,
 } from "@/server/services/profiles/plans";
 import { upsertSetting } from "@/server/data/settings";
+import { refuseEntriesWithoutJobs } from "@/server/services/profiles/salary-entry-writes";
 import { firstRow } from "@/lib/utils/first-row";
 import type { Ack } from "@/lib/http/probe-result";
 
@@ -118,15 +119,19 @@ export async function createProfile(
       .returning();
     return rows[0]!;
   }
-  const rows = await db
-    .insert(schema.salaryProfiles)
-    .values({
-      name: input.name,
-      description: input.description ?? null,
-      salaries: input.salaries ?? {},
-    })
-    .returning();
-  return rows[0]!;
+  const salaries = input.salaries ?? {};
+  return db.transaction(async (tx) => {
+    await refuseEntriesWithoutJobs(tx, salaries);
+    const rows = await tx
+      .insert(schema.salaryProfiles)
+      .values({
+        name: input.name,
+        description: input.description ?? null,
+        salaries,
+      })
+      .returning();
+    return rows[0]!;
+  });
 }
 
 // ── duplicate ──

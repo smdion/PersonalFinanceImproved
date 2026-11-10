@@ -634,6 +634,40 @@ describe("deleting a job removes its Salary Profile entries", () => {
       expect(Object.keys(salariesOf(id))).toEqual([String(kept)]);
   });
 
+  it("a Salary Profile write naming a job that doesn't exist is refused, and nothing changes", async () => {
+    const personId = await seedPerson(db, "One Job", "1990-01-01");
+    const job = seedJob(db, personId);
+    const missing = 987654;
+    await expect(
+      caller.salaryProfile.create({
+        name: "Invented create",
+        salaries: { [missing]: BLANK_SALARY_ENTRY },
+      }),
+    ).rejects.toThrow(`No job ${missing}`);
+    const id = db
+      .insert(schema.salaryProfiles)
+      .values({
+        name: "Invented writes",
+        salaries: { [job]: BLANK_SALARY_ENTRY },
+      })
+      .returning()
+      .get().id;
+    await expect(
+      caller.salaryProfile.update({
+        id,
+        salaries: { [job]: BLANK_SALARY_ENTRY, [missing]: BLANK_SALARY_ENTRY },
+      }),
+    ).rejects.toThrow(`No job ${missing}`);
+    await expect(
+      caller.salaryProfile.patchEntry({
+        id,
+        jobId: missing,
+        fields: BLANK_SALARY_ENTRY,
+      }),
+    ).rejects.toThrow(`No job ${missing}`);
+    expect(Object.keys(salariesOf(id))).toEqual([String(job)]);
+  });
+
   it("people.delete drops the speculative job's entries with it", async () => {
     const person = await caller.settings.people.create({
       name: "Pegged",

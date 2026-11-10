@@ -26,6 +26,11 @@ import {
 } from "@/server/services/profiles/profile-lifecycle";
 import { loadSalaryProfileDetail } from "@/server/services/profiles/salary-profile";
 import { lockedRow } from "@/server/data/lock-row";
+import {
+  existingJobKeys,
+  refuseEntriesWithoutJobs,
+  updateSalaryProfile,
+} from "@/server/services/profiles/salary-entry-writes";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -56,10 +61,16 @@ async function refreshExtraPaycheckRoutingIfActive(
       if (!profile) return undefined;
 
       const salaries = { ...checkSalaryEntries(profile).salaries };
+      const jobs = await existingJobKeys(tx, Object.keys(salaries));
       let anyRefreshed = false;
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
         if (!routing?.rules?.length) continue; // a refused entry is read as stored
+        // One entry whose job is gone (a write that raced its delete) can't stop the rest.
+        if (!jobs.has(jobIdStr)) {
+          log("warn", "salary_entry_without_job", { profileId, jobIdStr });
+          continue;
+        }
         const jobId = Number(jobIdStr);
         const refreshed = await computeJobNetPayPerCheck(tx, jobId, scope.asOf);
         salaries[jobIdStr] = {
@@ -213,16 +224,6 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.id));
-      if (!existing[0])
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
       await assertSalaryEntryTaxBracketsExist(ctx, input.salaries);
 
       const updates: Partial<typeof schema.salaryProfiles.$inferInsert> = {};
@@ -231,12 +232,7 @@ export const salaryProfileRouter = createTRPCRouter({
         updates.description = input.description ?? null;
       if (input.salaries !== undefined) updates.salaries = input.salaries;
 
-      const rows = await ctx.db
-        .update(schema.salaryProfiles)
-        .set(updates)
-        .where(eq(schema.salaryProfiles.id, input.id))
-        .returning();
-      const updated = rows[0]!;
+      const updated = await updateSalaryProfile(ctx.db, input.id, updates);
 
       if (input.salaries !== undefined) {
         const refreshed = await refreshExtraPaycheckRoutingIfActive(
@@ -290,6 +286,7 @@ export const salaryProfileRouter = createTRPCRouter({
         }
 
         const nextSalaries = { ...salaries, [key]: parsed.data };
+        await refuseEntriesWithoutJobs(tx, { [key]: parsed.data });
         await assertSalaryEntryTaxBracketsExist(
           { db: tx, scope: ctx.scope },
           { [key]: parsed.data },
