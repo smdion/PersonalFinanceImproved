@@ -308,3 +308,25 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
     }
   });
 }
+
+/** A backup whose rows point at a row it doesn't have: refused whole on
+ *  both dialects (PostgreSQL inserts with triggers off, then checks every
+ *  reference), and nothing is written. */
+export function danglingReferenceCases(fresh: () => Promise<FenceDb>) {
+  it("an import whose rows point at a missing person is refused, and nothing changes", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      await household(db);
+      const before = await stored(db);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db)),
+      ) as Backup;
+      setAll(backup, "retirement_settings", "person_id", 999999);
+      await expect(importBackup(db, backup as never, admin)).rejects.toThrow();
+      expect(await stored(db)).toEqual(before);
+    } finally {
+      done();
+    }
+  });
+}

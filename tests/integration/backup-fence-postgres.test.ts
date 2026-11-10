@@ -24,6 +24,7 @@ import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
 import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
+  danglingReferenceCases,
   unknownAccountTypeCases,
 } from "./closed-set-import-cases";
 
@@ -66,6 +67,7 @@ describe.skipIf(skipWithoutPostgres)(
     backupFenceCases(fresh);
     closedSetImportCases(fresh);
     unknownAccountTypeCases(fresh);
+    danglingReferenceCases(fresh);
     versionRestoreSettingsCases(fresh);
     backupJsonValueCases(fresh);
   },

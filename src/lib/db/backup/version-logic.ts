@@ -11,6 +11,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../schema";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
+import { assertReferencesHold } from "./restore-references-pg";
 import {
   jsonColumnsFor,
   jsonbColumnsOnClient,
@@ -422,7 +423,6 @@ async function importBackupPg(
     await client.query("BEGIN");
     await client.query("SET session_replication_role = 'replica'");
 
-    // Truncate all tables
     const allTableNames = VERSION_TABLE_NAMES.map((n) => `"${n}"`).join(", ");
     await client.query(`TRUNCATE ${allTableNames} CASCADE`);
 
@@ -476,7 +476,7 @@ async function importBackupPg(
       );
     }
 
-    await client.query("SET session_replication_role = 'origin'");
+    await assertReferencesHold(client);
     await client.query("COMMIT");
 
     // Log import (non-critical)

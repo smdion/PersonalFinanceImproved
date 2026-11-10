@@ -11,6 +11,7 @@ import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
 import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
+  danglingReferenceCases,
   unknownAccountTypeCases,
 } from "./closed-set-import-cases";
 
@@ -39,6 +40,7 @@ describe("JSON values on import and restore (SQLite)", () => {
 describe("closed-set values on import and restore (SQLite)", () => {
   closedSetImportCases(fresh);
   unknownAccountTypeCases(fresh);
+  danglingReferenceCases(fresh);
 });
 
 describe("an installation table with no column lists", () => {
