@@ -315,9 +315,7 @@ export function distributeContributions(
           isOverflowTarget(s.category) &&
           brokKeys.has(specToAccount.get(specKeyOf(s)) ?? ""),
       )
-      .sort(
-        (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
-      );
+      .sort((a, b) => a.allocationPriority - b.allocationPriority);
 
     if (brokAccounts.length > 0) {
       let remaining = overflowToBrokerage;

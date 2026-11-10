@@ -3760,9 +3760,6 @@
   "src/lib/pure/contributions/accumulation-order.ts": {
     "ratchet/no-string-closed-set-field": {
       "count": 1
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
     }
   },
   "src/lib/pure/contributions/cap-pass.ts": {
@@ -3905,9 +3902,6 @@
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/pure/contributions/profile-fields.ts": {
@@ -4048,7 +4042,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/pure/engine/individual-accounts/ledger.ts": {

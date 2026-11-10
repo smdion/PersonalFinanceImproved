@@ -132,6 +132,7 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         periodsPerYear: 12,
         baseAnnual: 12000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         personId: 1,
       },
       {
@@ -143,6 +144,7 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         periodsPerYear: 12,
         baseAnnual: 12000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         personId: 2,
       },
     ];
@@ -185,6 +187,7 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         periodsPerYear: 12,
         baseAnnual: 24000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
       },
     ];
 
@@ -214,6 +217,7 @@ describe("year 0 — a contribution over its IRS limit, late in the year", () =>
       salaryFraction: 1,
       baseAnnual: 23500, // capped
       taxTreatment: "pre_tax",
+      allocationPriority: 0,
       personId: 1,
       ...(configuredAnnual !== undefined ? { configuredAnnual } : {}),
     });

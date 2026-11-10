@@ -3,7 +3,7 @@
 
 interface ActiveContributionLite {
   accountType: string;
-  allocationPriority?: number | null;
+  allocationPriority: number;
 }
 
 /**
@@ -14,7 +14,7 @@ export function buildAccumulationOrder(
   activeContributions: readonly ActiveContributionLite[],
 ): string[] {
   const sorted = [...activeContributions].sort(
-    (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
+    (a, b) => a.allocationPriority - b.allocationPriority,
   );
   const seen = new Set<string>();
   const order: string[] = [];

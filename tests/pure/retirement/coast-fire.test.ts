@@ -970,6 +970,7 @@ describe("findCoastFireAge — contributions stop on the per-account (spec) path
           salaryFraction: 1,
           baseAnnual: 24000,
           taxTreatment: "pre_tax",
+          allocationPriority: 0,
           parentCategory: "Retirement",
         },
       ],

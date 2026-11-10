@@ -124,6 +124,7 @@ const spec = (
   periodsPerYear: 12,
   baseAnnual: 12000,
   taxTreatment: "pre_tax",
+  allocationPriority: 0,
   personId,
   ...over,
 });

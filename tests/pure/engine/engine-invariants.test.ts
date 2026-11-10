@@ -408,6 +408,7 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
     salaryFraction: 1,
     baseAnnual: input.currentSalary * rate * share,
     taxTreatment,
+    allocationPriority: 0,
     parentCategory: "Retirement",
   }));
   const base = (c: AccountCategory) =>
@@ -2108,6 +2109,7 @@ describe("engine invariants", () => {
         salaryFraction: 1,
         baseAnnual: annual,
         taxTreatment,
+        allocationPriority: 0,
         parentCategory,
       })),
       baseYearContributions: {

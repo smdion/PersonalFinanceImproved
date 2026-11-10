@@ -36,7 +36,7 @@ export type ContributionSpec = {
   /** User's self-imposed annual contribution target (null = no cap). */
   targetAnnual?: number | null;
   /** Overflow allocation priority (lower = higher priority, 0 = default). */
-  allocationPriority?: number;
+  allocationPriority: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
   /** Account ownership type (from contribution_accounts). */
