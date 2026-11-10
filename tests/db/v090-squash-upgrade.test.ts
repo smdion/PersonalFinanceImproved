@@ -24,7 +24,7 @@ import {
 const FOLDER = "drizzle-sqlite";
 const journal = JSON.parse(
   fs.readFileSync(path.join(FOLDER, "meta", "_journal.json"), "utf8"),
-) as { entries: { idx: number; tag: string }[] };
+) as { entries: { idx: number; tag: string; when: number }[] };
 const hashOf = (tag: string) =>
   crypto
     .createHash("sha256")
@@ -273,7 +273,7 @@ describe("assertSupportedUpgradePath on each dialect's journal", () => {
   describe.each(["drizzle", "drizzle-sqlite"])("%s", (folder) => {
     const own = JSON.parse(
       fs.readFileSync(path.join(folder, "meta", "_journal.json"), "utf8"),
-    ) as { entries: { idx: number; tag: string }[] };
+    ) as { entries: { idx: number; tag: string; when: number }[] };
     const check = (recorded: Set<string>, actual: Map<string, Set<string>>) =>
       assertSupportedUpgradePath(
         own,

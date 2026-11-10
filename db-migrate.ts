@@ -459,7 +459,10 @@ export class UpgradePathError extends Error {
   override name = "UpgradePathError";
 }
 
-type Journal = { entries: { idx: number; tag: string }[] };
+/** `when` (generation time) is each applied migration's `created_at`, as
+ *  Drizzle records it, so its latest-`created_at` check never takes an
+ *  applied migration for pending, whatever the clock. */
+type Journal = { entries: { idx: number; tag: string; when: number }[] };
 
 function readJournal(migrationsFolder: string): Journal {
   return JSON.parse(
@@ -980,7 +983,7 @@ async function handleSquashUpgrade(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [
             crypto.createHash("sha256").update(sql).digest("hex"),
-            String(Date.now()),
+            String(entry.when),
           ],
         );
         log("info", "squash_migration_applied", { tag: entry.tag });
@@ -1167,7 +1170,7 @@ export async function runPostgres() {
             await convertPg(preClient, entry.tag, "afterSql");
             await preClient.query(
               "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
-              [hash, String(Date.now())],
+              [hash, String(entry.when)],
             );
             log("info", "migration_applied", { tag: entry.tag });
           }
@@ -1806,7 +1809,7 @@ function handleSQLiteSquashUpgrade(
           )
           .run(
             crypto.createHash("sha256").update(sql).digest("hex"),
-            String(Date.now()),
+            String(entry.when),
           );
         log("info", "squash_migration_applied", { tag: entry.tag });
       }
@@ -1928,7 +1931,7 @@ export function runSQLite() {
             .prepare(
               "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
             )
-            .run(hash, String(Date.now()));
+            .run(hash, String(entry.when));
           log("info", "migration_applied", {
             tag: entry.tag,
             dialect: "sqlite",
