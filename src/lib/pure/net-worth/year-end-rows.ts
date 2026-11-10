@@ -1,5 +1,6 @@
 import { toNumber } from "@/lib/utils/numbers";
 import { calendarYear } from "@/lib/utils/date";
+import { storedPortfolioByType } from "./year-end-columns";
 import { computeMortgageBalance } from "@/lib/pure/debts/mortgage-balance";
 import {
   accountTypeToPerformanceCategory,
@@ -441,13 +442,8 @@ export function storedYearEndRows({
 
     // Portfolio fields: prefer finalized performance data over stored net_worth_annual
     const portfolioTotal = perf?.portfolioTotal ?? toNumber(r.portfolioTotal);
-    // Portfolio breakdown by accountType: prefer perf data, fall back to legacy columns
-    const portfolioByType: Record<string, number> = perf?.byType ?? {
-      "401k": toNumber(r.retirementTotal), // legacy: 401k+403b+IRA combined
-      hsa: toNumber(r.hsa),
-      brokerage:
-        toNumber(r.ltBrokerage) + toNumber(r.espp) + toNumber(r.rBrokerage),
-    };
+    // Portfolio breakdown by accountType: prefer perf data, else the stored columns
+    const portfolioByType = perf?.byType ?? storedPortfolioByType(r);
 
     // Non-portfolio fields always from net_worth_annual
     const cash = toNumber(r.cash);
