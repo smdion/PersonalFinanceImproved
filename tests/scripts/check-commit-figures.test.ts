@@ -297,3 +297,34 @@ describe("checkCommit: flips name their case, figures their row (G2)", () => {
     ).toEqual([]);
   });
 });
+
+describe("checkCommit: commit types say behavior (G8)", () => {
+  const typeRules = (raw: string, f: FileChange[] = []) =>
+    checkCommit(facts(raw, f))
+      .map((w) => w.rule)
+      .filter((rule) => rule === "refactor-figure" || rule === "api-breaking");
+  const rerecord = "Baseline-rerecord: __baseline__/** — TX5, the add-on";
+
+  it("warns on a refactor that re-records a figure, not on a fix", () => {
+    expect(typeRules(`refactor(tax): x\n\nWhy.\n\n${rerecord}`)).toEqual([
+      "refactor-figure",
+    ]);
+    expect(typeRules(`fix(tax): x\n\nWhy.\n\n${rerecord}`)).toEqual([]);
+    expect(
+      typeRules(
+        "refactor(ui): x\n\nWhy.\n\nBaseline-rerecord: __screens__/** — none, text only",
+      ),
+    ).toEqual([]);
+  });
+
+  it("pairs a breaking subject with its API: line", () => {
+    const api = "API: settings.list: returns { ok, error } instead of throwing";
+    expect(typeRules(`feat!: x\n\nWhy.\n\n${api}`)).toEqual([]);
+    expect(typeRules(`fix(settings)!: x\n\nWhy.\n\n${api}`)).toEqual([]);
+    expect(typeRules(`feat(settings): x\n\nWhy.\n\n${api}`)).toEqual([
+      "api-breaking",
+    ]);
+    expect(typeRules("feat!: x\n\nWhy.")).toEqual(["api-breaking"]);
+    expect(typeRules("fix(settings): x\n\nWhy.")).toEqual([]);
+  });
+});

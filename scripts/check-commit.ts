@@ -3900,6 +3900,37 @@ function figureWarnings(
   return warnings;
 }
 
+/** A subject's type: its prefix, without scope or `!`. */
+const subjectType = (subject: string) => /^([a-z]+)/.exec(subject)?.[1];
+
+/**
+ * Commit types say behavior (v0.11 G8): `refactor:` changes no figure, and a
+ * breaking API change is `feat!:`/`fix!:` with an `API:` line saying what
+ * breaks; an `API:` line without the `!`, or a `!` without the line, warns.
+ */
+function typeWarnings(message: ParsedMessage): Warning[] {
+  const warnings: Warning[] = [];
+  const item = rerecordItems(message).find((id) => id && id !== "none");
+  if (subjectType(message.subject) === "refactor" && item !== undefined)
+    warnings.push({
+      rule: "refactor-figure",
+      text: `refactor: changes no figure, but ${RERECORD} names ${item}: type it fix(<area>): or feat(<area>):`,
+    });
+  const breaking = /^[a-z]+(\([^)]+\))?!:/.test(message.subject);
+  const api = trailerValues(message.raw, "API").length > 0;
+  if (api && !breaking)
+    warnings.push({
+      rule: "api-breaking",
+      text: "an API: line marks a breaking API change: type it feat!: or fix!:",
+    });
+  if (breaking && !api && !isRevertSubject(message.subject))
+    warnings.push({
+      rule: "api-breaking",
+      text: 'a breaking change (the "!") says what breaks in an "API: <procedure or field>: <change>" line',
+    });
+  return warnings;
+}
+
 // Figure commits name their flips and their CALCULATIONS row (v0.11 G2)
 
 const CALCULATIONS = "Calculations";
@@ -4007,7 +4038,11 @@ export function checkCommit(facts: CommitFacts): Warning[] {
       text: 'a revert says why: "This reverts commit …" alone gives no reason',
     });
   }
-  warnings.push(...figureWarnings(message, files), ...flipWarnings(facts));
+  warnings.push(
+    ...figureWarnings(message, files),
+    ...flipWarnings(facts),
+    ...typeWarnings(message),
+  );
   const srcLines = srcLinesChanged(files);
   if (srcLines > MAX_SRC_LINES && !exempt) {
     warnings.push({
