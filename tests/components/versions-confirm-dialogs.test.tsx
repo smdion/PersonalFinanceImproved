@@ -32,6 +32,7 @@ function deferredMutation(state: { isError?: boolean; message?: string } = {}) {
   );
   const mutation = {
     mutateAsync,
+    reset: vi.fn(),
     isPending: false,
     isError: state.isError ?? false,
     error: state.message ? { message: state.message } : null,
@@ -159,6 +160,69 @@ describe("RestoreDialog", () => {
     const again = renderRestore({ refused: "refused" });
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(again.setRestoreTarget).toHaveBeenCalledWith(null);
+  });
+});
+
+describe("RestoreDialog: the pre-restore backup", () => {
+  it("names the version in its description", async () => {
+    const { create } = renderRestore();
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    expect(create.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: 'Auto-created before restoring "Before the move"',
+      }),
+    );
+  });
+
+  it("a failed backup says so and restores nothing", async () => {
+    const run = renderRestore();
+    run.create.mutateAsync.mockRejectedValueOnce(new Error("disk full"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    });
+    expect(
+      screen.getByText("The backup failed, so nothing was restored: disk full"),
+    ).toBeTruthy();
+    expect(run.restore.mutateAsync).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Restore" })).toBeEnabled();
+  });
+
+  it("a retry after a failed restore doesn't make a second backup", async () => {
+    const run = renderRestore();
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    await act(async () => run.create.settle[0]!());
+    await act(async () => run.restore.settle[0]!());
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    expect(run.create.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(run.restore.mutateAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it("a new opening of the dialog makes its own backup", async () => {
+    const run = renderRestore();
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    await act(async () => run.create.settle[0]!());
+    await act(async () => run.restore.settle[0]!());
+    run.view.rerender(
+      <RestoreDialog
+        restoreTarget={{ id: 7, name: "Before the move" }}
+        restoreDataLoss={[]}
+        restoreCreateBackup
+        setRestoreCreateBackup={vi.fn()}
+        restoreConfirmText="Before the move"
+        restoreMutation={run.restore.mutation as never}
+        createMutation={run.create.mutation as never}
+        setRestoreTarget={run.setRestoreTarget}
+        setRestoreConfirmText={run.setRestoreConfirmText}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    expect(run.create.mutateAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it("closing clears a failed restore, so the next dialog starts clean", () => {
+    const run = renderRestore({ refused: "refused" });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(run.restore.mutation.reset).toHaveBeenCalled();
   });
 });
 
