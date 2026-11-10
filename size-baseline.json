@@ -330,7 +330,7 @@
     "src/lib/pure/net-worth/snapshot-groups.ts": 16,
     "src/lib/pure/net-worth/year-end-metrics.ts": 133,
     "src/lib/pure/net-worth/year-end-rows.ts": 521,
-    "src/lib/pure/paycheck/bonus.ts": 243,
+    "src/lib/pure/paycheck/bonus.ts": 238,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 115,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 258,
     "src/lib/pure/paycheck/paystub-check.ts": 439,

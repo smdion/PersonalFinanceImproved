@@ -93,8 +93,7 @@ export function calculateBonus(
     };
   }
 
-  // If bonus_override is set on the job, use that value directly as gross bonus.
-  // Otherwise: salary × bonus_percent × bonus_multiplier × (months_in_bonus_year / 12).
+  // The set bonus, else salary × bonus% × multiplier × (months in bonus year / 12).
   const bonusGross =
     input.bonusOverride !== null
       ? roundToCents(input.bonusOverride)
@@ -105,9 +104,7 @@ export function calculateBonus(
             (input.monthsInBonusYear / 12),
         );
 
-  // The contributions the bonus check takes (accounts set to be taken from
-  // bonus checks) — percent-of-salary ones scale against bonusGross,
-  // fixed-amount ones take their regular per-period dollars.
+  // What the bonus check takes, per bonusCheckContribution.
   const bonusLines: DeductionLine[] = input.contributionAccounts.flatMap(
     (ca) => {
       const amount = bonusCheckContribution(ca, bonusGross);
@@ -199,7 +196,6 @@ export function findBonusPeriod(
   const year = asOfDate.getFullYear();
   const msPerDay = MS_PER_DAY;
   const targetMonth = bonusMonth - 1; // 0-indexed
-  // Clamp day to valid range for target month
   const lastDay = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
   const targetDay =
     bonusDayOfMonth != null ? Math.min(bonusDayOfMonth, lastDay) : null;
@@ -216,7 +212,6 @@ export function findBonusPeriod(
     while (payday <= december31) {
       periodNum++;
       if (bonusDate) {
-        // Find the period whose window contains the bonus date
         const nextPayday = new Date(payday.getTime() + interval * msPerDay);
         if (bonusDate >= payday && bonusDate < nextPayday) return periodNum;
       } else {
