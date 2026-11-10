@@ -263,7 +263,7 @@
     "src/lib/pure/contributions/contribution-order.ts": 83,
     "src/lib/pure/contributions/contribution-rows.ts": 194,
     "src/lib/pure/contributions/display-specs.ts": 139,
-    "src/lib/pure/contributions/irs-limits.ts": 210,
+    "src/lib/pure/contributions/irs-limits.ts": 209,
     "src/lib/pure/contributions/joint-accounts.ts": 176,
     "src/lib/pure/contributions/paycheck-accounts.ts": 157,
     "src/lib/pure/contributions/person-snapshot.ts": 215,

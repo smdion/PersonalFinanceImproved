@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  ageInYearFromDob,
+  limitAge,
   ageOnDate,
   countReachingAgeRule,
   reachesAgeRule,
@@ -32,8 +32,8 @@ describe("countReachingAgeRule", () => {
 
 describe("ageInYearFromDob", () => {
   it("is the year minus the stored birth year", () => {
-    expect(ageInYearFromDob("1980-12-31", 2026)).toBe(46);
-    expect(ageInYearFromDob("1980-01-01", 2026)).toBe(46);
+    expect(limitAge("1980-12-31", 2026)).toBe(46);
+    expect(limitAge("1980-01-01", 2026)).toBe(46);
   });
 });
 

@@ -31,7 +31,7 @@ export function countReachingAgeRule(
 }
 
 /** The age in `year` (at Dec 31) of a stored `YYYY-MM-DD` date of birth. */
-export function ageInYearFromDob(dateOfBirth: string, year: number): number {
+export function limitAge(dateOfBirth: string, year: number): number {
   return ageInYear(calendarYear(dateOfBirth), year);
 }
 

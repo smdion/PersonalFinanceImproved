@@ -8,7 +8,7 @@ import {
 } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
-import { ageInYearFromDob } from "@/lib/pure/household/age";
+import { limitAge } from "@/lib/pure/household/age";
 
 /** The limit row an account's base IRS limit comes from: the coverage
  *  variant (family HSA) when it applies, else the base key. */
@@ -88,8 +88,7 @@ export function ficaCapContext(
 ): { limits: Record<string, number>; ageAtYearEnd: number | null } {
   return {
     limits,
-    ageAtYearEnd:
-      dateOfBirth === null ? null : ageInYearFromDob(dateOfBirth, taxYear),
+    ageAtYearEnd: dateOfBirth === null ? null : limitAge(dateOfBirth, taxYear),
   };
 }
 
