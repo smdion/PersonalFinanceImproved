@@ -1,7 +1,7 @@
 "use client";
 
 import { trpc } from "@/lib/trpc";
-import { usePersistedSetting } from "./use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useActiveProfileRepair } from "./use-active-profile-repair";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -30,9 +30,8 @@ export function useActiveRetirementProfile(): [
         utils.savings.invalidate(),
       ]),
   });
-  const [activeId, setActiveId] = usePersistedSetting<number | null>(
+  const [activeId, setActiveId] = useProfileIdSetting(
     SK_ACTIVE_RETIREMENT_PROFILE_ID,
-    null,
     {
       writeVia: (id) =>
         upsertWithInvalidation.mutateAsync({

@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useLocalStorageSet } from "@/app/(dashboard)/savings/use-local-storage-set";
 import { SummaryCards } from "@/components/savings/summary-cards";
 import { NewFundFormCard } from "@/components/savings/new-fund-form-card";
@@ -105,9 +106,8 @@ export function SavingsContent() {
     SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
-  const [activeContributionProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = useProfileIdSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
   );
   // Fetch contribution profiles list for subtitle display.
   const { data: contributionProfilesList } =

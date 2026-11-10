@@ -45,6 +45,7 @@ import {
 } from "@/components/retirement/sections/helpers";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -72,10 +73,7 @@ export function RetirementProfileTab({
       : IRS_LIMIT_GROWTH_RATE;
   const utils = trpc.useUtils();
   const [decumulationBudgetProfileId, setDecumulationBudgetProfileId] =
-    usePersistedSetting<number | null>(
-      SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID,
-      null,
-    );
+    useProfileIdSetting(SK_RETIREMENT_DECUMULATION_BUDGET_PROFILE_ID);
   const [decumulationBudgetColumn, setDecumulationBudgetColumn] =
     usePersistedSetting<number | null>(
       SK_RETIREMENT_DECUMULATION_BUDGET_COL,

@@ -2,7 +2,7 @@ import type { DollarBasis } from "@/lib/config/enum-values";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import type { AccumOverride } from "@/components/retirement-projection/types";
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -33,10 +33,7 @@ export function useBrokeragePage() {
   });
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [activeProfileId] = usePersistedSetting<number | null>(
-    SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
-  );
+  const [activeProfileId] = useProfileIdSetting(SK_ACTIVE_CONTRIB_PROFILE_ID);
   // Brokerage planned events (persisted to DB)
   const { brokerageLumpSums, setBrokerageLumpSums } = useBrokerageLumpSums();
 

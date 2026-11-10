@@ -3,7 +3,7 @@
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -44,10 +44,7 @@ import { renderJointAccount } from "./contribution-snapshot-joint";
 
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
-  const [activeProfileId] = usePersistedSetting<number | null>(
-    SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
-  );
+  const [activeProfileId] = useProfileIdSetting(SK_ACTIVE_CONTRIB_PROFILE_ID);
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const contributionInput = {
     ...(activeProfileId != null

@@ -21,6 +21,7 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetRetirementNote } from "@/components/budget/budget-retirement-note";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -98,13 +99,11 @@ export function BudgetContent({
     activeProfileId,
   });
 
-  const [activeContributionProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = useProfileIdSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
   );
-  const [activeSalaryProfileIdSetting] = usePersistedSetting<number | null>(
+  const [activeSalaryProfileIdSetting] = useProfileIdSetting(
     SK_ACTIVE_SALARY_PROFILE_ID,
-    null,
   );
   // The active ids, sent explicitly (null while loading = none), shared by
   // the summary query and the edit batch so they resolve alike.
