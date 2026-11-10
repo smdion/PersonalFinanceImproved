@@ -17,7 +17,8 @@ export type PaycheckContributionRow = Pick<
   subType: string | null;
   label: string | null;
   contributionMethod: string;
-  contributionValue: string | number;
+  /** Null when a stored profile entry has none (it reads as 0). */
+  contributionValue: string | number | null;
   taxTreatment: TaxTreatment;
   employerMatchType: EmployerMatchType;
   employerMatchValue: string | null;
