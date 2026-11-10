@@ -190,7 +190,7 @@ Helpers: `taxTypeTextColor()`, `taxTypeLabel()` (reads `TAX_TYPE_LABELS` in `lib
 - Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers, and its `chartHex` into `CATEGORY_CHART_HEX`, which adds only ESPP and pension
 - **Account scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ all accounts (§ Account Categories: "Portfolio money" is the other part).
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
-- **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. `AccountMapping.localId` uses the format `"performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}"`. Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
+- **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. An account mapping resolves by its typed id (`performanceAccountId`, `assetId`, `debtId`, or `loanId` with `loanMapType`); its `localId` (`"performance:{id}" | "asset:{id}" | "debt:{id}" | "mortgage:{loanId}:{type}"`) names the same target, and the pseudo-accounts `"cash"` and `"creditCard"` are matched by `localId` alone. A mapping without a typed id is skipped by the pull with a warning (the credentials migration gave every mapping it could match one). Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
 
 ---
 
@@ -1009,6 +1009,21 @@ SQLite and PostgreSQL).
   import. A converter asks only when it has something to encrypt, so a
   keyless install with nothing to convert still starts; missing or
   malformed when asked, the key refuses the start as above.
+- **A restore reads its source's dialect:** `transformFromSource`
+  (`src/lib/db/backup/restore-source.ts`) runs the transforms for the
+  backup's `sourceDialect` (a version restore passes the install's own).
+  From a PostgreSQL source, each string scalar in a jsonb column is its
+  JSON text while the steps run, as `selectPg` gives it to the live
+  migration, and one no converter rewrote is its string again after; a
+  SQLite source, or a backup from before v0.8.3 that names none, runs as
+  it is.
+- **Restore-only links:** a backup from before the credentials tag was
+  taken by a version that linked rows on every start (a contribution
+  account's performance account, a mapping's portfolio label). Its restore
+  gets that match once, by text as it was, in `restoreLinks`
+  (`src/lib/db/backup/restore-links.ts`), before the converters; no live
+  converter does it, since a text match rerun on every replay would
+  re-link rows unlinked since. A backup from the tag on skips it.
 - **A new migration never recreates a SQLite table** (0005 and 0015 do,
   and replay handles those as above); a shape that seems to need one stops
   for an owner decision.
@@ -1075,7 +1090,7 @@ The Performance page uses a **separate grouping** based on `accountType` from th
 | **Retirement**   | 401k, 403b, IRA                                              | Everything else             |
 | **Portfolio**    | All accounts combined (a display label, not Portfolio money) | Sum of all categories       |
 
-This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. For `account_performance` rows without a `performanceAccountId`, the system falls back to matching by `institution + accountLabel` against the master table, then to the stored `parentCategory`.
+This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. Every `account_performance` row reads its account through `performanceAccountId` (`resolveMaster`, `lib/pure/investments/annual-rollups.ts`); a row with none, or naming a missing account, throws. A row's stored `parentCategory` is its account's: the stored-JSON migration copied it, and every writer keeps the two equal.
 
 **Where numbers appear:**
 
