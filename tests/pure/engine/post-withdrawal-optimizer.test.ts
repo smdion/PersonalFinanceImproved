@@ -512,9 +512,9 @@ describe("checkAca", () => {
   });
 
   it("reads the ACA MAGI to the cent, whatever the term order (exactly at the cliff)", () => {
-    // Traditional + conversion + gains + Roth growth + Social Security is
-    // 84,600.00 to the cent (84600 or 84599.99999999999 by term order):
-    // exactly the 2-person cliff, so the subsidy is lost.
+    // MAGI is 84,600.00 to the cent (84600 or 84599.99999999999 by term
+    // order), the 2-person cliff, read as lost: this pins CALCULATIONS RET-17's
+    // Gap, not the law (IRC 36B(c)(1)(A) "does not exceed" keeps exactly 400%).
     const result = checkAca(
       makeAcaInput({
         totalTraditionalWithdrawal: 15821.05,

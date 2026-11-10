@@ -31,7 +31,7 @@ export type MagiIncome<R extends MagiRule> = Omit<
 };
 
 /** The year's MAGI under `rule`, to the cent: the edges it meets (IRMAA
- *  tiers, the ACA cliff) are cent-exact, so a sum's term order can't decide. */
+ *  tiers, the ACA cliff) are stated in dollars, so a sum's term order can't decide. */
 export function yearMagi<R extends MagiRule>(
   income: MagiIncome<R>,
   rule: R,
