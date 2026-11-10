@@ -2,7 +2,7 @@
  *  Each const array → a Zod enum in enum-values.schema.ts → tRPC validators. Values only, so
  *  client components can import this without bundling Zod. */
 
-import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
+import { BUDGET_API_SERVICE_VALUES } from "./budget-apps";
 
 // ── Pay Period ──
 

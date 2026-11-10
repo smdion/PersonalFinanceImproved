@@ -67,5 +67,12 @@ describe("the migrator bundle", () => {
     expect(
       inputs.filter((f) => /node_modules\/(next|server-only)\//.test(f)),
     ).toEqual([]);
+    // tsx runs db-migrate.ts from other folders (the PostgreSQL migration
+    // tests), where the "@/" alias doesn't resolve: its sources import by path.
+    expect(
+      inputs
+        .filter((f) => f.startsWith("src/"))
+        .filter((f) => /from "@\//.test(readFileSync(f, "utf8"))),
+    ).toEqual([]);
   });
 });
