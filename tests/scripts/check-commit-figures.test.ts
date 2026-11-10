@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checkCommit,
+  droppedXfails,
   parseMessage,
   rerecordedFiles,
   rerecordItems,
@@ -92,7 +93,10 @@ describe("rerecordItems", () => {
 });
 
 describe("checkCommit: figure commits (G1)", () => {
-  const baseline = [changed("tests/baseline/__baseline__/el-h1/taxes.json")];
+  const baseline = [
+    changed("tests/baseline/__baseline__/el-h1/taxes.json"),
+    changed("docs/CALCULATIONS.md"),
+  ];
 
   it("passes a re-record with its item, figure lines and count line", () => {
     expect(
@@ -200,5 +204,96 @@ describe("checkCommit: figure commits (G1)", () => {
         baseline,
       ),
     ).toEqual(["figure-count"]);
+  });
+});
+
+describe("droppedXfails (G2)", () => {
+  const diff = (file: string, lines: string[]) =>
+    [
+      `diff --git a/${file} b/${file}`,
+      `--- a/${file}`,
+      `+++ b/${file}`,
+      "@@ -1,9 +1,9 @@",
+      ...lines,
+    ].join("\n");
+  const flip = diff("tests/pure/tax/answer-key-tax.test.ts", [
+    "-  xfail({",
+    '-    id: "tax/R-S67",',
+    '+  it("tax/R-S67", () => {',
+    "   run: () => federal(),",
+    '   it.fails("sim/K12 — expected failure until v0.11 x", run);',
+    '-  it.fails("sim/K13 — expected failure until v0.11 x", run);',
+    '-  it.fails("a wrapper defect, not an answer-key case (v0.11 x)", run);',
+  ]);
+
+  it("finds the cases that stop being expected failures, by id", () => {
+    expect(droppedXfails(flip)).toEqual(["tax/R-S67", "sim/K13"]);
+  });
+
+  it("doesn't count a case moved to another file", () => {
+    const moved = [
+      diff("tests/a.test.ts", ["-  xfail({", '-    id: "tax/L2",', "-  });"]),
+      diff("tests/b.test.ts", ["+  xfail({", '+    id: "tax/L2",', "+  });"]),
+    ].join("\n");
+    expect(droppedXfails(moved)).toEqual([]);
+  });
+});
+
+describe("checkCommit: flips name their case, figures their row (G2)", () => {
+  const files = [
+    changed("tests/pure/tax/answer-key-tax.test.ts"),
+    changed("docs/CALCULATIONS.md"),
+  ];
+  const flipRules = (raw: string, f = files, sha?: string) =>
+    checkCommit({
+      ...facts(raw, f),
+      droppedXfails: ["tax/R-S67"],
+      sha,
+    })
+      .map((w) => w.rule)
+      .filter((rule) => rule === "xfail-flip" || rule.startsWith("figure"));
+  const item = "Baseline-rerecord: tests/pure/tax/*.ts — TX5, the 65+ add-on";
+
+  it("passes a flip its Figure-change line names", () => {
+    expect(flipRules(message(COUNT, "", FIGURE, item))).toEqual([]);
+  });
+
+  it("warns on a flip no Figure-change line names", () => {
+    const other =
+      "Figure-change: tax/R-S678: federal 5,020 → 4,054, the senior deduction";
+    expect(flipRules(message(COUNT, "", other, item))).toEqual(["xfail-flip"]);
+  });
+
+  it("needs the CALCULATIONS row, or Calculations: none, <reason>", () => {
+    const answerKeyOnly = [changed("tests/pure/tax/answer-key-tax.test.ts")];
+    expect(flipRules(message(COUNT, "", FIGURE, item), answerKeyOnly)).toEqual([
+      "figure-calculations",
+    ]);
+    expect(
+      flipRules(
+        message(COUNT, "", FIGURE, item, "Calculations: none, no row yet"),
+        answerKeyOnly,
+      ),
+    ).toEqual([]);
+  });
+
+  it("asks no row of a none re-record, nor of Q1, which landed before the rule", () => {
+    const answerKeyOnly = [changed("tests/fixtures/x-rows.json")];
+    expect(
+      checkCommit(
+        facts(
+          message(
+            "Baseline-rerecord: tests/fixtures/x-rows.json — none, a comment",
+          ),
+          answerKeyOnly,
+        ),
+      ).map((w) => w.rule),
+    ).toEqual([]);
+    expect(
+      checkCommit({
+        ...facts(message(COUNT, "", FIGURE, item), answerKeyOnly),
+        sha: "301bcb446186cf96ba919283ec035276e915ea43",
+      }).map((w) => w.rule),
+    ).toEqual([]);
   });
 });

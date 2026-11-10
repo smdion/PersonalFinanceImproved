@@ -80,6 +80,10 @@ export type CommitFacts = {
   notMechanical?: string;
   /** Why a `Comments-only:` commit changes code (undefined: it doesn't, or no trailer). */
   notCommentsOnly?: string;
+  /** Answer-key expected failures the commit flips or deletes (G2). */
+  droppedXfails?: string[];
+  /** The commit's sha (undefined: the staged change). */
+  sha?: string;
 };
 
 export type Warning = { rule: string; text: string };
@@ -3896,6 +3900,73 @@ function figureWarnings(
   return warnings;
 }
 
+// Figure commits name their flips and their CALCULATIONS row (v0.11 G2)
+
+const CALCULATIONS = "Calculations";
+/** Landed before G2: Q1, whose row's Gaps never listed the loss it fixed. */
+const BEFORE_CALCULATIONS_RULE = new Set([
+  "301bcb446186cf96ba919283ec035276e915ea43",
+]);
+/** An answer-key case id, as tests/fixtures/answer-key.ts checks it. */
+const CASE_ID = /^[a-z]+\/[A-Za-z0-9][^\s]*$/;
+const XFAIL_CALL = /\bxfail\(\{[^]{0,300}?\bid:\s*(["'`])(.*?)\1/g;
+const FAILS_CALL = /\b(?:it|test)\.fails\(\s*(["'`])(.*?)\1/g;
+
+/** The answer-key expected failures in a test file's text, by case id. */
+export function expectedFailures(text: string): string[] {
+  return [...text.matchAll(XFAIL_CALL), ...text.matchAll(FAILS_CALL)]
+    .map((m) => (m[2] ?? "").split(" ")[0] ?? "")
+    .filter((id) => CASE_ID.test(id));
+}
+
+/**
+ * The expected failures a full-context diff of test files flips or deletes:
+ * ids on the old side that no file's new side still expects to fail.
+ */
+export function droppedXfails(diff: string): string[] {
+  const files = readDiff(diff);
+  const now = new Set(
+    files.flatMap((f) => expectedFailures(f.new.lines.join("\n"))),
+  );
+  const was = files.flatMap((f) => expectedFailures(f.old.lines.join("\n")));
+  return [...new Set(was)].filter((id) => !now.has(id));
+}
+
+/** Changed test code that loses lines: where a flip can be. */
+const flipCandidates = (files: FileChange[]) =>
+  files
+    .filter(
+      (c) =>
+        c.deleted > 0 &&
+        c.file.startsWith("tests/") &&
+        CODE_FILE.test(c.file) &&
+        !c.file.includes(" => "),
+    )
+    .map((c) => c.file);
+
+function flipWarnings(facts: CommitFacts): Warning[] {
+  const { message, files } = facts;
+  const lines = trailerValues(message.raw, FIGURE_CHANGE);
+  const named = new Set(lines.flatMap((line) => line.split(/[\s:,;()]+/)));
+  const unnamed = (facts.droppedXfails ?? []).filter((id) => !named.has(id));
+  const warnings: Warning[] = unnamed.map((id) => ({
+    rule: "xfail-flip",
+    text: `${id} is no longer an expected failure: name it in a "${FIGURE_CHANGE}: ${id}: $A → $B, <cause>" line`,
+  }));
+  const item = rerecordItems(message).find((id) => id && id !== "none");
+  if (
+    item !== undefined &&
+    !files.some((c) => c.file === REGISTER_DOC) &&
+    !/^none\b/.test(message.trailers[CALCULATIONS] ?? "") &&
+    !BEFORE_CALCULATIONS_RULE.has(facts.sha ?? "")
+  )
+    warnings.push({
+      rule: "figure-calculations",
+      text: `${RERECORD}: ${item} also updates its ${REGISTER_DOC} row (Tested, Gaps), or says "${CALCULATIONS}: none, <reason>"`,
+    });
+  return warnings;
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
@@ -3936,7 +4007,7 @@ export function checkCommit(facts: CommitFacts): Warning[] {
       text: 'a revert says why: "This reverts commit …" alone gives no reason',
     });
   }
-  warnings.push(...figureWarnings(message, files));
+  warnings.push(...figureWarnings(message, files), ...flipWarnings(facts));
   const srcLines = srcLinesChanged(files);
   if (srcLines > MAX_SRC_LINES && !exempt) {
     warnings.push({
@@ -4070,6 +4141,7 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     git("show", "-U0", "--format=", sha, "--", "src/"),
   );
   const time = Number(git("log", "-1", "--format=%ct", sha).trim());
+  const flips = flipCandidates(files);
   return {
     message,
     files,
@@ -4077,6 +4149,13 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     priorFixes: countPriorFixes(spots, time, history, sha),
     notMechanical,
     notCommentsOnly: notComments,
+    droppedXfails:
+      flips.length > 0
+        ? droppedXfails(
+            git("show", FULL_CONTEXT, "--format=", sha, "--", ...flips),
+          )
+        : [],
+    sha,
   };
 }
 
@@ -4108,6 +4187,7 @@ function runMessageFile(file: string): Warning[] {
           git("diff", "--cached", "-M", FULL_CONTEXT, "--", "src/"),
         )
       : undefined;
+  const flips = flipCandidates(files);
   const warnings = checkCommit({
     message,
     files,
@@ -4115,6 +4195,10 @@ function runMessageFile(file: string): Warning[] {
     priorFixes: countPriorFixes(spots, now + 1, history),
     notMechanical,
     notCommentsOnly: notComments,
+    droppedXfails:
+      flips.length > 0
+        ? droppedXfails(git("diff", "--cached", FULL_CONTEXT, "--", ...flips))
+        : [],
   });
   report("commit", warnings);
   return warnings;
