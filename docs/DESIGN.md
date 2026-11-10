@@ -122,7 +122,7 @@ Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any na
 | `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
 | `ledgr-sync`                 | `sync`                | Trigger budget API sync operations (connecting YNAB or Actual is admin-only)                                                                   |
 
-The `(dashboard)` layout redirects to `/login`; `src/proxy.ts` runs `auth` but has no `authorized` callback, so it blocks nothing. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
+`src/proxy.ts` sends a page request with no session to `/login` (its `authorized` callback; DEMO_ONLY and `next dev` skip it), and the `(dashboard)` layout checks the session again with the full config. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 
 ### Server/Client Component Boundary
 
