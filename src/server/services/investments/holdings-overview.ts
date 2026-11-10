@@ -22,7 +22,7 @@ import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
-import { getAge } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { getLatestMarketClose } from "@/server/services/investments/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
@@ -117,7 +117,7 @@ async function targetByAssetClass(
       currentGlidePath,
       currentGlidePathStale,
     };
-  const age = getAge(new Date(`${person.dob}T00:00:00`), asOf);
+  const age = ageOnDate(person.dob, asOf);
   return {
     age,
     target: interpolateAllocations(glidePath, age),

@@ -3,7 +3,7 @@
  * (from real past separation only, never a planned date), and their manual-entry mutations.
  */
 import { z } from "zod/v4";
-import { isCalendarDate } from "@/lib/utils/date";
+import { calendarYear, isCalendarDate } from "@/lib/utils/date";
 import { eq, and } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -78,7 +78,7 @@ export const taxBucketsRouter = createTRPCRouter({
       people: people.map((p) => ({
         id: p.id,
         name: p.name,
-        birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
+        birthYear: calendarYear(p.dateOfBirth),
       })),
       currentDate: ctx.scope.asOf,
     });
@@ -89,7 +89,7 @@ export const taxBucketsRouter = createTRPCRouter({
       people: people.map((p) => ({
         id: p.id,
         name: p.name,
-        birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
+        birthYear: calendarYear(p.dateOfBirth),
       })),
     };
   }),

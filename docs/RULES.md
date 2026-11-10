@@ -63,7 +63,6 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **"One config entry" for an account type,** until v0.11: some lists and router schemas are still built at module load (the `it.fails` cases in `tests/lint/violations.test.ts`).
 - **Early access has two behaviors,** until v0.11: the engine reads each type's `earlyAccessRule`; Tax Buckets still branches on IRA and HSA by name.
 - **The engine keys an account by its display name** (with category, tax type and owner), so two same-named accounts of one owner merge (`el-h5`), until it keys by id (v0.11).
-- **A date of birth is parsed two ways,** UTC midnight (`ageOnDate`) and local midnight (milestones, holdings), until one parse (v0.11).
 - **The W-4 status stands in for the return status** when a year has none, in one function (`w4StandInForReturn`), until the return status is asked for (v0.11).
 - **Two MAGI sites keep their own term order,** the ACA check (`aca-check.ts`) and the Roth conversion's IRMAA cap (`roth-conversion.ts`), until `yearMagi` rounds to cents (v0.11).
 - **The withdrawal settings' schemas disagree,** until one derives the others (v0.11). Splits sent with a projection or saved in "Changes by year" take any number, while saved settings take 0–1 summing near 100%. Tax-preference keys are any text in the sent defaults but an account category in "Changes by year". `avoidPenalizedWithdrawals` is on both engine types but in no schema, so a sent value is dropped and the default runs.

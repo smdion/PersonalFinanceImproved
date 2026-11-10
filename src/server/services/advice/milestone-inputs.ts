@@ -38,7 +38,7 @@ import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
-import { getAge } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
@@ -227,9 +227,7 @@ export async function loadMilestoneInputs(
   const householdAge = current?.averageAge ?? 0;
   const ageOf = (personId: number | null) => {
     const p = people.find((x) => x.id === personId);
-    return p
-      ? getAge(new Date(`${p.dateOfBirth}T00:00:00`), asOfDate)
-      : householdAge;
+    return p ? ageOnDate(p.dateOfBirth, asOfDate) : householdAge;
   };
   const debts: MilestoneDebt[] = debtRows.map((d) => {
     const now = debtBalance(d);
