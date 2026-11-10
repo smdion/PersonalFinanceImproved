@@ -136,6 +136,23 @@ describe("a query from outside an open transaction (drizzle)", () => {
     expect(await during(() => gated.query.t.findMany())).toEqual([]);
   });
 
+  it("a write never lands inside a transaction queued while it waited", async () => {
+    const failing = () =>
+      gated
+        .transaction(async (inner) => {
+          await inner.insert(t).values({ v: 1 });
+          await pause();
+          throw new Error("rolled back");
+        })
+        .catch(() => undefined);
+    const first = failing();
+    await Promise.resolve();
+    const second = failing();
+    const write = gated.insert(t).values({ v: 2 });
+    await Promise.all([first, second, write]);
+    expect(rows()).toEqual([2]);
+  });
+
   it("with nothing open, a query runs at once", async () => {
     await gated.insert(t).values({ v: 3 });
     expect(await gated.select().from(t)).toEqual([{ v: 3 }]);

@@ -19,6 +19,8 @@ export function withAsyncTransactions<T extends object>(
   const inTransaction = new AsyncLocalStorage<true>();
   let depth = 0;
   let queue: Promise<unknown> = Promise.resolve();
+  /** Settles when the transaction now running ends. */
+  let running: Promise<void> = Promise.resolve();
 
   const nested = async (fn: (tx: T) => unknown) => {
     const name = `ledgr_sp_${++depth}`;
@@ -41,6 +43,12 @@ export function withAsyncTransactions<T extends object>(
   });
 
   const outside = () => sqlite.inTransaction && !inTransaction.getStore();
+  /** Runs `go` once no transaction is open, checked when it runs: never
+   *  inside a transaction that began while it waited. */
+  const whenNoneOpen = (go: () => unknown): Promise<unknown> =>
+    outside()
+      ? running.then(() => whenNoneOpen(go))
+      : Promise.resolve().then(go);
   const isBuilder = (o: unknown): o is object =>
     typeof o === "object" &&
     o !== null &&
@@ -63,7 +71,7 @@ export function withAsyncTransactions<T extends object>(
         if (key === "then")
           return (...args: unknown[]) =>
             outside()
-              ? queue.then(() => value.apply(target, args))
+              ? whenNoneOpen(() => value.apply(target, args))
               : value.apply(target, args);
         return (...args: unknown[]) => {
           const out: unknown = value.apply(target, args);
@@ -75,6 +83,8 @@ export function withAsyncTransactions<T extends object>(
   (db as T & WithTransaction).transaction = (fn: (tx: T) => unknown) => {
     if (inTransaction.getStore()) return nested(fn);
     const run = async () => {
+      let ended!: () => void;
+      running = new Promise<void>((resolve) => (ended = resolve));
       sqlite.exec("BEGIN IMMEDIATE");
       try {
         const result = await inTransaction.run(true, () => fn(tx));
@@ -83,6 +93,8 @@ export function withAsyncTransactions<T extends object>(
       } catch (error) {
         if (sqlite.inTransaction) sqlite.exec("ROLLBACK");
         throw error;
+      } finally {
+        ended();
       }
     };
     const turn = queue.then(run, run);
