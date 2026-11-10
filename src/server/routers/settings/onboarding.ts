@@ -7,10 +7,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
-import {
-  checkOnboardingComplete,
-  firstRunState,
-} from "@/server/data/first-run";
+import { onboardingWizardDone, firstRunState } from "@/server/data/first-run";
 import { lockForTransaction } from "@/server/data/lock-row";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 import type { DbOrTx } from "@/lib/db";
@@ -32,7 +29,7 @@ export const onboardingProcedures = {
    * Whether onboarding is complete: the wizard finished, or a person exists.
    */
   getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
-    return { complete: await checkOnboardingComplete(ctx.db) };
+    return { complete: await onboardingWizardDone(ctx.db) };
   }),
 
   /**

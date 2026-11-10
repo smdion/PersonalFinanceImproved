@@ -29,7 +29,7 @@ async function peopleExist(db: DbOrTx): Promise<boolean> {
 }
 
 /** Onboarding is complete once the wizard finished or a person exists. */
-export async function checkOnboardingComplete(db: DbOrTx): Promise<boolean> {
+export async function onboardingWizardDone(db: DbOrTx): Promise<boolean> {
   return (await onboardingFlag(db)) === true || peopleExist(db);
 }
 
