@@ -323,4 +323,26 @@ describe("extra-paycheck materializers: the rows they write", () => {
     ];
     expect(runs).toEqual(EXPECTED.local);
   });
+
+  it("keeps a month's unsettled rows on a run at 23:30 Chicago on its last day", async () => {
+    process.env.TZ = "America/Chicago";
+    vi.useFakeTimers();
+    ctx = await createTestDb();
+    seed(ctx);
+    const rowsOf = (
+      run: Awaited<ReturnType<typeof runBoth>>,
+      table: "savings" | "budget",
+      month: string,
+    ) => run[table].filter((r) => r[2] === month).map((r) => r.slice(1));
+    const before = await runBoth(ctx, "2026-05-15T17:00:00Z");
+    const mayBudget = rowsOf(before, "budget", "2026-05-01");
+    const julySavings = rowsOf(before, "savings", "2026-07-01");
+    expect(mayBudget.length).toBeGreaterThan(0);
+    expect(julySavings.length).toBeGreaterThan(0);
+    // 23:30 on a month's last day in Chicago is already the next month in UTC.
+    const mayEnd = await runBoth(ctx, "2026-06-01T04:30:00Z");
+    expect(rowsOf(mayEnd, "budget", "2026-05-01")).toEqual(mayBudget);
+    const julyEnd = await runBoth(ctx, "2026-08-01T04:30:00Z");
+    expect(rowsOf(julyEnd, "savings", "2026-07-01")).toEqual(julySavings);
+  });
 });

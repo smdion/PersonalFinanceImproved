@@ -10,6 +10,7 @@ import {
 } from "@/lib/pure/paycheck/extra-paycheck-months";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
+import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { Db } from "@/lib/db";
 
 /** Months walked from the current one: the 10-year projection window. */
@@ -68,7 +69,7 @@ export async function loadExtraPaycheckJobs(
       monthDates: getExtraPaycheckMonthKeys(
         new Date(anchorPayDate + "T00:00:00Z"),
         payPeriod,
-        now,
+        currentMonthKey(now),
         HORIZON_MONTHS,
       ),
     });

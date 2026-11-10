@@ -28,6 +28,7 @@ import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
 } from "@/lib/pure/paycheck/extra-paycheck-months";
+import { monthKey } from "@/lib/utils/date-keys";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -345,7 +346,7 @@ function LivingCostsCardImpl() {
   // Extra-paycheck money routed to savings isn't in any goal's monthlyAllocation, so add it.
   // Counted from this year's 3rd-paycheck months times the current toggle, not from the
   // materialized transactions, which miss months that passed before a rule existed.
-  const yearStart = new Date(Date.UTC(new Date().getFullYear(), 0, 1));
+  const thisYear = new Date().getFullYear();
   const extraPaycheckAllocatedThisYear = sumBy(extraPaycheckJobs ?? [], (j) => {
     if (j.payPeriod !== "biweekly" || !j.anchorPayDate) return 0;
     const routing = j.extraPaycheckRouting;
@@ -356,9 +357,9 @@ function LivingCostsCardImpl() {
     const extraMonthsThisYear = getExtraPaycheckMonthKeys(
       anchor,
       j.payPeriod,
-      yearStart,
+      monthKey(new Date(thisYear, 0, 1)),
       12,
-    ).filter((k) => k.startsWith(String(yearStart.getUTCFullYear())));
+    );
     return extraMonthsThisYear.length * netPayPerCheck;
   });
   // Take-home of bonuses set to "extra spending" (their taxes and contributions

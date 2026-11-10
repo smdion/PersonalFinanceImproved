@@ -26,9 +26,7 @@ export function ExtraPaycheckBudgetNote() {
 
   if (!jobs || jobs.length === 0) return null;
 
-  const now = new Date();
-  const asOf = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  const thisMonthKey = currentMonthKey(now);
+  const thisMonthKey = currentMonthKey(new Date());
 
   const entries = jobs
     .filter((j) => j.payPeriod === "biweekly" && j.anchorPayDate)
@@ -38,7 +36,7 @@ export function ExtraPaycheckBudgetNote() {
       const months = getExtraPaycheckMonthKeys(
         anchor,
         j.payPeriod!,
-        asOf,
+        thisMonthKey,
         HORIZON_MONTHS,
       );
       return {

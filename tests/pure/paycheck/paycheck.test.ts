@@ -627,7 +627,7 @@ describe("anchor-payday date-walk (pinned)", () => {
       getExtraPaycheckMonthKeys(
         new Date("2025-01-03"),
         "biweekly",
-        new Date("2025-03-07"),
+        "2025-03-01",
         18,
       ),
     ).toEqual(["2025-08-01", "2026-01-01", "2026-07-01"]);
