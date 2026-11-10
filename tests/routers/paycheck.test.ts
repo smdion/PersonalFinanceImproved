@@ -25,6 +25,7 @@ import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 
 // ── Empty DB ──────────────────────────────────────────────────────────────────
 
@@ -588,6 +589,69 @@ describe("settings.jobs CRUD", () => {
     await caller.settings.jobs.delete({ id });
     const remaining = await caller.settings.jobs.list();
     expect(remaining).toHaveLength(1);
+  });
+});
+
+describe("deleting a job removes its Salary Profile entries", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  const salariesOf = (id: number) =>
+    db
+      .select({ salaries: schema.salaryProfiles.salaries })
+      .from(schema.salaryProfiles)
+      .where(eq(schema.salaryProfiles.id, id))
+      .get()!.salaries;
+
+  it("jobs.delete drops the job's entry from every profile and keeps the others", async () => {
+    const personId = await seedPerson(db, "Two Jobs", "1990-01-01");
+    const kept = seedJob(db, personId);
+    const deleted = seedJob(db, personId);
+    const entries = {
+      [kept]: BLANK_SALARY_ENTRY,
+      [deleted]: BLANK_SALARY_ENTRY,
+    };
+    const profiles = ["Invented A", "Invented B"].map(
+      (name) =>
+        db
+          .insert(schema.salaryProfiles)
+          .values({ name, salaries: entries })
+          .returning()
+          .get().id,
+    );
+    await caller.settings.jobs.delete({ id: deleted });
+    for (const id of profiles)
+      expect(Object.keys(salariesOf(id))).toEqual([String(kept)]);
+  });
+
+  it("people.delete drops the speculative job's entries with it", async () => {
+    const person = await caller.settings.people.create({
+      name: "Pegged",
+      dateOfBirth: "1995-01-01",
+    });
+    const speculative = (await caller.settings.jobs.list()).find(
+      (j) => j.personId === person!.id && j.isSpeculative,
+    )!;
+    const id = db
+      .insert(schema.salaryProfiles)
+      .values({
+        name: "Invented what-if",
+        salaries: { [speculative.id]: BLANK_SALARY_ENTRY },
+      })
+      .returning()
+      .get().id;
+    await caller.settings.people.delete({ id: person!.id });
+    expect(salariesOf(id)).toEqual({});
   });
 });
 

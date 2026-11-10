@@ -11,6 +11,7 @@ import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
+import { deleteJobsAndEntries } from "@/server/data/delete-jobs";
 
 // A job is identity/lifecycle only: pay schedule, W-4, bonus and salary fields live in
 // the Salary Profile entry (salaryEntrySchema in json-schemas.ts).
@@ -73,7 +74,8 @@ export const jobsProcedures = {
         return result;
       }),
     /**
-     * Refused for the speculative job; rewrites the extra-paycheck rows in Savings and the budget.
+     * Refused for the speculative job; deletes it with its Salary Profile entries, then rewrites
+     * the extra-paycheck rows in Savings and the budget.
      */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
@@ -89,7 +91,7 @@ export const jobsProcedures = {
               "Cannot delete the speculative job — it's a permanent peg for Salary Profile what-if scenarios.",
           });
         }
-        await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
+        await deleteJobsAndEntries(ctx.db, [input.id]);
         await materializeExtraPaycheckSavings(ctx.db, ctx.scope.asOf);
         await materializeBudgetIncomeAdjustments(ctx.db, ctx.scope.asOf);
         return { ok: true };

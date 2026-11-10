@@ -7,6 +7,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { deleteJobsAndEntries } from "@/server/data/delete-jobs";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { getAllPeople } from "@/server/data/people";
 import {
@@ -139,17 +140,22 @@ export const peopleProcedures = {
             message:
               "They have Roth basis recorded on an account — remove it first",
           });
-        // The speculative-job peg is not employment history: delete it in the same
-        // transaction so it never blocks the delete via the jobs FK.
+        // The speculative-job peg is not employment history: delete it (and its Salary
+        // Profile entries) in the same transaction so it never blocks the delete via the jobs FK.
         return ctx.db.transaction(async (tx) => {
-          await tx
-            .delete(schema.jobs)
+          const speculative = await tx
+            .select({ id: schema.jobs.id })
+            .from(schema.jobs)
             .where(
               and(
                 eq(schema.jobs.personId, input.id),
                 eq(schema.jobs.isSpeculative, true),
               ),
             );
+          await deleteJobsAndEntries(
+            tx,
+            speculative.map((j) => j.id),
+          );
           // Their per-profile retirement rows and changes by year are
           // settings about them, not history: they go with them.
           await tx
