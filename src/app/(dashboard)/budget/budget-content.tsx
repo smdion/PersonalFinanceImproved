@@ -20,8 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetRetirementNote } from "@/components/budget/budget-retirement-note";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
+import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -78,11 +77,11 @@ export function BudgetContent({
 }) {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
-  const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
+  const [activeColumn, setActiveColumn] = useIntegerSetting(
     SK_BUDGET_ACTIVE_COLUMN,
     0,
   );
-  const [nameColWidth, setNameColWidth] = usePersistedSetting<number>(
+  const [nameColWidth, setNameColWidth] = useIntegerSetting(
     SK_BUDGET_NAME_COL_WIDTH,
     192,
   );
@@ -99,10 +98,10 @@ export function BudgetContent({
     activeProfileId,
   });
 
-  const [activeContributionProfileId] = useProfileIdSetting(
+  const [activeContributionProfileId] = useIntegerSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
   );
-  const [activeSalaryProfileIdSetting] = useProfileIdSetting(
+  const [activeSalaryProfileIdSetting] = useIntegerSetting(
     SK_ACTIVE_SALARY_PROFILE_ID,
   );
   // The active ids, sent explicitly (null while loading = none), shared by

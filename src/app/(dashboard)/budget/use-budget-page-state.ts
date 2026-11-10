@@ -164,9 +164,9 @@ export function useBudgetPageState({
       const onUp = (ev: MouseEvent) => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        const finalWidth = Math.max(
-          120,
-          Math.min(400, startW + (ev.clientX - startX)),
+        // A whole pixel: the width is stored as an integer setting.
+        const finalWidth = Math.round(
+          Math.max(120, Math.min(400, startW + (ev.clientX - startX))),
         );
         setDragWidth(null);
         setNameColWidth(finalWidth);

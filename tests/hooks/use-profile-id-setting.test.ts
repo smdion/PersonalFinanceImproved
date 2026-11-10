@@ -65,3 +65,22 @@ describe("useIntegerSetting", () => {
     ).toBe(column);
   });
 });
+
+describe("useIntegerSetting: the budget's name-column width", () => {
+  it.each([
+    [200, 200],
+    ["200", 200],
+    [192.5, 192],
+  ])(
+    "reads a width stored as %j as %j (a fractional width reads as unset)",
+    (stored, width) => {
+      setQuery("settings.appSettings.list", [
+        { key: "budget_name_col_width", value: stored },
+      ]);
+      expect(
+        renderHook(() => useIntegerSetting("budget_name_col_width", 192)).result
+          .current[0],
+      ).toBe(width);
+    },
+  );
+});
