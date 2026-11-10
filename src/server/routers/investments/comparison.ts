@@ -49,6 +49,7 @@ import {
   loadHoldingSplits,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
+import { calendarYear } from "@/lib/utils/date";
 
 /** Label of the matched-mix entry (key "matched_mix"). */
 const MATCHED_MIX_LABEL = "Your mix, in index funds";
@@ -156,7 +157,7 @@ export const investmentComparisonRouter = createTRPCRouter({
           .limit(1),
       ]);
       if (!simulation.preset?.found || !person) return null;
-      const birthYear = Number(person.dob.slice(0, 4));
+      const birthYear = calendarYear(person.dob);
       const ranges = yearReturnRanges({
         ages: input.years.map((y) => y - birthYear),
         assetClasses: simulation.mcAssetClasses,
