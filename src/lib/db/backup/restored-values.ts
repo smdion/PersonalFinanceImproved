@@ -3,13 +3,13 @@
  * restored row's values as SQL. Rows hold each value as read (node-postgres
  * parsed a jsonb value; SQLite's JSON columns are text).
  */
-import { is, sql, type SQL } from "drizzle-orm";
-import { getTableConfig, PgDialect, PgTable } from "drizzle-orm/pg-core";
-import * as schema from "../schema-pg";
+import { sql, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { queryRaw } from "../compat";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
 import { parsedJson } from "../migrate/converter-rows";
+import { schemaColumnsOfType } from "./schema-columns";
 
 type ColumnRows = { column_name: string; is_nullable: string }[];
 
@@ -19,15 +19,15 @@ export type JsonbColumn = { notNull: boolean; asText?: true };
 
 /** Every JSON column, by table, from the schema (as SQLite's JSON text). */
 const SCHEMA_JSON_COLUMNS = new Map(
-  Object.values<unknown>(schema)
-    .filter((t) => is(t, PgTable))
-    .map((t) => {
-      const table = getTableConfig(t);
-      const columns = table.columns
-        .filter((c) => c.getSQLType() === "jsonb")
-        .map((c) => [c.name, { notNull: c.notNull, asText: true }] as const);
-      return [table.name, new Map<string, JsonbColumn>(columns)] as const;
-    }),
+  [...schemaColumnsOfType((type) => type === "jsonb")].map(
+    ([table, columns]) =>
+      [
+        table,
+        new Map<string, JsonbColumn>(
+          columns.map((c) => [c.name, { notNull: c.notNull, asText: true }]),
+        ),
+      ] as const,
+  ),
 );
 
 /** A table's JSON columns as `sourceDialect`'s rows are written here: jsonb

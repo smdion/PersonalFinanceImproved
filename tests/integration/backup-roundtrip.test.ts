@@ -134,6 +134,31 @@ describe("Backup Round-Trip (real version-logic)", () => {
     expect(await snapshotTables(b.rawDb)).toEqual(before);
   });
 
+  it("a backup whose timestamps are PostgreSQL text imports with every timestamp kept", async () => {
+    const before = await snapshotTables(a.rawDb);
+    const backup = JSON.parse(
+      JSON.stringify(await exportBackup(a.rawDb, { asAdmin: true })),
+    ) as BackupData;
+    // timestamptz text with its offset, and every other one as a plain
+    // `timestamp` column wrote it (no offset, UTC).
+    let converted = 0;
+    for (const rows of Object.values(backup.tables))
+      for (const row of rows as Record<string, unknown>[])
+        for (const [column, value] of Object.entries(row))
+          if (/_at$/.test(column) && typeof value === "number") {
+            const text = new Date(value * 1000)
+              .toISOString()
+              .replace("T", " ")
+              .replace(".000Z", "");
+            row[column] = converted % 2 === 0 ? `${text}+00` : text;
+            converted++;
+          }
+    expect(converted).toBeGreaterThan(1);
+
+    await importBackup(b.rawDb, backup, asAdmin);
+    expect(await snapshotTables(b.rawDb)).toEqual(before);
+  });
+
   it("import brings back reference rows the backup predates (a newer tax year)", async () => {
     const backup = await exportBackup(a.rawDb, { asAdmin: true });
     const years = (backup.tables.tax_params as { tax_year: number }[]).map(
