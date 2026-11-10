@@ -20,6 +20,7 @@ import {
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { CapContext, CapRow } from "./contribution-caps.types";
+import { holdToAnnualAdditions } from "./annual-additions";
 
 type CapReason =
   /** Cut to the IRS limit. */
@@ -225,8 +226,7 @@ export function capContributionsByLimitGroup(
   const employeeOf = (r: CapRow) =>
     Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
   const kept = rows.map(employeeOf);
-  /** Each row's factor on its configured employee money, for employer
-   *  money that moves with it. */
+  /** Each row's factor on its configured employee money (employer money moves with it). */
   const factorOf = rows.map(() => 1);
   const limitOf: (number | null)[] = rows.map(() => null);
   const maxOf: (number | null)[] = rows.map(() => null);
@@ -401,8 +401,8 @@ export function capContributionsByLimitGroup(
     }
   }
 
-  // Compensation bound (IRA), on the capped pre-tax money above: each
-  // person's own compensation, or the couple's combined for a spousal IRA.
+  holdToAnnualAdditions(rows, ctx, { kept, factorOf, maxOf }); // 415(c), per employer
+  // Compensation bound (IRA) on the capped pre-tax money: own pay, or the couple's for a spousal IRA.
   const compensation = new Map(
     ctx.people.map((p) => [
       p.id,

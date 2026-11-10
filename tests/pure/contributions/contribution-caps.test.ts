@@ -394,6 +394,44 @@ describe("capContributionsByLimitGroup — employer money over the limit", () =>
   });
 });
 
+describe("capContributionsByLimitGroup — 415(c) at two employers", () => {
+  const lim415 = {
+    "401k_employee_limit": 24500,
+    "401k_catchup_limit": 8000,
+    "401k_super_catchup_limit": 11250,
+    "401k_total_additions_limit": 72000,
+  };
+  /** A $10,000 deferral at a $200,000 job with `employerAnnual` of employer money. */
+  const plan = (job: number, employerAnnual: number) =>
+    row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10000,
+      employerAnnual,
+      employer: { key: job, pay: 200000 },
+    });
+  const a = plan(1, 60000);
+  const b = plan(2, 65000);
+  // A: 72,000 − 60,000 = 12,000 fits; B: 72,000 − 65,000 = 7,000 kept, 3,000 over. Each row's
+  // most is its own employer's room plus the $10,000 configured at the other employer.
+  it.each([
+    ["A first", [a, b]],
+    ["B first", [b, a]],
+  ])("the same caps whichever employer comes first (%s)", (_, rows) => {
+    const r = cap(rows, [person(1, 40, 400000)], "Single", lim415);
+    expect(r.get(a.id)!).toMatchObject({
+      cappedAnnual: 10000,
+      overBy: 0,
+      maxEmployee: 22000,
+    });
+    expect(r.get(b.id)!).toMatchObject({
+      cappedAnnual: 7000,
+      overBy: 3000,
+      maxEmployee: 17000,
+    });
+  });
+});
+
 describe("capContributionsByLimitGroup — spousal IRA and compensation", () => {
   it("funds a non-earning spouse's IRA from the other spouse's pay", () => {
     const r = row({ personId: 2, accountType: "ira", regularAnnual: 6000 });

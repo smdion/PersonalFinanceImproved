@@ -11,12 +11,12 @@ export type CapRow = {
   regularAnnual: number;
   /** Employee money from bonus checks over the tax year. */
   bonusAnnual: number;
-  /** Employer money over the year at the configured contribution (counts toward the limit when
-   *  `matchCountsTowardLimit`); CapContext.employerAt, when given, says how it moves with a cut. */
+  /** Employer money over the year at the configured contribution (counts toward 415(c), and toward
+   *  the group's limit when `matchCountsTowardLimit`); CapContext.employerAt says how it moves. */
   employerAnnual: number;
   /** Pre-tax payroll money: off the person's W-2 box 1 pay, which bounds an IRA. */
   reducesCompensation: boolean;
-  /** The plan's employer and its gross pay; none = no employer known. */
+  /** The plan's employer and its gross pay; none = no employer known (no 415(c) step). */
   employer?: PlanEmployer;
 };
 

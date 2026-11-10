@@ -70,7 +70,6 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Some composition that needs I/O still lives in router procedures,** until it moves into `src/server/services/`: 11 procedures run over 100 lines, the largest the three net-worth reads (`computeSummary`, `listSnapshots`, `computeComparison`; the first and last wait for v0.11's balance-sheet service), and routers hold 52 `.transaction(` calls. No router imports another area's router (`no-router-to-router`). Don't add more.
 - **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/accounts/roth-basis-tracking.ts`).
-- **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
 - **Over-limit contributions overflow only in some later years,** until they overflow in every year (decision C4, v0.11). Money configured over this year's limit is capped and goes nowhere.
 - **RMDs aren't taken before withdrawals start,** until each owner's RMD is taken from their RMD age every year (decision D5, v0.11). A gap year warns; a working year doesn't.
 - **A Portfolio-parented Traditional account's RMD isn't taken from it,** until fixed (decision D12.7, v0.11). Its part shows as the owner's RMD shortfall.

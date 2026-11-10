@@ -126,15 +126,12 @@ function d2Household(birthDate: string) {
 describe("limits/D2-45: 415(c) dollar leg, under 50", () => {
   // Born 1980-01-15: 46 today and at Dec 31 2026. All deferrals count as
   // annual additions under 50 (Reg. 1.414(v)-1(a)(1)): employer 60,000
-  // leaves 72,000 − 60,000 = 12,000 of deferrals. Today Ledgr keeps 24,500
-  // and 60,000 (84,500 in all) and allows the save (verdict D2 repro).
+  // leaves 72,000 − 60,000 = 12,000 of deferrals.
   const run = d2Household("1980-01-15");
-  xfail({
-    id: "limits/D2-45 [LIM-07]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D2)',
-    run,
-    expected: { employee: 12_000, employer: 60_000 },
-    today: { employee: 24_500, employer: 60_000 },
+  it("limits/D2-45 [LIM-07] employee 12,000, employer 60,000", async () => {
+    const got = await run();
+    cents(got.employee, 12_000);
+    cents(got.employer, 60_000);
   });
 });
 
@@ -142,14 +139,12 @@ describe("limits/D2-50: 415(c) dollar leg, 50+", () => {
   // Born 1974-01-15: 52. Deferrals past 415(c) can be catch-up at 50+
   // (Reg. 1.414(v)-1(b)(1)(i)), outside annual additions
   // (414(v)(3)(A)): 12,000 under 415(c) + 8,000 catch-up = 20,000, within
-  // 402(g) + catch-up (32,500). Today the same 24,500 + 60,000.
+  // 402(g) + catch-up (32,500).
   const run = d2Household("1974-01-15");
-  xfail({
-    id: "limits/D2-50 [LIM-07]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D2)',
-    run,
-    expected: { employee: 20_000, employer: 60_000 },
-    today: { employee: 24_500, employer: 60_000 },
+  it("limits/D2-50 [LIM-07] employee 20,000, employer 60,000", async () => {
+    const got = await run();
+    cents(got.employee, 20_000);
+    cents(got.employer, 60_000);
   });
 });
 

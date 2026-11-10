@@ -213,26 +213,21 @@ describe("limits: deferrals and age", () => {
     cents(deferralLimit(2025, 1961), 31_000);
   });
 
-  // C14: deferrals can't pass pay. 2026, born 1971 (55), pay 10,000, a
-  // plan that allows all of pay, 24,500 asked. Total deferrals never pass
-  // compensation: 415(c)(1)(B) "100 percent of the participant's
-  // compensation", and for the catch-up leg 414(v)(2)(A)(ii) (compensation
-  // less other deferrals). min(32,500, 10,000) = 10,000. Today the cap
-  // pass keeps 24,500 (the router repro's net check is −587.11).
-  xfail({
-    id: "limits/C14 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D1)',
-    run: () => {
-      const r = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 24_500,
-      });
-      return cap(2026, [person(1, 2026, 55, 10_000)], [r]).get(r.id)!
-        .cappedAnnual;
-    },
-    expected: 10_000,
-    today: 24_500,
+  it("limits/C14 [LIM-06] deferrals can't pass pay (2026, 55, pay 10,000, 24,500 asked): 10,000", () => {
+    // A plan that allows all of pay. Total deferrals never pass
+    // compensation: 415(c)(1)(B) "100 percent of the participant's
+    // compensation", and for the catch-up leg 414(v)(2)(A)(ii)
+    // (compensation less other deferrals). min(32,500, 10,000) = 10,000.
+    const r = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 24_500,
+      employer: { key: 1, pay: 10_000 },
+    });
+    cents(
+      cap(2026, [person(1, 2026, 55, 10_000)], [r]).get(r.id)!.cappedAnnual,
+      10_000,
+    );
   });
 });
 
@@ -275,31 +270,27 @@ describe("limits: several employers", () => {
     cents(roomAtB(45, 24_500), 0);
   });
 
-  // C20: each plan is bound by its own employer's pay. 2026, 52, two
-  // jobs paying 10,000 each, 32,500 asked at each. 415(c)(1)(B) per
-  // employer: 10,000 + 10,000 = 20,000, under the 32,500 personal cap.
-  // Ledgr has wages per person, so it pools them (20,000) and holds the
-  // two rows to the 402(g) cap only: 32,500 (derived; the key gives no
-  // Today figure).
-  xfail({
-    id: "limits/C20 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D1b)',
-    run: () => {
-      const a = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 32_500,
-      });
-      const b = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 32_500,
-      });
-      const capped = cap(2026, [person(1, 2026, 52, 20_000)], [a, b]);
-      return capped.get(a.id)!.cappedAnnual + capped.get(b.id)!.cappedAnnual;
-    },
-    expected: 20_000,
-    today: 32_500,
+  it("limits/C20 [LIM-06] each plan bound by its own employer's pay (2026, 52, two jobs at 10,000, 32,500 asked at each): 20,000", () => {
+    // 415(c)(1)(B) per employer: 10,000 + 10,000 = 20,000, under the
+    // 32,500 personal cap; no catch-up fits at either (414(v)(2)(A)(ii):
+    // pay less the other deferrals is 0).
+    const a = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 32_500,
+      employer: { key: 1, pay: 10_000 },
+    });
+    const b = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 32_500,
+      employer: { key: 2, pay: 10_000 },
+    });
+    const capped = cap(2026, [person(1, 2026, 52, 20_000)], [a, b]);
+    cents(
+      capped.get(a.id)!.cappedAnnual + capped.get(b.id)!.cappedAnnual,
+      20_000,
+    );
   });
 });
 
@@ -369,37 +360,34 @@ describe("limits: total additions and mega backdoor room", () => {
     cents(megaRoom(2026, 50_000, 24_500, 5_000).room, 20_500);
   });
 
-  // C40: 415(c) excess. 2026, 45, pay 20,000, deferrals 20,000, employer
-  // 5,000. Annual additions 25,000 against min(72,000, 20,000) = 20,000:
-  // 5,000 over (415(c)(1)(B)). The cap pass has no 415(c) step, so
-  // nothing is over today (verdict D2: 0).
-  xfail({
-    id: "limits/C40 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D2)',
-    run: () => {
-      const r = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 20_000,
-        employerAnnual: 5_000,
-      });
-      return cap(2026, [person(1, 2026, 45, 20_000)], [r]).get(r.id)!.overBy;
-    },
-    expected: 5_000,
-    today: 0,
+  it("limits/C40 [LIM-06] 415(c) excess (2026, 45, pay 20,000, deferrals 20,000, employer 5,000): 5,000", () => {
+    // Annual additions 25,000 against min(72,000, 20,000) = 20,000:
+    // 5,000 over (415(c)(1)(B)), cut from the employee money.
+    const r = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 20_000,
+      employerAnnual: 5_000,
+      employer: { key: 1, pay: 20_000 },
+    });
+    cents(
+      cap(2026, [person(1, 2026, 45, 20_000)], [r]).get(r.id)!.overBy,
+      5_000,
+    );
   });
 
   it("limits/C41 [LIM-06] over 415(c) as catch-up (2026, 52, pay 20,000, deferrals 20,000, employer 5,000): excess 0", () => {
     // At 52, the 5,000 of deferrals past 415(c) are catch-up (Reg.
     // 1.414(v)-1(b)(1)(i), 415(c) is an applicable limit): additions
     // 20,000 ≤ 20,000, and catch-up 5,000 ≤ 414(v)(2)(A)(ii)'s
-    // 20,000 − 15,000. Nothing over. Ledgr agrees only because it has no
-    // 415(c) step (D1); kept as the guard on the catch-up side of the fix.
+    // 20,000 − 15,000. Nothing over: the guard on the catch-up side of
+    // the 415(c) step.
     const r = row({
       personId: 1,
       accountType: "401k",
       regularAnnual: 20_000,
       employerAnnual: 5_000,
+      employer: { key: 1, pay: 20_000 },
     });
     cents(cap(2026, [person(1, 2026, 52, 20_000)], [r]).get(r.id)!.overBy, 0);
   });
