@@ -32,7 +32,7 @@ import { computePaycheckSummary } from "@/server/services/paycheck/summary";
 
 export const zBudgetActiveSummaryInput = z
   .object({
-    selectedColumn: z.number().optional(),
+    selectedColumn: z.number().int().min(0).optional(),
     profileId: z.number().optional(),
     /** The page's own Contribution/Salary picks (What-If); absent =
      *  the active profiles. */
