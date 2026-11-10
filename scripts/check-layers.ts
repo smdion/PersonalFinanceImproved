@@ -13,7 +13,9 @@
  *     A break that moves to another edge without a rename (a deleted barrel,
  *     a cycle reported on a different pair) is named by a commit trailer
  *     `Layers-renamed: <from> -> <to> => <from> -> <to>`: it pairs one entry
- *     gone from the ref's list with one new entry of the same rule.
+ *     gone from the ref's list with one new entry of the same rule, when the
+ *     new edge's cycle holds the old edge's files (`no-circular`), or the
+ *     edges share a file or the commit deleted or renamed an old one.
  *
  * Usage: pnpm check:layers [--base origin/main] [--prune]
  */
@@ -31,6 +33,8 @@ export interface LayerViolation {
   rule: string;
   from: string;
   to: string;
+  /** A `no-circular` violation's cycle, as dependency-cruiser reports it. */
+  cycle?: string[];
 }
 
 const key = (v: LayerViolation) => `${v.rule}\u0000${v.from}\u0000${v.to}`;
@@ -54,6 +58,8 @@ export interface LayerBase {
 export interface EntryMove {
   from: { from: string; to: string };
   to: { from: string; to: string };
+  /** Files the trailer's commit deleted or renamed away (old paths). */
+  gone?: string[];
 }
 
 const MOVE_TRAILER =
@@ -74,9 +80,37 @@ export function renameMove(
 ): EntryMove {
   const at = (p: string) => renames.get(p) ?? p;
   return {
+    ...m,
     from: { from: at(m.from.from), to: at(m.from.to) },
     to: { from: at(m.to.from), to: at(m.to.to) },
   };
+}
+
+/**
+ * Why a trailer may not pair its two edges (todo:360): a `no-circular`
+ * break re-reported on another pair keeps the old edge's files in the new
+ * edge's cycle at HEAD; any other break shares an endpoint with the old
+ * edge, or the trailer's commit deleted or renamed one of the old edge's
+ * files. Undefined: it may.
+ */
+export function unsoundMove(
+  m: EntryMove,
+  rule: string,
+  found: LayerViolation[],
+): string | undefined {
+  const old = [m.from.from, m.from.to];
+  const edge = `${m.from.from} -> ${m.from.to} => ${m.to.from} -> ${m.to.to}`;
+  if (rule === "no-circular") {
+    const now = found.find(
+      (v) => v.rule === rule && v.from === m.to.from && v.to === m.to.to,
+    );
+    const cycle = new Set([m.to.from, ...(now?.cycle ?? [])]);
+    if (old.every((f) => cycle.has(f))) return undefined;
+    return `Layers-renamed: ${edge}: the new edge's cycle doesn't hold ${old.filter((f) => !cycle.has(f)).join(" and ")}`;
+  }
+  const shared = old.some((f) => f === m.to.from || f === m.to.to);
+  if (shared || old.some((f) => m.gone?.includes(f))) return undefined;
+  return `Layers-renamed: ${edge}: the edges share no file, and the commit deleted or renamed neither old file`;
 }
 
 /**
@@ -98,7 +132,10 @@ function entryMovesSince(baseRef: string): EntryMove[] {
     .flatMap((record) => {
       const [sha, message = ""] = record.split("\x00");
       const renames = renamesSince(sha!);
-      return parseEntryMoves(message).map((m) => renameMove(m, renames));
+      const gone = goneIn(sha!);
+      return parseEntryMoves(message).map((m) =>
+        renameMove({ ...m, gone }, renames),
+      );
     });
 }
 
@@ -113,6 +150,7 @@ export function applyEntryMoves(
   entries: LayerViolation[],
   known: LayerViolation[],
   moves: EntryMove[],
+  found: LayerViolation[] = [],
 ): { entries: LayerViolation[]; errors: string[] } {
   const knownKeys = new Set(known.map(key));
   const out = [...entries];
@@ -128,6 +166,11 @@ export function applyEntryMoves(
       errors.push(
         `Layers-renamed: ${m.from.from} -> ${m.from.to} names no base entry that is gone from ${KNOWN_FILE}`,
       );
+      continue;
+    }
+    const unsound = unsoundMove(m, out[i]!.rule, found);
+    if (unsound) {
+      errors.push(unsound);
       continue;
     }
     out[i] = { rule: out[i]!.rule, from: m.to.from, to: m.to.to };
@@ -146,7 +189,7 @@ export function compareWithKnown(
   const errors: string[] = [];
   let baseEntries = base?.entries;
   if (base?.moved?.length) {
-    const applied = applyEntryMoves(base.entries, known, base.moved);
+    const applied = applyEntryMoves(base.entries, known, base.moved, found);
     baseEntries = applied.entries;
     errors.push(...applied.errors);
   }
@@ -205,9 +248,27 @@ export function renamesSince(baseRef: string, cwd = ROOT) {
   );
 }
 
+/** The old paths a commit deleted or renamed away. */
+function goneIn(sha: string): string[] {
+  return execFileSync(
+    "git",
+    ["show", "-M", "--name-status", "--format=", sha],
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  )
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter(([status]) => /^[DR]/.test(status ?? ""))
+    .map(([, from]) => from!);
+}
+
 interface CruiseOutput {
   summary: {
-    violations: { from: string; to: string; rule: { name: string } }[];
+    violations: {
+      from: string;
+      to: string;
+      rule: { name: string };
+      cycle?: ({ name: string } | string)[];
+    }[];
   };
 }
 
@@ -232,6 +293,9 @@ function cruise(): LayerViolation[] {
     rule: v.rule.name,
     from: v.from,
     to: pkg(v.to),
+    ...(v.cycle && {
+      cycle: v.cycle.map((c) => (typeof c === "string" ? c : c.name)),
+    }),
   }));
 }
 

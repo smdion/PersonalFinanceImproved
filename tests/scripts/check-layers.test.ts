@@ -16,6 +16,8 @@ import {
   renameMove,
   renameEntries,
   renamesSince,
+  unsoundMove,
+  type EntryMove,
   type LayerBase,
   type LayerViolation,
 } from "../../scripts/check-layers";
@@ -223,5 +225,52 @@ describe("a trailer whose files move later", () => {
         to: "src/lib/pure/engine/types/c.ts",
       },
     });
+  });
+});
+
+describe("a sound Layers-renamed (todo:360)", () => {
+  const at = (n: string) => `src/lib/pure/${n}.ts`;
+  const [A, B, C, X, Y] = [at("a"), at("b"), at("c"), at("x"), at("y")];
+  const move = (gone?: string[]): EntryMove => ({
+    from: { from: A, to: B },
+    to: { from: X, to: Y },
+    ...(gone && { gone }),
+  });
+
+  it("refuses swapping a fixed break for an unrelated one of the same rule", () => {
+    expect(unsoundMove(move(), RULE, [])).toMatch(/share no file/);
+    const { errors } = applyEntryMoves(
+      [entry(A, B)],
+      [entry(X, Y)],
+      [move()],
+      [entry(X, Y)],
+    );
+    expect(errors).toHaveLength(1);
+  });
+
+  it("pairs edges that share an endpoint, or whose old file the commit removed", () => {
+    expect(
+      unsoundMove({ ...move(), to: { from: A, to: C } }, RULE, []),
+    ).toBeUndefined();
+    expect(unsoundMove(move([B]), RULE, [])).toBeUndefined();
+  });
+
+  it("pairs no-circular edges only when the new edge's cycle holds the old edge's files", () => {
+    const circular = (cycle: string[]): LayerViolation => ({
+      rule: "no-circular",
+      from: X,
+      to: Y,
+      cycle,
+    });
+    expect(
+      unsoundMove(move(), "no-circular", [circular([Y, A, B, X])]),
+    ).toBeUndefined();
+    expect(unsoundMove(move(), "no-circular", [circular([Y, A, X])])).toMatch(
+      /cycle doesn't hold src\/lib\/pure\/b\.ts/,
+    );
+    // Sharing an endpoint isn't enough for a cycle: any pair in it can be reported.
+    expect(
+      unsoundMove({ ...move(), to: { from: A, to: C } }, "no-circular", []),
+    ).toMatch(/cycle doesn't hold/);
   });
 });
