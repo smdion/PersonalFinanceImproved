@@ -4,7 +4,12 @@
  * 1900–2100, whole years).
  */
 import { describe, it, expect } from "vitest";
-import { zCalendarDate, zMonthKey, zYear } from "@/lib/utils/zod-fields";
+import {
+  zCalendarDate,
+  zMoneyNumber,
+  zMonthKey,
+  zYear,
+} from "@/lib/utils/zod-fields";
 
 const CASES: [string, boolean][] = [
   ["2026-11-05", true],
@@ -71,5 +76,22 @@ describe("zMonthKey", () => {
     ["2026-11-01", false],
   ])("%j accepted: %s", (value, accepted) => {
     expect(zMonthKey.safeParse(value).success).toBe(accepted);
+  });
+});
+
+describe("zMoneyNumber", () => {
+  it.each([
+    [0, true],
+    [-250.5, true],
+    [1234.56, true],
+    [999_999_999_999.99, true],
+    [-999_999_999_999.99, true],
+    [1e12, false],
+    [-1e12, false],
+    [1e300, false],
+    [Number.POSITIVE_INFINITY, false],
+    [Number.NaN, false],
+  ])("%d accepted: %s", (amount, accepted) => {
+    expect(zMoneyNumber.safeParse(amount).success).toBe(accepted);
   });
 });

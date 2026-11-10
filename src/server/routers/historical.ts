@@ -3,7 +3,7 @@ import { calendarYear } from "@/lib/utils/date";
 import { and, asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
-import { zYear } from "@/lib/utils/zod-fields";
+import { zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { upsertHistoricalNote } from "@/server/data/historical-notes";
@@ -123,13 +123,13 @@ export const historicalRouter = createTRPCRouter({
       z.object({
         year: zYear,
         fields: z.object({
-          grossIncome: z.number().optional(),
-          combinedAgi: z.number().optional(),
-          ssaEarnings: z.number().optional(),
+          grossIncome: zMoneyNumber.optional(),
+          combinedAgi: zMoneyNumber.optional(),
+          ssaEarnings: zMoneyNumber.optional(),
           effectiveTaxRate: z.number().optional(),
-          taxesPaid: z.number().optional(),
-          propertyTaxes: z.number().optional(),
-          otherLiabilities: z.number().optional(),
+          taxesPaid: zMoneyNumber.optional(),
+          propertyTaxes: zMoneyNumber.optional(),
+          otherLiabilities: zMoneyNumber.optional(),
         }),
       }),
     )
@@ -174,8 +174,8 @@ export const historicalRouter = createTRPCRouter({
       z.object({
         personId: z.number().int(),
         year: zYear,
-        salary: z.number().optional(),
-        bonus: z.number().optional(),
+        salary: zMoneyNumber.optional(),
+        bonus: zMoneyNumber.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

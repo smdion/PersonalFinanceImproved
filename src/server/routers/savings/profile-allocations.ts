@@ -1,5 +1,6 @@
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
+import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -140,7 +141,7 @@ export const profileAllocationProcedures = {
           goalId: z.number().int(),
           profileId: z.number().int(),
           allocationPercent: z.number().min(0).max(100).nullable(),
-          monthlyContribution: z.number().min(0),
+          monthlyContribution: zMoneyNumber.min(0),
         }),
       )
       .mutation(async ({ ctx, input }) => {

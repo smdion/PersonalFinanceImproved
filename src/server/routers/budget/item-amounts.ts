@@ -1,6 +1,7 @@
 import { assertWithinIrsLimits } from "@/server/services/contributions/caps";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
+import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -45,7 +46,7 @@ export const itemAmountProcedures = {
       z.object({
         id: z.number().int(),
         colIndex: z.number().int(),
-        amount: z.number(),
+        amount: zMoneyNumber,
         selection: payProfileSelectionSchema.optional(),
       }),
     )
@@ -117,7 +118,7 @@ export const itemAmountProcedures = {
           z.object({
             id: z.number().int(),
             colIndex: z.number().int(),
-            amount: z.number(),
+            amount: zMoneyNumber,
           }),
         ),
         selection: payProfileSelectionSchema.optional(),

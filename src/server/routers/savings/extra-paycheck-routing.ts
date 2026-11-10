@@ -1,6 +1,6 @@
 import { eq, asc, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import { zMonthKey } from "@/lib/utils/zod-fields";
+import { zMoneyNumber, zMonthKey } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -116,7 +116,10 @@ export const extraPaycheckRoutingProcedures = {
           yearlyGrowth: z
             .record(
               z.string(),
-              z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+              z.object({
+                type: z.enum(["pct", "dollar"]),
+                value: zMoneyNumber,
+              }),
             )
             .optional(),
         }),
@@ -199,7 +202,7 @@ export const extraPaycheckRoutingProcedures = {
           jobId: z.number().int(),
           yearlyGrowth: z.record(
             z.string(),
-            z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+            z.object({ type: z.enum(["pct", "dollar"]), value: zMoneyNumber }),
           ),
         }),
       )

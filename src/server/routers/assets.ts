@@ -3,7 +3,7 @@ import { calendarYear } from "@/lib/utils/date";
 import { desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
-import { zYear } from "@/lib/utils/zod-fields";
+import { zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { upsertHistoricalNote } from "@/server/data/historical-notes";
@@ -27,8 +27,8 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         year: zYear,
         fields: z.object({
-          cash: z.number().optional(),
-          houseValue: z.number().optional(),
+          cash: zMoneyNumber.optional(),
+          houseValue: zMoneyNumber.optional(),
         }),
       }),
     )
@@ -68,7 +68,7 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         year: zYear,
         description: z.string().min(1),
-        cost: z.number(),
+        cost: zMoneyNumber,
         note: z.string().optional(),
       }),
     )
@@ -87,7 +87,7 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         description: z.string().min(1).optional(),
-        cost: z.number().optional(),
+        cost: zMoneyNumber.optional(),
         note: z.string().optional(),
       }),
     )
@@ -123,7 +123,7 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1),
         year: zYear,
-        value: z.number(),
+        value: zMoneyNumber,
         note: z.string().optional(),
       }),
     )
@@ -211,8 +211,8 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         loanId: z.number(),
         year: zYear,
-        assessedValue: z.number().nullable().optional(),
-        taxAmount: z.number(),
+        assessedValue: zMoneyNumber.nullable().optional(),
+        taxAmount: zMoneyNumber,
         note: z.string().nullable().optional(),
       }),
     )

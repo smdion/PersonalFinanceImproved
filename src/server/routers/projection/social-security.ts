@@ -4,6 +4,7 @@
  * `perPersonSettings` (an unknown id is a BAD_REQUEST).
  */
 import { z } from "zod/v4";
+import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { sweepClaimingAges } from "@/lib/pure/retirement/social-security";
@@ -33,7 +34,7 @@ export const socialSecurityRouter = createTRPCRouter({
     .input(
       z.strictObject({
         personId: z.number().int(),
-        pia: z.number().positive(),
+        pia: zMoneyNumber.positive(),
         ages: z.array(z.number().int().min(62).max(70)).min(1).optional(),
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,

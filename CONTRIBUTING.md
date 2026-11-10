@@ -132,7 +132,7 @@ One behavior per commit, and the message says why. `.husky/commit-msg` and a CI 
 
 ### Rules
 
-1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/utils/zod-fields` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
+1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/utils/zod-fields` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations. A dollar amount a request sends as a number (budget amounts, assets, historical figures, JSON columns) uses `zMoneyNumber` — never bare `z.number()`.
 2. **Account type uses config enum.** Every mutation that accepts `accountType` must use `z.enum(accountCategoryEnum())`. No `z.string().min(1)` on account type fields.
 3. **Shared schemas for shared tables.** When multiple mutations write to the same table, extract the field validators into a shared schema or compose from shared field definitions. Don't define independent schemas with different constraints.
 4. **Years and dates use the shared fields.** A year input is `zYear` (whole years, 1900–2100: decision B6), a date `zCalendarDate` (a day that exists, `YYYY-MM-DD`), a month `zMonthKey` (`YYYY-MM`), all from `@/lib/utils/zod-fields` — never bare `z.number()` or a shape-only regex. Router inputs only: a parser of stored JSON keeps reading what an older version wrote.

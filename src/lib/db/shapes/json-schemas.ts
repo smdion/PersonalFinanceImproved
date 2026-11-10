@@ -12,7 +12,7 @@ import {
   employerMatchTypeSchema,
 } from "@/lib/config/enum-values.schema";
 import { ROTH_IRA_ROUTE_VALUES } from "@/lib/config/enum-values";
-import { zDecimal, zYear } from "@/lib/utils/zod-fields";
+import { zDecimal, zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
 import { w4FilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { isCalendarDate } from "@/lib/utils/date";
 
@@ -159,7 +159,7 @@ export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
 
 const yearAdjustmentSchema = z.object({
   year: zYear,
-  monthlyExpenses: z.number(),
+  monthlyExpenses: zMoneyNumber,
   profileId: z.number().optional(),
   budgetColumn: z.number().optional(),
   notes: z.string().optional(),
@@ -167,12 +167,12 @@ const yearAdjustmentSchema = z.object({
 
 const largePurchaseSchema = z.object({
   name: z.string(),
-  purchasePrice: z.number(),
+  purchasePrice: zMoneyNumber,
   downPaymentPercent: z.number().optional(),
   loanRate: z.number().optional(),
   loanTermYears: z.number().optional(),
-  ongoingMonthlyCost: z.number().optional(),
-  saleProceeds: z.number().optional(),
+  ongoingMonthlyCost: zMoneyNumber.optional(),
+  saleProceeds: zMoneyNumber.optional(),
   purchaseYear: zYear,
 });
 
@@ -181,10 +181,10 @@ const largePurchaseSchema = z.object({
 export const relocationScenarioParamsSchema = z.object({
   currentProfileId: z.number(),
   currentBudgetColumn: z.number(),
-  currentExpenseOverride: z.number().nullable(),
+  currentExpenseOverride: zMoneyNumber.nullable(),
   relocationProfileId: z.number(),
   relocationBudgetColumn: z.number(),
-  relocationExpenseOverride: z.number().nullable(),
+  relocationExpenseOverride: zMoneyNumber.nullable(),
   yearAdjustments: z.array(yearAdjustmentSchema),
   largePurchases: z.array(largePurchaseSchema),
   currentContributionProfileId: z.number().nullable(),

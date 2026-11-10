@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, savingsProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { zCalendarDate } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zMoneyNumber } from "@/lib/utils/zod-fields";
 
 export const transferProcedures = {
   // ══ TRANSFERS (paired planned transactions) ══
@@ -18,7 +18,7 @@ export const transferProcedures = {
           fromGoalId: z.number().int(),
           toGoalId: z.number().int(),
           transactionDate: zCalendarDate,
-          amount: z.number().positive(),
+          amount: zMoneyNumber.positive(),
           description: z.string().min(1),
           isRecurring: z.boolean().default(false),
           recurrenceMonths: z.number().int().min(1).nullable().optional(),

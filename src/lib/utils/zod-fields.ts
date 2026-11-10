@@ -17,6 +17,14 @@ export const zFraction = zDecimal.refine(
   { message: "Must be a fraction between 0 and 1 (0.06 for 6%)" },
 );
 
+/** The largest dollar figure a money column holds (decimal(14,2)). */
+const MONEY_LIMIT = 999_999_999_999.99;
+
+/** A dollar amount a request sends as a number: finite and within what a
+ *  money column holds, so nothing past it reaches a JSON column unchecked.
+ *  For router inputs, never for stored JSON. */
+export const zMoneyNumber = z.number().min(-MONEY_LIMIT).max(MONEY_LIMIT);
+
 /** A calendar year a request may name, 1900–2100: one range for every
  *  year field. For router inputs, never for stored JSON. */
 export const zYear = z.number().int().min(1900).max(2100);

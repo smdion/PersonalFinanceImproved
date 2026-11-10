@@ -54,6 +54,10 @@ describe("mutations no other router test calls", () => {
     await expect(
       ctx.caller.assets.updateAsset({ year: 2019, fields: { cash: 1 } }),
     ).rejects.toThrow(/No year-end history found for 2019/);
+    // A dollar figure past what a money column holds is refused.
+    await expect(
+      ctx.caller.assets.updateAsset({ year: 2025, fields: { cash: 1e15 } }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     // A year outside 1900–2100, or not whole, is refused before any read.
     for (const year of [2200, 2025.5])
       await expect(
