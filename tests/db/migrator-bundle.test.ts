@@ -45,6 +45,7 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/v0106-retirement-people.ts",
         "src/lib/db/migrate/v0106-budget-amounts.ts",
         "src/lib/db/migrate/v0106-net-pay-snapshot.ts",
+        "src/lib/db/migrate/v0106-credentials.ts",
         "src/lib/db/backup/version-tables.ts",
         "src/lib/utils/match-rate.ts",
         "src/lib/crypto-envelope.ts",

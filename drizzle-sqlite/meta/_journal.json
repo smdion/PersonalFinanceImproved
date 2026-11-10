@@ -134,6 +134,13 @@
       "when": 1794263509044,
       "tag": "0018_v0106_money",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1794269620333,
+      "tag": "0019_v0106_credentials",
+      "breakpoints": true
     }
   ]
 }

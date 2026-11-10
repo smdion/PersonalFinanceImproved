@@ -56,7 +56,8 @@ describe("the money tag's per-person retirement rows", () => {
       "retirement_profile_people",
     ]);
     expect(BEFORE).toBe("0017_v0102_match_value");
-    expect(Object.keys(MIGRATION_CONVERTERS).at(-1)).toBe(MONEY_TAG);
+    const tags = Object.keys(MIGRATION_CONVERTERS);
+    expect(tags[tags.indexOf(MONEY_TAG) - 1]).toBe(BEFORE);
   });
 
   it("adds a row for each settings row without one, with what it read, and a replay adds none", () => {

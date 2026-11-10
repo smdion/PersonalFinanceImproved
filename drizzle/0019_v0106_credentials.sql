@@ -1,0 +1,6 @@
+-- v0.10.6 credentials, syncs and links. No schema change: the converters in
+-- src/lib/db/migrate/v0106-*.ts run after this SQL, as restore runs them on
+-- an older backup.
+-- Credentials: every api_connections.config (and its copies in stored
+-- versions) not held as an encrypted envelope is encrypted with
+-- ENCRYPTION_KEY; one held as text is unwrapped, never encrypted twice.

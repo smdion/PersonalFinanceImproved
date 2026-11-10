@@ -48,6 +48,7 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
     parsed: "nowhere",
     reader: "lib/crypto.ts#readMaybeEncrypted",
     fallbacks: "lib/crypto.ts",
+    note: "an encrypted envelope; the credentials migration encrypts plaintext",
   },
   "api_connections.skipped_category_ids": {
     shape: `${SCHEMAS}#skippedCategoryIdsSchema`,

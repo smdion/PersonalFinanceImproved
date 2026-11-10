@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0018_v0106_money`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0019_v0106_credentials`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -29,6 +29,7 @@
 | 0016 | v0102_match_rate          | yes        | yes    |
 | 0017 | v0102_match_value         | yes        | yes    |
 | 0018 | v0106_money               | yes        | yes    |
+| 0019 | v0106_credentials         | yes        | yes    |
 
 ## Relations
 
@@ -1116,7 +1117,7 @@ erDiagram
 | server_knowledge     | integer                  |          |         |             |
 | last_synced_at       | timestamp with time zone |          |         |             |
 
-- `config`: type `ApiConfig`; shape `apiConfigSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `readMaybeEncrypted` (lib/crypto.ts); **old shapes still read (FALLBACKS)**
+- `config`: type `ApiConfig`; shape `apiConfigSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `readMaybeEncrypted` (lib/crypto.ts); an encrypted envelope; the credentials migration encrypts plaintext; **old shapes still read (FALLBACKS)**
 - `account_mappings`: type `AccountMapping[]`; shape `accountMappingsSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; **old shapes still read (FALLBACKS)**
 - `skipped_category_ids`: type `string[]`; shape `skippedCategoryIdsSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere
 

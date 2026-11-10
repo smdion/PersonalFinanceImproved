@@ -288,9 +288,12 @@ describe("the money tag through the real migrator (SQLite)", () => {
       .get() as { n: number };
     db.close();
     const shipped = JSON.parse(fs.readFileSync(journalPath(), "utf8")) as {
-      entries: unknown[];
+      entries: { tag: string }[];
     };
-    expect(recorded.n).toBe(shipped.entries.length - 1);
+    // Every tag before this one (a later tag is pending behind it).
+    expect(recorded.n).toBe(
+      shipped.entries.findIndex((e) => e.tag === MONEY_TAG),
+    );
     const after = state((t) => reads(t, settingsBeforeTag), asReadBeforeTag);
     expect(after).toEqual(before);
   });
