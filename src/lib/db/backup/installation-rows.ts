@@ -24,15 +24,19 @@ type Row = Record<string, unknown>;
 /** Each installation table's columns, every one on exactly one list: kept from
  *  today (`key` matches a today row to the backup's), matched (today's where they
  *  name the same restored row: connection-links.ts), or taken from the backup. */
-export const INSTALLATION_COLUMNS: Record<
-  string,
-  {
-    key: string;
-    kept: readonly string[];
-    matched: readonly string[];
-    fromBackup: readonly string[];
-  }
-> = {
+type ColumnLists = Readonly<
+  Record<
+    string,
+    Readonly<{
+      key: string;
+      kept: readonly string[];
+      matched: readonly string[];
+      fromBackup: readonly string[];
+    }>
+  >
+>;
+
+export const INSTALLATION_COLUMNS: ColumnLists = {
   api_connections: {
     key: "service",
     kept: ["id", "service", "config", "server_knowledge"],
@@ -65,7 +69,7 @@ const rowsOf = (rows: unknown): Row[] =>
 function withBackupColumns(
   today: Row[],
   backup: unknown,
-  { key, fromBackup }: (typeof INSTALLATION_COLUMNS)[string],
+  { key, fromBackup }: ColumnLists[string],
   targets: { today: TargetRows; restored: TargetRows },
 ): Row[] {
   const rows = rowsOf(backup);
@@ -143,6 +147,7 @@ export async function withInstallationRows(
   database: Parameters<typeof queryRaw>[0],
   tables: Record<string, unknown[]>,
   by: RestoreScope,
+  lists: ColumnLists = INSTALLATION_COLUMNS, // a test passes its own
 ): Promise<Record<string, unknown[]>> {
   const keepAccess = !by.asAdmin || by.householdOnly === true;
   const today = (name: string) => todayRows(database, name, by.sourceDialect);
@@ -151,7 +156,7 @@ export async function withInstallationRows(
     if (scope === "logins" && (keepAccess || rowsOf(tables[name]).length === 0))
       out[name] = await today(name);
     if (scope !== "installation" || !keepAccess) continue;
-    const columns = INSTALLATION_COLUMNS[name];
+    const columns = lists[name];
     if (!columns) throw new Error(`${name}: no installation columns listed`);
     const targets = {
       today: await targetRows(today),
