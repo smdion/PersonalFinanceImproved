@@ -4,6 +4,7 @@
 import { ACTIVE_FIELDS_CONVERTER } from "./v0106-active-fields";
 import { PERFORMANCE_CATEGORY_CONVERTER } from "./v0106-performance-category";
 import { RETIRED_LIMITS_CONVERTER } from "./v0106-retired-limits";
+import { AFTER_TAX_EXEMPT_CONVERTER } from "./v0106-after-tax-exempt";
 import { SALARY_ENTRIES_CONVERTER } from "./v0106-salary-entries";
 
 /** The stored-JSON tag. */
@@ -15,5 +16,6 @@ export const STORED_JSON_CONVERTERS = {
     ACTIVE_FIELDS_CONVERTER,
     PERFORMANCE_CATEGORY_CONVERTER,
     RETIRED_LIMITS_CONVERTER,
+    AFTER_TAX_EXEMPT_CONVERTER,
   ],
 } as const;

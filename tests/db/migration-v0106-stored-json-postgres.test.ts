@@ -44,6 +44,7 @@ import {
   yearRows,
 } from "./performance-category-cases";
 import { KEPT, LIMITS } from "./retired-limits-cases";
+import { DEDUCTIONS, deductionRows } from "./after-tax-exempt-cases";
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -141,6 +142,7 @@ describe.skipIf(skipWithoutPostgres)(
         ),
         ...yearRows().map((y) => ["account_performance", y] as const),
         ...LIMITS.map((r) => ["contribution_limits", r] as const),
+        ...deductionRows().map((d) => ["paycheck_deductions", d] as const),
       ]) {
         const cols = Object.keys(row);
         const params = cols.map((_, i) => "$" + String(i + 1));
@@ -185,6 +187,13 @@ describe.skipIf(skipWithoutPostgres)(
         )
       ).rows.map((r) => r.id);
 
+    const exemptFlags = async () =>
+      (
+        await client.query<{ f: boolean }>(
+          "SELECT fica_exempt AS f FROM paycheck_deductions WHERE id >= 951 ORDER BY id",
+        )
+      ).rows.map((r) => r.f);
+
     const readable = PROFILES.flatMap((c, i) =>
       typeof c.before === "string" ? [] : [i],
     );
@@ -228,6 +237,14 @@ describe.skipIf(skipWithoutPostgres)(
       expect(await limitIds()).toEqual(KEPT);
       migrate();
       expect(await limitIds()).toEqual(KEPT);
+    });
+
+    it("clears the FICA-exempt flag on after-tax deductions as a pending migration, and a later start writes nothing", async () => {
+      await installBefore();
+      migrate();
+      expect(await exemptFlags()).toEqual(DEDUCTIONS.map((d) => d.after));
+      migrate();
+      expect(await exemptFlags()).toEqual(DEDUCTIONS.map((d) => d.after));
     });
 
     it("a refused active-fields row refuses the start, and nothing changes", async () => {

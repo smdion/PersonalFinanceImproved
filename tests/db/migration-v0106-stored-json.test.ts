@@ -36,6 +36,7 @@ import {
   yearRows,
 } from "./performance-category-cases";
 import { KEPT, LIMITS } from "./retired-limits-cases";
+import { DEDUCTIONS, deductionRows } from "./after-tax-exempt-cases";
 
 const REPO = process.cwd();
 const FOLDER = "drizzle-sqlite";
@@ -105,11 +106,16 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
       ...PERFORMANCE_ACCOUNTS.map((a) => ["performance_accounts", a] as const),
       ...yearRows().map((y) => ["account_performance", y] as const),
       ...LIMITS.map((r) => ["contribution_limits", r] as const),
+      ...deductionRows().map((d) => ["paycheck_deductions", d] as const),
     ]) {
       const cols = Object.keys(row[1]);
       db.prepare(
         `INSERT INTO ${row[0]} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
-      ).run(...Object.values(row[1]));
+      ).run(
+        ...Object.values(row[1]).map((v) =>
+          typeof v === "boolean" ? Number(v) : v,
+        ),
+      );
     }
     db.close();
     fs.writeFileSync(journalPath(), shipped);
@@ -161,6 +167,18 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     return rows.map((r) => r.id);
   };
 
+  /** The invented deductions' FICA-exempt flags as stored. */
+  const exemptFlags = () => {
+    const db = open();
+    const rows = db
+      .prepare(
+        "SELECT fica_exempt AS f FROM paycheck_deductions WHERE id >= 951 ORDER BY id",
+      )
+      .all() as { f: number }[];
+    db.close();
+    return rows.map((r) => r.f === 1);
+  };
+
   const readable = PROFILES.flatMap((c, i) =>
     typeof c.before === "string" ? [] : [i],
   );
@@ -200,6 +218,14 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     expect(limitIds()).toEqual(KEPT);
     runSQLite();
     expect(limitIds()).toEqual(KEPT);
+  });
+
+  it("clears the FICA-exempt flag on after-tax deductions as a pending migration, and a later start writes nothing", () => {
+    installBefore();
+    runSQLite();
+    expect(exemptFlags()).toEqual(DEDUCTIONS.map((d) => d.after));
+    runSQLite();
+    expect(exemptFlags()).toEqual(DEDUCTIONS.map((d) => d.after));
   });
 
   it("a refused active-fields row refuses the start, and nothing changes", () => {
