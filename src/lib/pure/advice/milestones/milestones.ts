@@ -34,7 +34,7 @@ import {
 } from "@/lib/pure/advice/milestones/investing";
 import { customGoal } from "@/lib/pure/advice/milestones/custom-goals";
 import { journey } from "@/lib/pure/advice/milestones/journey";
-import { foo } from "@/lib/pure/advice/milestones/foo";
+import { foo } from "@/lib/pure/advice/milestones/financial-order-of-operations";
 import { protection, housing } from "@/lib/pure/advice/milestones/housing";
 
 export * from "@/lib/pure/advice/milestones/milestones.types";

@@ -2,11 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   applyGuytonKlinger,
   applyGuytonKlingerStrategy,
-} from "@/lib/pure/engine/guyton-klinger";
+} from "@/lib/pure/engine/spending-strategies/guyton-klinger";
 import type {
   GuytonKlingerInput,
   GuytonKlingerParams,
-} from "@/lib/pure/engine/guyton-klinger";
+} from "@/lib/pure/engine/spending-strategies/guyton-klinger";
 import { initialCrossYearState } from "@/lib/pure/engine/spending-strategy";
 
 const DEFAULT_PARAMS: GuytonKlingerParams = {
@@ -186,6 +186,7 @@ describe("applyGuytonKlingerStrategy (wrapper)", () => {
       hasBudgetOverride: false,
       yearIndex: 0,
       age: 65,
+      ssIncome: 0,
       crossYearState: initialCrossYearState(),
     };
     const result = applyGuytonKlingerStrategy(DEFAULT_PARAMS, input);
@@ -202,6 +203,7 @@ describe("applyGuytonKlingerStrategy (wrapper)", () => {
       hasBudgetOverride: false,
       yearIndex: 1,
       age: 66,
+      ssIncome: 0,
       crossYearState: {
         ...initialCrossYearState(),
         initialWithdrawalRate: 0.05,

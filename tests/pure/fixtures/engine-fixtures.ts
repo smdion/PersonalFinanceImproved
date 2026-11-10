@@ -271,6 +271,7 @@ export function makeContributionSpec(
     salaryFraction: 1,
     baseAnnual: 16800,
     taxTreatment: "tax_free",
+    allocationPriority: 0,
     ...overrides,
   };
 }

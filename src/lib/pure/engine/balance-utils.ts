@@ -20,7 +20,7 @@ import {
   setTraditional,
   setRoth,
   setBalance,
-} from "../../config/account-balance";
+} from "../accounts/account-balance";
 import { roundToCents, safeDivide } from "../../utils/math";
 import type {
   EligibilityRecord,
@@ -178,7 +178,7 @@ export function subtractExcluded(
 
 /**
  * Replays a RouteResult's slots onto an `AccountBalances` clone (roth/traditional split or total,
- * as `routeWithdrawals` branches), floored at 0, so a second dispatch can chain off the first.
+ * as the waterfall router branches), floored at 0, so a second dispatch can chain off the first.
  * Categories with no slot stay untouched.
  */
 export function applySlotsToBalances(

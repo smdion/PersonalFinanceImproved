@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { HelpTip } from "@/components/ui/help-tip";
-import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 
 export type RuleOf55BadgeProps = {
   entry: AccountAnalysisEntry;

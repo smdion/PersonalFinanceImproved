@@ -1,6 +1,6 @@
 /**
- * One person's retirement settings in the active profile: their own row,
- * or the profile's household values where they have none.
+ * One person's retirement settings in the active profile: their own
+ * per-person row, the profile's household values where a field is empty.
  */
 import { toNumber } from "@/lib/utils/numbers";
 import type * as schema from "@/lib/db/schema";
@@ -23,9 +23,9 @@ export type ActiveProfileRows = {
 };
 
 /**
- * A person's settings, each looked up once. A person with no row in the
- * active profile reads the profile's values (a restored older backup can
- * lack one), so a page renders instead of blanking.
+ * A person's settings, each looked up once: their per-person row's field,
+ * or the profile's household value where it is null or they have no row
+ * (every person with a settings row in a profile has a per-person row).
  */
 export function settingsFor(personId: number, profile: ActiveProfileRows) {
   const { activeProfileId, settings } = profile;
@@ -35,7 +35,8 @@ export function settingsFor(personId: number, profile: ActiveProfileRows) {
   const rs = profile.retSettings.find(
     (s) => s.personId === personId && s.profileId === activeProfileId,
   );
-  const ps = pp ?? rs;
+  // With no profile there are no per-person rows: the settings row holds them.
+  const ps = activeProfileId === null ? rs : pp;
   // The raise rate's live source is retirement_settings (the column on
   // retirement_profile_people is never read). No row there: the primary's
   // rate; an explicit 0 is a real rate (a cap, a freeze) and is kept.
@@ -48,8 +49,7 @@ export function settingsFor(personId: number, profile: ActiveProfileRows) {
       : profile.primaryRaiseRate,
     socialSecurityMonthly:
       ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
-    // PIA is per person with no household value; only the
-    // retirement_profile_people row has it. null is "not opted in".
+    // PIA is per person with no household value. null is "not opted in".
     socialSecurityPia: pp?.socialSecurityPia ?? null,
     ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
     ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,

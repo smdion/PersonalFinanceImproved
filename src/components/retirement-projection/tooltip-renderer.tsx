@@ -1,9 +1,9 @@
 /** Data-driven tooltip renderer with a fixed 17-section visual order — call sites supply a TooltipData shape and this module handles all layout, formatting, and recursive line-item rendering. */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import { isRothType } from "@/lib/config/account-types";
 import type { TooltipLineItem, TooltipData } from "./types";
-import { tipColorClass } from "./utils";
+import { tipColorClass } from "./projection-display";
 
 /**
  * Renders a single tooltip line item (contribution, withdrawal, balance, etc.).

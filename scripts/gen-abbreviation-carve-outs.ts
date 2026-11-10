@@ -23,8 +23,8 @@ export const CARVE_OUT_FILE = "scripts/abbreviation-carve-outs.json";
 
 const SHAPE_DIRS = ["src/lib/db/pg", "src/lib/db/sqlite"];
 const SHAPE_FILES = [
-  "src/lib/db/json-schemas.ts",
-  "src/lib/db/profile-fields.ts",
+  "src/lib/db/shapes/json-schemas.ts",
+  "src/lib/db/shapes/profile-fields.ts",
   "src/lib/constants/settings-keys.ts",
   "src/lib/tax-data/schema.ts",
   // External APIs' field names.

@@ -7,6 +7,7 @@ import * as schema from "@/lib/db/schema";
 import { BudgetApiError } from "@/lib/budget-api/errors";
 import { isSimplefinReplayMode } from "./client";
 import type { Db } from "@/lib/db";
+import { countRows } from "@/lib/db/compat";
 import { MS_PER_DAY } from "@/lib/constants";
 
 const SERVICE = "simplefin";
@@ -77,7 +78,7 @@ export async function countSimplefinRequestsLastDay(
   now: Date,
 ): Promise<number> {
   const rows = await db
-    .select({ n: sql<number>`count(*)` })
+    .select({ count: sql<number>`count(*)` })
     .from(schema.syncRequestLog)
     .where(
       and(
@@ -90,7 +91,7 @@ export async function countSimplefinRequestsLastDay(
         ne(schema.syncRequestLog.outcome, "skipped_quota"),
       ),
     );
-  return Number(rows[0]?.n ?? 0);
+  return countRows(rows);
 }
 
 /** When the most recent real request was made, if any. */

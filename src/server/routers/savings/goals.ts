@@ -275,6 +275,9 @@ export const goalProcedures = {
         };
       });
     }),
+    /**
+     * Add a fund, with a $0 funding row in every Budget profile; returns the fund.
+     */
     create: savingsProcedure
       .input(savingsGoalInput)
       .mutation(async ({ ctx, input }) => {
@@ -311,6 +314,7 @@ export const goalProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /** Delete a fund; its sub-funds become top-level. */
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) => deleteSavingsGoal(ctx.db, input.id)),

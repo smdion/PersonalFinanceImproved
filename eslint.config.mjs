@@ -268,14 +268,11 @@ const config = [
           ],
           patterns: [
             {
-              // The shape files (types and zod schemas, no I/O) are the
+              // lib/db/shapes/ (types and zod schemas, no I/O) is the
               // layer manifest's `shapes`, which pure code may read.
               group: [
                 "@/lib/db/*",
-                "!@/lib/db/json-schemas",
-                "!@/lib/db/salary-entry-defaults",
-                "!@/lib/db/salary-entry-edit",
-                "!@/lib/db/profile-fields",
+                "!@/lib/db/shapes",
                 "drizzle-orm",
                 "drizzle-orm/*",
               ],

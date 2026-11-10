@@ -15,8 +15,10 @@
  * called from where it was, router procedures moved whole into a new
  * part mounted where they were, or a UI cut: an IIFE's body into a named
  * function, a JSX run into a component; with `Rename: old → new, …`, every
- * changed code line is its old line with those names renamed, owner Q2:
- * notARename), and the
+ * changed code line is its old line with those names renamed, a comment
+ * by those names only, owner Q2 and W6: notARename; a `Comments-only:`
+ * trailer exempts a commit whose `src/` code tokens are all unchanged, owner
+ * V6: notCommentsOnly), and the
  * second-fix rule: a fix to a function that already had a fix in the last 30
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
@@ -28,6 +30,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { codeOf } from "./engine-hash";
 import {
   isShapeFile,
   storedAndResponseKeys,
@@ -72,6 +75,8 @@ export type CommitFacts = {
   priorFixes: Map<Spot, number>;
   /** Why a `Mechanical:` commit isn't a move (undefined: it is, or no trailer). */
   notMechanical?: string;
+  /** Why a `Comments-only:` commit changes code (undefined: it doesn't, or no trailer). */
+  notCommentsOnly?: string;
 };
 
 export type Warning = { rule: string; text: string };
@@ -594,6 +599,16 @@ function tokensOf(
       n.kind <= ts.SyntaxKind.LastJSDocNode
     )
       return;
+    // Prettier wraps a returned expression in parentheses only when it
+    // breaks over lines; they change nothing, so a re-wrap may drop them.
+    if (
+      ts.isParenthesizedExpression(n) &&
+      (n.parent as ts.Node | undefined) !== undefined &&
+      ts.isReturnStatement(n.parent)
+    ) {
+      visit(n.expression);
+      return;
+    }
     const children = n.getChildren(source);
     if (children.length > 0) {
       children.forEach(visit);
@@ -657,7 +672,8 @@ function allChanged(
   return true;
 }
 
-/** A moved body may not read its own `this` or `arguments`. */
+/** A moved body may not read its own `this` or `arguments` (a token, not
+ *  a word inside a string). */
 const OWN_BINDING = new Set(["this", "arguments", "super"]);
 
 /**
@@ -849,7 +865,10 @@ function cutMovedBodies(
     const visit = (node: ts.Node) => {
       if (movableBody(node, entry.old, oldSource)) {
         const key = bodyKey(node.body, oldSource);
-        if (!key.some((s) => s.split(" ").some((t) => OWN_BINDING.has(t))))
+        const tokens = node.body.statements.flatMap((s) =>
+          tokensOf(s, oldSource),
+        );
+        if (!tokens.some((t) => OWN_BINDING.has(t)))
           sources.push({ f, node, key });
         return;
       }
@@ -3630,17 +3649,39 @@ function codeRenameProblem(
     used.add(x.text);
   }
   const [c, d] = [commentTexts(was), commentTexts(now)];
-  const differs = c.findIndex((t, i) => t !== d[i]);
+  const differs = c.findIndex((t, i) => !renamedComment(t, d[i], map));
   if (differs >= 0 || c.length !== d.length)
-    return `${file}: a comment changed (a rename changes code only; reword comments in their own commit)`;
+    return `${file}: a comment changed by more than the ${RENAME}: names (reword comments in their own commit)`;
   return undefined;
+}
+
+const NAME_TOKEN = /([A-Za-z_$][\w$]*)/;
+
+/** Whether `now` is the comment `was` with some of its names renamed by `map`
+ *  (W6 a): each name kept or renamed, everything else the same. */
+function renamedComment(
+  was: string,
+  now: string | undefined,
+  map: Map<string, string>,
+): boolean {
+  if (now === undefined) return false;
+  if (was === now) return true;
+  const [a, b] = [was.split(NAME_TOKEN), now.split(NAME_TOKEN)];
+  // split with a capture group puts the names at the odd indexes.
+  return (
+    a.length === b.length &&
+    a.every(
+      (piece, i) => piece === b[i] || (i % 2 === 1 && map.get(piece) === b[i]),
+    )
+  );
 }
 
 /**
  * Why a `Mechanical:` commit with `Rename:` is more than those renames: every
  * changed code line equals its old line once the map is applied to its name
- * tokens (prettier's re-wrap allowed); strings, comments, stored, external
- * and response keys, a router's object keys and z.object keys stay. The
+ * tokens (prettier's re-wrap allowed), and a comment may rename the same
+ * names and change nothing else; strings, stored, external and response
+ * keys, a router's object keys and z.object keys stay. The
  * register's code references follow the names; the ratchet files keep their
  * own checks. Undefined: proven.
  */
@@ -3721,6 +3762,41 @@ export function mechanicalProblem(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Comments-only commits (owner V6, v0.10.5)
+// ---------------------------------------------------------------------------
+
+export const COMMENTS_ONLY = "Comments-only";
+
+/**
+ * Why a `Comments-only:` commit changes more than comments in `src/`: every
+ * changed `src/` file is code whose tokens (the engine hash's codeOf) are the
+ * same on both sides, and none is created, deleted or moved. Undefined: proven.
+ */
+export function notCommentsOnly(
+  numstat: FileChange[],
+  diff: string,
+): string | undefined {
+  const src = numstat.filter((c) => c.file.startsWith("src/"));
+  const moved = src.find((c) => c.file.includes(" => "));
+  if (moved) return `${moved.file}: a ${COMMENTS_ONLY}: commit moves no file`;
+  const notCode = src.find((c) => !CODE_FILE.test(c.file));
+  if (notCode)
+    return `${notCode.file}: not code, so its comments can't be told from the rest`;
+  const entries = new Map(readDiff(diff).map((e) => [e.file, e]));
+  for (const { file } of src) {
+    const entry = entries.get(file);
+    if (!entry) return `${file}: not in the diff`;
+    if (entry.wholeFile)
+      return `${file}: a ${COMMENTS_ONLY}: commit creates or deletes no file`;
+    const [was, now] = [entry.old, entry.new].map((side) =>
+      codeOf(file, side.lines.join("\n")),
+    );
+    if (was !== now) return `${file}: code changed, not only comments`;
+  }
+  return undefined;
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
@@ -3732,6 +3808,15 @@ export function checkCommit(facts: CommitFacts): Warning[] {
       text: `Mechanical: is for a move or rename only: ${facts.notMechanical}`,
     });
   }
+  const commentsClaimed = COMMENTS_ONLY in message.trailers;
+  const commentsOnly = commentsClaimed && facts.notCommentsOnly === undefined;
+  if (commentsClaimed && facts.notCommentsOnly !== undefined) {
+    warnings.push({
+      rule: "comments-only",
+      text: `${COMMENTS_ONLY}: is for a commit that changes no src/ code: ${facts.notCommentsOnly}`,
+    });
+  }
+  const exempt = mechanical || commentsOnly;
 
   if (!SUBJECT_PREFIX.test(message.subject)) {
     warnings.push({
@@ -3753,14 +3838,14 @@ export function checkCommit(facts: CommitFacts): Warning[] {
     });
   }
   const srcLines = srcLinesChanged(files);
-  if (srcLines > MAX_SRC_LINES && !mechanical) {
+  if (srcLines > MAX_SRC_LINES && !exempt) {
     warnings.push({
       rule: "size",
       text: `${srcLines} changed src/ lines (limit ${MAX_SRC_LINES}); split it, or add a Mechanical: trailer to a pure move or rename`,
     });
   }
   const srcFiles = srcFileCount(files);
-  if (touchesEngineOrTax(files) && srcFiles > MAX_ENGINE_FILES && !mechanical) {
+  if (touchesEngineOrTax(files) && srcFiles > MAX_ENGINE_FILES && !exempt) {
     warnings.push({
       rule: "engine-files",
       text: `engine or tax commit touches ${srcFiles} src/ files (limit ${MAX_ENGINE_FILES})`,
@@ -3873,6 +3958,13 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
           git("show", "-M", FULL_CONTEXT, "--format=", sha),
         )
       : undefined;
+  const notComments =
+    COMMENTS_ONLY in message.trailers
+      ? notCommentsOnly(
+          parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
+          git("show", "-M", FULL_CONTEXT, "--format=", sha, "--", "src/"),
+        )
+      : undefined;
   const files = parseNumstat(git("show", "--numstat", "--format=", sha));
   const spots = spotsFromDiff(
     git("show", "-U0", "--format=", sha, "--", "src/"),
@@ -3884,6 +3976,7 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     spots,
     priorFixes: countPriorFixes(spots, time, history, sha),
     notMechanical,
+    notCommentsOnly: notComments,
   };
 }
 
@@ -3908,12 +4001,20 @@ function runMessageFile(file: string): Warning[] {
           git("diff", "--cached", "-M", FULL_CONTEXT),
         )
       : undefined;
+  const notComments =
+    COMMENTS_ONLY in message.trailers
+      ? notCommentsOnly(
+          parseNumstat(git("diff", "--cached", "-M", "--numstat")),
+          git("diff", "--cached", "-M", FULL_CONTEXT, "--", "src/"),
+        )
+      : undefined;
   const warnings = checkCommit({
     message,
     files,
     spots,
     priorFixes: countPriorFixes(spots, now + 1, history),
     notMechanical,
+    notCommentsOnly: notComments,
   });
   report("commit", warnings);
   return warnings;

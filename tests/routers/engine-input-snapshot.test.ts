@@ -84,7 +84,6 @@ describe("engine input snapshot guard", () => {
             contributionMethod: "percent_of_salary",
           },
         },
-        jobs: {},
       },
     });
 

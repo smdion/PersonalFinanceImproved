@@ -3,7 +3,7 @@
  *  is walked by exactly one of them. */
 
 import * as schema from "@/lib/db/schema";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,

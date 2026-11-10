@@ -9,7 +9,7 @@ import type {
   TaxBuckets,
   IndividualAccountInput,
 } from "../accounts/account-balances.types";
-import { computeNiit } from "../../config/niit";
+import { computeNiit } from "../tax/niit";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";

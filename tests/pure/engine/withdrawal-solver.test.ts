@@ -21,7 +21,7 @@ import {
   setBalance,
   setBasis,
   setTraditional,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
 
 import {

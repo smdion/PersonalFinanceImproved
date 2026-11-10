@@ -124,6 +124,7 @@ describe("buildSpecToAccountMapping", () => {
         salaryFraction: 1,
         baseAnnual: 16800,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         ownerName: "Alice",
       },
     ];
@@ -163,6 +164,7 @@ describe("buildSpecToAccountMapping", () => {
         salaryFraction: 1,
         baseAnnual: 7000,
         taxTreatment: "tax_free",
+        allocationPriority: 0,
         ownerName: "Unknown",
       },
     ];
@@ -195,6 +197,7 @@ describe("buildSpecToAccountMapping", () => {
         salaryFraction: 1,
         baseAnnual: 8346,
         taxTreatment: "hsa",
+        allocationPriority: 0,
       },
     ];
     const accounts: IndividualAccountInput[] = [

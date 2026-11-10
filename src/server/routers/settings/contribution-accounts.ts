@@ -96,12 +96,17 @@ const limitedTypeHasOwnerIssue = {
 
 export const contributionAccountsProcedures = {
   contributionAccounts: createTRPCRouter({
+    /** Every contribution account, by person. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
         .from(schema.contributionAccounts)
         .orderBy(asc(schema.contributionAccounts.personId)),
     ),
+    /**
+     * Add a contribution account. Linked to a performance account, it takes that parent category,
+     * and each supported tax treatment without an account there gets an inactive one. Returns it.
+     */
     create: adminProcedure
       .input(
         contributionAccountInput
@@ -178,6 +183,10 @@ export const contributionAccountsProcedures = {
 
         return created;
       }),
+    /**
+     * Refused over an IRS limit or with a prior-year amount its type can't hold. A linked performance
+     * account sets its parent category; Contribution Profile entries follow a match-type change.
+     */
     update: adminProcedure
       .input(
         z
@@ -284,6 +293,9 @@ export const contributionAccountsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /**
+     * Record last year's contribution (stamped last year); refused for a type that can't hold one.
+     */
     setPriorYearAmount: adminProcedure
       .input(
         z.object({
@@ -320,6 +332,9 @@ export const contributionAccountsProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /**
+     * Delete a contribution account and its entry in every Contribution Profile.
+     */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>

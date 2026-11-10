@@ -1,6 +1,5 @@
 // Drizzle schema — all table definitions for ledgr.
 // This file is the single source of truth for the data model.
-// See Migration Plan Section 4 for design principles and seed data notes.
 
 // The tables live in ./pg/ by domain, re-exported here; keep this order. schema-sqlite.ts
 // and ./sqlite/ are generated from them by `npx tsx scripts/gen-sqlite-schema.ts`.

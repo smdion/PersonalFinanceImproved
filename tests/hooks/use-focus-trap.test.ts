@@ -5,7 +5,7 @@
 import { createElement as h } from "react";
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { useFocusTrap } from "@/components/ui/use-focus-trap";
 
 afterEach(() => {
   cleanup();

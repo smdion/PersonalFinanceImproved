@@ -74,7 +74,6 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
             contributionMethod: "percent_of_salary",
           },
         },
-        jobs: {},
       },
     });
     t.sqlite.exec(
@@ -367,7 +366,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
     beforeAll(() => {
       switchProfileId = seedContributionProfile(t.db, {
         name: "Later",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
     });
 

@@ -8,8 +8,8 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
-import type { SimulationInputs } from "@/components/retirement-projection/mc-simulation-types";
+import { SimulationAssumptions } from "@/components/retirement-projection/simulation/mc-simulation-assumptions";
+import type { SimulationInputs } from "@/components/retirement-projection/simulation/mc-simulation-types";
 
 // HelpTip needs a Radix TooltipProvider ancestor this component doesn't
 // supply on its own — stub it to render `text` as a queryable title, same

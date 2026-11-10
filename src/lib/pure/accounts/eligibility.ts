@@ -16,12 +16,12 @@ import {
   penaltyFreePrefixAmount,
   type EarlyAccessSlice,
 } from "@/lib/pure/accounts/early-access";
-import { projectRuleOf55 } from "@/lib/pure/accounts/tax-bucket-projection";
+import { projectRuleOf55 } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import { ageInYear } from "@/lib/utils/date";
 import type {
   RuleOf55Status,
   RothBasisMeta,
-} from "@/lib/pure/accounts/tax-bucket-analysis";
+} from "@/lib/pure/accounts/account-balances.types";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";

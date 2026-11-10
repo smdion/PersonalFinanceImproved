@@ -11,6 +11,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
+  isTaxLimitKey,
   taxLimitGroups,
   type TaxLimitFormat,
 } from "@/lib/config/tax-limit-keys";
@@ -112,12 +113,12 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     }
   };
 
-  /** Copies every limit type from `copyFrom` into the active year; offered only while that
-   *  year has no rows. */
+  /** Copies `copyFrom`'s known limits into the active year, while it has none. */
   const handleCopyYear = async () => {
     if (!copyFrom || yearData.length > 0) return;
     const sourceData = (query.data ?? []).filter((l) => l.taxYear === copyFrom);
     for (const l of sourceData) {
+      if (!isTaxLimitKey(l.limitType)) continue;
       // Carried forward: a release with this year's real figure replaces it.
       await createMut.mutateAsync({
         taxYear: activeYear,

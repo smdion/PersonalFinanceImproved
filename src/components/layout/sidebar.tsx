@@ -51,7 +51,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
-import { budgetApiServiceLabel } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 
 // ── Navigation data structure ──
 

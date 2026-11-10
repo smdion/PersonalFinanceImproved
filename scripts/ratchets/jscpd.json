@@ -9,7 +9,7 @@
     "src/lib/db/schema-sqlite.ts",
     "src/lib/db/pg/**",
     "src/lib/db/sqlite/**",
-    "src/lib/db/reference-data.ts"
+    "src/lib/db/migrate/reference-data.ts"
   ],
   "minTokens": 100,
   "minLines": 5,

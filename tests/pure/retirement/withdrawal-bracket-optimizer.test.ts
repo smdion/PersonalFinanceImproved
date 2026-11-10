@@ -59,6 +59,7 @@ function makeMainHousehold(
   brackets = MFJ_BRACKETS,
 ): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {
@@ -243,6 +244,7 @@ function makeMainHousehold(
  */
 function makeDepletionHousehold(currentTarget: number): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
       accountSplits: {

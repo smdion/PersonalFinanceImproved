@@ -8,7 +8,7 @@ import {
   formatPercent,
   formatSavingsRate,
 } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { ViewMode } from "@/lib/pure/contributions/view-mode";
 import type {
   HouseholdSavings,

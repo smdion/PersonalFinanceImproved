@@ -15,7 +15,7 @@ import { BonusSection } from "./bonus-section";
 import { splitLineLabel } from "./deduction-row";
 import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import { TaxWithholdingSection } from "./tax-withholding-section";
-import { ContributionsSection } from "./contributions-section";
+import { ContributionsSection } from "../contributions/contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
@@ -33,7 +33,7 @@ import type {
   JointContrib,
   EarningRow,
 } from "./types";
-import type { ContribAccountFormValues } from "./contrib-account-form";
+import type { ContribAccountFormValues } from "../contributions/contrib-account-form";
 import { PaystubCheck } from "./paystub-check";
 import type { FicaRates } from "@/lib/pure/paycheck/paystub-check";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";

@@ -13,6 +13,9 @@ import { firstRow } from "@/lib/utils/first-row";
 
 export const overrideProcedures = {
   retirementSalaryOverrides: createTRPCRouter({
+    /**
+     * Every salary change by year (a person's salary for a projection year), by year.
+     */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -67,6 +70,9 @@ export const overrideProcedures = {
   }),
 
   retirementBudgetOverrides: createTRPCRouter({
+    /**
+     * Every retirement budget change by year (a monthly amount for a projection year), by year.
+     */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -117,6 +123,9 @@ export const overrideProcedures = {
   }),
 
   projectionOverrides: createTRPCRouter({
+    /**
+     * One kind's saved changes by year (accumulation, decumulation or brokerage); [] when none.
+     */
     get: protectedProcedure
       .input(
         z.object({
@@ -132,6 +141,9 @@ export const overrideProcedures = {
           )
           .then((r) => r[0]?.overrides ?? []),
       ),
+    /**
+     * Replace one kind's saved changes by year, at the brokerage permission for every kind.
+     */
     save: brokerageProcedure
       .input(
         z.object({
@@ -157,6 +169,9 @@ export const overrideProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Delete one kind's saved changes by year, at the brokerage permission for every kind.
+     */
     clear: brokerageProcedure
       .input(
         z.object({

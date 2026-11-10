@@ -5,7 +5,7 @@ import { FieldRow } from "@/components/ui/field-row";
 import { HelpTip } from "@/components/ui/help-tip";
 import { PAY_WEEK_LABELS } from "@/lib/config/display-labels";
 import { PAY_WEEK_VALUES } from "@/lib/config/enum-values";
-import { PayPeriodOptions } from "@/components/ui/pay-period-options";
+import { PayPeriodOptions } from "@/components/paycheck/pay-period-options";
 import { payPeriodConfig } from "@/lib/config/pay-periods";
 import { DateInput } from "@/components/ui/date-input";
 import { SectionHeader } from "./section-header";

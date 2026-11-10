@@ -1,16 +1,11 @@
-/** A cached budget month's balances, checked once on read. */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+/** A cached budget month's balances, read in the clients' shape only. */
+import { describe, it, expect } from "vitest";
 import { readCachedMonthBalances } from "@/lib/budget-api/cached-month";
-import { log } from "@/lib/logger";
-
-vi.mock("@/lib/logger", () => ({ log: vi.fn(), logWarnOnce: vi.fn() }));
 
 const KEY = "months/2031-04-01";
 
 describe("readCachedMonthBalances", () => {
-  beforeEach(() => vi.mocked(log).mockClear());
-
-  it("reads each category's balance by id, without a log", () => {
+  it("reads each category's balance by id", () => {
     const balances = readCachedMonthBalances(KEY, {
       month: "2031-04-01",
       categories: [
@@ -22,28 +17,25 @@ describe("readCachedMonthBalances", () => {
       ["cat-a", 1200],
       ["cat-b", -35.5],
     ]);
-    expect(log).not.toHaveBeenCalled();
   });
 
-  it("logs a month of another shape and keeps what it can read", () => {
-    const balances = readCachedMonthBalances(KEY, {
-      categories: [
-        { id: "cat-a", balance: 50 },
-        { id: null, balance: 10 },
-        { id: "cat-c", balance: null },
-      ],
-    });
-    expect([...balances]).toEqual([["cat-a", 50]]);
-    expect(log).toHaveBeenCalledWith(
-      "warn",
-      "budget_cache_month_unexpected_shape",
-      expect.objectContaining({ cacheKey: KEY }),
+  it("throws on a month of another shape, naming the key and paths, never a value", () => {
+    const read = () =>
+      readCachedMonthBalances(KEY, {
+        categories: [
+          { id: "cat-a", balance: 50 },
+          { id: null, balance: 10 },
+          { id: "cat-c", balance: "invented-text" },
+        ],
+      });
+    expect(read).toThrow(
+      `Cached budget month ${KEY} isn't in the clients' shape (categories.1.id, categories.2.balance)`,
     );
+    expect(read).not.toThrow(/invented-text/);
   });
 
-  it("reads a month with no categories as none", () => {
-    expect(readCachedMonthBalances(KEY, {}).size).toBe(0);
-    expect(readCachedMonthBalances(KEY, null).size).toBe(0);
-    expect(log).toHaveBeenCalledTimes(2);
+  it("throws on a month with no categories", () => {
+    expect(() => readCachedMonthBalances(KEY, {})).toThrow(/\(categories\)/);
+    expect(() => readCachedMonthBalances(KEY, null)).toThrow(/\(\(root\)\)/);
   });
 });

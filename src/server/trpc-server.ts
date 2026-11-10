@@ -5,7 +5,7 @@
 import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 import { createServerSideHelpers } from "@trpc/react-query/server";
 import { cookies } from "next/headers";
-import { PRIVACY_COOKIE } from "@/lib/utils/format";
+import { PRIVACY_COOKIE } from "@/lib/utils/privacy-mode";
 import { createContext, internalCtx, takeAuthenticatedRateToken } from "./trpc";
 import { appRouter } from "./routers";
 

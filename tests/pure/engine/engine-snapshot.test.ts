@@ -54,6 +54,7 @@ const AS_OF = new Date("2025-03-07");
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
@@ -421,6 +422,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 26,
         baseAnnual: 15000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         personId: 1,
       },
       {
@@ -432,6 +434,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 26,
         baseAnnual: 9000,
         taxTreatment: "tax_free",
+        allocationPriority: 0,
         personId: 1,
       },
       {
@@ -443,6 +446,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 26,
         baseAnnual: 4290,
         taxTreatment: "hsa",
+        allocationPriority: 0,
         personId: 1,
       },
       {
@@ -454,6 +458,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 12,
         baseAnnual: 7000,
         taxTreatment: "tax_free",
+        allocationPriority: 0,
         personId: 1,
       },
       {
@@ -465,6 +470,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 12,
         baseAnnual: 6000,
         taxTreatment: "after_tax",
+        allocationPriority: 0,
         personId: 1,
       },
     ];
@@ -1967,6 +1973,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 1.0,
         baseAnnual: 15000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
       },
       {
         category: "401k",
@@ -1976,6 +1983,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 1.0,
         baseAnnual: 7500,
         taxTreatment: "tax_free",
+        allocationPriority: 0,
       },
       {
         category: "hsa",
@@ -1986,6 +1994,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 26,
         baseAnnual: 4300,
         taxTreatment: "hsa",
+        allocationPriority: 0,
       },
       {
         category: "ira",
@@ -1995,6 +2004,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 1.0,
         baseAnnual: 7000,
         taxTreatment: "tax_free",
+        allocationPriority: 0,
       },
       {
         category: "brokerage",
@@ -2004,6 +2014,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 1.0,
         baseAnnual: 12000,
         taxTreatment: "after_tax",
+        allocationPriority: 0,
       },
     ];
     const input = makeInput({
@@ -2027,6 +2038,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 0.6,
         baseAnnual: 14400,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         personId: 1,
         ownerName: "Person A",
       },
@@ -2038,6 +2050,7 @@ describe("engine snapshot parity", () => {
         salaryFraction: 0.4,
         baseAnnual: 6000,
         taxTreatment: "pre_tax",
+        allocationPriority: 0,
         personId: 2,
         ownerName: "Person B",
       },
@@ -2050,6 +2063,7 @@ describe("engine snapshot parity", () => {
         periodsPerYear: 26,
         baseAnnual: 4300,
         taxTreatment: "hsa",
+        allocationPriority: 0,
       },
     ];
     const input = makeInput({

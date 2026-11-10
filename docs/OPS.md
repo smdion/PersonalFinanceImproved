@@ -36,7 +36,7 @@ A version is deployed before it is released, so a deploy problem is fixed on the
 
 1. Stop Ledgr, so nothing writes a credential under the old key while the tool runs.
 2. Generate the new key (`openssl rand -base64 32`) and dry-run: `ENCRYPTION_KEY_NEW=<new key> pnpm encryption:rotate --dry-run`. It prints what it would re-encrypt and changes nothing.
-3. Run it: `ENCRYPTION_KEY_NEW=<new key> pnpm encryption:rotate`. A credential that decrypts with neither key stops it with nothing changed; a re-run after an interrupted one finishes a mixed state. Credentials stored before encryption are left for the app's next write.
+3. Run it: `ENCRYPTION_KEY_NEW=<new key> pnpm encryption:rotate`. A credential that decrypts with neither key stops it with nothing changed; a re-run after an interrupted one finishes a mixed state. An unencrypted credential stops it too, with nothing changed: start Ledgr once with `ENCRYPTION_KEY` so its migration encrypts every one, then rotate.
 4. Set `ENCRYPTION_KEY` to the new key in `.env`.
 5. Start Ledgr and check an integration still connects.
 

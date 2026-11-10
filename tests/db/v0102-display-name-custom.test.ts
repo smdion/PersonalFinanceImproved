@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
-import { contribAccountActiveFieldsSchema } from "@/lib/db/json-schemas";
-import { renameDisplayNameActive } from "@/lib/db/v0102-display-name-custom";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
+import { contribAccountActiveFieldsSchema } from "@/lib/db/shapes/json-schemas";
+import { renameDisplayNameActive } from "@/lib/db/migrate/v0102-display-name-custom";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { RENAME_CASES } from "./display-name-custom-cases";
 
@@ -20,7 +20,10 @@ describe("renameDisplayNameActive", () => {
             contributionAccounts: {
               "1": { displayNameActive: "Old", isActive: true },
               "2": { displayNameActive: "Old", displayNameCustom: "New" },
-              "3": { contributionValue: "100", contributionMethod: "percent" },
+              "3": {
+                contributionValue: "100",
+                contributionMethod: "percent_of_salary",
+              },
             },
             deductions: {},
           },
@@ -33,7 +36,10 @@ describe("renameDisplayNameActive", () => {
         contributionAccounts: {
           "1": { displayNameCustom: "Old", isActive: true },
           "2": { displayNameCustom: "New" },
-          "3": { contributionValue: "100", contributionMethod: "percent" },
+          "3": {
+            contributionValue: "100",
+            contributionMethod: "percent_of_salary",
+          },
         },
         deductions: {},
       },

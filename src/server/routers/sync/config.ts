@@ -10,8 +10,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-import type { ActualConfig } from "@/lib/budget-api";
-import { readMaybeEncrypted } from "@/lib/crypto";
+import { readActualConfig } from "@/lib/budget-api/stored-config";
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import { serviceEnum } from "./_shared";
 import { upsertSetting } from "@/server/data/settings";
@@ -33,7 +32,7 @@ export const syncConfigRouter = createTRPCRouter({
       return { service: active, url: YNAB_APP_URL } as const;
     const conn = await getApiConnection(ctx.db, "actual");
     if (!conn) return { service: active, url: null } as const;
-    const config = readMaybeEncrypted<ActualConfig>(conn.config);
+    const config = readActualConfig(conn.config);
     return { service: active, url: config.externalUrl ?? null } as const;
   }),
 

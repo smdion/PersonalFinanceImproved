@@ -31,17 +31,14 @@ describe("buildAccumulationOrder (M1)", () => {
     expect(buildAccumulationOrder(contribs)).toEqual(["401k", "ira"]);
   });
 
-  it("treats null/undefined allocationPriority as 0 (highest priority)", () => {
+  it("puts the column's default priority 0 first, ties in input order", () => {
     const contribs = [
       { accountType: "401k", allocationPriority: 10 },
-      { accountType: "hsa", allocationPriority: null },
-      { accountType: "ira" },
+      { accountType: "hsa", allocationPriority: 0 },
+      { accountType: "ira", allocationPriority: 0 },
     ];
-    // Both hsa (null → 0) and ira (undefined → 0) are ordered before 401k.
-    // Stable sort preserves original order between equal keys, so hsa
-    // comes before ira.
-    const result = buildAccumulationOrder(contribs);
-    expect(result.indexOf("hsa")).toBeLessThan(result.indexOf("401k"));
-    expect(result.indexOf("ira")).toBeLessThan(result.indexOf("401k"));
+    // allocation_priority is NOT NULL (default 0), and no active-field entry
+    // holds one, so every row has a number.
+    expect(buildAccumulationOrder(contribs)).toEqual(["hsa", "ira", "401k"]);
   });
 });

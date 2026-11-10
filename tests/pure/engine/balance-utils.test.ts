@@ -4,7 +4,7 @@ import {
   getTraditionalBalance,
   getTotalBalance,
   getBasis,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import {
   accountBalancesFromTaxBuckets,
   cloneAccountBalances,

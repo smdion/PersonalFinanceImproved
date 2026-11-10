@@ -4,12 +4,12 @@
  * Each strategy is tested in isolation with the common SpendingStrategyInput interface.
  */
 import { describe, it, expect } from "vitest";
-import { applyForgoInflation } from "@/lib/pure/engine/forgo-inflation";
-import { applySpendingDecline } from "@/lib/pure/engine/spending-decline";
-import { applyConstantPercentage } from "@/lib/pure/engine/constant-percentage";
-import { applyEndowment } from "@/lib/pure/engine/endowment";
-import { applyVanguardDynamic } from "@/lib/pure/engine/vanguard-dynamic";
-import { applyRmdSpending } from "@/lib/pure/engine/rmd-spending";
+import { applyForgoInflation } from "@/lib/pure/engine/spending-strategies/forgo-inflation";
+import { applySpendingDecline } from "@/lib/pure/engine/spending-strategies/spending-decline";
+import { applyConstantPercentage } from "@/lib/pure/engine/spending-strategies/constant-percentage";
+import { applyEndowment } from "@/lib/pure/engine/spending-strategies/endowment";
+import { applyVanguardDynamic } from "@/lib/pure/engine/spending-strategies/vanguard-dynamic";
+import { applyRmdSpending } from "@/lib/pure/engine/spending-strategies/rmd-spending";
 import {
   applySpendingStrategy,
   initialCrossYearState,
@@ -17,7 +17,7 @@ import {
 import type {
   SpendingStrategyInput,
   SpendingCrossYearState,
-} from "@/lib/pure/engine/spending-strategy";
+} from "@/lib/pure/engine/types/spending-strategy";
 
 function makeInput(
   overrides: Partial<SpendingStrategyInput> = {},
@@ -30,6 +30,7 @@ function makeInput(
     hasBudgetOverride: false,
     yearIndex: 1,
     age: 66,
+    ssIncome: 0,
     crossYearState: initialCrossYearState(),
     ...overrides,
   };

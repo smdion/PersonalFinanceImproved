@@ -84,6 +84,7 @@ function retiree(strategy: WithdrawalStrategyType): ProjectionInput {
   };
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults(),
       decumulationDefaults: makeDecumulationDefaults({
         withdrawalRoutingMode: "waterfall",

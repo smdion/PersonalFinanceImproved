@@ -21,7 +21,7 @@ import * as prettier from "prettier";
 import {
   TAX_DATA_DIR,
   readTaxDataDir,
-} from "../src/lib/db/reference-reconcile-core";
+} from "../src/lib/db/migrate/reference-reconcile-core";
 import type {
   FilingStatus,
   PublishedYear,

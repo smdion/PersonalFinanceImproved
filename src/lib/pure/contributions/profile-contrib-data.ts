@@ -78,7 +78,7 @@ type ContributionInputRow = {
   fromBonus: boolean | undefined;
   performanceAccountId?: number | null;
   targetAnnual?: string | number | null;
-  allocationPriority?: number | null;
+  allocationPriority: number;
   ownership?: string | null;
   hsaCoverageType?: string | null;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
@@ -261,7 +261,7 @@ export function buildProfileContribData(
         ownerName: contribOwner,
         accountName: matchedAccount?.name,
         targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
-        allocationPriority: c.allocationPriority ?? 0,
+        allocationPriority: c.allocationPriority,
         parentCategory:
           c.parentCategory ??
           (c.performanceAccountId

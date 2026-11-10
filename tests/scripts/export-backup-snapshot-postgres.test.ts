@@ -15,7 +15,7 @@ import {
 } from "../routers/setup-postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import pg from "pg";
-import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
+import { VERSION_TABLE_NAMES } from "@/lib/db/backup/version-tables";
 import { readTablesPostgres } from "../../scripts/export-backup";
 
 const first = VERSION_TABLE_NAMES[0]!;

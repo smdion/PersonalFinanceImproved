@@ -14,7 +14,7 @@ import {
   seedSnapshot,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { saveSimplefinConnection } from "@/lib/simplefin/sync";
+import { saveSimplefinConnection } from "@/server/services/sync/simplefin/sync";
 import {
   SIMPLEFIN_DAILY_REQUEST_LIMIT,
   countSimplefinRequestsLastDay,

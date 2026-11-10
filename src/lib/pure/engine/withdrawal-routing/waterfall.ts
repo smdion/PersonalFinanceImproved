@@ -11,14 +11,14 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import type { RouteResult } from "./types";
 
 /**
  * Route withdrawals from accounts for one year.
  * Draws from accounts in withdrawal order, respecting caps and tax preferences.
  */
-export function routeWithdrawals(
+export function routeWithdrawalsWaterfall(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,

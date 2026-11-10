@@ -450,7 +450,7 @@ export async function computeContributionSummary(
         // estimate adds them only when the year's actuals don't already
         // hold that check (paid after the date they run through).
         const bonusEmp = bonusCheckContribution(account, pay.bonusGross);
-        const bonusMatch = account.employerMatchOnBonus ?? 0;
+        const bonusMatch = account.employerMatchOnBonus;
         entry.bonus += bonusEmp;
         entry.fullMatchShareOfPay =
           account.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;

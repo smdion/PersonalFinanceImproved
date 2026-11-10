@@ -175,7 +175,7 @@ describe("calculateBudget", () => {
 });
 
 describe("calculateBudget — branch coverage", () => {
-  it("warns when selectedColumn exceeds an item's amounts length", () => {
+  it("an item with fewer amounts than columns stops the read", () => {
     const input: BudgetInput = {
       columnLabels: ["Standard", "Tight", "Emergency"],
       selectedColumn: 2,
@@ -190,15 +190,28 @@ describe("calculateBudget — branch coverage", () => {
       asOfDate: AS_OF_DATE,
     };
 
-    const result = calculateBudget(input);
-    expect(result.warnings).toContainEqual(
-      expect.stringContaining(
-        'Budget item "Rent" has 2 columns but column 2 was requested',
-      ),
+    // The writers and the money migration give every item every column.
+    expect(() => calculateBudget(input)).toThrow(
+      "A budget item holds 2 amounts for 3 columns",
     );
-    // Falls back to $0
+  });
+
+  it("a column past the list reads as no budget, with a warning", () => {
+    const result = calculateBudget({
+      columnLabels: ["Standard"],
+      selectedColumn: 1,
+      items: [
+        {
+          category: "Housing",
+          label: "Rent",
+          amounts: [900],
+          isEssential: true,
+        },
+      ],
+      asOfDate: AS_OF_DATE,
+    });
     expect(result.totalMonthly).toBe(0);
-    expect(result.essentialTotal).toBe(0);
+    expect(result.warnings).toEqual(["Column 1 was requested of 1 — using $0"]);
   });
 
   it("handles all-essential items (no discretionary)", () => {
@@ -332,7 +345,7 @@ describe("calculateBudget — branch coverage", () => {
     expect(result.totalMonthly).toBeCloseTo(100.0, 2);
   });
 
-  it("handles items with empty amounts array gracefully", () => {
+  it("an item with no amounts stops the read", () => {
     const input: BudgetInput = {
       columnLabels: ["Standard"],
       selectedColumn: 0,
@@ -348,14 +361,9 @@ describe("calculateBudget — branch coverage", () => {
       asOfDate: AS_OF_DATE,
     };
 
-    const result = calculateBudget(input);
-    // Empty amounts => col 0 out of bounds => warning + $0
-    expect(result.warnings).toContainEqual(
-      expect.stringContaining(
-        'Budget item "Empty" has 0 columns but column 0 was requested',
-      ),
+    expect(() => calculateBudget(input)).toThrow(
+      "A budget item holds 0 amounts for 1 columns",
     );
-    expect(result.totalMonthly).toBe(500);
   });
 
   it("has correct per-category totals and item breakdown", () => {

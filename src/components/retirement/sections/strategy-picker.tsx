@@ -10,7 +10,7 @@ import {
   getAllStrategyKeys,
   getStrategyMeta,
 } from "@/lib/config/withdrawal-strategies";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { recommendWithdrawalStrategy } from "@/lib/pure/retirement/withdrawal-strategy-recommendation";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
@@ -52,8 +52,7 @@ export function StrategyPickerSection({
   hasBudgetLink,
   isEditable,
 }: Props) {
-  const strategyMeta =
-    STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const strategyMeta = storedStrategyConfig(settings.withdrawalStrategy);
   const rec = recommendWithdrawalStrategy({
     retirementHorizonYears: settings.endAge - settings.retirementAge,
     hasBudgetLink,
@@ -119,8 +118,7 @@ export function StrategyChip({
   upsertSettings: UpsertSettingsMutation;
   editable: boolean;
 }) {
-  const strategyMeta =
-    STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const strategyMeta = storedStrategyConfig(settings.withdrawalStrategy);
   return (
     <span className={chipCls}>
       <span className={labelCls}>Strategy</span>

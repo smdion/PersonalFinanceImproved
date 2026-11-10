@@ -1,6 +1,7 @@
 // Part of the Drizzle schema (PostgreSQL) — see schema-pg.ts.
 
-import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 13. App config / admin

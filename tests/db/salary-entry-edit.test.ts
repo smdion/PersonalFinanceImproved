@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
+import { salaryEntryEdit } from "@/lib/db/shapes/salary-entry-edit";
 
 describe("salaryEntryEdit — one parse for every salary editor", () => {
   it("numbers, with blanks clearing the nullable ones", () => {

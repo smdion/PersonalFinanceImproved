@@ -320,7 +320,7 @@ describe("contributionProfiles router", () => {
           contributionAccounts: {
             "999": {
               contributionValue: "5000",
-              contributionMethod: "dollar_amount",
+              contributionMethod: "fixed_annual",
               isActive: true,
             },
           },
@@ -386,7 +386,7 @@ function seedContribProfile(
     .insert(sqliteSchema.contributionProfiles)
     .values({
       name: "Test What-If",
-      contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      contributionActiveFields: { contributionAccounts: {} },
       ...overrides,
     })
     .returning({ id: sqliteSchema.contributionProfiles.id })
@@ -428,9 +428,11 @@ describe("contributionProfiles coverage", () => {
           name: "WithActiveFields",
           contributionActiveFields: {
             contributionAccounts: {
-              [String(acctId)]: { contributionValue: "0.15" },
+              [String(acctId)]: {
+                contributionValue: "0.15",
+                contributionMethod: "percent_of_salary",
+              },
             },
-            jobs: {},
           },
         });
 
@@ -502,7 +504,6 @@ describe("contributionProfiles coverage", () => {
                 displayNameCustom: "My Custom Name",
               },
             },
-            jobs: {},
           },
         });
 
@@ -571,43 +572,6 @@ describe("contributionProfiles coverage", () => {
         for (const a of accts) {
           expect(a.accountName).toContain(" — ");
         }
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
-  // ── GETBYID: suggested perf account fallback ──
-
-  describe("getById — suggestedPerfAccount fuzzy match", () => {
-    it("falls back to fuzzy perf account match when no explicit FK", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "Alex");
-        const jobId = seedJob(db, personId, { employerName: "Fidelity" });
-        // Create a perf account that matches by type + person
-        seedPerformanceAccount(db, {
-          institution: "Fidelity",
-          accountType: "401k",
-          accountLabel: "Alex 401k",
-          ownerPersonId: personId,
-          parentCategory: "Retirement",
-        });
-        // Create a contrib account WITHOUT performanceAccountId
-        seedContribAccount(db, {
-          personId,
-          jobId,
-          accountType: "401k",
-          performanceAccountId: null,
-        });
-
-        const profileId = seedContribProfile(db, { name: "FuzzyPerfTest" });
-        const result = await caller.contributionProfile.getById({
-          id: profileId,
-        });
-        expect(result).not.toBeNull();
-        // The account detail should exist and have an accountName that includes institution info
-        expect(result!.accountDetails.length).toBeGreaterThanOrEqual(1);
       } finally {
         cleanup();
       }
@@ -1144,7 +1108,6 @@ describe("contributionProfiles coverage", () => {
                 contributionMethod: "fixed_annual",
               },
             },
-            jobs: {},
           },
         });
         const listed = (await caller.contributionProfile.list()).find(
@@ -1257,10 +1220,10 @@ describe("contributionProfiles coverage", () => {
   // toggles) moved to salary-profiles.test.ts — this router no longer
   // returns salary/job data at all (see deductionDetails coverage above).
 
-  // ── GETBYID: fuzzy match via personName in label (not ownerPersonId) ──
+  // ── GETBYID: an unlinked row isn't matched by a label holding its name ──
 
-  describe("getById — fuzzy match by person name in account label", () => {
-    it("matches perf account by person name in label when ownerPersonId differs", async () => {
+  describe("getById — an unlinked account and a label holding its person's name", () => {
+    it("keeps its own name: no performance account is matched by label", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Jordan");
@@ -1280,13 +1243,15 @@ describe("contributionProfiles coverage", () => {
           performanceAccountId: null,
         });
 
-        const profileId = seedContribProfile(db, { name: "FuzzyNameMatch" });
+        const profileId = seedContribProfile(db, { name: "UnlinkedNameMatch" });
         const result = await caller.contributionProfile.getById({
           id: profileId,
         });
-        // Matched to "Jordan Old 401k" by name, so it takes that label.
+        // Unlinked, so it keeps its own label, not "Jordan Old 401k".
         expect(result!.accountDetails).toHaveLength(1);
-        expect(result!.accountDetails[0]!.accountName).toBe("Jordan Old 401k");
+        expect(result!.accountDetails[0]!.accountName).toBe(
+          "Jordan 401k (TestCo)",
+        );
       } finally {
         cleanup();
       }
@@ -1402,7 +1367,6 @@ describe("contributionProfiles coverage", () => {
                 contributionMethod: "percent_of_salary",
               },
             },
-            jobs: {},
           },
         });
 
@@ -1510,7 +1474,7 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {
               [String(accountId)]: {
                 contributionValue: "5000",
-                contributionMethod: "dollar_amount",
+                contributionMethod: "fixed_annual",
                 isActive: true,
               },
             },
@@ -1529,7 +1493,7 @@ describe("contributionProfiles coverage", () => {
         const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
         const fields = detail.activeFields as Record<string, unknown>;
         expect(fields.contributionValue).toBe("5000");
-        expect(fields.contributionMethod).toBe("dollar_amount");
+        expect(fields.contributionMethod).toBe("fixed_annual");
         expect(fields.isActive).toBe(false);
       } finally {
         cleanup();
@@ -1546,7 +1510,7 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {
               [String(accountId)]: {
                 contributionValue: "5000",
-                contributionMethod: "dollar_amount",
+                contributionMethod: "fixed_annual",
                 isActive: false,
               },
             },

@@ -18,8 +18,8 @@
 
 - **<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages** — Dashboard, Paycheck, Budget, Savings, Portfolio, Performance, Brokerage, Benchmarks, Net Worth, Historical, Mortgage, Liabilities, Assets, Retirement (+ methodology pages), Tax Buckets, Taxes, Milestones, Recommendations, Profiles, Tools (ESPP, Relocation), Settings, Versions and more.
 - **Calculators** in `lib/pure/<area>/` — paycheck, tax, budget, contribution, mortgage, net worth, savings, emergency fund, brokerage goals, Monte Carlo simulation, relocation, Coast FIRE, Social Security, Simple tax mode, the plan judge (`assessPlan`) and more.
-- **The projection engine** — `lib/pure/engine/`, <!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules; map in `engine/ARCHITECTURE.md`.
-- **<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->18<!-- /AUTO-GEN --> migrations (PG + SQLite).
+- **The projection engine** — `lib/pure/engine/`, <!-- AUTO-GEN:engineModules -->25<!-- /AUTO-GEN --> modules; map in `engine/ARCHITECTURE.md`.
+- **<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->21<!-- /AUTO-GEN --> migrations (PG + SQLite).
 - **Integrations** — YNAB and Actual Budget (two-way budget sync, cash, assets, savings categories), SimpleFIN (balances, holdings, transactions), Tiingo prices, SEC fund facts.
 
 Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is meant to be one entry; see RULES.md § Known Gaps), and the engine is **one pure module per concern** behind an orchestrator.
@@ -60,27 +60,28 @@ This is the architectural foundation. Every data model, UI component, and calcul
 Run `ls src/lib/ src/components/ src/server/routers/` for the live layout.
 Key concept → directory map:
 
-| Concept                 | Directory                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Calculators (pure)      | `src/lib/pure/<area>/`: accounts, advice, budget, contributions, debts, household, investments, net-worth, paycheck, retirement, savings, simulation, sync, tax                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Engine modules          | `src/lib/pure/engine/` (<!-- AUTO-GEN:engineModules -->33<!-- /AUTO-GEN --> modules), with the year handlers' stages in `projection-year-handlers/`, the per-account ledger in `individual-accounts/` and the routing modes in `withdrawal-routing/`                                                                                                                                                                                                                                                                                                                             |
-| Calculator I/O types    | `src/lib/pure/<area>/*.types.ts` beside each calculator; the engine's in `src/lib/pure/engine/types/` (no barrel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Shared utilities        | `src/lib/utils/` (dates, formatting, math; no domain logic)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Shared server reads     | `src/server/data/` (one read per table or subject, shared by routers and services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| Server services         | `src/server/services/<area>/`: composition that needs I/O (reads, then pure calculators), shared by routers                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->45<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Domain components       | `src/components/{paycheck,budget,savings,networth,performance,debts,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->23<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->29<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->29<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->10<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), debts (<!-- AUTO-GEN:mortgageComponents -->10<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->33<!-- /AUTO-GEN -->) |
-| Dashboard cards         | `src/components/dashboard/` (<!-- AUTO-GEN:dashboardCards -->20<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Migrations              | `drizzle/` + `drizzle-sqlite/` (<!-- AUTO-GEN:migrations -->18<!-- /AUTO-GEN --> squashed baseline per release; PG in `drizzle/`, SQLite in `drizzle-sqlite/`)                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Scripts                 | `scripts/` (seed, validate, verify-docs, release)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Tests                   | `tests/` (Vitest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Docs                    | `docs/RULES.md`, `docs/DESIGN.md`, `docs/TESTING.md`, `docs/OPS.md`, [`docs/CALCULATIONS.md`](CALCULATIONS.md) (every calculation: function, authority, tests)                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Concept                            | Directory                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calculators (pure)                 | `src/lib/pure/<area>/`: accounts (the tax buckets in `accounts/tax-buckets/`), advice, budget, contributions, debts, household, investments, net-worth, paycheck, retirement, savings, simulation, sync, tax. The engine payload's pure steps sit in their area: the tax year and parameters in `tax/` (`resolve-tax-year.ts`, `resolve-tax-params.ts`), contribution caps in `contributions/` (`cap-contributions.ts`), the projection settings in `retirement/` (`projection-settings.ts`)                                                                                                                                                                                                                                                          |
+| Engine modules                     | `src/lib/pure/engine/` (<!-- AUTO-GEN:engineModules -->25<!-- /AUTO-GEN --> modules), with the year handlers' stages in `projection-year-handlers/`, the per-account ledger in `individual-accounts/` and the routing modes in `withdrawal-routing/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Calculator I/O types               | `src/lib/pure/<area>/*.types.ts` beside each calculator; the engine's in `src/lib/pure/engine/types/` (no barrel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Shared utilities                   | `src/lib/utils/` (dates, formatting, math; no domain logic)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Config tables (declare)            | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| DB schema                          | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Stored shapes, migrations, backups | `src/lib/db/shapes/` (the stored JSON schemas and salary-entry shapes), `src/lib/db/migrate/` (data-converting migrations, shipped reference data), `src/lib/db/backup/` (the backup file, its transforms, restore); the stored-shape readers are `src/lib/db/stored-*.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Shared server reads                | `src/server/data/` (one read per table or subject, shared by routers and services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Server services                    | `src/server/services/<area>/`: composition that needs I/O (reads, then pure calculators), shared by routers. `projection/projection-run.ts` builds a projection's engine input (its steps in `projection/engine-payload/`), beside the strategy, relocation and Coast FIRE services; the Simulation's run is `simulation/monte-carlo-projection.ts`; budget-API push and pull and the SimpleFIN sync are in `sync/` (`sync/simplefin/`); the mortgage summary and other liabilities in `debts/`                                                                                                                                                                                                                                                       |
+| tRPC routers                       | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->10<!-- /AUTO-GEN --> settings sub-routers); the `net-worth/` folder is mounted as `networth`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Auth + tRPC middleware             | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Pages (App Router)                 | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Shared UI primitives               | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->42<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Domain components                  | `src/components/{paycheck,budget,savings,net-worth,performance,debts,settings,profiles,contributions}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->15<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->19<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->29<!-- /AUTO-GEN -->), net-worth (<!-- AUTO-GEN:networthComponents -->11<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), debts (<!-- AUTO-GEN:mortgageComponents -->10<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->33<!-- /AUTO-GEN -->); profiles (the Profiles page: contribution, salary, retirement, savings and What-If parts), contributions (contribution accounts and cards) |
+| Dashboard cards                    | `src/components/dashboard/` (<!-- AUTO-GEN:dashboardCards -->20<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Budget API clients                 | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Migrations                         | `drizzle/` + `drizzle-sqlite/` (<!-- AUTO-GEN:migrations -->21<!-- /AUTO-GEN --> squashed baseline per release; PG in `drizzle/`, SQLite in `drizzle-sqlite/`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Scripts                            | `scripts/` (seed, validate, verify-docs, release)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Tests                              | `tests/` (Vitest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Docs                               | `docs/RULES.md`, `docs/DESIGN.md`, `docs/TESTING.md`, `docs/OPS.md`, [`docs/CALCULATIONS.md`](CALCULATIONS.md) (every calculation: function, authority, tests)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -189,7 +190,7 @@ Helpers: `taxTypeTextColor()`, `taxTypeLabel()` (reads `TAX_TYPE_LABELS` in `lib
 - Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers, and its `chartHex` into `CATEGORY_CHART_HEX`, which adds only ESPP and pension
 - **Account scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ all accounts (§ Account Categories: "Portfolio money" is the other part).
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
-- **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. `AccountMapping.localId` uses the format `"performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}"`. Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
+- **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. An account mapping resolves by its typed id (`performanceAccountId`, `assetId`, `debtId`, or `loanId` with `loanMapType`); its `localId` (`"performance:{id}" | "asset:{id}" | "debt:{id}" | "mortgage:{loanId}:{type}"`) names the same target, and the pseudo-accounts `"cash"` and `"creditCard"` are matched by `localId` alone. A mapping without a typed id is skipped by the pull with a warning (the credentials migration gave every mapping it could match one). Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
 
 ---
 
@@ -378,7 +379,7 @@ Every setting can change by year ("Changes by year", resolved in `override-resol
 
 **Retirement scope and the plan judge.** Every year row carries two balances from one helper (`scopedBalances`, `balance-utils.ts`): `retirementBalance` — the aggregate minus Portfolio-parented accounts (`computeNonRetirementExclusion`, the same exclusion routing uses) — and `allAccountsBalance` (net-worth views only, lint-guarded). Depletion is retirement money running out. Whether a plan works is decided once, by `assessPlan` (`lib/pure/retirement/plan-outcome.ts`): the first retirement year with material unmet spending (the engine's `unmetNeedMaterial`, floor `shortfallMaterialityFloor`) or with retirement money gone while later years still need withdrawals, with a reason (`depleted` / `penaltyGap` / `shortfall`). Simulation trials, Coast FIRE, the optimizers, tax optimization, relocation, stress tests and the report all read it. Routing guarantees that make the verdict meaningful: bracket filling draws Traditional above the target once Roth/brokerage/HSA are gone; percentage mode places an emptied or capped account's share on the others; the gross-up funds what routing actually delivers and prices NIIT; penalty-locked categories are capped at what their tracked accounts can give (`reachableByCategory`). The full contract is § Account Categories. Showing simulated vs baseline figures follows one rule (`simulatedOrBaseline`, `usePlanEngineInput`, `DEFAULT_SIMULATION`) — § Account Categories, "Simulated vs baseline".
 
-**Tax-year resolution:** every tax-figure consumer (the projection engine, the paycheck calculator, `savings.ts`) resolves its year through one function, `resolveTaxParams()` (`lib/config/tax-params.ts`), instead of each maintaining its own `WHERE tax_year = …` query. It picks a year — `tax_params` is an optional per-year vintage marker, not a value store; the existing `contribution_limits`/`tax_brackets`/`ltcg_brackets`/`irmaa_brackets`/`fpl_by_household` tables remain the only value store — and returns that year's slices in the shapes each engine module already consumed. A retirement profile can pin its resolved year via `retirement_profiles.tax_params_year` (NULL = track the latest enacted year, the default for every profile); re-opening a pinned profile reproduces its numbers instead of silently re-pricing when a newer tax year is seeded. The pin is set through `retirement.retirementProfiles.update` (`taxParamsYear`); there's no UI control for it yet. `irmaa_brackets` and `fpl_by_household` feed the engine's IRMAA and ACA checks.
+**Tax-year resolution:** every tax-figure consumer (the projection engine, the paycheck calculator, `savings.ts`) resolves its year through one function, `resolveTaxParams()` (`lib/pure/tax/resolve-tax-params.ts`), instead of each maintaining its own `WHERE tax_year = …` query. It picks a year — `tax_params` is an optional per-year vintage marker, not a value store; the existing `contribution_limits`/`tax_brackets`/`ltcg_brackets`/`irmaa_brackets`/`fpl_by_household` tables remain the only value store — and returns that year's slices in the shapes each engine module already consumed. A retirement profile can pin its resolved year via `retirement_profiles.tax_params_year` (NULL = track the latest enacted year, the default for every profile); re-opening a pinned profile reproduces its numbers instead of silently re-pricing when a newer tax year is seeded. The pin is set through `retirement.retirementProfiles.update` (`taxParamsYear`); there's no UI control for it yet. `irmaa_brackets` and `fpl_by_household` feed the engine's IRMAA and ACA checks.
 
 ### Projection Card
 
@@ -399,7 +400,7 @@ Tooltip rendering for the projection card is data-driven and lives in
 it to `renderTooltip()`. The renderer decides _how_ to render — never _what_
 data to show. Section order is fixed; every section is `{d.field && <render>}`.
 
-Helper modules (`utils.ts`, `use-projection-derived.ts`, `types.ts`) hold the
+Helper modules (`bucket-slots.ts`, `projection-columns.ts`, `use-projection-derived.ts`, `types.ts`) hold the
 data-driven lookups (`bucketSlotMap`, `colKeyParts`, `itemTaxType`, etc.).
 Keep the field-by-field contract in the file header comment of
 `tooltip-renderer.tsx` — not here.
@@ -467,7 +468,7 @@ brokerage_goals → engine input (brokerageGoals)
 
 **Schema:** `brokerage_goals` (name, target amount, year, priority, active, notes). Basis lives on `performance_accounts.cost_basis`.
 
-**UI:** `components/brokerage/brokerage-goals.tsx` (cards + summary figures).
+**UI:** `app/(dashboard)/brokerage/brokerage-goals.tsx` (cards + summary figures).
 
 ---
 
@@ -615,7 +616,7 @@ The rules are RULES.md § Data-Driven Architecture.
 | File                                                | Role                                                                                             |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `src/lib/config/account-types.ts`                   | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate         |
-| `src/lib/config/account-balance.ts`                 | Balance-structure helpers (Traditional, Roth, basis)                                             |
+| `src/lib/pure/accounts/account-balance.ts`          | Balance-structure helpers (Traditional, Roth, basis)                                             |
 | `src/lib/config/display-labels.ts`                  | Label maps and performance-category constants                                                    |
 | `src/lib/config/account-types.types.ts`             | `AccountTypeConfig` (the entry shape), `AccountBalance` union                                    |
 | `src/lib/constants.ts`                              | App-wide defaults and thresholds                                                                 |
@@ -632,7 +633,7 @@ The rules are RULES.md § Data-Driven Architecture.
 | `src/lib/pure/simulation/dollars.ts`                | The Simulation's outcomes in a view's dollars (today's or nominal)                               |
 | `src/lib/config/eligibility-reason.ts`              | `EligibilityReason`: what decided a withdrawal's eligibility, with its age, year or basis        |
 | `src/lib/config/eligibility-labels.ts`              | `describeEligibility`: the one wording of an `EligibilityReason`, formatted in the browser       |
-| `src/lib/db/version-tables.ts`                      | Each versioned table and its scope (household, logins, installation); the restore lists follow   |
+| `src/lib/db/backup/version-tables.ts`               | Each versioned table and its scope (household, logins, installation); the restore lists follow   |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
@@ -747,7 +748,7 @@ data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
 number and election a job needs for a live calculation comes from a
 **Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
 a **complete entry**, `SalaryEntry` (`z.infer` of `salaryEntrySchema` in
-`src/lib/db/json-schemas.ts`):
+`src/lib/db/shapes/json-schemas.ts`):
 
 ```ts
 type SalaryEntry = {
@@ -789,7 +790,7 @@ stored and later misread. It also carries every limit: amounts are ≥ 0,
 
 **One parse for every salary editor.** A field edit from the Paycheck page
 or Profiles → Salary goes through `salaryEntryEdit()`
-(`lib/db/salary-entry-edit.ts`), which checks the value against
+(`lib/db/shapes/salary-entry-edit.ts`), which checks the value against
 `salaryEntrySchema`'s own field, and is saved with `salaryProfile.patchEntry`
 (a field-level merge in one transaction — never a whole-`salaries` PUT from
 a client copy). Never add a second parse or a second set of limits.
@@ -868,7 +869,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 - **Success bars.** 90% (`SIMULATION_CONFIDENCE_THRESHOLD`) for Coast FIRE and the strategy comparison's diagnosis; the screens rate 90% and up best and 75% and up next. The report's on-track verdict and action items use 85% (`lib/pure/advice/report/`).
 - **Bands** are the 5th to 95th percentiles of each year's retirement balance across all trials (linear between order statistics, R's type 7). Failed trials stay in, at $0 once their money is gone.
 - **Today's dollars.** Each trial's figures are divided by that trial's own price index before the percentiles are taken. A row uses the index at its start (`growth(t)`, 1 for the first row): right for the year's withdrawal, but a year-end balance reads high: by a year's inflation for a retired household, and by the part of the first year left at the as-of date for a working one.
-- **Fixed-return line.** The Simulation's own fixed-return line compounds, each year, the weighted sum of each class's geometric mean (`routers/projection/monte-carlo.ts`).
+- **Fixed-return line.** The Simulation's own fixed-return line compounds, each year, the weighted sum of each class's geometric mean (`services/simulation/monte-carlo-projection.ts`).
 
 ---
 
@@ -901,7 +902,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 
 A migration that rewrites data runs **one converter** both on a live
 database (`db-migrate.ts`, inside the migration's transaction: registered by
-tag in `MIGRATION_CONVERTERS` (`src/lib/db/migration-converters.ts`), it runs
+tag in `MIGRATION_CONVERTERS` (`src/lib/db/migrate/migration-converters.ts`), it runs
 in the pending loop and both squash replays, before the tag's SQL when that
 drops what it reads, after it when that adds what it writes) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
@@ -912,8 +913,8 @@ after a squash drops it from the journal). `db-migrate.ts` imports the converter
 `src/` nor the Next build): **one copy** serves both paths, as the
 reference-data reconcile, the demo-schema stamp and the versioned table list
 already do. Converters work
-on snake_case rows (JSON as object or text), are idempotent (a no-op once
-their source is gone) and write only non-default values; the restore path
+on snake_case rows (JSON as object or text), are idempotent (below: "What a
+converter may decide by") and write only non-default values; the restore path
 also drops the columns the migration drops. A migration that only renames
 or removes a JSON key, moving the value unchanged (no arithmetic, no lookup
 across rows; migration 0014), may instead be one SQL file per dialect plus a
@@ -938,11 +939,100 @@ whole when a statement is already done or moved past, or when the table has
 a column a later migration adds that the recreate would drop (the database
 is past it); any other error stops the replay.
 
+**What a converter may decide by.** A converter reruns on every squash
+replay and every restore, with no signal of what it is past, so each one is
+idempotent by construction, and its test must prove it: run twice over
+its own output, it writes nothing and every row stays byte-identical
+(`tests/db/converter-replay.ts` does this on each path: a backup's tables,
+SQLite and PostgreSQL).
+
+- **Allowed:** a gate on structure (a column or key that is empty or
+  absent, a missing row, a JSON shape such as the encryption envelope) or
+  on a closed-set discriminant (a match type, a contribution method, a
+  stored key from a fixed list, a boolean); content computed from the
+  values read, once the gate has chosen the row; and an in-place rewrite
+  only when it is a projection, giving the same result applied to its own
+  output (padding an array, copying a value from its master row, removing
+  keys named by a fixed list).
+- **Forbidden:** inferring a unit, or "already converted", from a
+  magnitude (0.5 is both a whole percent and a fraction), and any in-place
+  rewrite that is not idempotent.
+- **Frozen:** a later release replays the converter with that release's
+  code, so it reads only its tables and its own constants (no live schema,
+  config or key list), and it deletes or strips by an explicit retired
+  list, never by "not in today's set". Its tables arrive as a deep-frozen
+  copy on every path, so changing one in place throws. One boundary: a
+  refusal's check (`src/lib/db/migrate/frozen-shape.ts`, the shape as data)
+  takes each closed set as its values at the tag and the config's now, and
+  its shape takes whatever the live schema takes (a test holds it). The
+  restore runs every converter on an older backup, so a value a later
+  release adds, or one it retires before its own tag converts it, is never
+  refused; nothing is written or deleted by them.
+- **Several shapes, one tag:** a tag registers one converter or a list
+  that runs in order, each over a fresh read of its tables, so the second
+  sees what the first wrote. A list's `beforeSql` converters come before
+  its `afterSql` ones, so the restore step, which runs the whole list in
+  order, runs them in the live order. A converter returns row updates, inserts
+  (the database numbers the row; a restore gives it the table's next id)
+  and deletes, all by `id`; they apply as deletes, then updates, then
+  inserts, and each must change exactly one row or the migration stops. No cascade or
+  set-null runs for a converter, so a delete of a row other rows still
+  reference is refused on every path (PostgreSQL's foreign keys from
+  `pg_constraint`, SQLite's from `pragma_foreign_key_list`, the restore
+  step's from the schema): the converter deletes the children first. The
+  restore step checks every write of a result before the first lands.
+  A converter inserts only into the tables its `rowCounts.grows` names
+  and deletes only from its `rowCounts.shrinks` (the runners refuse any
+  other; the release gate's row-count check reads the same lists), and an
+  insert names every column but `id`: a restore writes NULL, not the
+  column's default, for one it leaves out.
+  The tag logs one line per phase with the counts.
+- **Refusing the start:** rows a converter can't convert without changing
+  what they read as make it throw `ConverterRefusal` with a code it
+  declares in `refusals` (`src/lib/db/migrate/converter-refusal.ts`):
+  the problem, the way out on an upgrade and on a restore, and the field
+  names it may name. The runner checks the code, that each refused table
+  is one the converter reads and each field is declared, and turns it into
+  `MigrationRefusal`: the declared words, row ids and field names, never a
+  value. The migration's one transaction (every pending tag) rolls back,
+  the migrator logs `migration_failed` with the ids and exits non-zero, so
+  the container doesn't start and the previous image still runs. On
+  restore it fails the restore before any write, in the restore's words.
+  For the same reason a value a converter can't write is named by its
+  kind, and a statement the driver refuses by its label and the driver's
+  code, never the driver's message.
+- **The encryption key:** a converter gets its tables and a context
+  whose `encryptionKey()` reads `ENCRYPTION_KEY` when the converter
+  asks, after `db-migrate.ts` has loaded `.env` (and from the app's
+  environment on restore), through `src/lib/crypto-envelope.ts`, the
+  server-free half of the encryption, which the migrator bundle may
+  import. A converter asks only when it has something to encrypt, so a
+  keyless install with nothing to convert still starts; missing or
+  malformed when asked, the key refuses the start as above.
+- **A restore reads its source's dialect:** `transformFromSource`
+  (`src/lib/db/backup/restore-source.ts`) runs the transforms for the
+  backup's `sourceDialect` (a version restore passes the install's own).
+  From a PostgreSQL source, each string scalar in a jsonb column is its
+  JSON text while the steps run, as `selectPg` gives it to the live
+  migration, and one no converter rewrote is its string again after; a
+  SQLite source, or a backup from before v0.8.3 that names none, runs as
+  it is.
+- **Restore-only links:** a backup from before the credentials tag was
+  taken by a version that linked rows on every start (a contribution
+  account's performance account, a mapping's portfolio label). Its restore
+  gets that match once, by text as it was, in `restoreLinks`
+  (`src/lib/db/backup/restore-links.ts`), before the converters; no live
+  converter does it, since a text match rerun on every replay would
+  re-link rows unlinked since. A backup from the tag on skips it.
+- **A new migration never recreates a SQLite table** (0005 and 0015 do,
+  and replay handles those as above); a shape that seems to need one stops
+  for an owner decision.
+
 ### A backup's closed-set values
 
 A restore or import checks a backup's rows after the transforms and the
 credentials fence, before anything is written (`checkRestoredValues` and
-`checkImportedValues`, `src/lib/db/closed-set-columns.ts`). The table there lists every text column
+`checkImportedValues`, `src/lib/db/backup/closed-set-columns.ts`). The table there lists every text column
 of a versioned table that holds a set the config defines (a test walks the
 schema's union-typed columns). A value outside its set takes the column's
 default where the owner named one (withdrawal strategy, routing mode,
@@ -1000,7 +1090,7 @@ The Performance page uses a **separate grouping** based on `accountType` from th
 | **Retirement**   | 401k, 403b, IRA                                              | Everything else             |
 | **Portfolio**    | All accounts combined (a display label, not Portfolio money) | Sum of all categories       |
 
-This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. For `account_performance` rows without a `performanceAccountId`, the system falls back to matching by `institution + accountLabel` against the master table, then to the stored `parentCategory`.
+This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. Every `account_performance` row reads its account through `performanceAccountId` (`resolveMaster`, `lib/pure/investments/annual-rollups.ts`); a row with none, or naming a missing account, throws. A row's stored `parentCategory` is its account's: the stored-JSON migration copied it, and every writer keeps the two equal.
 
 **Where numbers appear:**
 
@@ -1021,7 +1111,7 @@ How a date is resolved (the rules: RULES § Time Resolution).
 - **One request, one date.** The tRPC middleware makes `ctx.scope` per call (`server/trpc.ts`): `asOf`, the call's instant, and `today`, its household day (`calendarDateOf`). Services take the date as a parameter; a sync job reads the clock once at its run's start; a step after a network fetch may read it again, with a comment. `tests/baseline/one-year-per-request.test.ts` turns the clock to Jan 1 right after a Dec 31 scope is made and checks every query returns the same.
 - **Write stamps** read `writeStamp()` (`lib/utils/clock.ts`), the one other clock read: when a row was written, when a cache entry expires, a log line's time.
 - **Local days** are the household's: the server runs in the household time zone (Settings → General → Household, `server/data/household-timezone.ts`; `TZ` until it's set, as `.env.example` says). `calendarDateOf`, `ctx.scope.today`, snapshot dates, paycheck and budget dates and year boundaries are local days.
-- **UTC days** are SimpleFIN's: its `posted` and `transacted` timestamps (`lib/simplefin/ingest.ts` `postedDay`), balance dates, the transaction window, the Performance fill's `today` and the fill ledger use `utcDayOf`. They're compared only with each other, never with a local day. Merging the two moves an evening's transactions to the next day (v0.11, RULES § Known Gaps).
+- **UTC days** are SimpleFIN's: its `posted` and `transacted` timestamps (`server/services/sync/simplefin/ingest.ts` `postedDay`), balance dates, the transaction window, the Performance fill's `today` and the fill ledger use `utcDayOf`. They're compared only with each other, never with a local day. Merging the two moves an evening's transactions to the next day (v0.11, RULES § Known Gaps).
 
 ## Settings Belong on Their Pages
 
@@ -1104,7 +1194,7 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 1. **Resolution helper lives in `src/server/services/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/pure/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
-2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). They hold 29 fields today (17 in a salary entry, 11 on a contribution account, 1 on a deduction), past the ~25 this deviation first named; the owner kept them hand-written at 29 (2026-11-09), so revisit at ~40 fields or if they change often.
+2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/shapes/profile-fields.ts`). They hold 29 fields today (17 in a salary entry, 11 on a contribution account, 1 on a deduction), past the ~25 this deviation first named; the owner kept them hand-written at 29 (2026-11-09), so revisit at ~40 fields or if they change often.
 
 3. **Plans keep the internal name `scenarios`** (table, router, permission key `scenario`): renaming would be a migration plus an RBAC-data change for no user-facing gain. Everything user-facing says "Plan".
 
@@ -1174,7 +1264,7 @@ and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->45<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->42<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).
@@ -1298,18 +1388,18 @@ by `ratchet/no-unlabeled-control`; a hand date format by
 
 ### File Organization
 
-| Directory                               | Contains                                                                                                                                       |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/(dashboard)/<route>/`          | `page.tsx`, a thin server page, and `<route>-content.tsx`, the client component it renders; hooks and parts only that route uses sit beside it |
-| `src/components/ui/`                    | Shared primitives (§ Layout Patterns), and the keyboard helpers `as-button.ts` and `arrow-keys.ts`                                             |
-| `src/components/forms/`                 | `FormField`, `FormInput`, `FormSelect`                                                                                                         |
-| `src/components/charts/`                | `ChartFrame`, the chart summary text and shared chart parts                                                                                    |
-| `src/components/layout/`                | The app shell: sidebar, scenario bar, quick search, data freshness, demo banner                                                                |
-| `src/components/dashboard/`             | The dashboard's cards                                                                                                                          |
-| `src/components/retirement-projection/` | The projection card (`index.tsx`, `projection-card/`), its table rows and their view models, the Simulation and the advisor report             |
-| `src/components/debts/`                 | The mortgage and liabilities cards                                                                                                             |
-| `src/components/help/`, `methodology/`  | The help page's and the methodology pages' content                                                                                             |
-| `src/components/<feature>/`             | One folder per feature (budget, contributions, paycheck, savings, portfolio, performance, settings, …); a large part is a subfolder            |
+| Directory                               | Contains                                                                                                                                                                                                   |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/(dashboard)/<route>/`          | `page.tsx`, a thin server page, and `<route>-content.tsx`, the client component it renders; hooks and parts only that route uses sit beside it                                                             |
+| `src/components/ui/`                    | Shared primitives (§ Layout Patterns), and the keyboard helpers `as-button.ts` and `arrow-keys.ts`                                                                                                         |
+| `src/components/forms/`                 | `FormField`, `FormInput`, `FormSelect`                                                                                                                                                                     |
+| `src/components/charts/`                | `ChartFrame`, the chart summary text and shared chart parts                                                                                                                                                |
+| `src/components/layout/`                | The app shell: sidebar, scenario bar, quick search, data freshness, demo banner                                                                                                                            |
+| `src/components/dashboard/`             | The dashboard's cards                                                                                                                                                                                      |
+| `src/components/retirement-projection/` | The projection card (`index.tsx`, `projection-card/`), the table and its rows' view models (`table/`), the Simulation (`simulation/`), "Changes by year" (`overrides/`) and the advisor report (`report/`) |
+| `src/components/debts/`                 | The mortgage and liabilities cards                                                                                                                                                                         |
+| `src/components/help/`, `methodology/`  | The help page's and the methodology pages' content                                                                                                                                                         |
+| `src/components/<feature>/`             | One folder per feature (budget, contributions, paycheck, profiles, savings, portfolio, performance, settings, …); a large part is a subfolder                                                              |
 
 A component file's chart summary sits beside it as `<chart>.summary.ts`.
 A hook lives in one of three homes, by who uses it: beside

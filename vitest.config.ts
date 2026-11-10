@@ -167,11 +167,6 @@ export default defineConfig({
         "src/lib/db/pg/**",
         "src/lib/db/sqlite/**",
         "src/lib/db/schema.ts",
-        // DB runtime — requires live database for transactions/queries
-        // (version-logic.ts is not here: tests/integration/backup-roundtrip
-        // runs it against the test SQLite database.)
-        "src/lib/db/backfill-local-ids.ts",
-        "src/lib/db/backfill-perf-ids.ts",
       ],
       // The gate covers the engine and lib/pure, the code that produces the
       // figures. CI's unit shards (LEDGR_COVERAGE_SHARD) each see part of the
@@ -211,6 +206,10 @@ export default defineConfig({
         __dirname,
         "node_modules/server-only/empty.js",
       ),
+      // The migrator's source, never the db-migrate.js bundle a build leaves
+      // beside it: the bundle holds its own converter registry, which a
+      // test's vi.mock can't reach.
+      "../../db-migrate": path.resolve(__dirname, "db-migrate.ts"),
     },
   },
 });

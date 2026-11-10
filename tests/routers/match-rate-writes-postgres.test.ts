@@ -21,9 +21,9 @@ import type { Session } from "next-auth";
 import { runMigrator } from "./fresh-install-cases";
 import {
   matchRateWriteCases,
-  sqliteDecimal,
   type MatchRateDb,
 } from "./match-rate-writes-cases";
+import { decimalText } from "./decimal-text";
 
 // Not imported from ./setup: that module loads the db module (as SQLite)
 // before this file can point DATABASE_URL at PostgreSQL.
@@ -90,8 +90,8 @@ describe.skipIf(skipWithoutPostgres)("match writes (PostgreSQL)", () => {
         )!;
         return {
           ...r,
-          employerMatchValue: sqliteDecimal(r.employerMatchValue),
-          employerMatchRate: sqliteDecimal(r.employerMatchRate),
+          employerMatchValue: decimalText(r.employerMatchValue),
+          employerMatchRate: decimalText(r.employerMatchRate),
         };
       },
       entries: async (id) => {

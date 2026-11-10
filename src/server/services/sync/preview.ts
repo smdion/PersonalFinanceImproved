@@ -5,13 +5,7 @@ import { loansFedBySimplefin } from "@/server/services/sync/loan-feed";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
-import {
-  getApiConnection,
-  cacheGet,
-  type BudgetAccount,
-  type BudgetCategoryGroup,
-  type BudgetMonthDetail,
-} from "@/lib/budget-api";
+import { getApiConnection, cacheGet } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import { buildMortgageInputs } from "@/lib/pure/debts/mortgage-balance";
@@ -54,9 +48,9 @@ export async function computeSyncPreview(
     activeMortgageLoans,
     mortgageExtraPayments,
   ] = await Promise.all([
-    cacheGet<BudgetAccount[]>(ctx.db, service, "accounts"),
-    cacheGet<BudgetCategoryGroup[]>(ctx.db, service, "categories"),
-    cacheGet<BudgetMonthDetail>(ctx.db, service, `months/${currentMonth}`),
+    cacheGet(ctx.db, service, "accounts"),
+    cacheGet(ctx.db, service, "categories"),
+    cacheGet(ctx.db, service, `months/${currentMonth}`),
     getApiConnection(ctx.db, service),
     ctx.db.select().from(schema.appSettings),
     ctx.db.select().from(schema.budgetProfiles),
@@ -176,7 +170,7 @@ export async function computeSyncPreview(
     });
     // Contribution-linked items freeze `amounts` on edit, so resolve them to
     // show what syncBudgetToApi would push.
-    const previewNumColumns = (activeProfile.columnLabels as string[]).length;
+    const previewNumColumns = activeProfile.columnLabels.length;
     const activeProfiles = await resolveProfileSelection(ctx.scope);
     budgetItemRows = await resolveLinkedBudgetItemAmounts(
       ctx,

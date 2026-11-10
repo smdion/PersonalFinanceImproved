@@ -31,6 +31,7 @@ describe("runStressTestScenarios (M2)", () => {
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   > {
     return withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.15,
         accountOrder: ["401k", "hsa", "ira", "brokerage"],

@@ -9,7 +9,6 @@ import {
 } from "@/server/data/category-links";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values.schema";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
-import type { BudgetCategoryGroup } from "@/lib/budget-api";
 
 export const apiLinkProcedures = {
   // ══ API CATEGORY SYNC ══
@@ -78,11 +77,7 @@ export const apiLinkProcedures = {
     const active = await getActiveBudgetApi(ctx.db);
     if (active === "none") return { balances: [], service: null };
 
-    const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
-      ctx.db,
-      active,
-      "categories",
-    );
+    const categoriesCache = await cacheGet(ctx.db, active, "categories");
     if (!categoriesCache) return { balances: [], service: active };
 
     const catMap = new Map<

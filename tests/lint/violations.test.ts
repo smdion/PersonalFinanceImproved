@@ -89,7 +89,7 @@ import {
 import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
+import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
 import { engineHousehold } from "../fixtures/answer-key-household";
@@ -359,15 +359,17 @@ const CLOSED_SET_LISTS_KNOWN: Record<
       count: 1,
       reason,
     },
-    "src/components/retirement-projection/projection-table-accum-row.tsx": {
-      count: 3,
-      reason,
-    },
-    "src/components/retirement-projection/projection-table-decum-row.tsx": {
-      count: 3,
-      reason,
-    },
-    "src/components/retirement-projection/projection-table.tsx": {
+    "src/components/retirement-projection/table/projection-table-accum-row.tsx":
+      {
+        count: 3,
+        reason,
+      },
+    "src/components/retirement-projection/table/projection-table-decum-row.tsx":
+      {
+        count: 3,
+        reason,
+      },
+    "src/components/retirement-projection/table/projection-table.tsx": {
       count: 4,
       reason,
     },
@@ -406,6 +408,9 @@ function findHardcodedClosedSetArrayViolations(): Violation[] {
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
     const code = codeOnly(lines);
+    // A tag's converter keeps its own copy of each set as of its tag (DESIGN
+    // § Data-converting migrations: Frozen), beside the config's.
+    if (rel.startsWith("src/lib/db/migrate/v")) continue;
     for (const set of CLOSED_SETS) {
       if (rel === set.definedIn) continue;
       for (const m of code.matchAll(closedSetArrayPattern(set))) {
@@ -831,7 +836,7 @@ function findDirectCronSecretReadViolations(): Violation[] {
 // Rule 22: an API route under src/app/api/ that writes to the DB with no
 // DEMO_ONLY guard. M5 found one cron route missing the guard every sibling
 // write route had; while scoping this rule, the same gap turned up
-// independently in two MORE sibling routes (startup/route.ts,
+// independently in two MORE sibling routes (a start-up route since deleted,
 // simplefin/daily/route.ts) that the original review never flagged — fixed
 // alongside adding this rule. Detecting "does this route write" precisely
 // would need semantic analysis (writes often happen via an imported helper,
@@ -2055,12 +2060,12 @@ describe("one config entry adds an account type", () => {
  *  category added later misses them. */
 const BUILT_AT_LOAD = [
   "src/app/(dashboard)/historical/historical-content.tsx ALL_portfolioBreakdownCols",
-  "src/components/retirement-projection/projection-table-decum-row.model.ts CATEGORY_ORDER",
+  "src/components/retirement-projection/table/projection-table-decum-row.model.ts CATEGORY_ORDER",
   "src/components/retirement-projection/types.ts emptyAccumForm",
   "src/components/retirement-projection/types.ts emptyDecumForm",
-  "src/components/retirement-projection/utils.ts catDisplayLabel",
-  "src/components/retirement-projection/utils.ts bucketSlotMap",
-  "src/components/retirement-projection/utils.ts _singleBucketCategories",
+  "src/components/retirement-projection/projection-display.ts catDisplayLabel",
+  "src/components/retirement-projection/table/bucket-slots.ts bucketSlotMap",
+  "src/components/retirement-projection/table/bucket-slots.ts _singleBucketCategories",
   "src/lib/config/account-types.ts DEFAULT_WITHDRAWAL_SPLITS",
   "src/lib/pure/engine/types/overrides.schema.ts lumpSumSchema",
   "src/lib/pure/engine/types/overrides.schema.ts decumulationDefaultsInputSchema",
@@ -2070,10 +2075,10 @@ const BUILT_AT_LOAD = [
   "src/lib/utils/colors.ts ACCOUNT_TYPE_COLORS",
   "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
   "src/lib/pure/household/what-if.schema.ts zSandboxContribAdditions",
-  "src/server/routers/networth/portfolio-snapshots.ts portfolioSnapshotInput",
-  "src/server/routers/networth/snapshot-accounts.ts snapshotAccountInput",
+  "src/server/routers/net-worth/portfolio-snapshots.ts portfolioSnapshotInput",
+  "src/server/routers/net-worth/snapshot-accounts.ts snapshotAccountInput",
   "src/server/routers/performance/accounts.ts performanceAccountInput",
-  "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
+  "src/server/services/projection/projection-run.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
   "src/server/routers/settings/contribution-accounts.ts contributionAccountInput",
 ];

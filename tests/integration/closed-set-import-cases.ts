@@ -16,8 +16,9 @@ const admin = { asAdmin: true };
 
 async function app() {
   const schema = await import("@/lib/db/schema");
-  const versions = await import("@/lib/db/version-logic");
-  const { ClosedSetRefusal } = await import("@/lib/db/closed-set-columns");
+  const versions = await import("@/lib/db/backup/version-logic");
+  const { ClosedSetRefusal } =
+    await import("@/lib/db/backup/closed-set-columns");
   return { schema, ClosedSetRefusal, ...versions };
 }
 
@@ -281,7 +282,7 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
     try {
       const { exportBackup, importBackup, ClosedSetRefusal } = await app();
       const { computeTaxBucketBreakdown } =
-        await import("@/lib/pure/accounts/tax-buckets");
+        await import("@/lib/pure/accounts/tax-buckets/tax-buckets");
       await snapshot(db);
       const backup = JSON.parse(
         JSON.stringify(await exportBackup(db)),

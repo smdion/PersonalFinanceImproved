@@ -4,6 +4,10 @@
  */
 import { z } from "zod/v4";
 import type { Focus } from "@/lib/config/focus-topics";
+import type {
+  EngineAccumulationYear,
+  EngineDecumulationYear,
+} from "@/lib/pure/engine/types/index";
 import {
   CHECKPOINT_SOURCES,
   CUSTOM_GOAL_METRICS,
@@ -57,6 +61,16 @@ export type MilestoneYear = {
   mortgageBalance: number;
   otherLiabilities: number;
 };
+
+type MilestoneYearRead = "year" | "age" | "phase" | "allAccountsBalance";
+/** The engine projection-year fields the milestones read, by phase: pay
+ *  and contributions exist only in accumulation years. */
+export type MilestoneEngineYear =
+  | Pick<
+      EngineAccumulationYear,
+      MilestoneYearRead | "projectedSalary" | "totalEmployee" | "totalEmployer"
+    >
+  | Pick<EngineDecumulationYear, MilestoneYearRead>;
 
 /** One projected year, as the milestones read it. */
 export type MilestoneProjectionYear = {

@@ -4,23 +4,58 @@
 import "server-only";
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { BudgetApiService } from "./types";
+import { readStoredValue } from "@/lib/db/stored-setting";
+import type {
+  BudgetAccount,
+  BudgetApiService,
+  BudgetCategoryGroup,
+  BudgetMonthDetail,
+  BudgetTransaction,
+} from "./types";
+import { cachedShapeFor, type CacheKey } from "./cache-shapes";
 import type { BudgetAPIClient } from "./interface";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import type { Db, DbOrTx } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
 
-/** Read a cached value. Returns null if not found or expired. */
-export async function cacheGet<T>(
-  db: Db,
-  service: BudgetApiService,
-  key: string,
-  maxAgeMs?: number,
-): Promise<{
+type Cached<T> = {
   data: T;
   serverKnowledge: number | null;
   fetchedAt: Date;
-} | null> {
+};
+
+/** Read a cached value, checked against its key's shape (a refused one is
+ *  logged once per key and read as stored). Null if not found or expired. */
+export function cacheGet(
+  db: Db,
+  service: BudgetApiService,
+  key: "accounts",
+  maxAgeMs?: number,
+): Promise<Cached<BudgetAccount[]> | null>;
+export function cacheGet(
+  db: Db,
+  service: BudgetApiService,
+  key: "categories",
+  maxAgeMs?: number,
+): Promise<Cached<BudgetCategoryGroup[]> | null>;
+export function cacheGet(
+  db: Db,
+  service: BudgetApiService,
+  key: "transactions",
+  maxAgeMs?: number,
+): Promise<Cached<BudgetTransaction[]> | null>;
+export function cacheGet(
+  db: Db,
+  service: BudgetApiService,
+  key: `months/${string}`,
+  maxAgeMs?: number,
+): Promise<Cached<BudgetMonthDetail> | null>;
+export async function cacheGet(
+  db: Db,
+  service: BudgetApiService,
+  key: CacheKey,
+  maxAgeMs?: number,
+): Promise<Cached<unknown> | null> {
   const rows = await db
     .select()
     .from(schema.budgetApiCache)
@@ -41,7 +76,11 @@ export async function cacheGet<T>(
   }
 
   return {
-    data: row.data as T,
+    data: readStoredValue(
+      `budget_api_cache.${key} (${service})`,
+      row.data,
+      cachedShapeFor(key),
+    ),
     serverKnowledge: row.serverKnowledge,
     fetchedAt: row.fetchedAt,
   };

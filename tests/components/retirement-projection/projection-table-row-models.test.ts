@@ -14,7 +14,7 @@ import type {
   ProjectionResult,
 } from "@/lib/pure/engine/types";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
 import type { TooltipData } from "@/components/retirement-projection/types";
 import {
@@ -22,15 +22,15 @@ import {
   displaySalary,
   gapDrawnItems,
   yearAgesTooltip,
-} from "@/components/retirement-projection/projection-table-accum-row.model";
-import { totalContributionTooltip } from "@/components/retirement-projection/projection-table-accum-balances.model";
+} from "@/components/retirement-projection/table/projection-table-accum-row.model";
+import { totalContributionTooltip } from "@/components/retirement-projection/table/projection-table-accum-balances.model";
 import {
   categoryCellColor,
   categoryCellText,
   taxTypeCellText,
   totalWithdrawalText,
-} from "@/components/retirement-projection/projection-table-decum-row.model";
-import { totalWithdrawalTooltip } from "@/components/retirement-projection/projection-table-decum-balances.model";
+} from "@/components/retirement-projection/table/projection-table-decum-row.model";
+import { totalWithdrawalTooltip } from "@/components/retirement-projection/table/projection-table-decum-balances.model";
 import { annAndBo, people } from "../projection-household";
 
 const deflate: ProjectionState["deflate"] = (v) => v / 2;

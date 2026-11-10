@@ -76,6 +76,10 @@ const accountCreateInput = z.object({
 });
 
 export const yearRecordProcedures = {
+  /**
+   * Edit a year's category totals row; lifetime totals are refused on a finalized year (they follow its
+   * account rows). Stamps the performance date.
+   */
   updateAnnual: performanceProcedure
     .input(annualUpdateInput)
     .mutation(async ({ ctx, input }) => {
@@ -237,6 +241,10 @@ export const yearRecordProcedures = {
       });
     }),
 
+  /**
+   * Add an account's row for a year, its label, owner and category copied from the performance
+   * account; stamps the performance date and returns the row.
+   */
   createAccount: performanceProcedure
     .input(accountCreateInput)
     .mutation(async ({ ctx, input }) => {

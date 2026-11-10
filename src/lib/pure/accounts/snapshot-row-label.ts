@@ -4,7 +4,7 @@
  * the New Snapshot form. DESIGN.md "Snapshot Display".
  */
 import { getDisplayConfig } from "@/lib/config/account-types";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel } from "@/lib/config/display-labels";
 
 export interface SnapshotRowLabelInput {
   /** Who owns the row, when the owner prefix applies (a joint performance

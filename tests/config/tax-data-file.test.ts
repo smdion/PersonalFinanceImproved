@@ -8,11 +8,15 @@
 import { describe, it, expect } from "vitest";
 import { readTaxData } from "../helpers/tax-data";
 import { validateTaxDataFile } from "@/lib/tax-data/validate";
-import { irmaaBracketsSchema, ltcgBracketsSchema } from "@/lib/db/json-schemas";
+import { checkTaxDataFile } from "@/lib/tax-data/checked-file";
+import {
+  irmaaBracketsSchema,
+  ltcgBracketsSchema,
+} from "@/lib/db/shapes/json-schemas";
 import {
   assembleTaxData,
   readTaxDataDir,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import { staleTaxDataFiles } from "../../scripts/tax-data-schema";
 
 const file = readTaxData();
@@ -20,6 +24,35 @@ const file = readTaxData();
 describe("tax-data file", () => {
   it("passes every check (lib/tax-data/validate.ts — the app runs the same on a community update)", () => {
     expect(validateTaxDataFile(file)).toEqual([]);
+  });
+
+  it("checked as any parsed value, it comes back as itself", () => {
+    const parsed: unknown = JSON.parse(JSON.stringify(file));
+    const checked = checkTaxDataFile(parsed, { unknownKeys: "ignore" });
+    expect(checked.problems).toEqual([]);
+    expect(checked.file).toBe(parsed);
+  });
+
+  it("a file that passes the checks without the file's structure is refused", () => {
+    const f = JSON.parse(JSON.stringify(file)) as typeof file;
+    const latestYear = Object.keys(f.years).sort().at(-1)!;
+    Object.assign(f.years[latestYear]!.limits.ira_limit!, {
+      supersedes: "7000",
+    });
+    expect(validateTaxDataFile(f)).toEqual([]);
+    expect(checkTaxDataFile(f, {})).toEqual({
+      file: null,
+      problems: [
+        `structure years.${latestYear}.limits.ira_limit.supersedes: Invalid input: expected array, received string`,
+      ],
+    });
+  });
+
+  it("a file the checks refuse reports their problems, not its structure", () => {
+    expect(checkTaxDataFile({ formatVersion: 1, years: {} }, {})).toEqual({
+      file: null,
+      problems: ["dataVersion undefined is not a positive integer", "no years"],
+    });
   });
 
   it("the generated schemas and README key table are current (pnpm tax-data:schema)", async () => {

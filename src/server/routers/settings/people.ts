@@ -27,7 +27,12 @@ const personInput = z.object({
 
 export const peopleProcedures = {
   people: createTRPCRouter({
+    /** Every person in the household, by id. */
     list: protectedProcedure.query(({ ctx }) => getAllPeople(ctx.db)),
+    /**
+     * Add a person with their speculative-job peg and their rows in every Retirement profile
+     * (cloned from the primary person's); returns the person.
+     */
     create: adminProcedure
       .input(personInput)
       .mutation(async ({ ctx, input }) => {
@@ -78,6 +83,10 @@ export const peopleProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Refused while they own a debt, are the primary person, or have a real job or Roth basis;
+     * their speculative job, retirement rows and changes by year go with them.
+     */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

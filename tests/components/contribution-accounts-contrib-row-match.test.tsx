@@ -9,9 +9,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   AddContributionForm,
   ContributionRow,
-} from "@/components/portfolio/contribution-accounts-contrib-row";
+} from "@/components/contributions/contribution-accounts-contrib-row";
 import { expectLabelReachesControl } from "./label-click";
-import type { ContribRow } from "@/components/portfolio/contribution-accounts-types";
+import type { ContribRow } from "@/components/contributions/contribution-accounts-types";
 import {
   entryWithMergedRate,
   storedMatchRate,
@@ -19,10 +19,10 @@ import {
 import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
-vi.mock("@/components/paycheck/roth-route-select", () => ({
+vi.mock("@/components/contributions/roth-route-select", () => ({
   RothRouteSelect: () => null,
 }));
-vi.mock("@/components/portfolio/contribution-accounts-inline", () => ({
+vi.mock("@/components/contributions/contribution-accounts-inline", () => ({
   InlineText: ({ label, value }: { label: string; value: string }) => (
     <span data-testid={`inline-${label}`}>{value}</span>
   ),

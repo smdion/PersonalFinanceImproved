@@ -4,6 +4,10 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import { loadBuyingMonths } from "@/server/services/investments/buying-months";
 
 export const investmentBuyingRouter = createTRPCRouter({
+  /**
+   * Always Be Buying: each whole month since the first transaction, invested, not invested
+   * or unknown, from deposits into the counted SimpleFIN feeds.
+   */
   computeBuyingMonths: portfolioProcedure.query(({ ctx }) =>
     loadBuyingMonths(ctx),
   ),

@@ -1,0 +1,16 @@
+-- v0.10.6 credentials, syncs and links. No schema change: the converters in
+-- src/lib/db/migrate/v0106-*.ts run after this SQL, as restore runs them on
+-- an older backup.
+-- Credentials: every api_connections.config (and its copies in stored
+-- versions) not held as an encrypted envelope is encrypted with
+-- ENCRYPTION_KEY; one held as text is unwrapped, never encrypted twice.
+-- Mapping ids: a budget-app account mapping that names its Ledgr account
+-- only by an id prefix (localId, or localName without one) gets its typed
+-- id; a plain asset name gets the latest year's asset of that name. An
+-- unmatched name or a malformed id is left and reported.
+-- Joint person ids: a joint contribution account naming a person is
+-- cleared of it; one with no job that a profile sets to a percent of
+-- salary refuses the start (ids only), and nothing is changed.
+-- Cached months: every budget_api_cache months/ entry of the active budget
+-- app gives its linked active goals a savings_monthly month not yet held;
+-- then every cached month is purged (the next sync caches the current one).

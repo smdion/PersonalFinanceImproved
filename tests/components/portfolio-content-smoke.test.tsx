@@ -63,7 +63,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 vi.mock("@/components/investments/holding-history-section", () => ({
   HoldingHistorySection: () => null,
 }));
-vi.mock("@/components/portfolio/contribution-accounts", () => ({
+vi.mock("@/components/contributions/contribution-accounts", () => ({
   ContributionAccountsSettings: () => <div>contrib-accounts</div>,
 }));
 vi.mock("@/components/dashboard/utils", () => ({

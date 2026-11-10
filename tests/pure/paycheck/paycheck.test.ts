@@ -278,6 +278,7 @@ describe("calculatePaycheck", () => {
       group: "portfolio",
       employerMatch: 0,
       employerMatchTaxTreatment: "pre_tax",
+      employerMatchOnBonus: 0,
       ficaExemptAnnualCap: cap,
       ...extra,
     });
@@ -329,15 +330,17 @@ describe("calculatePaycheck", () => {
       expect(r.ficaWages).toBeCloseTo(gross - 100, 2);
     });
 
-    it("an after-tax deduction flagged FICA-exempt is still FICA wages", () => {
+    it("a FICA-exempt deduction leaves FICA wages; an after-tax one stays in", () => {
+      // The flag is on pre-tax rows only: the stored-JSON migration cleared
+      // it from after-tax ones, and every writer refuses the pair.
       const r = calculatePaycheck({
         ...base,
         deductions: [
           {
-            name: "Bad row",
+            name: "Disability",
             amount: 50,
             taxTreatment: "after_tax",
-            ficaExempt: true,
+            ficaExempt: false,
           },
           {
             name: "Medical",

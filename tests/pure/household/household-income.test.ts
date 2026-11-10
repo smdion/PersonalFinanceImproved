@@ -26,6 +26,7 @@ const account = (
   group: "retirement",
   employerMatch: 0,
   employerMatchTaxTreatment: "pre_tax",
+  employerMatchOnBonus: 0,
   ficaExemptAnnualCap: null,
   ...over,
 });

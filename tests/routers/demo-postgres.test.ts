@@ -100,7 +100,8 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   });
 
   it("shares install-wide tables with public instead of copying them", async () => {
-    const { DEMO_SHARED_TABLES } = await import("@/lib/db/demo-schema-marker");
+    const { DEMO_SHARED_TABLES } =
+      await import("@/lib/db/migrate/demo-schema-marker");
     const { rows } = await admin.query<{ tablename: string }>(
       "SELECT tablename FROM pg_tables WHERE schemaname = $1 AND tablename = ANY($2::text[])",
       [schemaName, DEMO_SHARED_TABLES],

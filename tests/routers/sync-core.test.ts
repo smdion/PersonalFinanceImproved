@@ -34,6 +34,7 @@ import {
 import * as schema from "@/lib/db/schema-sqlite";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
 import { ynabCategory, ynabTransaction } from "../fixtures/ynab-spec";
+import { decimalText } from "./decimal-text";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -205,7 +206,7 @@ describe("sync core — syncAll", () => {
     // Verify asset was updated
     const assets = db.select().from(schema.otherAssetItems).all();
     const updated = assets.find((a) => a.name === "Vehicle" && a.year === 2026);
-    expect(updated?.value).toBe("22000");
+    expect(decimalText(updated?.value)).toBe("22000");
   });
 
   it("pulls mortgage property value from tracking account", async () => {
@@ -260,7 +261,7 @@ describe("sync core — syncAll", () => {
 
     const loans = db.select().from(schema.mortgageLoans).all();
     const updated = loans.find((l) => l.id === loan.id);
-    expect(updated?.propertyValueEstimated).toBe("420000");
+    expect(decimalText(updated?.propertyValueEstimated)).toBe("420000");
     // The value only: which one to use is the household's choice.
     expect(updated?.usePurchaseOrEstimated).toBe("purchase");
   });
@@ -305,7 +306,7 @@ describe("sync core — syncAll", () => {
 
     const updatedLoans = db.select().from(schema.mortgageLoans).all();
     const updated = updatedLoans.find((l) => l.id === loan.id);
-    expect(updated?.apiBalance).toBe("285000"); // absolute value
+    expect(decimalText(updated?.apiBalance)).toBe("285000"); // absolute value
   });
 
   it("wraps client errors in INTERNAL_SERVER_ERROR", async () => {

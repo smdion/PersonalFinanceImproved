@@ -11,7 +11,7 @@
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { shippedTaxTables } from "../helpers/tax-data";
-import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
+import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getDefaultDecumulationOrder,

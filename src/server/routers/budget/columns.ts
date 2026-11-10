@@ -9,7 +9,7 @@ import {
   columnLabelsSchema,
   columnMonthsSchema,
   budgetAmountsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 import { requireBudgetProfile } from "@/server/services/budget/budget-client";
 
 export const columnProcedures = {

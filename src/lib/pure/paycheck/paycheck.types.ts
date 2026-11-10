@@ -61,7 +61,7 @@ export type ContributionAccountInput = {
   group: string; // e.g. 'retirement', 'portfolio' — driven by account data, not hardcoded
   employerMatch: number;
   /** Of employerMatch, the part that matches what the bonus check takes. */
-  employerMatchOnBonus?: number;
+  employerMatchOnBonus: number;
   /** The match this account would get at the plan's cap — the full match.
    *  Equals employerMatch when uncapped or a flat amount. */
   employerMatchAvailable?: number;

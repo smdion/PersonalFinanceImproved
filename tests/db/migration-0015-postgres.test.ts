@@ -14,7 +14,7 @@ import {
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pg from "pg";
 import * as fs from "node:fs";
-import { DEAD_SETTING_KEYS } from "@/lib/db/v0102-dead-data";
+import { DEAD_SETTING_KEYS } from "@/lib/db/migrate/v0102-dead-data";
 
 const sql = fs.readFileSync("drizzle/0015_v0102_dead_data.sql", "utf8");
 const SCHEMA = "migration_0015_test";

@@ -1,11 +1,13 @@
 /**
  * Generates the API + schema docs.
  *
- * Reads src/server/routers/ and the schema (src/lib/db/pg/) and writes:
+ * Reads src/server/routers/ and the schema (src/lib/db/schema-pg.ts) and writes:
  *   - docs/API_ROUTERS.md  — one-line summary of every tRPC procedure, by
  *     its client path, checked against tests/baseline/procedures.ts's
  *     queries; a procedure written in an index.ts fails the run
- *   - docs/SCHEMA.md       — mermaid ER diagram of every table
+ *   - docs/SCHEMA.md       — every table's columns and keys, the relations
+ *     as a mermaid diagram, jsonb shapes and the schema version
+ *     (scripts/gen-schema-docs.ts)
  *
  * Both files are regenerated on demand. Don't hand-edit them — the
  * verify-docs hook (.claude/hooks/verify-docs.sh) runs this when the
@@ -18,7 +20,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
-import { readPgSchemaSource } from "./pg-schema-source";
+import { generateSchemaDoc } from "./gen-schema-docs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -132,36 +134,36 @@ function procedureCall(
   return { kind: method, procType: ts.isIdentifier(base) ? base.text : "?" };
 }
 
-/** The JSDoc / `//` comment block just above a procedure's first line. */
+/** The doc comment just above a procedure's first line, whole: a block
+ *  comment from its opening line, or a run of `//` lines. */
 function descriptionAbove(lines: string[], i: number): string {
-  let description = "";
-  for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
-    const prev = lines[k]!.trim();
-    if (prev === "" || prev === "}") break;
-    if (prev.startsWith("/**")) {
-      // single-line jsdoc
-      const m = prev.match(/\/\*\*\s*(.+?)\s*\*\//);
-      if (m) {
-        description = m[1]!;
-        break;
-      }
+  const trimmed = (k: number) => lines[k]!.trim();
+  if (i > 0 && trimmed(i - 1).endsWith("*/")) {
+    let start = i - 1;
+    while (start >= 0 && !trimmed(start).startsWith("/*")) {
+      if (!trimmed(start).startsWith("*")) return ""; // closes code's comment
+      start--;
     }
-    if (prev.startsWith("*")) {
-      const cleaned = prev
-        .replace(/^\*\s?\/?/, "")
-        .replace(/\*\/$/, "")
-        .trim();
-      if (cleaned && !cleaned.startsWith("@")) {
-        description = cleaned + (description ? " " + description : "");
-      }
-    } else if (prev.startsWith("//")) {
-      description =
-        prev.slice(2).trim() + (description ? " " + description : "");
-    } else {
-      break; // code: a comment above it belongs to something else
-    }
+    if (start < 0) return "";
+    return lines
+      .slice(start, i)
+      .map((line) =>
+        line
+          .trim()
+          .replace(/^\/\*\*?/, "")
+          .replace(/\*\/$/, "")
+          .replace(/^\*\s?/, "")
+          .trim(),
+      )
+      .filter((text) => text !== "" && !text.startsWith("@"))
+      .join(" ");
   }
-  return description;
+  let k = i;
+  while (k > 0 && trimmed(k - 1).startsWith("//")) k--;
+  return lines
+    .slice(k, i)
+    .map((line) => line.trim().slice(2).trim())
+    .join(" ");
 }
 
 function propertyKey(file: string, name: ts.PropertyName): string {
@@ -361,112 +363,14 @@ export function buildRouterCatalog(
   return md;
 }
 
-// ── Schema ER diagram ────────────────────────────────────────────────
-
-interface TableInfo {
-  name: string;
-  fkTargets: { col: string; targetTable: string }[];
-}
-
-function parseSchemaFile(): TableInfo[] {
-  const content = readPgSchemaSource(ROOT);
-  const tables: TableInfo[] = [];
-
-  // Match: export const <varName> = pgTable("<tableName>", { ... });
-  // For each, extract FK references inside the body.
-  const tableRegex = /export const (\w+) = pgTable\(\s*"([^"]+)"/g;
-  let match;
-  while ((match = tableRegex.exec(content)) !== null) {
-    const varName = match[1]!;
-    const tableName = match[2]!;
-    // Find the matching closing of this table definition by tracking braces
-    // from the opening { after pgTable("name",
-    const startIdx = content.indexOf("{", match.index);
-    if (startIdx === -1) continue;
-    let depth = 1;
-    let endIdx = startIdx + 1;
-    while (depth > 0 && endIdx < content.length) {
-      if (content[endIdx] === "{") depth++;
-      else if (content[endIdx] === "}") depth--;
-      endIdx++;
-    }
-    const body = content.slice(startIdx, endIdx);
-
-    // Find FK references: .references(() => <varName>.<col>, ...)
-    // The varName here is the source-side variable name; we map back to the
-    // table name by looking it up in our tables list later.
-    const fkRegex = /references\(\(\)\s*=>\s*(\w+)\.(\w+)/g;
-    const fks: { col: string; targetTable: string }[] = [];
-    let fkMatch;
-    while ((fkMatch = fkRegex.exec(body)) !== null) {
-      const targetVar = fkMatch[1]!;
-      // We don't know the col here without more parsing — use the var name
-      // as a placeholder; the diff is which table it points to.
-      fks.push({ col: "→", targetTable: targetVar });
-    }
-
-    tables.push({
-      name: tableName,
-      fkTargets: fks,
-    });
-    // Suppress unused-var warning by referencing varName
-    void varName;
-  }
-
-  return tables;
-}
-
-function buildSchemaErDiagram(): string {
-  const tables = parseSchemaFile();
-  let md = "# Schema ER Diagram\n\n";
-  md +=
-    "> **Auto-generated** by `scripts/gen-api-docs.ts`. " +
-    "Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.\n\n";
-  md += `**${tables.length} tables.**\n\n`;
-  md += "## Mermaid diagram\n\n";
-  md += "```mermaid\nerDiagram\n";
-  for (const t of tables) {
-    md += `  ${t.name} {\n    int id PK\n  }\n`;
-  }
-  // Build a varName→tableName lookup so FK arrows point at the right table.
-  // The tables list uses tableName; the FKs reference varNames. The varName
-  // is usually a camelCase of the snake_case tableName. Build the lookup.
-  const varToTable = new Map<string, string>();
-  const content = readPgSchemaSource(ROOT);
-  const reLookup = /export const (\w+) = pgTable\(\s*"([^"]+)"/g;
-  let m;
-  while ((m = reLookup.exec(content)) !== null) {
-    varToTable.set(m[1]!, m[2]!);
-  }
-  for (const t of tables) {
-    for (const fk of t.fkTargets) {
-      const target = varToTable.get(fk.targetTable) ?? fk.targetTable;
-      md += `  ${t.name} }o--|| ${target} : references\n`;
-    }
-  }
-  md += "```\n\n";
-  md += "## Tables\n\n";
-  for (const t of tables.sort((a, b) => a.name.localeCompare(b.name))) {
-    md += `- **${t.name}**`;
-    if (t.fkTargets.length > 0) {
-      const targets = t.fkTargets
-        .map((fk) => varToTable.get(fk.targetTable) ?? fk.targetTable)
-        .join(", ");
-      md += ` → ${targets}`;
-    }
-    md += "\n";
-  }
-  return md;
-}
-
 // ── Main ─────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   const apiCatalog = buildRouterCatalog(ROUTERS_DIR, BASELINE_PROCEDURES);
   fs.writeFileSync(API_DOCS_OUT, apiCatalog);
   console.log(`Wrote ${API_DOCS_OUT} (${apiCatalog.length} bytes)`);
 
-  const schemaDoc = buildSchemaErDiagram();
+  const schemaDoc = await generateSchemaDoc(ROOT);
   fs.writeFileSync(SCHEMA_DOCS_OUT, schemaDoc);
   console.log(`Wrote ${SCHEMA_DOCS_OUT} (${schemaDoc.length} bytes)`);
 }
@@ -475,5 +379,8 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  main();
+  main().catch((err: unknown) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

@@ -7,7 +7,7 @@ import { getLtcgRate } from "@/lib/pure/tax/ltcg";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { toNumber } from "@/lib/utils/numbers";
 import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
-import type { resolveTaxParams } from "@/lib/config/tax-params";
+import type { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 
 type Decimal = string | null | undefined;
 type ResolvedTax = ReturnType<typeof resolveTaxParams>;

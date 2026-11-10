@@ -4,7 +4,6 @@
  */
 
 import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
-import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 
 // ── Account-type colors (paycheck, dashboard contribution cards) ──
 
@@ -80,11 +79,6 @@ export const TAX_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 /** Text color for tax treatment labels (e.g. `text-blue-500` for Pre-Tax) */
 export function taxTypeTextColor(taxType: string): string {
   return TAX_TYPE_COLORS[taxType]?.text ?? "text-gray-500";
-}
-
-/** Display label for tax treatment (e.g. `taxFree` → `Tax-Free`) */
-export function taxTypeLabel(taxType: string): string {
-  return TAX_TYPE_LABELS[taxType] ?? taxType;
 }
 
 // ── Status/severity colors (badges, toasts, alert banners) ──

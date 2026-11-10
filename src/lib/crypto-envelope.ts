@@ -9,6 +9,8 @@ const FORMAT_VERSION = 1 as const;
 const GENERATE_KEY =
   '`node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'`';
 
+/** Every envelope format keeps a numeric `v` and a string `ct`: the
+ *  credentials migration leaves any such object alone on a replay. */
 export interface EncryptedEnvelope {
   v: typeof FORMAT_VERSION;
   iv: string; // base64

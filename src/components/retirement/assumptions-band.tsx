@@ -16,7 +16,7 @@ import {
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { StrategyChip } from "@/components/retirement/sections/strategy-picker";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import {
@@ -113,8 +113,7 @@ export function AssumptionsBand({
 
   if (settings.profileId == null) return null;
   const profileId = settings.profileId;
-  const strategyMeta =
-    STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const strategyMeta = storedStrategyConfig(settings.withdrawalStrategy);
   const isMultiPerson = perPersonSettings && perPersonSettings.length > 1;
 
   const chipCls =

@@ -14,7 +14,7 @@ import {
   clearUnmappedPulledBalances,
 } from "@/server/services/sync/apply-pull-mapping";
 import { applyLoanFeedBalances } from "@/server/services/sync/loan-feed";
-import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
+import { recomputeTodaySnapshotFromLocal } from "@/server/services/sync/simplefin/sync";
 import { countsInLiveBalance } from "@/lib/pure/sync/simplefin-feeds";
 
 const loanInput = {

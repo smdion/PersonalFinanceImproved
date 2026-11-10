@@ -26,7 +26,7 @@ import {
   EXCLUDED_TABLES,
   ADMIN_ONLY_RESTORE_TABLES,
   VERSION_PREVIEW_WITHHELD_TABLES,
-} from "@/lib/db/version-tables";
+} from "@/lib/db/backup/version-tables";
 
 function allSchemaTableNames(): string[] {
   const names: string[] = [];

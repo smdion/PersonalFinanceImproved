@@ -1,7 +1,4 @@
-import {
-  isPullMapping,
-  mappingsWithTypedIds,
-} from "@/lib/pure/sync/account-mapping";
+import { isPullMapping } from "@/lib/pure/sync/account-mapping";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
@@ -36,7 +33,7 @@ async function sumMappedAccountBalances(
   // A remote also pulled into a debt or loan balance counts there, not
   // here (mappings saved before one-pull-per-account was enforced).
   const pulledElsewhere = new Set(
-    mappingsWithTypedIds(all)
+    all
       .filter(
         (m) =>
           m.debtId != null ||
@@ -49,8 +46,7 @@ async function sumMappedAccountBalances(
   );
   if (mapped.length === 0) return null;
 
-  type BudgetAccount = { id: string; balance: number };
-  const cached = await cacheGet<BudgetAccount[]>(
+  const cached = await cacheGet(
     db,
     service,
     "accounts",
@@ -104,13 +100,7 @@ export async function getEffectiveCash(
       };
     }
 
-    type BudgetAccount = {
-      onBudget: boolean;
-      closed: boolean;
-      type: string;
-      balance: number;
-    };
-    const cached = await cacheGet<BudgetAccount[]>(
+    const cached = await cacheGet(
       db,
       active,
       "accounts",

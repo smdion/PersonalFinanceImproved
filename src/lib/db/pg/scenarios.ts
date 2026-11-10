@@ -6,10 +6,10 @@ import {
   text,
   integer,
   timestamp,
-  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import type { RelocationScenarioParams } from "./app-config";
 import { budgetProfiles } from "./budget";
 import { contributionProfiles, salaryProfiles } from "./contribution-profiles";

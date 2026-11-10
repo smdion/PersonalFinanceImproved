@@ -13,6 +13,10 @@ export const contributionRouter = createTRPCRouter({
   computeHighIncomeLine: protectedProcedure.query(({ ctx }) =>
     householdHighIncomeLine(ctx.db, ctx.scope.asOf),
   ),
+  /**
+   * Each person's contributions by account against this year's IRS limits, joint totals, and
+   * the prior-year window while it is open; profiles and What-If edits as the paycheck summary.
+   */
   computeSummary: protectedProcedure
     .input(zContributionSummaryInput)
     .query(({ ctx, input }) => computeContributionSummary(ctx, input)),

@@ -20,15 +20,15 @@ const CLIENT_DIRS = ["src/components", "src/app", "src/lib/hooks"];
 
 /** file → number of numeric reads of the configured value, and why. */
 const ALLOWED: Record<string, { count: number; why: string }> = {
-  "src/components/paycheck/contrib-card-auto-max.tsx": {
+  "src/components/contributions/contrib-card-auto-max.tsx": {
     count: 1,
     why: "auto-max preview: today's setting vs the most it can be",
   },
-  "src/app/(dashboard)/budget/use-what-if-sandbox.ts": {
+  "src/components/profiles/what-if/use-what-if-sandbox.ts": {
     count: 1,
     why: "the What-If sandbox: which contribution edits are non-zero",
   },
-  "src/app/(dashboard)/budget/what-if-editors.tsx": {
+  "src/components/profiles/what-if/what-if-editors.tsx": {
     count: 1,
     why: "the What-If editor: the live value a row's edit starts from",
   },

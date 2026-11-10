@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { BrokerageGoalsSection } from "@/components/brokerage/brokerage-goals";
+import { BrokerageGoalsSection } from "@/app/(dashboard)/brokerage/brokerage-goals";
 import {
   holdMutation,
   mutationCalls,

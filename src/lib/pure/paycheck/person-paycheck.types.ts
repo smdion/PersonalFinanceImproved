@@ -1,5 +1,5 @@
 /** The job a person's paycheck year is figured for. */
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 
 /** A current job with its Salary Profile's pay schedule merged on
  *  (mergeSalaryProfileJobFields): the fields yearEarnings reads. */

@@ -7,11 +7,12 @@ import {
   DEMO_SCHEMA_MARKER_PREFIX,
   DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SQL,
-} from "@/lib/db/demo-schema-marker";
-import { applyReferenceData } from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/demo-schema-marker";
+import { applyReferenceData } from "@/lib/db/migrate/reference-data";
 import * as schema from "@/lib/db/schema";
 import { pool, type db as appDb } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";
+import { countRows } from "@/lib/db/compat";
 import {
   demoSchemaName,
   getDemoProfile,
@@ -48,9 +49,9 @@ export async function buildDemoSchema(
   const serial = serializeQueries(client);
   try {
     const schemaCount = await client.query(
-      `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo\\_%'`,
+      `SELECT count(*)::int AS count FROM information_schema.schemata WHERE schema_name LIKE 'demo\\_%'`,
     );
-    if ((schemaCount.rows[0]?.cnt ?? 0) >= MAX_DEMO_SCHEMAS) {
+    if (countRows(schemaCount.rows) >= MAX_DEMO_SCHEMAS) {
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: `Maximum demo schemas (${MAX_DEMO_SCHEMAS}) reached. Deactivate an existing profile first.`,

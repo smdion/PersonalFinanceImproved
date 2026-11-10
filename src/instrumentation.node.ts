@@ -44,7 +44,6 @@ export function registerNodeHandlers() {
 
   // Delay to let the server fully initialize before self-fetching
   setTimeout(() => {
-    runStartupTasks();
     runAutoVersionCheck();
     // Check every hour; the API route skips if already ran today
     versionInterval = setInterval(runAutoVersionCheck, 60 * 60 * 1000);
@@ -88,41 +87,6 @@ const FAILED_REQUEST: JobOutcome = { ok: false, message: "Request failed" };
 /** A run the route answered with neither ok nor skipped. */
 function unexpectedResponse(status: number): JobOutcome {
   return { ok: false, message: `Unexpected response (HTTP ${status})` };
-}
-
-async function runStartupTasks() {
-  const startedAt = new Date();
-  try {
-    const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret) return;
-
-    const res = await fetch(`${getBaseUrl()}/api/startup`, {
-      headers: { "X-Cron-Secret": cronSecret },
-    });
-    const body = await res.json();
-
-    if (body.ok) {
-      log("info", "startup_tasks_completed", body);
-      recordJobResult("startup_tasks", startedAt, {
-        ok: true,
-        message: "Startup tasks ran",
-      });
-    } else {
-      log("warn", "startup_tasks_failed", { body });
-      recordJobResult(
-        "startup_tasks",
-        startedAt,
-        unexpectedResponse(res.status),
-      );
-    }
-  } catch (err) {
-    if (err instanceof Error) {
-      reportError(err, { context: "startup_tasks" });
-    } else {
-      log("error", "startup_tasks_failed", { error: String(err) });
-    }
-    recordJobResult("startup_tasks", startedAt, FAILED_REQUEST);
-  }
 }
 
 async function runAutoVersionCheck() {

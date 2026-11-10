@@ -35,17 +35,12 @@ function ensureCompleteWithdrawalOrder(
   return missing.length > 0 ? [...order, ...missing] : order;
 }
 
-/**
- * The year's accumulation config: sticky-forward overrides on the defaults, each field
- * independent; `reset: true` reverts all fields to defaults.
- */
-export function resolveAccumulationConfig(
-  year: number,
+/** A fresh accumulation config holding only the plan defaults: the first
+ *  year starts from it and a `reset: true` override reverts to it. */
+function accumulationDefaultsFor(
   defaults: AccumulationDefaults,
-  overrides: AccumulationOverride[],
 ): ResolvedAccumulationConfig {
-  // Start from defaults
-  let config: ResolvedAccumulationConfig = {
+  return {
     contributionRate: defaults.contributionRate,
     routingMode: defaults.routingMode,
     accountOrder: [...defaults.accountOrder],
@@ -55,23 +50,25 @@ export function resolveAccumulationConfig(
     taxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
   };
+}
+
+/**
+ * The year's accumulation config: sticky-forward overrides on the defaults, each field
+ * independent; `reset: true` reverts all fields to defaults.
+ */
+export function resolveAccumulationConfig(
+  year: number,
+  defaults: AccumulationDefaults,
+  overrides: AccumulationOverride[],
+): ResolvedAccumulationConfig {
+  let config = accumulationDefaultsFor(defaults);
 
   // Apply overrides in year order (they should already be sorted)
   for (const o of overrides) {
     if (o.year > year) break;
 
     if (o.reset) {
-      // Reset ALL fields to defaults
-      config = {
-        contributionRate: defaults.contributionRate,
-        routingMode: defaults.routingMode,
-        accountOrder: [...defaults.accountOrder],
-        accountSplits: { ...defaults.accountSplits },
-        taxSplits: { ...defaults.taxSplits },
-        accountCaps: buildCategoryRecord(() => null),
-        taxTypeCaps: { traditional: null, roth: null },
-        lumpSums: [],
-      };
+      config = accumulationDefaultsFor(defaults);
       continue;
     }
 
@@ -118,23 +115,18 @@ export function resolveAccumulationConfig(
   return config;
 }
 
-/**
- * Resolve the decumulation config for a given year.
- * Same sticky-forward logic as accumulation.
- */
-export function resolveDecumulationConfig(
-  year: number,
+/** A fresh decumulation config holding only the plan defaults: the first
+ *  year starts from it and a `reset: true` override reverts to it. */
+function decumulationDefaultsFor(
   defaults: DecumulationDefaults,
-  overrides: DecumulationOverride[],
 ): ResolvedDecumulationConfig {
-  const defaultSplits =
-    defaults.withdrawalSplits ?? buildCategoryRecord(() => 0);
-
-  let config: ResolvedDecumulationConfig = {
+  return {
     withdrawalRate: defaults.withdrawalRate,
     withdrawalRoutingMode: defaults.withdrawalRoutingMode ?? "bracket_filling",
     withdrawalOrder: [...defaults.withdrawalOrder],
-    withdrawalSplits: { ...defaultSplits },
+    withdrawalSplits: {
+      ...(defaults.withdrawalSplits ?? buildCategoryRecord(() => 0)),
+    },
     withdrawalTaxPreference: Object.fromEntries(
       getAllCategories().map((cat) => [
         cat,
@@ -156,38 +148,24 @@ export function resolveDecumulationConfig(
     discretionaryWithdrawalOrder:
       defaults.discretionaryWithdrawalOrder ?? "roth_first",
   };
+}
+
+/**
+ * Resolve the decumulation config for a given year.
+ * Same sticky-forward logic as accumulation.
+ */
+export function resolveDecumulationConfig(
+  year: number,
+  defaults: DecumulationDefaults,
+  overrides: DecumulationOverride[],
+): ResolvedDecumulationConfig {
+  let config = decumulationDefaultsFor(defaults);
 
   for (const o of overrides) {
     if (o.year > year) break;
 
     if (o.reset) {
-      config = {
-        withdrawalRate: defaults.withdrawalRate,
-        withdrawalRoutingMode:
-          defaults.withdrawalRoutingMode ?? "bracket_filling",
-        withdrawalOrder: [...defaults.withdrawalOrder],
-        withdrawalSplits: { ...defaultSplits },
-        withdrawalTaxPreference: Object.fromEntries(
-          getAllCategories().map((cat) => [
-            cat,
-            getAccountTypeConfig(cat).supportsRothSplit
-              ? (defaults.withdrawalTaxPreference[cat] ?? null)
-              : null,
-          ]),
-        ) as Record<AccountCategory, "traditional" | "roth" | null>,
-        withdrawalAccountCaps: buildCategoryRecord(() => null),
-        withdrawalTaxTypeCaps: { traditional: null, roth: null },
-        lumpSums: [],
-        avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
-        rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
-        qcdMaximize: defaults.qcdMaximize ?? false,
-        rmdSmoothingEnabled: defaults.rmdSmoothingEnabled ?? false,
-        rmdSmoothingMaxBracketTarget:
-          defaults.rmdSmoothingMaxBracketTarget ??
-          RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
-        discretionaryWithdrawalOrder:
-          defaults.discretionaryWithdrawalOrder ?? "roth_first",
-      };
+      config = decumulationDefaultsFor(defaults);
       continue;
     }
 
@@ -235,8 +213,8 @@ export function resolveDecumulationConfig(
     // undefined means the plan default.
     if (o.rothBracketTarget !== undefined)
       config.rothBracketTarget = o.rothBracketTarget;
-    // Seeded in the initial literal and reset branch; this sticky-forward
-    // line lets it vary per year.
+    // Seeded by decumulationDefaultsFor; this sticky-forward line lets it
+    // vary per year.
     if (o.rmdSmoothingMaxBracketTarget !== undefined)
       config.rmdSmoothingMaxBracketTarget = o.rmdSmoothingMaxBracketTarget;
     if (o.avoidPenalizedWithdrawals !== undefined)

@@ -1,4 +1,4 @@
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   type SalaryActiveMap,
   type SalaryProfileActiveMap,

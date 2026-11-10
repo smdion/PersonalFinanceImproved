@@ -86,6 +86,7 @@ function makeInput(): ProjectionInput {
       salaryFraction: 1,
       baseAnnual: 6000,
       taxTreatment: "after_tax",
+      allocationPriority: 0,
       personId: 1,
       ownerName: "Alex",
       parentCategory: "Portfolio",
@@ -100,6 +101,7 @@ function makeInput(): ProjectionInput {
       salaryFraction: 1,
       baseAnnual: 3600,
       taxTreatment: "after_tax",
+      allocationPriority: 0,
       personId: 2,
       ownerName: "Sam",
       parentCategory: "Portfolio",
@@ -108,6 +110,7 @@ function makeInput(): ProjectionInput {
   ];
 
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {

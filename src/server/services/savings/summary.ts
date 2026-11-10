@@ -4,7 +4,7 @@ import { asc, sql, lt } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/pure/savings/savings";
-import { calculateEFund } from "@/lib/pure/savings/efund";
+import { calculateEFund, DEFAULT_EFUND_MONTHS } from "@/lib/pure/savings/efund";
 import {
   getEssentialExpenses,
   resolveEfundTierIndex,
@@ -16,7 +16,6 @@ import { toNumber } from "@/lib/utils/numbers";
 import type { SavingsInput } from "@/lib/pure/savings/savings.types";
 import type { EFundInput } from "@/lib/pure/savings/efund.types";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
-import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 
 export async function computeSavingsSummary(
@@ -117,7 +116,7 @@ export async function computeSavingsSummary(
   const currentMonthBudgetedMap = new Map<number, number>();
   if (apiLinkedGoals.length > 0 && activeServiceForSummary !== "none") {
     const now = ctx.scope.asOf;
-    const monthCache = await cacheGet<BudgetMonthDetail>(
+    const monthCache = await cacheGet(
       ctx.db,
       activeServiceForSummary,
       `months/${currentMonthKey(now)}`,
@@ -181,7 +180,7 @@ export async function computeSavingsSummary(
     if (efundReimbursementCategoryId) {
       outstandingSelfLoans = 0;
       if (activeServiceForSummary !== "none") {
-        const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+        const categoriesCache = await cacheGet(
           ctx.db,
           activeServiceForSummary,
           "categories",
@@ -209,7 +208,7 @@ export async function computeSavingsSummary(
       emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
       outstandingSelfLoans,
       essentialMonthlyExpenses,
-      targetMonths: efundGoal.targetMonths ?? 4,
+      targetMonths: efundGoal.targetMonths ?? DEFAULT_EFUND_MONTHS,
       asOfDate: ctx.scope.asOf,
     };
     efundResult = calculateEFund(efundInput);

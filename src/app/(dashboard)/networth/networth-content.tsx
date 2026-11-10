@@ -15,44 +15,44 @@ import { PageHeader } from "@/components/ui/page-header";
 import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { NetWorthCompare } from "@/components/networth/net-worth-compare";
-import { NetWorthComposition } from "@/components/networth/net-worth-composition";
-import { AssetsLiabilitiesCards } from "@/components/networth/assets-liabilities-cards";
-import { MetricsRow } from "@/components/networth/metrics-row";
-import { YoYTable } from "@/components/networth/yoy-table";
-import { FinancialIndependenceCard } from "@/components/networth/financial-independence-card";
+import { NetWorthCompare } from "@/components/net-worth/net-worth-compare";
+import { NetWorthComposition } from "@/components/net-worth/net-worth-composition";
+import { AssetsLiabilitiesCards } from "@/components/net-worth/assets-liabilities-cards";
+import { MetricsRow } from "@/components/net-worth/metrics-row";
+import { YoYTable } from "@/components/net-worth/yoy-table";
+import { FinancialIndependenceCard } from "@/components/net-worth/financial-independence-card";
 
 // Code-split the Recharts charts (~250KB each) into chunks loaded on mount.
 // ssr:false because Recharts isn't SSR-friendly.
 const NetWorthLineChart = dynamic(
   () =>
-    import("@/components/networth/net-worth-line-chart").then((m) => ({
+    import("@/components/net-worth/net-worth-line-chart").then((m) => ({
       default: m.NetWorthLineChart,
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
 const JourneyToAbundanceChart = dynamic(
   () =>
-    import("@/components/networth/journey-to-abundance-chart").then((m) => ({
+    import("@/components/net-worth/journey-to-abundance-chart").then((m) => ({
       default: m.JourneyToAbundanceChart,
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
 const NetWorthLocationPie = dynamic(
   () =>
-    import("@/components/networth/net-worth-location-pie").then((m) => ({
+    import("@/components/net-worth/net-worth-location-pie").then((m) => ({
       default: m.NetWorthLocationPie,
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
 const TaxLocationPie = dynamic(
   () =>
-    import("@/components/networth/tax-location-pie").then((m) => ({
+    import("@/components/net-worth/tax-location-pie").then((m) => ({
       default: m.TaxLocationPie,
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
-import { SpreadsheetView } from "@/components/networth/spreadsheet/spreadsheet-view";
+import { SpreadsheetView } from "@/components/net-worth/spreadsheet/spreadsheet-view";
 import { CardBoundary } from "@/components/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 

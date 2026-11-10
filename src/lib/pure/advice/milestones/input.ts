@@ -36,6 +36,7 @@ import type {
   MilestoneChecklist,
   MilestoneInput,
   MilestoneLimit,
+  MilestoneEngineYear,
   MilestoneProjectionYear,
   MilestoneYear,
 } from "@/lib/pure/advice/milestones/milestones";
@@ -121,28 +122,20 @@ export function milestoneYearFromHistory(row: {
 
 /** Projection years → the milestones' view (today's cash held flat). */
 export function milestoneProjectionYears(
-  years: readonly {
-    year: number;
-    age: number;
-    phase: string;
-    allAccountsBalance: number;
-    projectedSalary?: number;
-    totalEmployee?: number;
-    totalEmployer?: number;
-  }[],
+  years: readonly MilestoneEngineYear[],
   cashToday: number,
 ): MilestoneProjectionYear[] {
   return years.map((y) => {
-    const working = y.phase === "accumulation";
+    const working = y.phase === "accumulation" ? y : null;
     return {
       year: y.year,
       age: y.age,
       // FI milestones are liquid net worth: every account (Portfolio
       // included) plus cash.
       liquid: y.allAccountsBalance + cashToday,
-      salary: working ? (y.projectedSalary ?? 0) : null,
+      salary: working ? working.projectedSalary : null,
       contributions: working
-        ? (y.totalEmployee ?? 0) + (y.totalEmployer ?? 0)
+        ? working.totalEmployee + working.totalEmployer
         : null,
     };
   });

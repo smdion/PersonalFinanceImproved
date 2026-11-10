@@ -1,7 +1,7 @@
 /**
  * Filing status, one chain: this year's return = household setting, else the active Retirement
- * Profile's, else a W-4 (server/services/tax/filing-status.ts); retirement years = the profile's
- * or this year's. Nothing known: FILING_STATUS_IF_UNKNOWN, and Ledgr asks, never guesses silently.
+ * Profile's, else a W-4 (server/services/tax/filing-status.ts); retirement years = the profile's or
+ * this year's; none known: FILING_STATUS_IF_UNKNOWN, and Ledgr asks. See lib/config/filing-status*.ts.
  */
 import {
   parseReturnFilingStatus,

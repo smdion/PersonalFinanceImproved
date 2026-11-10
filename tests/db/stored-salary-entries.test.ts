@@ -1,7 +1,7 @@
-/** salary_profiles.salaries is checked once on read and read as stored. */
+/** salary_profiles.salaries is checked once on read; another shape throws. */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { salaryEntry } from "../helpers/salary-entry";
 
 afterEach(() => vi.restoreAllMocks());
@@ -32,10 +32,13 @@ describe("checkSalaryEntries", () => {
     expect(events).toEqual([]);
   });
 
-  it("logs an entry of another shape and keeps it as stored", () => {
+  it("throws on an entry of another shape, naming the profile, and logs it once", () => {
     const salaries = withRetiredField();
     const events = eventsDuring(() => {
-      expect(checkSalaryEntries({ id: 4, salaries }).salaries).toBe(salaries);
+      for (let i = 0; i < 2; i++)
+        expect(() => checkSalaryEntries({ id: 4, salaries })).toThrow(
+          "Salary Profile 4: its stored entries don't fit their shape",
+        );
     });
     expect(events).toEqual([
       expect.objectContaining({
@@ -46,24 +49,20 @@ describe("checkSalaryEntries", () => {
     ]);
   });
 
-  it("logs one refused row once, and another row again", () => {
-    const salaries = withRetiredField();
-    expect(
-      eventsDuring(() => {
-        checkSalaryEntries({ id: 7, salaries });
-        checkSalaryEntries({ id: 7, salaries });
-      }),
-    ).toHaveLength(1);
-    expect(
-      eventsDuring(() => checkSalaryEntries({ id: 8, salaries })),
-    ).toHaveLength(1);
-  });
-
-  it("reads a row holding no entries as empty", () => {
+  it.each([
+    ["a JSON null", null],
+    ["an array", [salaryEntry()]],
+    ["a scalar", 42],
+    ["a double-encoded string", JSON.stringify({ "3": salaryEntry() })],
+  ])("throws on a root that is %s", (_, root) => {
     eventsDuring(() => {
-      expect(checkSalaryEntries({ id: 4, salaries: null }).salaries).toEqual(
-        {},
-      );
+      expect(() =>
+        checkSalaryEntries({
+          id: 5,
+          // eslint-disable-next-line no-restricted-syntax -- a stored root of any shape, as the column can hold it
+          salaries: root as unknown as Record<string, SalaryEntry>,
+        }),
+      ).toThrow("Salary Profile 5");
     });
   });
 });

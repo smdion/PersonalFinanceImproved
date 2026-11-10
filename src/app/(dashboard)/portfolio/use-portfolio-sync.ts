@@ -2,7 +2,7 @@ import type { usePortfolioSnapshotMutations } from "@/components/portfolio/use-p
 import { useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { errorText } from "@/lib/utils/mutation-error";
-import { budgetApiServiceLabel } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { toast } from "@/lib/hooks/use-toast";
 import { useSnapshotSyncPending } from "@/components/portfolio/use-snapshot-sync-pending";
 

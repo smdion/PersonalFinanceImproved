@@ -10,14 +10,16 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
-import { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  prepareEngineInput,
+  prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 import { projectionMetadata } from "@/server/services/projection/projection-metadata";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildCoastFireProfileSwitches,
 } from "./_shared";
-import { prepareEngineInput } from "./engine-input";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 

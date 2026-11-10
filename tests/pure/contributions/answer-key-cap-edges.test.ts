@@ -31,7 +31,7 @@ import {
   personPay,
 } from "@/lib/pure/contributions/person-snapshot";
 import type { ContributionRow } from "@/lib/pure/contributions/contribution-rows";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 
 const limitsOf = (year: number): Record<string, number> =>
   Object.fromEntries(

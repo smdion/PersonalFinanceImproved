@@ -32,7 +32,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ContributionProfileManager } from "@/components/contributions/profile-manager/contribution-profile-manager";
+import { ContributionProfileManager } from "@/components/profiles/contribution/contribution-profile-manager";
 
 const renderManager = (locked = false) =>
   render(

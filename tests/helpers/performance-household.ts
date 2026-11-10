@@ -39,8 +39,8 @@ function accountRow(
     institution: "Acme",
     accountLabel: `Acct ${id}`,
     performanceAccountId: id,
-    // Stored legacy value; the stage replaces it with the master's.
-    parentCategory: "Brokerage",
+    // As stored: the master's (the stored-JSON migration made them equal).
+    parentCategory: perfLookups.get(id)!.parentCategory,
     ownerPersonId: 1 as number | null,
     isActive: true,
     note: null,

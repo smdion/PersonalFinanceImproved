@@ -22,6 +22,7 @@ import {
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
+import { decimalText } from "./decimal-text";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -111,6 +112,23 @@ describe("sync mappings — basic operations", () => {
         mappings: [],
       });
       expect(result).toEqual({ ok: true });
+    });
+
+    it("refuses a mapping that names no Ledgr account by id (a name alone)", async () => {
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localName: "Invented boat",
+              remoteAccountId: "remote-boat",
+              syncDirection: "pull",
+            },
+          ],
+        }),
+      ).rejects.toThrow(
+        "Invented boat names no Ledgr account — pick one for it",
+      );
     });
 
     it("refuses a budget account pulled into two places (it would count twice)", async () => {
@@ -223,6 +241,7 @@ describe("sync mappings — basic operations", () => {
           assetId: 10,
         },
         {
+          localId: "performance:3",
           localName: "Investment",
           remoteAccountId: "remote-acct-2",
           syncDirection: "push" as const,
@@ -248,6 +267,7 @@ describe("sync mappings — basic operations", () => {
         service: "ynab",
         mappings: [
           {
+            localId: "asset:12",
             localName: "Only One",
             remoteAccountId: "r-1",
             syncDirection: "both",
@@ -308,7 +328,7 @@ describe("sync mappings — createAssetAndMap", () => {
     const assets = db.select().from(schema.otherAssetItems).all();
     const vehicle = assets.find((a) => a.name === "New Vehicle");
     expect(vehicle).toBeDefined();
-    expect(vehicle!.value).toBe("25000");
+    expect(decimalText(vehicle!.value)).toBe("25000");
     expect(vehicle!.year).toBe(new Date().getFullYear());
 
     // Verify mapping was added
@@ -342,7 +362,7 @@ describe("sync mappings — createAssetAndMap", () => {
         (a) => a.name === "New Vehicle" && a.year === new Date().getFullYear(),
       );
     expect(assets).toHaveLength(1);
-    expect(assets[0]!.value).toBe("23000");
+    expect(decimalText(assets[0]!.value)).toBe("23000");
   });
 });
 

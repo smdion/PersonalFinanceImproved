@@ -10,7 +10,7 @@ import {
   getPeriodSuffix,
   householdPeriodsPerYear,
   toContributionPeriod,
-} from "@/components/ui/contrib-period-toggle";
+} from "@/components/contributions/contrib-period-toggle";
 
 const labels = () => screen.getAllByRole("radio").map((b) => b.textContent);
 

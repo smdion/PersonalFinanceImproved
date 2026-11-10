@@ -26,7 +26,8 @@ import {
 
 // -- Import actual values to verify they match expectations --
 import { getLtcgRate, computeLtcgTax } from "@/lib/pure/tax/ltcg";
-import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
+import { NIIT_RATE, NIIT_THRESHOLDS } from "@/lib/config/niit";
+import { computeNiit } from "@/lib/pure/tax/niit";
 import { SS_TAX_THRESHOLDS } from "@/lib/config/ss-tax";
 import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";
 import { getAcaSubsidyCliff } from "@/lib/config/aca-tables";
@@ -492,7 +493,7 @@ describe("Tax law structural checks", () => {
   // (not just data updates) when they change.
 
   // Bracket rates (TCJA, made permanent by OBBBA) are checked row by row in
-  // tests/config/tax-params.test.ts; FICA rate, Medicare surtax threshold,
+  // tests/pure/tax/resolve-tax-params.test.ts; FICA rate, Medicare surtax threshold,
   // HSA/super catch-up and standard deductions against the seed in
   // tests/config/irs-contribution-limits.test.ts.
 

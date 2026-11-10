@@ -7,9 +7,8 @@ import {
 } from "@/server/services/projection/engine-payload/settings-for";
 
 // An invented household: profile 1 is active, profile 2 is another one.
-// Each person's settings come from their own rows in the active profile,
-// or the profile's household row where they have none (a restored older
-// backup can lack a person's row).
+// Each person's settings come from their own profile-people row in the
+// active profile, or the profile's household row where a field is empty.
 type Rows = ActiveProfileRows;
 type SettingsRow = Rows["settings"];
 type ProfilePersonRow = Rows["profilePeople"][number];
@@ -66,9 +65,10 @@ describe("settingsFor", () => {
     expect(settingsFor(2, rows())).toEqual(householdValues);
   });
 
-  it("a retirement_settings row only: its values, and no PIA", () => {
-    const own = settingsRow({
+  const ownSettings = (profileId: number | null) =>
+    settingsRow({
       personId: 2,
+      profileId,
       retirementAge: 62,
       endAge: 92,
       salaryAnnualIncrease: "0.05",
@@ -76,7 +76,20 @@ describe("settingsFor", () => {
       ssStartAge: 68,
       ruleOf55Override: true,
     });
-    expect(settingsFor(2, rows({ retSettings: [household, own] }))).toEqual({
+
+  it("with no profile, a retirement_settings row: its values, and no PIA", () => {
+    const own = ownSettings(null);
+    const noProfile = { ...household, profileId: null };
+    expect(
+      settingsFor(
+        2,
+        rows({
+          activeProfileId: null,
+          retSettings: [noProfile, own],
+          settings: noProfile,
+        }),
+      ),
+    ).toEqual({
       retirementAge: 62,
       endAge: 92,
       salaryAnnualIncrease: 0.05,
@@ -84,6 +97,15 @@ describe("settingsFor", () => {
       socialSecurityPia: null,
       ssStartAge: 68,
       ruleOf55Override: true,
+    });
+  });
+
+  it("in a profile, ages come from the profile-people row, never the settings row", () => {
+    // The money migration gives every such settings row its profile-people row.
+    const own = ownSettings(1);
+    expect(settingsFor(2, rows({ retSettings: [household, own] }))).toEqual({
+      ...householdValues,
+      salaryAnnualIncrease: 0.05,
     });
   });
 

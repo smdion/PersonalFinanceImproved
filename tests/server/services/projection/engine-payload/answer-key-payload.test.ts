@@ -34,7 +34,7 @@ import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { calculateProjection } from "@/lib/pure/engine";
-import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
+import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import { SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
 import { xfail } from "../../../../fixtures/answer-key";
 import {
@@ -178,7 +178,7 @@ function fixedContributions(
   );
   return seedContributionProfile(db, {
     name: "Answer key",
-    contributionActiveFields: { contributionAccounts, jobs: {} },
+    contributionActiveFields: { contributionAccounts },
   });
 }
 

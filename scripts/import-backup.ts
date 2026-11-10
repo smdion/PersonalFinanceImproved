@@ -89,7 +89,7 @@ async function run() {
 
   // Import the transformer (uses tsconfig paths, so this script must run via tsx)
   const { transformBackupToCurrentSchema } =
-    await import("../src/lib/db/backup-transforms");
+    await import("../src/lib/db/backup/backup-transforms");
 
   const { tables, transformed, sourceVersion } = transformBackupToCurrentSchema(
     backup.tables,
@@ -145,7 +145,8 @@ async function run() {
 
     try {
       const db = drizzle(pool, { schema });
-      const { importBackup } = await import("../src/lib/db/version-logic");
+      const { importBackup } =
+        await import("../src/lib/db/backup/version-logic");
       const result = await importBackup(
         db,
         {
@@ -185,7 +186,8 @@ async function run() {
         sqlite,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as any;
-      const { importBackup } = await import("../src/lib/db/version-logic");
+      const { importBackup } =
+        await import("../src/lib/db/backup/version-logic");
       const result = await importBackup(
         db,
         {

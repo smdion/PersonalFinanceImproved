@@ -66,6 +66,20 @@ describe("resolveAccumulationConfig", () => {
     expect(config.accountSplits.hsa).toBe(0.15);
   });
 
+  it("leaves every account the set doesn't cap uncapped", () => {
+    const overrides: AccumulationOverride[] = [
+      { year: 2025, accountCaps: { ira: 3000 } },
+    ];
+    const config = resolveAccumulationConfig(2025, defaults, overrides);
+    expect(config.accountCaps).toEqual({
+      "401k": null,
+      "403b": null,
+      hsa: null,
+      ira: 3000,
+      brokerage: null,
+    });
+  });
+
   it("merges accountCaps — a cap holds until a reset", () => {
     // The app writes caps as numbers only (the router's schema); a reset is
     // how a cap is removed.
@@ -92,6 +106,21 @@ describe("resolveAccumulationConfig", () => {
     const config2029 = resolveAccumulationConfig(2029, defaults, overrides);
     expect(config2029.contributionRate).toBe(defaults.contributionRate);
     expect(config2029.routingMode).toBe(defaults.routingMode);
+  });
+
+  it("a reset year resolves exactly as a year with no overrides", () => {
+    const overrides: AccumulationOverride[] = [
+      {
+        year: 2025,
+        contributionRate: 0.5,
+        accountCaps: { "401k": 15000 },
+        taxTypeCaps: { roth: 7000 },
+      },
+      { year: 2028, reset: true },
+    ];
+    expect(resolveAccumulationConfig(2029, defaults, overrides)).toEqual(
+      resolveAccumulationConfig(2029, defaults, []),
+    );
   });
 
   it("ignores overrides for future years", () => {
@@ -133,6 +162,16 @@ describe("resolveDecumulationConfig", () => {
     const config = resolveDecumulationConfig(2050, defaults, []);
     expect(config.withdrawalRate).toBe(0.04);
     expect(config.withdrawalRoutingMode).toBe("bracket_filling");
+  });
+
+  it("leaves every account the set doesn't cap uncapped", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, withdrawalAccountCaps: { "401k": 40000 } },
+    ];
+    const config = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config.withdrawalAccountCaps["401k"]).toBe(40000);
+    expect(config.withdrawalAccountCaps.ira).toBeNull();
+    expect(config.withdrawalAccountCaps.brokerage).toBeNull();
   });
 
   it("applies sticky-forward withdrawalRoutingMode", () => {
@@ -201,6 +240,24 @@ describe("resolveDecumulationConfig", () => {
     const config2056 = resolveDecumulationConfig(2056, defaults, overrides);
     expect(config2056.withdrawalRoutingMode).toBe(
       defaults.withdrawalRoutingMode,
+    );
+  });
+
+  it("a reset year resolves exactly as a year with no overrides", () => {
+    const overrides: DecumulationOverride[] = [
+      {
+        year: 2050,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalSplits: { "401k": 0.9 },
+        withdrawalAccountCaps: { ira: 20000 },
+        rothConversionTarget: 0.22,
+        rmdSmoothingMaxBracketTarget: 0.32,
+        avoidPenalizedWithdrawals: false,
+      },
+      { year: 2055, reset: true },
+    ];
+    expect(resolveDecumulationConfig(2056, defaults, overrides)).toEqual(
+      resolveDecumulationConfig(2056, defaults, []),
     );
   });
 

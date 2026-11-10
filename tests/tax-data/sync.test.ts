@@ -24,7 +24,7 @@ import { packSignedTaxData, signTaxData } from "@/lib/tax-data/signature";
 import {
   checkForTaxDataUpdate,
   setTaxDataSyncEnabled,
-} from "@/lib/tax-data/sync";
+} from "@/server/services/tax/tax-data-sync";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";
 
@@ -131,6 +131,24 @@ describe("checkForTaxDataUpdate", () => {
       });
       expect(await check(github(absurd))).toBe("invalid");
       expect(await check(github("not json"))).toBe("invalid");
+      expect(updates()).toEqual([]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("refuses a signed file without the file's structure; a signed JSON null is an error, as before", async () => {
+    const { updates, check, cleanup } = await setup();
+    try {
+      const misshapen = release((f) => {
+        Object.assign(f.years["2026"]!.limits.ira_limit!, { notes: 7 });
+      });
+      expect(await check(github(misshapen))).toBe("invalid");
+      const nullText = "null\n";
+      const signedNull = packSignedTaxData(nullText, [
+        signTaxData(nullText, keys.privateKey, "test"),
+      ]);
+      expect(await check(github(signedNull))).toBe("error");
       expect(updates()).toEqual([]);
     } finally {
       cleanup();

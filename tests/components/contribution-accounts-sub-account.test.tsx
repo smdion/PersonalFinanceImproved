@@ -3,9 +3,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   AddSubAccountForm,
   SubAccountRow,
-} from "@/components/portfolio/contribution-accounts-sub-account";
+} from "@/components/contributions/contribution-accounts-sub-account";
 import { expectLabelReachesControl } from "./label-click";
-import type { PortfolioSub } from "@/components/portfolio/contribution-accounts-types";
+import type { PortfolioSub } from "@/components/contributions/contribution-accounts-types";
 
 // First direct coverage for SubAccountRow's label editor. Written
 // alongside its migration onto useInlineNumberEdit with

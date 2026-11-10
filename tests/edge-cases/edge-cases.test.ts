@@ -353,6 +353,7 @@ describe("contribution edge cases", () => {
           group: "retirement",
           employerMatch: 0,
           employerMatchTaxTreatment: "pre_tax",
+          employerMatchOnBonus: 0,
         },
       ],
       limits: {},
@@ -380,6 +381,7 @@ describe("contribution edge cases", () => {
           group: "retirement",
           employerMatch: 5000,
           employerMatchTaxTreatment: "pre_tax",
+          employerMatchOnBonus: 0,
         },
       ],
       limits: {},
@@ -709,6 +711,7 @@ function makeBaseProjection(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
       accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },

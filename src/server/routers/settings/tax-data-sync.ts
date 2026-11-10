@@ -1,5 +1,5 @@
 /**
- * Community tax-data updates (lib/tax-data/sync.ts): status, last check, and admin
+ * Community tax-data updates (server/services/tax/tax-data-sync.ts): status, last check, and admin
  * review/Apply/Dismiss of a waiting update; Apply refuses if the figures changed since review.
  */
 import { createHash } from "crypto";
@@ -13,14 +13,13 @@ import {
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { TaxDataFile } from "@/lib/db/reference-reconcile-core";
 import {
   applyCommunityTaxData,
   previewCommunityTaxData,
   readTaxDataFile,
-} from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-data";
 import { verifyTaxDataSignature } from "@/lib/tax-data/signature";
-import { validateTaxDataFile } from "@/lib/tax-data/validate";
+import { checkTaxDataFile } from "@/lib/tax-data/checked-file";
 import { describeTaxDataChanges } from "@/lib/tax-data/describe";
 import { getValidCronSecret } from "@/lib/auth/cron";
 import {
@@ -28,7 +27,7 @@ import {
   lastTaxDataCheck,
   setTaxDataSyncEnabled,
   taxDataSyncOffReason,
-} from "@/lib/tax-data/sync";
+} from "@/server/services/tax/tax-data-sync";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
 
@@ -56,12 +55,11 @@ function verifiedFile(row: { fileText: string; signature: string }) {
       code: "BAD_REQUEST",
       message: "The stored update no longer verifies — it can't be applied.",
     });
-  const file = JSON.parse(row.fileText) as TaxDataFile;
-  const problems = validateTaxDataFile(file, {
+  const { file, problems } = checkTaxDataFile(JSON.parse(row.fileText), {
     unknownKeys: "ignore",
     citations: "lenient",
   });
-  if (problems.length)
+  if (!file)
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: `The update fails its checks: ${problems[0]}`,
@@ -115,6 +113,10 @@ export const taxDataSyncProcedures = {
         await setTaxDataSyncEnabled(ctx.db, input.enabled);
       }),
 
+    /**
+     * Check for a community update now, even with the setting off (the operator and demo switches
+     * still hold); at most once a minute. Returns the check's result.
+     */
     checkNow: adminProcedure.mutation(async ({ ctx }) => {
       if (Date.now() - lastManualCheck < 60_000)
         throw new TRPCError({
@@ -160,6 +162,7 @@ export const taxDataSyncProcedures = {
         return { changed: changes.length };
       }),
 
+    /** Dismiss the waiting update of that version, recording who decided. */
     dismiss: adminProcedure
       .input(z.object({ dataVersion: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

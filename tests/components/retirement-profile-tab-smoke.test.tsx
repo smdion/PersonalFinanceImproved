@@ -127,7 +127,7 @@ describe("RetirementProfileTab smoke", () => {
 
   it("renders the relocated Projection Assumptions content", async () => {
     const { RetirementProfileTab } =
-      await import("@/components/retirement/retirement-profile-tab");
+      await import("@/components/profiles/retirement/retirement-profile-tab");
     render(<RetirementProfileTab />);
     expect(screen.getByText("Projection Assumptions")).toBeInTheDocument();
     expect(
@@ -140,7 +140,7 @@ describe("RetirementProfileTab smoke", () => {
   it("admin: strategy select and tax controls are enabled", async () => {
     currentRole = "admin";
     const { RetirementProfileTab } =
-      await import("@/components/retirement/retirement-profile-tab");
+      await import("@/components/profiles/retirement/retirement-profile-tab");
     render(<RetirementProfileTab />);
     for (const sel of screen.getAllByRole("combobox")) {
       expect(sel).not.toBeDisabled();
@@ -150,7 +150,7 @@ describe("RetirementProfileTab smoke", () => {
   it("non-admin: strategy select and tax controls render disabled, values still visible", async () => {
     currentRole = "viewer";
     const { RetirementProfileTab } =
-      await import("@/components/retirement/retirement-profile-tab");
+      await import("@/components/profiles/retirement/retirement-profile-tab");
     render(<RetirementProfileTab />);
     // Withdrawal Strategy select (retirementSettings.upsert-backed).
     const strategySelect = screen.getByDisplayValue("Fixed Real");

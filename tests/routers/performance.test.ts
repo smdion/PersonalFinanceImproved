@@ -20,6 +20,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -206,12 +207,12 @@ describe("performance router", () => {
       expect(row).toBeDefined();
       expect(row!.year).toBe(2024);
       expect(row!.institution).toBe("Schwab");
-      expect(row!.beginningBalance).toBe("50000");
-      expect(row!.totalContributions).toBe("10000");
-      expect(row!.yearlyGainLoss).toBe("5000");
-      expect(row!.endingBalance).toBe("65000");
-      expect(row!.employerContributions).toBe("3000");
-      expect(row!.fees).toBe("100");
+      expect(decimalText(row!.beginningBalance)).toBe("50000");
+      expect(decimalText(row!.totalContributions)).toBe("10000");
+      expect(decimalText(row!.yearlyGainLoss)).toBe("5000");
+      expect(decimalText(row!.endingBalance)).toBe("65000");
+      expect(decimalText(row!.employerContributions)).toBe("3000");
+      expect(decimalText(row!.fees)).toBe("100");
       expect(row!.performanceAccountId).toBe(perfAccountId);
     });
 
@@ -253,10 +254,10 @@ describe("performance router", () => {
         endingBalance: "33000",
       });
 
-      expect(row!.employerContributions).toBe("0");
-      expect(row!.fees).toBe("0");
-      expect(row!.distributions).toBe("0");
-      expect(row!.rollovers).toBe("0");
+      expect(decimalText(row!.employerContributions)).toBe("0");
+      expect(decimalText(row!.fees)).toBe("0");
+      expect(decimalText(row!.distributions)).toBe("0");
+      expect(decimalText(row!.rollovers)).toBe("0");
     });
   });
 
@@ -371,7 +372,7 @@ describe("performance router", () => {
         .from(schema.accountPerformance)
         .all()
         .find((r) => r.id === accountPerfId);
-      expect(row!.beginningBalance).toBe("55000");
+      expect(decimalText(row!.beginningBalance)).toBe("55000");
     });
 
     it("updates multiple fields at once", async () => {
@@ -389,10 +390,10 @@ describe("performance router", () => {
         .from(schema.accountPerformance)
         .all()
         .find((r) => r.id === accountPerfId);
-      expect(row!.totalContributions).toBe("12000");
-      expect(row!.yearlyGainLoss).toBe("6000");
-      expect(row!.endingBalance).toBe("73000");
-      expect(row!.fees).toBe("200");
+      expect(decimalText(row!.totalContributions)).toBe("12000");
+      expect(decimalText(row!.yearlyGainLoss)).toBe("6000");
+      expect(decimalText(row!.endingBalance)).toBe("73000");
+      expect(decimalText(row!.fees)).toBe("200");
     });
 
     it("updates annualReturnPct to a specific value", async () => {
@@ -407,7 +408,7 @@ describe("performance router", () => {
         .from(schema.accountPerformance)
         .all()
         .find((r) => r.id === accountPerfId);
-      expect(row!.annualReturnPct).toBe("0.085");
+      expect(decimalText(row!.annualReturnPct)).toBe("0.085");
     });
 
     it("updates annualReturnPct to null", async () => {
@@ -492,7 +493,7 @@ describe("performance router", () => {
         .from(schema.annualPerformance)
         .all()
         .find((r) => r.id === annualId);
-      expect(row!.beginningBalance).toBe("105000");
+      expect(decimalText(row!.beginningBalance)).toBe("105000");
     });
 
     it("updates multiple fields at once", async () => {
@@ -510,10 +511,10 @@ describe("performance router", () => {
         .from(schema.annualPerformance)
         .all()
         .find((r) => r.id === annualId);
-      expect(row!.totalContributions).toBe("22000");
-      expect(row!.yearlyGainLoss).toBe("18000");
-      expect(row!.endingBalance).toBe("145000");
-      expect(row!.employerContributions).toBe("6000");
+      expect(decimalText(row!.totalContributions)).toBe("22000");
+      expect(decimalText(row!.yearlyGainLoss)).toBe("18000");
+      expect(decimalText(row!.endingBalance)).toBe("145000");
+      expect(decimalText(row!.employerContributions)).toBe("6000");
     });
 
     it("updates annualReturnPct to a specific value", async () => {
@@ -528,7 +529,7 @@ describe("performance router", () => {
         .from(schema.annualPerformance)
         .all()
         .find((r) => r.id === annualId);
-      expect(row!.annualReturnPct).toBe("0.12");
+      expect(decimalText(row!.annualReturnPct)).toBe("0.12");
     });
 
     it("updates annualReturnPct to null", async () => {
@@ -567,9 +568,9 @@ describe("performance router", () => {
         .from(schema.annualPerformance)
         .all()
         .find((r) => r.id === annualId);
-      expect(row!.distributions).toBe("1000");
-      expect(row!.fees).toBe("750");
-      expect(row!.rollovers).toBe("5000");
+      expect(decimalText(row!.distributions)).toBe("1000");
+      expect(decimalText(row!.fees)).toBe("750");
+      expect(decimalText(row!.rollovers)).toBe("5000");
     });
 
     it("stamps performance_last_updated after update", async () => {

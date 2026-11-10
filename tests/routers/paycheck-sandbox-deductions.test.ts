@@ -51,7 +51,6 @@ describe("paycheck.computeSummary — sandboxDeductionEdits", () => {
         name: "Deduction Baseline Profile",
         contributionActiveFields: {
           contributionAccounts: {},
-          jobs: {},
           deductions: { [String(deductionId)]: { amountPerPeriod: "100" } },
         },
       });

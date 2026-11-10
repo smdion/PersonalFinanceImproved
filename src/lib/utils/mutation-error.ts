@@ -42,7 +42,7 @@ function shapeOf(error: unknown): TrpcClientErrorShape {
 }
 
 /**
- * The one failure rule for loads and saves (owner Q18): the sentence the
+ * The one failure rule for loads and saves: the sentence the
  * server wrote for the user when it wrote one, a failed service's
  * `userMessage` or a hand-written BAD_REQUEST (never a Zod dump); else null.
  */

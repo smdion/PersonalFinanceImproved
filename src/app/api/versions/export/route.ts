@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
-import { exportBackup } from "@/lib/db/version-logic";
+import { exportBackup } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 

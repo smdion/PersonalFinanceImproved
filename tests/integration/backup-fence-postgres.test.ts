@@ -1,7 +1,8 @@
 /**
- * The connections fence and the closed-set check on PostgreSQL (the cases
- * are in ./backup-fence-cases and ./closed-set-import-cases, shared with
- * SQLite): ids are reused after a restore resets the sequences, and
+ * The connections fence, the closed-set check and settings through a
+ * version restore on PostgreSQL (the cases are in ./backup-fence-cases,
+ * ./closed-set-import-cases and ./version-restore-settings-cases, shared
+ * with SQLite): ids are reused after a restore resets the sequences, and
  * TRUNCATE ... CASCADE runs over the other tables.
  *
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
@@ -19,6 +20,7 @@ import { describe, beforeAll, afterAll } from "vitest";
 import pg from "pg";
 import { runMigrator } from "../routers/fresh-install-cases";
 import { backupFenceCases } from "./backup-fence-cases";
+import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
 import {
   closedSetImportCases,
   unknownAccountTypeCases,
@@ -63,5 +65,6 @@ describe.skipIf(skipWithoutPostgres)(
     backupFenceCases(fresh);
     closedSetImportCases(fresh);
     unknownAccountTypeCases(fresh);
+    versionRestoreSettingsCases(fresh);
   },
 );

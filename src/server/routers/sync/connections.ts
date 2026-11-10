@@ -18,7 +18,8 @@ import {
   cacheClear,
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
-import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
+import { readActualConfig } from "@/lib/budget-api/stored-config";
+import { encryptJson } from "@/lib/crypto";
 import { checkOutboundUrl } from "@/lib/http/url-safety";
 import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
@@ -49,8 +50,7 @@ export const syncConnectionsRouter = createTRPCRouter({
             // send back so the settings UI can prefill an edit field
             // without requiring the whole credential form to be retyped.
             externalUrl:
-              readMaybeEncrypted<ActualConfig>(actualConn.config).externalUrl ??
-              null,
+              readActualConfig(actualConn.config).externalUrl ?? null,
           }
         : { connected: false, lastSyncedAt: null, externalUrl: null },
     };
@@ -100,13 +100,12 @@ export const syncConnectionsRouter = createTRPCRouter({
               ...(input.externalUrl ? { externalUrl: input.externalUrl } : {}),
             };
 
-      // Encrypt at rest with AES-256-GCM (RULES.md § Permission & Security Gates);
-      // readMaybeEncrypted() reads both envelopes and legacy plaintext rows.
+      // Encrypt at rest with AES-256-GCM (RULES.md § Permission & Security Gates).
       const encryptedConfig = encryptJson(config);
 
       // onConflictDoUpdate is one atomic statement, so no transaction is needed. The
       // casts below are intentional: the JSONB column stores the encrypted envelope
-      // as-is despite its YnabConfig|ActualConfig type; readMaybeEncrypted() decodes it.
+      // as-is despite its YnabConfig|ActualConfig type; decryptJson() decodes it.
       // eslint-disable-next-line no-restricted-syntax -- see block comment above
       const storedConfig = encryptedConfig as unknown as
         YnabConfig | ActualConfig;
@@ -134,7 +133,7 @@ export const syncConnectionsRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No Actual Budget connection configured",
         });
-      const current = readMaybeEncrypted<ActualConfig>(conn.config);
+      const current = readActualConfig(conn.config);
       const next: ActualConfig = { ...current };
       if (input.externalUrl) next.externalUrl = input.externalUrl;
       else delete next.externalUrl;
@@ -246,7 +245,8 @@ export const syncConnectionsRouter = createTRPCRouter({
 
     const parsedStaleHours = Number(staleHoursRow);
     const autoSync = {
-      enabled: autoEnabledRow !== "false",
+      // Off is "false", or false as an earlier PostgreSQL read wrote it back.
+      enabled: autoEnabledRow !== "false" && autoEnabledRow !== false,
       staleHours: Math.max(
         1,
         staleHoursRow == null || !Number.isFinite(parsedStaleHours)

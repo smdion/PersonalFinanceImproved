@@ -5,7 +5,7 @@ import {
 } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 
 /**
  * One invented household for the privacy spec, so CI's empty database has

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq, and, like } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { appSettings, stateVersions } from "@/lib/db/schema";
-import { createVersion } from "@/lib/db/version-logic";
+import { createVersion } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
 

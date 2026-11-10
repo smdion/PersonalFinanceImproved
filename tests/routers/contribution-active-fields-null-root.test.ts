@@ -1,8 +1,8 @@
 /**
  * A Contribution Profile whose contribution_active_fields holds a JSON null
- * (a hand edit) reads as an empty profile, as it did before the shared
- * reader: net pay per check and the IRS-limit check give the same result
- * as for `{}`, and deleting a row's entries leaves that root as it is.
+ * (a hand edit since the stored-JSON migration, which stores `{}`) throws,
+ * naming the profile, in net pay per check, the IRS-limit check and the
+ * removal of a deleted row's entries; an object root reads as before.
  */
 import "./setup-mocks";
 import { describe, expect, it, vi } from "vitest";
@@ -72,10 +72,15 @@ async function underRoot(root: "null" | "{}") {
 }
 
 describe("a JSON-null contribution_active_fields root", () => {
-  it("reads as an empty profile in net pay and the IRS-limit check", async () => {
-    const empty = await underRoot("{}");
-    expect(empty.netPay).toHaveProperty("value");
-    expect(await underRoot("null")).toEqual(empty);
+  it("throws in net pay and the IRS-limit check, naming the profile", async () => {
+    expect((await underRoot("{}")).netPay).toHaveProperty("value");
+    const refused = await underRoot("null");
+    for (const result of [refused.netPay, refused.capCheck])
+      expect(result).toEqual({
+        error: expect.stringMatching(
+          /^Contribution Profile \d+: its stored active fields don't fit their shape$/,
+        ),
+      });
   });
 });
 
@@ -106,14 +111,16 @@ describe("dropContributionActiveFields", () => {
     }
   }
 
-  it("leaves a JSON-null root as it is", async () => {
-    expect(await dropOver("null")).toBe("null");
+  it("throws over a JSON-null root, naming the profile", async () => {
+    await expect(dropOver("null")).rejects.toThrow(
+      /^Contribution Profile \d+: its stored active fields don't fit their shape$/,
+    );
   });
 
   it("drops the row's entry from an object root, keeping the rest", async () => {
     const after = await dropOver(
       JSON.stringify({
-        contributionAccounts: { "7": { annualAmount: 100 }, "8": {} },
+        contributionAccounts: { "7": { isActive: false }, "8": {} },
         deductions: {},
       }),
     );

@@ -9,11 +9,11 @@ import {
   date,
   timestamp,
   decimal,
-  jsonb,
   uniqueIndex,
   index,
   check,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {
   InvestmentTransactionKind,

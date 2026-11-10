@@ -5,7 +5,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { maskAmountsInText } from "@/lib/utils/format";
 import { YearByYearTable } from "./brokerage-year-table";
 import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
-import { BrokerageGoalsSection } from "@/components/brokerage/brokerage-goals";
+import { BrokerageGoalsSection } from "@/app/(dashboard)/brokerage/brokerage-goals";
 import {
   LumpSumForm,
   LumpSumBadge,

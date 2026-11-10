@@ -1,0 +1,236 @@
+"use client";
+
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+import { InlineEdit } from "@/components/ui/inline-edit";
+import { HelpTip } from "@/components/ui/help-tip";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
+import { formatCurrency } from "@/lib/utils/format";
+import { taxTypeLabel } from "@/lib/config/display-labels";
+import type { BudgetApiService } from "@/lib/config/budget-apps";
+
+export function AssetsLiabilitiesCards({
+  portfolioTotal,
+  portfolioAccounts,
+  byTaxType,
+  cash,
+  cashSource,
+  cashMissingAccounts = 0,
+  displayHomeValue,
+  otherAssets,
+  otherAssetItems,
+  otherAssetsSyncSource,
+  mortgageBalance,
+  otherLiabilities,
+  totalLiabilities,
+  useMarketValue,
+  hasHouse,
+  onSettingUpdate,
+}: {
+  portfolioTotal: number;
+  portfolioAccounts: { taxType: string; amount: number }[];
+  byTaxType: Map<string, number>;
+  cash: number;
+  cashSource: BudgetApiService | "manual";
+  /** Mapped cash accounts missing from the budget app's account list. */
+  cashMissingAccounts?: number;
+  displayHomeValue: number;
+  otherAssets: number;
+  otherAssetItems?: { name: string; value: number; synced: boolean }[];
+  otherAssetsSyncSource?: string | null;
+  mortgageBalance: number;
+  /** Typed figure (editable here), the debts list and mapped cards. */
+  otherLiabilities: {
+    manual: number;
+    itemized: number;
+    creditCardMapped: number;
+  };
+  totalLiabilities: number;
+  useMarketValue: boolean;
+  hasHouse: boolean;
+  onSettingUpdate: (key: string, value: string) => void;
+}) {
+  return (
+    <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card title="Assets">
+        <div className="space-y-2 text-sm">
+          <div className="group border-subtle relative flex cursor-default justify-between border-b py-1">
+            <span className="text-muted">
+              Investment Portfolio
+              <span className="text-faint ml-1 text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                &#9432;
+              </span>
+            </span>
+            <span className="font-medium">
+              {formatCurrency(portfolioTotal)}
+            </span>
+            {byTaxType.size > 0 && (
+              <div className="bg-surface-primary absolute top-full left-0 z-10 mt-1 hidden min-w-[220px] rounded-lg border p-3 shadow-lg group-hover:block">
+                <p className="text-muted mb-2 text-xs font-medium">
+                  By Tax Type
+                </p>
+                {Array.from(byTaxType.entries())
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, amount]) => (
+                    <div
+                      key={type}
+                      className="flex justify-between py-0.5 text-xs"
+                    >
+                      <span className="text-muted">{taxTypeLabel(type)}</span>
+                      <span className="font-medium">
+                        {formatCurrency(amount)}
+                      </span>
+                    </div>
+                  ))}
+                <div className="border-subtle mt-1 flex justify-between border-t pt-1 text-xs font-semibold">
+                  <span>Total</span>
+                  <span>{formatCurrency(portfolioTotal)}</span>
+                </div>
+                <p className="text-caption text-faint mt-1">
+                  {portfolioAccounts.length} accounts
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="border-subtle flex items-center justify-between border-b py-1">
+            <span className="text-muted">
+              Cash
+              {cashSource !== "manual" && <SyncBadge source={cashSource} />}
+              {cashMissingAccounts > 0 && (
+                <span
+                  className="text-caption ml-1 text-amber-600"
+                  title="A cash account you mapped is no longer in your budget app (closed or deleted), so it counts as $0. Check your account mappings."
+                >
+                  {cashMissingAccounts} mapped{" "}
+                  {cashMissingAccounts === 1 ? "account" : "accounts"} missing
+                </span>
+              )}
+            </span>
+            {cashSource === "manual" ? (
+              <InlineEdit
+                value={String(cash)}
+                onSave={(v) => onSettingUpdate("current_cash", v)}
+                formatDisplay={(v) => formatCurrency(Number(v))}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="font-medium"
+              />
+            ) : (
+              <span className="font-medium">{formatCurrency(cash)}</span>
+            )}
+          </div>
+          {hasHouse && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <span className="text-muted">
+                Home {useMarketValue ? "(Market)" : "(Cost Basis)"}
+              </span>
+              <span className="font-medium">
+                {formatCurrency(displayHomeValue)}
+              </span>
+            </div>
+          )}
+          {otherAssetItems && otherAssetItems.length > 0 ? (
+            otherAssetItems.map((item) => (
+              <div
+                key={item.name}
+                className="border-subtle flex items-center justify-between border-b py-1"
+              >
+                <span className="text-muted">
+                  {item.name}
+                  {item.synced && otherAssetsSyncSource && (
+                    <SyncBadge source={otherAssetsSyncSource} />
+                  )}
+                </span>
+                <span className="font-medium">
+                  {formatCurrency(item.value)}
+                </span>
+              </div>
+            ))
+          ) : otherAssets > 0 ? (
+            <div className="border-subtle flex items-center justify-between border-b py-1">
+              <span className="text-muted">Other Assets</span>
+              <InlineEdit
+                value={String(otherAssets)}
+                onSave={(v) => onSettingUpdate("current_other_assets", v)}
+                formatDisplay={(v) => formatCurrency(Number(v))}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="font-medium"
+              />
+            </div>
+          ) : null}
+          <div className="flex justify-between py-1 font-semibold">
+            <span>Total Assets</span>
+            <span>
+              {formatCurrency(
+                portfolioTotal + cash + displayHomeValue + otherAssets,
+              )}
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Liabilities">
+        <div className="space-y-2 text-sm">
+          {hasHouse && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <span className="text-muted">Mortgage Balance</span>
+              <span className="font-medium">
+                {formatCurrency(mortgageBalance)}
+              </span>
+            </div>
+          )}
+          {otherLiabilities.itemized > 0 && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <Link href="/liabilities" className="text-muted hover:underline">
+                Debts (list)
+              </Link>
+              <span className="font-medium">
+                {formatCurrency(otherLiabilities.itemized)}
+              </span>
+            </div>
+          )}
+          {otherLiabilities.creditCardMapped > 0 && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <span className="text-muted">Credit cards (from budget)</span>
+              <span className="font-medium">
+                {formatCurrency(otherLiabilities.creditCardMapped)}
+              </span>
+            </div>
+          )}
+          <div className="border-subtle flex items-center justify-between border-b py-1">
+            <span className="text-muted">
+              Other debts, not itemized
+              <HelpTip text="A single figure for debts you haven't listed one by one on Liabilities." />
+            </span>
+            <InlineEdit
+              value={String(otherLiabilities.manual)}
+              onSave={(v) => onSettingUpdate("current_other_liabilities", v)}
+              formatDisplay={(v) => formatCurrency(Number(v))}
+              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+              type="number"
+              className="font-medium"
+            />
+          </div>
+          <div className="flex justify-between py-1 font-semibold">
+            <span>Total Liabilities</span>
+            <span>{formatCurrency(totalLiabilities)}</span>
+          </div>
+        </div>
+        {hasHouse && (
+          <div className="border-subtle mt-3 border-t pt-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">
+                Home Equity{" "}
+                <HelpTip text="Home value minus mortgage balance -- the portion of your home you actually own" />
+              </span>
+              <span className="font-medium text-green-700">
+                {formatCurrency(displayHomeValue - mortgageBalance)}
+              </span>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

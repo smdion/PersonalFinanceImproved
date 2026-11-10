@@ -16,12 +16,12 @@ import {
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
 } from "@/lib/config/display-labels";
 import type { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
-import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets";
-import {
-  computeTaxBucketAnalysis,
-  type RuleOf55Status,
-  type RothBasisMeta,
-} from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
+import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
+import type {
+  RuleOf55Status,
+  RothBasisMeta,
+} from "@/lib/pure/accounts/account-balances.types";
 import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
 import type { fetchRetirementData } from "./load";
 

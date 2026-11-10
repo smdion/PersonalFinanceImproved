@@ -9,6 +9,7 @@ import {
 import { newestReportPerDay } from "@/lib/pure/sync/simplefin-holdings";
 import { staleFeeds } from "@/lib/pure/sync/stale-feeds";
 import * as schema from "@/lib/db/schema";
+import { countRows } from "@/lib/db/compat";
 import {
   getSimplefinConnection,
   saveSimplefinConnection,
@@ -16,7 +17,7 @@ import {
   runSimplefinSync,
   upsertSimplefinAccounts,
   getSimplefinLastError,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import {
   claimSetupToken,
   getAccounts,
@@ -30,9 +31,8 @@ import {
   simplefinRequestRecorder,
   stopAtSimplefinQuota,
 } from "@/lib/simplefin/request-log";
-import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/accounts/balance-dates";
-import type { SimplefinConfig } from "@/lib/simplefin/sync";
+import { readSimplefinConfig } from "@/server/services/sync/simplefin/config";
 import type { ProbeResult } from "@/lib/http/probe-result";
 import { TRPCError } from "@trpc/server";
 
@@ -80,7 +80,7 @@ export const connectionsProcedures = {
         };
       }
       try {
-        const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+        const { accessUrl } = readSimplefinConfig(conn.config);
         // A test counts against the daily quota like a sync.
         await stopAtSimplefinQuota(ctx.db, ctx.scope.asOf);
         const { accounts, providerErrors } = await getAccounts(accessUrl, {
@@ -243,7 +243,7 @@ export const connectionsProcedures = {
         (max, v) => (max === null || v.asOf > max ? v.asOf : max),
         null,
       ),
-      transactions: Number(txStats[0]?.count ?? 0),
+      transactions: countRows(txStats),
       transactionAccounts: Number(txStats[0]?.accounts ?? 0),
       oldestTransaction: txStats[0]?.oldest ?? null,
       requestsLastDay,

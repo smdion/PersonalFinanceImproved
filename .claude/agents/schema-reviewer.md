@@ -139,7 +139,7 @@ Every structural change (add column, add table, add index, change type, add cons
 
 ### 3. Update backup-transforms.ts
 
-If the change adds a new column to an existing table, existing backup files (`.json` exports) won't have that column. `src/lib/db/backup-transforms.ts` must be updated to handle the missing column with an appropriate default.
+If the change adds a new column to an existing table, existing backup files (`.json` exports) won't have that column. `src/lib/db/backup/backup-transforms.ts` must be updated to handle the missing column with an appropriate default.
 
 Check the existing transform registry. The new transform must handle all prior versions that lack the new column.
 
@@ -157,7 +157,7 @@ Before deploying any release with schema changes, run the migration test against
 
 ```bash
 # See docs/OPS.md § Release Process (and the private .scratch/docs/ops/OPS.md step 5)
-./scripts/test-migration.sh "$PROD_DATABASE_URL"
+ENCRYPTION_KEY="$PROD_ENCRYPTION_KEY" ./scripts/test-migration.sh "$PROD_DATABASE_URL"
 ```
 
 This is not optional for schema changes that ship to production.

@@ -15,7 +15,6 @@ import {
   cacheGet,
   YNAB_INTERNAL_GROUPS,
 } from "@/lib/budget-api";
-import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 
 export const apiLinkProcedures = {
@@ -29,11 +28,7 @@ export const apiLinkProcedures = {
       const service = input?.service ?? (active !== "none" ? active : null);
       if (!service) return { groups: [] };
 
-      const cached = await cacheGet<BudgetCategoryGroup[]>(
-        ctx.db,
-        service,
-        "categories",
-      );
+      const cached = await cacheGet(ctx.db, service, "categories");
       if (!cached) return { groups: [] };
 
       // Flatten to group > category hierarchy, excluding hidden and YNAB internal groups
@@ -144,7 +139,7 @@ export const apiLinkProcedures = {
 
       const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
-      const monthCache = await cacheGet<BudgetMonthDetail>(
+      const monthCache = await cacheGet(
         ctx.db,
         active,
         `months/${currentMonth}`,

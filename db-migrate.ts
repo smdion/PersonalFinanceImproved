@@ -6,7 +6,7 @@ import * as path from "path";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
   MIGRATION_STAMP_SUBQUERY,
-} from "./src/lib/db/demo-schema-marker";
+} from "./src/lib/db/migrate/demo-schema-marker";
 import {
   parseSimulationPresets,
   pickApprovedCommunityFile,
@@ -20,15 +20,19 @@ import {
   type RefQuery,
   type SimulationPresetsFile,
   type TaxDataFile,
-} from "./src/lib/db/reference-reconcile-core";
-import { VERSION_TABLE_NAMES } from "./src/lib/db/version-tables";
+} from "./src/lib/db/migrate/reference-reconcile-core";
+import { VERSION_TABLE_NAMES } from "./src/lib/db/backup/version-tables";
 import { loadEnvFile } from "./src/lib/db/env-file";
-import { restrictBackupFile, writeBackupFile } from "./src/lib/db/backup-file";
+import { MigrationRefusal } from "./src/lib/db/migrate/converter-refusal";
+import {
+  restrictBackupFile,
+  writeBackupFile,
+} from "./src/lib/db/backup/backup-file";
 import {
   MIGRATION_CONVERTERS,
   runConverterPg,
   runConverterSqlite,
-} from "./src/lib/db/migration-converters";
+} from "./src/lib/db/migrate/migration-converters";
 
 function log(
   level: "info" | "warn" | "error",
@@ -59,7 +63,7 @@ function getDialect(): "postgresql" | "sqlite" {
  * touching a figure the household changed (see reconcileReferenceRows).
  * The Simulation presets (reference-data/) are seeded only where every
  * preset table is empty (see presetSeedSteps). Both come from
- * src/lib/db/reference-reconcile-core.ts, the code the app runs.
+ * src/lib/db/migrate/reference-reconcile-core.ts, the code the app runs.
  */
 function readTaxDataFile(): TaxDataFile {
   return readTaxDataDir(fs, path.resolve(TAX_DATA_DIR));
@@ -1028,7 +1032,7 @@ export function requireBackupOrAbort(backupPath: string | null): void {
   );
 }
 
-async function runPostgres() {
+export async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
   const { Pool } = await import("pg");
@@ -1174,7 +1178,7 @@ async function runPostgres() {
     // schema's current structure on next activation. Demo schemas are
     // sandboxes the demo router (src/server/routers/demo.ts) builds with
     // CREATE TABLE LIKE public.x and stamps with the applied-migration
-    // count and last hash (src/lib/db/demo-schema-marker.ts); any whose
+    // count and last hash (src/lib/db/migrate/demo-schema-marker.ts); any whose
     // stamp doesn't match the current one was built for an older structure. Checked on
     // EVERY start, not just when a migration ran, so a failed drop is
     // retried — and it's fatal: a stale schema can't be left in place
@@ -1942,6 +1946,9 @@ async function run() {
       dialect,
       error: err instanceof Error ? err.message : String(err),
       code: (err as NodeJS.ErrnoException).code,
+      ...(err instanceof MigrationRefusal
+        ? { refused: err.refused, fields: err.fields }
+        : {}),
     });
     process.exit(1);
   }

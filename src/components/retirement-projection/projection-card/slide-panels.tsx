@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { ValidationContent } from "@/components/methodology/validation-content";
-import { SimulationAssumptions } from "@/components/retirement-projection/mc-simulation-assumptions";
+import { SimulationAssumptions } from "@/components/retirement-projection/simulation/mc-simulation-assumptions";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import type { ProjectionState } from "../projection-table-types";

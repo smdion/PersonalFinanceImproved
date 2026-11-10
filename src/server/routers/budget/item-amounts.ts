@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { budgetAmountsSchema } from "@/lib/db/json-schemas";
+import { budgetAmountsSchema } from "@/lib/db/shapes/json-schemas";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
 import { applyContributionAccountEditsBatch } from "@/server/services/contributions/account-edits";
 import type { DbOrTx } from "@/lib/db";

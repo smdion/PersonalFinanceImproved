@@ -1,5 +1,5 @@
 /** "Why this account, why this order" helpers shared by the advisor report and the table
- *  tooltips (re-exported from components/retirement-projection/utils.ts). Callers pass
+ *  tooltips (re-exported from components/retirement-projection/projection-display.ts). Callers pass
  *  amounts already in the page's dollar mode. */
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";

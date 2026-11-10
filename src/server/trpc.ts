@@ -3,7 +3,7 @@ import {
   DEMO_SCHEMA_MARKER_PREFIX,
   DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SUBQUERY,
-} from "@/lib/db/demo-schema-marker";
+} from "@/lib/db/migrate/demo-schema-marker";
 import { devBypass } from "./auth-mode";
 import { ZodError, z } from "zod/v4";
 import { externalFailure, userMessageFor } from "@/lib/budget-api/errors";

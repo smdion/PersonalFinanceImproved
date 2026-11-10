@@ -1,25 +1,15 @@
 import { z } from "zod/v4";
-import { asc, desc, eq, gte } from "drizzle-orm";
+import { desc, eq, gte } from "drizzle-orm";
 import { adminProcedure, protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { recomputeTodaySnapshotFromLocal } from "@/lib/simplefin/sync";
+import { recomputeTodaySnapshotFromLocal } from "@/server/services/sync/simplefin/sync";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
-import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/sync/simplefin-feeds";
 import {
   applyLoanFeedBalances,
   clearLoanBalance,
 } from "@/server/services/sync/loan-feed";
-import { getLatestSnapshot } from "@/server/data/snapshots";
-import { roundToCents } from "@/lib/utils/math";
-import {
-  isRetirementParent,
-  isPortfolioParent,
-} from "@/lib/config/account-types";
-import type { ParentCategory } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types";
-import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
-import { loadLinkContext } from "@/server/services/sync/simplefin";
+import { listSimplefinAccounts } from "@/server/services/sync/simplefin";
 
 export const accountsProcedures = {
   /**
@@ -27,153 +17,9 @@ export const accountsProcedures = {
    * latest snapshot balance and a display-only drift `change`, computed per performance
    * account: every SimpleFIN account linked to it shares the combined-balance delta.
    */
-  listAccounts: protectedProcedure.query(async ({ ctx }) => {
-    const [rows, latest] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.simplefinAccounts)
-        .orderBy(
-          asc(schema.simplefinAccounts.orgName),
-          asc(schema.simplefinAccounts.accountName),
-        ),
-      getLatestSnapshot(ctx.db),
-    ]);
-
-    // A performance account can be split across multiple snapshot rows
-    // (e.g. by tax type), so sum every row that shares its id.
-    const snapshotBalanceByPerfId = new Map<number, number>();
-    const taxTypesSeenByPerfId = new Map<number, Set<PortfolioTaxType>>();
-    const parentCategoryByPerfId = new Map<number, ParentCategory>();
-    // accountType/subType live on the performance_accounts master row, so every snapshot
-    // row for a performanceAccountId carries the same value: overwriting is safe.
-    const accountTypeByPerfId = new Map<number, AccountCategory>();
-    const subTypeByPerfId = new Map<number, string | null>();
-    if (latest) {
-      for (const a of latest.accounts) {
-        if (a.performanceAccountId == null) continue;
-        snapshotBalanceByPerfId.set(
-          a.performanceAccountId,
-          (snapshotBalanceByPerfId.get(a.performanceAccountId) ?? 0) + a.amount,
-        );
-        const taxTypes =
-          taxTypesSeenByPerfId.get(a.performanceAccountId) ?? new Set();
-        taxTypes.add(a.taxType as PortfolioTaxType);
-        taxTypesSeenByPerfId.set(a.performanceAccountId, taxTypes);
-        if (
-          isRetirementParent(a.parentCategory ?? undefined) ||
-          isPortfolioParent(a.parentCategory ?? undefined)
-        ) {
-          parentCategoryByPerfId.set(
-            a.performanceAccountId,
-            a.parentCategory as ParentCategory,
-          );
-        }
-        accountTypeByPerfId.set(a.performanceAccountId, a.accountType);
-        subTypeByPerfId.set(a.performanceAccountId, a.subType);
-      }
-    }
-    // A performanceAccountId split across >1 tax types in this snapshot has no single
-    // tax type: resolve to "mixed" rather than misattribute the balance.
-    const taxTypeByPerfId = new Map<number, PortfolioTaxType | "mixed">();
-    for (const [perfId, taxTypes] of taxTypesSeenByPerfId) {
-      const [only] = taxTypes;
-      taxTypeByPerfId.set(perfId, taxTypes.size === 1 && only ? only : "mixed");
-    }
-
-    // Group every counted (linked and included) SimpleFIN account's balance
-    // by target performanceAccountId, since more than one can point at the
-    // same id. Unchecked accounts count for nothing — see countsAsFeed.
-    const linkedTotalByPerfId = new Map<number, number>();
-    const linkedTotalBySubKey = new Map<string, number>();
-    for (const r of rows) {
-      if (!countsAsFeed(r) || r.linkedPerformanceAccountId == null) continue;
-      if (r.linkedSubKey)
-        linkedTotalBySubKey.set(
-          r.linkedSubKey,
-          (linkedTotalBySubKey.get(r.linkedSubKey) ?? 0) +
-            Number(r.lastBalance),
-        );
-      linkedTotalByPerfId.set(
-        r.linkedPerformanceAccountId,
-        (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? 0) +
-          Number(r.lastBalance),
-      );
-    }
-
-    const snapshotDate = latest?.snapshot.snapshotDate ?? null;
-    const links = await loadLinkContext(ctx.db, rows);
-
-    return rows.map((r) => {
-      const lastBalance = Number(r.lastBalance);
-      const base = {
-        id: r.id,
-        orgName: r.orgName,
-        accountName: r.accountName,
-        lastBalance,
-        lastBalanceDate: r.lastBalanceDate,
-        isIncluded: r.isIncluded,
-        lastSeenAt: r.lastSeenAt,
-        linkedPerformanceAccountId: r.linkedPerformanceAccountId,
-        linkedLoanId: r.linkedLoanId,
-        unclaimedDebt: isUnclaimedDebt(r),
-        // The sub-account it's linked to; a key missing from the latest
-        // snapshot (edited or deactivated) is kept and flagged, and the
-        // link counts for the whole account meanwhile.
-        linkedSubKey:
-          r.linkedPerformanceAccountId != null ? r.linkedSubKey : null,
-        linkedSubLabel: r.linkedSubKey
-          ? (links.subByKey.get(r.linkedSubKey)?.label ?? null)
-          : null,
-        subLinkMissing:
-          r.linkedPerformanceAccountId != null &&
-          !!r.linkedSubKey &&
-          !links.subByKey.has(r.linkedSubKey),
-        suggestion: links.suggestions.get(r.id) ?? null,
-        /** Tax treatment (label) of a part this account needs but the tracked account lacks. */
-        missingPart: links.missingParts.get(r.id) ?? null,
-        snapshotDate,
-      };
-      if (r.linkedPerformanceAccountId == null || !countsAsFeed(r)) {
-        return {
-          ...base,
-          snapshotBalance: null,
-          change: null,
-          taxType: null,
-          parentCategory: null,
-          accountType: null,
-          subType: null,
-        };
-      }
-      // A feed linked to one part compares with that part, alongside only
-      // the feeds sharing its key — never the whole account's total.
-      const part = r.linkedSubKey
-        ? links.subByKey.get(r.linkedSubKey)
-        : undefined;
-      const snapshotBalance = part
-        ? part.amount
-        : (snapshotBalanceByPerfId.get(r.linkedPerformanceAccountId) ?? null);
-      const linkedTotal = part
-        ? (linkedTotalBySubKey.get(r.linkedSubKey!) ?? lastBalance)
-        : (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ??
-          lastBalance);
-      return {
-        ...base,
-        snapshotBalance,
-        // Rounded to cents: summing several linked rows can leave a float residue
-        // that would show as a "+$0.00" drift badge.
-        change:
-          snapshotBalance == null
-            ? null
-            : roundToCents(linkedTotal - snapshotBalance),
-        taxType: taxTypeByPerfId.get(r.linkedPerformanceAccountId) ?? null,
-        parentCategory:
-          parentCategoryByPerfId.get(r.linkedPerformanceAccountId) ?? null,
-        accountType:
-          accountTypeByPerfId.get(r.linkedPerformanceAccountId) ?? null,
-        subType: subTypeByPerfId.get(r.linkedPerformanceAccountId) ?? null,
-      };
-    });
-  }),
+  listAccounts: protectedProcedure.query(({ ctx }) =>
+    listSimplefinAccounts(ctx),
+  ),
 
   /**
    * Toggle an account's inclusion and recompute today's total from local

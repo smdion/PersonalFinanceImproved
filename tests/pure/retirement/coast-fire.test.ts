@@ -27,6 +27,7 @@ const AS_OF = new Date("2025-03-07");
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
           "401k": 0.4,
@@ -969,6 +970,7 @@ describe("findCoastFireAge — contributions stop on the per-account (spec) path
           salaryFraction: 1,
           baseAnnual: 24000,
           taxTreatment: "pre_tax",
+          allocationPriority: 0,
           parentCategory: "Retirement",
         },
       ],

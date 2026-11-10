@@ -32,7 +32,7 @@ import {
   getWindowLimitDays,
   runSimplefinSync,
   saveSimplefinConnection,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
 const DAY = 86_400_000;

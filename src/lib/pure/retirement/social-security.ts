@@ -1,15 +1,15 @@
 /**
  * Social Security claiming-age calculator: spousal "greater of" logic and a claiming-age sweep
- * calling `calculateProjection()` as a black box. PIA is a caller-supplied input; the
- * early/delayed adjustment math (fixed by law) lives in `lib/config/social-security.ts`.
+ * calling `calculateProjection()` as a black box, and the early/delayed and spousal claiming
+ * multipliers (fixed by law; FRA and the claiming ages are in `lib/config/social-security.ts`).
  */
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "../engine";
 import type { ProjectionInput } from "../engine/types";
 import {
+  type FullRetirementAge,
+  fraToMonths,
   getFullRetirementAge,
-  getClaimingAdjustmentMultiplier,
-  getSpousalAdjustmentMultiplier,
   SPOUSAL_BENEFIT_BASE_RATE,
   SS_EARLIEST_CLAIMING_AGE_MONTHS,
   SS_LATEST_CLAIMING_AGE_MONTHS,
@@ -194,4 +194,72 @@ export function sweepClaimingAges(
     best === undefined || best.fails ? null : best.claimingAge;
 
   return { recommendedAge, candidates };
+}
+
+/**
+ * Early-claiming reduction: 5/9 of 1% per month for the first 36 months
+ * before FRA, then 5/12 of 1% per month beyond that.
+ */
+const EARLY_REDUCTION_RATE_FIRST_36 = 5 / 9 / 100;
+const EARLY_REDUCTION_RATE_BEYOND_36 = 5 / 12 / 100;
+
+/** Delayed-claiming credit: 2/3 of 1% per month past FRA, up to age 70. */
+const DELAYED_CREDIT_RATE_PER_MONTH = 2 / 3 / 100;
+
+/** Multiplier on PIA for claiming at `claimingAgeMonths`: 1 at FRA, below 1 early, above 1
+ *  delayed. The age is clamped to [62, 70], the only claiming ages the law allows. */
+export function getClaimingAdjustmentMultiplier(
+  fra: FullRetirementAge,
+  claimingAgeMonths: number,
+): number {
+  const fraMonths = fraToMonths(fra);
+  const clampedMonths = Math.min(
+    Math.max(claimingAgeMonths, SS_EARLIEST_CLAIMING_AGE_MONTHS),
+    SS_LATEST_CLAIMING_AGE_MONTHS,
+  );
+
+  if (clampedMonths === fraMonths) return 1;
+
+  if (clampedMonths < fraMonths) {
+    const monthsEarly = fraMonths - clampedMonths;
+    const first36 = Math.min(monthsEarly, 36);
+    const beyond36 = Math.max(monthsEarly - 36, 0);
+    const reduction =
+      first36 * EARLY_REDUCTION_RATE_FIRST_36 +
+      beyond36 * EARLY_REDUCTION_RATE_BEYOND_36;
+    return 1 - reduction;
+  }
+
+  const monthsDelayed = clampedMonths - fraMonths;
+  return 1 + monthsDelayed * DELAYED_CREDIT_RATE_PER_MONTH;
+}
+
+/** Spousal early-claiming reduction per month before FRA: 25/36 of 1% for the first 36 months,
+ *  5/12 of 1% beyond (unlike the worker's 5/9%). No delayed credits: capped at 50% of the
+ *  higher earner's PIA. */
+const SPOUSAL_REDUCTION_RATE_FIRST_36 = 25 / 36 / 100;
+const SPOUSAL_REDUCTION_RATE_BEYOND_36 = 5 / 12 / 100;
+
+/** Multiplier on `SPOUSAL_BENEFIT_BASE_RATE * higherEarnerPia` for claiming at
+ *  `claimingAgeMonths`: 1 at or after FRA (no delayed credit), below 1 early. Clamped to
+ *  [62, FRA]. */
+export function getSpousalAdjustmentMultiplier(
+  fra: FullRetirementAge,
+  claimingAgeMonths: number,
+): number {
+  const fraMonths = fraToMonths(fra);
+  const clampedMonths = Math.min(
+    Math.max(claimingAgeMonths, SS_EARLIEST_CLAIMING_AGE_MONTHS),
+    fraMonths,
+  );
+
+  if (clampedMonths >= fraMonths) return 1;
+
+  const monthsEarly = fraMonths - clampedMonths;
+  const first36 = Math.min(monthsEarly, 36);
+  const beyond36 = Math.max(monthsEarly - 36, 0);
+  const reduction =
+    first36 * SPOUSAL_REDUCTION_RATE_FIRST_36 +
+    beyond36 * SPOUSAL_REDUCTION_RATE_BEYOND_36;
+  return 1 - reduction;
 }

@@ -3,7 +3,7 @@
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import { OverridesPanel } from "./overrides-panel";
+import { OverridesPanel } from "./overrides/overrides-panel";
 import { EngineNotices } from "./projection-card/engine-notices";
 import { RecalculatingBanner } from "./projection-card/recalculating-banner";
 import { ProjectionLoaderStrip } from "./projection-card/loader-strip";
@@ -13,10 +13,8 @@ import { useProjectionReport } from "./projection-card/use-projection-report";
 import { ReportControls } from "./projection-card/report-controls";
 import { ProjectionResults } from "./projection-card/projection-results";
 import { TableArea } from "./projection-card/table-area";
-import {
-  useProjectionState,
-  type EngineContributionRate,
-} from "./use-projection-state";
+import { useProjectionState } from "./use-projection-state";
+import type { EngineContributionRate } from "./use-projection-state.types";
 
 // ---------------------------------------------------------------------------
 // Main Component

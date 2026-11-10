@@ -7,6 +7,7 @@ import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
+import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
 import {
   closedSetImportCases,
   unknownAccountTypeCases,
@@ -26,6 +27,10 @@ describe("backup connections fence (SQLite)", () => {
   backupFenceCases(fresh);
 });
 
+describe("settings through a version restore (SQLite)", () => {
+  versionRestoreSettingsCases(fresh);
+});
+
 describe("closed-set values on import and restore (SQLite)", () => {
   closedSetImportCases(fresh);
   unknownAccountTypeCases(fresh);
@@ -33,9 +38,10 @@ describe("closed-set values on import and restore (SQLite)", () => {
 
 describe("an installation table with no column lists", () => {
   it("stops a non-admin's import rather than keeping it whole", async () => {
-    const { INSTALLATION_COLUMNS } = await import("@/lib/db/installation-rows");
+    const { INSTALLATION_COLUMNS } =
+      await import("@/lib/db/backup/installation-rows");
     const { exportBackup, importBackup } =
-      await import("@/lib/db/version-logic");
+      await import("@/lib/db/backup/version-logic");
     const { rawDb, cleanup } = await createTestCaller();
     const listed = INSTALLATION_COLUMNS["api_connections"];
     delete INSTALLATION_COLUMNS["api_connections"];

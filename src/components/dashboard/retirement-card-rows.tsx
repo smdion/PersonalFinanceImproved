@@ -1,6 +1,6 @@
 /** The retirement card's estimate rows: the baseline withdrawal, Coast FIRE
  *  and when the simulation last ran. */
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { focusHref } from "@/lib/config/focus-topics";
 import { FocusLink } from "@/components/ui/focus-link";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -18,7 +18,7 @@ export function renderWithdrawalRow(
 ) {
   const strategyKey = settings.withdrawalStrategy as string | undefined;
   const strategyLabel = strategyKey
-    ? (STRATEGY_CONFIG_BY_STORED_KEY[strategyKey]?.label ?? strategyKey)
+    ? (storedStrategyConfig(strategyKey)?.label ?? strategyKey)
     : "Fixed";
   const isDynamic = strategyKey && strategyKey !== "fixed";
   return (

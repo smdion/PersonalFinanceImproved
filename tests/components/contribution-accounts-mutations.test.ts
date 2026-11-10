@@ -105,7 +105,7 @@ const baseContrib: Contrib = {
 
 async function importHook() {
   const mod =
-    await import("@/components/portfolio/use-contribution-accounts-mutations");
+    await import("@/components/contributions/use-contribution-accounts-mutations");
   return mod.useContributionAccountsMutations;
 }
 

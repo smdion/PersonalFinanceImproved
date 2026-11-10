@@ -16,14 +16,16 @@
  *
  * The pinned outcomes are what the code did when this was recorded, refusals
  * and all; a step that looks wrong is a finding to report, not to re-pin.
+ * Decimal text compares by value (decimalText), so the pins hold on
+ * PostgreSQL too.
  */
 import "./setup-mocks";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as s from "@/lib/db/schema-sqlite";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_RETIREMENT_PROFILE_ID,
@@ -39,6 +41,7 @@ import {
   seedSalaryProfile,
 } from "./setup";
 import EXPECTED from "../fixtures/profile-lifecycle-rows.json";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -349,7 +352,7 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(r.steps).toEqual(EXPECTED.contribution);
+    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.contribution));
   });
 
   it("Salary Profiles write the same rows", async () => {
@@ -458,7 +461,7 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(r.steps).toEqual(EXPECTED.salary);
+    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.salary));
   });
 
   it("Retirement Profiles write the same rows", async () => {
@@ -558,6 +561,6 @@ describe("profile lifecycle rows", () => {
     );
 
     r.othersUnchanged();
-    expect(r.steps).toEqual(EXPECTED.retirement);
+    expect(decimalText(r.steps)).toEqual(decimalText(EXPECTED.retirement));
   });
 });

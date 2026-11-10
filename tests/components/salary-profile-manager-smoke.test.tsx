@@ -1,6 +1,7 @@
 /**
- * Manager-level smoke test before the split of budget/salary-profile-
- * manager.tsx (RULES § Refactoring: smoke tests before any split;
+ * Manager-level smoke test before the split of
+ * profiles/salary/salary-profile-manager.tsx (RULES § Refactoring: smoke
+ * tests before any split;
  * target-architecture § 8.7: manager smoke). A dated temporary net: the
  * split that replaces the file replaces this test. The shared salary
  * sections inside it are covered by salary-sections.test.tsx.
@@ -13,7 +14,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserProvider } from "@/lib/context/user-context";
-import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { formatCurrency } from "@/lib/utils/format";
 import { mutationCalls, resetTrpcMock, setQuery } from "./trpc-mock";
@@ -26,7 +27,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   promptText: vi.fn(async () => null),
 }));
 
-import { SalaryProfileManager } from "@/components/budget/salary-profile-manager";
+import { SalaryProfileManager } from "@/components/profiles/salary/salary-profile-manager";
 
 type ProfileList = RouterOutputs["salaryProfile"]["list"];
 type ProfileDetail = NonNullable<RouterOutputs["salaryProfile"]["getById"]>;

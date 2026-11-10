@@ -70,6 +70,10 @@ async function handle(msg) {
     rows: last?.rows ?? [],
     rowCount: last?.rowCount ?? 0,
     fields: (last?.fields ?? []).map((f) => f.name),
+    // Which columns are json or jsonb (sent as their text, as SQLite does).
+    json: (last?.fields ?? []).map(
+      (f) => f.dataTypeID === 114 || f.dataTypeID === 3802,
+    ),
   };
 }
 

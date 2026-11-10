@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts build partial paycheck views (the tab reads person, job, salary, bonus terms and the contribution figures) */
 /**
- * Tab-level smoke test before the split of budget/what-if-tab.tsx (RULES §
- * Refactoring: smoke tests before any split; target-architecture § 8.7: tab
- * smoke, reset behavior). A dated temporary net: the split that replaces the
+ * Tab-level smoke test before the split of profiles/what-if/what-if-tab.tsx
+ * (RULES § Refactoring: smoke tests before any split; target-architecture
+ * § 8.7: tab smoke, reset behavior). A dated temporary net: the split that replaces the
  * file replaces this test. The editors themselves are covered by
  * what-if-editors.test.tsx.
  *
@@ -69,7 +69,7 @@ vi.mock("@/lib/hooks/use-paycheck-person-views", async () => {
     },
   };
 });
-vi.mock("@/app/(dashboard)/budget/what-if-paycheck-summary", () => ({
+vi.mock("@/components/profiles/what-if/what-if-paycheck-summary", () => ({
   WhatIfPaycheckSummary: () => <div data-testid="paycheck-summary" />,
 }));
 type StubRowHandlers = {
@@ -91,7 +91,7 @@ vi.mock("@/components/budget", async (importOriginal) => ({
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { WhatIfTab } from "@/app/(dashboard)/budget/what-if-tab";
+import { WhatIfTab } from "@/components/profiles/what-if/what-if-tab";
 
 beforeEach(() => {
   resetTrpcMock();

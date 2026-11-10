@@ -27,7 +27,7 @@ vi.mock("@/lib/sec/client", async (orig) => ({
     return new Map([["NEWFX", { seriesId: "S1", classId: "C1" }]]);
   }),
 }));
-vi.mock("@/lib/sec/facts-sync", () => ({
+vi.mock("@/server/services/investments/sec-facts", () => ({
   syncSecurityFacts: vi.fn(async () => {
     if (sec.syncFails) throw await badAnswer();
     return {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FocusStateValue } from "@/lib/config/focus-topics";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip } from "@/components/ui/help-tip";
-import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-bucket-analysis";
+import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import {
   isTaxFreeBucket,
   isPreTaxType,

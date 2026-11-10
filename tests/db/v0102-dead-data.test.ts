@@ -1,12 +1,12 @@
 /** The 0015 restore step: a backup's holding observations lose
  *  performance_account_id and its dead settings stay out. */
 import { describe, it, expect } from "vitest";
-import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
+import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import { validateColumns } from "@/lib/db/compat";
 import {
   DEAD_SETTING_KEYS,
   dropDeadHoldingLinkAndSettings,
-} from "@/lib/db/v0102-dead-data";
+} from "@/lib/db/migrate/v0102-dead-data";
 import pgJournal from "../../drizzle/meta/_journal.json";
 
 const tags = pgJournal.entries.map((e) => e.tag);

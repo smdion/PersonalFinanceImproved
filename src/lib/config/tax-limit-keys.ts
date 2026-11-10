@@ -300,9 +300,20 @@ export const ACCOUNT_LIMIT_KEYS: ReadonlySet<string> = new Set(
 const BY_KEY = new Map(TAX_LIMIT_KEYS.map((k) => [k.key, k]));
 
 /** The registry entry for a `limit_type`, or undefined for one Ledgr
- *  doesn't use (an old row a household still has). */
+ *  doesn't use (a household's own key, shown as not used by Ledgr). */
 export function taxLimitKey(key: string): TaxLimitKey | undefined {
   return BY_KEY.get(key);
+}
+
+/** A `limit_type` Ledgr knows: the only kind Settings saves. */
+export const isTaxLimitKey = (key: string) => BY_KEY.has(key);
+
+/** The registry entry for a key the tax math reads: one it doesn't know
+ *  is an error, never a figure. */
+export function requireTaxLimitKey(key: string): TaxLimitKey {
+  const entry = BY_KEY.get(key);
+  if (!entry) throw new Error(`Unknown contribution limit key: ${key}`);
+  return entry;
 }
 
 /** Settings cards: account-type cards first, then TAX_LIMIT_GROUPS. */

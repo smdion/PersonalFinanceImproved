@@ -6,7 +6,7 @@ import * as schema from "@/lib/db/schema";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { dropMappingsTo } from "@/server/data/delete-references";
 import { firstRow } from "@/lib/utils/first-row";
-import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
+import { computeMortgageActiveSummary } from "@/server/services/debts/mortgage-active-summary";
 
 // --- CRUD Zod schemas ---
 
@@ -49,11 +49,16 @@ const mortgageExtraPaymentInput = z.object({
 });
 
 export const mortgageRouter = createTRPCRouter({
+  /**
+   * Every loan's amortization with its extra payments, each what-if's outcome, and the active
+   * loan's result.
+   */
   computeActiveSummary: protectedProcedure.query(({ ctx }) =>
     computeMortgageActiveSummary(ctx),
   ),
 
   mortgageLoans: createTRPCRouter({
+    /** Every mortgage loan, by id. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -79,6 +84,7 @@ export const mortgageRouter = createTRPCRouter({
           .returning()
           .then(firstRow),
       ),
+    /** Delete a loan and the budget-API mappings that point at it. */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
@@ -92,6 +98,9 @@ export const mortgageRouter = createTRPCRouter({
   }),
 
   mortgageWhatIfScenarios: createTRPCRouter({
+    /**
+     * Every mortgage what-if (extra principal, a one-time payment or a refinance), in sort order.
+     */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -129,6 +138,7 @@ export const mortgageRouter = createTRPCRouter({
   }),
 
   mortgageExtraPayments: createTRPCRouter({
+    /** Every extra mortgage payment, planned or made, by payment date. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()

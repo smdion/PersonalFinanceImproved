@@ -10,11 +10,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { MortgageSettings } from "@/components/debts/mortgage-settings";
-import {
-  budgetApiServiceLabel,
-  formatCurrency,
-  maskAmountsInText,
-} from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { DebtsCard } from "@/components/debts/debts-card";
 import { ActiveLoanCard } from "@/components/debts/active-loan-card";
 import { HistoricalLoans } from "@/components/debts/historical-loans";
@@ -22,7 +19,7 @@ import { RefinanceCalculator } from "@/components/debts/refinance-calculator";
 import { RefinanceHistory } from "@/components/debts/refinance-history";
 import { RefinanceImpact } from "@/components/debts/refinance-impact";
 import { WhatIfSection } from "@/components/debts/what-if-section";
-import { SyncBadge } from "@/components/ui/sync-badge";
+import { SyncBadge } from "@/components/net-worth/sync-badge";
 
 export function LiabilitiesContent() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);

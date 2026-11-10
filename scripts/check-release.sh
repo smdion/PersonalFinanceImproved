@@ -32,8 +32,12 @@ if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
   step "migrations from empty (PostgreSQL)" env DATABASE_URL="$TEST_DATABASE_URL" bash -c 'pnpm -s build:migrator && node db-migrate.js'
   step "constraint snapshot" pnpm -s check:constraints
   for t in tests/routers/demo-postgres.test.ts tests/routers/fresh-install-postgres.test.ts \
+    tests/db/converter-lists-postgres.test.ts tests/db/migration-refusal-postgres.test.ts \
     tests/db/migration-0014-postgres.test.ts tests/db/migration-0015-postgres.test.ts \
     tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts \
+    tests/db/migration-v0106-money-postgres.test.ts \
+    tests/db/migration-v0106-credentials-postgres.test.ts tests/db/migration-v0106-joint-person-ids-postgres.test.ts tests/db/migration-v0106-cached-months-postgres.test.ts \
+    tests/db/migration-v0106-stored-json-postgres.test.ts \
     tests/routers/match-rate-writes-postgres.test.ts tests/integration/backup-fence-postgres.test.ts \
     tests/scripts/rotate-encryption-key-postgres.test.ts tests/scripts/export-backup-snapshot-postgres.test.ts \
     tests/routers/seeded-postgres.test.ts \

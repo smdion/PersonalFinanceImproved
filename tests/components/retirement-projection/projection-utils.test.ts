@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts required to build minimal slot/account fixtures without satisfying every unrelated field of the full engine types */
 /**
  * Unit tests for the pure data-driven helpers in
- * src/components/retirement-projection/utils.ts. Uses the real
+ * src/components/retirement-projection/ (bucket-slots, projection-columns, lump-sums, parent-category-filter, projection-display). Uses the real
  * @/lib/config/account-types module (as other pure-function tests in this
  * repo do, e.g. tests/pure/engine/balance-utils.test.ts) rather than mocking
  * it — these helpers are config-driven and their correctness depends on
@@ -9,35 +9,43 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  catDisplayLabel,
+  formatDiscretionaryTierBreakdown,
+} from "@/components/retirement-projection/projection-display";
+import {
   isAccumYear,
+  filterYearByParentCategory,
+  rowTotal,
+} from "@/components/retirement-projection/parent-category-filter";
+import {
+  lumpSumTaxBucket,
+  lumpSumsForBucket,
+  lumpSumsForCategory,
+  lumpSumTotal,
+} from "@/components/retirement-projection/table/lump-sums";
+import {
   itemTaxType,
   colKeyParts,
   colBalance,
-  safeDivide,
   colWithdrawal,
   colEngineTaxType,
-  slotBucketWithdrawal,
-  slotBucketContribution,
   slotsColumnBalanceInflow,
-  slotsBucketBalanceInflow,
-  filterSpecsForBucket,
-  iaBelongsToBucket,
   percentOf,
   proRateMonths,
   specFrac,
   matchFracOf,
   computeColumnChange,
   computeAccountSplits,
-  filterYearByParentCategory,
-  rowTotal,
-  lumpSumTaxBucket,
-  lumpSumsForBucket,
-  lumpSumsForCategory,
-  lumpSumTotal,
-  catDisplayLabel,
+} from "@/components/retirement-projection/table/projection-columns";
+import {
+  slotBucketWithdrawal,
+  slotBucketContribution,
+  slotsBucketBalanceInflow,
+  filterSpecsForBucket,
+  iaBelongsToBucket,
   bucketSlotMap,
-  formatDiscretionaryTierBreakdown,
-} from "@/components/retirement-projection/utils";
+} from "@/components/retirement-projection/table/bucket-slots";
+import { safeDivide } from "@/lib/utils/math";
 import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";

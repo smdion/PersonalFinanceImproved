@@ -1,7 +1,7 @@
 /**
  * Cross-layer consistency check for withdrawal-strategy defaults.
  *
- * buildStrategyParams (server/routers/projection/_shared.ts) and
+ * buildStrategyParams (lib/pure/retirement/projection-settings.ts) and
  * WITHDRAWAL_STRATEGY_CONFIG (lib/config/withdrawal-strategies.ts) each
  * independently fall back to a "default" value when the user hasn't
  * configured one. They're two layers of the same fact and previously
@@ -26,7 +26,7 @@ vi.mock("@/lib/db/schema", () => ({}));
 import {
   buildStrategyParams,
   resolveSsStartAgeBaseline,
-} from "@/server/routers/projection/_shared";
+} from "@/lib/pure/retirement/projection-settings";
 import {
   getAllStrategyKeys,
   getStrategyDefaults,

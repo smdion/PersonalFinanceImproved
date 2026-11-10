@@ -26,10 +26,10 @@ vi.mock("@/lib/sec/client", async () => {
     }),
   };
 });
-vi.mock("@/lib/sec/facts-sync", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/sec/facts-sync")>(
-    "@/lib/sec/facts-sync",
-  );
+vi.mock("@/server/services/investments/sec-facts", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/server/services/investments/sec-facts")
+  >("@/server/services/investments/sec-facts");
   return {
     ...actual,
     syncSecurityFacts: vi.fn(async () => ({

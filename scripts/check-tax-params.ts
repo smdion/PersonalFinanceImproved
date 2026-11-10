@@ -30,7 +30,7 @@ import { TAX_DATA_SECTIONS } from "../src/lib/config/tax-data-publication";
 import {
   TAX_DATA_DIR,
   readTaxDataDir,
-} from "../src/lib/db/reference-reconcile-core";
+} from "../src/lib/db/migrate/reference-reconcile-core";
 import {
   taxDataStatus,
   taxYearDeadline,
@@ -136,6 +136,7 @@ const TAX_PATHS = [
   "tax-data/",
   "src/lib/config/tax-tables.ts",
   "src/lib/config/tax-params.ts",
+  "src/lib/pure/tax/resolve-tax-params.ts",
   "src/lib/config/tax-data-publication.ts",
   "src/lib/pure/tax/data-status.ts",
 ];

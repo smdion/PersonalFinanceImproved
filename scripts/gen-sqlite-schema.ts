@@ -11,7 +11,7 @@
  *   boolean("col")                     → integer("col", { mode: "boolean" })
  *   date("col")                        → text("col")     (ISO date strings)
  *   timestamp("col", { ... })          → integer("col", { mode: "timestamp" })  (unix seconds → Date)
- *   jsonb("col")                       → text("col", { mode: "json" })
+ *   jsonb("col") (../pg-jsonb)         → text("col", { mode: "json" })
  *   varchar("col", { length: N })      → text("col")
  *   pgTable                            → sqliteTable
  *   .defaultNow()                      → .default(sql`(unixepoch())`)
@@ -75,6 +75,8 @@ function transform(src: string): string {
   let out = src
     .replace(/import \{[\s\S]*?\} from "drizzle-orm\/pg-core";\n/, "")
     .replace(/import \{ sql \} from "drizzle-orm";\n/, "")
+    // The PostgreSQL jsonb column (read once); SQLite's json text needs none.
+    .replace(/import \{ jsonb \} from "\.\.\/pg-jsonb";\n/, "")
     .replace(
       /^\/\/ Part of the Drizzle schema \(PostgreSQL\)/m,
       "// AUTO-GENERATED from ../pg/ by scripts/gen-sqlite-schema.ts — do not edit.\n// Part of the Drizzle schema (SQLite)",
@@ -191,11 +193,17 @@ for (const f of fs.readdirSync(PG_DIR).filter((f) => f.endsWith(".ts")))
     "utf-8",
   );
 
-// The barrel: same sections, re-exported from ./sqlite/.
-const barrel = fs
-  .readFileSync(path.join(DB, "schema-pg.ts"), "utf-8")
+// The barrel: same sections, re-exported from ./sqlite/. Its header is the
+// comment block that opens with the first line below, however many lines
+// it runs to.
+const PG_HEADER =
+  /^\/\/ Drizzle schema — all table definitions for ledgr\.(\n\/\/.*)*/;
+const pgBarrel = fs.readFileSync(path.join(DB, "schema-pg.ts"), "utf-8");
+if (!PG_HEADER.test(pgBarrel))
+  throw new Error("schema-pg.ts no longer opens with its header line");
+const barrel = pgBarrel
   .replace(
-    /^\/\/ Drizzle schema — all table definitions for ledgr\.\n\/\/ This file is the single source of truth for the data model\.\n\/\/ See Migration Plan Section 4 for design principles and seed data notes\./,
+    PG_HEADER,
     "// AUTO-GENERATED from schema-pg.ts — do not edit by hand.\n// Run: npx tsx scripts/gen-sqlite-schema.ts\n// SQLite dialect of the Drizzle schema.",
   )
   .replace(/from "\.\/pg\//g, 'from "./sqlite/');

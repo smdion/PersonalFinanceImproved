@@ -6,7 +6,7 @@ import {
 import {
   contributionAccountFieldKind,
   deductionFieldKind,
-} from "@/lib/db/profile-fields";
+} from "@/lib/db/shapes/profile-fields";
 
 const ctx = (over: Partial<PaycheckEditContext> = {}): PaycheckEditContext => ({
   locked: false,

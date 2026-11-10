@@ -4,16 +4,19 @@
  * These tests use a deterministic ENCRYPTION_KEY set in beforeAll/afterAll
  * so they don't pollute the rest of the suite.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { randomBytes } from "node:crypto";
+import { z } from "zod/v4";
 import {
   encryptString,
   decryptString,
   encryptJson,
   decryptJson,
-  readMaybeEncrypted,
 } from "@/lib/crypto";
 import { isEncryptedEnvelope } from "@/lib/crypto-envelope";
+
+const anything = z.unknown();
+const tokenConfig = z.object({ accessToken: z.string(), budgetId: z.string() });
 
 const TEST_KEY = randomBytes(32).toString("base64");
 let originalKey: string | undefined;
@@ -83,7 +86,7 @@ describe("encryptJson / decryptJson", () => {
       budgetId: "deadbeef-1111-2222-3333-444455556666",
     };
     const env = encryptJson(config);
-    expect(decryptJson<typeof config>(env)).toEqual(config);
+    expect(decryptJson(env, "test_config", anything)).toEqual(config);
   });
 
   it("round-trips nested objects + arrays", () => {
@@ -92,7 +95,7 @@ describe("encryptJson / decryptJson", () => {
       list: [{ x: "y" }, { x: "z" }],
     };
     const env = encryptJson(value);
-    expect(decryptJson<typeof value>(env)).toEqual(value);
+    expect(decryptJson(env, "test_value", anything)).toEqual(value);
   });
 });
 
@@ -129,20 +132,49 @@ describe("isEncryptedEnvelope", () => {
   });
 });
 
-describe("readMaybeEncrypted (legacy compatibility)", () => {
+describe("decryptJson reads only an envelope", () => {
   it("decrypts an envelope", () => {
     const config = { accessToken: "encrypted-tok", budgetId: "abc" };
     const env = encryptJson(config);
-    expect(readMaybeEncrypted<typeof config>(env)).toEqual(config);
+    expect(decryptJson(env, "test_config", anything)).toEqual(config);
   });
 
-  it("returns plaintext as-is (legacy v4 api_connections.config)", () => {
-    const legacy = { accessToken: "plain-tok", budgetId: "abc" };
-    expect(readMaybeEncrypted<typeof legacy>(legacy)).toEqual(legacy);
+  it("throws on anything else, naming the source and never the value", () => {
+    const plain = { accessToken: "plain-tok", budgetId: "abc" };
+    for (const stored of [plain, null, undefined, JSON.stringify(plain)]) {
+      expect(() => decryptJson(stored, "test_plain", anything)).toThrow(
+        /^test_plain is not an encrypted envelope/,
+      );
+      try {
+        decryptJson(stored, "test_plain", anything);
+      } catch (e) {
+        expect(String(e)).not.toContain("plain-tok");
+      }
+    }
   });
+});
 
-  it("preserves null/undefined", () => {
-    expect(readMaybeEncrypted(null)).toBeNull();
-    expect(readMaybeEncrypted(undefined)).toBeUndefined();
+describe("decryptJson checks the config against its shape", () => {
+  it("reads a refused config as stored and warns once", () => {
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const partial = { accessToken: "tok" };
+      expect(
+        decryptJson(encryptJson(partial), "test_partial", tokenConfig),
+      ).toEqual(partial);
+      expect(
+        decryptJson(encryptJson(partial), "test_partial", tokenConfig),
+      ).toEqual(partial);
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(String(logged.mock.calls[0]?.[0]))).toMatchObject({
+        event: "stored_value_unexpected_shape",
+        source: "test_partial",
+        issues: [
+          "budgetId: Invalid input: expected string, received undefined",
+        ],
+      });
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

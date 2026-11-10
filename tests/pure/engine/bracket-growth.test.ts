@@ -14,7 +14,8 @@ import {
   computeTaxableSS,
 } from "@/lib/pure/engine/tax-estimation";
 import { computeLtcgTax } from "@/lib/pure/tax/ltcg";
-import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
+import { NIIT_THRESHOLDS } from "@/lib/config/niit";
+import { computeNiit } from "@/lib/pure/tax/niit";
 import {
   TEST_BRACKETS,
   makeAccumulationDefaults,
@@ -269,6 +270,7 @@ function makeInput(
   } = {},
 ): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {
@@ -445,6 +447,7 @@ function makeLtcgHeavyInput(
   preTax = 200000,
 ): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {
@@ -751,6 +754,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {
@@ -923,6 +927,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {

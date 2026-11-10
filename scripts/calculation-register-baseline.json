@@ -93,6 +93,7 @@
     "LIM-26": "H",
     "LIM-27": "H",
     "LIM-28": "H",
+    "LIM-29": "M",
     "RET-01": "H",
     "RET-02": "H",
     "RET-03": "H",
@@ -167,6 +168,7 @@
     "ENG-38": "M",
     "ENG-39": "M",
     "ENG-40": "M",
+    "ENG-41": "L",
     "WDR-01": "H",
     "WDR-02": "H",
     "WDR-03": "M",
@@ -277,7 +279,8 @@
     "HH-64": "M",
     "HH-65": "M",
     "HH-66": "M",
-    "HH-67": "L"
+    "HH-67": "L",
+    "HH-68": "L"
   },
   "highRiskWithoutIndependentTest": [
     "ENG-03",
@@ -349,7 +352,7 @@
     "src/lib/pure/accounts/roth-basis-tracking.ts:applyBasisDraw",
     "src/lib/pure/accounts/roth-basis-tracking.ts:clampBasisToBalance",
     "src/lib/pure/accounts/roth-basis-tracking.ts:initRothBasisState",
-    "src/lib/pure/accounts/tax-bucket-projection.ts:projectRuleOf55",
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts:projectRuleOf55",
     "src/lib/pure/advice/goldilocks.ts:investedAtStartOf",
     "src/lib/pure/advice/milestone-first-reached.ts:FIRST_REACHED_NEW_DAYS",
     "src/lib/pure/advice/milestone-first-reached.ts:firstReachedSchema",
@@ -456,7 +459,7 @@
     "src/lib/pure/engine/contribution-routing.ts:capSpecs",
     "src/lib/pure/engine/contribution-routing.ts:slotLimits",
     "src/lib/pure/engine/gap-year-draw.ts:shortfallFloor",
-    "src/lib/pure/engine/guyton-klinger.ts:applyGuytonKlingerStrategy",
+    "src/lib/pure/engine/spending-strategies/guyton-klinger.ts:applyGuytonKlingerStrategy",
     "src/lib/pure/engine/individual-accounts/ledger.ts:accrueIndividualBasis",
     "src/lib/pure/engine/individual-accounts/ledger.ts:depleteIndividualBasis",
     "src/lib/pure/engine/individual-accounts/ledger.ts:makeIndKey",

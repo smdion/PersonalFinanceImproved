@@ -12,8 +12,8 @@ import {
   sameReferenceValue,
   shippedReferenceRows,
   type TaxDataFile,
-} from "@/lib/db/reference-reconcile-core";
-import { REFERENCE_TABLES, toSql } from "@/lib/db/reference-data";
+} from "@/lib/db/migrate/reference-reconcile-core";
+import { REFERENCE_TABLES, toSql } from "@/lib/db/migrate/reference-data";
 import { PgDialect } from "drizzle-orm/pg-core";
 
 type Db = ReturnType<typeof openTestSqlite>;

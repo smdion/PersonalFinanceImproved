@@ -12,7 +12,7 @@ import {
 } from "@/server/services/profile-selection";
 import { computeContributionSummary } from "@/server/services/contributions/summary";
 import { computeSavingsSummary } from "@/server/services/savings/summary";
-import { computeMortgageActiveSummary } from "@/server/services/mortgage/active-summary";
+import { computeMortgageActiveSummary } from "@/server/services/debts/mortgage-active-summary";
 import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
 import { loadBuyingMonths } from "@/server/services/investments/buying-months";
 import { listBrokerageGoals } from "@/server/data/brokerage-goals";

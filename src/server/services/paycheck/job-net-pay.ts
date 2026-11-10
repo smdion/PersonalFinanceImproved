@@ -25,7 +25,7 @@ import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriod } from "@/lib/config/enum-values";
-import { resolveTaxParams } from "@/lib/config/tax-params";
+import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import {
   deductionLine,

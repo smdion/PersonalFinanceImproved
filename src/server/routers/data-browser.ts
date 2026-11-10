@@ -3,9 +3,12 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { createTRPCRouter, adminProcedure } from "../trpc";
-import { VERSION_TABLE_NAMES, EXCLUDED_TABLES } from "@/lib/db/version-tables";
+import {
+  VERSION_TABLE_NAMES,
+  EXCLUDED_TABLES,
+} from "@/lib/db/backup/version-tables";
 import { isPostgres } from "@/lib/db/dialect";
-import { queryRaw } from "@/lib/db/compat";
+import { countRows, queryRaw } from "@/lib/db/compat";
 import { log } from "@/lib/logger";
 
 /** All known table names (version tables + excluded tables like change_log). */
@@ -43,7 +46,7 @@ export const dataBrowserRouter = createTRPCRouter({
           ctx.db,
           sql.raw(`SELECT COUNT(*) AS count FROM "${name}"`),
         );
-        const count = Number(res[0]?.count ?? 0);
+        const count = countRows(res);
         results.push({ tableName: name, rowCount: count });
       } catch {
         // Table might not exist yet (migration not run)
@@ -112,7 +115,7 @@ export const dataBrowserRouter = createTRPCRouter({
         ctx.db,
         sql`SELECT COUNT(*) AS count FROM ${sql.raw(`"${input.tableName}"`)}`,
       );
-      const totalCount = Number(countRes[0]?.count ?? 0);
+      const totalCount = countRows(countRes);
 
       const rows = await queryRaw<Record<string, unknown>>(
         ctx.db,

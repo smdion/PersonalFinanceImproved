@@ -6,7 +6,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 /**
  * Always-dark tooltip surface in both themes (slate is not theme-remapped); custom tooltips (e.g.
  * Recharts) reuse it. Text inside must read on slate-900 and slate-700 without `--c-*` colors;
- * see retirement-projection/utils.ts's `tipColorClass`.
+ * see retirement-projection/projection-display.ts's `tipColorClass`.
  */
 export const TOOLTIP_SURFACE_CLASSES =
   "rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-label leading-relaxed text-slate-100 shadow-xl";

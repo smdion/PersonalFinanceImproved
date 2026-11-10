@@ -14,6 +14,7 @@ import type {
   PayPeriod,
 } from "./enum-values";
 import { isPayPeriod } from "./pay-periods";
+import { BUDGET_SERVICES, isBudgetApiService } from "./budget-apps";
 
 export const PAY_PERIOD_LABELS: Record<PayPeriod, string> = {
   weekly: "Weekly",
@@ -75,6 +76,11 @@ export const TAX_TYPE_LABELS: Record<string, string> = {
   hsa: "HSA",
   afterTax: "After-tax",
 };
+
+/** Display label for tax treatment (e.g. `taxFree` → `Tax-Free`) */
+export function taxTypeLabel(taxType: string): string {
+  return TAX_TYPE_LABELS[taxType] ?? taxType;
+}
 
 export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   none: "No match",
@@ -341,4 +347,14 @@ export const FILING_STATUS_LABELS: Record<FilingStatusKey, string> = {
 export function filingStatusLabel(status: string): string {
   const known = parseReturnFilingStatus(status);
   return known ? filingTable(FILING_STATUS_LABELS, known) : status;
+}
+
+/** Display label for a budget API service, so sync toasts name the connected
+ *  provider. */
+export function budgetApiServiceLabel(
+  service: string | null | undefined,
+): string {
+  if (isBudgetApiService(service)) return BUDGET_SERVICES[service].label;
+  if (service === "simplefin") return "SimpleFIN";
+  return "the budget API";
 }

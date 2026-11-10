@@ -9,10 +9,10 @@ import {
   timestamp,
   decimal,
   varchar,
-  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 import { contributionProfiles, salaryProfiles } from "./contribution-profiles";

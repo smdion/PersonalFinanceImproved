@@ -35,10 +35,10 @@ import { describe, expect, it } from "vitest";
 import { cents, xfail } from "../../fixtures/answer-key";
 import {
   fraToMonths,
-  getClaimingAdjustmentMultiplier,
   getFullRetirementAge,
 } from "@/lib/config/social-security";
 import {
+  getClaimingAdjustmentMultiplier,
   computeAdjustedBenefit,
   computeSpousalBenefit,
   sweepClaimingAges,

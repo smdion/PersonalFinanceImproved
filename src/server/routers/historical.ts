@@ -15,6 +15,10 @@ import { findActiveJob } from "@/lib/pure/household/profiles";
 import { zYearEndTargeting } from "@/lib/pure/net-worth/year-end-targeting.schema";
 
 export const historicalRouter = createTRPCRouter({
+  /**
+   * Year-end history with each year's assets, notes and per-person salaries; the current year's
+   * salaries come from the active Salary Profile until they are recorded.
+   */
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
     .query(async ({ ctx, input }) => {
@@ -217,6 +221,7 @@ export const historicalRouter = createTRPCRouter({
 
   // --- Historical Notes ---
 
+  /** Save the note on one year's field; a blank note deletes it. */
   upsertNote: adminProcedure
     .input(
       z.object({

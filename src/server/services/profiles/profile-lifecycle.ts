@@ -12,7 +12,10 @@ import {
 } from "@/lib/pure/household/profiles";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
+import {
+  resolveRetirementProfileIdFrom,
+  toProfileId,
+} from "@/lib/pure/household/retirement-profile";
 import {
   ACTIVE_SETTING_KEY,
   PROFILE_TABLE,
@@ -37,18 +40,14 @@ const CAN_DELETE = {
 
 type ActiveSettingRow = typeof schema.appSettings.$inferSelect;
 
-function storedNumber(value: unknown): number | null {
-  return typeof value === "number" ? value : null;
-}
-
 /** The active profile a delete must refuse. */
 const ACTIVE_FOR_DELETE: Record<
   LifecycleKind,
   (settingRows: ActiveSettingRow[], profiles: { id: number }[]) => number | null
 > = {
-  // The raw setting: only a stored number can equal a profile id.
-  contribution: (rows) => storedNumber(rows[0]?.value),
-  salary: (rows) => storedNumber(rows[0]?.value),
+  // The stored setting, a number or a numeric string, as its readers take it.
+  contribution: (rows) => toProfileId(rows[0]?.value),
+  salary: (rows) => toProfileId(rows[0]?.value),
   // Resolved: unset or stale means the lowest id, the one the engine reads.
   retirement: (rows, profiles) =>
     resolveRetirementProfileIdFrom(rows, profiles),

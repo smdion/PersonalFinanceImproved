@@ -9,7 +9,7 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { compositionBucketSchema } from "@/lib/config/enum-values.schema";
 import type { CompositionBucket } from "@/lib/config/enum-values";
-import { syncSecurityFacts } from "@/lib/sec/facts-sync";
+import { syncSecurityFacts } from "@/server/services/investments/sec-facts";
 import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "@/server/services/investments/holdings-overview";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";

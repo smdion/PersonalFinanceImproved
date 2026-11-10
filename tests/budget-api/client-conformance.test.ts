@@ -25,6 +25,8 @@ import type {
   BudgetTransaction,
   NewBudgetTransaction,
 } from "@/lib/budget-api/types";
+import "../routers/test-encryption-key";
+import { encryptJson } from "@/lib/crypto";
 import { BUDGET_PROVIDERS } from "@/lib/budget-api/providers";
 import { resetActualWrapperGates } from "@/lib/budget-api/actual-client";
 import { BudgetApiError } from "@/lib/budget-api/errors";
@@ -996,7 +998,9 @@ describe.each(BUDGET_API_SERVICE_VALUES)("%s", (service) => {
     const service_ = fakeService(world.prefix, answers, echo);
     unanswered = service_.unanswered;
     vi.stubGlobal("fetch", vi.fn(service_.fetchFn));
-    const client = BUDGET_PROVIDERS[service].createClient(world.config);
+    const client = BUDGET_PROVIDERS[service].createClient(
+      encryptJson(world.config),
+    );
     if (!client) throw new Error(`${service}: no client from its config`);
     return { client, sent: service_.sent };
   }

@@ -1,10 +1,13 @@
 /**
  * Emergency fund: months of essential expenses (budget items with isEssential) covered by the raw,
- * true (less self-loans) and with-repay balances, and the target (targetMonths, default 4) and
- * what's needed after repay (negative = ahead).
+ * true (less self-loans) and with-repay balances, and the target (targetMonths) and what's
+ * needed after repay (negative = ahead).
  */
 import type { EFundInput, EFundResult } from "./efund.types";
 import { safeDivide } from "../../utils/math";
+
+/** The target, in months, for an emergency fund goal that stores none. */
+export const DEFAULT_EFUND_MONTHS = 4;
 
 export function calculateEFund(input: EFundInput): EFundResult {
   const warnings: string[] = [];

@@ -6,7 +6,7 @@
 
 import { useId } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import { STRATEGY_CONFIG_BY_STORED_KEY } from "@/lib/config/stored-withdrawal-strategy";
+import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
@@ -23,7 +23,7 @@ export function StrategyParamsSection({
   isEditable,
 }: Props) {
   const id = useId();
-  const meta = STRATEGY_CONFIG_BY_STORED_KEY[settings.withdrawalStrategy];
+  const meta = storedStrategyConfig(settings.withdrawalStrategy);
   if (!meta || meta.paramFields.length === 0) return null;
 
   // Partition fields into layout items: grouped pairs or standalone

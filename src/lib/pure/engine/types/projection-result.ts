@@ -69,7 +69,7 @@ export type ProjectionInput = {
     socialSecurityWageBase: number;
   };
   /** The working budget's contribution lines, a year, in today's dollars. */
-  budgetContributionLines?: number;
+  budgetContributionLines: number;
   /** The projection's last year. */
   projectionEndYear: number;
   currentSalary: number;
@@ -426,9 +426,9 @@ export type EngineDecumulationYear = {
    *  plan judge (plan-outcome.ts) — one threshold, set here. */
   shortfallMaterialityFloor?: number;
   /** Part of `unmetNeed` due to excluding penalty-exposed money rather than lack of money
-   *  (`RouteResult` docblock, withdrawal-routing/types.ts). */
+   *  (`RouteResult.penaltyAvoidedShortfall`, withdrawal-routing/types.ts). */
   penaltyAvoidedShortfall?: number;
-  /** Part of `unmetNeed` due to excluding Portfolio-parented money (`RouteResult` docblock);
+  /** Part of `unmetNeed` due to excluding Portfolio-parented money (`RouteResult.nonRetirementShortfall`);
    *  independent of `penaltyAvoidedShortfall`. */
   nonRetirementShortfall?: number;
   /** Early-withdrawal penalty charged this year; nonzero only when penalized money was drawn.

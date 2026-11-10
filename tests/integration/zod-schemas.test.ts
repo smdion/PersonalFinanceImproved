@@ -21,7 +21,7 @@ import {
   taxBracketsSchema,
   accountMappingSchema,
   relocationScenarioParamsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 
 // ── Column Labels Schema ──────────────────────────────────────────
 
@@ -267,7 +267,6 @@ describe("extraPaycheckRoutingSchema", () => {
             { goalId: 1, pct: 60 },
             { goalId: 2, pct: 40 },
           ],
-          netPaySnapshot: 1000,
         },
       ],
       overrides: [{ month: "2026-06", splits: [{ goalId: 1, pct: 100 }] }],
@@ -410,7 +409,10 @@ describe("contributionActiveFieldsSchema", () => {
           contributionMethod: "fixed_annual",
           isActive: true,
         },
-        "12": { contributionMethod: "percent_gross", contributionValue: 500 },
+        "12": {
+          contributionMethod: "percent_of_salary",
+          contributionValue: 500,
+        },
       },
       deductions: {
         "1": { amountPerPeriod: "12.50" },

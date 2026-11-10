@@ -1,8 +1,14 @@
 /** AES-256-GCM at-rest encryption for secrets with ENCRYPTION_KEY (32 bytes, base64; envelope
- *  format in crypto-envelope.ts). Plaintext values still read. Defends against backup leaks,
- *  not against code execution in the running app. */
+ *  format in crypto-envelope.ts). Defends against backup leaks, not against code execution in
+ *  the running app. */
 
 import "server-only";
+import type { z } from "zod/v4";
+import {
+  passOnAsStored,
+  readStoredShape,
+  storedValueLog,
+} from "@/lib/db/stored-shape";
 import {
   decryptStringWithKey,
   encryptStringWithKey,
@@ -37,18 +43,28 @@ export function encryptJson(jsonPayload: unknown): EncryptedEnvelope {
 }
 
 /**
- * Decrypt + JSON.parse. Throws if the input isn't a valid envelope.
- * Use isEncryptedEnvelope() to detect plaintext legacy values first.
+ * A stored config decrypted and parsed, checked against `shape` (`readStoredConfig`). Every
+ * stored config is an envelope (writers store one; the credentials migration converts any
+ * other), so anything else throws, naming `source` and never the value.
  */
-export function decryptJson<T>(envelope: EncryptedEnvelope): T {
-  return JSON.parse(decryptString(envelope)) as T;
+export function decryptJson<S extends z.ZodType>(
+  stored: unknown,
+  source: string,
+  shape: S,
+): z.output<S> {
+  if (!isEncryptedEnvelope(stored))
+    throw new Error(
+      `${source} is not an encrypted envelope; re-save the connection.`,
+    );
+  return readStoredConfig(source, JSON.parse(decryptString(stored)), shape);
 }
 
-/** Read a config value stored as plaintext (returned as-is) or as an encrypted envelope
- *  (decrypted and parsed). Writes always go through encryptJson(). */
-export function readMaybeEncrypted<T>(storedValue: unknown): T {
-  if (isEncryptedEnvelope(storedValue)) {
-    return decryptJson<T>(storedValue);
-  }
-  return storedValue as T;
+/** A config value as read: a refused one is logged once per source and
+ *  passed on as stored. */
+function readStoredConfig<S extends z.ZodType>(
+  source: string,
+  value: unknown,
+  shape: S,
+): z.output<S> {
+  return passOnAsStored(readStoredShape(value, shape, storedValueLog(source)));
 }

@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({
   isPostgres: () => m.postgres,
   db: { execute: m.execute, all: m.all },
 }));
-vi.mock("@/lib/db/version-tables", () => ({ VERSION_TABLES: [] }));
+vi.mock("@/lib/db/backup/version-tables", () => ({ VERSION_TABLES: [] }));
 vi.mock("@/lib/db/schema-pg", () => ({}));
 vi.mock("@/lib/db/schema-sqlite", () => ({}));
 

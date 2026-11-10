@@ -10,7 +10,7 @@ import {
   addRoth,
   addBalance,
   addBasis,
-} from "../../../config/account-balance";
+} from "../../accounts/account-balance";
 import {
   OVERFLOW_TOLERANCE,
   MAX_BROKERAGE_RAMP_YEARS,

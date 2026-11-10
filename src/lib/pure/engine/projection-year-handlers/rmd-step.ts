@@ -5,7 +5,7 @@ import {
   isQcdEligible,
   isRetirementMoney,
 } from "../../../config/account-types";
-import { addTraditional } from "../../../config/account-balance";
+import { addTraditional } from "../../accounts/account-balance";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { reachesAgeRule } from "@/lib/pure/household/age";
 import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";

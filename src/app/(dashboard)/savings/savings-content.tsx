@@ -40,7 +40,7 @@ import {
 import { AllocationEditorSection } from "@/components/savings/allocation-editor-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { SavingsTrajectoryTable } from "@/components/savings/savings-trajectory-table";
-import { AllTransactionsTab } from "@/components/savings/transactions/tab";
+import { AllTransactionsTab } from "@/components/savings/transactions/all-transactions-tab";
 import {
   ApiSyncSection,
   useApiSync,

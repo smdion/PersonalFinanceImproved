@@ -1,5 +1,32 @@
-/** A projection run's household data and engine payload. */
+/** A projection run: its household data and engine payload, and the engine
+ *  input built from them ("Changes by year" and decumulation defaults). */
 
+import { z } from "zod/v4";
+import { eq } from "drizzle-orm";
+import { toNumber } from "@/lib/utils/numbers";
+import * as schema from "@/lib/db/schema";
+import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
+import { readStoredValue } from "@/lib/db/stored-setting";
+import { readStoredShape, storedValueLog } from "@/lib/db/stored-shape";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
+import {
+  accountCategoryEnum,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
+} from "@/lib/config/account-types";
+import type {
+  AccumulationOverride,
+  DecumulationDefaults,
+  DecumulationOverride,
+} from "@/lib/pure/engine/types";
+import {
+  decumulationDefaultsInputSchema,
+  decumulationOverrideArraySchema,
+  lumpSumSchema,
+  storedWithdrawalOrderSchema,
+  storedWithdrawalSplitsSchema,
+} from "@/lib/pure/engine/types";
+import { buildStrategyParams } from "@/lib/pure/retirement/projection-settings";
 import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
 import type { ProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
@@ -27,4 +54,162 @@ export async function prepareProjectionRun(
     asOf: scope.asOf,
   });
   return { profiles, data, payload };
+}
+
+// Accumulation/decumulation override schemas ("Changes by year") for every
+// projection input. Omitted = the household's saved rows (resolveProjectionOverrides);
+// only an editor with unsaved changes sends its own.
+export const accumulationOverrideArraySchema = z.array(
+  z.object({
+    year: z.number().int(),
+    contributionRate: z.number().min(0).max(1).optional(),
+    routingMode: z.enum(["waterfall", "percentage"]).optional(),
+    accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    // Per-category fields set only some categories (the engine's Partial).
+    accountSplits: z
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    taxSplits: z
+      .partialRecord(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+      .optional(),
+    accountCaps: z
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    taxTypeCaps: z
+      .object({
+        traditional: z.number().optional(),
+        roth: z.number().optional(),
+      })
+      .optional(),
+    lumpSums: lumpSumSchema,
+    reset: z.boolean().optional(),
+    notes: z.string().optional(),
+  }),
+);
+
+/** The household's saved set of one kind, parsed: a set its schema refuses
+ *  (the save path stores any records) is dropped, logged once (FALLBACKS). */
+async function savedOverrides<S extends z.ZodType>(
+  db: Db,
+  overrideType: "accumulation" | "decumulation",
+  shape: S,
+): Promise<z.output<S> | []> {
+  const rows = await db
+    .select({ overrides: schema.projectionOverrides.overrides })
+    .from(schema.projectionOverrides)
+    .where(eq(schema.projectionOverrides.overrideType, overrideType));
+  const read = readStoredShape(
+    rows[0]?.overrides ?? [],
+    shape,
+    storedValueLog(`projection_overrides.${overrideType}`),
+  );
+  // The parsed copy (unnamed keys stripped), as the engine has always had.
+  return read.fits ? shape.parse(read.value) : [];
+}
+
+/** The "Changes by year" every projection runs with (relocation and the
+ *  strategy comparison too), as engine types: what the caller sent, else
+ *  the household's saved sets (`savedOverrides`). */
+export async function resolveProjectionOverrides(
+  db: Db,
+  input: {
+    accumulationOverrides?: z.infer<typeof accumulationOverrideArraySchema>;
+    decumulationOverrides?: z.infer<typeof decumulationOverrideArraySchema>;
+  },
+): Promise<{
+  accumulationOverrides: AccumulationOverride[];
+  decumulationOverrides: DecumulationOverride[];
+}> {
+  const [accumulationOverrides, decumulationOverrides] = await Promise.all([
+    input.accumulationOverrides ??
+      savedOverrides(db, "accumulation", accumulationOverrideArraySchema),
+    input.decumulationOverrides ??
+      savedOverrides(db, "decumulation", decumulationOverrideArraySchema),
+  ]);
+  return { accumulationOverrides, decumulationOverrides };
+}
+
+/** retirement_settings' withdrawal routing, as its writer stores it. */
+const storedRouting = z.looseObject({
+  withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES),
+  withdrawalOrder: storedWithdrawalOrderSchema.nullish(),
+  withdrawalSplits: storedWithdrawalSplitsSchema.nullish(),
+});
+
+/**
+ * Build decumulation defaults from DB settings + client-supplied routing overrides.
+ * Shared by computeProjection and computeMonteCarloProjection.
+ */
+export function buildDecumulationDefaults(
+  settings: Parameters<typeof buildStrategyParams>[0] & {
+    withdrawalRate: string | null;
+    withdrawalStrategy: string;
+    withdrawalRoutingMode: string;
+    withdrawalOrder?: string[] | null;
+    withdrawalSplits?: Record<string, number> | null;
+    rmdExcessHandling?: string | null;
+    qcdMaximize?: boolean | null;
+    rmdSmoothingEnabled?: boolean | null;
+    rmdSmoothingMaxBracketTarget?: string | null;
+    discretionaryWithdrawalOrder?: string | null;
+  },
+  clientDefaults: z.output<typeof decumulationDefaultsInputSchema>,
+  distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
+): DecumulationDefaults {
+  const saved = readStoredValue("retirement_settings", settings, storedRouting);
+  return {
+    withdrawalRate: toNumber(settings.withdrawalRate),
+    // The ONE place the routing is resolved, for every caller: a client
+    // override (the Retirement page's touched Configure toggle) wins, else
+    // the household's saved value; a NULL order or splits is the config's.
+    withdrawalRoutingMode:
+      clientDefaults.withdrawalRoutingMode ?? saved.withdrawalRoutingMode,
+    withdrawalOrder:
+      clientDefaults.withdrawalOrder ??
+      saved.withdrawalOrder ??
+      getDefaultDecumulationOrder(),
+    withdrawalSplits: clientDefaults.withdrawalSplits ??
+      saved.withdrawalSplits ?? { ...CONFIG_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference,
+    distributionTaxRates,
+    withdrawalStrategy: readStoredStrategy(settings.withdrawalStrategy),
+    strategyParams: buildStrategyParams(settings),
+    rmdExcessHandling:
+      settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",
+    qcdMaximize: settings.qcdMaximize ?? false,
+    rmdSmoothingEnabled: settings.rmdSmoothingEnabled ?? false,
+    rmdSmoothingMaxBracketTarget: settings.rmdSmoothingMaxBracketTarget
+      ? toNumber(settings.rmdSmoothingMaxBracketTarget)
+      : undefined,
+    discretionaryWithdrawalOrder:
+      settings.discretionaryWithdrawalOrder === "brokerage_first"
+        ? "brokerage_first"
+        : "roth_first",
+  };
+}
+
+/**
+ * The payload's base input with the resolved decumulation defaults and the
+ * "Changes by year" (omitted = the household's saved rows), in that order.
+ */
+export async function prepareEngineInput<Base extends object>(
+  db: Db,
+  payload: {
+    settings: Parameters<typeof buildDecumulationDefaults>[0];
+    distributionTaxRates: Parameters<typeof buildDecumulationDefaults>[2];
+    baseEngineInput: Base;
+  },
+  input: Parameters<typeof resolveProjectionOverrides>[1] & {
+    decumulationDefaults: Parameters<typeof buildDecumulationDefaults>[1];
+  },
+) {
+  return {
+    ...payload.baseEngineInput,
+    decumulationDefaults: buildDecumulationDefaults(
+      payload.settings,
+      input.decumulationDefaults,
+      payload.distributionTaxRates,
+    ),
+    ...(await resolveProjectionOverrides(db, input)),
+  };
 }

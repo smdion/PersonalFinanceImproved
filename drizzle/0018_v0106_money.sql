@@ -1,0 +1,12 @@
+-- v0.10.6 money shapes. No
+-- schema change: the converters in src/lib/db/migrate/v0106-*.ts run after
+-- this SQL, as restore runs them on an older backup.
+-- Per-person retirement rows: a person with a settings row in a profile and
+-- no retirement_profile_people row there gets one, copied from that
+-- settings row. A replay adds nothing: the row is then there.
+-- Budget amounts: an item's amounts get one number per column of its
+-- profile, a missing or null column as 0; never truncated. A replay pads
+-- nothing: the array is then whole.
+-- Extra-paycheck routing: a rule's saved net pay goes where nothing reads
+-- it (the routing has a base pay, or is in Budget mode); a Savings-mode
+-- routing that still pays from it refuses the start, naming ids only.

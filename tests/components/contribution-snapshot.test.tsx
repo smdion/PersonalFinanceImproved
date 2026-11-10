@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ContributionSnapshot } from "@/components/paycheck/contribution-snapshot";
+import { ContributionSnapshot } from "@/components/contributions/contribution-snapshot";
 import {
   holdMutation,
   resetTrpcMock,

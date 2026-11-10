@@ -10,7 +10,8 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 
 const MONTHS = [
   "Jan",

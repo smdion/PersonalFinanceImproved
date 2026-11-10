@@ -28,7 +28,7 @@ import {
   setBasis,
   addBalance,
   addBasis,
-} from "../../config/account-balance";
+} from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,8 @@
  * mutations and permissions. Rename is click-to-edit via `onRename`.
  */
 
-import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
 import { planInUseMessage } from "@/lib/pure/household/plans";
@@ -130,10 +131,8 @@ function renderApiLinkBadge(
   apiService: string,
   p: BudgetProfileListEntry,
 ) {
-  // columnLabels is stored jsonb, typed by a cast here.
   const mode =
-    (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-    `Mode ${apiLinkedColumnIndex}`;
+    p.columnLabels[apiLinkedColumnIndex] ?? `Mode ${apiLinkedColumnIndex}`;
   return (
     <Badge
       color="blue"

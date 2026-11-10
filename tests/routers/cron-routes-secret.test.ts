@@ -1,5 +1,5 @@
 /**
- * The five `X-Cron-Secret` routes run `cronRoute`, after their own
+ * The four `X-Cron-Secret` routes run `cronRoute`, after their own
  * DEMO_ONLY check. Each answers, in this order:
  *   - DEMO_ONLY set → 403, whatever the secret
  *   - CRON_SECRET missing or under 32 characters → 500 "Server
@@ -17,7 +17,6 @@ const m = vi.hoisted(() => ({
   checkForTaxDataUpdate: vi.fn(),
   createVersion: vi.fn(),
   syncSecurityFacts: vi.fn(),
-  backfillPerformanceAccountIds: vi.fn(),
 }));
 
 // versions/daily reads app settings, then looks for today's auto version.
@@ -34,32 +33,25 @@ vi.mock("@/lib/db/schema", () => ({
   stateVersions: { id: {}, versionType: {}, name: {} },
 }));
 vi.mock("@/lib/logger", () => ({ log: m.log, logWarnOnce: vi.fn() }));
-vi.mock("@/lib/simplefin/sync", () => ({
+vi.mock("@/server/services/sync/simplefin/sync", () => ({
   getSimplefinConnection: vi.fn().mockResolvedValue({ id: 1 }),
   hasSyncedToday: vi.fn().mockResolvedValue(false),
   runSimplefinSync: m.runSimplefinSync,
 }));
-vi.mock("@/lib/tax-data/sync", () => ({
+vi.mock("@/server/services/tax/tax-data-sync", () => ({
   taxDataSyncOffReason: vi.fn().mockResolvedValue(null),
   taxDataCheckDue: vi.fn().mockResolvedValue(true),
   checkForTaxDataUpdate: m.checkForTaxDataUpdate,
 }));
-vi.mock("@/lib/db/version-logic", () => ({ createVersion: m.createVersion }));
+vi.mock("@/lib/db/backup/version-logic", () => ({
+  createVersion: m.createVersion,
+}));
 vi.mock("@/lib/sec/connection", () => ({
   getSecConnection: vi.fn().mockResolvedValue({ id: 1 }),
 }));
-vi.mock("@/lib/sec/facts-sync", () => ({
+vi.mock("@/server/services/investments/sec-facts", () => ({
   secFactsRefreshDue: vi.fn().mockResolvedValue(true),
   syncSecurityFacts: m.syncSecurityFacts,
-}));
-vi.mock("@/lib/db/backfill-perf-ids", () => ({
-  backfillPerformanceAccountIds: m.backfillPerformanceAccountIds,
-}));
-vi.mock("@/lib/db/backfill-local-ids", () => ({
-  backfillMappingLocalIds: vi.fn().mockResolvedValue(undefined),
-}));
-vi.mock("@/lib/db/backfill-joint-person-id", () => ({
-  backfillJointPersonId: vi.fn().mockResolvedValue(undefined),
 }));
 
 type Route = {
@@ -94,12 +86,6 @@ const ROUTES: Route[] = [
     load: () => import("@/app/api/sec/weekly/route"),
     work: m.syncSecurityFacts,
   },
-  {
-    name: "startup",
-    path: "/api/startup",
-    load: () => import("@/app/api/startup/route"),
-    work: m.backfillPerformanceAccountIds,
-  },
 ];
 
 const ORIGINAL_ENV = { ...process.env };
@@ -124,7 +110,6 @@ beforeEach(() => {
   m.checkForTaxDataUpdate.mockResolvedValue({});
   m.createVersion.mockResolvedValue({ id: 1 });
   m.syncSecurityFacts.mockResolvedValue({});
-  m.backfillPerformanceAccountIds.mockResolvedValue(undefined);
 });
 
 afterEach(() => {

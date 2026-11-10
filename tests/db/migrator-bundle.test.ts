@@ -28,21 +28,52 @@ describe("the migrator bundle", () => {
       logLevel: "silent",
     });
     const inputs = Object.keys(metafile.inputs);
-    expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual([
-      "db-migrate.ts",
-      "src/lib/db/backup-file.ts",
-      "src/lib/db/converter-rows.ts",
-      "src/lib/db/demo-schema-marker.ts",
-      "src/lib/db/env-file.ts",
-      "src/lib/db/migration-converters.ts",
-      "src/lib/db/reference-reconcile-core.ts",
-      "src/lib/db/v0102-match-rate.ts",
-      "src/lib/db/v0102-match-value.ts",
-      "src/lib/db/version-tables.ts",
-      "src/lib/utils/match-rate.ts",
-    ]);
+    // Sorted on both sides: a moved module keeps its line in this list.
+    expect(inputs.filter((f) => !f.includes("node_modules/")).sort()).toEqual(
+      [
+        "db-migrate.ts",
+        "src/lib/db/backup/backup-file.ts",
+        "src/lib/db/migrate/converter-rows.ts",
+        "src/lib/db/migrate/converter-refusal.ts",
+        "src/lib/db/migrate/converter-writes.ts",
+        "src/lib/db/migrate/demo-schema-marker.ts",
+        "src/lib/db/env-file.ts",
+        "src/lib/db/migrate/migration-converters.ts",
+        "src/lib/db/migrate/reference-reconcile-core.ts",
+        "src/lib/db/migrate/v0102-match-rate.ts",
+        "src/lib/db/migrate/v0102-match-value.ts",
+        "src/lib/db/migrate/v0106-retirement-people.ts",
+        "src/lib/db/migrate/v0106-budget-amounts.ts",
+        "src/lib/db/migrate/v0106-net-pay-snapshot.ts",
+        "src/lib/db/migrate/v0106-credentials.ts",
+        "src/lib/db/migrate/v0106-mapping-ids.ts",
+        "src/lib/db/migrate/v0106-joint-person-ids.ts",
+        "src/lib/db/migrate/v0106-cached-months.ts",
+        "src/lib/db/migrate/v0106-salary-entries.ts",
+        "src/lib/db/migrate/v0106-active-fields.ts",
+        "src/lib/db/migrate/v0106-performance-category.ts",
+        "src/lib/db/migrate/v0106-retired-limits.ts",
+        "src/lib/db/migrate/v0106-after-tax-exempt.ts",
+        "src/lib/db/migrate/v0106-stored-json.ts",
+        "src/lib/db/migrate/frozen-shape.ts",
+        "src/lib/db/backup/version-tables.ts",
+        "src/lib/utils/match-rate.ts",
+        "src/lib/utils/date.ts",
+        "src/lib/crypto-envelope.ts",
+        "src/lib/config/budget-apps.ts",
+        "src/lib/config/enum-values.ts",
+        "src/lib/config/filing-status.ts",
+      ].sort(),
+    );
     expect(
       inputs.filter((f) => /node_modules\/(next|server-only)\//.test(f)),
+    ).toEqual([]);
+    // tsx runs db-migrate.ts from other folders (the PostgreSQL migration
+    // tests), where the "@/" alias doesn't resolve: its sources import by path.
+    expect(
+      inputs
+        .filter((f) => f.startsWith("src/"))
+        .filter((f) => /from "@\//.test(readFileSync(f, "utf8"))),
     ).toEqual([]);
   });
 });

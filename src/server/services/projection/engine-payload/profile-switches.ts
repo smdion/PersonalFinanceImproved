@@ -22,14 +22,14 @@ import { resolveProfile } from "@/server/services/contributions/profile";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { toNumber } from "@/lib/utils/numbers";
 import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ProfileSwitch } from "@/lib/pure/engine/types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
 import type { fetchRetirementData } from "./load";
-import { retirementContributions } from "./retirement-contributions";
-import { missingSwitchProfileWarnings } from "./missing-switch-profiles";
+import { retirementContributions } from "@/lib/pure/contributions/retirement-contributions";
+import { missingSwitchProfileWarnings } from "@/lib/pure/retirement/missing-switch-profiles";
 import type { Db } from "@/lib/db";
 
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;

@@ -7,6 +7,7 @@
  *   tests/accessibility/axe-baseline.json (counts per page and rule),
  *   scripts/calculation-register-baseline.json (lists and risk labels),
  *   scripts/ratchets/duplicates.json (copied blocks and lines),
+ *   scripts/ratchets/undocumented-procedures.json (procedures without a doc comment),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
  *   tests/lint/violations.test.ts, tests/lint/procedure-verbs.test.ts and
@@ -43,13 +44,16 @@ import {
   REGISTER_FILE,
   SIZE_FILE,
   SUPPRESSION_FILES,
+  UNDOCUMENTED_FILE,
   duplicateRises,
   registerRises,
   sizeRises,
   suppressionRises,
+  undocumentedRises,
   type Duplicates,
   type Register,
   type SizeBaseline,
+  type Undocumented,
 } from "./ratchets/counts";
 import {
   BUNDLE_FILE,
@@ -192,6 +196,7 @@ export const RATCHET_FILES = [
   ...SUPPRESSION_FILES,
   REGISTER_FILE,
   DUPLICATES_FILE,
+  UNDOCUMENTED_FILE,
   BUNDLE_FILE,
   COVERAGE_FILE,
   ...LIST_FILES,
@@ -246,6 +251,12 @@ export function risesBetween(git: Git, from: string, to: string): Rise[] {
     ...duplicateRises(
       json<Duplicates | undefined>(was, DUPLICATES_FILE, undefined),
       json<Duplicates | undefined>(now, DUPLICATES_FILE, undefined),
+    ),
+  );
+  rises.push(
+    ...undocumentedRises(
+      json<Undocumented | undefined>(was, UNDOCUMENTED_FILE, undefined),
+      json<Undocumented | undefined>(now, UNDOCUMENTED_FILE, undefined),
     ),
   );
   rises.push(...bundleRises(...both(BUNDLE_FILE), now));

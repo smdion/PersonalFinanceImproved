@@ -15,7 +15,7 @@
 import "../../../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { createTestDb, type TestDbContext } from "../../../helpers/db-harness";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
@@ -99,9 +99,9 @@ describe("materializeExtraPaycheckSavings", () => {
                   from: "2026-01",
                   to: null,
                   splits: [{ goalId, pct: 100 }],
-                  netPaySnapshot: 1000,
                 },
               ],
+              baseNetPayPerCheck: 1000,
             },
           },
         },
@@ -181,9 +181,9 @@ describe("materializeExtraPaycheckSavings", () => {
           from: "2026-01",
           to: null,
           splits: [{ goalId, pct: 100 }],
-          netPaySnapshot: 1000,
         },
       ],
+      baseNetPayPerCheck: 1000,
       enabled: false,
     });
 
@@ -231,9 +231,9 @@ describe("materializeExtraPaycheckSavings", () => {
           from: "2026-01",
           to: null,
           splits: [{ goalId, pct: 100 }],
-          netPaySnapshot: 5000,
         },
       ],
+      baseNetPayPerCheck: 5000,
     });
 
     await materializeExtraPaycheckSavings(ctx.db as never, new Date());

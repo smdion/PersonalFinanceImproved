@@ -7,10 +7,8 @@
 
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import {
-  formatSyncResultToast,
-  budgetApiServiceLabel,
-} from "@/lib/utils/format";
+import { formatSyncResultToast } from "@/components/ui/sync-result-toast";
+import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 export function useBudgetSyncMutations() {

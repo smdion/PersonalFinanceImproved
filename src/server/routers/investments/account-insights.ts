@@ -15,7 +15,7 @@ import {
   RECENT_ACTIVITY_DAYS,
   sentTransactions,
 } from "@/lib/pure/sync/simplefin-feeds";
-import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
+import { getTransactionCoverageStart } from "@/server/services/sync/simplefin/sync";
 import { loadContributionMix } from "@/server/services/contributions/contribution-mix";
 import { toNumber } from "@/lib/utils/numbers";
 import {
@@ -28,6 +28,10 @@ import {
 import { valueHoldings } from "@/server/services/investments/holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
+  /**
+   * What SimpleFIN knows about each tracked account for the Portfolio cards: live balance,
+   * link status, holdings, and deposits against the paycheck setup.
+   */
   computeAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
     const today = utcDayOf(ctx.scope.asOf);
     const since = addDays(today, -RECENT_ACTIVITY_DAYS);

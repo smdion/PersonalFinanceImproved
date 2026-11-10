@@ -25,7 +25,6 @@ export function wealthFormulaIncome(row: {
 /**
  * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
  * "how big does my portfolio need to be" figure.
- * Single computation path: this is the only place the formula is written.
  */
 function computeFiTarget(
   annualExpenses: number,

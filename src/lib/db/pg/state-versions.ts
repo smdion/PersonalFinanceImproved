@@ -6,10 +6,10 @@ import {
   text,
   integer,
   timestamp,
-  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 17. State versions (backup / restore)

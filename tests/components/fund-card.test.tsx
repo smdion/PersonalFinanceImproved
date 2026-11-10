@@ -30,8 +30,6 @@ vi.mock("@/lib/utils/format", () => ({
   formatCurrency: (n: number) => `$${Math.round(n).toLocaleString()}`,
   formatDate: (d: Date | string) => String(d),
   formatNumber: (n: number) => String(n),
-  budgetApiServiceLabel: (s: string | null | undefined) =>
-    s === "ynab" ? "YNAB" : s === "actual" ? "Actual Budget" : "the budget API",
 }));
 
 vi.mock("@/components/savings/fund-mini-chart", () => ({

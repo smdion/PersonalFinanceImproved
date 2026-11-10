@@ -49,7 +49,7 @@ export function queryPending(query: Queries): boolean {
   return listOf(query).some((q) => q.isLoading || Boolean(q.error));
 }
 
-/** A failed load in words (owner Q18): the server's own sentence when it
+/** A failed load in words: the server's own sentence when it
  *  wrote one, else "Couldn't load <what>. Try again." */
 function loadFailureText(error: unknown, what: string | undefined) {
   return (

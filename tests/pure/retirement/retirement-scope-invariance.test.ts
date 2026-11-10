@@ -73,6 +73,7 @@ const spec = (
   salaryFraction: 1,
   baseAnnual: annual,
   taxTreatment,
+  allocationPriority: 0,
   parentCategory,
   personId: 1,
   ownerName: "Alex",

@@ -10,6 +10,7 @@ import { and, eq, lt, asc, sql, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import type { Db } from "@/lib/db";
+import { countRows } from "@/lib/db/compat";
 import { ENGINE_HASH } from "@/lib/generated/engine-hash";
 import { writeStamp } from "@/lib/utils/clock";
 
@@ -162,10 +163,9 @@ async function evictProjectionCache(db: Db): Promise<void> {
     .delete(schema.projectionCache)
     .where(lt(schema.projectionCache.expiresAt, writeStamp()));
 
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.projectionCache);
-  const over = (countRow?.count ?? 0) - MAX_ROWS;
+  const countAll = db.select({ count: sql<number>`count(*)` });
+  const over =
+    countRows(await countAll.from(schema.projectionCache)) - MAX_ROWS;
   if (over <= 0) return;
 
   const oldest = await db

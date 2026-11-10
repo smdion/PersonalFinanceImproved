@@ -58,7 +58,7 @@ import {
   type WithholdingBracket,
 } from "@/lib/pure/engine/tax-estimation";
 import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
-import { computeNiit } from "@/lib/config/niit";
+import { computeNiit } from "@/lib/pure/tax/niit";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";

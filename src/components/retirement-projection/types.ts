@@ -84,7 +84,7 @@ export type TooltipData =
       };
       /** Guardrail/spending-strategy event for this year (e.g. Guyton-Klinger
        *  raise/cut), as marked on the Balance chart. Build via
-       *  `buildStrategyEventStyle` in utils.ts to share the chart's wording/color. */
+       *  `buildStrategyEventStyle` in projection-display.ts to share the chart's wording/color. */
       strategyEvent?: { color: string; text: string };
       items?: TooltipLineItem[];
       total?: {
@@ -244,9 +244,9 @@ export type AccumOverride = {
   contributionRate?: number;
   routingMode?: "waterfall" | "percentage";
   accountOrder?: AccountCategory[];
-  accountSplits?: Record<AccountCategory, number>;
+  accountSplits?: Partial<Record<AccountCategory, number>>;
   taxSplits?: Record<string, number>;
-  accountCaps?: Record<AccountCategory, number>;
+  accountCaps?: Partial<Record<AccountCategory, number>>;
   taxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
   lumpSums?: Array<{
     id: string;
@@ -268,9 +268,9 @@ export type DecumOverride = {
   personName?: string; // when set, override applies to this person only
   withdrawalRoutingMode?: "waterfall" | "percentage";
   withdrawalOrder?: AccountCategory[];
-  withdrawalSplits?: Record<AccountCategory, number>;
+  withdrawalSplits?: Partial<Record<AccountCategory, number>>;
   withdrawalTaxPreference?: Record<string, "traditional" | "roth">;
-  withdrawalAccountCaps?: Record<AccountCategory, number>;
+  withdrawalAccountCaps?: Partial<Record<AccountCategory, number>>;
   withdrawalTaxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
   rothConversionTarget?: number; // 0 = disable, 0.10/0.12/etc = target bracket
   lumpSums?: Array<{

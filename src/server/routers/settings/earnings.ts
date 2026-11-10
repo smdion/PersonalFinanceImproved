@@ -28,6 +28,7 @@ const earningInput = z
 
 export const earningsProcedures = {
   earnings: createTRPCRouter({
+    /** Every other-pay line on a job's checks, by job. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -45,6 +46,10 @@ export const earningsProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Edit an other-pay line's structure (its amount is the Salary Profile's), at the
+     * contributionProfile permission, like create.
+     */
     update: contributionProfileProcedure
       .input(z.object({ id: z.number().int() }).and(earningInput))
       .mutation(({ ctx, input: { id, ...data } }) =>

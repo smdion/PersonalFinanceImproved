@@ -18,12 +18,10 @@
  * a pinned SALARY carries a number to grow. A person whose salary resolves
  * live in the switched profile must get NO injected override — the engine is
  * already projecting their job salary forward, so injecting one would
- * compound a second, redundant salary path. That includes someone who pins
- * only BONUS terms: bonus terms are not a salary and must not be injected as
- * one, which is a new way to get this wrong under the presence encoding.
+ * compound a second, redundant salary path.
  */
 import "./setup-mocks";
-import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
+import { salaryEntry } from "../helpers/salary-entry";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
@@ -132,16 +130,11 @@ describe("retirement profile-switch salary injection", () => {
       .insert(schema.salaryProfiles)
       .values({
         name: "Household Raise",
+        // Casey has no entry here: nothing to grow.
         salaries: {
-          [String(alexId)]: { salary: ALEX_PROFILE_SALARY },
-          [String(blakeId)]: { salary: BLAKE_PROFILE_SALARY },
-          // Pins bonus terms but NOT salary — has a profile entry, yet
-          // nothing here to grow.
-          [String(caseyId)]: { bonusPercent: 0.4 },
-          // Partial entries on purpose: the older stored shape this
-          // regression test reproduces (writes are complete entries now).
-          // eslint-disable-next-line no-restricted-syntax -- see above
-        } as unknown as SalaryEntryMap,
+          [String(alexId)]: salaryEntry({ salary: ALEX_PROFILE_SALARY }),
+          [String(blakeId)]: salaryEntry({ salary: BLAKE_PROFILE_SALARY }),
+        },
       })
       .returning({ id: schema.salaryProfiles.id })
       .get().id;
@@ -181,17 +174,15 @@ describe("retirement profile-switch salary injection", () => {
     const all = payload.baseEngineInput.perPersonSalaryOverrides!.filter(
       (o) => o.year === SWITCH_YEAR,
     );
-    // Two salary-pinned people; Casey pins only bonus terms, so nothing.
+    // Two salary-pinned people; Casey has no entry, so nothing.
     expect(all).toHaveLength(2);
     expect(entriesFor(alexId)).toHaveLength(1);
     expect(entriesFor(blakeId)).toHaveLength(1);
   });
 
   it("injects NOTHING for a person whose salary resolves live", () => {
-    // The presence invariant at the profile-switch site. Casey HAS an entry
-    // in the profile — so `.has(personId)` is true for them — but pins only
-    // bonus terms. Anything keying off entry presence rather than the
-    // `salary` field specifically would inject a bogus override here.
+    // The presence invariant at the profile-switch site: Casey has no
+    // entry in the switched profile, so their job salary runs on.
     expect(entriesFor(caseyId)).toHaveLength(0);
   });
 

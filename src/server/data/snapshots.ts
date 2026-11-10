@@ -103,3 +103,13 @@ export async function getLatestSnapshot(
 
   return { snapshot, accounts, total };
 }
+
+/** The latest snapshot's id by date (dates are unique), or null for none. */
+export async function getLatestSnapshotId(db: Db): Promise<number | null> {
+  const [latest] = await db
+    .select({ id: schema.portfolioSnapshots.id })
+    .from(schema.portfolioSnapshots)
+    .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+    .limit(1);
+  return latest?.id ?? null;
+}

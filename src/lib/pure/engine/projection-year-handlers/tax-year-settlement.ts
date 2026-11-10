@@ -2,7 +2,7 @@
 import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
-import { computeNiit } from "../../../config/niit";
+import { computeNiit } from "../../tax/niit";
 import {
   computeLtcgTax,
   getLtcgRate,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { encodeJsonbForPgImport } from "@/lib/db/jsonb-import";
+import { encodeJsonbForPgImport } from "@/lib/db/backup/jsonb-import";
 
 describe("encodeJsonbForPgImport", () => {
   describe("sourceDialect: postgres", () => {

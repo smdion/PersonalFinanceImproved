@@ -147,6 +147,7 @@ export function account(c: {
     group: "retirement",
     employerMatch: c.employerMatch ?? 0,
     employerMatchTaxTreatment: "pre_tax",
+    employerMatchOnBonus: 0,
     ficaExemptAnnualCap: c.ficaExemptAnnualCap ?? null,
   };
 }

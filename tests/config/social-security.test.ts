@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   getFullRetirementAge,
   fraToMonths,
-  getClaimingAdjustmentMultiplier,
-  getSpousalAdjustmentMultiplier,
   SPOUSAL_BENEFIT_BASE_RATE,
   parseAnnualPia,
 } from "@/lib/config/social-security";
+import {
+  getClaimingAdjustmentMultiplier,
+  getSpousalAdjustmentMultiplier,
+} from "@/lib/pure/retirement/social-security";
 
 describe("parseAnnualPia — the one canonical opt-in check", () => {
   it("annualizes a valid monthly string", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ContributionCard } from "@/components/paycheck/contrib-card";
+import { ContributionCard } from "@/components/contributions/contrib-card";
 import type { RawContrib } from "@/components/paycheck/types";
 
 // No query is registered: performanceAccounts.list has no data.
@@ -49,7 +49,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("@/components/paycheck/inline-account-type", () => ({
+vi.mock("@/components/contributions/inline-account-type", () => ({
   InlineAccountType: ({ value }: { value: string }) => <span>{value}</span>,
 }));
 
@@ -151,6 +151,31 @@ describe("ContribCard", () => {
     );
     expect(
       screen.getByText("Set to 5% of salary ($5,000/yr toward $23,000 limit)"),
+    ).toBeInTheDocument();
+  });
+
+  it("names a per-paycheck amount per paycheck, in the preview and once auto-maxed", () => {
+    const perPaycheck = {
+      ...baseContrib,
+      contributionMethod: "fixed_per_period",
+      contributionValue: "500",
+    };
+    const { unmount } = render(
+      <ContributionCard {...defaultProps} contrib={perPaycheck} />,
+    );
+    expect(screen.getByText(/→ \$884\.61\/paycheck$/)).toBeInTheDocument();
+    expect(screen.getByText(/^\$500(\.00)?\/paycheck \(/)).toBeInTheDocument();
+    unmount();
+    render(
+      <ContributionCard
+        {...defaultProps}
+        contrib={{ ...perPaycheck, autoMaximize: true }}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /^Set to \$500(\.00)?\/paycheck \(\$13,000\/yr toward \$23,000 limit\)$/,
+      ),
     ).toBeInTheDocument();
   });
 

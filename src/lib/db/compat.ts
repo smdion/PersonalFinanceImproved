@@ -5,7 +5,7 @@
 
 import { sql, getTableColumns } from "drizzle-orm";
 import { isPostgres } from "./dialect";
-import { VERSION_TABLES } from "./version-tables";
+import { VERSION_TABLES } from "./backup/version-tables";
 import * as pgSchema from "./schema-pg";
 import * as sqliteSchema from "./schema-sqlite";
 
@@ -30,6 +30,17 @@ export async function queryRaw<T = Record<string, unknown>>(
     return result.rows as T[];
   }
   return (db as SqliteLike).all(query) as T[];
+}
+
+/**
+ * The count from a `count(*)` query's rows. Without a GROUP BY, `count(*)`
+ * always returns exactly one row (PostgreSQL sends it as bigint text, SQLite
+ * as a number), so no row is a broken query and throws.
+ */
+export function countRows(rows: readonly { count: string | number }[]): number {
+  const [row] = rows;
+  if (row === undefined) throw new Error("count(*) returned no row");
+  return Number(row.count);
 }
 
 /** Run a raw SQL statement with no rows needed back, across PG/SQLite dialects. */

@@ -38,8 +38,8 @@ export function retirementFirst<T>(
   return retirement.length > 0 ? retirement : [...items];
 }
 
-/** The standard composite key. Includes `ownerPersonId` (eligibility is per owner); a joint
- *  account keys on `"joint"`. */
+/** The standard composite key. Includes `ownerPersonId`, so two people's same-named accounts
+ *  stay apart (eligibility is per owner too); a joint account keys on `"joint"`. */
 export function makeIndKey(): IndKeyFn {
   return (ia) =>
     `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;

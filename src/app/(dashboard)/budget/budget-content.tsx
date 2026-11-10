@@ -60,10 +60,10 @@ import {
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
 import { BudgetDetailPanel } from "./budget-detail-panel";
-import { WhatIfTab } from "./what-if-tab";
+import { WhatIfTab } from "../../../components/profiles/what-if/what-if-tab";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { RetirementProfileTab } from "@/components/retirement/retirement-profile-tab";
-import { RetirementProfileManager } from "@/components/retirement/retirement-profile-manager";
+import { RetirementProfileTab } from "@/components/profiles/retirement/retirement-profile-tab";
+import { RetirementProfileManager } from "@/components/profiles/retirement/retirement-profile-manager";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 
 /**

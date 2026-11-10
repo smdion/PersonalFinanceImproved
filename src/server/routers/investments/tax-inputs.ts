@@ -10,7 +10,7 @@ import * as schema from "@/lib/db/schema";
 import {
   getTransactionCoverageStart,
   getWindowLimitDays,
-} from "@/lib/simplefin/sync";
+} from "@/server/services/sync/simplefin/sync";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   estimateTaxableInvestmentIncome,
@@ -30,6 +30,10 @@ import {
 } from "@/server/data/investments";
 
 export const investmentTaxInputsRouter = createTRPCRouter({
+  /**
+   * The investment side of a tax year's Roth IRA MAGI estimate: taxable investment income,
+   * each person's pre-tax IRA balance (pro-rata), and what the feeds can't see.
+   */
   getRothIraInputs: portfolioProcedure
     .input(z.object({ taxYear: z.number().int().min(2000).max(2100) }))
     .query(async ({ ctx, input }) => {

@@ -1,7 +1,7 @@
 import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,
-} from "@/lib/db/salary-entry-defaults";
+} from "@/lib/db/shapes/salary-entry-defaults";
 import { type SetStateAction, type Dispatch } from "react";
 import { trpc } from "@/lib/trpc";
 import { calendarDateOf } from "@/lib/utils/calendar-date";

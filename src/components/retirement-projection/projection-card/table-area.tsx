@@ -1,5 +1,5 @@
-import { ProjectionTable } from "../projection-table";
-import { ProjectionTableSkeleton } from "../projection-table-skeleton";
+import { ProjectionTable } from "../table/projection-table";
+import { ProjectionTableSkeleton } from "../table/projection-table-skeleton";
 import type {
   ProjectionTableProps,
   ReportMode,

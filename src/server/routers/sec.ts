@@ -26,7 +26,10 @@ import {
   nothingChanged,
   userMessageFor,
 } from "@/lib/budget-api/errors";
-import { getSecFactsStatus, syncSecurityFacts } from "@/lib/sec/facts-sync";
+import {
+  getSecFactsStatus,
+  syncSecurityFacts,
+} from "@/server/services/investments/sec-facts";
 
 const MANUAL_REFRESH_GAP_MS = 10 * 60 * 1000;
 let lastManualRefresh = 0;
@@ -85,6 +88,7 @@ export const secRouter = createTRPCRouter({
     return syncSecurityFacts(ctx.db, { force: true, now: ctx.scope.asOf });
   }),
 
+  /** Forget the stored SEC contact; fund facts already fetched stay. */
   removeConnection: adminProcedure.mutation(async ({ ctx }) => {
     await removeSecConnection(ctx.db);
     return { ok: true as const };

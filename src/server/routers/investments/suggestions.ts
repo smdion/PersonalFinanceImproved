@@ -11,7 +11,7 @@ import {
   getEmployerMatchSubType,
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
-import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
+import { getTransactionCoverageStart } from "@/server/services/sync/simplefin/sync";
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import { mixFor } from "@/lib/pure/investments/flow-suggestions";
 import {

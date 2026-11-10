@@ -113,6 +113,7 @@ async function assertPlanNameFree(
 
 export const adminProcedures = {
   // ══ DATA FRESHNESS ══
+  /** The latest snapshot's date and the performance and basis last-updated stamps. */
   getDataFreshness: protectedProcedure.query(async ({ ctx }) => {
     const latestSnapshot = await ctx.db
       .select({ snapshotDate: schema.portfolioSnapshots.snapshotDate })
@@ -129,6 +130,7 @@ export const adminProcedures = {
     };
   }),
 
+  /** Move the latest snapshot's date within its year and after the previous one; set the performance and basis stamps. */
   updateDataFreshness: adminProcedure
     .input(
       z.object({
@@ -188,6 +190,7 @@ export const adminProcedures = {
 
   // ══ APP SETTINGS ══
   appSettings: createTRPCRouter({
+    /** Every app setting, by key; the RBAC group keys only for an admin. */
     list: protectedProcedure.query(async ({ ctx }) => {
       const rows = await ctx.db
         .select()
@@ -203,6 +206,7 @@ export const adminProcedures = {
       }
       return rows;
     }),
+    /** Save one setting (time zone, structured shape and glide-path asset classes checked); null deletes it for the default. */
     upsert: adminProcedure
       .input(appSettingInput)
       .mutation(async ({ ctx, input }) => {

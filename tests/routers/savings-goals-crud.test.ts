@@ -8,6 +8,7 @@
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, adminSession } from "./setup";
+import { decimalText } from "./decimal-text";
 
 describe("savings.savingsGoals", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -166,7 +167,7 @@ describe("savings.savingsGoals", () => {
         targetMode: "fixed",
       });
       expect(result).toBeDefined();
-      expect(result!.targetAmount).toBe("20000");
+      expect(decimalText(result!.targetAmount)).toBe("20000");
     });
   });
 
@@ -307,7 +308,7 @@ describe("savings.savingsGoals additional coverage", () => {
     });
     expect(result).toBeDefined();
     expect(result!.name).toBe("Fully Updated");
-    expect(result!.targetAmount).toBe("20000");
+    expect(decimalText(result!.targetAmount)).toBe("20000");
     expect(result!.targetDate).toBe("2028-12-31");
     expect(result!.priority).toBe(1);
     expect(result!.isActive).toBe(false);

@@ -1,0 +1,63 @@
+/**
+ * Endowment (Morningstar Method 6): a fixed share of the N-year rolling average balance, with a
+ * floor. SWR 5.7% (40/60 portfolio, 90% success, 30 years).
+ */
+import { roundToCents } from "../../../utils/math";
+import {
+  DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
+  DEFAULT_STRATEGY_FLOOR_PERCENT,
+  DEFAULT_ENDOWMENT_ROLLING_YEARS,
+} from "../../../constants";
+import type {
+  SpendingStrategyInput,
+  SpendingStrategyResult,
+  EndowmentParams,
+} from "../types/spending-strategy";
+
+export function applyEndowment(
+  params: EndowmentParams | Record<string, number | boolean>,
+  input: SpendingStrategyInput,
+): SpendingStrategyResult {
+  const { portfolioBalance, crossYearState } = input;
+  const p = params as EndowmentParams;
+  const withdrawalPercent =
+    p.withdrawalPercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
+  const rollingYears = p.rollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS;
+  const floorPercent = p.floorPercent ?? DEFAULT_STRATEGY_FLOOR_PERCENT;
+
+  // Include current balance in history for the rolling average
+  const history = [...crossYearState.balanceHistory, portfolioBalance];
+
+  // First decumulation year: capture initial amount
+  if (crossYearState.initialWithdrawalAmount === null) {
+    const initial = roundToCents(portfolioBalance * withdrawalPercent);
+    return {
+      projectedExpenses: initial,
+      amountKind: "portfolio_withdrawal",
+      action: null,
+      updatedState: {
+        initialWithdrawalAmount: initial,
+        balanceHistory: history,
+      },
+    };
+  }
+
+  // Rolling average of the last N balances
+  const window = history.slice(-rollingYears);
+  const avg = window.reduce((sum, b) => sum + b, 0) / window.length;
+  const raw = avg * withdrawalPercent;
+  // Nominal floor: prevents severe spending cuts relative to initial withdrawal.
+  // Kept nominal to preserve the self-correcting property of rate-based strategies.
+  const floor = crossYearState.initialWithdrawalAmount * floorPercent;
+  const floorApplied = raw < floor;
+  const spending = roundToCents(Math.max(raw, floor));
+
+  return {
+    projectedExpenses: spending,
+    amountKind: "portfolio_withdrawal",
+    action: floorApplied ? "floor_applied" : null,
+    updatedState: {
+      balanceHistory: history,
+    },
+  };
+}

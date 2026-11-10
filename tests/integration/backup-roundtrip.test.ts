@@ -1,7 +1,7 @@
 /**
  * Backup Round-Trip Test
  *
- * Drives the real backup code in src/lib/db/version-logic.ts — the same
+ * Drives the real backup code in src/lib/db/backup/version-logic.ts — the same
  * functions behind /api/versions/export, /api/versions/import and the
  * version router's create/restore — against the migrated + seeded test
  * SQLite database, and checks that data survives each path unchanged.
@@ -20,17 +20,17 @@ import {
   seedPerson,
 } from "../routers/setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
-import { SIMULATION_PRESET_TABLES } from "@/lib/db/reference-reconcile-core";
-import { readSimulationPresetsFile } from "@/lib/db/reference-data";
+import { VERSION_TABLE_NAMES } from "@/lib/db/backup/version-tables";
+import { SIMULATION_PRESET_TABLES } from "@/lib/db/migrate/reference-reconcile-core";
+import { readSimulationPresetsFile } from "@/lib/db/migrate/reference-data";
 import {
   createVersion,
   exportBackup,
   importBackup,
   restoreVersion,
   type BackupData,
-} from "@/lib/db/version-logic";
-import { tablesLostOnRestore } from "@/lib/db/restore-data-loss";
+} from "@/lib/db/backup/version-logic";
+import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
 
 type TestCtx = Awaited<ReturnType<typeof createTestCaller>>;
 

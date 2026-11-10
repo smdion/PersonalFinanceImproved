@@ -36,7 +36,7 @@ export function timingSafeSecretMatch(
  */
 export type CronHeaderCheck = "ok" | "misconfigured" | "unauthorized";
 
-/** Validates the `X-Cron-Secret` header used by the daily/weekly/startup cron routes. */
+/** Validates the `X-Cron-Secret` header used by the daily and weekly cron routes. */
 export function validateCronHeaderRequest(request: Request): CronHeaderCheck {
   const cronSecret = getValidCronSecret();
   if (!cronSecret) return "misconfigured";

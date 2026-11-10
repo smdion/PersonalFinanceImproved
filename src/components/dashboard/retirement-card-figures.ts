@@ -14,7 +14,7 @@ import { sumBy } from "@/lib/utils/math";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { filterYearByParentCategory } from "@/components/retirement-projection/utils";
+import { filterYearByParentCategory } from "@/components/retirement-projection/parent-category-filter";
 
 export function retirementCardFigures(
   projected: Extract<

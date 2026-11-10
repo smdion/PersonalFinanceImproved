@@ -16,7 +16,7 @@ vi.mock("@/server/services/investments/market-prices", () => ({
   getBenchmarkMonthlyPrices: vi.fn(async () => null),
 }));
 const syncCalls = vi.hoisted(() => ({ ids: [] as number[][] }));
-vi.mock("@/lib/sec/facts-sync", () => ({
+vi.mock("@/server/services/investments/sec-facts", () => ({
   syncSecurityFacts: vi.fn(
     async (_db: unknown, opts: { securityIds?: number[] }) => {
       syncCalls.ids.push(opts.securityIds ?? []);

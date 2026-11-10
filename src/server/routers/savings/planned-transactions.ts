@@ -10,7 +10,6 @@ import * as schema from "@/lib/db/schema";
 import { loadSavingsGoalLinks } from "@/server/data/category-links";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
-import type { BudgetTransaction } from "@/lib/budget-api";
 import type { DbOrTx } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
@@ -90,6 +89,10 @@ export const plannedTransactionProcedures = {
           .returning()
           .then(firstRow),
       ),
+    /**
+     * Refused for an extra-paycheck (rule) row; a transfer's other leg takes the same date,
+     * description and recurrence and the mirrored amount. Returns the row.
+     */
     update: savingsProcedure
       .input(
         z
@@ -162,6 +165,9 @@ export const plannedTransactionProcedures = {
           return updated;
         });
       }),
+    /**
+     * Refused for an extra-paycheck (rule) row; deleting either leg of a transfer deletes both.
+     */
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
@@ -208,6 +214,9 @@ export const plannedTransactionProcedures = {
         }),
       )
       .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
+    /**
+     * Settle several occurrences in one transaction; a transfer's legs settle together.
+     */
     settleMany: savingsProcedure
       .input(
         z.object({
@@ -243,11 +252,7 @@ export const plannedTransactionProcedures = {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") return { suggestions: [] };
 
-      const transactionsCache = await cacheGet<BudgetTransaction[]>(
-        ctx.db,
-        active,
-        "transactions",
-      );
+      const transactionsCache = await cacheGet(ctx.db, active, "transactions");
       if (!transactionsCache) return { suggestions: [] };
       const realTransactions = transactionsCache.data;
 

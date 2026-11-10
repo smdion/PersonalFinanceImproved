@@ -13,6 +13,7 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, viewerSession, adminSession } from "./setup";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -231,7 +232,7 @@ describe("mortgage.mortgageWhatIfScenarios", () => {
         sortOrder: 1,
       });
       expect(updated!.label).toBe("+$300/month");
-      expect(updated!.extraMonthlyPrincipal).toBe("300");
+      expect(decimalText(updated!.extraMonthlyPrincipal)).toBe("300");
     });
 
     it("deletes a scenario", async () => {
@@ -288,7 +289,7 @@ describe("mortgage.mortgageExtraPayments", () => {
         notes: "Bonus payment",
       });
       expect(created).toBeDefined();
-      expect(created!.amount).toBe("5000");
+      expect(decimalText(created!.amount)).toBe("5000");
       expect(created!.isActual).toBe(true);
       paymentId = created!.id;
     });
@@ -319,7 +320,7 @@ describe("mortgage.mortgageExtraPayments", () => {
         isActual: true,
         notes: "Updated bonus",
       });
-      expect(updated!.amount).toBe("7500");
+      expect(decimalText(updated!.amount)).toBe("7500");
       expect(updated!.paymentDate).toBe("2023-07-15");
     });
 

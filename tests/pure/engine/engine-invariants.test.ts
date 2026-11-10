@@ -6,6 +6,7 @@
  *
  * Run time defaults to 50 runs per invariant (about 9 s). Override with
  * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
+ * Runs use a fixed seed so CI is repeatable; FAST_CHECK_SEED=random explores.
  */
 import {
   startingBalanceGaps,
@@ -31,7 +32,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getTotalBalance,
   getTraditionalBalance,
-} from "@/lib/config/account-balance";
+} from "@/lib/pure/accounts/account-balance";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
@@ -41,6 +42,9 @@ import { shippedTaxTables } from "../../helpers/tax-data";
 // ---------------------------------------------------------------------------
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "50", 10);
+const SEED_SETTING = process.env.FAST_CHECK_SEED ?? "1";
+if (SEED_SETTING !== "random")
+  fc.configureGlobal({ seed: Number(SEED_SETTING) });
 const AS_OF = new Date("2025-03-07");
 const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
@@ -56,6 +60,7 @@ function asAccumulation(y: EngineYearProjection): EngineAccumulationYear {
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
+      budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.15,
         accountSplits: {
@@ -403,6 +408,7 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
     salaryFraction: 1,
     baseAnnual: input.currentSalary * rate * share,
     taxTreatment,
+    allocationPriority: 0,
     parentCategory: "Retirement",
   }));
   const base = (c: AccountCategory) =>
@@ -2103,6 +2109,7 @@ describe("engine invariants", () => {
         salaryFraction: 1,
         baseAnnual: annual,
         taxTreatment,
+        allocationPriority: 0,
         parentCategory,
       })),
       baseYearContributions: {

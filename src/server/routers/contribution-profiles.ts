@@ -24,14 +24,13 @@ import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
-import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
-import { getDisplayConfig } from "@/lib/config/account-types";
+import { contributionAccountName } from "@/server/services/contributions/account-name";
 import {
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
   contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 import type { Db } from "@/lib/db";
 import {
   activeFieldsWithMatchRates,
@@ -44,9 +43,10 @@ import {
   duplicateProfile,
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
+import { loadContributionProfileDetail } from "@/server/services/contributions/profile-detail";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
-// Schemas imported from @/lib/db/json-schemas as centralized schemas.
+// Schemas imported from @/lib/db/shapes/json-schemas as centralized schemas.
 
 const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 type Entry = Record<string, unknown>;
@@ -248,42 +248,15 @@ export const contributionProfileRouter = createTRPCRouter({
 
     const { rawContribRows, peopleMap, jobs, perfAccountMap } =
       await loadLiveContribData(ctx.db, ctx.scope.asOf);
-    // portfolioAccountLabel wants id → name; peopleMap is id → person row.
+    // contributionAccountName wants id → name; peopleMap is id → person row.
     const nameMap = new Map(
       Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
     );
 
     const accounts = rawContribRows.map((row) => {
-      const perfAccount =
-        row.performanceAccountId != null
-          ? perfAccountMap.get(row.performanceAccountId)
-          : undefined;
-      // The institution comes from the linked performance account; the owner's
-      // current employer is a stand-in only for an account with no link yet.
-      const institution =
-        perfAccount?.institution ??
-        jobs.find(
-          (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
-        )?.employerName ??
-        "";
-      // A row with its own personId is person-specific (limits are per person) even
-      // under a jointly tracked account, so it gets its owner's label; joint rows
-      // (personId null) use the account's ownershipType. Shared rule in portfolio-labels.ts.
-      const accountName = portfolioAccountLabel(
-        {
-          accountType: row.accountType,
-          subType: row.subType,
-          label: row.label,
-          institution,
-        },
-        perfAccount
-          ? {
-              displayName: perfAccount.displayName,
-              accountLabel: perfAccount.accountLabel,
-              ownershipType: perfAccount.ownershipType,
-            }
-          : undefined,
-        row.personId,
+      const accountName = contributionAccountName(
+        row,
+        { perfAccountMap, jobs },
         nameMap,
       );
       // Same-person/same-type siblings need disambiguating, same rule
@@ -332,180 +305,7 @@ export const contributionProfileRouter = createTRPCRouter({
    */
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const rows = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      const profile = rows[0];
-      if (!profile) return null;
-
-      const {
-        contribs,
-        jobs,
-        jobSalaries,
-        rawContribRows,
-        peopleMap,
-        perfAccountMap,
-        salaryProfileActiveMap,
-      } = await loadLiveContribData(ctx.db, ctx.scope.asOf);
-      // portfolioAccountLabel wants id → name; peopleMap here is id → full
-      // person row (still needed below for the fuzzy-suggestion matcher).
-      const nameMap = new Map(
-        Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
-      );
-      const resolved = resolveProfile(
-        profile,
-        contribs,
-        jobs,
-        jobSalaries,
-        salaryProfileActiveMap,
-      );
-
-      // Build per-account detail for the editor UI
-      const {
-        contributionAccounts: accountActiveFields,
-        deductions: deductionActiveFields,
-      } = readContributionActiveFields(
-        profile.contributionActiveFields,
-        profile.id,
-      );
-      // Convert perfAccountMap to array for fallback matching
-      const allPerfAccounts = Array.from(perfAccountMap.values());
-
-      const accountDetails = rawContribRows.map((row) => {
-        const activeFields = accountActiveFields[String(row.id)];
-        const person =
-          row.personId != null ? peopleMap.get(row.personId) : undefined;
-
-        // Resolve linked performance account via explicit FK (primary path)
-        const perfAccount = row.performanceAccountId
-          ? (perfAccountMap.get(row.performanceAccountId) ?? null)
-          : null;
-
-        // DEPRECATED: fuzzy match by person + type — used as a display hint only (not for data operations).
-        // Will be removed once all contribution accounts are backfilled with performanceAccountId
-        // via settings.backfillPerformanceAccountIds.
-        let suggestedPerfAccount: typeof perfAccount = null;
-        if (!perfAccount) {
-          const display = getDisplayConfig(row.accountType, row.subType);
-          const typeLabel = display.displayLabel.toLowerCase();
-          const personName = person?.name.toLowerCase() ?? "";
-          suggestedPerfAccount =
-            allPerfAccounts.find((pa) => {
-              const labelLower = pa.accountLabel.toLowerCase();
-              return (
-                labelLower.includes(typeLabel) &&
-                (pa.ownerPersonId === row.personId ||
-                  labelLower.includes(personName))
-              );
-            }) ?? null;
-        }
-
-        // For display purposes, use the explicit link; fall back to fuzzy suggestion for name rendering only
-        const displayPerfAccount = perfAccount ?? suggestedPerfAccount;
-
-        // Derive institution: perf account link → person's job employer → fallback empty
-        const institution =
-          displayPerfAccount?.institution ??
-          jobs.find(
-            (j) =>
-              j.personId === row.personId && !j.endDate && !j.isSpeculative,
-          )?.employerName ??
-          "";
-
-        // A row with its own personId gets its owner's label even under a jointly
-        // tracked account (see compareData above; rule in portfolio-labels.ts).
-        const accountName = portfolioAccountLabel(
-          {
-            accountType: row.accountType,
-            subType: row.subType,
-            label: row.label,
-            institution,
-          },
-          displayPerfAccount
-            ? {
-                displayName: displayPerfAccount.displayName,
-                accountLabel: displayPerfAccount.accountLabel,
-                ownershipType: displayPerfAccount.ownershipType,
-              }
-            : undefined,
-          row.personId,
-          nameMap,
-        );
-
-        // Disambiguate when multiple contrib accounts share the same display name
-        // (e.g., Trad vs Roth 401k) by appending tax treatment
-        const taxLabel = taxTreatmentToShortLabel(row.taxTreatment);
-        const sameName = rawContribRows.filter((r) => {
-          if (r.id === row.id) return false;
-          // Same person + same account type = siblings that need disambiguation
-          return (
-            r.personId === row.personId && r.accountType === row.accountType
-          );
-        });
-        const disambiguatedName =
-          sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
-
-        const displayNameCustom = activeFields?.displayNameCustom as
-          string | undefined;
-
-        return {
-          id: row.id,
-          accountType: row.accountType,
-          subType: row.subType,
-          label: row.label,
-          accountName: displayNameCustom || disambiguatedName,
-          liveAccountName: disambiguatedName,
-          personId: row.personId,
-          taxTreatment: row.taxTreatment,
-          parentCategory: row.parentCategory,
-          // Live values: no method or value (only a profile's entry has
-          // them; see applyContribActiveFields).
-          liveMatchType: row.employerMatchType,
-          liveMatchValue: row.employerMatchValue,
-          liveMatchRate: row.employerMatchRate,
-          liveMaxMatchPct: row.employerMaxMatchPct,
-          liveIsActive: row.isActive,
-          /** Paid through payroll — only these can be taken from bonus checks. */
-          liveIsPayroll: isPaidThroughPayroll(row),
-          // Active values — null means this profile has no value at all for
-          // this account (isIncomplete), not "falls back to a live value".
-          activeFields: activeFields ?? null,
-          isIncomplete: activeFields == null,
-        };
-      });
-
-      // Deductions have no live value of their own: exclude-if-absent, like a
-      // contribution account's contributionValue (see applyDeductionActiveFields).
-      const allDeductions = await ctx.db
-        .select()
-        .from(schema.paycheckDeductions);
-      const deductionDetails = allDeductions.map((d) => {
-        const activeFields = deductionActiveFields[String(d.id)];
-        const job = jobs.find((j) => j.id === d.jobId);
-        return {
-          id: d.id,
-          jobId: d.jobId,
-          employerName: job?.employerName ?? null,
-          deductionName: d.deductionName,
-          isPretax: d.isPretax,
-          ficaExempt: d.ficaExempt,
-          activeFields: activeFields ?? null,
-          isIncomplete: activeFields?.amountPerPeriod === undefined,
-        };
-      });
-
-      return {
-        ...profile,
-        createdAt: profile.createdAt.toISOString(),
-        accountDetails,
-        deductionDetails,
-        resolved: {
-          combinedSalary: resolved.combinedSalary,
-        },
-      };
-    }),
+    .query(({ ctx, input }) => loadContributionProfileDetail(ctx, input)),
 
   /**
    * Create a new contribution profile.

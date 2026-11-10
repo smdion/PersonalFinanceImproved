@@ -7,6 +7,7 @@ import {
   performanceProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { countRows } from "@/lib/db/compat";
 import { canDeletePerformanceAccount } from "@/lib/pure/household/profiles";
 import { buildAccountLabel } from "@/lib/utils/format";
 import {
@@ -70,6 +71,7 @@ export const accountProcedures = {
   // ---------------------------------------------------------------------------
 
   performanceAccounts: createTRPCRouter({
+    /** Every performance account, in display order. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
@@ -79,6 +81,9 @@ export const accountProcedures = {
           asc(schema.performanceAccounts.id),
         ),
     ),
+    /**
+     * Add a performance account, its label built from owner, type and institution; returns it.
+     */
     create: performanceProcedure
       .input(performanceAccountInput)
       .mutation(async ({ ctx, input }) => {
@@ -112,6 +117,10 @@ export const accountProcedures = {
           .returning();
         return created;
       }),
+    /**
+     * Save an account; its label, owner and category carry to its year rows and linked accounts,
+     * year totals follow, and an ineligible one is cleared as the unspent-RMD account.
+     */
     update: performanceProcedure
       .input(
         z
@@ -219,23 +228,27 @@ export const accountProcedures = {
           return updated;
         });
       }),
+    /**
+     * Refused while it has year rows or holding periods; linked contribution and snapshot accounts
+     * are unlinked, and its budget-API mappings dropped.
+     */
     delete: performanceProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
         // Pre-check: accountPerformance FK is RESTRICT — validate before hitting DB error
-        const [perfCountRow] = await ctx.db
+        const perfCountRows = await ctx.db
           .select({ count: sql<number>`count(*)` })
           .from(schema.accountPerformance)
           .where(eq(schema.accountPerformance.performanceAccountId, input.id));
-        const perfCount = Number(perfCountRow?.count ?? 0);
+        const perfCount = countRows(perfCountRows);
         // holding_periods FK is RESTRICT as well.
-        const [periodCountRow] = await ctx.db
+        const periodCountRows = await ctx.db
           .select({ count: sql<number>`count(*)` })
           .from(schema.holdingPeriods)
           .where(eq(schema.holdingPeriods.performanceAccountId, input.id));
         const deleteCheck = canDeletePerformanceAccount(
           perfCount,
-          Number(periodCountRow?.count ?? 0),
+          countRows(periodCountRows),
         );
         if (!deleteCheck.allowed) {
           throw new TRPCError({

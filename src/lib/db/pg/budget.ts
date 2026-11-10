@@ -7,10 +7,10 @@ import {
   integer,
   boolean,
   timestamp,
-  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "../pg-jsonb";
 import type { ApiSyncDirection } from "@/lib/config/enum-values";
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { contributionAccounts } from "./contributions";

@@ -21,7 +21,7 @@ import {
   setRoth,
   setBalance,
   setBasis,
-} from "../../config/account-balance";
+} from "../accounts/account-balance";
 import {
   getNextIrmaaCliff,
   type IrmaaBracket,

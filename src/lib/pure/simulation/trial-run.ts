@@ -7,7 +7,7 @@ import { strategySpending } from "../retirement/strategy-spending";
 import { assessPlan, type PlanFailureReason } from "../retirement/plan-outcome";
 import { calculateProjection } from "../engine";
 import { buildInflationPath } from "../engine/inflation-path";
-import { gkAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
+import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { createPRNG, sampleBlendedReturn, sampleNormalMeanStd } from "./random";
 import type { MonteCarloInput } from "./monte-carlo.types";
 import type { ProjectionInput, EngineDecumulationYear } from "../engine/types";
@@ -82,8 +82,7 @@ export function runTrials(
   let budgetStableCount = 0;
 
   // Each trial's price level by year, for the assumptions on the bands.
-  const tracksGkAnchor =
-    engineInput.decumulationDefaults.withdrawalStrategy === "guyton_klinger";
+  const strategy = engineInput.decumulationDefaults.withdrawalStrategy;
   const gkAnchorRates: number[] = [];
   const priceLevelsByYear: number[][] = Array.from(
     { length: numYears },
@@ -217,10 +216,8 @@ export function runTrials(
     // Spending stability: withdrawals ≥ the threshold share of baseline every decumulation year.
     // Baseline: targetWithdrawal for post-retirement-raise strategies; otherwise year-1's
     // withdrawal grown by the trial's inflation.
-    if (tracksGkAnchor) {
-      const anchor = gkAnchorRate(result.projectionByYear);
-      if (anchor !== null) gkAnchorRates.push(anchor);
-    }
+    const anchor = strategyAnchorRate(strategy, result.projectionByYear);
+    if (anchor !== null) gkAnchorRates.push(anchor);
     const decumulationYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );

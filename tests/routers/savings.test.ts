@@ -35,6 +35,7 @@ import {
 import type { BudgetMonthDetail } from "@/lib/budget-api";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import { goalClient } from "../helpers/goal-client";
+import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", async () => {
   const actual =
@@ -136,7 +137,7 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       expect(result).toBeDefined();
-      expect(result!.amount).toBe("-500");
+      expect(decimalText(result!.amount)).toBe("-500");
     });
 
     it("rejects an invalid date format", async () => {
@@ -203,7 +204,7 @@ describe("savings.plannedTransactions", () => {
       });
       expect(result).toBeDefined();
       expect(result!.id).toBe(txId);
-      expect(result!.amount).toBe("350");
+      expect(decimalText(result!.amount)).toBe("350");
       expect(result!.description).toBe("Updated description");
     });
 

@@ -6,14 +6,14 @@ import {
   TAX_DATA_FORMAT_VERSION,
   type TaxDataFile,
   type TaxDataYear,
-} from "@/lib/db/reference-reconcile-core";
+} from "@/lib/db/migrate/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
 import {
   fplByHouseholdAmountsSchema,
   irmaaBracketsSchema,
   ltcgBracketsSchema,
-} from "@/lib/db/json-schemas";
+} from "@/lib/db/shapes/json-schemas";
 
 /** Indexed dollar figures may move −2%…+15% a year. */
 const INDEXED_BOUNDS = [0.98, 1.15] as const;

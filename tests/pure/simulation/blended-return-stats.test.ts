@@ -47,9 +47,12 @@ describe("blendedReturnStats", () => {
 });
 
 describe("gkAnchorRate", () => {
-  const accum = { phase: "accumulation", retirementBalance: 1_000_000 };
+  const accum = {
+    phase: "accumulation" as const,
+    retirementBalance: 1_000_000,
+  };
   const first = {
-    phase: "decumulation",
+    phase: "decumulation" as const,
     retirementBalance: 950_000,
     projectedExpenses: 60_000,
     ssIncome: 20_000,

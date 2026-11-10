@@ -155,6 +155,24 @@ describe("ratchet/no-abbreviation", () => {
     ).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
+  it("counts the second set (owner W8): ind, perf, cat, brok, decum, accum, ret", () => {
+    expect(
+      reported(
+        "no-abbreviation",
+        [
+          "const indKey = 1;",
+          "const perfRows = 1;",
+          "const parentCat = 1;",
+          "const brokAccounts = 1;",
+          "const decumYears = 1;",
+          "const accumPhase = 1;",
+          "const retAge = 1;",
+          "const individualKey = performance + category + brokerage + retirement + returns + catalog + index + decimal;",
+        ].join("\n"),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
   it("passes full words, words that only contain one, uses, imports and carve-outs", () => {
     expect(
       reported(
@@ -204,6 +222,32 @@ describe("ratchet/no-config-reach-through", () => {
         ].join("\n"),
       ),
     ).toEqual([1, 2, 3]);
+  });
+});
+
+describe("ratchet/no-history-comment: plan and owner-question ids", () => {
+  it("counts an owner or plan id, bare or named, not a quarter, a tax form or an answer-key case", () => {
+    const lines = (comments: string[]) =>
+      reported(
+        "no-history-comment",
+        comments.map((c, i) => `// ${c}\nconst a${i} = ${i};`).join("\n"),
+      ).map((line) => (line + 1) / 2);
+    expect(
+      lines([
+        "the boundary names the failed load in words (owner Q18)",
+        "falls back to the strategy's key (FQ8)",
+        "kept per person: N3",
+        "a proven comments-only commit, V6.",
+        "the saved changes apply (D6)",
+        "owner H6 settled the basis",
+        "2026 YTD (Q1)",
+        "Q4 2026 estimate",
+        "the W2 box 1 wages",
+        "the answer key's ret/R12 case",
+        "a NAT64 prefix on an IPv6 network",
+        "P5 worst case",
+      ]),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
   });
 });
 
@@ -389,9 +433,9 @@ describe("ratchet/no-identity-predicate-import", () => {
     expect(
       await counted("src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts"),
     ).toBe(false);
-    expect(await counted("src/lib/pure/accounts/tax-bucket-analysis.ts")).toBe(
-      false,
-    );
+    expect(
+      await counted("src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts"),
+    ).toBe(false);
   }, 30_000);
 });
 

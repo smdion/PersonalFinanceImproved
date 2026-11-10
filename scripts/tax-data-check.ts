@@ -1,8 +1,9 @@
 /**
  * Check the tax data on its own — seconds, no database, no `.env`: every
  * file parses, the assembled data passes every check CI and the app run
- * (src/lib/tax-data/validate.ts), and the generated schemas and README key
- * table are current. Run it before opening a pull request.
+ * (src/lib/tax-data/checked-file.ts: validate.ts, then the file's
+ * structure), and the generated schemas and README key table are current.
+ * Run it before opening a pull request.
  *
  * Usage: pnpm tax-data:check
  */
@@ -10,8 +11,8 @@ import * as fs from "fs";
 import {
   TAX_DATA_DIR,
   assembleTaxData,
-} from "../src/lib/db/reference-reconcile-core";
-import { validateTaxDataFile } from "../src/lib/tax-data/validate";
+} from "../src/lib/db/migrate/reference-reconcile-core";
+import { checkTaxDataFile } from "../src/lib/tax-data/checked-file";
 import { staleTaxDataFiles } from "./tax-data-schema";
 
 async function main() {
@@ -32,7 +33,7 @@ async function main() {
   if (problems.length === 0) {
     try {
       const data = assembleTaxData(files);
-      problems.push(...validateTaxDataFile(data));
+      problems.push(...checkTaxDataFile(data, {}).problems);
       if (problems.length === 0)
         console.log(
           `${TAX_DATA_DIR}: ${Object.keys(data.years).join(", ")} — dataVersion ${data.dataVersion}`,

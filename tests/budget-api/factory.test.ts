@@ -13,7 +13,7 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 // Set ENCRYPTION_KEY before importing factory.ts so the v0.5
-// readMaybeEncrypted() decryption path can be exercised. Save and
+// decryptJson() decryption path can be exercised. Save and
 // restore the original so this file doesn't bleed state.
 const TEST_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 let originalKey: string | undefined;
@@ -89,33 +89,27 @@ describe("getApiConnection", () => {
 });
 
 /**
- * getClientForService — exercises the at-rest encryption read path
- * (readMaybeEncrypted) that v0.5 introduced as the C1 security work.
- *
- * The factory accepts both legacy plaintext rows and v5 encrypted
- * envelopes transparently. Both paths must produce a working client
- * instance with the right credentials. A regression here = sync stops
- * working OR plaintext credentials get leaked into client constructors.
+ * getClientForService — the at-rest encryption read path (decryptJson). Every
+ * stored config is an envelope since the credentials migration; a plaintext
+ * row throws rather than reach a client constructor.
  */
-describe("getClientForService — readMaybeEncrypted contract", () => {
+describe("getClientForService — decryptJson contract", () => {
   it("returns null when no api_connections row exists", async () => {
     const db = createMockDb([[]]);
     expect(await getClientForService(db, "ynab")).toBeNull();
   });
 
   describe("YNAB", () => {
-    it("constructs a YnabClient from a plaintext-legacy config row", async () => {
-      // Pre-v0.5 deployments stored config as raw JSON. The factory must
-      // still read these — the next saveConnection upgrades them to
-      // encrypted-at-rest.
+    it("refuses a plaintext config row (the migration encrypts every one)", async () => {
       const plaintextConfig = {
         accessToken: "ynab-test-token",
         budgetId: "budget-uuid-1",
       };
       const db = createMockDb([[{ service: "ynab", config: plaintextConfig }]]);
 
-      const client = await getClientForService(db, "ynab");
-      expect(client).toBeInstanceOf(YnabClient);
+      await expect(getClientForService(db, "ynab")).rejects.toThrow(
+        /not an encrypted envelope/,
+      );
     });
 
     it("constructs a YnabClient from a v5 encrypted envelope (decrypts on read)", async () => {
@@ -139,21 +133,21 @@ describe("getClientForService — readMaybeEncrypted contract", () => {
 
     it("returns null when the YNAB config is missing accessToken", async () => {
       const db = createMockDb([
-        [{ service: "ynab", config: { budgetId: "x" } }],
+        [{ service: "ynab", config: encryptJson({ budgetId: "x" }) }],
       ]);
       expect(await getClientForService(db, "ynab")).toBeNull();
     });
 
     it("returns null when the YNAB config is missing budgetId", async () => {
       const db = createMockDb([
-        [{ service: "ynab", config: { accessToken: "t" } }],
+        [{ service: "ynab", config: encryptJson({ accessToken: "t" }) }],
       ]);
       expect(await getClientForService(db, "ynab")).toBeNull();
     });
   });
 
   describe("Actual Budget", () => {
-    it("constructs an ActualClient from a plaintext-legacy config row", async () => {
+    it("refuses a plaintext config row (the migration encrypts every one)", async () => {
       const plaintextConfig = {
         serverUrl: "https://actual.test",
         apiKey: "actual-key",
@@ -163,8 +157,9 @@ describe("getClientForService — readMaybeEncrypted contract", () => {
         [{ service: "actual", config: plaintextConfig }],
       ]);
 
-      const client = await getClientForService(db, "actual");
-      expect(client).toBeInstanceOf(ActualClient);
+      await expect(getClientForService(db, "actual")).rejects.toThrow(
+        /not an encrypted envelope/,
+      );
     });
 
     it("constructs an ActualClient from a v5 encrypted envelope", async () => {
@@ -185,7 +180,12 @@ describe("getClientForService — readMaybeEncrypted contract", () => {
 
     it("returns null when serverUrl is missing", async () => {
       const db = createMockDb([
-        [{ service: "actual", config: { apiKey: "k", budgetSyncId: "s" } }],
+        [
+          {
+            service: "actual",
+            config: encryptJson({ apiKey: "k", budgetSyncId: "s" }),
+          },
+        ],
       ]);
       expect(await getClientForService(db, "actual")).toBeNull();
     });
@@ -195,7 +195,7 @@ describe("getClientForService — readMaybeEncrypted contract", () => {
         [
           {
             service: "actual",
-            config: { serverUrl: "https://x", budgetSyncId: "s" },
+            config: encryptJson({ serverUrl: "https://x", budgetSyncId: "s" }),
           },
         ],
       ]);
@@ -207,7 +207,7 @@ describe("getClientForService — readMaybeEncrypted contract", () => {
         [
           {
             service: "actual",
-            config: { serverUrl: "https://x", apiKey: "k" },
+            config: encryptJson({ serverUrl: "https://x", apiKey: "k" }),
           },
         ],
       ]);
@@ -236,7 +236,7 @@ describe("getBudgetAPIClient", () => {
       [
         {
           service: "ynab",
-          config: { accessToken: "tok", budgetId: "buid" },
+          config: encryptJson({ accessToken: "tok", budgetId: "buid" }),
         },
       ], // api_connections lookup
     ]);

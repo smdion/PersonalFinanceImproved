@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// Smoke tests for src/components/networth/ — this directory previously had
+// Smoke tests for src/components/net-worth/ — this directory previously had
 // zero test coverage. These are pure presentational components (props in,
 // JSX out; no tRPC calls of their own — data is fetched by the parent
 // net-worth page), so we render them directly with representative props.
@@ -29,8 +29,8 @@ vi.mock("recharts", () => ({
   Legend: () => null,
 }));
 
-import { AssetsLiabilitiesCards } from "@/components/networth/assets-liabilities-cards";
-import { FinancialIndependenceCard } from "@/components/networth/financial-independence-card";
+import { AssetsLiabilitiesCards } from "@/components/net-worth/assets-liabilities-cards";
+import { FinancialIndependenceCard } from "@/components/net-worth/financial-independence-card";
 
 let projectedFi: {
   isLoading: boolean;
@@ -41,9 +41,9 @@ let projectedFi: {
 vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
   useProjectedFiYear: () => projectedFi,
 }));
-import { NetWorthComposition } from "@/components/networth/net-worth-composition";
-import { JourneyToAbundanceChart } from "@/components/networth/journey-to-abundance-chart";
-import type { HistoryRow } from "@/components/networth/types";
+import { NetWorthComposition } from "@/components/net-worth/net-worth-composition";
+import { JourneyToAbundanceChart } from "@/components/net-worth/journey-to-abundance-chart";
+import type { HistoryRow } from "@/components/net-worth/types";
 
 describe("AssetsLiabilitiesCards smoke", () => {
   const baseProps = {

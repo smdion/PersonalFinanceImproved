@@ -19,10 +19,10 @@ const restricted = async (source: string) => {
 describe("pure code and lib/db", () => {
   it("may import the four shape files", async () => {
     const source = [
-      'import { salaryEntrySchema } from "@/lib/db/json-schemas";',
-      'import { SALARY_ENTRY_DEFAULTS } from "@/lib/db/salary-entry-defaults";',
-      'import { applySalaryEntryEdit } from "@/lib/db/salary-entry-edit";',
-      'import { PROFILE_FIELDS } from "@/lib/db/profile-fields";',
+      'import { salaryEntrySchema } from "@/lib/db/shapes/json-schemas";',
+      'import { SALARY_ENTRY_DEFAULTS } from "@/lib/db/shapes/salary-entry-defaults";',
+      'import { applySalaryEntryEdit } from "@/lib/db/shapes/salary-entry-edit";',
+      'import { PROFILE_FIELDS } from "@/lib/db/shapes/profile-fields";',
       "export const all = [salaryEntrySchema, SALARY_ENTRY_DEFAULTS, applySalaryEntryEdit, PROFILE_FIELDS];",
     ].join("\n");
     expect(await restricted(source)).toEqual([]);

@@ -41,6 +41,7 @@ async function replaceMonthOverrides(
 export const allocationOverrideProcedures = {
   // ══ ALLOCATION OVERRIDES ══
   allocationOverrides: createTRPCRouter({
+    /** Set one fund's allocation for one month; returns the row. */
     upsert: savingsProcedure
       .input(
         z.object({
@@ -75,6 +76,9 @@ export const allocationOverrideProcedures = {
           .returning()
           .then(firstRow);
       }),
+    /**
+     * Remove one fund's allocation override for one month (no-op when there is none).
+     */
     delete: savingsProcedure
       .input(z.object({ goalId: z.number().int(), monthDate: z.string() }))
       .mutation(async ({ ctx, input }) => {

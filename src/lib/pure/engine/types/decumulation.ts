@@ -177,19 +177,9 @@ export type DecumulationDefaults = {
 type DecumulationOverrideRow = z.infer<
   typeof decumulationOverrideArraySchema
 >[number];
-/** The schema's `z.record` over categories demands every key; the engine
- *  fills a missing one, so its type takes a partial record. */
-type PerCategoryField =
-  "withdrawalSplits" | "withdrawalTaxPreference" | "withdrawalAccountCaps";
-
 /** One year's decumulation override, sticky-forward like
  *  AccumulationOverride; fields in `decumulationOverrideArraySchema`. */
-export type DecumulationOverride = Omit<
-  DecumulationOverrideRow,
-  PerCategoryField
-> & {
-  [K in PerCategoryField]?: Partial<NonNullable<DecumulationOverrideRow[K]>>;
-} & {
+export type DecumulationOverride = DecumulationOverrideRow & {
   /** Engine-only, so not API-settable. See DecumulationDefaults. */
   avoidPenalizedWithdrawals?: boolean;
 };

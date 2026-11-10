@@ -282,6 +282,7 @@ describe("ledgrCheckFor: Ledgr's figures for one check", () => {
           group: "retirement",
           employerMatch: 0,
           employerMatchTaxTreatment: "pre_tax" as const,
+          employerMatchOnBonus: 0,
         },
       ],
     };

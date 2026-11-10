@@ -10,13 +10,12 @@ import {
   formatNumber,
   buildAccountLabel,
   accountDisplayName,
-  formatSyncResultToast,
-  setPrivacyMode,
-  isPrivacyMode,
   maskedAmount,
   maskAmountsInText,
   MASKED_AMOUNT_PATTERN,
 } from "@/lib/utils/format";
+import { formatSyncResultToast } from "@/components/ui/sync-result-toast";
+import { setPrivacyMode, isPrivacyMode } from "@/lib/utils/privacy-mode";
 
 /**
  * Display formatter tests (v0.5.x test backfill).

@@ -5,7 +5,6 @@ import {
   getClientForService,
   getActiveBudgetApi,
   cacheGet,
-  type BudgetTransaction,
 } from "@/lib/budget-api";
 import { safeDivide } from "@/lib/utils/math";
 import { zCalendarDate } from "@/lib/utils/zod-fields";
@@ -25,7 +24,7 @@ async function cachedIncomeCategoryIds(
   db: Parameters<typeof cacheGet>[0],
   service: Parameters<typeof cacheGet>[1],
 ): Promise<Set<string>> {
-  const cached = await cacheGet<unknown>(db, service, "categories");
+  const cached = await cacheGet(db, service, "categories");
   if (!cached) return new Set();
   const groups = cachedIncomeGroups.safeParse(cached.data);
   if (!groups.success) {
@@ -57,11 +56,7 @@ export const expenseComparisonProcedures = {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") return { categories: [], service: null };
 
-      const txCache = await cacheGet<BudgetTransaction[]>(
-        ctx.db,
-        active,
-        "transactions",
-      );
+      const txCache = await cacheGet(ctx.db, active, "transactions");
       if (!txCache) return { categories: [], service: active };
 
       const client = await getClientForService(ctx.db, active);

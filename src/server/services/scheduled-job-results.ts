@@ -5,11 +5,7 @@
 import { log } from "@/lib/logger";
 
 export type ScheduledJob =
-  | "startup_tasks"
-  | "version_snapshot"
-  | "simplefin_sync"
-  | "sec_refresh"
-  | "tax_data_check";
+  "version_snapshot" | "simplefin_sync" | "sec_refresh" | "tax_data_check";
 
 /** What a run did: a short, fixed message, never a figure or a secret. */
 export type JobOutcome = { ok: boolean; message: string };

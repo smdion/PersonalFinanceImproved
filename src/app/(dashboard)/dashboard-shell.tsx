@@ -4,7 +4,7 @@ import { ScenarioProvider } from "@/lib/context/scenario-context";
 import { ScenarioBar } from "@/components/layout/scenario-bar";
 import { QuickSearch } from "@/components/layout/quick-search";
 import { usePrivacy } from "@/lib/context/privacy-context";
-import { useHouseholdTimeZoneDefault } from "@/lib/hooks/use-household-timezone-default";
+import { useHouseholdTimeZoneDefault } from "@/app/(dashboard)/use-household-timezone-default";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { privacy } = usePrivacy();

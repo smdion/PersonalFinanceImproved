@@ -15,7 +15,7 @@ import {
   PERF_CATEGORY_PORTFOLIO,
   PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
-import { getEffectiveCategory, resolveMaster } from "./annual-rollups";
+import { getEffectiveCategory } from "./annual-rollups";
 
 export function performanceAnnualRows(
   annual: {
@@ -83,12 +83,6 @@ export function performanceAnnualRows(
   const existingAnnual = new Set(
     annualRows.map((r) => annualKey(r.year, r.category)),
   );
-
-  // parentCategory comes from the master performance_accounts row:
-  // account_performance.parent_category can disagree with it.
-  for (const a of accounts) {
-    a.parentCategory = resolveMaster(a, perfLookups).parentCategory;
-  }
 
   // Group account_performance by year → effective category (derived from account type)
   const accountsByYearCat = new Map<string, typeof accounts>();

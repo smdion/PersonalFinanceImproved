@@ -3,7 +3,10 @@
  * section, year and figure, current and new value, and the citation the
  * file gives for it.
  */
-import type { RefChange, TaxDataFile } from "@/lib/db/reference-reconcile-core";
+import type {
+  RefChange,
+  TaxDataFile,
+} from "@/lib/db/migrate/reference-reconcile-core";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 import { TAX_DATA_SECTIONS } from "@/lib/config/tax-data-publication";

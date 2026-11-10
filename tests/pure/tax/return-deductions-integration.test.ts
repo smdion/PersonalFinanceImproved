@@ -30,6 +30,7 @@ const BASE_SD = 32200;
 
 function makeInput(withObbba: boolean): ProjectionInput {
   return withCapsAge({
+    budgetContributionLines: 0,
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0.2,
       accountSplits: {

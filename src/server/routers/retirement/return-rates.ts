@@ -11,9 +11,6 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
-// retirementScenarioInput removed with the retirementScenarios router
-// (Retirement Profiles step B) — nothing writes that table any more.
-
 const returnRateInput = z.object({
   age: z.number().int(),
   rateOfReturn: zDecimal,
@@ -33,12 +30,17 @@ async function collapseReturnRates(db: Db) {
 
 export const returnRateProcedures = {
   returnRates: createTRPCRouter({
+    /** The return-rate table: each age where the rate changes, by age. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
         .from(schema.returnRateTable)
         .orderBy(asc(schema.returnRateTable.age)),
     ),
+    /**
+     * Set the rate at an age (one row per age), then drop any breakpoint that repeats the
+     * rate before it; returns the row.
+     */
     upsert: adminProcedure.input(returnRateInput).mutation(({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
         const existing = await tx
@@ -62,6 +64,9 @@ export const returnRateProcedures = {
         return row;
       }),
     ),
+    /**
+     * Delete one breakpoint, then drop any that now repeats the rate before it.
+     */
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>

@@ -5,11 +5,11 @@
 import { describe, it, expect } from "vitest";
 import { partsSummary, seriesSummary } from "@/components/charts/chart-summary";
 import { pieSummary } from "@/components/charts/pie.summary";
-import { netWorthLineSummary } from "@/components/networth/net-worth-line-chart.summary";
-import { journeySummary } from "@/components/networth/journey-to-abundance-chart.summary";
+import { netWorthLineSummary } from "@/components/net-worth/net-worth-line-chart.summary";
+import { journeySummary } from "@/components/net-worth/journey-to-abundance-chart.summary";
 import { costTrendSummary } from "@/components/upkeep/cost-trend-chart.summary";
 import { budgetVsActualSummary } from "@/components/expenses/expenses-charts.summary";
-import type { HistoryRow } from "@/components/networth/types";
+import type { HistoryRow } from "@/components/net-worth/types";
 import { fundingBarSummary } from "@/components/paycheck/funding-bar.summary";
 import { riskBandSummary } from "@/components/retirement-projection/report/report-risk-band-chart.summary";
 import { balanceSummary } from "@/components/retirement-projection/projection-chart.summary";

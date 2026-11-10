@@ -11,13 +11,13 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { settleFirstRunGate } from "@/server/data/first-run";
-import { createVersion, restoreVersion } from "@/lib/db/version-logic";
-import { tablesLostOnRestore } from "@/lib/db/restore-data-loss";
-import { ClosedSetRefusal } from "@/lib/db/closed-set-columns";
+import { createVersion, restoreVersion } from "@/lib/db/backup/version-logic";
+import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
+import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 import {
   VERSION_PREVIEW_WITHHELD_TABLES,
   VERSION_TABLE_NAMES,
-} from "@/lib/db/version-tables";
+} from "@/lib/db/backup/version-tables";
 import { upsertSetting } from "@/server/data/settings";
 
 export const versionRouter = createTRPCRouter({
@@ -270,7 +270,7 @@ export const versionRouter = createTRPCRouter({
       // Reference data (tax tables, limits) isn't user data: put it back
       // rather than leave it empty until the next start.
       const { reconcileReferenceData } =
-        await import("@/lib/db/reference-data");
+        await import("@/lib/db/migrate/reference-data");
       await reconcileReferenceData(ctx.db);
       await settleFirstRunGate(ctx.db, "reset");
 

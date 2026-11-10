@@ -1,7 +1,7 @@
 /** The first-run wizard's Income step. */
 import { useState } from "react";
 import { FormError } from "@/components/ui/form-error";
-import { PayPeriodOptions } from "@/components/ui/pay-period-options";
+import { PayPeriodOptions } from "@/components/paycheck/pay-period-options";
 import type { PersonDraft, JobDraft } from "./wizard-state";
 import { IncomeJobList } from "./income-job-list";
 

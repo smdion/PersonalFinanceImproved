@@ -34,7 +34,7 @@ const admin = { asAdmin: true };
 
 async function app() {
   const schema = await import("@/lib/db/schema");
-  const versions = await import("@/lib/db/version-logic");
+  const versions = await import("@/lib/db/backup/version-logic");
   return { schema, ...versions };
 }
 
@@ -259,7 +259,7 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     try {
       const { schema, createVersion, restoreVersion } = await app();
       const { hasSyncedToday, transactionWindowStart } =
-        await import("@/lib/simplefin/sync");
+        await import("@/server/services/sync/simplefin/sync");
       const atVersion = daysAgo(30);
       await household(db, "Kept", ["simplefin"], atVersion);
       const version = await createVersion(db, {
@@ -289,9 +289,9 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
   it("every column of each installation table is kept or taken from the backup, never both", async () => {
     const { columns, done } = await fresh();
     try {
-      const { VERSION_TABLES } = await import("@/lib/db/version-tables");
+      const { VERSION_TABLES } = await import("@/lib/db/backup/version-tables");
       const { INSTALLATION_COLUMNS } =
-        await import("@/lib/db/installation-rows");
+        await import("@/lib/db/backup/installation-rows");
       const tables = VERSION_TABLES.filter((t) => t.scope === "installation");
       expect(tables.length).toBeGreaterThan(0);
       for (const { name } of tables) {

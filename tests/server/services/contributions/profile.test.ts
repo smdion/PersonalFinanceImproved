@@ -229,7 +229,10 @@ describe("resolveProfile", () => {
     const profile = makeProfile({
       contributionActiveFields: {
         contributionAccounts: {
-          "10": { contributionValue: "15" },
+          "10": {
+            contributionValue: "15",
+            contributionMethod: "percent_of_salary",
+          },
         },
       },
     });

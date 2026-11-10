@@ -31,9 +31,9 @@ import { useProjectionDerived } from "@/components/retirement-projection/use-pro
 import type { ProjectionFormState } from "@/components/retirement-projection/use-projection-form-state";
 import type { ProjectionQueries } from "@/components/retirement-projection/use-projection-queries";
 import type { ProjectionState } from "@/components/retirement-projection/projection-table-types";
-import { AccumulationRow } from "@/components/retirement-projection/projection-table-accum-row";
-import { DecumulationRow } from "@/components/retirement-projection/projection-table-decum-row";
-import type { RenderSimulationCellOptions } from "@/components/retirement-projection/projection-table-mc-cell";
+import { AccumulationRow } from "@/components/retirement-projection/table/projection-table-accum-row";
+import { DecumulationRow } from "@/components/retirement-projection/table/projection-table-decum-row";
+import type { RenderSimulationCellOptions } from "@/components/retirement-projection/table/projection-table-mc-cell";
 import { annAndBo, engineDataFor, people } from "../projection-household";
 
 /** The card's state for one engine result: the real derived-state hook,
