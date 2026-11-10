@@ -85,6 +85,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), listed in [FALLBACKS § Missing money shown as $0](FALLBACKS.md#missing-money-shown-as-0-household-math-work-v011), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
 - **A few older reads compare a UTC day with a local day** (live contributions, the mortgage's payoff check), until v0.11.
 - **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
+- **A backup labelled with a newer schema version than its data restores without the ladder steps its data needs** (a pre-upgrade backup written from a cleared journal is labelled by shape, past a data-only migration), until each converter is proven to leave current data unchanged and the ladder runs on every backup (v0.11).
 - **There are two kinds of calendar day,** the household's local day and SimpleFIN's UTC day (DESIGN § Time Resolution), until one day rules both (v0.11: merging them moves dates). Never compare one with the other.
 
 ## Data-Driven Architecture
