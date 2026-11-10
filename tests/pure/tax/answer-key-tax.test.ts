@@ -532,7 +532,7 @@ describe("answer key: long-term gains", () => {
 
   // Unused deduction shelters gains (spec LT-3; F1040 line 15; QDCG lines
   // 1, 5, 10): T = AGI − deductions, so a deduction larger than ordinary
-  // income comes off the gains. Today `toLtcgTaxableIncome` clamps the
+  // income comes off the gains. Today `ltcgStackBase` clamps the
   // ordinary part at 0 and `computeTaxFromSlots` taxes every gain dollar
   // (`lib/pure/tax/ltcg.ts`, `lib/pure/engine/tax-estimation.ts`).
   describe("tax/L2 [TAX-16]", () => {

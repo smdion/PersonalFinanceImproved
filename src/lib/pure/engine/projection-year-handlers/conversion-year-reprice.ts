@@ -3,7 +3,7 @@ import { computeNiit } from "../../tax/niit";
 import {
   getLtcgRate,
   scheduleDGainsTax,
-  toLtcgTaxableIncome,
+  ltcgStackBase,
 } from "@/lib/pure/tax/ltcg";
 import { estimateEffectiveTaxRate } from "../tax-estimation";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
@@ -33,10 +33,10 @@ export function repriceConversionYear(
   // LTCG bracket: the gains are re-priced on the revised ordinary income, and
   // the shown rate reads it as taxable income.
   let postConversionLtcgRate: number;
-  const revisedOrdinary = toLtcgTaxableIncome(
+  const revisedOrdinary = ltcgStackBase(
     actualTaxableIncome + rothConversionAmount,
     grownStandardDeduction,
-  );
+  ).ordinaryTaxable;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
       scheduleDGainsTax(

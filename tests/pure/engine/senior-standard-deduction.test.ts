@@ -5,7 +5,7 @@
  * projection year)` into the standard deduction BEFORE the per-year inflation
  * growth, so it grows on the same tax-data vintage as the base deduction.
  *
- * Before this, `toLtcgTaxableIncome` and every ordinary-bracket call site saw
+ * Before this, `ltcgStackBase` and every ordinary-bracket call site saw
  * only the flat filing-status deduction, systematically understating 0%-LTCG
  * room and overstating ordinary tax for the ~always-65+ decumulation
  * population.

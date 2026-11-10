@@ -4,7 +4,7 @@ import {
   ltcgRateForNextDollar,
   computeLtcgTax,
   ltcgRoomForRate,
-  toLtcgTaxableIncome,
+  ltcgStackBase,
 } from "@/lib/pure/tax/ltcg";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
@@ -14,26 +14,33 @@ const LTCG = shippedTaxTables(2026).ltcgBrackets;
 // LTCG brackets are denominated in taxable income, not gross ordinary
 // income. $120,100 gross with MFJ's $32,200 deduction is $87,900 taxable:
 // $11,000 under the $98,900 0%-LTCG ceiling.
-describe("toLtcgTaxableIncome", () => {
+describe("ltcgStackBase", () => {
   it("subtracts the standard deduction from gross ordinary income", () => {
-    expect(toLtcgTaxableIncome(120100, 32200)).toBe(87900);
+    expect(ltcgStackBase(120100, 32200).ordinaryTaxable).toBe(87900);
   });
 
   it("is 0 at exactly the deduction and for a negative gross", () => {
-    expect(toLtcgTaxableIncome(32200, 32200)).toBe(0);
-    expect(toLtcgTaxableIncome(-5000, 32200)).toBe(0);
+    expect(ltcgStackBase(32200, 32200).ordinaryTaxable).toBe(0);
+    expect(ltcgStackBase(-5000, 32200).ordinaryTaxable).toBe(0);
   });
 
   it("a 0 deduction subtracts nothing", () => {
-    expect(toLtcgTaxableIncome(120100, 0)).toBe(120100);
+    expect(ltcgStackBase(120100, 0).ordinaryTaxable).toBe(120100);
   });
 
   it("floors at 0 rather than going negative", () => {
-    expect(toLtcgTaxableIncome(10000, 32200)).toBe(0);
+    expect(ltcgStackBase(10000, 32200).ordinaryTaxable).toBe(0);
+  });
+
+  it("leaves the deduction ordinary income doesn't use, never more than the deduction", () => {
+    expect(ltcgStackBase(10000, 32200).unusedDeduction).toBe(22200);
+    expect(ltcgStackBase(120100, 32200).unusedDeduction).toBe(0);
+    expect(ltcgStackBase(-5000, 32200).unusedDeduction).toBe(32200);
+    expect(ltcgStackBase(0, undefined).unusedDeduction).toBe(0);
   });
 
   it("undefined standardDeduction ⇒ subtracts 0 (pre-fix behavior, not a throw)", () => {
-    expect(toLtcgTaxableIncome(120100, undefined)).toBe(120100);
+    expect(ltcgStackBase(120100, undefined).ordinaryTaxable).toBe(120100);
   });
 
   it("real household scenario: crosses from 15% into 0%-LTCG room once the deduction is applied", () => {
@@ -41,7 +48,7 @@ describe("toLtcgTaxableIncome", () => {
     const withoutFix = ltcgRoomForRate(0, grossOrdinary, "MFJ", LTCG);
     const withFix = ltcgRoomForRate(
       0,
-      toLtcgTaxableIncome(grossOrdinary, 32200),
+      ltcgStackBase(grossOrdinary, 32200).ordinaryTaxable,
       "MFJ",
       LTCG,
     );

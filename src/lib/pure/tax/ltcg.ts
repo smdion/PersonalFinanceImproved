@@ -4,14 +4,18 @@
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 
-/** Gross ordinary income (before any deduction) to the taxable income the LTCG
- *  brackets stack on: less the standard deduction, senior additions included
- *  (undefined subtracts nothing). Every LTCG-stacking site converts here. */
-export function toLtcgTaxableIncome(
+/** Gross ordinary income against the standard deduction (senior additions
+ *  included; undefined subtracts nothing): the ordinary taxable income gains
+ *  stack on, and the deduction it leaves unused. Every stacking site reads it. */
+export function ltcgStackBase(
   grossOrdinaryIncome: number,
   standardDeduction: number | undefined,
-): number {
-  return Math.max(0, grossOrdinaryIncome - (standardDeduction ?? 0));
+): { ordinaryTaxable: number; unusedDeduction: number } {
+  const deduction = standardDeduction ?? 0;
+  return {
+    ordinaryTaxable: Math.max(0, grossOrdinaryIncome - deduction),
+    unusedDeduction: Math.max(0, deduction - Math.max(0, grossOrdinaryIncome)),
+  };
 }
 
 /** The filing status's brackets. Every complete year has every status
@@ -124,7 +128,8 @@ export function scheduleDGainsTax<Bracket>(
   ) => number,
 ): number {
   const stacked = computeLtcgTax(
-    toLtcgTaxableIncome(grossOrdinaryIncome, taxRates.standardDeduction),
+    ltcgStackBase(grossOrdinaryIncome, taxRates.standardDeduction)
+      .ordinaryTaxable,
     gains,
     filingStatus,
     taxRates.ltcgBrackets,

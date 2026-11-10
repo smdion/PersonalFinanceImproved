@@ -134,7 +134,7 @@ export function buildDistributionTaxRates({
       settings.rothConversionTarget != null
         ? toNumber(settings.rothConversionTarget)
         : undefined,
-    // Paired with `toLtcgTaxableIncome` (tax/ltcg.ts): LTCG lookups need taxable income. From
+    // Paired with `ltcgStackBase` (tax/ltcg.ts): LTCG lookups need taxable income. From
     // `contribution_limits`; undefined when not seeded, and the LTCG helper subtracts 0.
     standardDeduction: standardDeductionForFilingStatus,
     additionalStdDeduction65PerSenior: deductionTerms.addOnPerCondition,

@@ -10,7 +10,7 @@ import type { WithholdingBracket } from "./tax-estimation";
 import {
   ltcgRoomForRate,
   ltcgRateForNextDollar,
-  toLtcgTaxableIncome,
+  ltcgStackBase,
 } from "@/lib/pure/tax/ltcg";
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
@@ -117,7 +117,7 @@ export interface RankWithdrawalTiersInput {
    *  modeled here (explicitly out of scope — see module docblock). */
   magiBeforeThisDraw: number;
   /** Household's annual standard deduction: converts `ordinaryIncomeFloor`
-   *  (gross) to the taxable income LTCG brackets use (`toLtcgTaxableIncome`);
+   *  (gross) to the taxable income LTCG brackets use (`ltcgStackBase`);
    *  undefined subtracts nothing. */
   standardDeduction?: number;
   /** Which free tier drains first: Roth basis or brokerage's 0%-LTCG room. Only
@@ -228,7 +228,7 @@ export function rankWithdrawalTiers(
   // this LTCG lookup.
   const zeroGainsRoom = ltcgRoomForRate(
     0,
-    toLtcgTaxableIncome(ordinaryIncomeFloor, standardDeduction),
+    ltcgStackBase(ordinaryIncomeFloor, standardDeduction).ordinaryTaxable,
     filingStatus,
     ltcgBrackets,
   );
@@ -265,10 +265,10 @@ export function rankWithdrawalTiers(
   // gains don't raise the ordinary floor itself — same taxable-income
   // conversion as zeroGainsRoom above, or this mixes a taxable-denominated
   // room with a gross-denominated floor.
-  const brokerageOrdinaryIncome = toLtcgTaxableIncome(
+  const brokerageOrdinaryIncome = ltcgStackBase(
     ordinaryIncomeFloor,
     standardDeduction,
-  );
+  ).ordinaryTaxable;
   // `brokerageOrdinaryIncome + zeroGainsRoom` sits exactly on the 0% ceiling,
   // where `getLtcgRate` (a dollar at the ceiling) says 0%. This tier starts
   // past it, so it's priced at the next dollar's rate.
