@@ -8,6 +8,7 @@ import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
 import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
+import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
   unknownAccountTypeCases,
@@ -29,6 +30,10 @@ describe("backup connections fence (SQLite)", () => {
 
 describe("settings through a version restore (SQLite)", () => {
   versionRestoreSettingsCases(fresh);
+});
+
+describe("JSON values on import and restore (SQLite)", () => {
+  backupJsonValueCases(fresh);
 });
 
 describe("closed-set values on import and restore (SQLite)", () => {

@@ -6,13 +6,17 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import { sql, eq, type SQL } from "drizzle-orm";
-import { PgDialect } from "drizzle-orm/pg-core";
+import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../schema";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
-import { jsonbColumns, restoredValue } from "./restored-values";
+import {
+  jsonColumnsFor,
+  jsonbColumnsOnClient,
+  missingJsonb,
+  restoredValue,
+} from "./restored-values";
 import {
   truncateTables,
   resetSequences,
@@ -201,15 +205,11 @@ async function insertRows(
   tx: Parameters<typeof execRaw>[0],
   tableName: string,
   rows: Record<string, unknown>[],
+  sourceDialect?: "postgres" | "sqlite",
 ): Promise<number> {
   const columns = unionColumns(rows);
   validateColumns(tableName, columns);
-  const jsonb = isPostgres()
-    ? await jsonbColumns(
-        (q) => queryRaw<{ column_name: string }>(tx, q),
-        tableName,
-      )
-    : new Set<string>();
+  const jsonb = await jsonColumnsFor(tx, tableName, sourceDialect);
   const colList = columns.map((c) => `"${c}"`).join(", ");
   const BATCH_SIZE = 500;
 
@@ -217,7 +217,7 @@ async function insertRows(
     const batch = rows.slice(i, i + BATCH_SIZE);
     const valueClauses = batch.map((row) => {
       const values = columns.map((col) =>
-        restoredValue(row[col], jsonb.has(col)),
+        restoredValue(row[col], jsonb.get(col)),
       );
       return sql`(${sql.join(values, sql.raw(", "))})`;
     });
@@ -429,20 +429,16 @@ async function importBackupPg(
     let restoredRows = 0;
     const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
-    // Each table's jsonb columns, read on this client
-    const onClient = async (q: SQL) => {
-      const { sql: text, params } = new PgDialect().sqlToQuery(q);
-      return (await client.query(text, params)).rows;
-    };
-    const jsonbCols = new Map<string, Set<string>>();
-    for (const t of sortedTables)
-      jsonbCols.set(t.name, await jsonbColumns(onClient, t.name));
+    const jsonbCols = await jsonbColumnsOnClient(
+      client,
+      sortedTables.map((t) => t.name),
+    );
 
     for (const tableEntry of sortedTables) {
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
-      const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
+      const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Map();
       const columns = unionColumns(rows);
       validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
@@ -454,7 +450,8 @@ async function importBackupPg(
         const valueClauses = batch.map((row) => {
           const placeholders = columns.map((col) => {
             const val = row[col];
-            if (val === null || val === undefined) return "NULL";
+            if (val === null || val === undefined)
+              return missingJsonb(tableJsonbCols.get(col));
             if (tableJsonbCols.has(col)) {
               params.push(encodeJsonbForPgImport(val, backup.sourceDialect));
               return `$${params.length}::jsonb`;
@@ -516,6 +513,7 @@ async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
+  const source = backup.sourceDialect;
   let restoredRows = 0;
   const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
@@ -526,7 +524,7 @@ async function importBackupSqlite(
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
-      restoredRows += await insertRows(tx, tableEntry.name, rows);
+      restoredRows += await insertRows(tx, tableEntry.name, rows, source);
     }
 
     // Log import (non-critical)
