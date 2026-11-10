@@ -7,7 +7,16 @@ import { authConfig } from "./auth.config";
 import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 import { authorizeLocalAdmin } from "./local-admin-login";
-import { PERMISSIONS, type Permission } from "@/lib/config/permissions";
+import {
+  PERMISSIONS,
+  RBAC_ADMIN_GROUP_KEY,
+  RBAC_SETTINGS_PREFIX,
+  type Permission,
+} from "@/lib/config/permissions";
+export {
+  RBAC_ADMIN_GROUP_KEY,
+  RBAC_SETTINGS_PREFIX,
+} from "@/lib/config/permissions";
 
 /*
  * NextAuth v5 is a beta (pinned exact in package.json; its API is not stable).
@@ -30,10 +39,6 @@ const DEFAULT_PERMISSION_GROUPS: Record<Permission, string> = {
 
 /** Default admin group name. */
 const DEFAULT_ADMIN_GROUP = "ledgr-admin";
-
-/** app_settings key prefix for RBAC group overrides. */
-export const RBAC_SETTINGS_PREFIX = "rbac_group_";
-export const RBAC_ADMIN_GROUP_KEY = "rbac_admin_group";
 
 /**
  * Build the group→permission mapping from app_settings overrides (rbac_admin_group,
