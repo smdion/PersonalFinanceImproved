@@ -321,7 +321,7 @@
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
     "src/lib/pure/engine/withdrawal-solver.ts": 455,
     "src/lib/pure/household/compensation.ts": 327,
-    "src/lib/pure/household/retirement-profile.ts": 74,
+    "src/lib/pure/household/retirement-profile.ts": 69,
     "src/lib/pure/investments/finalize-year.ts": 194,
     "src/lib/pure/investments/holding-periods.ts": 408,
     "src/lib/pure/investments/performance-account-rows.ts": 207,

@@ -12,10 +12,8 @@ import {
 } from "@/lib/pure/household/profiles";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import {
-  resolveRetirementProfileIdFrom,
-  toProfileId,
-} from "@/lib/pure/household/retirement-profile";
+import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
+import { storedInteger } from "@/lib/utils/stored-integer";
 import {
   ACTIVE_SETTING_KEY,
   PROFILE_TABLE,
@@ -46,8 +44,8 @@ const ACTIVE_FOR_DELETE: Record<
   (settingRows: ActiveSettingRow[], profiles: { id: number }[]) => number | null
 > = {
   // The stored setting, a number or a numeric string, as its readers take it.
-  contribution: (rows) => toProfileId(rows[0]?.value),
-  salary: (rows) => toProfileId(rows[0]?.value),
+  contribution: (rows) => storedInteger(rows[0]?.value, null),
+  salary: (rows) => storedInteger(rows[0]?.value, null),
   // Resolved: unset or stale means the lowest id, the one the engine reads.
   retirement: (rows, profiles) =>
     resolveRetirementProfileIdFrom(rows, profiles),

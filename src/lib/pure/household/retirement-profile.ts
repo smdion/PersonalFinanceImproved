@@ -4,14 +4,7 @@
  * caller reads only that profile's rows (no baseline, no merging).
  */
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
-
-/** Coerce an app_settings jsonb value to a profile id. Stored as a bare
- *  number (`1`), but tolerate a numeric string from older writes. */
-export function toProfileId(raw: unknown): number | null {
-  if (typeof raw === "number" && Number.isInteger(raw)) return raw;
-  if (typeof raw === "string" && /^\d+$/.test(raw)) return Number(raw);
-  return null;
-}
+import { storedInteger } from "@/lib/utils/stored-integer";
 
 /**
  * The active profile id from already-loaded rows. Falls back to the lowest-id
@@ -24,8 +17,9 @@ export function resolveRetirementProfileIdFrom(
 ): number | null {
   if (profiles.length === 0) return null;
   const validIds = new Set(profiles.map((p) => p.id));
-  const configured = toProfileId(
+  const configured = storedInteger(
     appSettings.find((s) => s.key === SK_ACTIVE_RETIREMENT_PROFILE_ID)?.value,
+    null,
   );
   if (configured != null && validIds.has(configured)) return configured;
   return profiles.reduce((lowest, p) => (p.id < lowest.id ? p : lowest)).id;
@@ -37,8 +31,9 @@ export function retirementProfileIsFallback(
   appSettings: { key: string; value: unknown }[],
   profiles: { id: number }[],
 ): boolean {
-  const configured = toProfileId(
+  const configured = storedInteger(
     appSettings.find((s) => s.key === SK_ACTIVE_RETIREMENT_PROFILE_ID)?.value,
+    null,
   );
   return profiles.length > 0 && !profiles.some((p) => p.id === configured);
 }

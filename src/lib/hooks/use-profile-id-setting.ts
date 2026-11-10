@@ -1,7 +1,7 @@
 "use client";
 
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { toProfileId } from "@/lib/pure/household/retirement-profile";
+import { storedInteger } from "@/lib/utils/stored-integer";
 
 /** A profile-id setting read however it was stored (a number, or the
  *  numeric string an older PostgreSQL write left); null when unset or not an
@@ -15,5 +15,5 @@ export function useProfileIdSetting(
     null,
     options,
   );
-  return [toProfileId(value), setValue, loaded];
+  return [storedInteger(value, null), setValue, loaded];
 }
