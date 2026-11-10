@@ -35,6 +35,7 @@ import { withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
 import { transformFromSource } from "./restore-source";
+import { versionRetention } from "./version-retention";
 import { writeStamp } from "@/lib/utils/clock";
 
 /** An INSERT's columns: the union of every row's keys, since a backup transform can append a
@@ -175,8 +176,7 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
     const retentionSetting = settings.find(
       (s) => s.key === "version_retention_count",
     );
-    const retention =
-      typeof retentionSetting?.value === "number" ? retentionSetting.value : 30;
+    const retention = versionRetention(retentionSetting?.value);
 
     // Count auto versions
     const autoVersions = await database

@@ -12,6 +12,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { settleFirstRunGate } from "@/server/data/first-run";
 import { createVersion, restoreVersion } from "@/lib/db/backup/version-logic";
+import { versionRetention } from "@/lib/db/backup/version-retention";
 import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
 import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 import {
@@ -164,7 +165,7 @@ export const versionRouter = createTRPCRouter({
     const settings = await ctx.db.select().from(schema.appSettings);
     const setting = settings.find((s) => s.key === "version_retention_count");
     return {
-      retentionCount: typeof setting?.value === "number" ? setting.value : 30,
+      retentionCount: versionRetention(setting?.value),
     };
   }),
 
