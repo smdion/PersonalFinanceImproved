@@ -36,6 +36,18 @@ vi.mock("@/server/auth", () => ({
 vi.mock("@/server/data/first-run", () => ({
   settleFirstRunGate: vi.fn().mockResolvedValue(undefined),
 }));
+// The browser's demo cookie (none unless a case sets one).
+const demoCookie = vi.hoisted(() => ({
+  value: undefined as string | undefined,
+}));
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "demo_active_profile" && demoCookie.value !== undefined
+        ? { name, value: demoCookie.value }
+        : undefined,
+  }),
+}));
 
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
@@ -44,6 +56,7 @@ beforeEach(() => {
   // non-demo test cases are hermetic regardless of ORIGINAL_ENV's contents,
   // rather than relying on it having been unset when this file loaded.
   delete process.env.DEMO_ONLY;
+  demoCookie.value = undefined;
   vi.resetModules();
 });
 
@@ -298,5 +311,80 @@ describe("/api/versions/import: a backup refused over its closed-set values", ()
       'performance_accounts.account_type = "solo401k" (1 row)',
     );
     expect(settleFirstRunGate).not.toHaveBeenCalled();
+  });
+});
+
+// SE2: with a demo profile active, every page shows the demo's schema, but
+// these routes read and write the household's own data: both refuse.
+describe("/api/versions/import and export while a demo profile is active", () => {
+  const admin = {
+    user: {
+      id: "u",
+      name: "U",
+      email: "u@test.local",
+      role: "admin",
+      permissions: [],
+    },
+    expires: "2099-12-31T23:59:59.999Z",
+  };
+
+  async function signedInAsAdmin() {
+    vi.stubEnv("NODE_ENV", "production");
+    const { auth } = await import("@/server/auth");
+    vi.mocked(auth).mockResolvedValueOnce(admin as never);
+  }
+
+  it("import answers 409 and imports nothing", async () => {
+    demoCookie.value = "single-income";
+    await signedInAsAdmin();
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    const body = new FormData();
+    body.append(
+      "file",
+      new File(
+        [JSON.stringify({ schemaVersion: "1", exportedAt: "x", tables: {} })],
+        "backup.json",
+      ),
+    );
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "A demo profile is active. Leave the demo to import a backup.",
+    );
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+
+  it("export answers 409 and reads nothing", async () => {
+    demoCookie.value = "single-income";
+    await signedInAsAdmin();
+    const { GET } = await import("@/app/api/versions/export/route");
+    const { exportBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(exportBackup).mockClear();
+    const res = await GET();
+    expect(res.status).toBe(409);
+    expect(exportBackup).not.toHaveBeenCalled();
+  });
+
+  it("a cookie naming no demo profile doesn't refuse (tRPC reads the household's data then too)", async () => {
+    demoCookie.value = "not-a-profile";
+    await signedInAsAdmin();
+    const { GET } = await import("@/app/api/versions/export/route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+  });
+
+  it("an unsigned request still answers 401 first", async () => {
+    demoCookie.value = "single-income";
+    vi.stubEnv("NODE_ENV", "production");
+    const { GET } = await import("@/app/api/versions/export/route");
+    const res = await GET();
+    expect(res.status).toBe(401);
   });
 });

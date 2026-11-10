@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
+import { refuseWhileDemoActive } from "@/server/services/demo/demo-session";
 import { importBackup, type BackupData } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
@@ -66,6 +67,8 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const demoActive = await refuseWhileDemoActive("import");
+    if (demoActive) return demoActive;
 
     // Parse multipart form data
     const formData = await request.formData();

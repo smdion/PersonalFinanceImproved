@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
+import { refuseWhileDemoActive } from "@/server/services/demo/demo-session";
 import { exportBackup } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
@@ -26,6 +27,8 @@ export async function GET() {
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const demoActive = await refuseWhileDemoActive("export");
+    if (demoActive) return demoActive;
 
     const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
     const json = JSON.stringify(backup, null, 2);
