@@ -41,7 +41,7 @@ export function householdTotals(
   const householdTax =
     earners.length > 0 && householdFilingStatus
       ? householdReturnTax(
-          earners.map((r) => r.earnings!),
+          results,
           householdFilingStatus,
           allBrackets,
           limitsMap,
