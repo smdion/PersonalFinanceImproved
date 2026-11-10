@@ -30,12 +30,23 @@ import {
 } from "./net-pay-snapshot-cases";
 
 // These cases hold entries for jobs the install doesn't have, which the
-// stored-JSON tag drops by design (tested there): the restore here runs the
-// converters before it.
+// stored-JSON and job-entries tags drop by design (tested there): the
+// restore here runs the converters before them.
 vi.mock("@/lib/db/migrate/v0106-stored-json", async (original) => ({
   ...(await original<typeof import("@/lib/db/migrate/v0106-stored-json")>()),
   STORED_JSON_CONVERTERS: {},
 }));
+vi.mock("@/lib/db/migrate/v0110-job-entries", async (original) => {
+  const real =
+    await original<typeof import("@/lib/db/migrate/v0110-job-entries")>();
+  return {
+    ...real,
+    JOB_ENTRIES_CONVERTER: {
+      ...real.JOB_ENTRIES_CONVERTER,
+      convert: () => ({ updates: [] }),
+    },
+  };
+});
 
 type Tables = Record<string, Record<string, unknown>[]>;
 const TAGS = pgJournal.entries.map((e) => e.tag);

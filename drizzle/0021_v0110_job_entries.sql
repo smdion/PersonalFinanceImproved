@@ -1,0 +1,5 @@
+-- v0.11.0 Salary Profile entries for deleted jobs (tag 0021). No schema
+-- change: the converter in src/lib/db/migrate/v0110-job-entries.ts runs
+-- after this SQL, as restore runs it on an older backup. An entry keyed by
+-- a job id the jobs table lacks goes from every Salary Profile (a job
+-- delete left it). A replay finds nothing: every key then has its job.

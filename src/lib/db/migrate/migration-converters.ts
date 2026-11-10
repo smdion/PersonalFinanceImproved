@@ -34,7 +34,7 @@ import { MAPPING_IDS_CONVERTER } from "./v0106-mapping-ids";
 import { JOINT_PERSON_IDS_CONVERTER } from "./v0106-joint-person-ids";
 import { CACHED_MONTHS_CONVERTER } from "./v0106-cached-months";
 import { STORED_JSON_CONVERTERS } from "./v0106-stored-json";
-
+import { JOB_ENTRIES_CONVERTER, JOB_ENTRIES_TAG } from "./v0110-job-entries";
 /** A table's rows as read: snake_case keys, JSON as object or text. */
 export type ConverterTables = Record<string, readonly unknown[] | undefined>;
 
@@ -91,6 +91,7 @@ export const MIGRATION_CONVERTERS: Readonly<Record<string, TagConverters>> = {
     CACHED_MONTHS_CONVERTER,
   ],
   ...STORED_JSON_CONVERTERS,
+  [JOB_ENTRIES_TAG]: JOB_ENTRIES_CONVERTER,
 };
 
 type Phase = DataConverter["runs"];
