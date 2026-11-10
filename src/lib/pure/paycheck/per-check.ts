@@ -149,10 +149,10 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const totalPostTax = sumBy(postTaxDeductions, (d) => d.amount);
 
   // ── Step 2: Compute FICA base ──
-  // Gross minus pre-tax Section 125 deductions and payroll-FICA-exempt contributions (HSA, within
-  // its cap). 401(k) deferrals stay FICA wages; an exempt-flagged after-tax row counts as wages.
+  // Gross minus Section 125 deductions (FICA-exempt, always pre-tax) and payroll-FICA-exempt
+  // contributions (HSA, within its cap). 401(k) deferrals stay FICA wages.
   const ficaExemptFromDeductions = sumBy(
-    input.deductions.filter((d) => d.ficaExempt && isPreTax(d.taxTreatment)),
+    input.deductions.filter((d) => d.ficaExempt),
     (d) => d.amount,
   );
   const ficaExemptFromContributions = sumBy(input.contributionAccounts, (ca) =>
