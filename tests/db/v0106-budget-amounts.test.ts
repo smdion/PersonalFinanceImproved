@@ -11,7 +11,12 @@ import { tagConverters } from "@/lib/db/migrate/migration-converters";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup/backup-transforms";
 import pgJournal from "../../drizzle/meta/_journal.json";
 import { expectRestoreReplaySafe } from "./converter-replay";
-import { ITEMS, PROFILES, reads } from "./budget-amounts-cases";
+import {
+  ITEMS,
+  PROFILES,
+  asReadBeforeTag,
+  reads,
+} from "./budget-amounts-cases";
 
 type Tables = Record<string, Record<string, unknown>[]>;
 const TAGS = pgJournal.entries.map((e) => e.tag);
@@ -74,7 +79,9 @@ describe("the money tag's budget amounts", () => {
   it("the budget reads every column of every item as before", () => {
     const before = backup();
     const after = expectRestoreReplaySafe(BUDGET_AMOUNTS_CONVERTER, backup());
-    expect(reads(itemsOf(after))).toEqual(reads(itemsOf(before)));
+    expect(reads(itemsOf(after))).toEqual(
+      reads(asReadBeforeTag(itemsOf(before))),
+    );
   });
 
   it("writes only the items it changes", () => {

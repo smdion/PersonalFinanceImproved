@@ -30,6 +30,7 @@ import { expectPgReplaySafe } from "./converter-replay";
 import {
   ITEMS,
   PROFILES as BUDGETS,
+  asReadBeforeTag,
   reads as budgetReads,
 } from "./budget-amounts-cases";
 import {
@@ -171,7 +172,10 @@ describe.skipIf(skipWithoutPostgres)(
     }
 
     /** The per-person rows, and what every reader reads from them. */
-    const state = async (read = reads) => {
+    const state = async (
+      read = reads,
+      budgetView: typeof asReadBeforeTag = (i) => [...i],
+    ) => {
       const rows = (
         await client.query<PersonRow>(
           `SELECT ${PERSON_COLUMNS} FROM retirement_profile_people ORDER BY id`,
@@ -203,7 +207,7 @@ describe.skipIf(skipWithoutPostgres)(
         rows,
         reads: read(tables),
         amounts: items.map((i) => i.amounts),
-        budget: budgetReads(items),
+        budget: budgetReads(budgetView(items)),
       };
     };
 
@@ -214,7 +218,10 @@ describe.skipIf(skipWithoutPostgres)(
 
     it("adds the rows as a pending migration, reads as before, and a later start adds none", async () => {
       await installBefore();
-      const before = await state((t) => reads(t, settingsBeforeTag));
+      const before = await state(
+        (t) => reads(t, settingsBeforeTag),
+        asReadBeforeTag,
+      );
       expect(migrate()).toMatch(
         new RegExp(`"event":"migration_conversion".*"tag":"${MONEY_TAG}"`),
       );

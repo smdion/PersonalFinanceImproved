@@ -69,7 +69,7 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
   "budget_items.amounts": {
     shape: `${SCHEMAS}#budgetAmountsSchema`,
     parsed: "read and write",
-    fallbacks: "lib/pure/budget/budget.ts",
+    note: "one amount per column of its profile",
   },
   "budget_profiles.column_labels": {
     shape: `${SCHEMAS}#columnLabelsSchema`,

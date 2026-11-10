@@ -1243,7 +1243,7 @@ erDiagram
 | sort_order              | integer                  | yes      | `0`      |                                                    |
 
 - Unique: (profile_id, category, subcategory)
-- `amounts`: type `number[]`; shape `budgetAmountsSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; **old shapes still read (FALLBACKS)**
+- `amounts`: type `number[]`; shape `budgetAmountsSchema` (lib/db/shapes/json-schemas.ts), parsed on read and write; one amount per column of its profile
 
 ### budget_profiles
 

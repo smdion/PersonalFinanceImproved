@@ -916,9 +916,11 @@ describe("budget router — syncBudgetFromApi", () => {
       const { result, amountsOf, itemIds } = await pullWith(
         [{ id: "c1", goalTarget: 500 }],
         0,
+        // A profile with no columns: its items hold no amounts.
         (sqlite, ids) =>
           sqlite.exec(
-            `UPDATE budget_items SET amounts = '[]' WHERE id = ${ids[0]}`,
+            `UPDATE budget_items SET amounts = '[]' WHERE id = ${ids[0]};
+             UPDATE budget_profiles SET column_labels = '[]' WHERE id = (SELECT profile_id FROM budget_items WHERE id = ${ids[0]})`,
           ),
       );
       expect(result.updated).toBe(0);

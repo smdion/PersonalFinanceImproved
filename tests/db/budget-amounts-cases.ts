@@ -39,6 +39,22 @@ export const ITEMS: AmountsCase[] = [
   { id: 8, profile_id: 3, before: [], after: [] },
 ];
 
+export type StoredItem = { profile_id: number; amounts: unknown[] };
+
+/** The items as budget.ts read them before the tag: each column of the
+ *  profile as `amounts[col] ?? 0` (frozen here; the reader now throws). */
+export function asReadBeforeTag(items: readonly StoredItem[]): StoredItem[] {
+  return items.map((i) => {
+    const columns =
+      PROFILES.find((p) => p.id === i.profile_id)?.column_labels.length ?? 0;
+    const length = Math.max(columns, i.amounts.length);
+    return {
+      ...i,
+      amounts: Array.from({ length }, (_, col) => i.amounts[col] ?? 0),
+    };
+  });
+}
+
 /** Each column's amount for each item, through the budget calculator's
  *  per-column totals and the annual total, as the budget page reads them. */
 export function reads(

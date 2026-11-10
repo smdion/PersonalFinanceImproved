@@ -21,6 +21,7 @@ import { expectSqliteReplaySafe } from "./converter-replay";
 import {
   ITEMS,
   PROFILES as BUDGETS,
+  asReadBeforeTag,
   reads as budgetReads,
 } from "./budget-amounts-cases";
 import {
@@ -150,7 +151,10 @@ describe("the money tag through the real migrator (SQLite)", () => {
 
   /** The per-person rows, and what every reader reads from them (a squash
    *  replay re-runs older tags' own conversions on other columns). */
-  const state = (read = reads) => {
+  const state = (
+    read = reads,
+    budgetView: typeof asReadBeforeTag = (i) => [...i],
+  ) => {
     const db = open();
     const tables = {
       people: all<(typeof PEOPLE)[number]>(db, "people"),
@@ -170,7 +174,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
       rows: tables.retirement_profile_people,
       reads: read(tables),
       amounts: items.map((i) => i.amounts),
-      budget: budgetReads(items),
+      budget: budgetReads(budgetView(items)),
     };
   };
 
@@ -184,7 +188,7 @@ describe("the money tag through the real migrator (SQLite)", () => {
 
   it("adds the rows as a pending migration, reads as before, and a later start adds none", () => {
     installBefore();
-    const before = state((t) => reads(t, settingsBeforeTag));
+    const before = state((t) => reads(t, settingsBeforeTag), asReadBeforeTag);
     runSQLite();
     const first = state();
     expectAdded(first);
