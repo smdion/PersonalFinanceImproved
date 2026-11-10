@@ -116,6 +116,11 @@ describe.skipIf(skipWithoutPostgres)(
       await insert("savings_goals", GOALS);
       await insert("savings_goal_category_links", LINKS);
       await insert("savings_monthly", HELD);
+      // Explicit ids leave the sequence behind (the converter's insert then
+      // takes id 1); the app's own restore resets it.
+      await client.query(
+        "SELECT setval(pg_get_serial_sequence('savings_monthly', 'id'), (SELECT max(id) FROM savings_monthly))",
+      );
       await insert("budget_api_cache", CACHE);
       fs.writeFileSync(journalPath(), shipped);
     }

@@ -72,12 +72,13 @@ describe.skipIf(skipWithoutPostgres)(
       path.join(dir, "drizzle", "meta", "_journal.json");
 
     /** `tsx db-migrate.ts` in the scratch folder: runPostgres for real,
-     *  with `key` as ENCRYPTION_KEY (none when undefined). */
-    function migrate(key: string | undefined = KEY_TEXT) {
+     *  with `key` as ENCRYPTION_KEY (none when null: an undefined argument
+     *  would take the default). */
+    function migrate(key: string | null = KEY_TEXT) {
       const env: NodeJS.ProcessEnv = { ...process.env };
       for (const name of Object.keys(env))
         if (name.startsWith("VITEST")) delete env[name];
-      if (key === undefined) delete env["ENCRYPTION_KEY"];
+      if (key === null) delete env["ENCRYPTION_KEY"];
       else env["ENCRYPTION_KEY"] = key;
       return spawnSync(TSX, [path.join(REPO, "db-migrate.ts")], {
         cwd: dir,
@@ -229,7 +230,7 @@ describe.skipIf(skipWithoutPostgres)(
     it("without ENCRYPTION_KEY the start is refused, naming no value, and nothing changes", async () => {
       await installBefore();
       const before = await state();
-      const r = migrate(undefined);
+      const r = migrate(null);
       expect(r.status).not.toBe(0);
       const output = `${r.stdout}\n${r.stderr}`;
       expect(output).toContain(
