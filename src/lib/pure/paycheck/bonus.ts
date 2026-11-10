@@ -8,6 +8,7 @@ import type {
 import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
+import { bonusCheckNet } from "./year-totals";
 
 /**
  * Whether a contribution account is paid through payroll: its own
@@ -67,11 +68,8 @@ export function bonusCheckContribution(
     : account.perPeriodContribution;
 }
 
-/**
- * Net bonus pay: gross = salary × bonus% × (months in bonus year / 12); federal
- * withholding at the supplemental flat rate, not the marginal rate. Contributions
- * come out per bonusCheckContribution.
- */
+/** The bonus estimate, as if paid after the regular checks: federal at the supplemental flat
+ *  rate, contributions per bonusCheckContribution, take-home per bonusCheckNet. */
 export function calculateBonus(
   input: PaycheckInput,
   _marginalRate: number,
@@ -163,13 +161,14 @@ export function calculateBonus(
 
   const bonusContributions = sumBy(bonusLines, (l) => l.amount);
 
-  const bonusNet = roundToCents(
-    bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,
-  );
-
   return {
     bonusGross,
-    bonusNet,
+    bonusNet: bonusCheckNet({
+      gross: bonusGross,
+      federal: bonusFederalWithholding,
+      fica: bonusFica,
+      contributions: bonusContributions,
+    }),
     bonusFederalWithholding,
     bonusFica,
     bonusContributions,

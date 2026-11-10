@@ -44,6 +44,8 @@ function HouseholdIncomeCardImpl() {
   // use, so gross, net and tax reconcile. YTD counts only bonuses already paid
   // (bonusMonth/bonusDayOfMonth passed) so it stays money actually received.
   const bonusEstimateFor = (d: (typeof people)[0]) => d.paycheck!.bonusEstimate;
+  // The bonus's take-home as its check pays it (the year schedule), the one the year's net reads.
+  const bonusNetFor = (d: (typeof people)[0]) => d.earnings!.netBonus;
   /** The formula bonus, when a set bonus is in use and differs from it. */
   const formulaBonusIfDifferent = (d: (typeof people)[0]) => {
     if (!("fullFormulaBonusEstimate" in d)) return null;
@@ -65,10 +67,8 @@ function HouseholdIncomeCardImpl() {
       )
     : sumBy(people, (d) => bonusEstimateFor(d).bonusGross);
   const totalBonusNet = isYtd
-    ? sumBy(people, (d) =>
-        isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusNet : 0,
-      )
-    : sumBy(people, (d) => bonusEstimateFor(d).bonusNet);
+    ? sumBy(people, (d) => (isBonusPaidYtd(d) ? bonusNetFor(d) : 0))
+    : sumBy(people, (d) => bonusNetFor(d));
   // Projected: household annual income — the figure the taxes are on.
   const income = data?.householdIncome ?? null;
   const totalGrossAnnual = isBlended
@@ -133,7 +133,7 @@ function HouseholdIncomeCardImpl() {
                       </td>
                       <td className="text-faint pb-1 text-right text-xs tabular-nums">
                         {formatCurrency(bonusEstimateFor(d).bonusGross)} gross /{" "}
-                        {formatCurrency(bonusEstimateFor(d).bonusNet)} net
+                        {formatCurrency(bonusNetFor(d))} net
                       </td>
                     </tr>
                   )}

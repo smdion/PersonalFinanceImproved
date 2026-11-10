@@ -38,8 +38,8 @@
  *   rate only (U5); closed, v0.12 UI "Disclosure list additions".
  * - C18, HW-H2b, C52, C53: blocked, below as `it.todo`.
  * - C48's bonus-check split (a $20,000 bonus after regular pay used the
- *   whole base): written below as an expected failure on its year totals
- *   only (owner, 2026-11-03). The bonus's own FICA and net (spec 380.00
+ *   whole base): written below on its year totals only (owner,
+ *   2026-11-03). The bonus's own FICA and net (spec 380.00
  *   and 15,220.00, today 290.00 and 15,310.00) wait on an N8 ruling: a
  *   bonus dated onto check 26 shares that check's last 1,807.75 of base
  *   pro rata.
@@ -48,7 +48,7 @@
  *   owner hasn't recorded, so only the year totals and January are held.
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import {
   account,
   deduction,
@@ -418,32 +418,21 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
   //   = 34,333.99; bonus 22% × 20,000 = 4,400.00 (Pub 15 § 7, 1a).
   // Year net 209,999.94 − 34,333.99 − 4,400 − 14,574.00 = 156,691.95,
   //   ±$0.26 for 26 checks' rounding (PW-3.15).
-  // Today the undated bonus isn't on the schedule; its estimate charges
-  // Medicare 290.00 and no Additional Medicare (bonus net 15,310.00, spec
-  // 15,220.00), so the year is 90.00 short: FICA 14,484.00, net
-  // 156,781.95. The bonus's own split isn't asserted (verdict N8).
-  xfail({
-    id: "paycheck/C48 [PAY-19]",
-    todo: 'v0.11 Paycheck "Take-home, wider than reported"',
-    run: () => {
-      const r = calculatePaycheck(
-        job({ salary: 190_000, period: "biweekly", bonus: 20_000 }),
-      );
-      // The bonus is counted once: from its schedule row once it has one,
-      // from the estimate while it's undated and off the schedule.
-      const onSchedule = r.yearSchedule.some((p) => p.bonusGross > 0);
-      const b = r.bonusEstimate;
-      return {
-        fica:
-          sum(
-            r.yearSchedule.map((p) => p.ficaSS + p.ficaMedicare + p.bonusFica),
-          ) + (onSchedule ? 0 : b.bonusFica),
-        net: scheduleNet(r) + (onSchedule ? 0 : b.bonusNet),
-      };
-    },
-    expected: { fica: 14_574, net: 156_691.95 },
-    today: { fica: 14_484, net: 156_781.95 },
-    tolerance: 0.26,
+  // The bonus's own split isn't asserted (verdict N8).
+  it("paycheck/C48 [PAY-19] regular pay used the base: the undated bonus on the last check pays Additional Medicare", () => {
+    const r = calculatePaycheck(
+      job({ salary: 190_000, period: "biweekly", bonus: 20_000 }),
+    );
+    cents(
+      {
+        fica: sum(
+          r.yearSchedule.map((p) => p.ficaSS + p.ficaMedicare + p.bonusFica),
+        ),
+        net: scheduleNet(r),
+      },
+      { fica: 14_574, net: 156_691.95 },
+      0.26,
+    );
   });
 
   it("paycheck/C51 [PAY-17] the bonus's 401(k) comes off before the flat rate", () => {

@@ -9,7 +9,7 @@ import type {
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
-import { yearTotals } from "@/lib/pure/paycheck/year-totals";
+import { bonusCheckNet, yearTotals } from "@/lib/pure/paycheck/year-totals";
 import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
@@ -37,7 +37,7 @@ type AnnualEarnings = {
   ficaWages: number;
   /** Take-home from the regular checks for the year. */
   netRegular: number;
-  /** Take-home from the bonus check. */
+  /** Take-home from the bonus check, as the year schedule pays it. */
   netBonus: number;
   /** HSA money paid in outside payroll — deducted above the line (Form 8889),
    *  so it lowers AGI but isn't on the paycheck. */
@@ -84,6 +84,11 @@ export function computeAnnualEarnings(args: {
   const imputedIncome = perYear((e) => !e.isCash);
   const otherFederalTaxable = perYear((e) => e.federalTaxable);
   const preTaxFederal = preTaxContributions + preTaxDeductions;
+  const year = yearTotals(
+    paycheck.yearSchedule,
+    paycheck.periodsBeforeStart + 1,
+    paycheck.periodsBeforeStart + checks,
+  );
 
   return {
     salary,
@@ -103,13 +108,17 @@ export function computeAnnualEarnings(args: {
     ),
     // The year schedule's own checks (Social Security stops at the wage
     // base, Additional Medicare starts above its threshold) — this job's,
-    // from its first check this year.
-    netRegular: yearTotals(
-      paycheck.yearSchedule,
-      paycheck.periodsBeforeStart + 1,
-      paycheck.periodsBeforeStart + checks,
-    ).net,
-    netBonus: bonusPaid ? bonusEstimate.bonusNet : 0,
+    // from its first check this year; the bonus as its check pays it.
+    netRegular: year.net,
+    netBonus:
+      bonusPaid && year.bonusGross > 0
+        ? bonusCheckNet({
+            gross: year.bonusGross,
+            federal: year.bonusFederal,
+            fica: year.bonusFica,
+            contributions: bonusEstimate.bonusContributions,
+          })
+        : 0,
     hsaOutsidePayroll: roundToCents(
       sumBy(
         args.contributionAccounts.filter(

@@ -1,5 +1,7 @@
 /** The bonus check on the year schedule: which check pays it. */
+import type { PaycheckInput } from "./paycheck.types";
 import { MS_PER_DAY } from "../../constants";
+import { getPeriodsPerYear } from "../../config/pay-periods";
 import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
 
 /**
@@ -56,4 +58,27 @@ export function findBonusPeriod(
   }
 
   return 1;
+}
+
+/**
+ * The schedule's check that pays the bonus: its dated one; an undated bonus, or one dated
+ * past the last row, the last (paid after the regular checks). Null with no bonus.
+ */
+export function bonusCheckNumber(
+  input: PaycheckInput,
+  bonusGross: number,
+): number | null {
+  if (bonusGross <= 0) return null;
+  const last = getPeriodsPerYear(input.payPeriod);
+  if (input.bonusMonth == null) return last;
+  return Math.min(
+    last,
+    findBonusPeriod(
+      input.asOfDate,
+      input.payPeriod,
+      input.anchorPayDate,
+      input.bonusMonth,
+      input.bonusDayOfMonth,
+    ),
+  );
 }

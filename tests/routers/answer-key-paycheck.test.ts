@@ -61,8 +61,6 @@ const NOON_AUG_14 = "2026-08-14T12:00:00Z";
 /** PW-3.15: ±$0.01 a check on a year's sum of 26 checks. */
 const YEAR_TOLERANCE = 0.26;
 
-const K1 =
-  'v0.11 Paycheck "year totals equal the check-by-check sum" (verdict K1)';
 const YEAR_TOTALS = 'v0.11 Paycheck "One yearTotals(schedule, first, last)"';
 const BONUS_PERIOD =
   'v0.11 Paycheck "findBonusPeriod returns check 1 for a date before the first payday" (verdict N6)';
@@ -202,11 +200,6 @@ afterAll(() => vi.useRealTimers());
  * March 13), 164,256.86 (December, check 25) and 164,256.86 (undated, on
  * the last check). The verdict's worked figures are kept, all inside
  * ±$0.26.
- *
- * Today the regular checks come from the schedule but the bonus's net
- * from the estimate, which prices the bonus as if regular pay came first
- * and never charges it Additional Medicare (`household-income.ts:125`,
- * `paycheck.ts:672`).
  */
 describe("paycheck/K1: take-home equals the schedule's sum", () => {
   const march = household({
@@ -218,13 +211,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/K1-190M [PAY-25]",
-    todo: K1,
-    run: () => takeHome(march()),
-    expected: 164_256.87,
-    today: 166_116.87,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/K1-190M [PAY-25] a March bonus: the year's take-home is the schedule's", () => {
+    cents(takeHome(march()), 164_256.87, YEAR_TOLERANCE);
   });
 
   const december = household({
@@ -236,13 +224,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/K1-190D [PAY-25]",
-    todo: K1,
-    run: () => takeHome(december()),
-    expected: 164_256.86,
-    today: 164_803.17,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/K1-190D [PAY-25] a December bonus: the year's take-home is the schedule's", () => {
+    cents(takeHome(december()), 164_256.86, YEAR_TOLERANCE);
   });
 
   // No bonus date: the verdict's rule places it on the last check, which
@@ -250,13 +233,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
   const undated = household({
     job: { ...BIWEEKLY, annualSalary: "190000", bonusOverride: 30_000 },
   });
-  xfail({
-    id: "paycheck/K1-190U [PAY-25]",
-    todo: K1,
-    run: () => takeHome(undated()),
-    expected: 164_256.9,
-    today: 164_436.86,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/K1-190U [PAY-25] no date: the bonus is on the last check", () => {
+    cents(takeHome(undated()), 164_256.9, YEAR_TOLERANCE);
   });
 
   // $170,000 (6,538.46 a check): 1c 169,999.96; 2a 161,399.96; row A
@@ -274,13 +252,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/K1-170M [PAY-25]",
-    todo: K1,
-    run: () => takeHome(k170()),
-    expected: 149_526.98,
-    today: 150_488.08,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/K1-170M [PAY-25] under $200,000 with the bonus: the year's take-home is the schedule's", () => {
+    cents(takeHome(k170()), 149_526.98, YEAR_TOLERANCE);
   });
 
   // $150,000 (5,769.23 a check): 1c 149,999.98; 2a 141,399.98; row A
@@ -306,8 +279,7 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
   // December 15. 1c 240,000; 2a 231,400; row A 209,275, C 41,024, D 32%:
   // 2g 48,104.00; 2h 4,008.67. Wages 170,000, under the base: SS
   // 10,540.00, Medicare 2,465.00. Take-home 170,000 − 6 × 4,008.67 −
-  // 11,000 − 10,540 − 2,465 = 121,942.98. Today the estimate prices the
-  // bonus against a full year of regular pay (paycheck.ts:415).
+  // 11,000 − 10,540 − 2,465 = 121,942.98.
   const partYear = household({
     job: {
       ...MONTHLY,
@@ -318,13 +290,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/K1-240J [PAY-25]",
-    todo: K1,
-    run: () => takeHome(partYear()),
-    expected: 121_942.98,
-    today: 125_042.98,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/K1-240J [PAY-25] part-year: the bonus walks this year's checks only", () => {
+    cents(takeHome(partYear()), 121_942.98, YEAR_TOLERANCE);
   });
 
   // $250,000 monthly (20,833.33 a check), a $100,000 bonus December 15.
@@ -342,13 +309,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/K1-250D [PAY-25]",
-    todo: K1,
-    run: () => takeHome(medicare()),
-    expected: 258_832.01,
-    today: 259_732.01,
-    tolerance: 0.12,
+  it("paycheck/K1-250D [PAY-25] past $200,000 all year: the bonus's check pays Additional Medicare", () => {
+    cents(takeHome(medicare()), 258_832.01, 0.12);
   });
 
   // CPA worksheet H3v: MFJ one earner, $190,000 biweekly, $30,000 bonus in
@@ -367,13 +329,8 @@ describe("paycheck/K1: take-home equals the schedule's sum", () => {
       bonusDayOfMonth: 15,
     },
   });
-  xfail({
-    id: "paycheck/HW-H3v [PAY-25]",
-    todo: K1,
-    run: () => takeHome(h3v()),
-    expected: 174_451,
-    today: 176_310.95,
-    tolerance: YEAR_TOLERANCE,
+  it("paycheck/HW-H3v [PAY-25] MFJ one earner: the year's take-home is the schedule's", () => {
+    cents(takeHome(h3v()), 174_451, YEAR_TOLERANCE);
   });
 });
 
@@ -570,7 +527,7 @@ describe("paycheck/N5: a 27-payday year", () => {
   // Biweekly, first payday Thursday January 1, 2026: paydays January 1 to
   // December 31, 27 of them. $200,000 with a $40,000 bonus December 31:
   // the bonus is on check 27, and its FICA is walked with the year. Today
-  // the schedule stops at 26 rows and the bonus is dropped from it.
+  // the schedule stops at 26 rows, the bonus on the last of them.
   const bonus = household({
     job: {
       ...BIWEEKLY,
@@ -593,7 +550,7 @@ describe("paycheck/N5: a 27-payday year", () => {
       };
     },
     expected: { rows: 27, bonusGross: 40_000, bonusOnLast: 40_000 },
-    today: { rows: 26, bonusGross: 0 },
+    today: { rows: 26, bonusGross: 40_000 },
   });
 
   // $52,000, the same 27 paydays, the job ending December 31: 27 checks

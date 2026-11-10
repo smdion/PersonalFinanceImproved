@@ -46,3 +46,13 @@ export function yearTotals(
     bonusFica: total((p) => p.bonusFica),
   };
 }
+
+/** A bonus check's take-home: its gross less its withholding, its FICA and what it takes. */
+export function bonusCheckNet(c: {
+  gross: number;
+  federal: number;
+  fica: number;
+  contributions: number;
+}): number {
+  return roundToCents(c.gross - c.federal - c.fica - c.contributions);
+}

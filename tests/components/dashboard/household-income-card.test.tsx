@@ -60,6 +60,8 @@ const summary = {
           ficaMedicare: 72.5,
         })),
       },
+      // The year's figures; the bonus's net is its schedule row's.
+      earnings: { netRegular: 45600, netBonus: 4300 },
       fullFormulaBonusEstimate: bonusEstimate(9000, 6450),
       resolvedBonusTerms: { bonusOverride: 6000 },
       blendedAnnual: { gross: 60000, netPay: 45600 },

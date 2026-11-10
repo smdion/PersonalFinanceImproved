@@ -8,7 +8,7 @@ import type {
 } from "./paycheck.types";
 import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
-import { findBonusPeriod } from "./bonus-check";
+import { bonusCheckNumber } from "./bonus-check";
 import { yearTotals } from "./year-totals";
 
 /**
@@ -92,17 +92,7 @@ export function buildYearSchedule(
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
 
-  // Determine which period gets the bonus (if bonusMonth is set)
-  const bonusPeriodNum =
-    input.bonusMonth != null && bonusEstimate.bonusGross > 0
-      ? findBonusPeriod(
-          input.asOfDate,
-          input.payPeriod,
-          input.anchorPayDate,
-          input.bonusMonth,
-          input.bonusDayOfMonth,
-        )
-      : null;
+  const bonusPeriodNum = bonusCheckNumber(input, bonusEstimate.bonusGross);
 
   const schedule: PeriodBreakdown[] = [];
   let ytdFicaBase = 0; // Running total of FICA-taxable earnings
