@@ -1,6 +1,7 @@
 import type { Db } from "@/lib/db";
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { loadStoredStamp } from "@/lib/db/stored-setting";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { getAllPeople } from "@/server/data/people";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -99,12 +100,9 @@ export async function computePerformanceSummary(ctx: { db: Db }) {
   const currentPortfolioValue = snapshotData?.total ?? null;
   const lastSnapshotDate = snapshotData?.snapshot.snapshotDate ?? null;
 
-  // Last-updated timestamp
-  const perfUpdatedSetting = await ctx.db
-    .select()
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, "performance_last_updated"));
-  const performanceLastUpdated = perfUpdatedSetting[0]?.value as string | null;
+  // Last-updated timestamp: null until a performance write stamps it
+  const performanceLastUpdated =
+    (await loadStoredStamp(ctx.db, "performance_last_updated")) ?? null;
 
   // Master account list for reference
   const masterAccounts = perfAccounts.map((pa) => ({

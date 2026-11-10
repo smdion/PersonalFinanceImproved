@@ -56,6 +56,8 @@ describe("performance router", () => {
       expect(summary).toHaveProperty("masterAccounts");
       expect(summary).toHaveProperty("lastSnapshotDate");
       expect(summary).toHaveProperty("performanceLastUpdated");
+      // Never stamped: null, a key the response always holds.
+      expect(summary.performanceLastUpdated).toBeNull();
       expect(summary).toHaveProperty("lifetimeTotals");
 
       expect(Array.isArray(summary.categories)).toBe(true);
