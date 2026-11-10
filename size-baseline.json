@@ -430,7 +430,7 @@
     "src/server/services/sync/simplefin.ts": 296,
     "src/server/services/sync/simplefin/ingest.ts": 522,
     "src/server/services/sync/simplefin/sync.ts": 550,
-    "src/server/services/sync/sync-all.ts": 250,
+    "src/server/services/sync/sync-all.ts": 249,
     "src/server/services/sync/sync-names.ts": 171,
     "src/server/trpc.ts": 548
   },
@@ -1102,7 +1102,7 @@
       "runSimplefinSync": 190
     },
     "src/server/services/sync/sync-all.ts": {
-      "syncAll": 226
+      "syncAll": 225
     },
     "src/server/services/sync/sync-names.ts": {
       "syncAllNames": 159

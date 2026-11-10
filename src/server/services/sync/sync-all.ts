@@ -58,9 +58,8 @@ export async function syncAll(
     const sinceDate = `${now.getFullYear() - 1}-01-01`;
     const transactions = await client.getTransactions(sinceDate);
 
-    // Read mappings before the transaction so we know what we'll be
-    // touching. The connection may have been edited concurrently, but
-    // the transaction below re-reads under the same isolation level.
+    // Read once, before the transaction: the pull below writes by these
+    // mappings, and a mapping edit made during the sync applies on the next.
     const conn = await getApiConnection(ctx.db, service);
     const mappings = conn?.accountMappings ?? [];
     const pullMappings = mappings.filter(
