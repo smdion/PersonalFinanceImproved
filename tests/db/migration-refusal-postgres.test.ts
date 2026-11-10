@@ -29,12 +29,9 @@ vi.mock("@/lib/db/migrate/migration-converters", async (importOriginal) => ({
   MIGRATION_CONVERTERS: hook.converters,
 }));
 
+import { runPostgres } from "../../db-migrate";
+
 const REPO = process.cwd();
-// The source by its full name: CI's PostgreSQL job builds db-migrate.js
-// beside it, which a bare "../../db-migrate" would load, unmocked.
-const { runPostgres } = (await import(
-  path.join(REPO, "db-migrate.ts")
-)) as typeof import("../../db-migrate");
 const TAG = "0015_v0102_dead_data";
 const SECRET = "invented-secret-value";
 

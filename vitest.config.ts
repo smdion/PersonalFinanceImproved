@@ -211,6 +211,10 @@ export default defineConfig({
         __dirname,
         "node_modules/server-only/empty.js",
       ),
+      // The migrator's source, never the db-migrate.js bundle a build leaves
+      // beside it: the bundle holds its own converter registry, which a
+      // test's vi.mock can't reach.
+      "../../db-migrate": path.resolve(__dirname, "db-migrate.ts"),
     },
   },
 });
