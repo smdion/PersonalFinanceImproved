@@ -108,6 +108,19 @@ export function meetsFirstYearNeed(projection: ProjectionResult): boolean {
   );
 }
 
+/** The Simulation's Coast FIRE verdict for one probe: enough trials pass
+ *  the plan judge and, as at fixed returns, the run's deterministic year 1
+ *  covers the stated need. */
+export function simulatedCoastFirePasses(
+  run: { successRate: number; deterministicProjection: ProjectionResult },
+  threshold: number,
+): boolean {
+  return (
+    run.successRate >= threshold &&
+    meetsFirstYearNeed(run.deterministicProjection)
+  );
+}
+
 function firstRetirementYear(
   projection: ProjectionResult,
 ): EngineDecumulationYear | undefined {

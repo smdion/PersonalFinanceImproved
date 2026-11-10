@@ -28,7 +28,10 @@ import {
   prepareEngineInput,
   prepareProjectionRun,
 } from "@/server/services/projection/projection-run";
-import { buildCoastFireProfileSwitches } from "@/lib/pure/retirement/coast-fire";
+import {
+  buildCoastFireProfileSwitches,
+  simulatedCoastFirePasses,
+} from "@/lib/pure/retirement/coast-fire";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import {
   hashEngineInput,
@@ -161,7 +164,7 @@ export async function computeCoastFireProbe(
   const result: CoastFireProbeResult = {
     probeAge: input.probeAge,
     successRate: mcResult.successRate,
-    passes: mcResult.successRate >= SIMULATION_CONFIDENCE_THRESHOLD,
+    passes: simulatedCoastFirePasses(mcResult, SIMULATION_CONFIDENCE_THRESHOLD),
     spendingStabilityRate: mcResult.spendingStabilityRate,
     penaltyAvoidedShortfallRate: mcResult.penaltyAvoidedShortfallRate,
     medianPenaltyAvoidedShortfallPV: mcResult.medianPenaltyAvoidedShortfallPV,

@@ -1062,7 +1062,7 @@
       "finalizePerformanceYear.transaction()": 369
     },
     "src/server/services/projection/coast-fire.ts": {
-      "computeCoastFireSimulation": 231
+      "computeCoastFireSimulation": 230
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
       "buildEnginePayload": 768

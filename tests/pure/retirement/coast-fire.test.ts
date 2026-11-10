@@ -13,10 +13,12 @@ import { describe, it, expect } from "vitest";
 import type {
   EngineAccumulationYear,
   ProjectionInput,
+  ProjectionResult,
 } from "@/lib/pure/engine/types";
 import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
+  simulatedCoastFirePasses,
 } from "@/lib/pure/retirement/coast-fire";
 import { calculateProjection } from "@/lib/pure/engine";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
@@ -1081,5 +1083,38 @@ describe("findCoastFireAge — gross-up off", () => {
       },
     };
     expect(findCoastFireAge(input).status).toBe("already_coast");
+  });
+});
+
+describe("simulatedCoastFirePasses — one verdict for both Coast FIRE paths", () => {
+  /** A run whose deterministic year 1 spends `spending` against `need`. */
+  const run = (successRate: number, spending: number, need: number) => ({
+    successRate,
+    deterministicProjection: {
+      projectionByYear: [
+        {
+          phase: "decumulation",
+          withdrawalSized: false,
+          spending,
+          projectedExpenses: spending,
+        },
+      ],
+      firstDecumulationYearStatedNeed: need,
+      // eslint-disable-next-line no-restricted-syntax -- only the fields the need test reads
+    } as unknown as ProjectionResult,
+  });
+
+  it("ret/SM1-sim [ENG-31] 95% of trials survive but year 1 spends $40,000 of a $60,000 need: fails", () => {
+    expect(simulatedCoastFirePasses(run(0.95, 40_000, 60_000), 0.9)).toBe(
+      false,
+    );
+  });
+
+  it("ret/SM1-sim2 [ENG-31] 95% survive and year 1 covers the need: passes", () => {
+    expect(simulatedCoastFirePasses(run(0.95, 60_000, 60_000), 0.9)).toBe(true);
+  });
+
+  it("ret/SM1-sim3 [ENG-31] the need covered but 80% survive: fails", () => {
+    expect(simulatedCoastFirePasses(run(0.8, 60_000, 60_000), 0.9)).toBe(false);
   });
 });

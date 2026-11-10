@@ -27,7 +27,10 @@ import {
   prepareEngineInput,
   prepareProjectionRun,
 } from "@/server/services/projection/projection-run";
-import { buildCoastFireProfileSwitches } from "@/lib/pure/retirement/coast-fire";
+import {
+  buildCoastFireProfileSwitches,
+  simulatedCoastFirePasses,
+} from "@/lib/pure/retirement/coast-fire";
 import { buildSimulationInputs } from "@/server/services/simulation/mc-inputs";
 import {
   hashEngineInput,
@@ -36,9 +39,8 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { writeStamp } from "@/lib/utils/clock";
 
-/** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
- *  search. A not-configured state (no preset, classes or glide path)
- *  returns no result and is never cached. */
+/** `computeCoastFireMC`'s cacheable result, every branch of the search
+ *  (a not-configured state returns none and is never cached). */
 type CoastFireSimulationResult = {
   coastFireAge: number | null;
   status: "already_coast" | "unreachable" | "found";
@@ -47,9 +49,8 @@ type CoastFireSimulationResult = {
   /** % of stop-now trials failing because penalty-exposed money was excluded:
    *  tells "can't reach the money before 59½" from "ran out" when stopNowSuccessRate is low. */
   stopNowPenaltyAvoidedShortfallRate: number;
-  /** Median dollar shortfall (today's dollars) among stop-now trials that
-   *  hit a penalty-avoided shortfall -- see MonteCarloResult's
-   *  medianPenaltyAvoidedShortfallPV. */
+  /** Median shortfall (today's $) among stop-now trials with a penalty-avoided
+   *  shortfall (MonteCarloResult's medianPenaltyAvoidedShortfallPV). */
   stopNowMedianPenaltyAvoidedShortfallPV: number;
   /** Full Simulation result for stopping at the current age, for a "Coast FIRE (Today)"
    *  scenario. Null when coastAge is already the current age (`mcResult` covers it). */
@@ -168,14 +169,14 @@ export async function computeCoastFireSimulation(
       input.runId,
     );
   };
-  const probeAt = async (coastAge: number): Promise<number> =>
-    (await probeSimulation(coastAge)).successRate;
-
-  const passes = (rate: number): boolean => rate >= CONFIDENCE;
+  const passes = (run: Awaited<ReturnType<typeof probeSimulation>>) =>
+    simulatedCoastFirePasses(run, CONFIDENCE);
+  const probeAt = async (coastAge: number): Promise<boolean> =>
+    passes(await probeSimulation(coastAge));
 
   if (engineInput.currentAge >= planRetirementAgeOf(engineInput)) {
     const fullResult = await probeSimulation(engineInput.currentAge);
-    const retiredPasses = passes(fullResult.successRate);
+    const retiredPasses = passes(fullResult);
     const result: CoastFireSimulationResult = {
       coastFireAge: retiredPasses ? engineInput.currentAge : null,
       status: retiredPasses ? "already_coast" : "unreachable",
@@ -200,7 +201,7 @@ export async function computeCoastFireSimulation(
   // next to the found age (quantifies a deterministic-vs-Simulation gap).
   const stopNowResult = await probeSimulation(engineInput.currentAge);
   const stopNowSuccessRate = stopNowResult.successRate;
-  if (passes(stopNowSuccessRate)) {
+  if (passes(stopNowResult)) {
     const result: CoastFireSimulationResult = {
       coastFireAge: engineInput.currentAge,
       status: "already_coast" as const,
@@ -224,7 +225,7 @@ export async function computeCoastFireSimulation(
   // Probe stopping the year before retirement — is the plan reachable at all?
   const maxCoastAge = planRetirementAgeOf(engineInput) - 1;
   const stopLateResult = await probeSimulation(maxCoastAge);
-  if (!passes(stopLateResult.successRate)) {
+  if (!passes(stopLateResult)) {
     const result: CoastFireSimulationResult = {
       coastFireAge: null,
       status: "unreachable" as const,
@@ -250,7 +251,7 @@ export async function computeCoastFireSimulation(
   let hi = maxCoastAge;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (passes(await probeAt(mid))) {
+    if (await probeAt(mid)) {
       hi = mid;
     } else {
       lo = mid + 1;
@@ -262,8 +263,7 @@ export async function computeCoastFireSimulation(
   // warning so the user knows the answer may be conservative.
   let warning: string | null = null;
   if (lo - 1 >= engineInput.currentAge + 1) {
-    const rePrior = await probeAt(lo - 1);
-    if (passes(rePrior)) {
+    if (await probeAt(lo - 1)) {
       warning =
         "MC success rate is non-monotone near this age — the true earliest age may be lower. Likely caused by IRMAA/ACA/LTCG bracket interactions.";
     }
