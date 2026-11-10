@@ -14,6 +14,7 @@ import {
 } from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { firstRow } from "@/lib/utils/first-row";
+import { lockRow } from "@/server/data/lock-row";
 
 /**
  * The Contribution Profile a budget-linked item edit writes into (the one the page shows).
@@ -81,20 +82,31 @@ export const itemAmountProcedures = {
         return item;
       }
 
-      const amounts = budgetAmountsSchema.parse(item.amounts);
-      if (input.colIndex < 0 || input.colIndex >= amounts.length) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Column index out of bounds",
-        });
-      }
-      amounts[input.colIndex] = input.amount;
-      return ctx.db
-        .update(schema.budgetItems)
-        .set({ amounts })
-        .where(eq(schema.budgetItems.id, input.id))
-        .returning()
-        .then(firstRow);
+      // Under the profile's lock (column edits rewrite every item's amounts).
+      return ctx.db.transaction(async (tx) => {
+        await lockRow(tx, schema.budgetProfiles, item.profileId);
+        const current = await tx
+          .select()
+          .from(schema.budgetItems)
+          .where(eq(schema.budgetItems.id, input.id))
+          .then(firstRow);
+        if (!current)
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        const amounts = budgetAmountsSchema.parse(current.amounts);
+        if (input.colIndex < 0 || input.colIndex >= amounts.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Column index out of bounds",
+          });
+        }
+        amounts[input.colIndex] = input.amount;
+        return tx
+          .update(schema.budgetItems)
+          .set({ amounts })
+          .where(eq(schema.budgetItems.id, input.id))
+          .returning()
+          .then(firstRow);
+      });
     }),
 
   /** Batch update multiple amount cells. */
@@ -121,64 +133,76 @@ export const itemAmountProcedures = {
       if (byId.size === 0)
         return { ok: true, updated: 0, updatedItems: 0, skipped: [] };
 
-      // One fetch, not one-per-item.
       const ids = Array.from(byId.keys());
-      const items = await ctx.db
-        .select()
-        .from(schema.budgetItems)
-        .where(inArray(schema.budgetItems.id, ids));
-      const itemById = new Map(items.map((it) => [it.id, it]));
-
-      // Sort the batch into "apply" and "skip": a deleted item or an out-of-range
-      // colIndex (stale client) is reported in `skipped`, not fatal. A non-finite
-      // amount throws, for direct server callers (the input schema rejects NaN).
-      type SkipReason = "deleted" | "column-out-of-range";
-      const skipped: { id: number; colIndex: number; reason: SkipReason }[] =
-        [];
-      const toApply: {
-        id: number;
-        amounts: number[];
-        changes: { colIndex: number; amount: number }[];
-      }[] = [];
-      for (const [id, changes] of byId) {
-        const item = itemById.get(id);
-        if (!item) {
-          for (const c of changes)
-            skipped.push({ id, colIndex: c.colIndex, reason: "deleted" });
-          continue;
-        }
-        // `amounts` tracks the profile's column count for linked items too, so it
-        // bounds both; an unchecked linked item would write into the active
-        // Contribution Profile via the tier fallback, unreported.
-        const amounts = budgetAmountsSchema.parse(item.amounts);
-        const valid = changes.filter((c) => {
-          if (!Number.isFinite(c.amount)) {
-            // Message is user-facing (surfaced by the global
-            // MutationCache.onError toast) — no raw ids.
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "One of the pasted amounts isn't a valid number.",
-            });
-          }
-          if (c.colIndex < 0 || c.colIndex >= amounts.length) {
-            skipped.push({
-              id,
-              colIndex: c.colIndex,
-              reason: "column-out-of-range",
-            });
-            return false;
-          }
-          return true;
-        });
-        if (valid.length > 0) toApply.push({ id, amounts, changes: valid });
-      }
-      // Deterministic lock-acquisition order (by id) so two concurrent
-      // pastes touching an overlapping set of items can't deadlock.
-      toApply.sort((a, b) => a.id - b.id);
+      const profileIds = (
+        await ctx.db
+          .selectDistinct({ profileId: schema.budgetItems.profileId })
+          .from(schema.budgetItems)
+          .where(inArray(schema.budgetItems.id, ids))
+      )
+        .map((r) => r.profileId)
+        .sort((a, b) => a - b);
 
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
-      await ctx.db.transaction(async (tx) => {
+      const { skipped, toApply } = await ctx.db.transaction(async (tx) => {
+        for (const profileId of profileIds)
+          await lockRow(tx, schema.budgetProfiles, profileId);
+        // One fetch, not one-per-item, under the lock of every profile it
+        // touches (ascending), so a column edit can't interleave.
+        const items = await tx
+          .select()
+          .from(schema.budgetItems)
+          .where(inArray(schema.budgetItems.id, ids));
+        const itemById = new Map(items.map((it) => [it.id, it]));
+
+        // Sort the batch into "apply" and "skip": a deleted item or an out-of-range
+        // colIndex (stale client) is reported in `skipped`, not fatal. A non-finite
+        // amount throws, for direct server callers (the input schema rejects NaN).
+        type SkipReason = "deleted" | "column-out-of-range";
+        const skipped: { id: number; colIndex: number; reason: SkipReason }[] =
+          [];
+        const toApply: {
+          id: number;
+          amounts: number[];
+          changes: { colIndex: number; amount: number }[];
+        }[] = [];
+        for (const [id, changes] of byId) {
+          const item = itemById.get(id);
+          if (!item) {
+            for (const c of changes)
+              skipped.push({ id, colIndex: c.colIndex, reason: "deleted" });
+            continue;
+          }
+          // `amounts` tracks the profile's column count for linked items too, so it
+          // bounds both; an unchecked linked item would write into the active
+          // Contribution Profile via the tier fallback, unreported.
+          const amounts = budgetAmountsSchema.parse(item.amounts);
+          const valid = changes.filter((c) => {
+            if (!Number.isFinite(c.amount)) {
+              // Message is user-facing (surfaced by the global
+              // MutationCache.onError toast) — no raw ids.
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "One of the pasted amounts isn't a valid number.",
+              });
+            }
+            if (c.colIndex < 0 || c.colIndex >= amounts.length) {
+              skipped.push({
+                id,
+                colIndex: c.colIndex,
+                reason: "column-out-of-range",
+              });
+              return false;
+            }
+            return true;
+          });
+          if (valid.length > 0) toApply.push({ id, amounts, changes: valid });
+        }
+        // Deterministic lock-acquisition order (by id) so two concurrent
+        // pastes touching an overlapping set of items can't deadlock.
+        toApply.sort((a, b) => a.id - b.id);
+
         // Linked items are collected so applyContributionAccountEditsBatch folds
         // every edit on the same contribution profile into one read-merge-write.
         const contributionEdits: {
@@ -219,6 +243,8 @@ export const itemAmountProcedures = {
           contributionEdits,
           (db, check) => assertWithinIrsLimits(db, check, ctx.scope.asOf),
         );
+
+        return { skipped, toApply };
       });
       const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);
       return {

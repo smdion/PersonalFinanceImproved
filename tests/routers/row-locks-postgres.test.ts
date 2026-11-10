@@ -1,7 +1,7 @@
 /**
  * Read-merge-writes hold their row's lock on PostgreSQL: overlapping saves
- * to one Salary Profile each land, none lost, and a transaction waiting on
- * a held row lock reads the holder's committed write.
+ * to one Salary Profile or one budget profile each land, none lost, and a
+ * transaction waiting on a held row lock reads the holder's committed write.
  *
  * Runs only when TEST_DATABASE_URL names a throwaway database (its name
  * must end in `_test`): the test drops and rebuilds its schemas. CI runs it
@@ -132,5 +132,29 @@ describe.skipIf(skipWithoutPostgres)("row locks (PostgreSQL)", () => {
       [id],
     );
     expect(after["salaries"]).toEqual({});
+  });
+
+  it("overlapping column adds on one budget profile each land on the profile and every item", async () => {
+    const profile = await app.caller.budget.createProfile({
+      name: "Invented columns",
+    });
+    await Promise.all(
+      Array.from({ length: OVERLAPPING }, (_, i) =>
+        app.caller.budget.addColumn({
+          label: `Column ${i}`,
+          profileId: profile.id,
+        }),
+      ),
+    );
+    const labels = await one(
+      "SELECT column_labels FROM budget_profiles WHERE id = $1",
+      [profile.id],
+    );
+    expect(labels["column_labels"]).toHaveLength(OVERLAPPING + 1);
+    const lengths = await admin.query<{ n: number }>(
+      "SELECT DISTINCT jsonb_array_length(amounts) AS n FROM budget_items WHERE profile_id = $1",
+      [profile.id],
+    );
+    expect(lengths.rows).toEqual([{ n: OVERLAPPING + 1 }]);
   });
 });
