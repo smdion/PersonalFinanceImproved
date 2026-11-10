@@ -11,9 +11,6 @@ import { zDecimal } from "@/lib/utils/zod-fields";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
-// retirementScenarioInput removed with the retirementScenarios router
-// (Retirement Profiles step B) — nothing writes that table any more.
-
 const returnRateInput = z.object({
   age: z.number().int(),
   rateOfReturn: zDecimal,

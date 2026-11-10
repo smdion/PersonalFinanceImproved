@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-syntax -- as unknown as casts build partial paycheck views (the tab reads person, job, salary, bonus terms and the contribution figures) */
 /**
- * Tab-level smoke test before the split of budget/what-if-tab.tsx (RULES §
- * Refactoring: smoke tests before any split; target-architecture § 8.7: tab
- * smoke, reset behavior). A dated temporary net: the split that replaces the
+ * Tab-level smoke test before the split of profiles/what-if/what-if-tab.tsx
+ * (RULES § Refactoring: smoke tests before any split; target-architecture
+ * § 8.7: tab smoke, reset behavior). A dated temporary net: the split that replaces the
  * file replaces this test. The editors themselves are covered by
  * what-if-editors.test.tsx.
  *

@@ -27,7 +27,7 @@ import { firstRow } from "@/lib/utils/first-row";
 
 export const retirementSettingsInput = z.object({
   personId: z.number().int(),
-  /** Which retirement profile this write targets; key presence matters (see `upsert`).
+  /** Which retirement profile this write targets; key presence matters (see `upsertRetirementSettings`).
    *  Omitted only by API callers without profiles; UI call sites always send it. */
   profileId: z.number().int().nullable().optional(),
   retirementAge: z.number().int().min(18).max(100),

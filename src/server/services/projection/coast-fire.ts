@@ -122,8 +122,8 @@ export async function computeCoastFireSimulation(
     returnClampMax,
     inflationRisk,
   });
-  // peekOnly always reads the real cache regardless of forceRefresh —
-  // see the identical fix/rationale in monte-carlo.ts.
+  // peekOnly always reads the real cache regardless of forceRefresh, as
+  // computeMonteCarloProjection does (services/simulation/monte-carlo-projection.ts).
   const cached =
     input.forceRefresh && !input.peekOnly
       ? null

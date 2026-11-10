@@ -10,11 +10,11 @@
  *   - the validation schemas zDecimal (lib/utils/zod-fields) and settingValue
  *     (settings/_shared)
  *
- * savingsGoals, performanceAccounts, portfolioSnapshots, and
- * relocationScenarios CRUD moved out to savings.ts/performance/accounts.ts/
- * networth/portfolio-snapshots.ts/projection/relocation.ts respectively — their
- * tests moved to savings-goals-crud.test.ts / performance.test.ts /
- * networth.test.ts / projection-relocation.test.ts alongside them.
+ * savingsGoals, performanceAccounts, portfolioSnapshots and
+ * relocationScenarios CRUD live in savings/goals.ts, performance/accounts.ts,
+ * net-worth/portfolio-snapshots.ts and projection/relocation.ts, tested in
+ * savings-goals-crud.test.ts / performance.test.ts / networth.test.ts /
+ * projection-relocation.test.ts.
  * Everything remaining in adminProcedures is a genuine cross-cutting
  * exception per DESIGN.md's Settings-page ownership table.
  *
@@ -406,23 +406,6 @@ describe("settings.apiConnections", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAVINGS GOALS
-// ─────────────────────────────────────────────────────────────────────────────
-
-// savings.savingsGoals CRUD tests moved to savings-goals-crud.test.ts
-// (procedures moved to routers/savings/goals.ts).
-
-// relocationScenarios CRUD tests moved to projection-relocation.test.ts
-// (procedures moved to routers/projection/relocation.ts).
-
-// performanceAccounts CRUD tests moved to performance.test.ts (procedures
-// moved to routers/performance/accounts.ts).
-
-// portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
-// delete) moved to networth.test.ts (procedures moved to
-// routers/net-worth/).
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -775,17 +758,6 @@ describe("settings.appSettings non-admin filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ADDITIONAL COVERAGE — savingsGoals edge cases
-// ─────────────────────────────────────────────────────────────────────────────
-
-// savings.savingsGoals additional coverage moved to savings-goals-crud.test.ts.
-
-// relocationScenarios additional coverage moved to
-// projection-relocation.test.ts.
-
-// performanceAccounts additional coverage moved to performance.test.ts.
-
-// ─────────────────────────────────────────────────────────────────────────────
 // APP SETTINGS — viewer filtering
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -826,13 +798,6 @@ describe("settings.appSettings.list viewer filtering", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BACKFILL PERFORMANCE ACCOUNT IDS
-// ─────────────────────────────────────────────────────────────────────────────
-
-// portfolioSnapshots.delete/create additional coverage moved to
-// networth.test.ts (procedures moved to routers/net-worth/portfolio-snapshots.ts).
-
-// ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -847,10 +812,6 @@ describe("settings.updateDataFreshness additional", () => {
     }
   });
 });
-
-// relocationScenarios additional coverage moved to
-// projection-relocation.test.ts (procedures moved to
-// routers/projection/relocation.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RECOMMENDATION DISMISSALS — one change at a time, merged on the server

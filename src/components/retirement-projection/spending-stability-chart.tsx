@@ -97,9 +97,9 @@ export function SpendingStabilityChart({
   const isStrategy = view === "strategy";
   const baselineLabel = isStrategy ? "Strategy" : "Budget";
 
-  // As monte-carlo.ts's "vs strategy" KPI does: a strategy with
-  // usesPostRetirementRaise is measured against each year's raise-adjusted
-  // `targetWithdrawal`, not a flat CPI-inflated line off year 1.
+  // As the Simulation's strategy ratios do (lib/pure/simulation/trial-run.ts):
+  // a strategy with usesPostRetirementRaise is measured against each year's
+  // raise-adjusted `targetWithdrawal`, not a flat CPI-inflated line off year 1.
   const activeStrategy =
     engineSettings.withdrawalStrategy as WithdrawalStrategyType;
   const usesPostRetirementRaise =
@@ -135,7 +135,7 @@ export function SpendingStabilityChart({
           : year1Withdrawal * inflationFactor
         : yearRow.budgetOnlyExpenses;
       // Budget view: strategy spending vs budget; strategy view: withdrawal vs
-      // the strategy's own baseline. Zero baseline → 0% (as in monte-carlo.ts).
+      // the strategy's own baseline. Zero baseline → 0% (as in trial-run.ts).
       // The ratio is deflate-agnostic; only display dollars need `deflate`.
       const measured = isStrategy
         ? yearRow.totalWithdrawal

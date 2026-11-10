@@ -1,6 +1,7 @@
 /**
- * Manager-level smoke test before the split of budget/salary-profile-
- * manager.tsx (RULES § Refactoring: smoke tests before any split;
+ * Manager-level smoke test before the split of
+ * profiles/salary/salary-profile-manager.tsx (RULES § Refactoring: smoke
+ * tests before any split;
  * target-architecture § 8.7: manager smoke). A dated temporary net: the
  * split that replaces the file replaces this test. The shared salary
  * sections inside it are covered by salary-sections.test.tsx.
