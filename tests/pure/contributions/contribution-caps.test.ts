@@ -3,9 +3,11 @@ import { describe, it, expect } from "vitest";
 import {
   capContributionsByLimitGroup,
   accountGroupLimits,
-  type CapPerson,
-  type CapRow,
 } from "@/lib/pure/contributions/contribution-caps";
+import type {
+  CapPerson,
+  CapRow,
+} from "@/lib/pure/contributions/contribution-caps.types";
 
 const limits = {
   "401k_employee_limit": 20000,

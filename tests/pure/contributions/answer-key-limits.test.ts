@@ -42,11 +42,11 @@
  * phase-out range function only, with the range (or a net MAGI) fed in.
  */
 import { describe, expect, it } from "vitest";
-import {
-  capContributionsByLimitGroup,
-  type CapPerson,
-  type CapRow,
-} from "@/lib/pure/contributions/contribution-caps";
+import { capContributionsByLimitGroup } from "@/lib/pure/contributions/contribution-caps";
+import type {
+  CapPerson,
+  CapRow,
+} from "@/lib/pure/contributions/contribution-caps.types";
 import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import {
   judgeRothIra,

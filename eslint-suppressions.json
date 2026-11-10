@@ -3760,10 +3760,15 @@
       "count": 3
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 3
+      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 4
+    }
+  },
+  "src/lib/pure/contributions/contribution-caps.types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/lib/pure/contributions/contribution-order.ts": {

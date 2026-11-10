@@ -1,7 +1,5 @@
 /** The annual-additions limit (IRC 415(c)), applied per employer: a plan row's employer. */
-
-/** A plan row's employer: its job, and the job's gross pay this year (null = unknown). */
-export type PlanEmployer = { key: number; pay: number | null };
+import type { PlanEmployer } from "./contribution-caps.types";
 
 type JobPay = { job: { id: number }; salary: number; totalComp?: number };
 
