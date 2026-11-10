@@ -49,7 +49,7 @@ const EXEMPT: Set<string> = new Set([
   // Tooltip + ConfirmDialog use raw colors for high-contrast emergency UI.
   "src/components/ui/tooltip.tsx",
   // Theme picker itself.
-  "src/components/ui/theme-toggle.tsx",
+  "src/components/layout/theme-toggle.tsx",
 ]);
 
 // Patterns we flag. Tailwind gray-N00 utilities specifically — other

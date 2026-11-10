@@ -11,14 +11,14 @@ vi.mock("@/components/layout/data-freshness", () => ({
 }));
 
 // Mock ThemeToggle (uses useTheme internally)
-vi.mock("@/components/ui/theme-toggle", () => ({
+vi.mock("@/components/layout/theme-toggle", () => ({
   ThemeToggle: ({ compact }: { compact?: boolean }) => (
     <div data-testid="theme-toggle">{compact ? "compact" : "full"}</div>
   ),
 }));
 
 // Mock PrivacyToggle (uses usePrivacy, which needs PrivacyProvider)
-vi.mock("@/components/ui/privacy-toggle", () => ({
+vi.mock("@/components/layout/privacy-toggle", () => ({
   PrivacyToggle: ({ compact }: { compact?: boolean }) => (
     <div data-testid="privacy-toggle">{compact ? "compact" : "full"}</div>
   ),

@@ -10,7 +10,7 @@ import { ProfileViewingBadge } from "@/components/budget/profile-viewing-badge";
 import {
   ProfileListRow,
   ProfileSidebarHeader,
-} from "@/components/ui/profile-sidebar";
+} from "@/components/profiles/profile-sidebar";
 import { confirm } from "@/components/ui/confirm-dialog";
 import type { useCloneProfile } from "@/components/budget/use-clone-profile";
 import { SlidePanel } from "@/components/ui/slide-panel";

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ProfileListRow } from "@/components/ui/profile-sidebar";
+import { ProfileListRow } from "@/components/profiles/profile-sidebar";
 import { pressKey } from "./keyboard";
 
 function mount(meta?: React.ReactNode) {

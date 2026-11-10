@@ -7,7 +7,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { asButton } from "./as-button";
+import { asButton } from "@/components/ui/as-button";
 import { TextAction } from "@/components/ui/text-action";
 
 type ProfileListRowProps = {

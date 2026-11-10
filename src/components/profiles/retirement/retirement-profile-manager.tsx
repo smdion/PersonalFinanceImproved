@@ -11,7 +11,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import {
   ProfileListRow,
   ProfileSidebarHeader,
-} from "@/components/ui/profile-sidebar";
+} from "@/components/profiles/profile-sidebar";
 
 /**
  * Retirement Profiles list (left column of the Budget page's Retirement tab). No bare create:
