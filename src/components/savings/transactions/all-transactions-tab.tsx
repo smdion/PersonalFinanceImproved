@@ -81,8 +81,8 @@ export function AllTransactionsTab({
     field: ActiveCellField;
   } | null>(null);
 
-  // An inline edit ends once: Enter's save records the edit it ended (each
-  // activation is a new activeCell), so that edit's blur doesn't save again.
+  // An inline edit ends once: Enter or Escape records the edit it ended (each
+  // activation is a new activeCell), so that edit's blur doesn't save.
   const committed = useRef<typeof activeCell>(null);
 
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
@@ -165,9 +165,8 @@ export function AllTransactionsTab({
     );
   };
 
-  // Show all upcoming transactions including transfers (deduped: only show one leg per pair)
-  // Clipped to the projection window end date when provided.
-  // Rule-generated rows hidden by default unless showRuleTx is on.
+  // Upcoming transactions, transfers deduped to one leg, clipped to the
+  // projection window's end; rule-generated rows only when showRuleTx is on.
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
@@ -361,6 +360,7 @@ export function AllTransactionsTab({
         setActiveCell(null);
       }
       if (e.key === "Escape") {
+        committed.current = activeCell;
         setEditingId(null);
         setEditForm(null);
         setActiveCell(null);

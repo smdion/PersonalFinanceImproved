@@ -29,8 +29,9 @@ export function useInlineNumberEdit<TKey>({
 }): UseInlineNumberEditReturn<TKey> {
   const [editingKey, setEditingKey] = useState<TKey | null>(null);
   const [editValue, setEditValue] = useState("");
-  // An edit commits once: guards against a second commit (a blur after
-  // Enter) reaching the same render's handlers; startEdit begins a new edit.
+  // An edit ends once, by commit or cancel: a blur after Enter or Escape
+  // reaches the same render's handlers and must not commit; startEdit
+  // begins a new edit.
   const committed = useRef(false);
 
   const startEdit = useCallback((key: TKey, currentValue: number | string) => {
@@ -39,7 +40,10 @@ export function useInlineNumberEdit<TKey>({
     setEditValue(String(currentValue));
   }, []);
 
-  const cancel = useCallback(() => setEditingKey(null), []);
+  const cancel = useCallback(() => {
+    committed.current = true;
+    setEditingKey(null);
+  }, []);
 
   const commit = useCallback(() => {
     if (editingKey === null || committed.current) return;

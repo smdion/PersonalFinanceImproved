@@ -201,4 +201,24 @@ describe("useInlineNumberEdit", () => {
     });
     expect(result.current.editValue).toBe("30");
   });
+
+  it("Escape then the removed input's blur (the same render's commit) saves nothing", () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() =>
+      useInlineNumberEdit<CellKey>({ onCommit }),
+    );
+
+    act(() =>
+      result.current.startEdit({ type: "annual", id: 1, field: "fees" }, 10),
+    );
+    act(() => result.current.setEditValue("20"));
+    // The input's handlers from the render that showed it: Escape ends the
+    // edit, then the input's blur, still bound to that render, fires.
+    const { handleKeyDown, commit } = result.current;
+    act(() => handleKeyDown(fakeKeyEvent("Escape")));
+    act(() => commit());
+
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(result.current.editingKey).toBeNull();
+  });
 });

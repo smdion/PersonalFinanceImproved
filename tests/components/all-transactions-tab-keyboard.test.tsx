@@ -1,10 +1,10 @@
 /**
  * The upcoming-transactions table's inline edits by keyboard:
- * each editable cell's content is a button, and a cell left after an Enter
- * save still saves.
+ * each editable cell's content is a button, a cell left after an Enter
+ * save still saves, and a cancelled edit's blur saves nothing.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 vi.mock("@/lib/trpc", async () => ({
@@ -97,5 +97,19 @@ describe("AllTransactionsTab inline edits by keyboard", () => {
       expect.objectContaining({ id: 7, description: "New tires" }),
       expect.objectContaining({ id: 7, amount: "-450" }),
     ]);
+  });
+
+  it("Escape then the input's blur in the same render saves nothing", () => {
+    mount();
+    pressKey(screen.getByRole("button", { name: "Tires" }), "Enter");
+    const description = screen.getByDisplayValue("Tires");
+    fireEvent.change(description, { target: { value: "Cancelled" } });
+    // Both handlers from one render, as when Escape removes the focused
+    // input and the browser blurs it before React re-renders.
+    act(() => {
+      fireEvent.keyDown(description, { key: "Escape" });
+      fireEvent.blur(description);
+    });
+    expect(mutationCalls(UPDATE)).toEqual([]);
   });
 });
