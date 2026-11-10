@@ -222,7 +222,7 @@ Portfolio snapshots are more granular than performance accounts — multiple sna
 - Joint + brokerage + "Long Term" label + Vanguard → `"Long Term Brokerage (Vanguard)"`
 - Bob + brokerage + ESPP subType + UBS → `"Bob ESPP (UBS)"`
 
-`displayName` is an optional user override. All display uses `accountDisplayName()` from `lib/utils/account-name.ts`, which returns `displayName` (if set) → `accountLabel` (programmatic) → fallback construction. Every router and component must use this helper — no inline `displayName ?? accountLabel` ternaries.
+`displayName` is an optional user override. All display uses `accountDisplayName()` from `lib/utils/account-name.ts`, which returns `displayName` (if set) → the label built from its parts when the owner is known → the stored `accountLabel` → construction with no owner. Every router and component must use this helper — no inline `displayName ?? accountLabel` ternaries.
 
 #### Sub-accounts and SimpleFIN links
 
@@ -896,7 +896,7 @@ The Simulation runs the whole projection many times, each trial with its own ran
 7. **Standardized naming.** Tax buckets use canonical keys everywhere: `preTax`, `taxFree`, `hsa`, `afterTax`. Display labels are applied at the UI layer via lookup maps. `parentCategory` (not `goalCategory`) is the unified field name across all tables.
 8. **No hardcoded user data.** Never reference specific names, employers, job titles, or other user-specific data in code. Everything comes from the DB. The app must work for any household, not just the current users.
 9. **Account type validation is app-level, not DB-level.** `accountType` columns are `text` (not enum), validated at the app layer against `ACCOUNT_TYPE_CONFIG` keys via `accountCategoryEnum()`. This allows adding new account types without DB migrations.
-10. **Programmatic account naming.** `accountLabel` is server-computed via `buildAccountLabel()` from `lib/utils/account-name.ts`: `{Owner} {Label?} {SubType || Type} ({Institution})`. `displayName` is an optional user override. All display uses `accountDisplayName()` — never inline `displayName ?? accountLabel` or direct field reads. Owner is baked into the label; components must NOT append owner separately.
+10. **Programmatic account naming.** `accountLabel` is server-computed via `buildAccountLabel()` from `lib/utils/account-name.ts`: `{Owner} {Label?} {SubType || Type} ({Institution})`. `displayName` is an optional user override. All display uses `accountDisplayName()` — never inline `displayName ?? accountLabel` or direct field reads. The owner is part of the label (built from the owner's current name when the caller knows it); components must NOT append owner separately.
 
 ### Data-converting migrations
 

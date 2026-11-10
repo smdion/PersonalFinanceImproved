@@ -264,16 +264,31 @@ describe("accountDisplayName", () => {
     expect(result).toBe("Bob 401k (Fidelity)");
   });
 
-  it("keeps the stored label as-is when it already starts with the owner name", () => {
+  it("builds the label from its parts when the owner is known, whatever was stored", () => {
+    const account = {
+      accountLabel: "Alice 401k (Fidelity)",
+      accountType: "401k",
+      institution: "Fidelity",
+    };
+    expect(accountDisplayName(account, "Alice")).toBe("Alice 401k (Fidelity)");
+    // A rename shows at once; a stored label that starts with the new name
+    // ("Al" of "Alice") reads the new name too.
+    expect(accountDisplayName(account, "Alicia")).toBe(
+      "Alicia 401k (Fidelity)",
+    );
+    expect(accountDisplayName(account, "Al")).toBe("Al 401k (Fidelity)");
     expect(
-      accountDisplayName(
-        {
-          accountLabel: "Alice 401k (Fidelity)",
-          accountType: "401k",
-          institution: "Fidelity",
-        },
-        "Alice",
-      ),
+      accountDisplayName({ ...account, ownershipType: "joint" }, "Alice"),
+    ).toBe("Joint 401k (Fidelity)");
+  });
+
+  it("reads the stored label when the caller names no owner", () => {
+    expect(
+      accountDisplayName({
+        accountLabel: "Alice 401k (Fidelity)",
+        accountType: "401k",
+        institution: "Fidelity",
+      }),
     ).toBe("Alice 401k (Fidelity)");
   });
 
