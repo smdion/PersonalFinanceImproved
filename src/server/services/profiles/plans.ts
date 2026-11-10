@@ -102,11 +102,16 @@ async function readActiveProfileIds(db: Db): Promise<PlanProfileIds> {
 /**
  * Make a Plan's profiles active in one transaction. Only kinds that would change are written and
  * permission-checked (an empty slot is left alone), all before any write, so a refusal never
- * half-applies a Plan.
+ * half-applies a Plan. The change log records who applied it, in the same transaction.
  */
 export async function applyPlan(
   db: Db,
-  user: { role: string; permissions: readonly string[] },
+  user: {
+    role: string;
+    permissions: readonly string[];
+    name?: string | null;
+    email?: string | null;
+  },
   planId: number,
 ): Promise<void> {
   const [plan] = await db
@@ -158,5 +163,14 @@ export async function applyPlan(
       }
     }
     await upsertSetting(tx, SK_LAST_APPLIED_PLAN_ID, plan.id);
+    // A protectedProcedure gets no change-log entry from tRPC: written here.
+    await tx.insert(schema.changeLog).values({
+      tableName: "settings.scenarios.activate",
+      recordId: plan.id,
+      fieldName: "*",
+      oldValue: null,
+      newValue: { id: plan.id, name: plan.name },
+      changedBy: user.name ?? user.email ?? "unknown", // OIDC may send neither
+    });
   });
 }

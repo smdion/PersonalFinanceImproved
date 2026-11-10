@@ -113,6 +113,29 @@ describe("Plans", () => {
     expect(activeBudgets.map((b) => b.id)).toEqual([ids.budgetProfileId]);
   });
 
+  it("activate writes a change-log entry naming the viewer and the Plan", async () => {
+    await seedProfiles(ctx.db, "Current", true);
+    const ids = await seedProfiles(ctx.db, "Plan");
+    const plan = await ctx.caller.settings.scenarios.create({
+      name: "Move",
+      ...ids,
+    });
+    await ctx.caller.settings.scenarios.activate({ id: plan!.id });
+    expect(
+      ctx.db
+        .select()
+        .from(schema.changeLog)
+        .where(eq(schema.changeLog.tableName, "settings.scenarios.activate"))
+        .all(),
+    ).toEqual([
+      expect.objectContaining({
+        recordId: plan!.id,
+        newValue: { id: plan!.id, name: "Move" },
+        changedBy: adminSession.user.name,
+      }),
+    ]);
+  });
+
   it("an older Plan with an empty kind leaves that kind's active profile alone", async () => {
     const current = await seedProfiles(ctx.db, "Current", true);
     const ids = await seedProfiles(ctx.db, "Plan");
