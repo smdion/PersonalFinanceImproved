@@ -5,8 +5,9 @@ import {
   type BudgetAPIClient,
   type BudgetApiService,
 } from "@/lib/budget-api";
-import type { Db } from "@/lib/db";
+import type { Db, DbOrTx } from "@/lib/db";
 import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
+import { lockedTargetBudgetProfile } from "@/server/data/budget-profile-lock";
 
 /** The active budget API's service; PRECONDITION_FAILED when none is. */
 export async function requireActiveBudgetApi(
@@ -46,6 +47,18 @@ export async function requireBudgetProfile(
   profileId: number | undefined,
 ) {
   const profile = await resolveTargetBudgetProfile(db, profileId);
+  if (!profile)
+    throw new TRPCError({ code: "BAD_REQUEST", message: "No active profile" });
+  return profile;
+}
+
+/** The target profile (`profileId`, else the active one) read under its
+ *  row lock in `tx`; BAD_REQUEST when there is none. */
+export async function requireLockedBudgetProfile(
+  tx: DbOrTx,
+  profileId: number | undefined,
+) {
+  const profile = await lockedTargetBudgetProfile(tx, profileId);
   if (!profile)
     throw new TRPCError({ code: "BAD_REQUEST", message: "No active profile" });
   return profile;

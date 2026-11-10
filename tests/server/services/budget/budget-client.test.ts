@@ -14,6 +14,9 @@ vi.mock("@/lib/budget-api", () => ({
 vi.mock("@/server/data/budget-profiles", () => ({
   resolveTargetBudgetProfile: async () => m.profile,
 }));
+vi.mock("@/server/data/budget-profile-lock", () => ({
+  lockedTargetBudgetProfile: async () => m.profile,
+}));
 
 import {
   requireActiveBudgetApi,
