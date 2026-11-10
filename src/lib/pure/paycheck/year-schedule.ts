@@ -8,7 +8,7 @@ import type {
 } from "./paycheck.types";
 import { roundToCents, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
-import { findBonusPeriod } from "./bonus";
+import { findBonusPeriod } from "./bonus-check";
 import { yearTotals } from "./year-totals";
 
 /**

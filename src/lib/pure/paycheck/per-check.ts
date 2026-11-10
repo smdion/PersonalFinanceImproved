@@ -13,7 +13,8 @@ import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { sumBracketTax } from "../tax/tax-brackets";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
-import { calculateBonus, findBonusPeriod } from "./bonus";
+import { calculateBonus } from "./bonus";
+import { findBonusPeriod } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
 import {
