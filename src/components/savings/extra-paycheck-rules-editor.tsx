@@ -130,8 +130,8 @@ function ExtraPaycheckJobPanel({
   const baseYearDisplay = routing?.baseYear ?? new Date().getFullYear();
 
   // Auto-upgrade: if rules exist but baseNetPayPerCheck hasn't been set yet,
-  // trigger saveGrowth so the server recomputes net pay and the materializer
-  // switches from the stale per-rule netPaySnapshot to the dynamic projection path.
+  // trigger saveGrowth so the server saves the current net pay as the base
+  // the materializer projects from.
   const autoUpgradeFiredRef = useRef(false);
   useEffect(() => {
     if (

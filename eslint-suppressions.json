@@ -5295,9 +5295,6 @@
   "src/server/services/budget/extra-paycheck-materializer.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 2
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/server/services/budget/linked-items.ts": {

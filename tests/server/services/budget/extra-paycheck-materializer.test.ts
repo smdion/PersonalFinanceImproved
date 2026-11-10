@@ -99,9 +99,9 @@ describe("materializeExtraPaycheckSavings", () => {
                   from: "2026-01",
                   to: null,
                   splits: [{ goalId, pct: 100 }],
-                  netPaySnapshot: 1000,
                 },
               ],
+              baseNetPayPerCheck: 1000,
             },
           },
         },
@@ -181,9 +181,9 @@ describe("materializeExtraPaycheckSavings", () => {
           from: "2026-01",
           to: null,
           splits: [{ goalId, pct: 100 }],
-          netPaySnapshot: 1000,
         },
       ],
+      baseNetPayPerCheck: 1000,
       enabled: false,
     });
 
@@ -231,9 +231,9 @@ describe("materializeExtraPaycheckSavings", () => {
           from: "2026-01",
           to: null,
           splits: [{ goalId, pct: 100 }],
-          netPaySnapshot: 5000,
         },
       ],
+      baseNetPayPerCheck: 5000,
     });
 
     await materializeExtraPaycheckSavings(ctx.db as never, new Date());

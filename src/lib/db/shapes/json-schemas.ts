@@ -202,8 +202,6 @@ const extraPaycheckRuleSchema = z.object({
   from: z.string(),
   to: z.string().nullable(),
   splits: z.array(extraPaycheckSplitSchema),
-  /** @deprecated legacy fallback — see ExtraPaycheckRule in schema-pg.ts. */
-  netPaySnapshot: z.number().optional(),
 });
 
 /** A one-time per-month override that takes precedence over its rule. */

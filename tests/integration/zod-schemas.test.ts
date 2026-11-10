@@ -267,7 +267,6 @@ describe("extraPaycheckRoutingSchema", () => {
             { goalId: 1, pct: 60 },
             { goalId: 2, pct: 40 },
           ],
-          netPaySnapshot: 1000,
         },
       ],
       overrides: [{ month: "2026-06", splits: [{ goalId: 1, pct: 100 }] }],

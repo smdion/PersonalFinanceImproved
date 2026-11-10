@@ -234,7 +234,7 @@
     "src/lib/db/migrate/reference-reconcile-core.ts": 752,
     "src/lib/db/pg/api-sync.ts": 550,
     "src/lib/db/pg/retirement.ts": 497,
-    "src/lib/db/shapes/json-schemas.ts": 376,
+    "src/lib/db/shapes/json-schemas.ts": 374,
     "src/lib/demo/profiles/debt-payoff.ts": 446,
     "src/lib/demo/profiles/dual-income-family.ts": 866,
     "src/lib/demo/profiles/early-retirement.ts": 666,

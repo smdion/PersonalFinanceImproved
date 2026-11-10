@@ -6,8 +6,8 @@
  * one (nothing mocked), so the pinned rows are exactly what an install gets.
  *
  * The household covers both modes and every way a job is left out: Savings
- * rules with an override, a rule window and growth; a legacy rule with only
- * `netPaySnapshot`; two jobs splitting into one goal on the same months;
+ * rules with an override, a rule window and growth; a flat base pay with
+ * no growth or base year; two jobs splitting into one goal on the same months;
  * Budget mode with no rules and with `enabled: false`; Budget mode with no
  * base pay; a speculative, an ended and a monthly-pay job; a job with no
  * Salary Profile entry; a routing whose snapshot anchor is `null`; splits to
@@ -118,8 +118,8 @@ function seed(ctx: TestDbContext): void {
         "2031": { type: "pct", value: 2.5 },
       },
     }),
-    // Savings, legacy: no base pay, so each rule's netPaySnapshot; the
-    // schedule comes from the routing's own snapshot, same months as job 1.
+    // Savings, a flat base pay (no growth, no base year); the schedule
+    // comes from the routing's own snapshot, same months as job 1.
     "2": entry(
       {
         rules: [
@@ -127,9 +127,9 @@ function seed(ctx: TestDbContext): void {
             from: "2026-03",
             to: null,
             splits: [{ goalId: TRAVEL, pct: 33.3 }],
-            netPaySnapshot: 1777.77,
           },
         ],
+        baseNetPayPerCheck: 1777.77,
         anchorPayDate: "2026-01-16",
         payPeriod: "biweekly",
       },
