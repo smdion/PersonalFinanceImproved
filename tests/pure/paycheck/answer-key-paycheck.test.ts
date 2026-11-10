@@ -64,6 +64,7 @@ import type {
   PaycheckResult,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import { NO_ONE_65 } from "../tax/tax-helpers";
 
 const row = (r: PaycheckResult, check: number) => r.yearSchedule[check - 1]!;
 const sum = (xs: number[]) =>
@@ -476,6 +477,7 @@ function yearOf(
     deductions: input.deductions,
   });
   const tax = calculateHouseholdTax({
+    ageDeductions: NO_ONE_65,
     people: [earnings],
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(
@@ -706,6 +708,7 @@ describe("paycheck/HW-H1–H4: the CPA hand worksheet", () => {
     const ea = yearOf(jobA, a, "Single").earnings;
     const eb = yearOf(jobB, b, "Single").earnings;
     const tax = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [
         {
           federalWages: ea.federalWages + eb.federalWages,

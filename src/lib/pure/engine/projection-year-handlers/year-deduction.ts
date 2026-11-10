@@ -1,6 +1,6 @@
 /** The decumulation year's standard deduction, grown to the year. */
 import { ADDITIONAL_STANDARD_DEDUCTION_AGE } from "../../../constants";
-import { computeObbbaSeniorDeduction } from "@/lib/pure/tax/return-deductions";
+import { returnDeductions } from "@/lib/pure/tax/return-deductions";
 import { yearMagi } from "@/lib/pure/tax/year-income";
 import { growAmount } from "../bracket-growth";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
@@ -16,8 +16,7 @@ export function yearStandardDeduction(
   taxGrowth: number,
 ) {
   // Household members 65+ this year (one when birth years are missing and
-  // the household's age is 65+). The §63(f) add-on applies only with a base
-  // deduction: undefined stays undefined (subtract 0), never NaN.
+  // the household's age is 65+).
   const seniorCount =
     perPersonBirthYears && perPersonBirthYears.length > 0
       ? perPersonBirthYears.filter(
@@ -26,37 +25,33 @@ export function yearStandardDeduction(
       : age >= ADDITIONAL_STANDARD_DEDUCTION_AGE
         ? 1
         : 0;
-  const seniorStandardDeductionAddon =
-    taxRates.standardDeduction != null &&
-    taxRates.additionalStdDeduction65PerSenior
-      ? seniorCount * taxRates.additionalStdDeduction65PerSenior
-      : 0;
-  // OBBBA senior deduction (return-deductions.ts): its phaseout reads last
-  // year's MAGI, unknown in the first decumulation year ($0 that year).
+  // The senior deduction's phaseout reads last year's MAGI, unknown in the
+  // first decumulation year ($0 that year).
   const lastYearIncome = incomeHistory.at(-1);
-  const obbbaAddon = computeObbbaSeniorDeduction({
-    seniorCount,
+  const { standardDeduction, seniorDeduction } = returnDeductions({
+    terms: {
+      basic: taxRates.standardDeduction,
+      addOnPerCondition: taxRates.additionalStdDeduction65PerSenior,
+      senior: {
+        perPerson: taxRates.obbbaSeniorDeductionPerPerson,
+        phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
+        phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
+        sunsetYear: taxRates.obbbaSeniorSunsetYear,
+      },
+    },
+    over65: seniorCount,
     magi: lastYearIncome
       ? { kind: "known", value: yearMagi(lastYearIncome, "seniorDeduction") }
       : { kind: "unknown" },
-    perPerson: taxRates.obbbaSeniorDeductionPerPerson,
-    phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
-    phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
     year,
-    sunsetYear: taxRates.obbbaSeniorSunsetYear,
   });
-  // The OBBBA amount is a fixed statutory figure, not CPI-indexed: added
-  // after the base and §63(f) add-on are grown, never grown with them.
-  const grownBaseAndSeniorDeduction = growAmount(
-    taxRates.standardDeduction != null
-      ? taxRates.standardDeduction + seniorStandardDeductionAddon
-      : taxRates.standardDeduction,
-    taxGrowth,
-  );
+  // The senior deduction is a fixed statutory figure, not CPI-indexed:
+  // added after the base and §63(f) add-on are grown, never grown with them.
+  const grownBaseAndAddOn = growAmount(standardDeduction, taxGrowth);
   const grownStandardDeduction =
-    grownBaseAndSeniorDeduction != null
-      ? grownBaseAndSeniorDeduction + obbbaAddon
-      : grownBaseAndSeniorDeduction;
+    grownBaseAndAddOn != null
+      ? grownBaseAndAddOn + seniorDeduction
+      : grownBaseAndAddOn;
 
   return { grownStandardDeduction };
 }

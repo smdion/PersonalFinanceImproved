@@ -10,6 +10,7 @@ import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { sumBracketTax } from "@/lib/pure/tax/tax-brackets";
 import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
 import { MFJ_TAXABLE_INCOME_BRACKETS } from "../fixtures";
+import { NO_ONE_65 } from "./tax-helpers";
 
 const B = MFJ_TAXABLE_INCOME_BRACKETS;
 const MFJ_LIABILITY = 250_000;
@@ -23,6 +24,7 @@ const wages = (gross: number, preTaxFederal = 0, ficaWages = gross) => ({
 describe("calculateHouseholdTax", () => {
   it("federal: one standard deduction on the combined income", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(120_000, 10_000), wages(90_000, 5_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -39,6 +41,7 @@ describe("calculateHouseholdTax", () => {
   it("Social Security is capped per person, Medicare isn't", () => {
     const base = B.socialSecurityWageBase;
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(base + 40_000), wages(60_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -52,6 +55,7 @@ describe("calculateHouseholdTax", () => {
 
   it("FICA is on FICA wages, not gross (Section 125, payroll HSA)", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(100_000, 12_000, 92_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -62,6 +66,7 @@ describe("calculateHouseholdTax", () => {
 
   it("MFJ, each spouse under the withholding threshold, together over the liability one: owed, and the warning says so", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(150_000), wages(140_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -75,6 +80,7 @@ describe("calculateHouseholdTax", () => {
 
   it("MFJ, one spouse over the withholding threshold, household under the liability one: nothing owed, credit warning", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(WITHHOLDING + 20_000), wages(10_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -85,6 +91,7 @@ describe("calculateHouseholdTax", () => {
 
   it("MFJ under both thresholds: no Additional Medicare, no warning", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(100_000), wages(100_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,
@@ -95,6 +102,7 @@ describe("calculateHouseholdTax", () => {
 
   it("Single over the threshold: owed and withheld match, no warning", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(WITHHOLDING + 50_000)],
       taxBrackets: SINGLE,
       medicareLiabilityThreshold: WITHHOLDING,
@@ -108,6 +116,7 @@ describe("calculateHouseholdTax", () => {
 
   it("missing liability row: uses the withholding threshold and says so", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(150_000), wages(140_000)],
       taxBrackets: B,
       medicareLiabilityThreshold: null,
@@ -123,6 +132,7 @@ describe("calculateHouseholdTax", () => {
 
   it("no income: all zero, no NaN", () => {
     const r = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [wages(0)],
       taxBrackets: B,
       medicareLiabilityThreshold: MFJ_LIABILITY,

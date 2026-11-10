@@ -47,6 +47,7 @@ import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import { NO_ONE_65 } from "./tax-helpers";
 
 const ltcg2026 = readTaxData().years["2026"]!.ltcg!
   .brackets as LtcgBracketTable;
@@ -63,6 +64,7 @@ function yearTax(input: PaycheckInput, status: ReturnFilingStatus) {
     deductions: input.deductions,
   });
   return calculateHouseholdTax({
+    ageDeductions: NO_ONE_65,
     people: [earnings],
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(

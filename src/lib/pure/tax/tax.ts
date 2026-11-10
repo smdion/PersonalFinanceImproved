@@ -7,6 +7,10 @@ import type { TaxBracketInput } from "../paycheck/paycheck.types";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { formatCurrency } from "../../utils/format";
 import { sumBracketTax } from "./tax-brackets";
+import {
+  returnDeductions,
+  type ReturnDeductionTerms,
+} from "./return-deductions";
 
 /** One person's earnings for the year, as the tax sees them (see computeAnnualEarnings). */
 type TaxEarnings = {
@@ -24,6 +28,13 @@ type HouseholdTaxInput = {
    *  (`fica_medicare_surtax_liability_<status>`). null when the tax data
    *  lacks the row — the withholding threshold is used, with a warning. */
   medicareLiabilityThreshold: number | null;
+  /** The year's §63(f) add-on and senior deduction terms, how many on the
+   *  return are 65+, and the tax year. */
+  ageDeductions: {
+    terms: Omit<ReturnDeductionTerms, "basic">;
+    over65: number;
+    year: number;
+  };
 };
 
 type HouseholdTaxResult = {
@@ -49,10 +60,20 @@ export function calculateHouseholdTax(
   const { people, taxBrackets } = input;
   const warnings: string[] = [];
 
-  // ── Federal: combined income, ONE standard deduction ──
+  // ── Federal: combined income, one return's deductions ──
   // Itemized deductions are not modelled.
   const wageAgi = sumBy(people, (p) => p.federalWages);
-  const taxableIncome = Math.max(0, wageAgi - taxBrackets.standardDeduction);
+  const { ageDeductions } = input;
+  const { standardDeduction, seniorDeduction } = returnDeductions({
+    terms: { ...ageDeductions.terms, basic: taxBrackets.standardDeduction },
+    over65: ageDeductions.over65,
+    magi: { kind: "known", value: wageAgi },
+    year: ageDeductions.year,
+  });
+  const taxableIncome = Math.max(
+    0,
+    wageAgi - standardDeduction - seniorDeduction,
+  );
   const bracketResult = sumBracketTax(taxableIncome, taxBrackets.brackets);
   const federalTax = roundToCents(bracketResult.total);
 

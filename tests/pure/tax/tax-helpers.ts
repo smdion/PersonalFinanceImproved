@@ -21,6 +21,7 @@ export type OnePersonTaxInput = {
 
 export function taxForOnePerson(input: OnePersonTaxInput) {
   const r = calculateHouseholdTax({
+    ageDeductions: NO_ONE_65,
     people: [
       {
         federalWages: input.annualGross - input.preTaxDeductionsAnnual,
@@ -34,3 +35,18 @@ export function taxForOnePerson(input: OnePersonTaxInput) {
   });
   return { ...r, agi: r.wageAgi };
 }
+
+/** calculateHouseholdTax's age deductions for a return with no one 65+. */
+export const NO_ONE_65 = {
+  terms: {
+    addOnPerCondition: undefined,
+    senior: {
+      perPerson: undefined,
+      phaseoutStart: undefined,
+      phaseoutRate: undefined,
+      sunsetYear: undefined,
+    },
+  },
+  over65: 0,
+  year: 2026,
+};
