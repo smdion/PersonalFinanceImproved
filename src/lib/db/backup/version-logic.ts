@@ -30,7 +30,6 @@ import { reconcileReferenceData } from "../migrate/reference-data";
 import {
   VERSION_TABLE_NAMES,
   VERSION_TABLES,
-  tablesFromBackup,
   tablesTakenCount,
 } from "./version-tables";
 import { householdOnlyTables, withInstallationRows } from "./installation-rows";
@@ -275,7 +274,6 @@ export async function restoreVersion(
       restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
-    // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
     await resetSequences(tx, VERSION_TABLE_NAMES);
 
     try {
@@ -297,8 +295,8 @@ export async function restoreVersion(
   // that it lacks (a newer tax year), as the next start would.
   await reconcileReferenceData(database);
 
-  const names = tableDatas.map((t) => t.tableName);
-  const restoredTables = tablesFromBackup(names, by).length;
+  const versioned = Object.fromEntries(tableDatas.map((t) => [t.tableName, 1]));
+  const restoredTables = tablesTakenCount(versioned, by);
   return { restoredTables, restoredRows, valueNotes: fenced.valueNotes };
 }
 
