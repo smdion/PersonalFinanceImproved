@@ -1,10 +1,11 @@
 import { roundToCents } from "../../../utils/math";
 import { computeNiit } from "../../tax/niit";
 import {
-  computeLtcgTax,
   getLtcgRate,
+  scheduleDGainsTax,
   toLtcgTaxableIncome,
 } from "@/lib/pure/tax/ltcg";
+import { estimateEffectiveTaxRate } from "../tax-estimation";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 import type { growLtcgBrackets } from "../bracket-growth";
 import type { priceYearTax } from "./tax-year-settlement";
@@ -29,8 +30,8 @@ export function repriceConversionYear(
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   let taxCost = taxFromSlots.taxCost;
   // Roth conversions are ordinary income and can push the gains into a higher
-  // LTCG bracket: recompute on the revised ordinary income, converted once to
-  // the taxable income the LTCG calls below use (they're its only readers).
+  // LTCG bracket: the gains are re-priced on the revised ordinary income, and
+  // the shown rate reads it as taxable income.
   let postConversionLtcgRate: number;
   const revisedOrdinary = toLtcgTaxableIncome(
     actualTaxableIncome + rothConversionAmount,
@@ -38,11 +39,16 @@ export function repriceConversionYear(
   );
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
-      computeLtcgTax(
-        revisedOrdinary,
+      scheduleDGainsTax(
+        actualTaxableIncome + rothConversionAmount,
         brokerageGainsPortion,
         filingStatus,
-        grownLtcgBrackets,
+        {
+          ...taxRates,
+          standardDeduction: grownStandardDeduction,
+          ltcgBrackets: grownLtcgBrackets,
+        },
+        estimateEffectiveTaxRate,
       ),
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost

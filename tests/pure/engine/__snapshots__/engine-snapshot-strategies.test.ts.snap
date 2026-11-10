@@ -76,9 +76,9 @@ exports[`engine snapshots by withdrawal strategy (pins current behavior) > const
     "2049 age 89 | expenses 67050.00 | spending 113799.58 | withdrawal 67050.00 | tax 6188.74 | ss 52938.32 | rmd 0.00 | action floor_applied | end 365145.10",
     "2050 age 90 | expenses 67050.00 | spending 114422.10 | withdrawal 67050.00 | tax 6889.68 | ss 54261.78 | rmd 0.00 | action floor_applied | end 317471.28",
     "2051 age 91 | expenses 67050.00 | spending 115107.41 | withdrawal 67050.00 | tax 7560.91 | ss 55618.32 | rmd 0.00 | action floor_applied | end 266698.66",
-    "2052 age 92 | expenses 67050.00 | spending 115854.22 | withdrawal 67050.00 | tax 8204.56 | ss 57008.78 | rmd 0.00 | action floor_applied | end 212625.82",
-    "2053 age 93 | expenses 67050.00 | spending 116661.34 | withdrawal 67050.00 | tax 8822.66 | ss 58434.00 | rmd 0.00 | action floor_applied | end 155038.25",
-    "2054 age 94 | expenses 67050.00 | spending 116239.80 | withdrawal 67050.00 | tax 10705.05 | ss 59894.85 | rmd 0.00 | action floor_applied | end 93707.49",
+    "2052 age 92 | expenses 67050.00 | spending 115880.47 | withdrawal 67050.00 | tax 8178.31 | ss 57008.78 | rmd 0.00 | action floor_applied | end 212625.82",
+    "2053 age 93 | expenses 67050.00 | spending 116967.10 | withdrawal 67050.00 | tax 8516.90 | ss 58434.00 | rmd 0.00 | action floor_applied | end 155038.25",
+    "2054 age 94 | expenses 67050.00 | spending 117298.47 | withdrawal 67050.00 | tax 9646.38 | ss 59894.85 | rmd 0.00 | action floor_applied | end 93707.49",
   ],
 }
 `;
@@ -159,8 +159,8 @@ exports[`engine snapshots by withdrawal strategy (pins current behavior) > endow
     "2049 age 89 | expenses 67050.00 | spending 113799.58 | withdrawal 67050.00 | tax 6188.74 | ss 52938.32 | rmd 0.00 | action floor_applied | end 346355.02",
     "2050 age 90 | expenses 67050.00 | spending 114422.10 | withdrawal 67050.00 | tax 6889.68 | ss 54261.78 | rmd 0.00 | action floor_applied | end 297459.85",
     "2051 age 91 | expenses 67050.00 | spending 115107.41 | withdrawal 67050.00 | tax 7560.91 | ss 55618.32 | rmd 0.00 | action floor_applied | end 245386.49",
-    "2052 age 92 | expenses 67050.00 | spending 115854.22 | withdrawal 67050.00 | tax 8204.56 | ss 57008.78 | rmd 0.00 | action floor_applied | end 189928.36",
-    "2053 age 93 | expenses 67050.00 | spending 116661.34 | withdrawal 67050.00 | tax 8822.66 | ss 58434.00 | rmd 0.00 | action floor_applied | end 130865.45",
+    "2052 age 92 | expenses 67050.00 | spending 115880.47 | withdrawal 67050.00 | tax 8178.31 | ss 57008.78 | rmd 0.00 | action floor_applied | end 189928.36",
+    "2053 age 93 | expenses 67050.00 | spending 116967.10 | withdrawal 67050.00 | tax 8516.90 | ss 58434.00 | rmd 0.00 | action floor_applied | end 130865.45",
     "2054 age 94 | expenses 67050.00 | spending 115400.09 | withdrawal 67050.00 | tax 11544.76 | ss 59894.85 | rmd 0.00 | action floor_applied | end 67963.45",
   ],
 }
@@ -237,8 +237,8 @@ exports[`engine snapshots by withdrawal strategy (pins current behavior) > forgo
     "2050 age 90 | expenses 111905.51 | spending 111905.51 | withdrawal 57643.73 | tax 0.00 | ss 54261.78 | rmd 0.00 | action - | end 848805.06",
     "2051 age 91 | expenses 114703.15 | spending 114703.15 | withdrawal 59084.83 | tax 0.00 | ss 55618.32 | rmd 0.00 | action - | end 841052.04",
     "2052 age 92 | expenses 117570.73 | spending 117570.73 | withdrawal 61189.73 | tax 627.78 | ss 57008.78 | rmd 0.00 | action - | end 830553.36",
-    "2053 age 93 | expenses 120510.00 | spending 120510.00 | withdrawal 71496.54 | tax 9420.54 | ss 58434.00 | rmd 0.00 | action - | end 808395.51",
-    "2054 age 94 | expenses 123522.75 | spending 123522.75 | withdrawal 74541.80 | tax 10913.90 | ss 59894.85 | rmd 0.00 | action - | end 781554.20",
+    "2053 age 93 | expenses 120510.00 | spending 120509.99 | withdrawal 70840.37 | tax 8764.38 | ss 58434.00 | rmd 0.00 | action - | end 809094.33",
+    "2054 age 94 | expenses 123522.75 | spending 123522.76 | withdrawal 73443.63 | tax 9815.72 | ss 59894.85 | rmd 0.00 | action - | end 783468.00",
   ],
 }
 `;
@@ -313,9 +313,9 @@ exports[`engine snapshots by withdrawal strategy (pins current behavior) > rmd_s
     "2049 age 89 | expenses 66645.16 | spending 118218.21 | withdrawal 66645.16 | tax 1365.27 | ss 52938.32 | rmd 1345.23 | action rmd_based | end 844627.47",
     "2050 age 90 | expenses 69231.76 | spending 123493.54 | withdrawal 69231.76 | tax 0.00 | ss 54261.78 | rmd 0.00 | action rmd_based | end 825796.43",
     "2051 age 91 | expenses 71808.39 | spending 127426.71 | withdrawal 71808.39 | tax 0.00 | ss 55618.32 | rmd 0.00 | action rmd_based | end 802997.26",
-    "2052 age 92 | expenses 74351.60 | spending 122324.45 | withdrawal 74351.60 | tax 9035.93 | ss 57008.78 | rmd 0.00 | action rmd_based | end 776007.62",
-    "2053 age 93 | expenses 76832.44 | spending 124138.29 | withdrawal 76832.44 | tax 11128.15 | ss 58434.00 | rmd 0.00 | action rmd_based | end 744621.57",
-    "2054 age 94 | expenses 78381.22 | spending 126069.91 | withdrawal 78381.22 | tax 12206.16 | ss 59894.85 | rmd 0.00 | action rmd_based | end 709545.97",
+    "2052 age 92 | expenses 74351.60 | spending 122695.74 | withdrawal 74351.60 | tax 8664.64 | ss 57008.78 | rmd 0.00 | action rmd_based | end 776007.62",
+    "2053 age 93 | expenses 76832.44 | spending 124855.82 | withdrawal 76832.44 | tax 10410.62 | ss 58434.00 | rmd 0.00 | action rmd_based | end 744621.57",
+    "2054 age 94 | expenses 78381.22 | spending 126719.19 | withdrawal 78381.22 | tax 11556.88 | ss 59894.85 | rmd 0.00 | action rmd_based | end 709545.97",
   ],
 }
 `;

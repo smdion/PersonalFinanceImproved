@@ -400,7 +400,7 @@ export function runDecumulationYear(
       grownLtcgBrackets,
       priceTax,
       taxableSS,
-      taxRates,
+      { ...taxRates, taxBrackets: grownTaxBrackets },
       totalTraditionalWithdrawal,
       ssIncome,
     );

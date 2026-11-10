@@ -35,6 +35,8 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 
 const y2026 = readTaxData().years["2026"]!;
 const mfjTable = y2026.withholding.tables.MFJ!.standard as WithholdingBracket[];
+const singleTable = y2026.withholding.tables.Single!
+  .standard as WithholdingBracket[];
 const ltcg2026 = y2026.ltcg!.brackets as LtcgBracketTable;
 
 /** One MFJ 2026 conversion at the 12% target, after `traditional` of
@@ -146,6 +148,35 @@ describe("answer key: the conversion amount and its tax", () => {
       { gains: gainsTax, rate: r.postConversionLtcgRate, niit: r.niitAmount },
       { gains: 6_000, rate: 0.15, niit: 0 },
     );
+  });
+});
+
+describe("answer key: a conversion year's gains, line 25", () => {
+  it("tax/L6:conversion [TAX-17] the re-priced gains stop at the 12% band's cost: 114", () => {
+    // tax/L6 with part of its ordinary income a conversion: 2026 Single,
+    // draws 55,550 + conversion 10,000 = 65,550 ordinary before the 16,100
+    // deduction, gains 950. L23 stacks the 950 at 15% (142.50); line 24
+    // less the ordinary tax is 5,800 − 5,686 = 114 (L6's figures), so the
+    // re-priced gains are 114.00.
+    let gainsTax = NaN;
+    repriceConversionYear(
+      { taxCost: 0, brokerageTaxCost: 0, rothTaxableGrowth: 0 } as never,
+      55_550,
+      10_000,
+      16_100,
+      "Single",
+      950,
+      ltcg2026,
+      ((_ss: number, brokerageTaxCost: number) => {
+        gainsTax = brokerageTaxCost;
+        return { taxCost: brokerageTaxCost };
+      }) as never,
+      0,
+      { taxBrackets: singleTable, taxMultiplier: 1 } as never,
+      55_550,
+      0,
+    );
+    cents(gainsTax, 114);
   });
 });
 

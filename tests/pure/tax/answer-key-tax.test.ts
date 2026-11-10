@@ -315,7 +315,6 @@ function additionalMedicare(status: ReturnFilingStatus, jobs: number[]) {
 }
 
 const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
-const LINE_25_CAP = `v0.11 Tax "Gap years have no 65+ deductions" (Schedule D line 25 cap, min(L23, L24))`;
 
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
 // L8 provisional income = other + ½ benefits (+ tax-exempt interest).
@@ -619,48 +618,36 @@ describe("answer key: long-term gains", () => {
   // Line 25 cap (spec LT-4): the tax is the smaller of line 23 (stacked)
   // and line 24 (TAX on all of T). Where the 0% top sits under the 12%
   // band's top, a gain at 15% would cost more than at 12%. 2026 Single:
-  // 50,400 − 49,450 = 950 of such room. `computeLtcgTax`
-  // (`lib/pure/tax/ltcg.ts`) never sees the ordinary schedule, so no caller
-  // caps it.
-  describe("tax/L6 [TAX-17]", () => {
-    // 2026 Single, T 50,400, G 950 (ordinary 65,550 before the 16,100
-    // deduction): L5 49,450, TAX = 1,240 + 12% × 37,050 = 5,686; L17 950
-    // × 15% = 142.50; L23 5,828.50. L24 = TAX(50,400) = 1,240 + 12% ×
-    // 38,000 = 5,800. Line 25: 5,800.00. Today 5,828.50 (key).
-    xfail({
-      id: "tax/L6 [TAX-17]",
-      todo: LINE_25_CAP,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 49_450 + 16_100,
-          gains: 950,
-          deductions: 16_100,
-        }),
-      expected: 5_800,
-      today: 5_828.5,
-    });
+  // 50,400 − 49,450 = 950 of such room.
+  it("tax/L6 [TAX-17] 2026 Single, T 50,400, G 950: line 25 5,800", () => {
+    // Ordinary 65,550 before the 16,100 deduction: L5 49,450, TAX = 1,240
+    // + 12% × 37,050 = 5,686; L17 950 × 15% = 142.50; L23 5,828.50. L24 =
+    // TAX(50,400) = 1,240 + 12% × 38,000 = 5,800. Line 25: 5,800.00.
+    cents(
+      yearTax({
+        year: 2026,
+        status: "Single",
+        ordinary: 49_450 + 16_100,
+        gains: 950,
+        deductions: 16_100,
+      }),
+      5_800,
+    );
   });
 
-  describe("tax/L7 [TAX-17]", () => {
-    // 2026 Single, T 50,400, G 1,000: L5 49,400, TAX = 1,240 + 12% ×
-    // 37,000 = 5,680; L9 50 at 0%, L17 950 × 15% = 142.50; L23 5,822.50;
-    // L24 5,800. Line 25: 5,800.00. Today 5,822.50 (key).
-    xfail({
-      id: "tax/L7 [TAX-17]",
-      todo: LINE_25_CAP,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 49_400 + 16_100,
-          gains: 1_000,
-          deductions: 16_100,
-        }),
-      expected: 5_800,
-      today: 5_822.5,
-    });
+  it("tax/L7 [TAX-17] 2026 Single, T 50,400, G 1,000: line 25 5,800", () => {
+    // L5 49,400, TAX = 1,240 + 12% × 37,000 = 5,680; L9 50 at 0%, L17 950
+    // × 15% = 142.50; L23 5,822.50; L24 5,800. Line 25: 5,800.00.
+    cents(
+      yearTax({
+        year: 2026,
+        status: "Single",
+        ordinary: 49_400 + 16_100,
+        gains: 1_000,
+        deductions: 16_100,
+      }),
+      5_800,
+    );
   });
 
   describe("tax/X3 [TAX-16] {return 2025 MFJ}", () => {

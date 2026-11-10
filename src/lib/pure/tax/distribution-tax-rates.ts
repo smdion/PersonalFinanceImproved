@@ -98,7 +98,7 @@ export function buildDistributionTaxRates({
     }
     // LTCG fallback: the real LTCG bracket rate at this income (DB brackets when seeded, else
     // 2026 federal defaults). Only used when a caller lacks filingStatus; the primary path
-    // prices with computeLtcgTax directly.
+    // prices with scheduleDGainsTax directly.
     effectiveBrokerageRate = filingStatus
       ? getLtcgRate(retirementIncome, filingStatus, ltcgBracketData)
       : dbBrokerageRate;

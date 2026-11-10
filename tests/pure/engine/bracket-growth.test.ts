@@ -670,11 +670,10 @@ describe("end-to-end: LTCG brackets grow through the Roth-conversion recompute p
     // The LTCG-specific contribution to the delta -- isolated from the
     // ordinary-bracket growth both scenarios share equally -- must clear
     // a threshold verified (by mutation) to sit between the fixed
-    // (~$6,521) and mutated (~$5,088) values: reverting the
-    // computeLtcgTax call inside the rothConversionAmount > 0 branch in
-    // decumulation-year.ts back to the raw taxRates.ltcgBrackets drops
-    // this gap below the threshold below.
-    expect(largeGainsDelta - nearZeroGainsDelta).toBeGreaterThan(5500);
+    // (~$5,217) and mutated (~$4,070) values: handing the conversion
+    // year's gains tax (`conversion-year-reprice.ts`) the raw
+    // taxRates.ltcgBrackets drops this gap below the threshold below.
+    expect(largeGainsDelta - nearZeroGainsDelta).toBeGreaterThan(4600);
   });
 });
 

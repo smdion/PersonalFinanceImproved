@@ -102,3 +102,45 @@ export function ltcgRoomForRate(
   }
   return Infinity;
 }
+
+/** A year's long-term gains tax (Schedule D Tax Worksheet): stacked on
+ *  ordinary taxable income, at most their cost at ordinary rates above it
+ *  (line 25). `ordinaryRate` prices ordinary income as the engine does. */
+export function scheduleDGainsTax<Bracket>(
+  grossOrdinaryIncome: number,
+  gains: number,
+  filingStatus: ReturnFilingStatus,
+  taxRates: {
+    taxBrackets?: Bracket[];
+    taxMultiplier?: number;
+    standardDeduction?: number;
+    ltcgBrackets: LtcgBracketTable;
+  },
+  ordinaryRate: (
+    income: number,
+    brackets: Bracket[],
+    taxMultiplier?: number,
+    standardDeduction?: number,
+  ) => number,
+): number {
+  const stacked = computeLtcgTax(
+    toLtcgTaxableIncome(grossOrdinaryIncome, taxRates.standardDeduction),
+    gains,
+    filingStatus,
+    taxRates.ltcgBrackets,
+  );
+  const brackets = taxRates.taxBrackets;
+  if (!brackets || brackets.length === 0) return stacked;
+  const ordinaryTax = (income: number) =>
+    income *
+    ordinaryRate(
+      income,
+      brackets,
+      taxRates.taxMultiplier,
+      taxRates.standardDeduction,
+    );
+  return Math.min(
+    stacked,
+    ordinaryTax(grossOrdinaryIncome + gains) - ordinaryTax(grossOrdinaryIncome),
+  );
+}

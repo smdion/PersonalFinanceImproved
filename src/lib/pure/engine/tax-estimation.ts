@@ -9,7 +9,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { computeLtcgTax, toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
+import { scheduleDGainsTax } from "@/lib/pure/tax/ltcg";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   ssTaxThresholdsFor,
@@ -249,7 +249,7 @@ interface ComputeTaxFromSlotsInput {
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     /** Converts `actualTaxableIncome` (gross) to the taxable income the LTCG
-     *  lookup below uses (`toLtcgTaxableIncome`); omitted subtracts nothing. */
+     *  lookup below uses (`scheduleDGainsTax`); omitted subtracts nothing. */
     standardDeduction?: number;
   };
   filingStatus: ReturnFilingStatus | null | undefined;
@@ -353,19 +353,17 @@ export function computeTaxFromSlots(
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,
     );
-    // Progressive LTCG tax: gains stack on ordinary income across 0%/15%/20%.
-    // `actualTaxableIncome` is gross (right for the W-4 brackets above), so
-    // it becomes taxable income for the LTCG brackets first.
+    // Gains stack on ordinary income across 0%/15%/20%, at most their cost at
+    // ordinary rates (line 25). `actualTaxableIncome` is gross, as the W-4
+    // brackets above take it; the gains tax converts it first.
     brokerageTaxCost = filingStatus
       ? roundToCents(
-          computeLtcgTax(
-            toLtcgTaxableIncome(
-              actualTaxableIncome,
-              taxRates.standardDeduction,
-            ),
+          scheduleDGainsTax(
+            actualTaxableIncome,
             brokerageGainsPortion,
             filingStatus,
-            taxRates.ltcgBrackets,
+            taxRates,
+            estimateEffectiveTaxRate,
           ),
         )
       : roundToCents(brokerageGainsPortion * taxRates.brokerage);
