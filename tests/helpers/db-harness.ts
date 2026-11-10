@@ -90,10 +90,10 @@ export function clearSimulationPresets(
 
 export async function createTestDb(): Promise<TestDbContext> {
   const sqlite = openTestSqlite();
-  const db = drizzle(sqlite, { schema: sqliteSchema });
+  const plainDb = drizzle(sqlite, { schema: sqliteSchema });
 
   // The same transactions a SQLite install runs: real commit and rollback.
-  withAsyncTransactions(db, sqlite);
+  const db = withAsyncTransactions(plainDb, sqlite);
 
   const rawDb = db as unknown as DbType;
 

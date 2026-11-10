@@ -112,7 +112,7 @@ Key files, adding a behavior field, and contribution stubs: DESIGN.md § Data-Dr
 
 ## Pure Business Logic Boundary
 
-**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: coupling logic to I/O makes it untestable regardless of database, and on SQLite's one connection a transaction held open across an `await` makes every other transaction wait, while plain queries from other requests run inside it and see its uncommitted work.
+**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: coupling logic to I/O makes it untestable regardless of database, and on SQLite's one connection a transaction held open across an `await` makes every other transaction and every query from another request wait.
 
 1. **Pure functions** (`src/lib/pure/<area>/`, one folder per area; the engine is `engine/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module, except `lib/db/shapes/` (types and zod schemas, no I/O), the layer manifest's `shapes`. Never import from barrel re-exports that pull in DB code. [check: `pnpm check:layers`; lint: `no-restricted-imports`]
 2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function. [human]

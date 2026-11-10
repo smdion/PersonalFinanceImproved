@@ -1,9 +1,10 @@
 /**
- * Async `db.transaction(async (tx) => …)` on SQLite (better-sqlite3 rejects a promise-returning
- * callback): commits on resolve, rolls back on throw, one at a time. A nested call, or one made
- * inside a running transaction (AsyncLocalStorage), is a savepoint so it never queues behind it.
+ * Async `db.transaction(async (tx) => …)` on SQLite: commits on resolve, rolls back on throw,
+ * one at a time; a call inside a running one (AsyncLocalStorage) is a savepoint, and a query
+ * awaited outside it waits for it to end (on the one connection it would otherwise join it).
  */
 import { AsyncLocalStorage } from "node:async_hooks";
+import { entityKind } from "drizzle-orm";
 
 type RawSqlite = {
   exec(sql: string): unknown;
@@ -39,6 +40,38 @@ export function withAsyncTransactions<T extends object>(
       key === "transaction" ? nested : Reflect.get(target, key, receiver),
   });
 
+  const outside = () => sqlite.inTransaction && !inTransaction.getStore();
+  const isBuilder = (o: unknown): o is object =>
+    typeof o === "object" &&
+    o !== null &&
+    !(o instanceof Promise) &&
+    typeof o.constructor === "function" &&
+    entityKind in o.constructor;
+  /** `o` with every query built from it, when awaited outside every
+   *  transaction while one is open, run after that transaction ends;
+   *  `tables` gates each property too (`db.query.<table>`). */
+  const gate = <O extends object>(o: O, tables = false): O =>
+    new Proxy(o, {
+      get: (target, key) => {
+        const value: unknown = Reflect.get(target, key, target);
+        if (typeof value !== "function") {
+          const isObject = typeof value === "object" && value !== null;
+          if (isObject && key === "query") return gate(value, true);
+          return isObject && tables ? gate(value) : value;
+        }
+        if (key === "transaction") return value;
+        if (key === "then")
+          return (...args: unknown[]) =>
+            outside()
+              ? queue.then(() => value.apply(target, args))
+              : value.apply(target, args);
+        return (...args: unknown[]) => {
+          const out: unknown = value.apply(target, args);
+          return isBuilder(out) ? gate(out) : out;
+        };
+      },
+    });
+
   (db as T & WithTransaction).transaction = (fn: (tx: T) => unknown) => {
     if (inTransaction.getStore()) return nested(fn);
     const run = async () => {
@@ -56,5 +89,5 @@ export function withAsyncTransactions<T extends object>(
     queue = turn.catch(() => undefined);
     return turn;
   };
-  return db;
+  return gate(db);
 }
