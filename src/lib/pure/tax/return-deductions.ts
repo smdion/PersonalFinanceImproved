@@ -1,5 +1,5 @@
 /**
- * OBBBA senior deduction: $6,000/person 65+, 2025-2028, phased out 6% of MAGI over $75k/$150k MFJ,
+ * OBBBA senior deduction: $6,000/person 65+, 2025-2028, each phased out 6% of MAGI over $75k/$150k MFJ,
  * on top of §63(f). Folded into the standard deduction before routing, with last year's MAGI as
  * the phaseout basis (this year's isn't known yet), so decumulation year 1 gets $0.
  */
@@ -17,8 +17,8 @@ type ObbbaSeniorDeductionInput = {
    *  (`obbba_senior_deduction_per_person`). Undefined ⇒ not seeded for this
    *  tax year ⇒ $0 (same convention as every other deduction figure here). */
   perPerson: number | undefined;
-  /** Filing-status-resolved phaseout start ($150k MFJ / $75k Single/HoH/MFS)
-   *  — from `contribution_limits`. */
+  /** Filing-status-resolved phaseout start ($150k MFJ / $75k Single, HOH;
+   *  MFS gets no senior deduction) — from `contribution_limits`. */
   phaseoutStart: number | undefined;
   /** 6% per the statute — from `contribution_limits`
    *  (`obbba_senior_deduction_phaseout_rate`). */

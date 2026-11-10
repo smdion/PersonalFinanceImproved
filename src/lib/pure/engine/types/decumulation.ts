@@ -99,7 +99,7 @@ export type DecumulationDefaults = {
      *  (return-deductions.ts). */
     obbbaSeniorDeductionPerPerson?: number;
     /** Filing-status-resolved MAGI phaseout start ($150k MFJ / $75k
-     *  Single/HoH/MFS) — from `contribution_limits`
+     *  Single, HOH; none for MFS) — from `contribution_limits`
      *  (`obbba_senior_deduction_phaseout_start_{mfj,unmarried}`). */
     obbbaSeniorPhaseoutStart?: number;
     /** OBBBA phaseout rate — 6% of MAGI over the threshold, per the statute.
