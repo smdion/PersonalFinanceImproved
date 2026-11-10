@@ -76,6 +76,12 @@ function passes(projection: ProjectionResult): boolean {
   // Survival: the one plan judge (retirement money lasts, every year's
   // spending funded — penalty-locked and Portfolio-only money included).
   if (!assessPlan(projection).succeeded) return false;
+  return meetsFirstYearNeed(projection);
+}
+
+/** Coast FIRE's own test on top of survival: the strategy's first
+ *  retirement year spends at least the household's stated need. */
+export function meetsFirstYearNeed(projection: ProjectionResult): boolean {
   const retirementYear = firstRetirementYear(projection);
   if (!retirementYear) return false;
   // Against the stated need, never `sustainableWithdrawal`. With no retirement budget set
