@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { backfillPerformanceAccountIds } from "@/lib/db/migrate/backfill-perf-ids";
-import { backfillMappingLocalIds } from "@/lib/db/migrate/backfill-local-ids";
 import { backfillJointPersonId } from "@/lib/db/migrate/backfill-joint-person-id";
 import { log } from "@/lib/logger";
 import { cronRoute } from "@/lib/auth/cron";
@@ -32,16 +31,6 @@ async function runBackfills(): Promise<Response> {
       error: err instanceof Error ? err.message : String(err),
     });
     results.perfIds = "failed";
-  }
-
-  try {
-    await backfillMappingLocalIds(db);
-    results.localIds = "ok";
-  } catch (err) {
-    log("error", "backfill_local_ids_failed", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    results.localIds = "failed";
   }
 
   try {

@@ -3351,14 +3351,6 @@
       "count": 1
     }
   },
-  "src/lib/db/migrate/backfill-local-ids.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
-    },
-    "ratchet/no-abbreviation": {
-      "count": 6
-    }
-  },
   "src/lib/db/migrate/backfill-perf-ids.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
@@ -5072,7 +5064,7 @@
   },
   "src/server/routers/net-worth/summary.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -5454,9 +5446,6 @@
     }
   },
   "src/server/services/net-worth/year-assets.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 1
     }

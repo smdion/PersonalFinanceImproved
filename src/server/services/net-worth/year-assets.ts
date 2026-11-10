@@ -86,21 +86,9 @@ export async function computeAssetSummary(
   const conn = apiConnections.find((c) => c.service === activeBudgetApi);
   const mappings = conn?.accountMappings ?? [];
   const mappedAssetIds = new Set(
-    mappings
-      .filter(
-        (m) =>
-          m.assetId != null || (m.localId ?? m.localName).startsWith("asset:"),
-      )
-      .map(
-        (m) =>
-          m.assetId ?? parseInt((m.localId ?? m.localName).split(":")[1]!, 10),
-      ),
+    mappings.flatMap((m) => (m.assetId != null ? [m.assetId] : [])),
   );
-  // Build mortgage mapping lookup using typed fields with legacy fallback
-  const mortgageMappings = mappings.filter(
-    (m) =>
-      m.loanId != null || (m.localId ?? m.localName).startsWith("mortgage:"),
-  );
+  const mortgageMappings = mappings.filter((m) => m.loanId != null);
 
   // Cash sync status
   const { cash: currentCash, source: cashSource } = await getEffectiveCash(
@@ -122,12 +110,9 @@ export async function computeAssetSummary(
 
   // Determine sync status for house value and mortgage
   const houseValueSynced = activeLoan
-    ? mortgageMappings.some((m) => {
-        if (m.loanId === activeLoan.id && m.loanMapType === "propertyValue")
-          return true;
-        const lid = m.localId ?? m.localName;
-        return lid === `mortgage:${activeLoan.id}:propertyValue`;
-      })
+    ? mortgageMappings.some(
+        (m) => m.loanId === activeLoan.id && m.loanMapType === "propertyValue",
+      )
     : false;
   const mortgageFromFeed =
     activeLoan != null &&
@@ -135,12 +120,9 @@ export async function computeAssetSummary(
   const mortgageSynced =
     mortgageFromFeed ||
     (activeLoan
-      ? mortgageMappings.some((m) => {
-          if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
-            return true;
-          const lid = m.localId ?? m.localName;
-          return lid === `mortgage:${activeLoan.id}:loanBalance`;
-        })
+      ? mortgageMappings.some(
+          (m) => m.loanId === activeLoan.id && m.loanMapType === "loanBalance",
+        )
       : false);
 
   const currentYear = ctx.scope.asOf.getFullYear();

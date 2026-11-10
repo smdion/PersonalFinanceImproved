@@ -11,10 +11,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { log } from "@/lib/logger";
 import { loansFedBySimplefin } from "./loan-feed";
-import {
-  isPullMapping,
-  mappingsWithTypedIds,
-} from "@/lib/pure/sync/account-mapping";
+import { isPullMapping } from "@/lib/pure/sync/account-mapping";
 import { toDecimalColumn } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
@@ -46,18 +43,17 @@ export async function applyPullMapping(
   },
 ): Promise<ApplyPullMappingResult> {
   const currentYear = pulledAt.getFullYear();
-  const localId = mapping.localId ?? mapping.localName; // backward compat
 
   // "cash" / "creditCard" are pseudo-accounts summed live from the accounts
   // cache (getEffectiveCash / getEffectiveCreditCardDebt), with no single local
-  // row to write; the asset branch below would write a row named "Cash".
-  if (localId === "cash" || localId === "creditCard") {
+  // row to write.
+  if (mapping.localId === "cash" || mapping.localId === "creditCard") {
     return { applied: false };
   }
 
   // A debt's balance, written like the mortgage loan balance below.
-  if (mapping.debtId != null || localId.startsWith("debt:")) {
-    const debtId = mapping.debtId ?? parseInt(localId.split(":")[1]!, 10);
+  if (mapping.debtId != null) {
+    const debtId = mapping.debtId;
     const updated = await db
       .update(schema.debts)
       .set({
@@ -75,10 +71,9 @@ export async function applyPullMapping(
       : { applied: false };
   }
 
-  // Prefer typed fields; fall back to prefix parsing for legacy mappings.
-  if (mapping.loanId || localId.startsWith("mortgage:")) {
-    const loanId = mapping.loanId ?? Number(localId.split(":")[1]);
-    const mapType = mapping.loanMapType ?? localId.split(":")[2]; // 'propertyValue' or 'loanBalance'
+  if (mapping.loanId != null) {
+    const loanId = mapping.loanId;
+    const mapType = mapping.loanMapType;
 
     if (mapType === "propertyValue") {
       await db
@@ -112,36 +107,27 @@ export async function applyPullMapping(
     return { applied: false };
   }
 
-  // Only target kinds this pipeline knows are written. A portfolio
-  // (`performance:`) account is push-only (the asset branch would count it
-  // twice); unknown prefixes are skipped; no prefix is a legacy asset mapping.
-  const isAssetTarget =
-    mapping.assetId != null ||
-    localId.startsWith("asset:") ||
-    !/^[a-z]+:\d/.test(localId);
-  if (mapping.performanceAccountId != null || !isAssetTarget) {
+  // Only an asset is written below. A portfolio account is push-only (the
+  // asset branch would count it twice); a mapping with no typed id (a name
+  // the credentials migration matched to no asset) is skipped until re-mapped.
+  if (mapping.assetId == null) {
     log("warn", "apply_pull_mapping.unsupported_target", {
-      localId,
-      localName: mapping.localName,
+      localId: mapping.localId ?? null,
       remoteAccountId: mapping.remoteAccountId,
+      typed: mapping.performanceAccountId != null,
     });
     return { applied: false };
   }
 
-  // Resolve asset name: prefer the typed ID over the (possibly stale) localName.
-  let assetName = mapping.localName;
-  if (mapping.assetId != null || localId.startsWith("asset:")) {
-    const assetId = mapping.assetId ?? parseInt(localId.split(":")[1]!, 10);
-    const assetRow = await db
-      .select()
-      .from(schema.otherAssetItems)
-      .where(eq(schema.otherAssetItems.id, assetId))
-      .then(firstRow);
-    // Typed mapping whose target row doesn't exist (e.g. asset deleted): skip
-    // rather than resurrect the asset under the stale localName.
-    if (!assetRow) return { applied: false };
-    assetName = assetRow.name;
-  }
+  // The asset's name, from its row (the mapping's localName may be stale).
+  const assetRow = await db
+    .select()
+    .from(schema.otherAssetItems)
+    .where(eq(schema.otherAssetItems.id, mapping.assetId))
+    .then(firstRow);
+  // Its row is gone (the asset was deleted): skip rather than resurrect it.
+  if (!assetRow) return { applied: false };
+  const assetName = assetRow.name;
 
   const existing = await db
     .select()
@@ -179,9 +165,9 @@ export async function clearUnmappedPulledBalances(db: Db): Promise<void> {
   const conns = await db
     .select({ accountMappings: schema.apiConnections.accountMappings })
     .from(schema.apiConnections);
-  const pulled = mappingsWithTypedIds(
-    conns.flatMap((c) => c.accountMappings ?? []),
-  ).filter(isPullMapping);
+  const pulled = conns
+    .flatMap((c) => c.accountMappings ?? [])
+    .filter(isPullMapping);
   const debtIds = pulled.flatMap((m) => (m.debtId != null ? [m.debtId] : []));
   const loanIds = [
     ...pulled.flatMap((m) =>

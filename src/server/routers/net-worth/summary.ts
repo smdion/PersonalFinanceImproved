@@ -118,23 +118,10 @@ export const summaryProcedures = {
 
       // Enrich other-asset items with API sync status (same pattern as assets.ts)
       const apiConn = apiConnections.find((c) => c.service === activeBudgetApi);
-      const apiMappings = (apiConn?.accountMappings ?? []) as {
-        localId?: string;
-        localName?: string;
-        assetId?: number;
-      }[];
       const mappedAssetIds = new Set(
-        apiMappings
-          .filter(
-            (m) =>
-              m.assetId != null ||
-              (m.localId ?? m.localName ?? "").startsWith("asset:"),
-          )
-          .map(
-            (m) =>
-              m.assetId ??
-              parseInt((m.localId ?? m.localName ?? "").split(":")[1]!, 10),
-          ),
+        (apiConn?.accountMappings ?? []).flatMap((m) =>
+          m.assetId != null ? [m.assetId] : [],
+        ),
       );
       const otherAssetItems = otherAssetsResult.items.map((item) => ({
         ...item,

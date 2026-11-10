@@ -137,7 +137,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
     expect(result).toEqual({ applied: false });
   });
 
-  it("still writes a legacy plain-name mapping as an asset", async () => {
+  it("skips a mapping with no typed id (a name no asset held): it is re-mapped first", async () => {
     const result = await applyPullMapping(ctx.rawDb, {
       mapping: {
         localName: "Old Savings Bond",
@@ -148,20 +148,27 @@ describe("applyPullMapping — only known target kinds are written", () => {
       service: "actual",
       pulledAt: new Date(year, 5, 15),
     });
-    expect(result).toEqual({ applied: true, kind: "asset" });
+    expect(result).toEqual({ applied: false });
     const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
-    expect(rows.find((r) => r.name === "Old Savings Bond")).toBeDefined();
+    expect(rows.find((r) => r.name === "Old Savings Bond")).toBeUndefined();
   });
 
   it.each([NaN, Infinity])(
     "refuses a balance of %s and writes nothing",
     async (apiBalance) => {
+      const asset = ctx.db
+        .insert(ctx.schema.otherAssetItems)
+        .values({ name: `Broken ${apiBalance}`, year, value: "1" })
+        .returning()
+        .get();
       await expect(
         applyPullMapping(ctx.rawDb, {
           mapping: {
+            localId: `asset:${asset.id}`,
             localName: `Broken ${apiBalance}`,
             remoteAccountId: "r3",
             syncDirection: "pull",
+            assetId: asset.id,
           },
           apiBalance,
           service: "actual",
@@ -169,9 +176,7 @@ describe("applyPullMapping — only known target kinds are written", () => {
         }),
       ).rejects.toThrow("Refused to store an asset value from the budget app");
       const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
-      expect(
-        rows.find((r) => r.name === `Broken ${apiBalance}`),
-      ).toBeUndefined();
+      expect(rows.find((r) => r.id === asset.id)).toEqual(asset);
     },
   );
 });
@@ -256,6 +261,7 @@ describe("applyPullMapping — debts, and clearing what nothing pulls", () => {
             localName: "Car loan",
             remoteAccountId: "acct-kept",
             syncDirection: "pull",
+            debtId: kept,
           },
         ],
       })

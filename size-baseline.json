@@ -363,7 +363,7 @@
     "src/server/routers/net-worth/index.ts": 19,
     "src/server/routers/net-worth/portfolio-snapshots.ts": 61,
     "src/server/routers/net-worth/snapshots.ts": 303,
-    "src/server/routers/net-worth/summary.ts": 268,
+    "src/server/routers/net-worth/summary.ts": 255,
     "src/server/routers/performance/finalize-year.ts": 36,
     "src/server/routers/performance/index.ts": 13,
     "src/server/routers/performance/summary.ts": 12,
@@ -387,7 +387,7 @@
     "src/server/routers/sync/core.ts": 12,
     "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utility-bills.ts": 569,
-    "src/server/services/budget/account-balances.ts": 151,
+    "src/server/services/budget/account-balances.ts": 148,
     "src/server/services/budget/active-summary.ts": 297,
     "src/server/services/budget/annual-expenses.ts": 58,
     "src/server/services/budget/linked-items.ts": 183,
@@ -403,7 +403,7 @@
     "src/server/services/investments/sec-facts.ts": 576,
     "src/server/services/net-worth/other-assets.ts": 85,
     "src/server/services/net-worth/snapshot-write.ts": 291,
-    "src/server/services/net-worth/year-assets.ts": 229,
+    "src/server/services/net-worth/year-assets.ts": 211,
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 120,
     "src/server/services/paycheck/job-net-pay.ts": 259,
@@ -1020,7 +1020,7 @@
       "snapshotProcedures.listSnapshots.query()": 213
     },
     "src/server/routers/net-worth/summary.ts": {
-      "summaryProcedures.computeSummary.query()": 243
+      "summaryProcedures.computeSummary.query()": 230
     },
     "src/server/services/budget/active-summary.ts": {
       "computeBudgetActiveSummary": 217
@@ -1049,9 +1049,6 @@
     },
     "src/server/services/net-worth/snapshot-write.ts": {
       "createPortfolioSnapshot": 270
-    },
-    "src/server/services/net-worth/year-assets.ts": {
-      "computeAssetSummary": 168
     },
     "src/server/services/net-worth/year-end-history.ts": {
       "buildYearEndHistory": 492

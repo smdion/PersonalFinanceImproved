@@ -41,8 +41,7 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
   "api_connections.account_mappings": {
     shape: `${SCHEMAS}#accountMappingsSchema`,
     parsed: "nowhere",
-    fallbacks: "services/sync/apply-pull-mapping.ts",
-    note: "typed ids, since the credentials migration (an unmatched name stays)",
+    note: "typed ids, since the credentials migration; a mapping without one is skipped with a warning",
   },
   "api_connections.config": {
     shape: `${SCHEMAS}#apiConfigSchema`,

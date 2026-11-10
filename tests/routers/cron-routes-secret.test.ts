@@ -57,9 +57,6 @@ vi.mock("@/server/services/investments/sec-facts", () => ({
 vi.mock("@/lib/db/migrate/backfill-perf-ids", () => ({
   backfillPerformanceAccountIds: m.backfillPerformanceAccountIds,
 }));
-vi.mock("@/lib/db/migrate/backfill-local-ids", () => ({
-  backfillMappingLocalIds: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/db/migrate/backfill-joint-person-id", () => ({
   backfillJointPersonId: vi.fn().mockResolvedValue(undefined),
 }));
