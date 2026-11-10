@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { missingLimitsWarning } from "@/lib/pure/tax/resolve-tax-year";
+import { requireTaxLimitKey } from "@/lib/config/tax-limit-keys";
 
 const rows = (taxYear: number, keys: string[]) =>
   keys.map((limitType) => ({ taxYear, limitType }));
@@ -51,5 +52,14 @@ describe("missingLimitsWarning", () => {
   it("ignores a key that is not an account limit", () => {
     const all = rows(2025, ["standard_deduction_mfj"]);
     expect(missingLimitsWarning({}, all, 2026)).toEqual([]);
+  });
+
+  it("ignores a household's own key, which the tax math's lookup refuses", () => {
+    const all = rows(2025, ["household_own_cap"]);
+    expect(missingLimitsWarning({}, all, 2026)).toEqual([]);
+    expect(() => requireTaxLimitKey("household_own_cap")).toThrow(
+      "Unknown contribution limit key",
+    );
+    expect(requireTaxLimitKey("401k_catchup_limit").kind).toBe("indexed");
   });
 });

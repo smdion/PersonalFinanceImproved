@@ -5,7 +5,10 @@ import {
   type TaxParamsRowSets,
   type TaxSection,
 } from "@/lib/pure/tax/resolve-tax-params";
-import { ACCOUNT_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
+import {
+  ACCOUNT_LIMIT_KEYS,
+  requireTaxLimitKey,
+} from "@/lib/config/tax-limit-keys";
 
 /**
  * The tax year every per-year slice is resolved on, through one call,
@@ -107,8 +110,8 @@ export function missingLimitsWarning(
   );
   if (missing.size === 0) return [];
   const names = [...missing].map((key) => {
-    const entry = taxLimitKey(key);
-    return entry ? `${entry.group} ${entry.label.toLowerCase()}` : key;
+    const entry = requireTaxLimitKey(key);
+    return `${entry.group} ${entry.label.toLowerCase()}`;
   });
   return [
     `The ${taxYear} tax data has no ${names.join(", ")} limit, so it counts as $0. Add it in Settings → Reference Data.`,
