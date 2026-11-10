@@ -9,6 +9,7 @@ import * as schema from "../schema-pg";
 import { queryRaw } from "../compat";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
+import { parsedJson } from "../migrate/converter-rows";
 
 type ColumnRows = { column_name: string; is_nullable: string }[];
 
@@ -106,4 +107,51 @@ export function restoredValue(
     return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
   }
   return sql`${val}`;
+}
+
+/** Rows with each of `json`'s columns as JSON text, as a SQLite export holds
+ *  them (null stays null). */
+export function rowsAsJsonText(
+  rows: Record<string, unknown>[],
+  json: { has: (column: string) => boolean },
+): Record<string, unknown>[] {
+  return rows.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([c, v]) => [
+        c,
+        json.has(c) && v != null ? JSON.stringify(v) : v,
+      ]),
+    ),
+  );
+}
+
+/** Rows read here in the form a backup from `sourceDialect` holds them, so
+ *  the two can be written together: on PostgreSQL a SQLite source's JSON as
+ *  text, on SQLite a PostgreSQL source's JSON parsed (jsonColumnsFor). */
+export async function rowsInSourceForm(
+  tx: Parameters<typeof queryRaw>[0],
+  tableName: string,
+  rows: Record<string, unknown>[],
+  sourceDialect: "postgres" | "sqlite" | undefined,
+): Promise<Record<string, unknown>[]> {
+  const crosses = isPostgres()
+    ? sourceDialect === "sqlite"
+    : sourceDialect === "postgres";
+  if (!crosses) return rows;
+  const json = await jsonColumnsFor(tx, tableName, sourceDialect);
+  if (isPostgres()) return rowsAsJsonText(rows, json);
+  // Text that isn't JSON is its own value: a string an older import stored
+  // unquoted (docs/FALLBACKS.md), written back quoted.
+  const asValue = (v: string) => {
+    const value = parsedJson(v); // JSON null stays null; non-JSON is undefined
+    return value === undefined ? v : value;
+  };
+  return rows.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([c, v]): [string, unknown] => [
+        c,
+        json.has(c) && typeof v === "string" ? asValue(v) : v,
+      ]),
+    ),
+  );
 }

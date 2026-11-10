@@ -160,7 +160,6 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
     );
     const retention = versionRetention(retentionSetting?.value);
 
-    // Count auto versions
     const autoVersions = await database
       .select({ id: schema.stateVersions.id })
       .from(schema.stateVersions)
@@ -354,6 +353,7 @@ export async function importBackup(
     await withInstallationRows(database, transformedTables, {
       asAdmin: by.asAdmin,
       householdOnly: backup.householdOnly === true,
+      sourceDialect: backup.sourceDialect,
     }),
   );
   const transformedBackup: BackupData = {

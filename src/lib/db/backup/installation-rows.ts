@@ -4,6 +4,7 @@
 import { sql } from "drizzle-orm";
 import { queryRaw } from "../compat";
 import { VERSION_TABLES } from "./version-tables";
+import { rowsInSourceForm } from "./restored-values";
 import {
   RBAC_ADMIN_GROUP_KEY,
   RBAC_SETTINGS_PREFIX,
@@ -61,9 +62,25 @@ function withBackupColumns(
   });
 }
 
-/** Who restores, and whether the backup is a household-only export (made by
- *  someone who isn't an admin: no logins, access settings or credentials). */
-export type RestoreScope = { asAdmin: boolean; householdOnly?: boolean };
+/** Who restores; whether the backup is a household-only export (no logins,
+ *  access settings or credentials); the dialect a backup was exported from. */
+export type RestoreScope = {
+  asAdmin: boolean;
+  householdOnly?: boolean;
+  sourceDialect?: "postgres" | "sqlite";
+};
+
+/** Today's rows of `name` in the form the backup's rows have: they merge
+ *  with the backup's and are written by its dialect's rule. */
+async function todayRows(
+  database: Parameters<typeof queryRaw>[0],
+  name: string,
+  sourceDialect: RestoreScope["sourceDialect"],
+): Promise<Row[]> {
+  const read = await queryRaw(database, sql.raw(`SELECT * FROM "${name}"`));
+  const rows: Row[] = JSON.parse(JSON.stringify(read));
+  return rowsInSourceForm(database, name, rows, sourceDialect);
+}
 
 /** The backup's tables as a restore or import writes them: whole for an admin's
  *  full backup, but one with no local admin keeps today's (the first-admin gate
@@ -74,12 +91,7 @@ export async function withInstallationRows(
   by: RestoreScope,
 ): Promise<Record<string, unknown[]>> {
   const keepAccess = !by.asAdmin || by.householdOnly === true;
-  const today = async (name: string): Promise<Row[]> =>
-    JSON.parse(
-      JSON.stringify(
-        await queryRaw(database, sql.raw(`SELECT * FROM "${name}"`)),
-      ),
-    );
+  const today = (name: string) => todayRows(database, name, by.sourceDialect);
   const out = { ...tables };
   for (const { name, scope } of VERSION_TABLES) {
     if (scope === "logins" && (keepAccess || rowsOf(tables[name]).length === 0))

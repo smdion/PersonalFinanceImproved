@@ -140,6 +140,24 @@ async function auditedBy(db: Db, fieldName: string) {
   return rows.map((r) => r.changedBy);
 }
 
+/** A backup as SQLite exports it, whatever this suite's dialect: on
+ *  PostgreSQL each jsonb value becomes JSON text, as a SQLite export holds it. */
+async function asSqliteMade<B extends { tables: Record<string, unknown[]> }>(
+  db: Db,
+  backup: B,
+): Promise<B & { sourceDialect: "sqlite" }> {
+  const { rowsInSourceForm } = await import("@/lib/db/backup/restored-values");
+  const tables: Record<string, unknown[]> = {};
+  for (const [name, rows] of Object.entries(backup.tables))
+    tables[name] = await rowsInSourceForm(
+      db,
+      name,
+      rows as Record<string, unknown>[],
+      "sqlite",
+    );
+  return { ...backup, sourceDialect: "sqlite" as const, tables };
+}
+
 export function backupFenceCases(fresh: () => Promise<FenceDb>) {
   it("a non-admin restore keeps today's credentials and takes the version's links, so a reused id isn't mapped", async () => {
     const { db, done } = await fresh();
@@ -490,6 +508,116 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         budgetId: "b-1",
       });
       expect(ynab!.lastSyncedAt).toEqual(at("2026-03-01T12:00:00Z"));
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin import of a PostgreSQL-made backup keeps today's access settings as themselves (on SQLite: across dialects)", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      const { isPostgres } = await import("@/lib/db/dialect");
+      await access(db, "theirs");
+      const exported = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      // As PostgreSQL exports it: each setting's JSON value parsed.
+      const asRead = (v: unknown) =>
+        !isPostgres() && typeof v === "string" ? JSON.parse(v) : v;
+      const backup = {
+        ...exported,
+        sourceDialect: "postgres" as const,
+        tables: {
+          ...exported.tables,
+          app_settings: exported.tables.app_settings.map(
+            (r: { value: unknown }) => ({ ...r, value: asRead(r.value) }),
+          ),
+        },
+      };
+      await access(db, "ours");
+
+      await importBackup(db, backup, notAdmin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["ours@example.test"],
+        adminGroup: "ours-admins",
+        budgetGroup: "ours-budget",
+        householdNote: "theirs",
+      });
+    } finally {
+      await done();
+    }
+  });
+
+  it("a setting an older import stored unquoted reads as its string, so a PostgreSQL-made backup still imports and writes it back quoted (SQLite)", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { isPostgres } = await import("@/lib/db/dialect");
+      if (isPostgres()) return; // jsonb can't hold unquoted text
+      const { sql } = await import("drizzle-orm");
+      const { execRaw } = await import("@/lib/db/compat");
+      const { exportBackup, importBackup } = await app();
+      await access(db, "theirs");
+      const exported = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      const backup = {
+        ...exported,
+        sourceDialect: "postgres" as const,
+        tables: {
+          ...exported.tables,
+          app_settings: exported.tables.app_settings.map(
+            (r: { value: unknown }) => ({
+              ...r,
+              value:
+                typeof r.value === "string" ? JSON.parse(r.value) : r.value,
+            }),
+          ),
+        },
+      };
+      await access(db, "ours");
+      await execRaw(
+        db,
+        sql`UPDATE app_settings SET value = 'ours-admins' WHERE key = 'rbac_admin_group'`,
+      );
+
+      await importBackup(db, backup, notAdmin);
+      expect((await accessNow(db)).adminGroup).toBe("ours-admins");
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin import of a SQLite-made backup keeps today's access and credentials in the backup's form (on PostgreSQL: across dialects)", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      await access(db, "theirs");
+      await household(db, "Theirs", ["ynab"], at("2026-03-01T12:00:00Z"));
+      const backup = await asSqliteMade(
+        db,
+        JSON.parse(JSON.stringify(await exportBackup(db, { asAdmin: true }))),
+      );
+      await access(db, "ours");
+      await db
+        .update(schema.apiConnections)
+        .set({ config: { accessToken: "today-token", budgetId: "b-1" } });
+
+      await importBackup(db, backup, notAdmin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["ours@example.test"],
+        adminGroup: "ours-admins",
+        budgetGroup: "ours-budget",
+        householdNote: "theirs",
+      });
+      const [ynab] = await connections(db);
+      expect(ynab!.config).toEqual({
+        accessToken: "today-token",
+        budgetId: "b-1",
+      });
+      expect(await linkTargets(db)).toEqual([
+        { service: "ynab", assets: ["Theirs asset"], profile: "Theirs budget" },
+      ]);
     } finally {
       await done();
     }
