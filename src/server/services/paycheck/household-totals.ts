@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server";
 import type * as schema from "@/lib/db/schema";
 import { paysMedical, isRothIncomeLimited } from "@/lib/config/account-types";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
@@ -12,30 +11,10 @@ import {
   type computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
-import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
-import {
-  buildLiabilityBracketInput,
-  StandardW4BracketsRequiredError,
-} from "@/lib/pure/paycheck/liability-brackets";
-import type { WithholdingTableRow } from "@/lib/pure/paycheck/withholding";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { loadCapHousehold } from "@/server/services/contributions/caps";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
-
-/** buildLiabilityBracketInput for a service: its domain error answered as
- *  the client's BAD_REQUEST, with the same message. */
-export function liabilityBracketInput(
-  bracketRow: WithholdingTableRow,
-  limits: Map<string, number>,
-): TaxBracketInput {
-  try {
-    return buildLiabilityBracketInput(bracketRow, limits);
-  } catch (e) {
-    if (e instanceof StandardW4BracketsRequiredError)
-      throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
-    throw e;
-  }
-}
+import { liabilityBracketInput } from "@/server/services/paycheck/liability-bracket-input";
 
 export function householdTotals(
   results: {

@@ -405,7 +405,7 @@
     "src/server/services/net-worth/snapshot-write.ts": 291,
     "src/server/services/net-worth/year-assets.ts": 211,
     "src/server/services/net-worth/year-end-history.ts": 587,
-    "src/server/services/paycheck/household-totals.ts": 120,
+    "src/server/services/paycheck/household-totals.ts": 99,
     "src/server/services/paycheck/job-net-pay.ts": 259,
     "src/server/services/paycheck/summary.ts": 660,
     "src/server/services/performance/finalize-year.ts": 436,
