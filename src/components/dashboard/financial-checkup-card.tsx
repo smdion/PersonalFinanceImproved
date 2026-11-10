@@ -27,10 +27,16 @@ import { CardQueryBoundary, queryPending } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { SK_SAVINGS_RATE_THRESHOLDS } from "@/lib/constants/settings-keys";
+import { parseStoredJson } from "@/lib/hooks/browser-storage";
 
 /** The Savings Rate row's default bars (green at or above the first, yellow
  *  at or above the second) until the household saves its own. */
 const DEFAULT_SAVINGS_RATE_BARS = [0.25, 0.15] as const;
+/** The stored bars: two or more, each a rate or null (the default's bar). */
+const isRateBars = (v: unknown): v is (number | null)[] =>
+  Array.isArray(v) &&
+  v.length >= 2 &&
+  v.every((bar) => bar === null || typeof bar === "number");
 
 type CheckupStep = {
   label: string;
@@ -235,20 +241,14 @@ function FinancialCheckupCardImpl() {
     { excludeMatch, includePortfolio },
   );
   const savingsRate = savingsBreakdown.rate;
-  const parsedThresholds = (() => {
-    try {
-      const arr = JSON.parse(
-        typeof savingsRateThresholds === "string"
-          ? savingsRateThresholds
-          : JSON.stringify(savingsRateThresholds),
-      );
-      return Array.isArray(arr) && arr.length >= 2
-        ? (arr as number[])
-        : DEFAULT_SAVINGS_RATE_BARS;
-    } catch {
-      return DEFAULT_SAVINGS_RATE_BARS;
-    }
-  })();
+  const parsedThresholds =
+    parseStoredJson(
+      SK_SAVINGS_RATE_THRESHOLDS,
+      typeof savingsRateThresholds === "string"
+        ? savingsRateThresholds
+        : JSON.stringify(savingsRateThresholds),
+      isRateBars,
+    ) ?? DEFAULT_SAVINGS_RATE_BARS;
   // The stored setting is any JSON array: a null element falls back.
   const greenThreshold = parsedThresholds[0] ?? DEFAULT_SAVINGS_RATE_BARS[0];
   const yellowThreshold = parsedThresholds[1] ?? DEFAULT_SAVINGS_RATE_BARS[1];

@@ -210,8 +210,8 @@
     "src/components/savings/fund-card.tsx": 548,
     "src/components/savings/fund-management-section.tsx": 639,
     "src/components/savings/fund-transaction-list.tsx": 440,
-    "src/components/savings/savings-trajectory-table.tsx": 549,
-    "src/components/savings/transactions/all-transactions-tab.tsx": 662,
+    "src/components/savings/savings-trajectory-table.tsx": 545,
+    "src/components/savings/transactions/all-transactions-tab.tsx": 661,
     "src/components/savings/transactions/editor.tsx": 375,
     "src/components/savings/transactions/filters.tsx": 207,
     "src/components/savings/transactions/row.tsx": 596,
@@ -834,11 +834,11 @@
       "SavingsTrajectoryChart": 213
     },
     "src/components/savings/savings-trajectory-table.tsx": {
-      "SavingsTrajectoryTable": 517,
+      "SavingsTrajectoryTable": 514,
       "SavingsTrajectoryTable.map()": 236
     },
     "src/components/savings/transactions/all-transactions-tab.tsx": {
-      "AllTransactionsTab": 622
+      "AllTransactionsTab": 620
     },
     "src/components/savings/upcoming-goals.tsx": {
       "UpcomingGoals": 187

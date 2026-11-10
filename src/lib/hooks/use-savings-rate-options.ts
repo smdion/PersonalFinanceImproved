@@ -11,11 +11,20 @@ import {
   SK_SAVINGS_RATE_INCLUDE_PORTFOLIO,
   SK_SAVINGS_RATE_MATCH,
 } from "@/lib/constants/settings-keys";
+import { isRecord, oneOf, readBrowserJson } from "@/lib/hooks/browser-storage";
 
 /** "auto": leave the match out at or above the high-income line. */
 type MatchChoice = "auto" | "include" | "exclude";
 
 type Choices = { match: MatchChoice | null; portfolio: boolean | null };
+
+const isMatch = oneOf(["auto", "include", "exclude", null] as const);
+const isPortfolio = oneOf([true, false, null] as const);
+/** What this browser saved: either choice may be missing. */
+const isSavedChoices = (v: unknown): v is Partial<Choices> =>
+  isRecord(v) &&
+  (v.match === undefined || isMatch(v.match)) &&
+  (v.portfolio === undefined || isPortfolio(v.portfolio));
 
 const STORAGE_KEY = "ledgr-savings-rate-options";
 const EMPTY: Choices = { match: null, portfolio: null };
@@ -26,12 +35,7 @@ const listeners = new Set<() => void>();
 function load(): Choices {
   if (!loaded && typeof window !== "undefined") {
     loaded = true;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) current = { ...EMPTY, ...(JSON.parse(stored) as Choices) };
-    } catch {
-      // unavailable or invalid — keep the defaults
-    }
+    current = { ...EMPTY, ...readBrowserJson(STORAGE_KEY, isSavedChoices) };
   }
   return current;
 }

@@ -15,7 +15,7 @@ import {
 } from "react";
 import type { RawItem } from "@/components/budget";
 import type { RouterOutputs } from "@/lib/trpc";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useLocalBoolean } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
 import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
@@ -51,7 +51,7 @@ export function useBudgetPageState({
 
   // Locked by default, persisted per browser; editMode is its inverse. Shares
   // EDIT_LOCK_KEYS.profileEditLocked with the profile tabs: one page padlock.
-  const [budgetLocked, setBudgetLocked] = useLocalStorage<boolean>(
+  const [budgetLocked, setBudgetLocked] = useLocalBoolean(
     EDIT_LOCK_KEYS.profileEditLocked,
     true,
   );

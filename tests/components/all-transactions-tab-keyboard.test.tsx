@@ -11,12 +11,13 @@ vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
 }));
 // The table unlocked, so its rows are editable.
-vi.mock("@/lib/hooks/use-local-storage", () => ({
-  useLocalStorage: (k: string, v: unknown) => [
+vi.mock("@/lib/hooks/use-local-storage", () => {
+  const read = (k: string, v: unknown) => [
     k === "ledgr:savings:txLocked" ? false : v,
     vi.fn(),
-  ],
-}));
+  ];
+  return { useLocalStorage: read, useLocalBoolean: read };
+});
 
 import { AllTransactionsTab } from "@/components/savings/transactions/all-transactions-tab";
 import type { GoalProjection } from "@/components/savings/types";

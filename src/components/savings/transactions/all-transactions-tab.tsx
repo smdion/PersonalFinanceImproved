@@ -4,7 +4,8 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useLocalBoolean } from "@/lib/hooks/use-local-storage";
+import { useHistoryWindow } from "../use-history-window";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
@@ -57,14 +58,12 @@ export function AllTransactionsTab({
     "transaction",
   );
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [historyWindow, setHistoryWindow] = useLocalStorage<
-    0 | 3 | 6 | 12 | "all"
-  >("ledgr:savings:txHistoryWindow", 0);
-  const [tableLocked, setTableLocked] = useLocalStorage<boolean>(
+  const [historyWindow, setHistoryWindow] = useHistoryWindow("transactions");
+  const [tableLocked, setTableLocked] = useLocalBoolean(
     "ledgr:savings:txLocked",
     true,
   );
-  const [showRuleTx, setShowRuleTx] = useLocalStorage<boolean>(
+  const [showRuleTx, setShowRuleTx] = useLocalBoolean(
     "ledgr:savings:showRuleTx",
     false,
   );
