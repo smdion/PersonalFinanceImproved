@@ -27,6 +27,7 @@ projection-year-handlers/    one year of work
   year-need.ts               the after-tax need and the withdrawal that meets it
   year-draws.ts              the draw routed by mode, then followed to each account
   tax-year-settlement.ts     the tax priced and settled in today's order (UD-04, UD-08)
+  conversion-year-reprice.ts the conversion year's gains re-priced, then NIIT
   funding-shortfall.ts       the unmet need (raw) and whether it's material
   year-cliffs.ts             IRMAA and ACA cliff checks
   portfolio-contributions.ts Portfolio contributions after retirement, reported only
@@ -131,7 +132,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty)
 9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw); when the RMD overrode routing, the reported gross-up factor is recomputed from them
 10. `settleYearDraws` — `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
-11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` re-prices the year's tax after it
+11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` (`conversion-year-reprice.ts`) re-prices the year's tax after it
 12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material
 13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
