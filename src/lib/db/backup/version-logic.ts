@@ -32,7 +32,7 @@ import {
   VERSION_TABLES,
   tablesFromBackup,
 } from "./version-tables";
-import { withInstallationRows } from "./installation-rows";
+import { householdOnlyTables, withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
 import { transformFromSource } from "./restore-source";
@@ -214,9 +214,8 @@ async function insertRows(
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
-  by: { asAdmin: boolean },
+  by: { asAdmin: boolean; user: string },
 ) {
-  // Load version metadata
   const [version] = await database
     .select()
     .from(schema.stateVersions)
@@ -226,7 +225,6 @@ export async function restoreVersion(
     throw new Error(`Version ${versionId} not found`);
   }
 
-  // Load all table data
   const tableDatas = await database
     .select()
     .from(schema.stateVersionTables)
@@ -261,10 +259,8 @@ export async function restoreVersion(
   let restoredRows = 0;
 
   await database.transaction(async (tx) => {
-    // Truncate all user tables
     await truncateTables(tx, VERSION_TABLE_NAMES);
 
-    // Insert rows per table in tier order (0 → 1 → 2)
     const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
     for (const tableEntry of sortedTables) {
@@ -284,7 +280,6 @@ export async function restoreVersion(
     // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
     await resetSequences(tx, VERSION_TABLE_NAMES);
 
-    // Log restore action
     try {
       await tx.insert(schema.changeLog).values({
         tableName: "state_versions",
@@ -293,7 +288,7 @@ export async function restoreVersion(
         oldValue: null,
         // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         newValue: { action: "restore", versionName: version.name } as unknown,
-        changedBy: version.createdBy,
+        changedBy: by.user,
       });
     } catch {
       // Non-critical
@@ -315,10 +310,12 @@ export type BackupData = {
   tables: Record<string, unknown[]>;
   // The dialect the export ran against; absent is treated as "postgres" on import.
   sourceDialect?: "postgres" | "sqlite";
+  householdOnly?: true; // exported by someone who isn't an admin (householdOnlyTables)
 };
 
 export async function exportBackup(
   database: NodePgDatabase<typeof schema>,
+  by: { asAdmin: boolean },
 ): Promise<BackupData> {
   const tables = await database.transaction(readVersionTables, {
     ...ONE_SNAPSHOT,
@@ -328,15 +325,16 @@ export async function exportBackup(
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     exportedAt: writeStamp().toISOString(),
-    tables,
+    tables: by.asAdmin ? tables : householdOnlyTables(tables),
     sourceDialect: isPostgres() ? "postgres" : "sqlite",
+    ...(by.asAdmin ? {} : { householdOnly: true as const }),
   };
 }
 
 export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-  by: { asAdmin: boolean },
+  by: { asAdmin: boolean; user: string },
 ) {
   // Transform the backup to the current schema if needed.
   const { tables: transformedTables, transformed } = transformFromSource(
@@ -353,7 +351,10 @@ export async function importBackup(
   }
 
   const checked = checkImportedValues(
-    await withInstallationRows(database, transformedTables, by),
+    await withInstallationRows(database, transformedTables, {
+      asAdmin: by.asAdmin,
+      householdOnly: backup.householdOnly === true,
+    }),
   );
   const transformedBackup: BackupData = {
     ...backup,
@@ -372,8 +373,8 @@ export async function importBackup(
   }
 
   const result = isPostgres()
-    ? await importBackupPg(database, transformedBackup)
-    : await importBackupSqlite(database, transformedBackup);
+    ? await importBackupPg(database, transformedBackup, by.user)
+    : await importBackupSqlite(database, transformedBackup, by.user);
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
   return { ...result, valueNotes: checked.valueNotes };
@@ -382,6 +383,7 @@ export async function importBackup(
 async function importBackupPg(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  user: string,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
@@ -441,7 +443,6 @@ async function importBackupPg(
       }
     }
 
-    // Reset serial sequences
     for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
@@ -463,7 +464,7 @@ async function importBackupPg(
           exportedAt: backup.exportedAt,
           // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
-        changedBy: "system",
+        changedBy: user,
       });
     } catch {
       // Non-critical
@@ -484,6 +485,7 @@ async function importBackupPg(
 async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
+  user: string,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
   const source = backup.sourceDialect;
   let restoredRows = 0;
@@ -499,7 +501,6 @@ async function importBackupSqlite(
       restoredRows += await insertRows(tx, tableEntry.name, rows, source);
     }
 
-    // Log import (non-critical)
     try {
       await tx.insert(schema.changeLog).values({
         tableName: "state_versions",
@@ -511,7 +512,7 @@ async function importBackupSqlite(
           exportedAt: backup.exportedAt,
           // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
-        changedBy: "system",
+        changedBy: user,
       });
     } catch {
       // Non-critical

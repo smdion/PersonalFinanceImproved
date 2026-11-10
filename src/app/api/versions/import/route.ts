@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
+import { getSessionUserLabel } from "@/server/trpc";
 import { refuseWhileDemoActive } from "@/server/services/demo/demo-session";
 import { importBackup, type BackupData } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
@@ -24,6 +25,9 @@ const backupDataSchema = z.object({
   // Optional (older backups lack it); declared so validation keeps it and
   // importBackupPg can tell PG jsonb strings from SQLite-serialized ones.
   sourceDialect: z.enum(["postgres", "sqlite"]).optional(),
+  // An export by someone who isn't an admin: today's logins, access settings
+  // and credentials stay, whoever imports it (installation-rows.ts).
+  householdOnly: z.literal(true).optional(),
 });
 
 /** Recursively check that no string exceeds MAX_STRING_LENGTH and depth doesn't exceed MAX_JSON_DEPTH. */
@@ -113,11 +117,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Anyone but an admin leaves the installation's connections as they are.
+    // Anyone but an admin leaves logins, access settings and credentials as they are.
     const importResult = await importBackup(
       db as Parameters<typeof importBackup>[0],
       backup,
-      { asAdmin: allowDev || session?.user.role === "admin" },
+      {
+        asAdmin: allowDev || session?.user.role === "admin",
+        user: session ? getSessionUserLabel(session) : "dev",
+      },
     );
     await settleFirstRunGate(db, "import");
 

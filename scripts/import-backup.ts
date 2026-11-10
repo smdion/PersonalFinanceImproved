@@ -154,9 +154,11 @@ async function run() {
           exportedAt: backup.exportedAt,
           tables: backup.tables, // importBackup handles transformation internally
           sourceDialect: backup.sourceDialect,
+          // A non-admin's export: today's logins and credentials stay.
+          householdOnly: backup.householdOnly === true ? true : undefined,
         },
         // Run by the server's operator: the whole backup, as an admin's.
-        { asAdmin: true },
+        { asAdmin: true, user: "import-backup script" },
       );
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
@@ -195,9 +197,11 @@ async function run() {
           exportedAt: backup.exportedAt,
           tables: backup.tables,
           sourceDialect: backup.sourceDialect,
+          // A non-admin's export: today's logins and credentials stay.
+          householdOnly: backup.householdOnly === true ? true : undefined,
         },
         // Run by the server's operator: the whole backup, as an admin's.
-        { asAdmin: true },
+        { asAdmin: true, user: "import-backup script" },
       );
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
@@ -209,6 +213,8 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error("Import failed:", err.message);
+  // A failed query's driver error (ECONNREFUSED, …) is its cause.
+  const cause = err.cause instanceof Error ? ` (${err.cause.message})` : "";
+  console.error("Import failed:", `${err.message}${cause}`);
   process.exit(1);
 });

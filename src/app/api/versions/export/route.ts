@@ -30,7 +30,14 @@ export async function GET() {
     const demoActive = await refuseWhileDemoActive("export");
     if (demoActive) return demoActive;
 
-    const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
+    // Anyone but an admin gets the household's data only (no logins,
+    // access settings or credentials).
+    const backup = await exportBackup(
+      db as Parameters<typeof exportBackup>[0],
+      {
+        asAdmin: allowDev || session?.user.role === "admin",
+      },
+    );
     const json = JSON.stringify(backup, null, 2);
     const dateStr = calendarDateOf(new Date());
 

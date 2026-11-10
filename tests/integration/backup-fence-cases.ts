@@ -29,8 +29,8 @@ const at = (iso: string) => new Date(iso);
 const daysAgo = (days: number) =>
   new Date(Math.floor(Date.now() / 1000) * 1000 - days * DAY_MS);
 
-const notAdmin = { asAdmin: false };
-const admin = { asAdmin: true };
+const notAdmin = { asAdmin: false, user: "Viewer" };
+const admin = { asAdmin: true, user: "Admin" };
 
 async function app() {
   const schema = await import("@/lib/db/schema");
@@ -98,6 +98,48 @@ async function linkTargets(db: Db) {
   }));
 }
 
+/** One local admin and one access setting (an Authentik group mapping),
+ *  plus a household setting, for one household. */
+async function access(db: Db, label: string) {
+  const { schema } = await app();
+  await db.delete(schema.localAdmins);
+  await db.insert(schema.localAdmins).values({
+    email: `${label}@example.test`,
+    passwordHash: `${label}-hash`,
+    name: label,
+  });
+  for (const [key, value] of [
+    ["rbac_admin_group", `${label}-admins`],
+    ["rbac_group_budget", `${label}-budget`],
+    ["access_test_household_note", label],
+  ] as const) {
+    await db.delete(schema.appSettings).where(eq(schema.appSettings.key, key));
+    await db.insert(schema.appSettings).values({ key, value });
+  }
+}
+
+async function accessNow(db: Db) {
+  const { schema } = await app();
+  const admins = await db.select().from(schema.localAdmins);
+  const settings = await db.select().from(schema.appSettings);
+  const value = (key: string) => settings.find((s) => s.key === key)?.value;
+  return {
+    admins: admins.map((a) => a.email).sort(),
+    adminGroup: value("rbac_admin_group"),
+    budgetGroup: value("rbac_group_budget"),
+    householdNote: value("access_test_household_note"),
+  };
+}
+
+async function auditedBy(db: Db, fieldName: string) {
+  const { schema } = await app();
+  const rows = await db
+    .select()
+    .from(schema.changeLog)
+    .where(eq(schema.changeLog.fieldName, fieldName));
+  return rows.map((r) => r.changedBy);
+}
+
 export function backupFenceCases(fresh: () => Promise<FenceDb>) {
   it("a non-admin restore keeps today's credentials and takes the version's links, so a reused id isn't mapped", async () => {
     const { db, done } = await fresh();
@@ -148,9 +190,10 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         (after!.accountMappings ?? []).map((m) => m.assetId),
       ).not.toContain(next.assetId);
 
-      // Its count leaves out the table it didn't take from the version.
+      // Its count leaves out the tables it didn't take from the version:
+      // the connections and the local admins.
       const whole = await restoreVersion(db, version.id, admin);
-      expect(fenced.restoredTables).toBe(whole.restoredTables - 1);
+      expect(fenced.restoredTables).toBe(whole.restoredTables - 2);
     } finally {
       await done();
     }
@@ -166,7 +209,9 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         ["ynab", "sec"],
         at("2026-02-01T08:00:00Z"),
       );
-      const backup = JSON.parse(JSON.stringify(await exportBackup(db)));
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
 
       // Today: our own rows and credentials; sec isn't connected here.
       await db.delete(schema.apiConnections);
@@ -216,7 +261,9 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
         ["ynab", "sec"],
         at("2026-02-01T08:00:00Z"),
       );
-      const backup = JSON.parse(JSON.stringify(await exportBackup(db)));
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
       const theirs = await connections(db);
       await db.delete(schema.apiConnections);
       await household(db, "Ours", ["ynab", "actual"]);
@@ -281,6 +328,168 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
       expect(
         transactionWindowStart(after!.lastSyncedAt, now).getTime(),
       ).toBeLessThanOrEqual(atVersion.getTime());
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin import keeps today's local admins and access settings, and takes the household's settings", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      await access(db, "theirs");
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await access(db, "ours");
+
+      await importBackup(db, backup, notAdmin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["ours@example.test"],
+        adminGroup: "ours-admins",
+        budgetGroup: "ours-budget",
+        householdNote: "theirs",
+      });
+      expect(await auditedBy(db, "import")).toEqual(["Viewer"]);
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin restore keeps today's local admins and access settings", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { createVersion, restoreVersion } = await app();
+      await access(db, "then");
+      const version = await createVersion(db, {
+        name: "before",
+        type: "manual",
+        createdBy: "someone else",
+      });
+      await access(db, "now");
+
+      await restoreVersion(db, version.id, notAdmin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["now@example.test"],
+        adminGroup: "now-admins",
+        budgetGroup: "now-budget",
+        householdNote: "then",
+      });
+      // The change log names who restored, not who made the version.
+      expect(await auditedBy(db, "restore")).toEqual(["Viewer"]);
+    } finally {
+      await done();
+    }
+  });
+
+  it("an admin's import takes the backup's local admins and access settings", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      await access(db, "theirs");
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await access(db, "ours");
+
+      await importBackup(db, backup, admin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["theirs@example.test"],
+        adminGroup: "theirs-admins",
+        budgetGroup: "theirs-budget",
+        householdNote: "theirs",
+      });
+      expect(await auditedBy(db, "import")).toEqual(["Admin"]);
+    } finally {
+      await done();
+    }
+  });
+
+  it("an admin's backup with no local admin keeps today's, so the first-admin gate can't reopen through it", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      const { firstRunState, settleFirstRunGate } =
+        await import("@/server/data/first-run");
+      await access(db, "theirs");
+      await db.delete(schema.localAdmins);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await access(db, "ours");
+
+      await importBackup(db, backup, admin);
+      await settleFirstRunGate(db as never, "import");
+      expect((await accessNow(db)).admins).toEqual(["ours@example.test"]);
+      expect(await firstRunState(db as never)).toEqual({ adminNeeded: false });
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin's export carries no logins, access settings or credentials", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup } = await app();
+      await access(db, "ours");
+      await household(db, "Ours", ["ynab"], at("2026-03-01T12:00:00Z"));
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: false })),
+      );
+
+      expect(backup.householdOnly).toBe(true);
+      expect(backup.tables).not.toHaveProperty("local_admins");
+      const keys = backup.tables.app_settings.map(
+        (r: { key: string }) => r.key,
+      );
+      expect(keys).toContain("access_test_household_note");
+      expect(keys.filter((k: string) => k.startsWith("rbac_"))).toEqual([]);
+      const [ynab] = backup.tables.api_connections;
+      expect(Object.keys(ynab).sort()).toEqual(
+        [
+          "service",
+          "account_mappings",
+          "skipped_category_ids",
+          "linked_profile_id",
+          "linked_column_index",
+          "last_synced_at",
+        ].sort(),
+      );
+      expect(JSON.stringify(backup)).not.toContain("Ours-token");
+      expect(JSON.stringify(backup)).not.toContain("ours-hash");
+    } finally {
+      await done();
+    }
+  });
+
+  it("an admin importing a non-admin's export keeps today's logins, access settings and credentials", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      await access(db, "theirs");
+      await household(db, "Theirs", ["ynab"], at("2026-03-01T12:00:00Z"));
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: false })),
+      );
+      await access(db, "ours");
+      const { schema } = await app();
+      await db
+        .update(schema.apiConnections)
+        .set({ config: { accessToken: "today-token", budgetId: "b-1" } });
+
+      await importBackup(db, backup, admin);
+      expect(await accessNow(db)).toEqual({
+        admins: ["ours@example.test"],
+        adminGroup: "ours-admins",
+        budgetGroup: "ours-budget",
+        householdNote: "theirs",
+      });
+      const [ynab] = await connections(db);
+      expect(ynab!.config).toEqual({
+        accessToken: "today-token",
+        budgetId: "b-1",
+      });
+      expect(ynab!.lastSyncedAt).toEqual(at("2026-03-01T12:00:00Z"));
     } finally {
       await done();
     }

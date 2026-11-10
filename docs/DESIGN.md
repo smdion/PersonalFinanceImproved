@@ -109,18 +109,18 @@ Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any na
 
 **Permission addons** (independent, mix-and-match via Authentik groups):
 
-| Authentik Group              | Permission            | Grants                                                                                                                                         |
-| ---------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ledgr-admin`                | (admin role)          | Full access to everything                                                                                                                      |
-| `ledgr-scenario`             | `scenario`            | Create/edit/delete Plans (sets of profiles)                                                                                                    |
-| `ledgr-contribution-profile` | `contributionProfile` | Contribution and Salary Profiles — every Salary Profile entry field (incl. W-4, pay schedule, where the bonus goes) — and making either active |
-| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups); a non-admin's restore or import keeps today's integration credentials             |
-| `ledgr-portfolio`            | `portfolio`           | Create/delete portfolio snapshots                                                                                                              |
-| `ledgr-performance`          | `performance`         | Manage performance accounts + account performance                                                                                              |
-| `ledgr-budget`               | `budget`              | Edit budget items, columns, profiles                                                                                                           |
-| `ledgr-savings`              | `savings`             | Manage savings goals, transactions, allocations                                                                                                |
-| `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
-| `ledgr-sync`                 | `sync`                | Trigger budget API sync operations (connecting YNAB or Actual is admin-only)                                                                   |
+| Authentik Group              | Permission            | Grants                                                                                                                                                                                     |
+| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ledgr-admin`                | (admin role)          | Full access to everything                                                                                                                                                                  |
+| `ledgr-scenario`             | `scenario`            | Create/edit/delete Plans (sets of profiles)                                                                                                                                                |
+| `ledgr-contribution-profile` | `contributionProfile` | Contribution and Salary Profiles — every Salary Profile entry field (incl. W-4, pay schedule, where the bonus goes) — and making either active                                             |
+| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups); a non-admin's restore or import keeps today's local admins, access settings and credentials, and their export leaves them out |
+| `ledgr-portfolio`            | `portfolio`           | Create/delete portfolio snapshots                                                                                                                                                          |
+| `ledgr-performance`          | `performance`         | Manage performance accounts + account performance                                                                                                                                          |
+| `ledgr-budget`               | `budget`              | Edit budget items, columns, profiles                                                                                                                                                       |
+| `ledgr-savings`              | `savings`             | Manage savings goals, transactions, allocations                                                                                                                                            |
+| `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                                                              |
+| `ledgr-sync`                 | `sync`                | Trigger budget API sync operations (connecting YNAB or Actual is admin-only)                                                                                                               |
 
 `src/proxy.ts` sends a page request with no session to `/login` (its `authorized` callback; DEMO_ONLY and `next dev` skip it), and the `(dashboard)` layout checks the session again with the full config. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 

@@ -8,6 +8,7 @@ import {
   adminProcedure,
   protectedProcedure,
   versionProcedure,
+  getSessionUserLabel,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { settleFirstRunGate } from "@/server/data/first-run";
@@ -142,6 +143,7 @@ export const versionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const restored = await restoreVersion(ctx.db, input.id, {
         asAdmin: ctx.session.user.role === "admin",
+        user: getSessionUserLabel(ctx.session),
       }).catch((err: unknown) => {
         if (!(err instanceof ClosedSetRefusal)) throw err;
         throw new TRPCError({ code: "BAD_REQUEST", message: err.message });

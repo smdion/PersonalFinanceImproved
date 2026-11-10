@@ -108,16 +108,16 @@ describe("after Reset all data", () => {
 });
 
 describe("after a restore", () => {
-  it("is open when the restored version has no local admin and no Authentik", () =>
+  it("stays closed when the restored version has no local admin: today's stay (SE1)", () =>
     withCtx(async (ctx) => {
       vi.stubEnv("AUTH_AUTHENTIK_ISSUER", "");
       await seedPerson(ctx.db, "Robin");
       const version = await ctx.caller.version.create({ name: "no admin" });
       seedLocalAdmin(ctx);
       await ctx.caller.version.restore({ id: version.id });
-      expect(ctx.db.select().from(schema.localAdmins).all()).toHaveLength(0);
+      expect(ctx.db.select().from(schema.localAdmins).all()).toHaveLength(1);
       expect(await ctx.caller.settings.getFirstRunState()).toEqual({
-        adminNeeded: true,
+        adminNeeded: false,
       });
     }));
 

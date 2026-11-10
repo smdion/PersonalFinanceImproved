@@ -53,9 +53,9 @@ describe("an installation table with no column lists", () => {
     const listed = INSTALLATION_COLUMNS["api_connections"];
     delete INSTALLATION_COLUMNS["api_connections"];
     try {
-      const backup = await exportBackup(rawDb);
+      const backup = await exportBackup(rawDb, { asAdmin: true });
       await expect(
-        importBackup(rawDb, backup, { asAdmin: false }),
+        importBackup(rawDb, backup, { asAdmin: false, user: "Viewer" }),
       ).rejects.toThrow("api_connections: no installation columns listed");
     } finally {
       INSTALLATION_COLUMNS["api_connections"] = listed!;

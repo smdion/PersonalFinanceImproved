@@ -33,6 +33,11 @@ vi.mock("@/lib/db/backup/version-logic", () => ({
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
 }));
+// The tRPC module itself is heavy; the route reads only its label helper.
+vi.mock("@/server/trpc", () => ({
+  getSessionUserLabel: (session: { user: { name: string } }) =>
+    session.user.name,
+}));
 vi.mock("@/server/data/first-run", () => ({
   settleFirstRunGate: vi.fn().mockResolvedValue(undefined),
 }));
@@ -235,7 +240,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: false },
+      { asAdmin: false, user: "U" },
     );
   });
 
@@ -245,7 +250,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: true },
+      { asAdmin: true, user: "U" },
     );
   });
 
@@ -258,7 +263,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: false },
+      { asAdmin: false, user: "U" },
     );
   });
 
@@ -386,5 +391,68 @@ describe("/api/versions/import and export while a demo profile is active", () =>
     const { GET } = await import("@/app/api/versions/export/route");
     const res = await GET();
     expect(res.status).toBe(401);
+  });
+});
+
+// SE1: the version permission manages the household's data, not access.
+describe("/api/versions/export: who exports how much", () => {
+  const as = (role: "admin" | "viewer", permissions: string[]) => ({
+    user: { id: "u", name: "U", email: "u@test.local", role, permissions },
+    expires: "2099-12-31T23:59:59.999Z",
+  });
+
+  async function exportAs(session: ReturnType<typeof as>) {
+    vi.stubEnv("NODE_ENV", "production");
+    const { auth } = await import("@/server/auth");
+    vi.mocked(auth).mockResolvedValueOnce(session as never);
+    const { GET } = await import("@/app/api/versions/export/route");
+    const { exportBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(exportBackup).mockClear();
+    const res = await GET();
+    return { res, exportBackup: vi.mocked(exportBackup) };
+  }
+
+  it("a viewer with the version permission exports the household's data only", async () => {
+    const { res, exportBackup } = await exportAs(as("viewer", ["version"]));
+    expect(res.status).toBe(200);
+    expect(exportBackup).toHaveBeenCalledWith(expect.anything(), {
+      asAdmin: false,
+    });
+  });
+
+  it("an admin exports the full backup", async () => {
+    const { res, exportBackup } = await exportAs(as("admin", []));
+    expect(res.status).toBe(200);
+    expect(exportBackup).toHaveBeenCalledWith(expect.anything(), {
+      asAdmin: true,
+    });
+  });
+});
+
+describe("/api/versions/import: a household-only export", () => {
+  it("keeps its householdOnly mark through validation", async () => {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    const body = new FormData();
+    const backup = {
+      schemaVersion: "0001",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      tables: {},
+      householdOnly: true,
+    };
+    body.append("file", new File([JSON.stringify(backup)], "backup.json"));
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(importBackup).mock.calls[0]![1]).toMatchObject({
+      householdOnly: true,
+    });
   });
 });

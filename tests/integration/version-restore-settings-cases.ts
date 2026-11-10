@@ -41,7 +41,7 @@ export function versionRestoreSettingsCases(fresh: () => Promise<FenceDb>) {
         .delete(schema.appSettings)
         .where(inArray(schema.appSettings.key, keys));
 
-      await restoreVersion(db, version.id, { asAdmin: true });
+      await restoreVersion(db, version.id, { asAdmin: true, user: "Admin" });
       const rows = await db
         .select({
           key: schema.appSettings.key,

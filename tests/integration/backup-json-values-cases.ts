@@ -20,7 +20,7 @@ export interface JsonValuesDb {
   done: () => Promise<void> | void;
 }
 
-const admin = { asAdmin: true };
+const admin = { asAdmin: true, user: "Admin" };
 
 /** Invented settings keys, one per JSON value type. */
 const VALUES: Record<string, unknown> = {
@@ -48,7 +48,7 @@ export function backupJsonValueCases(fresh: () => Promise<JsonValuesDb>) {
     try {
       const { exportBackup, importBackup } =
         await import("@/lib/db/backup/version-logic");
-      const backup = await exportBackup(db);
+      const backup = await exportBackup(db, { asAdmin: true });
       const settings = (backup.tables["app_settings"] ?? []) as {
         id: number;
         key: string;

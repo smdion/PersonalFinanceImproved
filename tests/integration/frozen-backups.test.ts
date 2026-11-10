@@ -201,10 +201,11 @@ describe("frozen backups from released versions", () => {
       try {
         const result = await importBackup(rawDb, structuredClone(backup), {
           asAdmin: true,
+          user: "Admin",
         });
         expect(result.restoredRows).toBeGreaterThan(0);
 
-        const { tables } = await exportBackup(rawDb);
+        const { tables } = await exportBackup(rawDb, { asAdmin: true });
         for (const table of HOUSEHOLD_TABLES)
           expect([table, ids(tables[table])]).toEqual([
             table,
