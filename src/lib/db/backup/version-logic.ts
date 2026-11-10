@@ -30,7 +30,7 @@ import {
 import { withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
-import { transformBackupToCurrentSchema } from "./backup-transforms";
+import { transformFromSource } from "./restore-source";
 import { writeStamp } from "@/lib/utils/clock";
 
 /** An INSERT's columns: the union of every row's keys, since a backup transform can append a
@@ -256,10 +256,10 @@ export async function restoreVersion(
     if (Array.isArray(t.data) && t.data.length > 0)
       rawTableMap[t.tableName] = t.data;
 
-  const { tables: transformedMap } = transformBackupToCurrentSchema(
+  const { tables: transformedMap } = transformFromSource(
     rawTableMap,
-    version.schemaVersion,
-    CURRENT_SCHEMA_VERSION,
+    { from: version.schemaVersion, to: CURRENT_SCHEMA_VERSION },
+    isPostgres() ? "postgres" : "sqlite",
   );
 
   // Rebuild the table data map with transformed data — including tables the
@@ -366,12 +366,11 @@ export async function importBackup(
   by: { asAdmin: boolean },
 ) {
   // Transform the backup to the current schema if needed.
-  const { tables: transformedTables, transformed } =
-    transformBackupToCurrentSchema(
-      backup.tables,
-      backup.schemaVersion,
-      CURRENT_SCHEMA_VERSION,
-    );
+  const { tables: transformedTables, transformed } = transformFromSource(
+    backup.tables,
+    { from: backup.schemaVersion, to: CURRENT_SCHEMA_VERSION },
+    backup.sourceDialect,
+  );
 
   if (transformed) {
     log("info", "backup_import_transformed", {

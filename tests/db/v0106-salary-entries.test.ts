@@ -11,6 +11,7 @@ import {
   refusedFields,
 } from "@/lib/db/migrate/v0106-salary-entries";
 import { STORED_JSON_TAG } from "@/lib/db/migrate/v0106-stored-json";
+import { transformFromSource } from "@/lib/db/backup/restore-source";
 import {
   ConverterRefusal,
   MigrationRefusal,
@@ -82,6 +83,59 @@ describe("the stored-JSON tag's Salary Profile entries", () => {
       backup(PROFILES),
     );
     expect(salariesOf(tables)).toEqual(PROFILES.map((c) => c.after));
+  });
+
+  it("a PostgreSQL export's roots, string scalars included, convert the same on restore", () => {
+    const { tables } = transformFromSource(
+      backup(PROFILES, false),
+      { from: BEFORE, to: CURRENT },
+      "postgres",
+    );
+    expect(salariesOf(tables)).toEqual(PROFILES.map((c) => c.after));
+  });
+
+  it("a PostgreSQL source's string scalar no converter rewrites comes back as its string", () => {
+    const setting = { id: 1, key: "invented_text", value: "plain words" };
+    const { tables } = transformFromSource(
+      { ...backup([], false), app_settings: [setting] },
+      { from: BEFORE, to: CURRENT },
+      "postgres",
+    );
+    expect(tables["app_settings"]).toEqual([setting]);
+  });
+
+  it("a backup naming no dialect (before v0.8.3) converts as the converters read it", () => {
+    const tables = {
+      ...backup(PROFILES),
+      contribution_accounts: [
+        {
+          id: 1,
+          employer_match_type: "percent_of_contribution",
+          employer_match_value: "50",
+        },
+      ],
+      contribution_profiles: [
+        {
+          id: 1,
+          name: "Invented",
+          contribution_active_fields: JSON.stringify({
+            contributionAccounts: { "1": { employerMatchValue: "50" } },
+          }),
+        },
+      ],
+    };
+    const named = transformFromSource(
+      structuredClone(tables),
+      { from: BEFORE, to: CURRENT },
+      "sqlite",
+    );
+    const unnamed = transformFromSource(
+      structuredClone(tables),
+      { from: BEFORE, to: CURRENT },
+      undefined,
+    );
+    expect(unnamed.tables).toEqual(named.tables);
+    expect(salariesOf(unnamed.tables)).toEqual(PROFILES.map((c) => c.after));
   });
 
   it("a PostgreSQL export's object and null roots convert the same", () => {
