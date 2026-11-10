@@ -315,7 +315,6 @@ function additionalMedicare(status: ReturnFilingStatus, jobs: number[]) {
 }
 
 const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
-const ONE_RETURN_DEDUCTIONS = `v0.11 Tax "One returnDeductions()" (with "Senior deduction phases out against the combined amount")`;
 const LINE_25_CAP = `v0.11 Tax "Gap years have no 65+ deductions" (Schedule D line 25 cap, min(L23, L24))`;
 
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
@@ -792,71 +791,35 @@ describe("answer key: senior deduction", () => {
     );
   });
 
-  // Today the function reduces the pooled 2 × 6,000 once
-  // (`return-deductions.ts:79`): 12,000 − 6% × (MAGI − 150,000),
-  // gone at 350,000. Pinned as a feature by
-  // `return-deductions.test.ts:76`.
-  const twoSeniors = (magi: number) => () =>
+  // Each person's 6,000 is reduced by 6% of the joint MAGI over 150,000
+  // and floored at 0 on its own (Schedule 1-A lines 35-37): two seniors
+  // are gone at 250,000, as one is.
+  const twoSeniors = (magi: number) =>
     seniorDeduction({ year: 2026, status: "MFJ", seniors: 2, magi });
 
-  describe("tax/E6 [TAX-22]", () => {
-    // MAGI 150,001: 2 × (6,000 − 0.06) = 11,999.88. Today: 12,000 − 0.06
-    // = 11,999.94 (worked here; the key says "pooled").
-    xfail({
-      id: "tax/E6 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(150_001),
-      expected: 11_999.88,
-      today: 11_999.94,
-    });
+  it("tax/E6 [TAX-22] MFJ two 65+, MAGI 150,001: 11,999.88", () => {
+    // 2 × (6,000 − 6% × 1) = 11,999.88.
+    cents(twoSeniors(150_001), 11_999.88);
   });
 
-  describe("tax/E7 [TAX-22] (also tax/HW-PO200)", () => {
-    // MAGI 200,000: 2 × (6,000 − 3,000) = 6,000. Today: 12,000 − 3,000 =
-    // 9,000 (key). The CPA hand worksheet's phase-out variant (HW-PO200,
-    // `comparison.md`) is the same household: two seniors, 200,000.
-    xfail({
-      id: "tax/E7 [TAX-22] (also tax/HW-PO200)",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(200_000),
-      expected: 6_000,
-      today: 9_000,
-    });
+  it("tax/E7 [TAX-22] (also tax/HW-PO200) MFJ two 65+, MAGI 200,000: 6,000", () => {
+    // 2 × (6,000 − 3,000) = 6,000. The CPA hand worksheet's phase-out
+    // variant (HW-PO200, `comparison.md`) is the same household.
+    cents(twoSeniors(200_000), 6_000);
   });
 
-  describe("tax/E8 [TAX-22]", () => {
-    // MAGI 249,999: 2 × (6,000 − 5,999.94) = 0.12. Today: 12,000 −
-    // 5,999.94 = 6,000.06 (worked here; the key says "pooled").
-    xfail({
-      id: "tax/E8 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(249_999),
-      expected: 0.12,
-      today: 6_000.06,
-    });
+  it("tax/E8 [TAX-22] MFJ two 65+, MAGI 249,999: 0.12", () => {
+    // 2 × (6,000 − 5,999.94) = 0.12.
+    cents(twoSeniors(249_999), 0.12);
   });
 
-  describe("tax/E9 [TAX-22] (also tax/HW-PO250)", () => {
-    // MAGI 250,000: 6% × 100,000 = 6,000 off each: 0. Today: 12,000 −
-    // 6,000 = 6,000 (key). HW-PO250 is the same household.
-    xfail({
-      id: "tax/E9 [TAX-22] (also tax/HW-PO250)",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(250_000),
-      expected: 0,
-      today: 6_000,
-    });
+  it("tax/E9 [TAX-22] (also tax/HW-PO250) MFJ two 65+, MAGI 250,000: 0", () => {
+    // 6% × 100,000 = 6,000 off each. HW-PO250 is the same household.
+    cents(twoSeniors(250_000), 0);
   });
 
-  describe("tax/E10 [TAX-22]", () => {
-    // MAGI 300,000: 0. Today: 12,000 − 9,000 = 3,000 (key).
-    xfail({
-      id: "tax/E10 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(300_000),
-      expected: 0,
-      today: 3_000,
-    });
+  it("tax/E10 [TAX-22] MFJ two 65+, MAGI 300,000: 0", () => {
+    cents(twoSeniors(300_000), 0);
   });
 });
 

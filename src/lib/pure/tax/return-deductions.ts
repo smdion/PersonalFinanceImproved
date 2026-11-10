@@ -31,9 +31,9 @@ type ObbbaSeniorDeductionInput = {
 };
 
 /**
- * The OBBBA deduction reduces the TOTAL claimed amount (perPerson x
- * seniorCount), not each person's share independently — the 6% phaseout
- * applies once against the combined base, per the statute's own worksheet.
+ * Each qualifying person's amount is reduced by 6% of the return's MAGI
+ * over the start and floored at 0 on its own (IRC 151(d)(5)(C); Schedule
+ * 1-A lines 35-37), so a second senior never moves where it ends.
  */
 export function computeObbbaSeniorDeduction(
   input: ObbbaSeniorDeductionInput,
@@ -58,9 +58,8 @@ export function computeObbbaSeniorDeduction(
   ) {
     return 0;
   }
-  const base = perPerson * seniorCount;
   const reduction = phaseoutRate * Math.max(0, magi.value - phaseoutStart);
-  return Math.max(0, base - reduction);
+  return Math.max(0, perPerson - reduction) * seniorCount;
 }
 
 /** A return's figures that turn on who is on it, from the tax year's
