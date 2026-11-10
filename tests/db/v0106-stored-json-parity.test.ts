@@ -13,6 +13,7 @@ import { runSQLite } from "../../db-migrate";
 import { SALARY_ENTRIES_CONVERTER } from "@/lib/db/migrate/v0106-salary-entries";
 import { ACTIVE_FIELDS_CONVERTER } from "@/lib/db/migrate/v0106-active-fields";
 import { PERFORMANCE_CATEGORY_CONVERTER } from "@/lib/db/migrate/v0106-performance-category";
+import { RETIRED_LIMITS_CONVERTER } from "@/lib/db/migrate/v0106-retired-limits";
 import {
   expectRegistryReplaySafe,
   expectRestoreMatchesSqlite,
@@ -27,6 +28,7 @@ import {
   PROFILES as CONTRIBUTION_PROFILES,
 } from "./active-fields-cases";
 import { PERFORMANCE_ACCOUNTS, yearRows } from "./performance-category-cases";
+import { LIMITS } from "./retired-limits-cases";
 
 const REPO = process.cwd();
 
@@ -65,11 +67,17 @@ const performanceRows = (): Fixture => ({
   account_performance: yearRows(),
 });
 
+/** The retired-limits cases. */
+const limitRows = (): Fixture => ({
+  contribution_limits: LIMITS.map((r) => ({ ...r })),
+});
+
 /** Every shape's rows, for the registry at the head. */
 const allRows = (): Fixture => ({
   ...salaryRows(),
   ...activeFieldsRows(),
   ...performanceRows(),
+  ...limitRows(),
 });
 
 describe("the stored-JSON tag's shapes at the journal head", () => {
@@ -130,6 +138,10 @@ describe("the stored-JSON tag's shapes at the journal head", () => {
       PERFORMANCE_CATEGORY_CONVERTER,
       performanceRows(),
     );
+  });
+
+  it("retired limits: the restore step gives SQLite's rows", () => {
+    expectRestoreMatchesSqlite(db, RETIRED_LIMITS_CONVERTER, limitRows());
   });
 
   it("the whole registry over every shape's rows writes nothing the second time", () => {

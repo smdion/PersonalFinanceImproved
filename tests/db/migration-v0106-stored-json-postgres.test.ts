@@ -43,6 +43,7 @@ import {
   YEARS,
   yearRows,
 } from "./performance-category-cases";
+import { KEPT, LIMITS } from "./retired-limits-cases";
 
 const REPO = process.cwd();
 const TSX = path.join(REPO, "node_modules", ".bin", "tsx");
@@ -139,6 +140,7 @@ describe.skipIf(skipWithoutPostgres)(
           (a) => ["performance_accounts", a] as const,
         ),
         ...yearRows().map((y) => ["account_performance", y] as const),
+        ...LIMITS.map((r) => ["contribution_limits", r] as const),
       ]) {
         const cols = Object.keys(row);
         const params = cols.map((_, i) => "$" + String(i + 1));
@@ -176,6 +178,13 @@ describe.skipIf(skipWithoutPostgres)(
         )
       ).rows.map((r) => r.c);
 
+    const limitIds = async () =>
+      (
+        await client.query<{ id: number }>(
+          "SELECT id FROM contribution_limits WHERE id >= 901 ORDER BY id",
+        )
+      ).rows.map((r) => r.id);
+
     const readable = PROFILES.flatMap((c, i) =>
       typeof c.before === "string" ? [] : [i],
     );
@@ -211,6 +220,14 @@ describe.skipIf(skipWithoutPostgres)(
       expect(await categories()).toEqual(YEARS.map((y) => y.after));
       migrate();
       expect(await categories()).toEqual(YEARS.map((y) => y.after));
+    });
+
+    it("deletes the retired limits as a pending migration, keeps every other, and a later start deletes nothing", async () => {
+      await installBefore();
+      migrate();
+      expect(await limitIds()).toEqual(KEPT);
+      migrate();
+      expect(await limitIds()).toEqual(KEPT);
     });
 
     it("a refused active-fields row refuses the start, and nothing changes", async () => {

@@ -35,6 +35,7 @@ import {
   YEARS,
   yearRows,
 } from "./performance-category-cases";
+import { KEPT, LIMITS } from "./retired-limits-cases";
 
 const REPO = process.cwd();
 const FOLDER = "drizzle-sqlite";
@@ -103,6 +104,7 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     for (const row of [
       ...PERFORMANCE_ACCOUNTS.map((a) => ["performance_accounts", a] as const),
       ...yearRows().map((y) => ["account_performance", y] as const),
+      ...LIMITS.map((r) => ["contribution_limits", r] as const),
     ]) {
       const cols = Object.keys(row[1]);
       db.prepare(
@@ -149,6 +151,16 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     return rows.map((r) => r.c);
   };
 
+  /** The invented limit rows left. */
+  const limitIds = () => {
+    const db = open();
+    const rows = db
+      .prepare("SELECT id FROM contribution_limits WHERE id >= 901 ORDER BY id")
+      .all() as { id: number }[];
+    db.close();
+    return rows.map((r) => r.id);
+  };
+
   const readable = PROFILES.flatMap((c, i) =>
     typeof c.before === "string" ? [] : [i],
   );
@@ -180,6 +192,14 @@ describe("the stored-JSON tag through the real migrator (SQLite)", () => {
     expect(categories()).toEqual(YEARS.map((y) => y.after));
     runSQLite();
     expect(categories()).toEqual(YEARS.map((y) => y.after));
+  });
+
+  it("deletes the retired limits as a pending migration, keeps every other, and a later start deletes nothing", () => {
+    installBefore();
+    runSQLite();
+    expect(limitIds()).toEqual(KEPT);
+    runSQLite();
+    expect(limitIds()).toEqual(KEPT);
   });
 
   it("a refused active-fields row refuses the start, and nothing changes", () => {
