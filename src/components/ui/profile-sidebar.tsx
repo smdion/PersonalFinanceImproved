@@ -8,6 +8,7 @@
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { asButton } from "./as-button";
+import { TextAction } from "@/components/ui/text-action";
 
 type ProfileListRowProps = {
   name: string;
@@ -103,31 +104,19 @@ export function ProfileListRow({
             onClick={(e) => e.stopPropagation()}
           >
             {onActivate && !isActive && (
-              <button
-                type="button"
-                onClick={onActivate}
-                className="text-caption text-faint hover:text-green-600"
-              >
+              <TextAction tone="positive" onClick={onActivate}>
                 activate
-              </button>
+              </TextAction>
             )}
             {onClone && (
-              <button
-                type="button"
-                onClick={onClone}
-                className="text-caption text-faint hover:text-blue-600"
-              >
+              <TextAction tone="neutral" onClick={onClone}>
                 clone
-              </button>
+              </TextAction>
             )}
             {onDelete && (
-              <button
-                type="button"
-                onClick={onDelete}
-                className="text-caption text-faint hover:text-red-600"
-              >
+              <TextAction tone="danger" onClick={onDelete}>
                 ×
-              </button>
+              </TextAction>
             )}
           </div>
         )}
@@ -157,13 +146,9 @@ export function ProfileSidebarHeader({
         {title}
       </h3>
       {onCreate && (
-        <button
-          type="button"
-          onClick={onCreate}
-          className="text-caption font-medium text-blue-600 hover:text-blue-700"
-        >
+        <TextAction tone="link" onClick={onCreate}>
           + New
-        </button>
+        </TextAction>
       )}
     </div>
   );

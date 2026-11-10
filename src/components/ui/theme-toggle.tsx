@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/lib/hooks/use-theme";
+import { UtilityButton } from "@/components/ui/utility-button";
 
 const options = [
   { value: "light" as const, label: "Light", icon: "\u2600" },
@@ -17,35 +18,31 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
     const current = options.find((o) => o.value === theme)!;
     return (
-      <button
+      <UtilityButton
+        shape="icon"
         onClick={() => setTheme(next)}
-        className="text-faint hover:text-primary p-1 transition-colors"
-        aria-label={`Theme: ${current.label}. Click to switch.`}
+        ariaLabel={`Theme: ${current.label}. Click to switch.`}
         title={`Theme: ${current.label}`}
       >
         <span className="text-sm">{current.icon}</span>
-      </button>
+      </UtilityButton>
     );
   }
 
   return (
     <div className="flex items-center gap-1 px-2">
       {options.map((opt) => (
-        <button
+        <UtilityButton
           key={opt.value}
+          shape="pill"
           onClick={() => setTheme(opt.value)}
-          className={`text-label flex flex-1 items-center justify-center gap-1 rounded px-1.5 py-1 transition-colors ${
-            theme === opt.value
-              ? "bg-blue-600 text-white"
-              : "text-faint hover:text-primary hover:bg-surface-primary"
-          }`}
-          aria-label={`${opt.label} theme`}
-          aria-pressed={theme === opt.value}
+          pressed={theme === opt.value}
+          ariaLabel={`${opt.label} theme`}
           title={`${opt.label} theme`}
         >
           <span>{opt.icon}</span>
           <span>{opt.label}</span>
-        </button>
+        </UtilityButton>
       ))}
     </div>
   );
