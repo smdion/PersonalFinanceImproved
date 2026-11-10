@@ -654,7 +654,7 @@ describe("anchor-payday date-walk (pinned)", () => {
     },
   );
 
-  it("bonusPeriod — semimonthly, day before/after the 16th split", () => {
+  it("bonusPeriod — semimonthly, day before/after the 15th payday", () => {
     const base = {
       ...PERSON_A_PAYCHECK_INPUT,
       payPeriod: "semimonthly" as const,

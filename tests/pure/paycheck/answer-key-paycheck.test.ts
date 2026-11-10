@@ -380,6 +380,28 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
     cents(scheduleNet(january), scheduleNet(december));
   });
 
+  it("paycheck/PAY19-1 [PAY-19] semimonthly: a bonus dated the 15th is on the 15th's check", () => {
+    // Semimonthly paydays are the 1st and the 15th (Ledgr's own calendar:
+    // the next payday and the paydays so far count them so). A bonus is
+    // paid with the check it is dated on or after (PW-8.1): June 1 is
+    // check 11 and June 15 check 12, so a June 15 bonus is on check 12
+    // and a June 14 one on check 11.
+    const on = (day: number) =>
+      calculatePaycheck(
+        job({
+          salary: 120_000,
+          period: "semimonthly",
+          bonus: 10_000,
+          bonusMonth: 6,
+          bonusDay: day,
+        }),
+      ).bonusPeriod;
+    expect({ june14: on(14), june15: on(15) }).toEqual({
+      june14: 11,
+      june15: 12,
+    });
+  });
+
   // C48: regular pay alone uses the whole base, then a $20,000 bonus with
   // no date (spec: paid after check 26). $190,000, 26 biweekly checks of
   // 7,307.69 (= 189,999.94), Single 2026. Year wages 209,999.94.

@@ -29,8 +29,8 @@
  *
  * Not written: the probe's extra runs that aren't key rows (an HSA with
  * no coverage, N3 under the limit, a percent-of-pay N3, N2 biweekly at
- * $250,000, N5 weekly, a semimonthly June 15 bonus); the semimonthly split
- * at the 16th is pinned in `tests/pure/paycheck/paycheck.test.ts`.
+ * $250,000, N5 weekly); the semimonthly June 15 bonus is case
+ * paycheck/PAY19-1 in `tests/pure/paycheck/answer-key-paycheck.test.ts`.
  *
  * The year-to-date panel (Y1) multiplies the average check by the checks
  * paid in the component (`annual-summary.tsx`); its figure is rebuilt

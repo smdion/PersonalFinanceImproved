@@ -228,8 +228,8 @@ export function findBonusPeriod(
   }
 
   if (payPeriod === "semimonthly") {
-    // Periods: 1st and 16th of each month
-    if (targetDay != null && targetDay >= 16) {
+    // Paydays the 1st and the 15th, as the pay calendar counts them
+    if (targetDay != null && targetDay >= 15) {
       return targetMonth * 2 + 2; // second pay period of the month
     }
     return targetMonth * 2 + 1; // first pay period of the month
