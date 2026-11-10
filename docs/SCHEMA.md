@@ -1197,7 +1197,7 @@ erDiagram
 | fetched_at       | timestamp with time zone | yes      | `now()` |             |
 
 - Unique: (service, cache_key)
-- `data`: type `unknown`; shape `budgetApiCacheDataSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `readCachedMonthBalances` (lib/budget-api/cached-month.ts); cache, loose by design; **old shapes still read (FALLBACKS)**
+- `data`: type `unknown`; shape `budgetApiCacheDataSchema` (lib/db/shapes/json-schemas.ts), parsed nowhere; read through `readCachedMonthBalances` (lib/budget-api/cached-month.ts); cache, loose by design
 
 ### budget_income_adjustments
 

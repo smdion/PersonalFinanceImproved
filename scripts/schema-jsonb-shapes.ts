@@ -63,7 +63,6 @@ export const JSONB_SHAPES: Record<string, JsonbShape> = {
     shape: `${SCHEMAS}#budgetApiCacheDataSchema`,
     parsed: "nowhere",
     reader: "lib/budget-api/cached-month.ts#readCachedMonthBalances",
-    fallbacks: "lib/budget-api/cached-month.ts",
     note: "cache, loose by design",
   },
   "budget_items.amounts": {
