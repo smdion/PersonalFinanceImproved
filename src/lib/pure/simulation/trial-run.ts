@@ -6,7 +6,7 @@ import {
 import { strategySpending } from "../retirement/strategy-spending";
 import { assessPlan, type PlanFailureReason } from "../retirement/plan-outcome";
 import { calculateProjection } from "../engine";
-import { buildInflationPath } from "../engine/inflation-path";
+import { runInflationPath } from "../engine/inflation-path";
 import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { createPRNG, sampleBlendedReturn, sampleNormalMeanStd } from "./random";
 import type { MonteCarloInput } from "./monte-carlo.types";
@@ -138,15 +138,15 @@ export function runTrials(
             sampleNormalMeanStd(rng, 0, inflationRisk.stdDev),
           )
         : undefined;
-    const trialInflation = buildInflationPath({
-      inflationRate: baseInflation,
-      postRetirementInflationRate: basePostRetirementInflation,
-      baseYear: engineInput.asOfDate.getFullYear(),
-      shocks: inflationShocks,
-    });
-    // Today's dollars for this trial: deflated by the inflation it ran with
-    // (the app's convention — the general rate, every year), so a hot trial
-    // reads poorer in today's dollars than a cool one with the same balance.
+    const trialInflation = runInflationPath(
+      { asOfDate: engineInput.asOfDate, inflationShocks },
+      {
+        inflationRate: baseInflation,
+        postRetirementInflationRate: basePostRetirementInflation,
+      },
+    );
+    // Today's dollars: deflated by the inflation this trial ran with (the general
+    // rate each year), so a hot trial reads poorer than a cool one, same balance.
     const todayDeflator = (yearIndex: number) =>
       trialInflation.growth(yearIndex);
     if (inflationShocks)

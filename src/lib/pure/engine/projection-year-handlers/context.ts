@@ -1,7 +1,7 @@
 /**
  * buildProjectionContext — builds the immutable context for a projection run.
  */
-import { buildInflationPath } from "../inflation-path";
+import { runInflationPath } from "../inflation-path";
 import type { ProjectionInput } from "../types/projection-result";
 import type { AccountCategory } from "../../../config/account-types";
 import {
@@ -173,12 +173,7 @@ export function buildProjectionContext(
     salaryGrowthRate: validated.salaryGrowthRate,
     planInflationRate: validated.inflationRate,
     validatedPostRetirementInflation: validated.postRetirementInflationRate,
-    inflation: buildInflationPath({
-      inflationRate: validated.inflationRate,
-      postRetirementInflationRate: validated.postRetirementInflationRate,
-      baseYear: input.asOfDate.getFullYear(),
-      shocks: input.inflationShocks,
-    }),
+    inflation: runInflationPath(input, validated),
     salaryOverrideMap,
     perPersonSalaryOverrides,
     currentYearBonusAdjustment,

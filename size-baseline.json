@@ -966,7 +966,7 @@
       "runAccumulationYear": 295
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
-      "buildProjectionContext": 186
+      "buildProjectionContext": 181
     },
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
       "runDecumulationYear": 529
