@@ -8,11 +8,8 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
-import {
-  type SalarySegment,
-  calculateBlendedAnnual,
-} from "@/lib/pure/paycheck/year-schedule";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 import {
   checksPaidYtd,
   countPeriodsElapsed,
@@ -22,7 +19,6 @@ import type {
   BlendedAnnualTotals,
   ContributionAccountInput,
   DeductionLine,
-  TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { PaycheckContributionRow } from "@/lib/pure/contributions/paycheck-contribution-row";
@@ -79,7 +75,6 @@ export function yearEarnings<P>(
   paycheck: ReturnType<typeof calculatePaycheck>,
   periodsPerYear: number,
   salary: number,
-  taxBracketInput: TaxBracketInput,
   contributionAccounts: ContributionAccountInput[],
   deductions: DeductionLine[],
   endedJobYears: (
@@ -93,38 +88,39 @@ export function yearEarnings<P>(
   },
   person: P,
 ) {
-  // One segment: the job's checks this year, from its start to its last day (when that's
-  // later this year, the job's checks stop there).
+  // The job's checks this year: from its start to its last day (when that's later this year,
+  // the job's checks stop there), summed from the year schedule.
   const lastDay =
     activeJob.endDate != null &&
     Number(String(activeJob.endDate).slice(0, 4)) === taxYear
       ? new Date(`${String(activeJob.endDate).slice(0, 10)}T12:00:00Z`)
       : null;
   const anchor = activeJob.anchorPayDate ?? activeJob.startDate;
-  let blendedAnnual: BlendedAnnualTotals | null = null;
-  {
-    // The checks it pays this year: from its start, to its last day.
-    const salarySegments: SalarySegment[] = [
+  const firstCheck = 1 + paycheck.periodsBeforeStart;
+  const lastCheck = lastDay
+    ? Math.min(
+        periodsPerYear,
+        countPeriodsElapsed(lastDay, activeJob.payPeriod!, new Date(anchor)),
+      )
+    : periodsPerYear;
+  const year = yearTotals(paycheck.yearSchedule, firstCheck, lastCheck);
+  const blendedAnnual: BlendedAnnualTotals = {
+    gross: year.gross,
+    federalWithholding: year.federal,
+    ficaSS: year.ficaSS,
+    ficaMedicare: year.ficaMedicare,
+    preTaxDeductions: year.preTax,
+    postTaxDeductions: year.postTax,
+    netPay: year.net,
+    blendedSalary: salary,
+    segments: [
       {
         salary,
+        periods: Math.max(0, lastCheck - firstCheck + 1),
         effectiveDate: null,
-        startPeriod: 1 + paycheck.periodsBeforeStart,
-        endPeriod: lastDay
-          ? Math.min(
-              periodsPerYear,
-              countPeriodsElapsed(
-                lastDay,
-                activeJob.payPeriod!,
-                new Date(anchor),
-              ),
-            )
-          : periodsPerYear,
-        paycheck,
       },
-    ];
-
-    blendedAnnual = calculateBlendedAnnual(salarySegments, taxBracketInput);
-  }
+    ],
+  };
 
   // This person's year: every job they had in it, each for its checks inside the year (salary,
   // resolved bonus, pre-tax money, FICA wages) — what household tax and income figures read.

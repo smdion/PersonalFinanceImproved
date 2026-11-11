@@ -523,7 +523,6 @@ export async function computePaycheckSummary(
         paycheck,
         periodsPerYear,
         salary,
-        taxBracketInput,
         contribAccounts,
         deductions,
         endedJobYears,

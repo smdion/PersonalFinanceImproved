@@ -168,7 +168,7 @@ export type PaycheckResult = {
   warnings: string[];
 };
 
-/** Blended annual totals computed from a salary timeline with mid-year changes. */
+/** The Year-end estimate: the job's checks this year, summed from the year schedule. */
 export type BlendedAnnualTotals = {
   gross: number;
   federalWithholding: number;
@@ -177,9 +177,9 @@ export type BlendedAnnualTotals = {
   preTaxDeductions: number;
   postTaxDeductions: number;
   netPay: number;
-  /** Weighted average salary across all segments. */
+  /** The job's salary (one salary a year). */
   blendedSalary: number;
-  /** Per-segment breakdown for UI transparency. */
+  /** The checks at that salary, for the panel's footnote. */
   segments: {
     salary: number;
     periods: number;

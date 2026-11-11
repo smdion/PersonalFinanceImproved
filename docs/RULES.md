@@ -71,7 +71,6 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/accounts/roth-basis-tracking.ts`).
 - **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
-- **Year totals come from three places** (the schedule, the blended walk, average × checks), until fixed. Only the schedule is right.
 - **Over-limit contributions overflow only in some later years,** until they overflow in every year (decision C4, v0.11). Money configured over this year's limit is capped and goes nowhere.
 - **RMDs aren't taken before withdrawals start,** until each owner's RMD is taken from their RMD age every year (decision D5, v0.11). A gap year warns; a working year doesn't.
 - **A Portfolio-parented Traditional account's RMD isn't taken from it,** until fixed (decision D12.7, v0.11). Its part shows as the owner's RMD shortfall.
@@ -149,7 +148,7 @@ Where year-level data, shared state and Salary Profile figures come from: DESIGN
 4. **Shared reads and services, not duplicated queries.** When multiple routers need the same read or derived value, it lives in `src/server/data/` (a read) or `src/server/services/` (composition). [check: `pnpm check:layers` (`no-router-to-router`); human]
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details. [human]
 6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice. [check: `pnpm check:duplicates`; human]
-7. **Year totals come from the year schedule.** One function computes them; every year panel reads it (not true yet: see § Known Gaps). [human]
+7. **Year totals come from the year schedule.** One function computes them; every year panel reads it. [human]
 
 ## Coding Conventions
 

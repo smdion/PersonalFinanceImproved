@@ -60,7 +60,6 @@ const NOON_AUG_14 = "2026-08-14T12:00:00Z";
 /** PW-3.15: ±$0.01 a check on a year's sum of 26 checks. */
 const YEAR_TOLERANCE = 0.26;
 
-const YEAR_TOTALS = 'v0.11 Paycheck "One yearTotals(schedule, first, last)"';
 const N5 =
   'v0.11 Paycheck "27 or 53 payday year: real paydays" (decision "A 27 or 53 payday year uses real paydays")';
 
@@ -377,19 +376,14 @@ describe("paycheck/N2: the Year-end estimate", () => {
   // row A 263,725, C 58,448, D 35%: 2g 68,134.25; 2h 5,677.85 (68,134.20
   // a year). SS 11,439.00. Medicare 1.45% × 300,000 + 0.9% × 100,000 =
   // 5,250.00 (PW-7.1, PW-7.9). Net 300,000 − 68,134.20 − 11,439 − 5,250 =
-  // 215,176.80. Today the blended walk leaves Additional Medicare out
-  // (paycheck.ts calculateBlendedAnnual).
+  // 215,176.80.
   const s = household({ job: { ...MONTHLY, annualSalary: "300000" } });
-  xfail({
-    id: "paycheck/N2 [PAY-24]",
-    todo: YEAR_TOTALS,
-    run: () => {
-      const b = s().blendedAnnual;
-      if (!b) throw new Error("no Year-end estimate");
-      return { medicare: b.ficaMedicare, net: b.netPay };
-    },
-    expected: { medicare: 5_250, net: 215_176.8 },
-    today: { medicare: 4_350, net: 216_076.8 },
+  it("paycheck/N2 [PAY-24] the Year-end estimate charges Additional Medicare", () => {
+    const b = s().blendedAnnual;
+    cents(
+      { medicare: b.ficaMedicare, net: b.netPay },
+      { medicare: 5_250, net: 215_176.8 },
+    );
   });
 });
 

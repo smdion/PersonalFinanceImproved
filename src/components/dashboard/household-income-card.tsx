@@ -13,20 +13,20 @@ import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { RothIraLine } from "@/components/taxes/roth-ira-section";
 
-/** A person's regular checks: year to date from the year schedule (Social Security at the
- *  full rate until the wage base, not the average), else a full year. */
+/** A person's regular checks from the year schedule (Social Security at the full rate until
+ *  the wage base): year to date, or the whole year. */
 function regularPay(
   pc: Pick<
     PaycheckResult,
-    "yearSchedule" | "periodsElapsedYtd" | "gross" | "netPay" | "periodsPerYear"
+    "yearSchedule" | "periodsElapsedYtd" | "periodsPerYear"
   >,
   ytd: boolean,
 ): { gross: number; net: number } {
-  if (ytd) return yearTotals(pc.yearSchedule, 1, pc.periodsElapsedYtd);
-  return {
-    gross: pc.gross * pc.periodsPerYear,
-    net: pc.netPay * pc.periodsPerYear,
-  };
+  return yearTotals(
+    pc.yearSchedule,
+    1,
+    ytd ? pc.periodsElapsedYtd : pc.periodsPerYear,
+  );
 }
 
 function HouseholdIncomeCardImpl() {

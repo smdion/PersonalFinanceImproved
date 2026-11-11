@@ -64,7 +64,6 @@ describe("answer key: a job's last check", () => {
       paycheck,
       26,
       104_000,
-      input.taxBrackets,
       [],
       [],
       () => ({
