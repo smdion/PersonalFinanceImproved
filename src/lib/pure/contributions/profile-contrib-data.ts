@@ -9,6 +9,7 @@ import {
   type AccountCategory,
   getAllCategories,
 } from "@/lib/config/account-types";
+import type { AccountOwnership } from "@/lib/config/enum-values";
 import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import { type CapPassed, computeValue } from "./contribution-caps";
 import { fractionFromPercent } from "./contribution-amount";
@@ -16,7 +17,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import {
   jobPayFor,
   annualContributionWithBonus,
-  resolveContributionPeriods,
+  rowPaySchedule,
   type ContributionRow,
 } from "./contribution-rows";
 import { aggregateContributionsByCategory } from "./category-totals";
@@ -79,7 +80,7 @@ type ContributionInputRow = {
   performanceAccountId?: number | null;
   targetAnnual?: string | number | null;
   allocationPriority: number;
-  ownership?: string | null;
+  ownership?: AccountOwnership | null;
   hsaCoverageType?: string | null;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
@@ -132,6 +133,7 @@ export function buildProfileContribData(
         : null,
       isPayrollDeducted: c.isPayrollDeducted,
       fromBonus: c.fromBonus,
+      ownership: c.ownership,
     }));
 
   const {
@@ -163,7 +165,7 @@ export function buildProfileContribData(
 
   // Per-account specs. A `fixed_per_period` account with no resolvable pay
   // period is dropped and reported in specBuilderIncompleteIds instead (see
-  // resolveContributionPeriods).
+  // rowPaySchedule).
   const specBuilderIncompleteIds: number[] = [];
   const contributionSpecs: ContributionSpec[] = activeContributions
     .filter((c) => {
@@ -201,8 +203,7 @@ export function buildProfileContribData(
         personPayShare = safeDivide(pay, personTotal, 1);
       } else if (method === "fixed_per_period") {
         value = cv;
-        const job = activeJobs.find((j) => j.id === c.jobId);
-        const resolved = resolveContributionPeriods(method, job);
+        const resolved = rowPaySchedule(c, activeJobs);
         if (resolved.incomplete) {
           specBuilderIncompleteIds.push(c.id);
           return null;
@@ -218,12 +219,11 @@ export function buildProfileContribData(
         // fixed_monthly / fixed_annual — the shared yearly amount (a bonus
         // check carrying contributions takes one more pay period's share).
         value = cv;
-        const job = activeJobs.find((j) => j.id === js?.job.id);
         baseAnnual = roundToCents(
           annualContributionWithBonus(
             c,
             js ?? { salary: 0 },
-            resolveContributionPeriods(method, job).periodsPerYear,
+            rowPaySchedule(c, activeJobs).periodsPerYear,
           ),
         );
       }
@@ -267,7 +267,7 @@ export function buildProfileContribData(
           (c.performanceAccountId
             ? ctx.perfCategoryMap.get(c.performanceAccountId)
             : undefined),
-        ownership: (c.ownership ?? "individual") as "individual" | "joint",
+        ownership: c.ownership ?? "individual",
         retirementBehavior: (c.performanceAccountId
           ? ctx.perfRetirementBehaviorMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["retirementBehavior"],

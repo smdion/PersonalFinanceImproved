@@ -1,25 +1,33 @@
 /** Small rules decided with the owner for v0.9.7. */
 import "../routers/setup-mocks";
 import { describe, expect, it } from "vitest";
-import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/contribution-rows";
 import { retirementProfileIsFallback } from "@/lib/pure/household/retirement-profile";
 import { isGoalMet } from "@/lib/pure/savings/savings-goal-met";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
-describe("a jobless account paid per paycheck", () => {
+describe("a joint account paid per paycheck", () => {
+  const joint = {
+    contributionMethod: "fixed_per_period",
+    jobId: null,
+    personId: null,
+    ownership: "joint" as const,
+  };
   it("is complete when everyone shares a schedule", () => {
-    expect(
-      resolveJoblessPeriodsPerYear([
-        { payPeriod: "biweekly" },
-        { payPeriod: "biweekly" },
-      ]),
-    ).toEqual({ periodsPerYear: 26, incomplete: false });
+    const { periodsPerYear, incomplete } = rowPaySchedule(joint, [
+      { id: 1, personId: 1, payPeriod: "biweekly" },
+      { id: 2, personId: 2, payPeriod: "biweekly" },
+    ]);
+    expect({ periodsPerYear, incomplete }).toEqual({
+      periodsPerYear: 26,
+      incomplete: false,
+    });
   });
   it("is incomplete when schedules differ: no job order decides it", () => {
     expect(
-      resolveJoblessPeriodsPerYear([
-        { payPeriod: "biweekly" },
-        { payPeriod: "semimonthly" },
+      rowPaySchedule(joint, [
+        { id: 1, personId: 1, payPeriod: "biweekly" },
+        { id: 2, personId: 2, payPeriod: "semimonthly" },
       ]).incomplete,
     ).toBe(true);
   });

@@ -1,15 +1,15 @@
 /**
  * A payroll fixed_monthly / fixed_annual account taken from the bonus check
  * needs the job's real pay-period count to know its per-paycheck amount.
- * resolveContributionPeriods used to hand back 0 for those methods, so the
- * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
+ * A schedule of 0 for those methods would make the bonus share regular / 0 =
+ * Infinity, and the cap pass would zero the account.
  */
 import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
   contributionRowAmounts,
-  resolveContributionPeriods,
+  rowPaySchedule,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 
@@ -42,14 +42,9 @@ const pay = [
 
 describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () => {
   it("resolves the job's real pay periods for every method", () => {
-    expect(
-      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
-        .periodsPerYear,
-    ).toBe(26);
-    expect(
-      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
-        .incomplete,
-    ).toBe(false);
+    const row = hsa("fixed_monthly", 100);
+    expect(rowPaySchedule(row, jobs).periodsPerYear).toBe(26);
+    expect(rowPaySchedule(row, jobs).incomplete).toBe(false);
   });
 
   it("a $100/month HSA gives a finite annual: 12 months plus one paycheck's share", () => {
@@ -155,5 +150,61 @@ describe("annualContributionWithBonus", () => {
         26,
       ),
     ).toBe(10_000);
+  });
+});
+
+describe("rowPaySchedule: the one schedule a row's per-check amount runs on", () => {
+  const perCheck = (
+    over: Partial<Parameters<typeof rowPaySchedule>[0]>,
+  ): Parameters<typeof rowPaySchedule>[0] => ({
+    contributionMethod: "fixed_per_period",
+    jobId: null,
+    personId: 1,
+    ownership: "individual",
+    ...over,
+  });
+  const twoJobs = [
+    { id: 1, personId: 1, payPeriod: "biweekly" },
+    { id: 2, personId: 2, payPeriod: "monthly" },
+  ];
+
+  it("a row's own job, else its person's first job", () => {
+    expect(rowPaySchedule(perCheck({ jobId: 2 }), twoJobs)).toMatchObject({
+      periodsPerYear: 12,
+      incomplete: false,
+      job: twoJobs[1],
+    });
+    expect(rowPaySchedule(perCheck({}), twoJobs)).toMatchObject({
+      periodsPerYear: 26,
+      job: twoJobs[0],
+    });
+  });
+
+  it("a household joint row: the one schedule every active job pays on, else $0 flagged", () => {
+    const joint = perCheck({ ownership: "joint", personId: null });
+    expect(rowPaySchedule(joint, twoJobs)).toEqual({
+      periodsPerYear: 0,
+      incomplete: true,
+      job: undefined,
+    });
+    expect(rowPaySchedule(joint, [twoJobs[0]!])).toMatchObject({
+      periodsPerYear: 26,
+      incomplete: false,
+    });
+    expect(rowPaySchedule(joint, []).incomplete).toBe(true);
+  });
+
+  it("a joint row tied to a job reads that job's schedule", () => {
+    expect(
+      rowPaySchedule(perCheck({ ownership: "joint", jobId: 2 }), twoJobs)
+        .periodsPerYear,
+    ).toBe(12);
+  });
+
+  it("only a per-check amount can be incomplete", () => {
+    expect(
+      rowPaySchedule(perCheck({ contributionMethod: "fixed_monthly" }), [])
+        .incomplete,
+    ).toBe(false);
   });
 });

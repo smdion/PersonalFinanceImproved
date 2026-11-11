@@ -1491,11 +1491,12 @@ describe("budget router", () => {
     });
 
     it("fixed_per_period converts correctly", async () => {
-      // No jobs seeded in this suite's dataset besides the one from
-      // seedStandardDataset (biweekly, 26 periods/year).
+      // A joint account runs on the household's one schedule: the only job
+      // is seedStandardDataset's (biweekly, 26 periods/year).
       const { itemId, contribProfileId } = await seedLinkedItem({
         contributionMethod: "fixed_per_period",
         contributionValue: "50.00", // monthly = 50*26/12 = 108.33
+        ownership: "joint",
       });
 
       const before = await caller.budget.computeActiveSummary({
@@ -1516,6 +1517,19 @@ describe("budget router", () => {
         (200 * 12) / 26,
         2,
       );
+    });
+
+    it("a per-check account of a person with no job reads $0, flagged, as on the Contributions page", async () => {
+      const { itemId, contribProfileId } = await seedLinkedItem({
+        contributionMethod: "fixed_per_period",
+        contributionValue: "50.00",
+      });
+      const before = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+      });
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBe(0);
+      expect(linked.contribStatus?.[0]).toBe("no_pay_period");
     });
 
     it("rejects editing a percent_of_salary-linked item with a clear error", async () => {

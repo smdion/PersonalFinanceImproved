@@ -54,7 +54,7 @@ import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContributionWindow } from "@/lib/utils/date";
 import { limitAge } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
-import { findActiveJob } from "@/lib/pure/household/profiles";
+import { filterActiveJobs, findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-pass";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
@@ -685,7 +685,7 @@ export async function computeContributionSummary(
   );
   jointAccountRows(
     jointContribs,
-    results,
+    filterActiveJobs(effectiveJobs, asOfDate),
     perfLabelMap,
     asOfDate,
     liveThroughToday,

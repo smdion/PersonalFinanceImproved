@@ -779,7 +779,7 @@ live from the job record" fallback — a job has nothing left on `jobs` to
 fall back to. A profile that doesn't mention a job says **nothing** about
 it: salary/bonus resolve to $0/no bonus, and every other field resolves to
 `undefined`, which every consumer must treat as a real "incomplete" signal
-(see `mergeSalaryProfileJobFields`/`resolveContributionPeriods`'s pattern of
+(see `mergeSalaryProfileJobFields`/`rowPaySchedule`'s pattern of
 excluding rather than guessing) — never a substitute for a live column,
 because none exists. `salaryEntrySchema` (`json-schemas.ts`) is `.strict()`
 so a partial or stale-shaped entry is rejected at write time, not silently

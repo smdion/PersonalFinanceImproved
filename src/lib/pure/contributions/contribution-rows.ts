@@ -5,6 +5,7 @@ import type {
 } from "@/lib/config/enum-values";
 import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { AccountOwnership } from "@/lib/config/enum-values";
 import { computeValue } from "./contribution-caps";
 import {
   computeAnnualContribution,
@@ -17,39 +18,43 @@ import {
 } from "@/lib/pure/paycheck/bonus";
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 
-/** Jobless account fallback: the active jobs' periods per year, or `incomplete: true` with none
- *  or with mixed schedules (`periodsPerYear` is then a placeholder). Shared by
- *  computeActiveSummary and its inverse, applyContributionAccountEdit. */
-export function resolveJoblessPeriodsPerYear(
-  activeJobs: { payPeriod: string | undefined }[],
-): { periodsPerYear: number; incomplete: boolean } {
-  const schedules = new Set(
-    activeJobs.flatMap((j) => (j.payPeriod != null ? [j.payPeriod] : [])),
-  );
-  const [first] = schedules;
-  return first !== undefined
-    ? {
-        periodsPerYear: getPeriodsPerYear(first),
-        incomplete: schedules.size > 1,
-      }
-    : { periodsPerYear: 0, incomplete: true };
+/** A joint row the household pays; a joint row tied to a job sits in that job's rows. */
+function isHouseholdJointRow(row: {
+  ownership?: AccountOwnership | null;
+  jobId: number | null;
+}): boolean {
+  return row.ownership === "joint" && row.jobId === null;
 }
 
-/**
- * A row's periods per year from its resolved `job` (undefined = none). Only `fixed_per_period`
- * uses it for its yearly amount, so only it can be incomplete; others resolve `0`, which
- * callers must not divide by.
- */
-export function resolveContributionPeriods(
-  method: string,
-  job: { payPeriod: string | undefined } | undefined,
-): { periodsPerYear: number; incomplete: boolean } {
-  if (!job || job.payPeriod == null)
-    return { periodsPerYear: 0, incomplete: method === "fixed_per_period" };
-  return {
-    periodsPerYear: getPeriodsPerYear(job.payPeriod),
-    incomplete: false,
-  };
+/** A row's job and the pay schedule its per-check amount runs on: its own job's; with no job, its
+ *  person's, or for a household joint row (no job) the one schedule every active job pays on. With
+ *  none, a per-check row is `incomplete` ($0, flagged); `periodsPerYear` 0 is never divided by. */
+export function rowPaySchedule<J extends JobRef>(
+  row: {
+    contributionMethod?: string | null;
+    jobId: number | null;
+    personId: number | null;
+    ownership?: AccountOwnership | null;
+  },
+  activeJobs: readonly J[],
+): { periodsPerYear: number; incomplete: boolean; job: J | undefined } {
+  const joint = isHouseholdJointRow(row);
+  const jobs =
+    row.jobId !== null
+      ? activeJobs.filter((j) => j.id === row.jobId)
+      : joint
+        ? activeJobs
+        : activeJobs.filter((j) => j.personId === row.personId).slice(0, 1);
+  const schedules = new Set(jobs.flatMap((j) => j.payPeriod ?? []));
+  const [only] = schedules;
+  const job = joint ? undefined : jobs[0];
+  return only !== undefined && schedules.size === 1
+    ? { periodsPerYear: getPeriodsPerYear(only), incomplete: false, job }
+    : {
+        periodsPerYear: 0,
+        incomplete: row.contributionMethod === "fixed_per_period",
+        job,
+      };
 }
 
 /** Minimal fields needed from the DB contribution_accounts row. */
@@ -74,6 +79,7 @@ export type ContributionRow = {
   fromBonus: boolean | undefined;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
+  ownership?: AccountOwnership | null;
 };
 
 export type JobRef = {
@@ -91,9 +97,7 @@ export type JobSalaryRef = {
   bonusGrossThisYear?: number;
 };
 
-/** The job whose pay a contribution is figured on: its own job, or — for an
- *  account not tied to one — the person's job. One lookup for the summary,
- *  the display specs and the engine specs. */
+/** The job pay a contribution is figured on: its own job's, else its person's (as rowPaySchedule). */
 export function jobPayFor<T extends { job: { id: number; personId: number } }>(
   c: { jobId: number | null; personId: number | null },
   jobSalaries: readonly T[],
@@ -165,15 +169,11 @@ export function contributionRowAmounts(
   const annualById = new Map<number, number>();
   const bonusGroups = matchPayGroupsWithBonus([...activeContributions]);
   for (const c of activeContributions) {
-    // Direct job link, or fall back to person's first active job when jobId is null
     const js = jobPayFor(c, jobSalaries);
-    const job = c.jobId
-      ? activeJobs.find((j) => j.id === c.jobId)
-      : activeJobs.find((j) => j.personId === c.personId);
     const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
-      c.contributionMethod,
-      job,
+    const { periodsPerYear: periods, incomplete } = rowPaySchedule(
+      c,
+      activeJobs,
     );
     if (incomplete) incompleteAccountIds.push(c.id);
     const annual = incomplete

@@ -1,4 +1,4 @@
-import { and, isNull, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
@@ -6,7 +6,7 @@ import type { ContribSaveChecker } from "@/server/services/contributions/caps";
 import { mergeSalaryProfileJobFields } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { DbOrTx, Db } from "@/lib/db";
-import { resolveJoblessPeriodsPerYear } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/contribution-rows";
 
 /**
  * Inverse of computeAnnualContribution for flat-dollar methods (budget-linked accounts
@@ -32,18 +32,25 @@ function computeContributionValueFromMonthly(
 }
 
 /**
- * The periods-per-year input `mergeContributionAccountEdit` needs, independent of the
- * profile/account, so a batch resolves it once.
+ * Each edited account's pay periods per year (rowPaySchedule; 0 = no schedule applies), from the
+ * jobs the globally active Salary Profile pays, so a batch resolves them once.
  */
-async function resolveActiveJobPeriodsPerYear(
+async function resolvePeriodsPerYearByAccount(
   db: DbOrTx,
-): Promise<{ periodsPerYear: number; incomplete: boolean }> {
-  const rawActiveJobs = await db
-    .select()
-    .from(schema.jobs)
-    .where(
-      and(isNull(schema.jobs.endDate), eq(schema.jobs.isSpeculative, false)),
-    );
+  accountIds: number[],
+): Promise<Map<number, number>> {
+  const [rawActiveJobs, accounts] = await Promise.all([
+    db
+      .select()
+      .from(schema.jobs)
+      .where(
+        and(isNull(schema.jobs.endDate), eq(schema.jobs.isSpeculative, false)),
+      ),
+    db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(inArray(schema.contributionAccounts.id, accountIds)),
+  ]);
   // A job's pay schedule comes from the globally active Salary Profile, never the
   // Contribution Profile.
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
@@ -51,7 +58,9 @@ async function resolveActiveJobPeriodsPerYear(
     rawActiveJobs,
     salaryProfileActiveMap,
   );
-  return resolveJoblessPeriodsPerYear(activeJobs);
+  return new Map(
+    accounts.map((a) => [a.id, rowPaySchedule(a, activeJobs).periodsPerYear]),
+  );
 }
 
 /**
@@ -63,9 +72,10 @@ function mergeContributionAccountEdit(
   activeFields: EntityFieldMap,
   contributionAccountId: number,
   monthlyAmount: number,
-  periodsPerYear: number,
-  incomplete: boolean,
+  /** Undefined: the account is gone, nothing to update. */
+  periodsPerYear: number | undefined,
 ): EntityFieldMap | null {
+  if (periodsPerYear === undefined) return null;
   const accountFields = (activeFields.contributionAccounts?.[
     String(contributionAccountId)
   ] ?? {}) as Record<string, unknown>;
@@ -77,7 +87,7 @@ function mergeContributionAccountEdit(
 
   // No active job supplies a pay schedule and this isn't a user-facing save that can
   // reject: keep the value rather than write a fabricated number.
-  if (incomplete && method === "fixed_per_period") return null;
+  if (periodsPerYear === 0 && method === "fixed_per_period") return null;
 
   const newValue = roundToCents(
     computeContributionValueFromMonthly(method, monthlyAmount, periodsPerYear),
@@ -118,39 +128,15 @@ export async function applyContributionAccountEdit(
    *  budget edit can save a contribution over its limit. */
   check: ContribSaveChecker,
 ): Promise<void> {
-  const { periodsPerYear, incomplete } =
-    await resolveActiveJobPeriodsPerYear(db);
-
-  const [profile] = await db
-    .select()
-    .from(schema.contributionProfiles)
-    .where(eq(schema.contributionProfiles.id, contributionProfileId));
-  if (!profile) return; // stale FK — nothing to update
-
-  const activeFields = profile.contributionActiveFields as EntityFieldMap;
-  const nextActiveFields = mergeContributionAccountEdit(
-    activeFields,
-    contributionAccountId,
-    monthlyAmount,
-    periodsPerYear,
-    incomplete,
+  await applyContributionAccountEditsBatch(
+    db,
+    [{ contributionAccountId, monthlyAmount, contributionProfileId }],
+    check,
   );
-  if (nextActiveFields === null) return;
-  await check(db as Db, {
-    profileId: contributionProfileId,
-    before: activeFields.contributionAccounts ?? {},
-    after: nextActiveFields.contributionAccounts ?? {},
-    touched: [contributionAccountId],
-  });
-
-  await db
-    .update(schema.contributionProfiles)
-    .set({ contributionActiveFields: nextActiveFields })
-    .where(eq(schema.contributionProfiles.id, contributionProfileId));
 }
 
 /**
- * Batch `applyContributionAccountEdit`: one SELECT + one UPDATE per distinct profile,
+ * Budget-linked edits as monthly amounts: one SELECT + one UPDATE per distinct profile,
  * however many edits it gets. `db` should be a transaction when the caller writes other
  * rows in the same request.
  */
@@ -166,8 +152,10 @@ export async function applyContributionAccountEditsBatch(
 ): Promise<void> {
   if (edits.length === 0) return;
 
-  const { periodsPerYear, incomplete } =
-    await resolveActiveJobPeriodsPerYear(db);
+  const periodsByAccount = await resolvePeriodsPerYearByAccount(
+    db,
+    edits.map((e) => e.contributionAccountId),
+  );
 
   const byProfile = new Map<number, typeof edits>();
   for (const edit of edits) {
@@ -191,8 +179,7 @@ export async function applyContributionAccountEditsBatch(
         activeFields,
         edit.contributionAccountId,
         edit.monthlyAmount,
-        periodsPerYear,
-        incomplete,
+        periodsByAccount.get(edit.contributionAccountId),
       );
       if (next !== null) {
         activeFields = next;

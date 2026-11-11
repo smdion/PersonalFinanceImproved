@@ -22,10 +22,7 @@ import {
   applyContribActiveFields,
 } from "@/server/services/contributions/profile";
 import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
-import {
-  resolveJoblessPeriodsPerYear,
-  resolveContributionPeriods,
-} from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/contribution-rows";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
@@ -105,10 +102,6 @@ export async function resolveLinkedBudgetItemAmounts<
   );
   const activeContributionIds = new Set(activeContributions.map((c) => c.id));
   const activeJobs = filterActiveJobs(profileResult.jobs, scope.asOf);
-  const {
-    periodsPerYear: defaultPeriodsPerYear,
-    incomplete: joblessIncomplete,
-  } = resolveJoblessPeriodsPerYear(activeJobs);
 
   const salaryByJobId = new Map<number, number>();
   for (const j of activeJobs) {
@@ -122,18 +115,10 @@ export async function resolveLinkedBudgetItemAmounts<
   for (const c of activeContributions) {
     if (!linkedContributionIds.has(c.id)) continue;
     const val = computeValue(c);
-    const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
-    let jobPeriodsPerYear: number;
-    let incomplete: boolean;
-    if (c.jobId) {
-      const job = activeJobs.find((j) => j.id === c.jobId);
-      const resolved = resolveContributionPeriods(c.contributionMethod, job);
-      jobPeriodsPerYear = resolved.periodsPerYear;
-      incomplete = resolved.incomplete;
-    } else {
-      jobPeriodsPerYear = defaultPeriodsPerYear;
-      incomplete = isFixedPerPeriod && joblessIncomplete;
-    }
+    const { periodsPerYear: jobPeriodsPerYear, incomplete } = rowPaySchedule(
+      c,
+      activeJobs,
+    );
     if (incomplete) {
       incompleteIds.add(c.id);
       contributionMonthlyById.set(c.id, 0);

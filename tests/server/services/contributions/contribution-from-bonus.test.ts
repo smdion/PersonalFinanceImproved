@@ -148,6 +148,35 @@ describe("projection specs (buildProfileContribData — profile switches use it 
       6,
     );
   });
+
+  it("a joint per-check account counts on the household's one schedule; with two schedules it's dropped, flagged", () => {
+    const joint = {
+      ...k401(),
+      id: 2,
+      personId: null,
+      jobId: null,
+      accountType: "brokerage" as AccountCategory,
+      contributionMethod: "fixed_per_period" as const,
+      contributionValue: "100",
+      taxTreatment: "after_tax",
+      employerMatchType: "none" as const,
+      performanceAccountId: null,
+      targetAnnual: null,
+      allocationPriority: 0,
+      ownership: "joint" as const,
+    };
+    const run = (activeJobs: typeof jobs) =>
+      buildProfileContribData(
+        [joint],
+        activeJobs,
+        [{ ...pay[0]!, totalComp: SALARY }],
+        ctx,
+      );
+    expect(run(jobs).baseYearContributions.brokerage).toBeCloseTo(2_600, 2);
+    const mixed = run([...jobs, { id: 2, personId: 2, payPeriod: "monthly" }]);
+    expect(mixed.contributionSpecs).toHaveLength(0);
+    expect(mixed.incompleteAccountIds).toEqual([2]);
+  });
 });
 
 describe("What-If overlay (applyContribActiveFields)", () => {

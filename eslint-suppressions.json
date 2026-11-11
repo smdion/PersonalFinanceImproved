@@ -3856,7 +3856,7 @@
   },
   "src/lib/pure/contributions/profile-contrib-data.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
+      "count": 6
     },
     "max-lines-per-function": {
       "count": 1
@@ -5231,7 +5231,7 @@
   },
   "src/server/services/contributions/account-edits.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 4
     }
   },
   "src/server/services/contributions/caps.ts": {

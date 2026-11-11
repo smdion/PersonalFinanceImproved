@@ -8,7 +8,6 @@ import {
   isRetirementCategory,
   isTaxFree,
 } from "@/lib/config/account-types";
-import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import {
   computeAnnualContribution,
   parseEmployerMatch,
@@ -25,14 +24,15 @@ import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
-import type {
-  AccountTypeSnapshot,
-  PersonSnapshot,
-} from "@/lib/pure/contributions/summary.types";
+import type { AccountTypeSnapshot } from "@/lib/pure/contributions/summary.types";
+import {
+  rowPaySchedule,
+  type JobRef,
+} from "@/lib/pure/contributions/contribution-rows";
 
 export function jointAccountRows(
   jointContribs: ContributionAccountRow[],
-  results: PersonSnapshot[],
+  activeJobs: readonly JobRef[],
   perfLabelMap: Map<number, string>,
   asOfDate: Date,
   liveThroughToday: Set<number>,
@@ -44,8 +44,8 @@ export function jointAccountRows(
 ) {
   for (const c of jointContribs) {
     const val = toNumber(String(c.contributionValue));
-    const periodsPerYear =
-      results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
+    // No applicable schedule: a per-check amount is $0 (rowPaySchedule).
+    const { periodsPerYear } = rowPaySchedule(c, activeJobs);
     const annual = computeAnnualContribution(
       c.contributionMethod,
       val,
