@@ -21,6 +21,9 @@ type RothIraPersonInput = {
    *  cap pass (limit, compensation, the spouse's IRA money — IRC 219(c));
    *  absent = sized here from compensation. */
   iraRoom?: number | null;
+  /** This year's money into IRAs other than a Roth IRA (Pub 590-A
+   *  Worksheet 2-2 line 9); 0 when there is none. */
+  otherIraContributions: number;
 };
 
 type RothIraPersonResult = {
@@ -96,13 +99,16 @@ export function judgeRothIra(args: {
     const own = Math.max(0, p.compensation);
     const usable =
       p.iraRoom ?? (args.combinedCompensation ? compensationLeft : own);
-    const allowed = rothIraAllowed(
-      magi,
-      phaseOut,
-      Math.min(p.iraLimit, usable),
+    const base = Math.min(p.iraLimit, usable);
+    const other = p.otherIraContributions;
+    // Worksheet 2-2 lines 9–11: one limit across both kinds (408A(c)(2)),
+    // so the smaller of line 8 and the base less the other IRA money.
+    const allowed = Math.min(
+      rothIraAllowed(magi, phaseOut, base),
+      Math.max(0, base - other),
     );
     maxDirect.set(p.personId, allowed);
-    compensationLeft = Math.max(0, compensationLeft - allowed);
+    compensationLeft = Math.max(0, compensationLeft - allowed - other);
   }
   return {
     magi,

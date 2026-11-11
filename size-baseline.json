@@ -270,7 +270,7 @@
     "src/lib/pure/contributions/person-snapshot.ts": 215,
     "src/lib/pure/contributions/profile-contrib-data.ts": 325,
     "src/lib/pure/contributions/profile-fields.ts": 45,
-    "src/lib/pure/contributions/roth-ira.ts": 178,
+    "src/lib/pure/contributions/roth-ira.ts": 177,
     "src/lib/pure/contributions/savings-rate.ts": 140,
     "src/lib/pure/contributions/summary.types.ts": 106,
     "src/lib/pure/contributions/view-metrics.ts": 190,

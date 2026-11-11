@@ -52,6 +52,7 @@ import {
   judgeRothIra,
   rothIraAllowed,
 } from "@/lib/pure/contributions/roth-ira-judge";
+import { otherIraMoney } from "@/lib/pure/contributions/roth-ira-summary";
 import { megaBackdoorRoom } from "@/lib/pure/advice/milestones/input";
 import { computeEmployerMatch } from "@/lib/pure/contributions/employer-match";
 import { taxDataLimitMap } from "../../helpers/tax-data";
@@ -539,6 +540,9 @@ const allowedDirect = (
         compensation: 300_000,
         iraLimit: capped.limit!,
         iraRoom: capped.maxEmployee,
+        otherIraContributions: otherIraMoney([
+          { accountType: "ira", taxTreatment: "pre_tax", cap: capped },
+        ]),
       },
     ],
   });
@@ -578,18 +582,12 @@ describe("limits: IRA", () => {
     cents(iraLimit(2025, 20, 3_500), 3_500);
   });
 
-  // C55: Roth room after a traditional IRA. 2026, 50, 5,000 traditional,
-  // MAGI under the range. One limit across both kinds (408A(c)(2); Pub
-  // 590-A Worksheet 2-2 lines 9–11): 8,600 − 5,000 = 3,600. Today the
-  // "Allowed" figure stops at line 8 and shows the whole 8,600 (verdict
-  // D5). Fed as the paycheck summary does (`computePaycheckSummary`): the
-  // cap pass's room goes in as `iraRoom`.
-  xfail({
-    id: "limits/C55 [LIM-13]",
-    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
-    run: () => allowedDirect("Single", 50, 50_000, 5_000),
-    expected: 3_600,
-    today: 8_600,
+  it("limits/C55 [LIM-13] Roth room after a traditional IRA (2026, 50, 5,000 traditional, MAGI under the range): 3,600", () => {
+    // One limit across both kinds (408A(c)(2); Pub 590-A Worksheet 2-2
+    // lines 9–11): 8,600 − 5,000 = 3,600 (verdict D5). Fed as the Roth IRA
+    // view is: the cap pass's room as `iraRoom`, the traditional row's
+    // capped money as line 9.
+    cents(allowedDirect("Single", 50, 50_000, 5_000), 3_600);
   });
 
   it("limits/C56 [LIM-11] spousal IRA (Pub 590-A; 2025 MFJ, A pay 30,000 gives 7,000, B no pay): 7,000", () => {
@@ -838,17 +836,11 @@ describe("limits: Roth IRA phase-out", () => {
     );
   });
 
-  // C88: phase-out first, then the traditional money. 2026 MFJ, 45, MAGI
-  // 247,000, 5,000 traditional. Worksheet 2-2: line 8 on 7,500 = 3,750;
-  // lines 9–11, 7,500 − 5,000 = 2,500; the smaller wins: 2,500 (reducing
-  // the base first would give the wrong 1,250). Today the text says 3,750
-  // (verdict D5).
-  xfail({
-    id: "limits/C88 [LIM-13]",
-    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
-    run: () => allowedDirect("MFJ", 45, 247_000, 5_000),
-    expected: 2_500,
-    today: 3_750,
+  it("limits/C88 [LIM-13] phase-out first, then the traditional money (2026 MFJ, 45, MAGI 247,000, 5,000 traditional): 2,500", () => {
+    // Worksheet 2-2: line 8 on 7,500 = 3,750; lines 9–11, 7,500 − 5,000 =
+    // 2,500; the smaller wins: 2,500 (reducing the base first would give
+    // the wrong 1,250; verdict D5).
+    cents(allowedDirect("MFJ", 45, 247_000, 5_000), 2_500);
   });
 
   it("limits/C89 [LIM-12] conversion income left out of MAGI, range function only (2026 MFJ, 45, AGI 300,000 with 80,000 conversion): 7,500", () => {

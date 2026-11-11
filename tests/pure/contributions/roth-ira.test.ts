@@ -11,7 +11,10 @@ import {
   pendingConversion,
   preTaxIraByPerson,
 } from "@/lib/pure/contributions/roth-ira-pro-rata";
-import { rothIraSummary } from "@/lib/pure/contributions/roth-ira-summary";
+import {
+  otherIraMoney,
+  rothIraSummary,
+} from "@/lib/pure/contributions/roth-ira-summary";
 import {
   medicareLiabilityKey,
   rothIraPhaseoutKeys,
@@ -49,8 +52,20 @@ describe("rothIraAllowed (Pub 590-A Worksheet 2-2)", () => {
 
 describe("judgeRothIra", () => {
   const people = [
-    { personId: 1, name: "A", compensation: 150_000, iraLimit: 7000 },
-    { personId: 2, name: "B", compensation: 0, iraLimit: 8000 },
+    {
+      personId: 1,
+      name: "A",
+      compensation: 150_000,
+      iraLimit: 7000,
+      otherIraContributions: 0,
+    },
+    {
+      personId: 2,
+      name: "B",
+      compensation: 0,
+      iraLimit: 8000,
+      otherIraContributions: 0,
+    },
   ];
   const judge = (magi: number, over = {}) =>
     judgeRothIra({
@@ -98,8 +113,20 @@ describe("judgeRothIra", () => {
       marginOverride: null,
       combinedCompensation: true,
       people: [
-        { personId: 1, name: "A", compensation: 8000, iraLimit: 7000 },
-        { personId: 2, name: "B", compensation: 0, iraLimit: 7000 },
+        {
+          personId: 1,
+          name: "A",
+          compensation: 8000,
+          iraLimit: 7000,
+          otherIraContributions: 0,
+        },
+        {
+          personId: 2,
+          name: "B",
+          compensation: 0,
+          iraLimit: 7000,
+          otherIraContributions: 0,
+        },
       ],
     })!;
     expect(r.people.map((p) => p.maxDirect)).toEqual([7000, 1000]);
@@ -120,6 +147,7 @@ describe("judgeRothIra", () => {
           compensation: 8000,
           iraLimit: 7000,
           iraRoom: 2000,
+          otherIraContributions: 0,
         },
         {
           personId: 2,
@@ -127,10 +155,65 @@ describe("judgeRothIra", () => {
           compensation: 0,
           iraLimit: 7000,
           iraRoom: 6000,
+          otherIraContributions: 0,
         },
       ],
     })!;
     expect(r.people.map((p) => p.maxDirect)).toEqual([2000, 6000]);
+  });
+
+  it("traditional IRA money this year comes off the Roth room (Worksheet 2-2 lines 9–11)", () => {
+    const one = (magi: number, other: number) =>
+      judgeRothIra({
+        magi,
+        phaseOut: MFJ,
+        marginOverride: null,
+        combinedCompensation: false,
+        people: [
+          {
+            personId: 1,
+            name: "A",
+            compensation: 150_000,
+            iraLimit: 7000,
+            otherIraContributions: other,
+          },
+        ],
+      })!.people[0]!.maxDirect;
+    // Under the range: 7,000 − 2,000.
+    expect(one(150_000, 2000)).toBe(5000);
+    // Halfway: line 8 is 3,500; line 10 is 7,000 − 2,000 = 5,000; 3,500.
+    expect(one(205_000, 2000)).toBe(3500);
+    // Line 10 smaller: 7,000 − 6,000 = 1,000 (no $200 floor on line 10).
+    expect(one(205_000, 6000)).toBe(1000);
+    expect(one(150_000, 9000)).toBe(0);
+  });
+
+  it("a spouse's traditional IRA money leaves less of the couple's pay (IRC 219(c))", () => {
+    // A: 8,000 pay, 3,000 traditional, 4,000 Roth room left. B: no pay,
+    // 8,000 − 3,000 − 4,000 = 1,000.
+    const r = judgeRothIra({
+      magi: 50_000,
+      phaseOut: MFJ,
+      marginOverride: null,
+      combinedCompensation: true,
+      people: [
+        {
+          personId: 1,
+          name: "A",
+          compensation: 8000,
+          iraLimit: 7000,
+          otherIraContributions: 3000,
+        },
+        {
+          personId: 2,
+          name: "B",
+          compensation: 0,
+          iraLimit: 7000,
+          otherIraContributions: 0,
+        },
+      ],
+    })!;
+    expect(r.people.map((p) => p.maxDirect)).toEqual([4000, 1000]);
   });
 
   it("no phase-out data → no verdict", () => {
@@ -184,15 +267,83 @@ describe("buildRothIraView", () => {
       wageAgi: 189_000,
       investmentIncome: 16_000,
       preTaxIraByPerson: [{ personId: 1, amount: 1234 }],
+      otherIraByPerson: [{ personId: 1, amount: 0 }],
       marginOverride: null,
     });
     expect(v.magi).toBe(205_000);
+    // Each person's other IRA money reaches the judge: under the range,
+    // 7,000 less 5,000 of traditional money.
+    expect(
+      buildRothIraView({
+        rothIra: {
+          filingStatus: "MFJ",
+          phaseOut: MFJ,
+          people: [
+            {
+              personId: 1,
+              name: "A",
+              compensation: 190_000,
+              iraLimit: 7000,
+              hasEmployerPlan: true,
+              iraRoom: null,
+              rothRoute: null,
+            },
+          ],
+        },
+        wageAgi: 150_000,
+        investmentIncome: 0,
+        preTaxIraByPerson: [],
+        otherIraByPerson: [{ personId: 1, amount: 5000 }],
+        marginOverride: null,
+      }).judgement!.people[0]!.maxDirect,
+    ).toBe(2000);
     expect(v.judgement!.verdict).toBe("tooClose");
     // A person whose IRA limit is missing from the data is left out.
     expect(v.judgement!.people.map((p) => p.personId)).toEqual([1]);
     expect(v.proRata).toEqual([
       { personId: 1, name: "A", amount: 1234, hasEmployerPlan: true },
     ]);
+  });
+
+  it("a judged person with no line 9 entry is refused, never read as $0", () => {
+    expect(() =>
+      buildRothIraView({
+        rothIra: {
+          filingStatus: "Single",
+          phaseOut: MFJ,
+          people: [
+            {
+              personId: 1,
+              name: "A",
+              compensation: 100_000,
+              iraLimit: 7000,
+              hasEmployerPlan: false,
+              iraRoom: null,
+              rothRoute: null,
+            },
+          ],
+        },
+        wageAgi: 100_000,
+        investmentIncome: 0,
+        preTaxIraByPerson: [],
+        otherIraByPerson: [],
+        marginOverride: null,
+      }),
+    ).toThrow("no line 9 for person 1");
+  });
+});
+
+describe("otherIraMoney", () => {
+  it("sums the capped money of non-Roth IRA rows; Roth IRA and 401(k) rows don't count", () => {
+    const cap = (cappedAnnual: number) => ({ cappedAnnual });
+    expect(
+      otherIraMoney([
+        { accountType: "ira", taxTreatment: "pre_tax", cap: cap(2000) },
+        { accountType: "ira", taxTreatment: "after_tax", cap: cap(500) },
+        { accountType: "ira", taxTreatment: "tax_free", cap: cap(7000) },
+        { accountType: "401k", taxTreatment: "pre_tax", cap: cap(9000) },
+      ]),
+    ).toBe(2500);
   });
 });
 
@@ -302,6 +453,7 @@ describe("pro-rata materiality", () => {
       wageAgi: 220_000,
       investmentIncome: 0,
       preTaxIraByPerson: [{ personId: 1, amount }],
+      otherIraByPerson: [{ personId: 1, amount: 0 }],
       marginOverride: null,
     });
   it("leftover cents aren't a pro-rata blocker; a real balance is", () => {
@@ -354,6 +506,7 @@ describe("Roth IRA route", () => {
         wageAgi: verdictMagi,
         investmentIncome: 0,
         preTaxIraByPerson: [],
+        otherIraByPerson: [{ personId: 1, amount: 0 }],
         marginOverride: null,
       });
     expect(backdoorPlanned(v(150_000, "direct"))).toBe(false);

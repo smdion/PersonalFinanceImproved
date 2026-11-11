@@ -17,8 +17,7 @@ import {
 
 /** What the Roth IRA MAGI is built from — shown beside the figure. */
 type RothIraMagiParts = {
-  /** The tax's AGI: salary + bonus − pre-tax payroll money − HSA money
-   *  paid in outside payroll. */
+  /** The tax's AGI: salary + bonus − pre-tax payroll − HSA money paid outside payroll. */
   wageAgi: number;
   /** Taxable investment income for the year (estimate). */
   investmentIncome: number;
@@ -35,12 +34,9 @@ export type RothIraView = {
   parts: RothIraMagiParts;
   /** null when the year's phase-out rows are missing from the tax data. */
   judgement: RothIraResult | null;
-  /** How each person who contributes to a Roth IRA gets the money there
-   *  (their Contribution Profile's route); people with no Roth IRA
-   *  contribution aren't listed. */
+  /** Each Roth IRA contributor's route (their Contribution Profile's); others aren't listed. */
   routes: { personId: number; name: string; route: RothIraRoute }[];
-  /** A backdoor deposit sitting in a traditional IRA, waiting to be
-   *  converted: after-tax, so left out of the pro-rata amount below. */
+  /** A backdoor deposit awaiting conversion: after-tax, left out of the pro-rata amount below. */
   pendingConversion: { personId: number; name: string; amount: number }[];
   /** Each person's pre-tax IRA balance — the pro-rata blocker for a backdoor conversion. */
   proRata: {
@@ -51,10 +47,8 @@ export type RothIraView = {
   }[];
 };
 
-/**
- * The Roth IRA view from the paycheck summary and the investment side; every reader goes
- * through it, so the verdict is judged once.
- */
+/** The Roth IRA view from the paycheck summary and the investment side; every
+ *  reader goes through it, so the verdict is judged once. */
 export function buildRothIraView(args: {
   rothIra: RothIraSummary;
   wageAgi: number;
@@ -62,6 +56,8 @@ export function buildRothIraView(args: {
   preTaxIraByPerson: readonly { personId: number; amount: number }[];
   /** Each person's traditional-IRA deposit waiting to be converted. */
   pendingConversionByPerson?: readonly { personId: number; amount: number }[];
+  /** Each person's money this year into IRAs other than a Roth IRA: one entry per person. */
+  otherIraByPerson: readonly { personId: number; amount: number }[];
   marginOverride: number | null;
 }): RothIraView {
   const parts: RothIraMagiParts = {
@@ -69,6 +65,11 @@ export function buildRothIraView(args: {
     investmentIncome: args.investmentIncome,
   };
   const magi = rothIraMagi(parts);
+  const otherIraOf = (personId: number) => {
+    const entry = args.otherIraByPerson.find((o) => o.personId === personId);
+    if (!entry) throw new Error(`Roth IRA: no line 9 for person ${personId}`);
+    return entry.amount;
+  };
   const rawPreTax = new Map(
     args.preTaxIraByPerson.map((p) => [p.personId, p.amount]),
   );
@@ -111,6 +112,7 @@ export function buildRothIraView(args: {
                 compensation: p.compensation,
                 iraLimit: p.iraLimit,
                 iraRoom: p.iraRoom,
+                otherIraContributions: otherIraOf(p.personId),
               },
             ],
       ),
@@ -126,8 +128,7 @@ export function buildRothIraView(args: {
     ),
     proRata: args.rothIra.people.flatMap((p) => {
       const amount = preTax.get(p.personId) ?? 0;
-      // Only a balance that would make a real share of a conversion
-      // taxable (leftover cents don't); unknown limit → no warning.
+      // Only a balance making a real share of a conversion taxable; unknown limit: no warning.
       const material =
         p.iraLimit !== null &&
         amount >= PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT * p.iraLimit;
@@ -153,9 +154,8 @@ export function isRothIraContribution(c: {
   return isRothIncomeLimited(c.accountType) && isTaxFree(c.taxTreatment);
 }
 
-/** A person's Roth IRA route from their effective contribution rows: the
- *  active Roth IRA contribution's route (absent = direct); null when they
- *  make none. */
+/** A person's Roth IRA route from their effective contribution rows: the active
+ *  Roth IRA contribution's route (absent = direct); null when they make none. */
 export function rothIraRouteOf(
   rows: readonly {
     accountType: string;
@@ -167,9 +167,8 @@ export function rothIraRouteOf(
   return roth ? (roth.rothRoute ?? "direct") : null;
 }
 
-/** A backdoor Roth is the plan (verdict "backdoor", or someone's Roth IRA
- *  route) — while it is, money in a traditional IRA is in transit, not
- *  idle cash. */
+/** A backdoor Roth is the plan (verdict "backdoor", or someone's Roth IRA route):
+ *  while it is, money in a traditional IRA is in transit, not idle cash. */
 export function backdoorPlanned(view: RothIraView | null): boolean {
   return (
     view?.judgement?.verdict === "backdoor" ||

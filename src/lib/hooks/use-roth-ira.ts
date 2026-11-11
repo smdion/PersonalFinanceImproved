@@ -13,6 +13,7 @@ import {
   buildRothIraView,
   type RothIraView,
 } from "@/lib/pure/contributions/roth-ira";
+import { otherIraMoney } from "@/lib/pure/contributions/roth-ira-summary";
 import type { RouterOutputs } from "@/lib/trpc";
 
 type RothIraInputs = RouterOutputs["investments"]["getRothIraInputs"];
@@ -55,6 +56,10 @@ export function useRothIra(): {
           investmentIncome: inputs.data.investmentIncome.estimate,
           preTaxIraByPerson: inputs.data.preTaxIraByPerson,
           pendingConversionByPerson: inputs.data.pendingConversionByPerson,
+          otherIraByPerson: data.people.map((r) => ({
+            personId: r.person.id,
+            amount: otherIraMoney(r.rawContribs),
+          })),
           marginOverride: marginSetting,
         })
       : null;

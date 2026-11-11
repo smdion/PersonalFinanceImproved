@@ -35,7 +35,13 @@ const judge = (magi: number) =>
     marginOverride: null,
     combinedCompensation: false,
     people: [
-      { personId: 1, name: "A", compensation: 200_000, iraLimit: 7_500 },
+      {
+        personId: 1,
+        name: "A",
+        compensation: 200_000,
+        iraLimit: 7_500,
+        otherIraContributions: 0,
+      },
     ],
   })!;
 

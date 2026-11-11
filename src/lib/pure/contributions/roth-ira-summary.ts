@@ -6,10 +6,13 @@ import {
   getAllCategories,
   hasEarlyAccessRule,
   isRothIncomeLimited,
+  isTaxFree,
 } from "@/lib/config/account-types";
 import type { RothIraRoute } from "@/lib/config/enum-values";
+import type { PaycheckContributionRow } from "@/lib/pure/contributions/paycheck-contribution-row";
 import { irsLimitOrNull } from "@/lib/pure/contributions/irs-limits";
 import { ageInYear } from "@/lib/utils/date";
+import { sumBy } from "@/lib/utils/math";
 import { rothIraPhaseoutKeys } from "@/lib/config/tax-params";
 
 export type RothIraSummary = {
@@ -85,4 +88,24 @@ export function rothIraSummary(args: {
       rothRoute: p.rothRoute ?? null,
     })),
   };
+}
+
+/** A person's money this year into IRAs other than a Roth IRA (Worksheet
+ *  2-2 line 9): their non-Roth IRA rows' money after the IRS-limit caps. */
+export function otherIraMoney(
+  rows: readonly (Pick<
+    PaycheckContributionRow,
+    "accountType" | "taxTreatment"
+  > & {
+    cap?: { cappedAnnual: number };
+  })[],
+): number {
+  return sumBy(
+    rows.flatMap((r) =>
+      isRothIncomeLimited(r.accountType) && !isTaxFree(r.taxTreatment) && r.cap
+        ? [r.cap.cappedAnnual]
+        : [],
+    ),
+    (amount) => amount,
+  );
 }

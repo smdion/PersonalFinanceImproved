@@ -44,6 +44,8 @@ const summary = {
       person: { id: 1, name: "Pat" },
       job: { bonusMonth: null, bonusDayOfMonth: null },
       salary: 60000,
+      // No IRA rows: no traditional IRA money for the Roth room.
+      rawContribs: [],
       paycheck: {
         gross: 5000,
         netPay: 3800,
