@@ -3,9 +3,11 @@
  * breakdowns. Local casts stand in for `@/server/*` types (no-restricted-imports).
  */
 
+import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
+import type { ContributionMethod } from "@/lib/config/enum-values";
 
 export function buildPayrollBreakdown(
   paycheckData: unknown,
@@ -130,7 +132,7 @@ export function buildNonPayrollContributions(
       isPayrollDeducted: boolean | null;
       contributionValue: string | number;
       cappedValue?: number;
-      contributionMethod: string;
+      contributionMethod: ContributionMethod;
       accountType: string;
     }>;
   }>;
@@ -143,17 +145,12 @@ export function buildNonPayrollContributions(
       if (isPaidThroughPayroll(c)) continue;
       if (linkedAccountIds.has(c.id)) continue;
       const val = computeValue(c) || 0;
-      const periodsPerYear = d.paycheck.periodsPerYear;
-      let monthly: number;
-      if (c.contributionMethod === "percent_of_salary") {
-        monthly = ((val / 100) * (d.salary ?? 0)) / 12;
-      } else {
-        monthly = fixedContributionMonthly(
-          c.contributionMethod,
-          val,
-          periodsPerYear,
-        );
-      }
+      const monthly = monthlyContribution(
+        c.contributionMethod,
+        val,
+        d.salary ?? 0,
+        d.paycheck.periodsPerYear,
+      );
       const existing = map.get(c.accountType) ?? 0;
       map.set(c.accountType, existing + monthly);
     }
@@ -161,15 +158,31 @@ export function buildNonPayrollContributions(
   return map;
 }
 
-/** A fixed-dollar contribution's monthly figure, by how it's entered. */
-export function fixedContributionMonthly(
-  method: string,
+/** A row's monthly dollars: a monthly amount as entered, else its yearly
+ *  dollars ÷ 12. */
+function monthlyContribution(
+  method: ContributionMethod,
   value: number,
+  salary: number,
   periodsPerYear: number,
 ): number {
   if (method === "fixed_monthly") return value;
-  if (method === "fixed_annual") return value / 12;
-  return (value * periodsPerYear) / 12;
+  return computeAnnualContribution(method, value, salary, periodsPerYear) / 12;
+}
+
+/**
+ * A joint contribution's monthly figure. Joint money has no pay of its own:
+ * a per-check amount follows the first paycheck's schedule (`periodsPerYear`,
+ * undefined when nobody has one).
+ */
+export function jointContributionMonthly(
+  method: ContributionMethod,
+  value: number,
+  periodsPerYear: number | undefined,
+): number {
+  if (method === "percent_of_salary") return value / 12;
+  if (method === "fixed_per_period" && !periodsPerYear) return value / 12;
+  return monthlyContribution(method, value, 0, periodsPerYear ?? 0);
 }
 
 /** Sum of all sinking-fund monthly commitments. */

@@ -5,10 +5,12 @@ import {
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { ContributionMethod } from "@/lib/config/enum-values";
+import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
 export type AutoMaxInput = {
   accountType: AccountCategory;
-  contributionMethod: string;
+  contributionMethod: ContributionMethod;
   /** In the method's unit: percent, per paycheck, per month or per year. */
   currentValue: number;
   annualLimit: number | undefined;
@@ -63,9 +65,14 @@ function sizeTarget(
     return {
       method: contributionMethod,
       current,
-      currentAnnual: salary * (current / 100),
+      currentAnnual: annualOf(input),
       target,
-      targetAnnual: salary * (target / 100),
+      targetAnnual: computeAnnualContribution(
+        contributionMethod,
+        target,
+        salary,
+        0,
+      ),
       wouldChange: target !== current,
     };
   }
@@ -84,9 +91,9 @@ function sizeTarget(
   return {
     method,
     current,
-    currentAnnual: current * perYear,
+    currentAnnual: annualOf(input),
     target,
-    targetAnnual: target * perYear,
+    targetAnnual: computeAnnualContribution(method, target, 0, perYear),
     wouldChange: Math.abs(target - current) > 0.01,
   };
 }
@@ -94,12 +101,13 @@ function sizeTarget(
 /** What the current value comes to in a year, in its method's unit. */
 function annualOf(input: AutoMaxInput): number {
   const { contributionMethod, currentValue, salary, periodsPerYear } = input;
-  if (contributionMethod === "percent_of_salary")
-    return salary ? salary * (currentValue / 100) : 0;
-  if (contributionMethod === "fixed_per_period")
-    return currentValue * (periodsPerYear ?? Number.NaN); // no pay schedule: no figure
-  if (contributionMethod === "fixed_monthly") return currentValue * 12;
-  return currentValue;
+  if (contributionMethod === "percent_of_salary" && !salary) return 0; // no pay
+  return computeAnnualContribution(
+    contributionMethod,
+    currentValue,
+    salary ?? Number.NaN, // read by a percent only, which has pay here
+    periodsPerYear ?? Number.NaN, // no pay schedule: no per-check figure
+  );
 }
 
 /** The auto-max preview and target for one contribution. */

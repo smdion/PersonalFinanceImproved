@@ -1,19 +1,26 @@
 import { describe, expect, it } from "vitest";
 import {
   buildNonPayrollContributions,
-  fixedContributionMonthly,
+  jointContributionMonthly,
 } from "@/components/budget/helpers";
 
-describe("fixedContributionMonthly", () => {
-  it("reads the value as entered", () => {
-    expect(fixedContributionMonthly("fixed_annual", 6500, 26)).toBeCloseTo(
+describe("jointContributionMonthly", () => {
+  it("reads a fixed amount as entered, a per-check one on the first paycheck's schedule", () => {
+    expect(jointContributionMonthly("fixed_annual", 6500, 26)).toBeCloseTo(
       541.67,
       2,
     );
-    expect(fixedContributionMonthly("fixed_monthly", 300, 26)).toBe(300);
-    expect(fixedContributionMonthly("fixed_per_period", 100, 26)).toBeCloseTo(
+    expect(jointContributionMonthly("fixed_monthly", 300.1, 26)).toBe(300.1);
+    expect(jointContributionMonthly("fixed_per_period", 100, 26)).toBeCloseTo(
       216.67,
       2,
+    );
+  });
+
+  it("today: a percent, and a per-check amount with no paycheck, read as value ÷ 12", () => {
+    expect(jointContributionMonthly("percent_of_salary", 6, 26)).toBe(0.5);
+    expect(jointContributionMonthly("fixed_per_period", 120, undefined)).toBe(
+      10,
     );
   });
 });

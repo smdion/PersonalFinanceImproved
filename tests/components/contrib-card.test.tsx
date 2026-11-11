@@ -185,7 +185,7 @@ describe("ContribCard", () => {
   it("names a per-paycheck amount per paycheck, in the preview and once auto-maxed", () => {
     const perPaycheck = {
       ...baseContrib,
-      contributionMethod: "fixed_per_period",
+      contributionMethod: "fixed_per_period" as const,
       contributionValue: "500",
     };
     const { unmount } = render(

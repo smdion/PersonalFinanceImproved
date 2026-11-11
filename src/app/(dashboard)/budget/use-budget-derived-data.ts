@@ -13,7 +13,7 @@ import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContributions,
-  fixedContributionMonthly,
+  jointContributionMonthly,
 } from "@/components/budget/helpers";
 import { normalizeContributionKey } from "@/lib/config/account-types";
 import type {
@@ -156,7 +156,7 @@ export function useBudgetDerivedData({
       for (const c of pData.jointContribs as Array<{
         id: number;
         accountType: string;
-        contributionMethod: string;
+        contributionMethod: Parameters<typeof jointContributionMonthly>[0];
         contributionValue: string | number;
         cappedValue?: number;
       }>) {
@@ -166,12 +166,11 @@ export function useBudgetDerivedData({
         const periods = (
           pData.people as { paycheck: { periodsPerYear: number } | null }[]
         ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
-        const monthly =
-          c.contributionMethod === "fixed_per_period" && periods
-            ? fixedContributionMonthly(c.contributionMethod, val, periods)
-            : c.contributionMethod === "fixed_monthly"
-              ? val
-              : val / 12;
+        const monthly = jointContributionMonthly(
+          c.contributionMethod,
+          val,
+          periods,
+        );
         const key = normalizeContributionKey(c.accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
