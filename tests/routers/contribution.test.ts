@@ -754,6 +754,26 @@ describe("contribution router", () => {
         parentCategory: "Portfolio",
         ownership: "joint",
       });
+      insertContribAccount(db, {
+        personId,
+        accountType: "brokerage",
+        contributionMethod: "fixed_annual",
+        contributionValue: "6000",
+        taxTreatment: "after_tax",
+        employerMatchType: "dollar_match",
+        employerMatchValue: "1500",
+        parentCategory: "Retirement",
+        ownership: "joint",
+      });
+    });
+
+    it("counts a joint account's dollar match: $1,500 a year, not $0", async () => {
+      const result = await computeSummary();
+      const joint = result.jointAccountTypes.find(
+        (a) => a.employeeContrib === 6000,
+      );
+      expect(joint?.employerMatch).toBe(1500);
+      expect(joint?.totalContrib).toBe(7500);
     });
 
     it("includes joint accounts in jointAccountTypes", async () => {
