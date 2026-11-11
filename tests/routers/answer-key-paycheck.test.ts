@@ -61,8 +61,6 @@ const NOON_AUG_14 = "2026-08-14T12:00:00Z";
 const YEAR_TOLERANCE = 0.26;
 
 const YEAR_TOTALS = 'v0.11 Paycheck "One yearTotals(schedule, first, last)"';
-const BONUS_PERIOD =
-  'v0.11 Paycheck "findBonusPeriod returns check 1 for a date before the first payday" (verdict N6)';
 const N5 =
   'v0.11 Paycheck "27 or 53 payday year: real paydays" (decision "A 27 or 53 payday year uses real paydays")';
 
@@ -469,8 +467,7 @@ describe("paycheck/N3: part-year caps", () => {
 describe("paycheck/N6: a bonus before the first payday", () => {
   // $156,000 biweekly, first payday Friday January 9; a $40,000 bonus
   // dated January 5. Counted when paid (PW-8.1), with the first check it
-  // can be: check 1. Today the date falls before every payday window and
-  // wraps to the last check (paycheck.ts findBonusPeriod).
+  // can be: check 1.
   const jan9 = {
     ...BIWEEKLY,
     anchorPayDate: "2026-01-09",
@@ -480,41 +477,26 @@ describe("paycheck/N6: a bonus before the first payday", () => {
     bonusDayOfMonth: 5,
   };
   const s = household({ job: jan9 });
-  xfail({
-    id: "paycheck/N6-a [PAY-19]",
-    todo: BONUS_PERIOD,
-    run: () => s().paycheck.bonusPeriod ?? 0,
-    expected: 1,
-    today: 26,
+  it("paycheck/N6-a [PAY-19] a bonus before the first payday is on check 1", () => {
+    cents(s().paycheck.bonusPeriod ?? 0, 1);
   });
 
   // The same, year to date on August 14 (16 checks paid): the bonus is
-  // paid, so the year-to-date bonus is 40,000. Today it waits for check 26
-  // (the Income card's paid test: bonusPeriod ≤ checks so far).
-  xfail({
-    id: "paycheck/N6-b [PAY-21]",
-    todo: BONUS_PERIOD,
-    run: () => {
-      const pc = s().paycheck;
-      const paid =
-        pc.bonusPeriod !== null && pc.bonusPeriod <= pc.periodsElapsedYtd;
-      return paid ? pc.bonusEstimate.bonusGross : 0;
-    },
-    expected: 40_000,
-    today: 0,
+  // paid, so the year-to-date bonus is 40,000 (the Income card's paid
+  // test: bonusPeriod ≤ checks so far).
+  it("paycheck/N6-b [PAY-21] year to date counts it from January", () => {
+    const pc = s().paycheck;
+    const paid =
+      pc.bonusPeriod !== null && pc.bonusPeriod <= pc.periodsElapsedYtd;
+    cents(paid ? pc.bonusEstimate.bonusGross : 0, 40_000);
   });
 
   // The same job started June 1: the bonus is dated before the start, so
   // it isn't this job's (paycheck.ts's own rule). Checks from June 12 to
-  // December 25: 15 × 6,000 = 90,000 of income. Today the wrapped check 26
-  // is after the start and the bonus counts: 130,000.
+  // December 25: 15 × 6,000 = 90,000 of income.
   const late = household({ job: { ...jan9, startDate: "2026-06-01" } });
-  xfail({
-    id: "paycheck/N6-c [PAY-25]",
-    todo: BONUS_PERIOD,
-    run: () => late().earnings.gross,
-    expected: 90_000,
-    today: 130_000,
+  it("paycheck/N6-c [PAY-25] a job started later doesn't count the bonus", () => {
+    cents(late().earnings.gross, 90_000);
   });
 });
 

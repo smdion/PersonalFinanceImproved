@@ -29,6 +29,8 @@ export function findBonusPeriod(
     const interval = payPeriod === "biweekly" ? 14 : 7;
     const jan1 = new Date(Date.UTC(year, 0, 1));
     let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, interval);
+    // Dated before the year's first payday: that first check pays it.
+    if (bonusDate && bonusDate < payday) return 1;
 
     let periodNum = 0;
     const december31 = new Date(Date.UTC(year, 11, 31));
