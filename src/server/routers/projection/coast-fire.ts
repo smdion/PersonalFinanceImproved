@@ -2,10 +2,6 @@
  * Coast FIRE endpoints: `computeCoastFire` (deterministic binary search for the earliest
  * age stopping contributions still funds expenses) and `computeCoastFireMC` (Simulation).
  */
-import {
-  planEndAge as planEndAgeOf,
-  planRetirementAge as planRetirementAgeOf,
-} from "@/lib/pure/household/household-timeline";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -53,35 +49,8 @@ export const coastFireRouter = createTRPCRouter({
 
       const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
-      const result = findCoastFireAge(engineInput);
-
-      // Deflate to today's dollars for display (as the retirement card does):
-      // withdrawal and expenses at retirementAge, end balance at projectionEndAge.
-      // The calculator stays pure; deflation happens at the router boundary.
-      const yearsToRetirement = Math.max(
-        0,
-        planRetirementAgeOf(engineInput) - engineInput.currentAge,
-      );
-      const yearsToEnd = Math.max(
-        0,
-        planEndAgeOf(engineInput) - engineInput.currentAge,
-      );
-      const retirementDeflator = Math.pow(
-        1 + engineInput.inflationRate,
-        yearsToRetirement,
-      );
-      const endDeflator = Math.pow(1 + engineInput.inflationRate, yearsToEnd);
-
-      return {
-        result: {
-          ...result,
-          sustainableWithdrawalToday:
-            result.sustainableWithdrawal / retirementDeflator,
-          projectedExpensesAtRetirementToday:
-            result.projectedExpensesAtRetirement / retirementDeflator,
-          endRetirementBalanceToday: result.endRetirementBalance / endDeflator,
-        },
-      };
+      // Its today's-dollar figures come from the run's own price level.
+      return { result: findCoastFireAge(engineInput) };
     }),
 
   /**

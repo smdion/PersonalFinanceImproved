@@ -6,7 +6,7 @@
 import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
-import { calculateProjection } from "../engine";
+import { calculateProjection, projectionPriceLevel } from "../engine";
 import type { AccountCategory } from "../../config/account-types";
 import type {
   EngineDecumulationYear,
@@ -29,6 +29,11 @@ type CoastFireResult = {
   sustainableWithdrawal: number;
   /** Projected expenses at the first decumulation year (nominal, inflated). */
   projectedExpensesAtRetirement: number;
+  /** Those three in today's dollars: each divided by the engine's own price
+   *  level in its year (the first retirement year; the last year run). */
+  endRetirementBalanceToday: number;
+  sustainableWithdrawalToday: number;
+  projectedExpensesAtRetirementToday: number;
   /** At or past retirement age: nothing is left to stop, so "unreachable"
    *  means the plan itself fails. */
   retired: boolean;
@@ -43,10 +48,14 @@ const UNREACHABLE: CoastFireResult = {
   endRetirementBalance: 0,
   sustainableWithdrawal: 0,
   projectedExpensesAtRetirement: 0,
+  endRetirementBalanceToday: 0,
+  sustainableWithdrawalToday: 0,
+  projectedExpensesAtRetirementToday: 0,
   retired: false,
 };
 
 function resultFrom(
+  input: ProjectionInput,
   coastFireAge: number,
   status: CoastFireStatus,
   projection: ProjectionResult,
@@ -55,16 +64,24 @@ function resultFrom(
   const retirementYear = firstRetirementYear(projection);
   const finalYear =
     projection.projectionByYear[projection.projectionByYear.length - 1];
+  // What the household spends — with Social Security on top of a
+  // portfolio-sized withdrawal that's not the strategy's amount.
+  const expenses = retirementYear ? strategySpending(retirementYear) : 0;
+  const endBalance = finalYear?.retirementBalance ?? 0;
+  const level = projectionPriceLevel(input);
+  // Never retiring in the window: the withdrawal is the retirement year's.
+  const atRetirement = level(retirementYear?.year ?? input.retirementYear);
   return {
     coastFireAge,
     status,
-    endRetirementBalance: finalYear?.retirementBalance ?? 0,
+    endRetirementBalance: endBalance,
     sustainableWithdrawal: projection.sustainableWithdrawal,
-    // What the household spends — with Social Security on top of a
-    // portfolio-sized withdrawal that's not the strategy's amount.
-    projectedExpensesAtRetirement: retirementYear
-      ? strategySpending(retirementYear)
+    projectedExpensesAtRetirement: expenses,
+    endRetirementBalanceToday: finalYear
+      ? endBalance / level(finalYear.year)
       : 0,
+    sustainableWithdrawalToday: projection.sustainableWithdrawal / atRetirement,
+    projectedExpensesAtRetirementToday: expenses / atRetirement,
     retired,
   };
 }
@@ -142,9 +159,9 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   if (currentAge >= retirementAge) {
     const projection = calculateProjection(input);
     return passes(projection)
-      ? resultFrom(currentAge, "already_coast", projection, true)
+      ? resultFrom(input, currentAge, "already_coast", projection, true)
       : {
-          ...resultFrom(currentAge, "unreachable", projection, true),
+          ...resultFrom(input, currentAge, "unreachable", projection, true),
           coastFireAge: null,
         };
   }
@@ -160,7 +177,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   // If stopping today passes, user is already Coast FIRE.
   const stopNow = probeAt(currentAge);
   if (passes(stopNow)) {
-    return resultFrom(currentAge, "already_coast", stopNow, false);
+    return resultFrom(input, currentAge, "already_coast", stopNow, false);
   }
 
   // If stopping the year before retirement doesn't pass, unreachable.
@@ -182,7 +199,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
     }
   }
 
-  return resultFrom(lo, "found", probeAt(lo), false);
+  return resultFrom(input, lo, "found", probeAt(lo), false);
 }
 
 /**

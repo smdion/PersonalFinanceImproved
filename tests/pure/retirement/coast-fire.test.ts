@@ -333,6 +333,61 @@ describe("findCoastFireAge", () => {
     expect(result.coastFireAge).toBe(70);
   });
 
+  it("today's dollars use the engine's own price level: the first retirement year, and the last year run", () => {
+    // Retiring this year after it began: the engine runs this year as a
+    // working year, so retirement starts next year (index 1), one year of
+    // inflation from today, though retirement age minus age is 0.
+    const input = makeInput({
+      currentAge: 65,
+      retirementYear: AS_OF.getFullYear(),
+      currentSalary: 0,
+      startingBalances: {
+        preTax: 1_000_000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1_000_000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      annualExpenses: 40_000,
+    });
+
+    const result = findCoastFireAge(input);
+    const years = calculateProjection(input).projectionByYear;
+    const firstRetirementYear = years.find(
+      (y) => y.phase === "decumulation",
+    )!.year;
+    // The end balance is the last year run's (the end year isn't run).
+    const lastYear = years[years.length - 1]!;
+
+    expect(firstRetirementYear).toBe(AS_OF.getFullYear() + 1);
+    expect(result.projectedExpensesAtRetirement).toBeGreaterThan(0);
+    expect(result.projectedExpensesAtRetirementToday).toBeCloseTo(
+      result.projectedExpensesAtRetirement / 1.025,
+      6,
+    );
+    expect(result.sustainableWithdrawalToday).toBeCloseTo(
+      result.sustainableWithdrawal / 1.025,
+      6,
+    );
+    expect(result.endRetirementBalance).toBe(lastYear.retirementBalance);
+    expect(result.endRetirementBalanceToday).toBeCloseTo(
+      result.endRetirementBalance /
+        1.025 ** (lastYear.year - AS_OF.getFullYear()),
+      6,
+    );
+  });
+
   it("exercises binary search and returns found with near-zero starting balance", () => {
     // Near-zero balance → can't coast today (stopNow fails).
     // 35 years of contributions at $150k salary → easily passes if stopping

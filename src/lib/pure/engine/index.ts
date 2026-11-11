@@ -2,6 +2,7 @@
  *  values from here, and types and input schemas from `./types` (module map:
  *  ARCHITECTURE.md). */
 export { calculateProjection } from "./projection";
+export { projectionPriceLevel } from "./price-level";
 
 export {
   estimateEffectiveTaxRate,
