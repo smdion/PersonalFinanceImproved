@@ -409,7 +409,7 @@
     "src/server/services/paycheck/job-net-pay.ts": 259,
     "src/server/services/paycheck/summary.ts": 660,
     "src/server/services/performance/finalize-year.ts": 436,
-    "src/server/services/performance/summary.ts": 158,
+    "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 209,

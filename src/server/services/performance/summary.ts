@@ -4,6 +4,10 @@ import * as schema from "@/lib/db/schema";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { getAllPeople } from "@/server/data/people";
+import {
+  getAccountPerformance,
+  getAnnualPerformance,
+} from "@/server/data/performance-rows";
 import { accountDisplayName } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { buildPerfAccountLookups } from "@/lib/pure/investments/annual-rollups";
@@ -23,14 +27,8 @@ import {
 export async function computePerformanceSummary(ctx: { db: Db }) {
   const [annual, accounts, perfAccounts, people, basisRows] = await Promise.all(
     [
-      ctx.db
-        .select()
-        .from(schema.annualPerformance)
-        .orderBy(asc(schema.annualPerformance.year)),
-      ctx.db
-        .select()
-        .from(schema.accountPerformance)
-        .orderBy(asc(schema.accountPerformance.year)),
+      getAnnualPerformance(ctx.db),
+      getAccountPerformance(ctx.db),
       ctx.db
         .select()
         .from(schema.performanceAccounts)
