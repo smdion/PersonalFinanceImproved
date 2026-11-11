@@ -5,10 +5,8 @@
  */
 import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import {
-  capEffectiveContribs,
-  capForRequest,
-} from "@/lib/pure/contributions/cap-pass";
+import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,

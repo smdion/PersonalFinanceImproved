@@ -1,5 +1,5 @@
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
 import { eq, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";

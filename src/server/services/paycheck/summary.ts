@@ -12,7 +12,7 @@ import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";

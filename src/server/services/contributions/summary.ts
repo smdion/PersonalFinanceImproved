@@ -56,7 +56,7 @@ import { limitAge } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { filterActiveJobs, findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {

@@ -3,7 +3,7 @@
  * treatment, to split a feed's single deposit (lib/pure/investments/flow-suggestions.ts).
  */
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

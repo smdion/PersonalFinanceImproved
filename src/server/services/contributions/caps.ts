@@ -23,9 +23,9 @@ import {
 } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import {
   capEffectiveContribs,
-  capForRequest,
   type CapPassHousehold,
   type CapRequestHousehold,
   type CapPassRow,
