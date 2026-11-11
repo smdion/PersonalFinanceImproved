@@ -172,7 +172,7 @@ function monthlyContribution(
 
 /**
  * A joint contribution's monthly figure. Joint money has no pay of its own:
- * a per-check amount follows the first paycheck's schedule (`periodsPerYear`,
+ * a percent is $0, and a per-check amount follows the first paycheck's schedule (`periodsPerYear`,
  * undefined when nobody has one).
  */
 export function jointContributionMonthly(
@@ -180,7 +180,6 @@ export function jointContributionMonthly(
   value: number,
   periodsPerYear: number | undefined,
 ): number {
-  if (method === "percent_of_salary") return value / 12;
   if (method === "fixed_per_period" && !periodsPerYear) return value / 12;
   return monthlyContribution(method, value, 0, periodsPerYear ?? 0);
 }
