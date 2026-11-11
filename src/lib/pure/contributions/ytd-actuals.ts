@@ -3,9 +3,9 @@ import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   type SalaryActiveMap,
   type SalaryProfileActiveMap,
-  applyActiveSalary,
-  resolveCompensation,
+  thisYearJobPay,
 } from "@/lib/pure/household/compensation";
+import { whatIfForJob } from "@/lib/pure/household/profiles";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { checksPaidYtd } from "@/lib/pure/paycheck/pay-periods-in-year";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
@@ -13,7 +13,6 @@ import {
   computeAnnualContribution,
   fractionFromPercent,
 } from "@/lib/pure/contributions/contribution-amount";
-import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
 /** Split YTD actuals among contributions sharing a performance account by each one's expected
@@ -34,6 +33,8 @@ export function splitYtdActuals(
     payPeriod: SalaryEntry["payPeriod"] | undefined;
     anchorPayDate: SalaryEntry["anchorPayDate"] | undefined;
     startDate: string;
+    endDate: string | null;
+    isSpeculative: boolean;
   }[],
   salaryProfileActiveMap: SalaryProfileActiveMap,
   effectiveSalaryMap: SalaryActiveMap,
@@ -62,17 +63,11 @@ export function splitYtdActuals(
     // No entry for this job in the active Salary Profile — same
     // "nothing to resolve" state as no job at all (the fallback below).
     if (!job || job.payPeriod == null) continue;
-    // The same What-If sandbox tier as computeContributionSummary's
-    // per-person salary, or expected YTD would keep the Salary Profile's
-    // value whenever a What-If salary is set.
-    const rawSalary = resolveCompensation(
+    // A What-If salary is the person's current job's only (whatIfForJob).
+    const { salary } = thisYearJobPay(
+      job,
       salaryProfileActiveMap,
-      job.id,
-    ).salary;
-    const salary = applyActiveSalary(
-      job.personId,
-      rawSalary,
-      effectiveSalaryMap,
+      whatIfForJob(job, effectiveJobs, asOfDate, effectiveSalaryMap),
     );
     const periodsPerYear = getPeriodsPerYear(job.payPeriod);
     // Expected YTD counts the checks this job has paid — none before
@@ -94,6 +89,7 @@ export function splitYtdActuals(
   >();
   for (const c of activeContributions) {
     const value = computeValue(c);
+    // No job it can resolve: no checks paid, nothing expected.
     let expectedYtd = 0;
     const jd = c.jobId ? jobCache.get(c.jobId) : null;
     if (c.contributionMethod === "percent_of_salary" && jd) {
@@ -101,16 +97,14 @@ export function splitYtdActuals(
         jd.salary *
         fractionFromPercent(value) *
         (jd.periodsElapsed / jd.periodsPerYear);
-    } else {
-      const periodsPerYear = jd?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
-      const periodsElapsed = jd?.periodsElapsed ?? 0;
+    } else if (jd) {
       const annual = computeAnnualContribution(
         c.contributionMethod,
         value,
         0,
-        periodsPerYear,
+        jd.periodsPerYear,
       );
-      expectedYtd = annual * (periodsElapsed / periodsPerYear);
+      expectedYtd = annual * (jd.periodsElapsed / jd.periodsPerYear);
     }
 
     if (c.performanceAccountId != null) {

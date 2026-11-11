@@ -3923,9 +3923,6 @@
   "src/lib/pure/contributions/ytd-actuals.ts": {
     "ratchet/no-abbreviation": {
       "count": 3
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/pure/debts/debt-rules.ts": {

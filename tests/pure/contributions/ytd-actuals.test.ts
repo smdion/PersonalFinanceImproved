@@ -17,6 +17,8 @@ const JOB_1 = {
   payPeriod: "biweekly" as const,
   anchorPayDate: "2025-01-03",
   startDate: "2020-01-01",
+  endDate: null,
+  isSpeculative: false,
 };
 
 const salaryProfile: SalaryProfileActiveMap = new Map([
@@ -98,15 +100,17 @@ describe("splitYtdActuals", () => {
   });
 
   it("gives a job with no Salary Profile entry no expected YTD, not NaN", () => {
-    // Job 9 has no entry in the active Salary Profile (no payPeriod):
-    // it falls to the default periods a year with 0 checks elapsed, so
-    // its expected YTD is $0 and the matched row takes the whole actual.
+    // Job 9 has no entry in the active Salary Profile (no payPeriod): no
+    // checks it can count, so its expected YTD is $0 and the matched row
+    // takes the whole actual.
     const unmatchedJob = {
       id: 9,
       personId: 1,
       payPeriod: undefined,
       anchorPayDate: undefined,
       startDate: "2020-01-01",
+      endDate: null,
+      isSpeculative: false,
     };
     const { contributionActualMap } = splitYtdActuals(
       [
@@ -143,6 +147,8 @@ describe("splitYtdActuals", () => {
       payPeriod: "biweekly" as const,
       anchorPayDate: null,
       startDate: "2025-09-05",
+      endDate: null,
+      isSpeculative: false,
     };
     const profile: SalaryProfileActiveMap = new Map([
       [2, salaryEntry({ salary: 90000 })],
@@ -192,5 +198,34 @@ describe("splitYtdActuals", () => {
     });
     expect(contributionActualMap.has(2)).toBe(false);
     expect(contributionActualMap.has(3)).toBe(false);
+  });
+
+  it("a What-If salary moves only the person's current job, not an ended one", () => {
+    // Job 1 ended in March; job 3 is current. A $260,000 What-If doubles
+    // job 3's 6%, so the split of a shared account tips toward it.
+    const ended = { ...JOB_1, endDate: "2025-03-31" };
+    const current = { ...JOB_1, id: 3, startDate: "2025-04-01" };
+    const profile: SalaryProfileActiveMap = new Map([
+      [1, salaryEntry({ salary: 130000 })],
+      [3, salaryEntry({ salary: 130000 })],
+    ]);
+    const whatIf: SalaryActiveMap = new Map([[1, { salary: 260000 }]]);
+    const split = (map: SalaryActiveMap) =>
+      splitYtdActuals(
+        [contrib({ id: 1 }), contrib({ id: 2, jobId: 3 })],
+        [ended, current],
+        profile,
+        map,
+        AS_OF,
+        new Map([[10, { contributions: 3000, employerMatch: 0 }]]),
+      ).contributionActualMap;
+    const base = split(noWhatIf);
+    const sandboxed = split(whatIf);
+    expect(sandboxed.get(2)!.contributions).toBeGreaterThan(
+      base.get(2)!.contributions,
+    );
+    expect(sandboxed.get(1)!.contributions).toBeLessThan(
+      base.get(1)!.contributions,
+    );
   });
 });

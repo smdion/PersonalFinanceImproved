@@ -274,7 +274,7 @@
     "src/lib/pure/contributions/savings-rate.ts": 140,
     "src/lib/pure/contributions/summary.types.ts": 106,
     "src/lib/pure/contributions/view-metrics.ts": 190,
-    "src/lib/pure/contributions/ytd-actuals.ts": 146,
+    "src/lib/pure/contributions/ytd-actuals.ts": 140,
     "src/lib/pure/debts/debt-balance.ts": 28,
     "src/lib/pure/debts/mortgage.ts": 387,
     "src/lib/pure/engine/aca-check.ts": 72,
