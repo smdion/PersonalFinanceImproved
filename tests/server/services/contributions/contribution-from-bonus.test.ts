@@ -37,10 +37,10 @@ function k401(
     subType: null,
     label: null,
     parentCategory: "Retirement",
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: "6",
     taxTreatment: "pre_tax",
-    employerMatchType: "percent_of_contribution",
+    employerMatchType: "percent_of_contribution" as const,
     employerMatchValue: "100",
     employerMaxMatchPct: "0.04",
     isPayrollDeducted: null as boolean | null,
@@ -156,7 +156,7 @@ describe("What-If overlay (applyContribActiveFields)", () => {
     {
       "1": {
         contributionValue: "6",
-        contributionMethod: "percent_of_salary",
+        contributionMethod: "percent_of_salary" as const,
         fromBonus: true,
       },
     },
@@ -196,7 +196,7 @@ describe("employer match — each account's own election", () => {
     accountType: "hsa" as AccountCategory,
     parentCategory: "Portfolio",
     contributionValue: "2",
-    employerMatchType: "none",
+    employerMatchType: "none" as const,
     employerMatchValue: null,
     employerMaxMatchPct: null,
   };
@@ -233,7 +233,7 @@ describe("What-If overlay — an entry that only turns an account off", () => {
       {
         "1": {
           contributionValue: "6",
-          contributionMethod: "percent_of_salary",
+          contributionMethod: "percent_of_salary" as const,
         },
       },
     );

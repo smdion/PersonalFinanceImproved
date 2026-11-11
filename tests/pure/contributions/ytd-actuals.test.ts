@@ -1,3 +1,4 @@
+import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import { salaryEntry } from "../../helpers/salary-entry";
 import { splitYtdActuals } from "@/lib/pure/contributions/ytd-actuals";
@@ -29,7 +30,7 @@ function contrib(
     isActive: boolean;
     jobId: number | null;
     performanceAccountId: number | null;
-    contributionMethod: string;
+    contributionMethod: ContributionMethod;
     contributionValue: string | number;
     cappedValue: number;
   }>,
@@ -39,7 +40,7 @@ function contrib(
     isActive: true,
     jobId: 1,
     performanceAccountId: 10,
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: "6",
     ...overrides,
   };
@@ -76,7 +77,7 @@ describe("splitYtdActuals", () => {
         contrib({ id: 1, contributionValue: "6" }),
         contrib({
           id: 2,
-          contributionMethod: "fixed_per_period",
+          contributionMethod: "fixed_per_period" as const,
           contributionValue: "100",
         }),
       ],
@@ -113,7 +114,7 @@ describe("splitYtdActuals", () => {
         contrib({
           id: 2,
           jobId: 9,
-          contributionMethod: "fixed_per_period",
+          contributionMethod: "fixed_per_period" as const,
           contributionValue: "500",
         }),
       ],
@@ -152,7 +153,7 @@ describe("splitYtdActuals", () => {
         contrib({
           id: 2,
           jobId: 2,
-          contributionMethod: "fixed_per_period",
+          contributionMethod: "fixed_per_period" as const,
           contributionValue: "50",
         }),
       ],

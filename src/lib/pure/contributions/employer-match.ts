@@ -5,6 +5,7 @@
  */
 import type {
   ContributionMethod,
+  EmployerMatchType,
   MatchTaxTreatment,
 } from "@/lib/config/enum-values";
 import { rowTakesFromBonusCheck } from "@/lib/pure/paycheck/bonus";
@@ -21,7 +22,7 @@ import {
  * (`parseEmployerMatch` reads the stored terms).
  */
 export function computeEmployerMatch(
-  matchType: string | null,
+  matchType: EmployerMatchType | null,
   matchValue: number,
   maxMatchPercent: number,
   empContributionAnnual: number,
@@ -99,7 +100,7 @@ export type GroupableMatchRow = {
   /** The salary this row's contribution is measured against; every row in a group
    *  must resolve the same one (a mismatch is an error, never averaged). */
   salary: number;
-  employerMatchType: string | null;
+  employerMatchType: EmployerMatchType | null;
   employerMatchValue: number;
   /** A percent match per contributed dollar, as stored (storedMatchRate);
    *  null: none stored (the value is read). Not employerMatchRateByCategory

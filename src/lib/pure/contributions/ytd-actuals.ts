@@ -1,3 +1,4 @@
+import type { ContributionMethod } from "@/lib/config/enum-values";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import {
   type SalaryActiveMap,
@@ -15,16 +16,15 @@ import {
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
-/** Split YTD actuals proportionally when multiple contribs share a perf
- *  account, by each one's expected YTD: salary × pct × the job's elapsed
- *  pay-period fraction (salary is flat under the active Salary Profile). */
+/** Split YTD actuals among contributions sharing a performance account by each one's expected
+ *  YTD: salary × pct × the job's elapsed pay-period fraction (flat salary per Salary Profile). */
 export function splitYtdActuals(
   effectiveContributions: readonly {
     id: number;
     isActive: boolean;
     jobId: number | null;
     performanceAccountId: number | null;
-    contributionMethod: string;
+    contributionMethod: ContributionMethod;
     contributionValue: string | number;
     cappedValue?: number;
   }[],

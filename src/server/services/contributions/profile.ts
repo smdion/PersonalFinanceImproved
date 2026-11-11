@@ -17,6 +17,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import type { Db } from "@/lib/db";
 import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
+import { readStoredMatchType } from "@/lib/db/stored-match-type";
 
 /**
  * Resolve a profile against live data (`liveJobSalaries` already reflects the active
@@ -84,7 +85,9 @@ export function resolveProfile<
  *  fields like displayNameCustom). */
 type ContributionActiveFields = {
   contributionValue: string | number;
-  contributionMethod: string;
+  contributionMethod: ContributionMethod;
+  /** The stored match type is outside the set: read as no match, and shown. */
+  matchTypeUnrecognised?: true;
   /** Also taken from bonus checks — always set once active fields apply. */
   fromBonus: boolean | undefined;
   /** A Roth IRA account's route — absent = direct. */
@@ -102,10 +105,7 @@ export function applyContribActiveFields<
 >(
   rows: readonly (R | (R & ContributionActiveFields))[],
   accountActiveFields: Record<string, Record<string, unknown>>,
-  /**
-   * `true` for the What-If sandbox layer over already-resolved rows: a row with no entry
-   * at this layer keeps its earlier value instead of being excluded.
-   */
+  /** `true` for the What-If layer over resolved rows: a row with no entry here keeps its value. */
   isOverlay = false,
 ): (R & ContributionActiveFields)[] {
   return rows
@@ -122,6 +122,7 @@ export function applyContribActiveFields<
       return {
         ...row,
         ...entryWithMergedRate(row, activeFields),
+        ...readStoredMatchType(row, activeFields),
         // An overlay layer that doesn't set it keeps the first layer's.
         fromBonus:
           (activeFields.fromBonus ??
@@ -132,20 +133,18 @@ export function applyContribActiveFields<
     .filter((row) => row.isActive !== false);
 }
 
-/**
- * Synthetic (no DB row) account for a What-If hypothetical: negative `id` so it never
- * collides, with the defaults `contributionAccountInput` uses for a new real row.
- */
+/** A What-If hypothetical account (no DB row; negative `id`, never colliding), with
+ *  the defaults `contributionAccountInput` uses for a new real row. */
 export function buildSandboxContribRow(
   addition: {
     personId: number;
-    accountType: string;
-    contributionMethod: string;
+    accountType: AccountCategory;
+    contributionMethod: ContributionMethod;
     contributionValue: string;
   },
   syntheticId: number,
 ): ContribRowWithActiveFields {
-  const category = addition.accountType as AccountCategory;
+  const category = addition.accountType; // checked by zSandboxContribAdditions
   return {
     id: syntheticId,
     jobId: null,
@@ -155,7 +154,7 @@ export function buildSandboxContribRow(
     label: null,
     parentCategory: getParentCategory(category),
     taxTreatment: getDefaultTaxTreatment(category) as TaxTreatment,
-    contributionMethod: addition.contributionMethod as ContributionMethod,
+    contributionMethod: addition.contributionMethod,
     contributionValue: addition.contributionValue,
     employerMatchType: "none",
     employerMatchValue: null,

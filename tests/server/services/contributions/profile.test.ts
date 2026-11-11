@@ -68,6 +68,20 @@ describe("applyContribActiveFields", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("reads an unknown stored match type as no match and flags the account", () => {
+    const odd = {
+      ...baseRow,
+      employerMatchType: "legacy",
+    } as unknown as typeof baseRow;
+    const [row] = applyContribActiveFields([odd], {
+      "1": { contributionValue: "5", contributionMethod: "percent_of_salary" },
+    });
+    expect(row).toMatchObject({
+      employerMatchType: "none",
+      matchTypeUnrecognised: true,
+    });
+  });
+
   it("leaves other rows untouched", () => {
     const row2 = { ...baseRow, id: 2 } as typeof baseRow;
     const result = applyContribActiveFields([baseRow, row2], {

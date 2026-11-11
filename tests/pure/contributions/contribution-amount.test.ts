@@ -49,12 +49,6 @@ describe("computeAnnualContribution", () => {
   });
 });
 
-describe("computeAnnualContribution: an unknown stored method", () => {
-  it("reads as a fixed annual amount", () => {
-    expect(computeAnnualContribution("weekly", 6000, 120000, 26)).toBe(6000);
-  });
-});
-
 describe("parseEmployerMatch", () => {
   it("reads the rate as a whole percent and the cap as a fraction", () => {
     expect(parseEmployerMatch("percent_of_contribution", 50, 0.06)).toEqual({
@@ -83,10 +77,9 @@ describe("parseEmployerMatch", () => {
     });
   });
 
-  it("reads no type, none, or an unknown stored type as no match", () => {
+  it("reads no type or none as no match", () => {
     expect(parseEmployerMatch(null, 50, 0.06)).toEqual({ kind: "none" });
     expect(parseEmployerMatch("none", 50, 0.06)).toEqual({ kind: "none" });
-    expect(parseEmployerMatch("bonus", 50, 0.06)).toEqual({ kind: "none" });
   });
 });
 

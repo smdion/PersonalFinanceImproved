@@ -28,6 +28,7 @@ import {
   CONTRIBUTION_METHOD_LABELS_SHORT,
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
+  noEmployerMatchLabel,
 } from "@/lib/config/display-labels";
 import { AutoMax } from "./contrib-card-auto-max";
 
@@ -306,9 +307,7 @@ export function ContributionCard({
             className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent focus:outline-none"
           >
             <option value="none">
-              {employerMatchAnnual > 0
-                ? "No match config of its own"
-                : "No employer match"}
+              {noEmployerMatchLabel(c, employerMatchAnnual > 0)}
             </option>
             <option value="percent_of_contribution">Add % match</option>
             <option value="dollar_match">Add $ match</option>

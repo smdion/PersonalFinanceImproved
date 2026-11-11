@@ -1,4 +1,8 @@
 /** A contribution row in yearly dollars, and the job its pay comes from. */
+import type {
+  ContributionMethod,
+  EmployerMatchType,
+} from "@/lib/config/enum-values";
 import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { computeValue } from "./contribution-caps";
@@ -13,11 +17,9 @@ import {
 } from "@/lib/pure/paycheck/bonus";
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 
-/**
- * Jobless account fallback: the active jobs' periods per year, or `incomplete: true` with none
- * or with mixed schedules (`periodsPerYear` is then a placeholder). Shared by
- * computeActiveSummary and its inverse, applyContributionAccountEdit.
- */
+/** Jobless account fallback: the active jobs' periods per year, or `incomplete: true` with none
+ *  or with mixed schedules (`periodsPerYear` is then a placeholder). Shared by
+ *  computeActiveSummary and its inverse, applyContributionAccountEdit. */
 export function resolveJoblessPeriodsPerYear(
   activeJobs: { payPeriod: string | undefined }[],
 ): { periodsPerYear: number; incomplete: boolean } {
@@ -59,10 +61,10 @@ export type ContributionRow = {
   subType: string | null;
   label: string | null;
   parentCategory: string;
-  contributionMethod: string;
+  contributionMethod: ContributionMethod;
   contributionValue: string | number;
   taxTreatment: string;
-  employerMatchType: string | null;
+  employerMatchType: EmployerMatchType | null;
   employerMatchValue: string | null;
   employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | null;
@@ -89,11 +91,9 @@ export type JobSalaryRef = {
   bonusGrossThisYear?: number;
 };
 
-/**
- * The job whose pay a contribution is figured on: its own job, or — for an
- * account not tied to one — the person's job. One lookup for the summary,
- * the display specs and the engine specs.
- */
+/** The job whose pay a contribution is figured on: its own job, or — for an
+ *  account not tied to one — the person's job. One lookup for the summary,
+ *  the display specs and the engine specs. */
 export function jobPayFor<T extends { job: { id: number; personId: number } }>(
   c: { jobId: number | null; personId: number | null },
   jobSalaries: readonly T[],
@@ -110,7 +110,7 @@ export function jobPayFor<T extends { job: { id: number; personId: number } }>(
  */
 export function annualContributionWithBonus(
   c: {
-    contributionMethod: string | null;
+    contributionMethod: ContributionMethod | null;
     contributionValue: string | number | null;
     jobId: number | null;
     isPayrollDeducted?: boolean | null;

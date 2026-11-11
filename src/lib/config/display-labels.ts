@@ -89,6 +89,16 @@ export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   fixed_annual: "Fixed annual",
 };
 
+/** A contribution card's no-match option: "not recognised" when the stored match
+ *  type is outside the set (read as no match). */
+export function noEmployerMatchLabel(
+  row: { matchTypeUnrecognised?: true },
+  matchedElsewhere: boolean,
+): string {
+  if (row.matchTypeUnrecognised) return "Match type not recognised";
+  return matchedElsewhere ? "No match config of its own" : "No employer match";
+}
+
 /** Unit glyph for a match type's value field; null for "none". Display-only: never use it
  *  for %-to-decimal math. The cap check stays an inline `"percent_of_contribution"` test
  *  so a new type with a cap can't inherit its ×100/÷100 conversion. */

@@ -4,6 +4,7 @@
  * resolveContributionPeriods used to hand back 0 for those methods, so the
  * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
  */
+import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
@@ -12,7 +13,7 @@ import {
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
 
-const hsa = (method: string, value: number): ContributionRow => ({
+const hsa = (method: ContributionMethod, value: number): ContributionRow => ({
   id: 1,
   personId: 1,
   jobId: 1,
@@ -23,7 +24,7 @@ const hsa = (method: string, value: number): ContributionRow => ({
   contributionMethod: method,
   contributionValue: value,
   taxTreatment: "tax_free",
-  employerMatchType: "none",
+  employerMatchType: "none" as const,
   employerMatchValue: null,
   employerMaxMatchPct: null,
   isPayrollDeducted: true,
@@ -74,7 +75,7 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
   it("never divides by zero when no pay period is known", () => {
     const annual = annualContributionWithBonus(
       {
-        contributionMethod: "fixed_monthly",
+        contributionMethod: "fixed_monthly" as const,
         contributionValue: 100,
         jobId: 1,
         fromBonus: true,
@@ -96,7 +97,7 @@ describe("annualContributionWithBonus", () => {
     jobId: number | null = 1,
     fromBonus: boolean | undefined = true,
   ) => ({
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: value,
     jobId,
     fromBonus,
@@ -123,7 +124,7 @@ describe("annualContributionWithBonus", () => {
     expect(
       annualContributionWithBonus(
         {
-          contributionMethod: "fixed_per_period",
+          contributionMethod: "fixed_per_period" as const,
           contributionValue: 200,
           jobId: 1,
           fromBonus: true,

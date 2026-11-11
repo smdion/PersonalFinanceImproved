@@ -59,7 +59,7 @@ describe("aggregateContributionsByCategory", () => {
   it("includes employer match by category", () => {
     const contribs = [
       makeContribRow({
-        employerMatchType: "percent_of_contribution",
+        employerMatchType: "percent_of_contribution" as const,
         employerMatchValue: "100",
         employerMaxMatchPct: "0.06",
       }),
@@ -93,7 +93,7 @@ describe("aggregateContributionsByCategory", () => {
       makeContribRow({
         id: 3,
         accountType: "hsa" as AccountCategory,
-        contributionMethod: "fixed_annual",
+        contributionMethod: "fixed_annual" as const,
         contributionValue: "4300",
       }),
     ];
@@ -129,7 +129,7 @@ describe("aggregateContributionsByCategory", () => {
     const contribs = [
       makeContribRow({
         parentCategory: "Retirement — Employer",
-        employerMatchType: "dollar_match",
+        employerMatchType: "dollar_match" as const,
         employerMatchValue: "5000",
       }),
     ];
@@ -167,7 +167,7 @@ describe("aggregateContributionsByCategory", () => {
       makeContribRow({
         id: 1,
         jobId: 99, // no job with this id in `jobs` below — ended/missing link
-        contributionMethod: "fixed_per_period",
+        contributionMethod: "fixed_per_period" as const,
         contributionValue: "500",
       }),
     ];
@@ -187,13 +187,13 @@ describe("aggregateContributionsByCategory", () => {
       makeContribRow({
         id: 1,
         jobId: 99,
-        contributionMethod: "percent_of_salary",
+        contributionMethod: "percent_of_salary" as const,
         contributionValue: "10",
       }),
       makeContribRow({
         id: 2,
         jobId: 99,
-        contributionMethod: "fixed_monthly",
+        contributionMethod: "fixed_monthly" as const,
         contributionValue: "200",
       }),
     ];

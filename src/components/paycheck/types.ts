@@ -33,6 +33,8 @@ export type RawContrib = {
   maxValue?: number;
   othersInGroup?: number;
   employerMatchType: string;
+  /** The stored match type is outside the set (read as no match). */
+  matchTypeUnrecognised?: true;
   employerMatchValue: string | null;
   employerMatchRate?: string | null;
   employerMaxMatchPct: string | null;

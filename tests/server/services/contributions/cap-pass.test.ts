@@ -57,7 +57,7 @@ function row(
     subType: null,
     label: null,
     parentCategory: "Retirement",
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: "10",
     taxTreatment: "pre_tax",
     employerMatchType: null,
@@ -89,7 +89,7 @@ describe("capEffectiveContribs", () => {
   it("keeps the configured value and gives a capped value whose yearly money is the capped amount", () => {
     const pct = row({ contributionValue: "8", fromBonus: true }); // 8% of 240k = 19,200
     const fixed = row({
-      contributionMethod: "fixed_per_period",
+      contributionMethod: "fixed_per_period" as const,
       contributionValue: "500", // 13,000/yr
       taxTreatment: "tax_free",
     });
@@ -125,9 +125,9 @@ describe("capEffectiveContribs", () => {
       accountType: "hsa",
       taxTreatment: "hsa",
       hsaCoverageType: "self_only",
-      contributionMethod: "fixed_per_period",
+      contributionMethod: "fixed_per_period" as const,
       contributionValue: "400", // 4,800/yr
-      employerMatchType: "percent_of_contribution",
+      employerMatchType: "percent_of_contribution" as const,
       employerMatchValue: "100",
     });
     const [out] = capEffectiveContribs([hsa], ctx);
@@ -159,9 +159,9 @@ describe("capEffectiveContribs", () => {
       accountType: "hsa",
       taxTreatment: "hsa",
       hsaCoverageType: "self_only",
-      contributionMethod: "fixed_per_period",
+      contributionMethod: "fixed_per_period" as const,
       contributionValue: "500", // 6,000/yr, over 4,000
-      employerMatchType: "fixed_annual",
+      employerMatchType: "fixed_annual" as const,
       employerMatchValue: "1000",
     });
     const [out] = capEffectiveContribs([hsa], ctx);
@@ -203,7 +203,7 @@ const planRow = (id: number, jobId: number | null, value: number) => ({
   personId: 1,
   jobId,
   accountType: jobId === null ? "ira" : "401k",
-  contributionMethod: "fixed_annual",
+  contributionMethod: "fixed_annual" as const,
   contributionValue: String(value),
   taxTreatment: jobId === null ? "tax_free" : "pre_tax",
   employerMatchType: null,

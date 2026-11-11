@@ -59,10 +59,10 @@ export type CapPassRow = {
   subType?: string | null;
   label?: string | null;
   parentCategory?: string | null;
-  contributionMethod: string | null;
+  contributionMethod: ContributionRow["contributionMethod"] | null;
   contributionValue: string | number | null;
   taxTreatment: string | null;
-  employerMatchType: string | null;
+  employerMatchType: ContributionRow["employerMatchType"];
   employerMatchValue: string | number | null;
   employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | number | null;

@@ -59,7 +59,7 @@ describe("buildContributionDisplaySpecs", () => {
         id: 1,
         contributionValue: "10", // 12000
         taxTreatment: "pre_tax",
-        employerMatchType: "percent_of_contribution",
+        employerMatchType: "percent_of_contribution" as const,
         employerMatchValue: "100",
         employerMaxMatchPct: "0.06",
       }),
@@ -94,7 +94,7 @@ describe("buildContributionDisplaySpecs", () => {
       makeContribRow({
         id: 1,
         contributionValue: "10",
-        employerMatchType: "percent_of_contribution",
+        employerMatchType: "percent_of_contribution" as const,
         employerMatchValue: "100",
         employerMaxMatchPct: "0.06",
       }),
@@ -102,7 +102,7 @@ describe("buildContributionDisplaySpecs", () => {
         id: 2,
         contributionValue: "5",
         taxTreatment: "tax_free",
-        employerMatchType: "percent_of_contribution",
+        employerMatchType: "percent_of_contribution" as const,
         employerMatchValue: "100",
         employerMaxMatchPct: "0.06",
       }),

@@ -173,7 +173,7 @@ describe("contribution.ts — PG string mode", () => {
       parentCategory: "retirement",
       contributionMethod: "percent_of_salary",
       contributionValue: "14.000000", // string (PG)
-      employerMatchType: "percent_of_salary",
+      employerMatchType: "percent_of_contribution",
       employerMatchValue: "50.000000", // string (PG) — 50% of contribution
       employerMaxMatchPct: "0.060000", // string (PG) — cap at 6% of salary
       employerMatchTaxTreatment: "traditional",
