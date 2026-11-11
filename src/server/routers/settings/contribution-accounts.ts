@@ -4,7 +4,7 @@ import {
 } from "@/server/services/contributions/caps";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { eq, asc, and } from "drizzle-orm";
+import { eq, asc, and, sql } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -96,12 +96,16 @@ const limitedTypeHasOwnerIssue = {
 
 export const contributionAccountsProcedures = {
   contributionAccounts: createTRPCRouter({
-    /** Every contribution account, by person. */
+    /** Every contribution account, by person (joint first), then id: the
+     *  same order on both databases, and after any edit. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
         .from(schema.contributionAccounts)
-        .orderBy(asc(schema.contributionAccounts.personId)),
+        .orderBy(
+          sql`${schema.contributionAccounts.personId} asc nulls first`,
+          asc(schema.contributionAccounts.id),
+        ),
     ),
     /**
      * Add a contribution account. Linked to a performance account, it takes that parent category,

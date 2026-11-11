@@ -122,7 +122,7 @@ export async function computeBudgetActiveSummary(
     .select()
     .from(schema.budgetItems)
     .where(eq(schema.budgetItems.profileId, activeProfile.id))
-    .orderBy(asc(schema.budgetItems.sortOrder));
+    .orderBy(asc(schema.budgetItems.sortOrder), asc(schema.budgetItems.id));
 
   // Read-only display path — resolve links for the currently active
   // service only (no cross-service ambiguity here; see
