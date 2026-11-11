@@ -439,6 +439,21 @@ describe("capContributionsByLimitGroup — spousal IRA and compensation", () => 
     expect(out.get(r.id)!).toMatchObject({ cappedAnnual: 6000, reason: null });
   });
 
+  it("married filing jointly, equal pay: neither spouse has less, so each is held to their own (IRC 219(c)(2))", () => {
+    const a = row({ personId: 1, accountType: "ira", regularAnnual: 6000 });
+    const b = row({ personId: 2, accountType: "ira", regularAnnual: 1000 });
+    const out = cap([a, b], [person(1, 40, 4000), person(2, 40, 4000)], "MFJ");
+    expect(out.get(a.id)!).toMatchObject({
+      cappedAnnual: 4000,
+      maxEmployee: 4000,
+      reason: "over-compensation",
+    });
+    expect(out.get(b.id)!).toMatchObject({
+      cappedAnnual: 1000,
+      maxEmployee: 4000,
+    });
+  });
+
   it("takes capped pre-tax payroll money off compensation", () => {
     const k = row({
       personId: 1,

@@ -86,8 +86,8 @@ export function judgeRothIra(args: {
       : magi >= phaseOut.end
         ? "backdoor"
         : "tooClose";
-  // IRA money can't exceed compensation; married filing jointly, a spouse may use the
-  // couple's combined compensation less the other's (IRC 219(c)): higher earner first.
+  // IRA money can't exceed compensation; married filing jointly, the spouse with less pay
+  // may use the couple's combined compensation less the other's (IRC 219(c)).
   const householdCompensation = sumBy(args.people, (p) =>
     Math.max(0, p.compensation),
   );
@@ -97,8 +97,10 @@ export function judgeRothIra(args: {
     (a, b) => b.compensation - a.compensation,
   )) {
     const own = Math.max(0, p.compensation);
+    const lower = args.people.some((o) => o.compensation > p.compensation);
     const usable =
-      p.iraRoom ?? (args.combinedCompensation ? compensationLeft : own);
+      p.iraRoom ??
+      (args.combinedCompensation && lower ? compensationLeft : own);
     const base = Math.min(p.iraLimit, usable);
     const other = p.otherIraContributions;
     // Worksheet 2-2 lines 9–11: one limit across both kinds (408A(c)(2)),

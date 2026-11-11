@@ -216,6 +216,36 @@ describe("judgeRothIra", () => {
     expect(r.people.map((p) => p.maxDirect)).toEqual([4000, 1000]);
   });
 
+  it("with no cap-pass room, the higher earner is held to their own pay (IRC 219(c)(2))", () => {
+    const allowed = (pays: [number, number]) =>
+      judgeRothIra({
+        magi: 50_000,
+        phaseOut: MFJ,
+        marginOverride: null,
+        combinedCompensation: true,
+        people: [
+          {
+            personId: 1,
+            name: "A",
+            compensation: pays[0],
+            iraLimit: 7500,
+            otherIraContributions: 0,
+          },
+          {
+            personId: 2,
+            name: "B",
+            compensation: pays[1],
+            iraLimit: 7500,
+            otherIraContributions: 0,
+          },
+        ],
+      })!.people.map((p) => p.maxDirect);
+    // A: own 5,000. B: 3,000 + 5,000 − 5,000 = 3,000.
+    expect(allowed([5000, 3000])).toEqual([5000, 3000]);
+    // Equal pay: neither has less, so each is held to their own.
+    expect(allowed([4000, 4000])).toEqual([4000, 4000]);
+  });
+
   it("no phase-out data → no verdict", () => {
     expect(judge(150_000, { phaseOut: null })).toBeNull();
   });

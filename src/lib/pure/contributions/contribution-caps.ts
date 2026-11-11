@@ -403,7 +403,7 @@ export function capContributionsByLimitGroup(
   }
 
   holdToAnnualAdditions(rows, ctx, { kept, factorOf, maxOf }); // 415(c), per employer
-  // Compensation bound (IRA) on the capped pre-tax money: own pay, or the couple's for a spousal IRA.
+  // IRA bound on the capped pre-tax money: own pay; on a joint return the lower earner adds the other's pay less their IRA money.
   const compensation = new Map(
     ctx.people.map((p) => [
       p.id,
@@ -448,7 +448,7 @@ export function capContributionsByLimitGroup(
     }
   };
   const spousal = includes(SPOUSAL_IRA_FILING_STATUSES, ctx.filingStatus);
-  holdIraRowsToCompensation(bounded, spousal, compensation, rows, holdTo);
+  holdIraRowsToCompensation(bounded, spousal, compensation, rows, holdTo, kept);
 
   const out = new Map<number, CappedContribution>();
   rows.forEach((r, i) => {

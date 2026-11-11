@@ -613,29 +613,19 @@ describe("limits: IRA", () => {
   });
 
   // D4: the higher earner is held to their own pay (219(c)(2)(B): only
-  // the spouse with less compensation uses the couple's). Ledgr pools both
-  // spouses' pay for both (limits-report D4: today's figures below).
-  //
-  // D4-a: pay 5,000 / 3,000, IRA 7,500 / 500. Higher earner:
-  // min(7,500, 5,000) = 5,000. Lower: min(7,500, 3,000 + 5,000 − 5,000)
-  // = 3,000 ≥ 500, so 500. Today: 8,000 pooled pay holds 7,500 + 500.
-  xfail({
-    id: "limits/D4-a [LIM-11]",
-    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
-    run: () => coupleIra([5_000, 3_000], [7_500, 500]),
-    expected: { higher: 5_000, lower: 500 },
-    today: { higher: 7_500, lower: 500 },
+  // the spouse with less compensation uses the couple's; verdict D4).
+  it("limits/D4-a [LIM-11] higher earner held to own pay (2026 MFJ, pay 5,000 / 3,000, IRA 7,500 / 500): 5,000 / 500", () => {
+    // Higher earner: min(7,500, 5,000) = 5,000. Lower: min(7,500, 3,000 +
+    // 5,000 − 5,000) = 3,000 ≥ 500, so 500.
+    const both = coupleIra([5_000, 3_000], [7_500, 500]);
+    cents(both.higher, 5_000);
+    cents(both.lower, 500);
   });
-  // D4-b: pay 5,000 / 1,000, IRA 7,500 / 1,000. Higher: 5,000. Lower:
-  // min(7,500, 1,000 + 5,000 − 5,000) = 1,000. Today: 8,500 cut to the
-  // pooled 6,000 by one factor 6,000 / 8,500: 7,500 × 0.70588… = 5,294.12,
-  // 1,000 × 0.70588… = 705.88.
-  xfail({
-    id: "limits/D4-b [LIM-11]",
-    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
-    run: () => coupleIra([5_000, 1_000], [7_500, 1_000]),
-    expected: { higher: 5_000, lower: 1_000 },
-    today: { higher: 5_294.12, lower: 705.88 },
+  it("limits/D4-b [LIM-11] the lower earner uses what the higher leaves (pay 5,000 / 1,000, IRA 7,500 / 1,000): 5,000 / 1,000", () => {
+    // Higher: 5,000. Lower: min(7,500, 1,000 + 5,000 − 5,000) = 1,000.
+    const both = coupleIra([5_000, 1_000], [7_500, 1_000]);
+    cents(both.higher, 5_000);
+    cents(both.lower, 1_000);
   });
 });
 
