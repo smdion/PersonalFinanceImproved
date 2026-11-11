@@ -148,13 +148,15 @@ describe.each([
     yearEnd: 3634.61,
   },
   {
+    // 30% of pay: a year of checks is 27,000, but the job ends Oct 15, so this year's checks
+    // stay under the 24,500 limit and the rate isn't cut.
     percent: "30",
     perCheck: "1038.46",
-    employee: 24500,
-    remaining: 9415.38,
-    perContribution: 1046.15,
+    employee: 27000,
+    remaining: 10280.77,
+    perContribution: 1142.31,
     pending: 4153.84,
-    yearEnd: 13569.22,
+    yearEnd: 14434.61,
   },
 ])("Dana at $percent% of pay", (expected) => {
   let seeded: Awaited<ReturnType<typeof seedDana>>;
@@ -171,8 +173,8 @@ describe.each([
 
   it("judges the months through the last posted day with the job held then", async () => {
     const { then, live, pace, savings } = await figures(seeded);
-    // The setup on Sep 30: capped at the $24,500 employee limit when over
-    // it; the match is 50% of up to 6% of $90,000.
+    // The setup on Sep 30, a year at its rate, capped on this year's checks; the
+    // match is 50% of up to 6% of $90,000.
     expect(then.employeePreTax).toBeCloseTo(expected.employee, 2);
     expect(then.employer).toBeCloseTo(2700, 2);
     expect(then.remainingThisYear).toBeCloseTo(expected.remaining, 2);

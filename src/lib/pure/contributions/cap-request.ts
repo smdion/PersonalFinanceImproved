@@ -160,9 +160,9 @@ function requestJobs(
   return { asOf, activeJobs, payOf };
 }
 
-/** Cap a request's effective rows on a year's pay at the jobs held on its date: every job each
- *  person holds counts (IRC 219(f)(1)); a What-If salary is the current job's only. */
-export function capForRequest<R extends CapPassRow>(
+/** Cap a request's effective rows on a year's pay at the jobs held on its date (the rate a year of
+ *  checks pays): every job each person holds counts (IRC 219(f)(1)); a What-If salary is the current job's only. */
+export function capAtYearRate<R extends CapPassRow>(
   rows: readonly R[],
   household: CapRequestHousehold,
   jobs: readonly CapJob[],
@@ -182,9 +182,10 @@ export function capForRequest<R extends CapPassRow>(
   });
 }
 
-/** Cap a request's effective rows on this tax year's checks at every job held in it (thisYearInput). */
-export function capThisYear<R extends CapPassRow>(
-  ...request: Parameters<typeof capForRequest<R>>
+/** Cap a request's effective rows on this tax year's checks at every job held in it (thisYearInput):
+ *  what every figure of the request reads. */
+export function capForRequest<R extends CapPassRow>(
+  ...request: Parameters<typeof capAtYearRate<R>>
 ): (R & CappedRowFields)[] {
   const [rows, household, jobs, salaryProfiles, whatIf] = request;
   const { asOf, activeJobs, payOf } = requestJobs(
@@ -204,11 +205,11 @@ const overOf = (cap: CappedRowFields["cap"]) => (cap ? cap.overBy : 0);
 /** The rows for a save check: each as the pass that leaves it further over (a year's pay, or this
  *  tax year's checks), so a save over in either is refused. */
 export function capForSaveCheck<R extends CapPassRow>(
-  ...request: Parameters<typeof capForRequest<R>>
+  ...request: Parameters<typeof capAtYearRate<R>>
 ) {
-  const thisYear = capThisYear(...request);
+  const thisYear = capForRequest(...request);
   // Both passes keep the rows' order, so row k is the same row in each.
-  return capForRequest(...request).map((c, k) =>
+  return capAtYearRate(...request).map((c, k) =>
     overOf(thisYear[k]!.cap) > overOf(c.cap) ? thisYear[k]! : c,
   );
 }

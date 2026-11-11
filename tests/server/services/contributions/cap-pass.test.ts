@@ -7,8 +7,8 @@ import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
 import {
+  capAtYearRate,
   capForRequest,
-  capThisYear,
 } from "@/lib/pure/contributions/cap-request";
 import {
   BLANK_SALARY_ENTRY,
@@ -172,7 +172,7 @@ describe("capEffectiveContribs", () => {
     expect(out!.cappedValue).toBeUndefined();
   });
 
-  it("an over-limit HSA's FICA-exempt amount is its capped contribution", () => {
+  it("an over-limit HSA's capped contribution is FICA-exempt in full", () => {
     const hsa = row({
       personId: 2,
       jobId: 20,
@@ -194,7 +194,8 @@ describe("capEffectiveContribs", () => {
       0,
     );
     expect(acct!.annualContribution).toBeCloseTo(3000, 2); // 4,000 − 1,000
-    expect(acct!.ficaExemptAnnualCap).toBeCloseTo(3000, 2);
+    // Already within the limit less employer money: no further FICA-exempt cap.
+    expect(acct!.ficaExemptAnnualCap).toBe(Infinity);
   });
 });
 
@@ -280,7 +281,7 @@ describe("capForRequest — a What-If salary is the current job's only", () => {
   });
 });
 
-describe("capThisYear — this tax year's checks", () => {
+describe("capForRequest — this tax year's checks", () => {
   const perCheck = (
     id: number,
     jobId: number,
@@ -296,7 +297,7 @@ describe("capThisYear — this tax year's checks", () => {
   const run = (
     rows: ReturnType<typeof perCheck>[],
     jobs: ReturnType<typeof jobAt>[],
-    pass = capThisYear<ReturnType<typeof perCheck>>,
+    pass = capForRequest<ReturnType<typeof perCheck>>,
   ) =>
     pass(
       rows,
@@ -326,7 +327,7 @@ describe("capThisYear — this tax year's checks", () => {
     const rows = [perCheck(1, 1, "hsa", 500)];
     const jobs = [monthly(1, "2030-07-01")];
     expect(run(rows, jobs)[0]!.cappedValue).toBeCloseTo(500, 2);
-    expect(run(rows, jobs, capForRequest)[0]!.cappedValue).toBeCloseTo(
+    expect(run(rows, jobs, capAtYearRate)[0]!.cappedValue).toBeCloseTo(
       4000 / 12,
       2,
     );

@@ -71,7 +71,7 @@ export type ContributionAccountInput = {
   employerMatchTaxTreatment: TaxTreatment;
   /** Yearly cap on this account's payroll contributions that aren't FICA
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
-   *  exempt in full (cap can't be sized). */
+   *  exempt in full (a capped row, or a cap that can't be sized). */
   ficaExemptAnnualCap: number | null;
 };
 

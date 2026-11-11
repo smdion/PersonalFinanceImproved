@@ -391,8 +391,6 @@ describe("paycheck/N2: the Year-end estimate", () => {
 // N3: a part-year job's caps are sized on this year's checks
 // ---------------------------------------------------------------------------
 
-const PART_YEAR_CAPS = 'v0.11 Limits "Part-year caps" (verdict N3)';
-
 /** The year's figures for a job that pays only from its start. */
 function partYearFigures(s: Summary): Record<string, number> {
   const rows = paidRows(s);
@@ -412,25 +410,20 @@ describe("paycheck/N3: part-year caps", () => {
   // Single row A 57,900, C 5,800, D 22%: 2g 16,250.00; 2h 1,354.17 (6 ×
   // = 8,125.02). Wages 57,000 for both taxes (PW-4.6, PW-4.7): SS
   // 3,534.00, Medicare 826.50. Net 60,000 − 3,000 − 8,125.02 − 3,534 −
-  // 826.50 = 44,514.48. Today the cap pass sizes 12 checks and cuts the
-  // row to 366.67 a check.
+  // 826.50 = 44,514.48.
   const hsaJob = household({
     job: { ...MONTHLY, annualSalary: "120000", startDate: "2026-07-01" },
     contributions: [hsa(500)],
   });
-  xfail({
-    id: "paycheck/N3-HSA [PAY-05]",
-    todo: PART_YEAR_CAPS,
-    run: () => partYearFigures(hsaJob()),
-    expected: {
+  it("paycheck/N3-HSA [PAY-05] six checks of 500 to the HSA, under its 4,400", () => {
+    cents(partYearFigures(hsaJob()), {
       perCheck: 500,
       preTax: 3_000,
       federalWages: 57_000,
       ficaWages: 57_000,
       federal: 8_125.02,
       net: 44_514.48,
-    },
-    today: { net: 45_077.28 },
+    });
   });
 
   // $240,000 monthly from July 1: 6 checks of 20,000, a traditional 401(k)
@@ -445,12 +438,12 @@ describe("paycheck/N3: part-year caps", () => {
       { accountType: "401k", taxTreatment: "pre_tax", perCheck: 3_500 },
     ],
   });
-  xfail({
-    id: "paycheck/N3-401k [PAY-05]",
-    todo: PART_YEAR_CAPS,
-    run: () => partYearFigures(k401()),
-    expected: { preTax: 21_000, federal: 18_127.02, net: 71_692.98 },
-    today: { net: 78_342.96 },
+  it("paycheck/N3-401k [PAY-05] six checks of 3,500 to the 401(k), under its 24,500", () => {
+    const f = partYearFigures(k401());
+    cents(
+      { preTax: f.preTax!, federal: f.federal!, net: f.net! },
+      { preTax: 21_000, federal: 18_127.02, net: 71_692.98 },
+    );
   });
 });
 
