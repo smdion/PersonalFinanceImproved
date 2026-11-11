@@ -33,21 +33,20 @@ function computeSSWithholding(
   return remainingBase * ssRate;
 }
 
-/**
- * Federal and FICA withheld on the year's first `periods` regular checks, per the year schedule
- * (full SS until the wage base, unlike the per-check average). Excludes bonus withholding.
- */
+/** Federal and FICA withheld on the schedule's first `periods` checks (full SS until the wage
+ *  base, unlike the per-check average), a bonus paid on one of them included. */
 export function withheldThroughPeriod(
   schedule: readonly PeriodBreakdown[],
   periods: number,
 ): { federal: number; fica: number } {
-  const { federal, fica } = yearTotals(schedule, 1, periods);
-  return { federal, fica };
+  const t = yearTotals(schedule, 1, periods);
+  const federal = roundToCents(t.federal + t.bonusFederal);
+  return { federal, fica: roundToCents(t.fica + t.bonusFica) };
 }
 
 /**
  * The household's withholding so far this year: each current job's
- * regular checks to date (withheldThroughPeriod) plus what jobs that ended
+ * checks to date (withheldThroughPeriod) plus what jobs that ended
  * this year withheld — someone with no job now still had tax withheld.
  */
 export function householdWithheldSoFar(

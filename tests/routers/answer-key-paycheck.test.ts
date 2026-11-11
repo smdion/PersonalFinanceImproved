@@ -630,8 +630,6 @@ describe("paycheck/Y1, Y2: year to date", () => {
   // A 57,900, C 5,800, D 22%: 2g 13,169.98; 2h 506.54; 13 × = 6,585.02,
   // plus 22% × 10,000 = 2,200: 8,785.02. FICA a check 238.46 + 55.77 =
   // 294.23; 13 × = 3,824.99, plus the bonus's 620 + 145 = 765: 4,589.99.
-  // Today "Withheld so far" leaves the bonus out (paycheck.ts
-  // withheldThroughPeriod).
   const y2 = household({
     job: {
       ...BIWEEKLY,
@@ -642,15 +640,12 @@ describe("paycheck/Y1, Y2: year to date", () => {
     },
     now: "2026-07-02T12:00:00Z",
   });
-  xfail({
-    id: "paycheck/Y2 [PAY-20]",
-    todo: YEAR_TOTALS,
-    run: () => {
-      const pc = y2().paycheck;
-      return withheldThroughPeriod(pc.yearSchedule, pc.periodsElapsedYtd);
-    },
-    expected: { federal: 8_785.02, fica: 4_589.99 },
-    today: { federal: 6_585.02, fica: 3_824.99 },
+  it("paycheck/Y2 [PAY-20] withheld so far includes the bonus check's withholding", () => {
+    const pc = y2().paycheck;
+    cents(withheldThroughPeriod(pc.yearSchedule, pc.periodsElapsedYtd), {
+      federal: 8_785.02,
+      fica: 4_589.99,
+    });
   });
 });
 

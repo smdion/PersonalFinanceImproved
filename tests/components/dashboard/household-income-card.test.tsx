@@ -53,11 +53,14 @@ const summary = {
         federalWithholding: 600,
         ficaSS: 310,
         ficaMedicare: 72.5,
-        // Withholding so far comes from the year schedule.
-        yearSchedule: Array.from({ length: 12 }, () => ({
+        // Withholding so far comes from the year schedule (the undated
+        // bonus is on the last check).
+        yearSchedule: Array.from({ length: 12 }, (_, i) => ({
           federalWithholding: 600,
           ficaSS: 310,
           ficaMedicare: 72.5,
+          bonusWithholding: i === 11 ? 1320 : 0,
+          bonusFica: i === 11 ? 459 : 0,
         })),
       },
       // The year's figures; the bonus's net is its schedule row's.
