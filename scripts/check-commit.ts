@@ -4027,7 +4027,13 @@ const flipCandidates = (files: FileChange[]) =>
 function flipWarnings(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const lines = trailerValues(message.raw, FIGURE_CHANGE);
-  const named = new Set(lines.flatMap((line) => line.split(/[\s:,;()]+/)));
+  // A case id may hold a colon (limits/IRA-2JOB:save): split on the rest and
+  // drop only the colon that ends the name ("tax/E6: …").
+  const named = new Set(
+    lines.flatMap((line) =>
+      line.split(/[\s,;()]+/).map((token) => token.replace(/:+$/, "")),
+    ),
+  );
   const unnamed = (facts.droppedXfails ?? []).filter((id) => !named.has(id));
   const warnings: Warning[] = unnamed.map((id) => ({
     rule: "xfail-flip",

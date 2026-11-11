@@ -264,6 +264,44 @@ describe("checkCommit: flips name their case, figures their row (G2)", () => {
     expect(flipRules(message(COUNT, "", other, item))).toEqual(["xfail-flip"]);
   });
 
+  describe("a case id holding a colon", () => {
+    const named = (dropped: string, figure: string) =>
+      checkCommit({
+        ...facts(message(COUNT, "", figure, item), files),
+        droppedXfails: [dropped],
+      })
+        .map((w) => w.rule)
+        .filter((rule) => rule === "xfail-flip");
+    const save =
+      "Figure-change: limits/IRA-2JOB:save: refused → saved, the second job's IRA";
+    const plain =
+      "Figure-change: limits/IRA-2JOB: 7,000 → 7,500, the second job's IRA";
+
+    it("is named by a line that writes it whole", () => {
+      expect(named("limits/IRA-2JOB:save", save)).toEqual([]);
+    });
+
+    it("isn't named by its prefix, nor names the prefix", () => {
+      expect(named("limits/IRA-2JOB:save", plain)).toEqual(["xfail-flip"]);
+      expect(named("limits/IRA-2JOB", save)).toEqual(["xfail-flip"]);
+    });
+
+    it("leaves the forms in history named: id:, id (…), id,", () => {
+      expect(
+        named("tax/E6", "Figure-change: tax/E6: 11,999.94 → 11,999.88, cause"),
+      ).toEqual([]);
+      expect(
+        named(
+          "paycheck/K1-190M",
+          "Figure-change: paycheck/K1-190M (still expected to fail): 1 → 2, cause",
+        ),
+      ).toEqual([]);
+      expect(
+        named("tax/L3", "Figure-change: tax/L2, tax/L3: 4,830 → 0, cause"),
+      ).toEqual([]);
+    });
+  });
+
   it("needs the CALCULATIONS row, or Calculations: none, <reason>", () => {
     const answerKeyOnly = [changed("tests/pure/tax/answer-key-tax.test.ts")];
     expect(flipRules(message(COUNT, "", FIGURE, item), answerKeyOnly)).toEqual([
