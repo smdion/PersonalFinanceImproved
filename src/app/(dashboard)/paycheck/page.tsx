@@ -4,7 +4,13 @@
  */
 
 import { PaycheckContent } from "./paycheck-content";
+import { FilingStatusConfirm } from "@/components/taxes/filing-status-confirm";
 
 export default function PaycheckPage() {
-  return <PaycheckContent />;
+  return (
+    <>
+      <FilingStatusConfirm />
+      <PaycheckContent />
+    </>
+  );
 }

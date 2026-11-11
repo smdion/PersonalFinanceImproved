@@ -349,6 +349,16 @@ export function filingStatusLabel(status: string): string {
   return known ? filingTable(FILING_STATUS_LABELS, known) : status;
 }
 
+/** Where a filing status not saved for the household came from (the
+ *  sources lib/pure/tax/filing-status.ts names besides "household"). */
+export const FILING_STATUS_SOURCE_LABELS: Record<
+  "retirementProfile" | "w4",
+  string
+> = {
+  retirementProfile: "the Retirement Profile",
+  w4: "the W-4",
+};
+
 /** Display label for a budget API service, so sync toasts name the connected
  *  provider. */
 export function budgetApiServiceLabel(

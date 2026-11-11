@@ -8,6 +8,7 @@ import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summ
 import { TaxBreakdown } from "@/components/taxes/tax-breakdown";
 import { RothIraSection } from "@/components/taxes/roth-ira-section";
 import { FilingStatusRow } from "@/components/taxes/filing-status-row";
+import { FilingStatusConfirm } from "@/components/taxes/filing-status-confirm";
 import { Card } from "@/components/ui/card";
 import { useFullYearNote } from "@/lib/hooks/use-full-year-note";
 
@@ -21,6 +22,7 @@ export function TaxesContent() {
         title="Taxes this year"
         subtitle="This year's tax on salary and bonus, and whether you can contribute to a Roth IRA directly"
       />
+      <FilingStatusConfirm />
       {fullYearNote && (
         <p className="text-caption text-faint -mt-2">{fullYearNote}.</p>
       )}

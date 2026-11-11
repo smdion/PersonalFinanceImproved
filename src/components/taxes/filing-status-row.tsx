@@ -7,21 +7,15 @@
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { FocusTarget } from "@/components/ui/focus-target";
-import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
+import { useHouseholdFilingStatus } from "./use-household-filing-status";
 import { RETURN_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
+  FILING_STATUS_SOURCE_LABELS,
   filingStatusLabel,
 } from "@/lib/config/display-labels";
 import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
-
-const SOURCE_TEXT: Record<Exclude<FilingStatusSource, "household">, string> = {
-  retirementProfile: "the Retirement Profile's",
-  w4: "the W-4's",
-};
 
 const HELP =
   "The filing status on this year's tax return. It sets the brackets and standard deduction here, the Roth IRA income limit and the IRS contribution limits. Retirement years use the Retirement Profile's own status. A W-4 status only sets withholding. Ledgr doesn't model married filing separately.";
@@ -34,26 +28,10 @@ export function FilingStatusRow({
   source: FilingStatusSource | null;
 }) {
   const user = useUser();
-  const utils = trpc.useUtils();
-  const upsert = trpc.settings.appSettings.upsert.useMutation();
-  const [setting, setSetting] = usePersistedSetting<string | null>(
-    SK_TAX_FILING_STATUS,
-    null,
-    {
-      // Every figure figured from it reloads once the setting is saved.
-      writeVia: async (value) => {
-        await upsert.mutateAsync({ key: SK_TAX_FILING_STATUS, value });
-        await Promise.all([
-          utils.paycheck.invalidate(),
-          utils.contribution.invalidate(),
-          utils.projection.invalidate(),
-        ]);
-      },
-    },
-  );
+  const { setting, save, saving } = useHouseholdFilingStatus();
   const followed =
     status && source && source !== "household"
-      ? `${filingStatusLabel(status)} (${SOURCE_TEXT[source]})`
+      ? `${filingStatusLabel(status)} (${FILING_STATUS_SOURCE_LABELS[source]}'s)`
       : "Not set";
   return (
     <FocusTarget topic="filingStatus">
@@ -67,8 +45,8 @@ export function FilingStatusRow({
             aria-label="Filing status on this year's return"
             className="text-primary hover:border-border focus:border-accent rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-sm focus:outline-none"
             value={setting ?? ""}
-            disabled={upsert.isPending}
-            onChange={(e) => setSetting(e.target.value || null)}
+            disabled={saving}
+            onChange={(e) => save(e.target.value || null)}
           >
             <option value="">{followed}</option>
             {RETURN_FILING_STATUS_VALUES.map((s) => (
