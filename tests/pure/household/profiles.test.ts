@@ -126,6 +126,7 @@ const TODAY = new Date("2026-10-28T12:00:00");
 describe("findActiveJob", () => {
   const jobs = [
     {
+      id: 1,
       personId: 1,
       startDate: "2020-01-01",
       endDate: "2023-12-31",
@@ -133,6 +134,7 @@ describe("findActiveJob", () => {
       name: "old",
     },
     {
+      id: 2,
       personId: 1,
       startDate: "2024-01-01",
       endDate: null,
@@ -140,6 +142,7 @@ describe("findActiveJob", () => {
       name: "current",
     },
     {
+      id: 3,
       personId: 2,
       startDate: "2024-01-01",
       endDate: null,
@@ -167,6 +170,7 @@ describe("findActiveJob", () => {
   it("a job whose last day is later this year is still current", () => {
     const ending = [
       {
+        id: 4,
         personId: 1,
         startDate: "2020-01-01",
         endDate: "2026-12-15",
@@ -178,6 +182,7 @@ describe("findActiveJob", () => {
 
   it("current on its first and last day", () => {
     const job = {
+      id: 5,
       personId: 1,
       startDate: "2026-10-28",
       endDate: "2026-10-28",
@@ -189,6 +194,7 @@ describe("findActiveJob", () => {
   it("a job that hasn't started isn't current", () => {
     const future = [
       {
+        id: 6,
         personId: 1,
         startDate: "2027-03-01",
         endDate: null,
@@ -201,6 +207,7 @@ describe("findActiveJob", () => {
   it("never returns a speculative job", () => {
     const spec = [
       {
+        id: 7,
         personId: 3,
         startDate: "2020-01-01",
         endDate: null,
@@ -213,6 +220,7 @@ describe("findActiveJob", () => {
   it("prefers a real active job over a speculative one for the same person", () => {
     const mixed = [
       {
+        id: 8,
         personId: 4,
         startDate: "2020-01-01",
         endDate: null,
@@ -220,6 +228,7 @@ describe("findActiveJob", () => {
         name: "spec",
       },
       {
+        id: 9,
         personId: 4,
         startDate: "2020-01-01",
         endDate: null,
@@ -228,6 +237,22 @@ describe("findActiveJob", () => {
       },
     ];
     expect(findActiveJob(mixed, 4, TODAY)?.name).toBe("real");
+  });
+
+  it("two current jobs: the one started first, then the lower id, in any row order", () => {
+    const at = (id: number, startDate: string) => ({
+      id,
+      personId: 1,
+      startDate,
+      endDate: null,
+      isSpeculative: false,
+    });
+    const main = at(7, "2020-01-06");
+    const side = at(3, "2023-03-01");
+    expect(findActiveJob([side, main], 1, TODAY)).toBe(main);
+    expect(findActiveJob([main, side], 1, TODAY)).toBe(main);
+    const sameDay = [at(9, "2023-03-01"), at(4, "2023-03-01")];
+    expect(findActiveJob(sameDay, 1, TODAY)?.id).toBe(4);
   });
 });
 
@@ -275,12 +300,20 @@ describe("filterActiveJobs", () => {
 });
 
 describe("projectionJobs", () => {
+  let nextId = 1;
   const job = (
     personId: number,
     startDate: string,
     endDate: string | null,
     name: string,
-  ) => ({ personId, startDate, endDate, isSpeculative: false, name });
+  ) => ({
+    id: nextId++,
+    personId,
+    startDate,
+    endDate,
+    isSpeculative: false,
+    name,
+  });
 
   it("each person's current job, else the next one they start", () => {
     const jobs = [
