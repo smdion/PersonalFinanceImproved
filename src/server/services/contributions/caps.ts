@@ -23,7 +23,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
-import { capForRequest } from "@/lib/pure/contributions/cap-request";
+import { capForSaveCheck } from "@/lib/pure/contributions/cap-request";
 import {
   capEffectiveContribs,
   type CapPassHousehold,
@@ -178,7 +178,7 @@ async function irsLimitJudge(
       fields: AccountFields,
       rowsAfter?: ReadonlyMap<number, ContribRowPatch>,
     ) =>
-      capForRequest(
+      capForSaveCheck(
         applyContribActiveFields(
           allContribs
             .map((c) => ({ ...c, ...rowsAfter?.get(c.id) }))

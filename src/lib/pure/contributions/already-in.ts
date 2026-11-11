@@ -6,7 +6,7 @@ import { sumBy } from "@/lib/utils/math";
 import type { CapPerson, CapRow } from "./contribution-caps.types";
 
 /** Every month of the year, as a covered-months mask. */
-const WHOLE_YEAR = 0xfff;
+export const WHOLE_YEAR = 0xfff;
 
 /** A row of a job that ended before the date: its money is already in. */
 export const isAlreadyIn = (r: CapRow) => r.employer?.ended === true;

@@ -13,20 +13,19 @@ import { sumBy } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import { jobPay, planEmployer } from "./annual-additions";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
+import type { JobRef, ContributionRow } from "./contribution-rows";
 import {
-  type JobRef,
-  type JobSalaryRef,
-  type ContributionRow,
-  contributionRowAmounts,
-} from "./contribution-rows";
+  type CapJobPay,
+  type CapPassPerson,
+  rowAmountsOverChecks,
+} from "./this-year-amounts";
 
 export type CappedRowFields = CapPassed;
 
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
-  /** Each job's pay; `totalComp` = salary + bonus (W-2 pay before pre-tax money) bounds an IRA. */
-  jobSalaries: readonly (JobSalaryRef & { totalComp?: number })[];
-  people: readonly { id: number; birthYear: number | null }[];
+  jobSalaries: readonly CapJobPay[];
+  people: readonly CapPassPerson[];
   limits: Record<string, number>;
   filingStatus: string;
   taxYear: number;
@@ -96,7 +95,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
     delete (fields as { capPassed?: true }).capPassed;
     return r as R;
   });
-  const { annualById, salaryById } = contributionRowAmounts(
+  const { annualById, salaryById } = rowAmountsOverChecks(
     configured.map(asContributionRow),
     ctx.activeJobs,
     ctx.jobSalaries,

@@ -256,7 +256,7 @@
     "src/lib/pure/contributions/account-match.ts": 66,
     "src/lib/pure/contributions/account-type-snapshots.ts": 289,
     "src/lib/pure/contributions/accumulation-order.ts": 28,
-    "src/lib/pure/contributions/cap-pass.ts": 186,
+    "src/lib/pure/contributions/cap-pass.ts": 185,
     "src/lib/pure/contributions/category-totals.ts": 146,
     "src/lib/pure/contributions/contribution-amount.ts": 74,
     "src/lib/pure/contributions/contribution-caps.ts": 563,

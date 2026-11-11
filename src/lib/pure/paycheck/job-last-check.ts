@@ -47,7 +47,8 @@ export function bonusAfterEnd(
   );
 }
 
-/** A job's checks in `asOfDate`'s year: the paydays before its start and its last check. */
+/** A job's checks in `asOfDate`'s year: the paydays before its start, its last check and the
+ *  checks it pays this year (`total`). */
 export function jobChecksThisYear(
   input: JobEnd & Pick<PaycheckInput, "startDate">,
   periodsPerYear: number,
@@ -59,7 +60,11 @@ export function jobChecksThisYear(
     input.startDate,
   );
   const lastCheck = lastCheckThisYear(input, periodsPerYear);
-  return { beforeStart, lastCheck };
+  return {
+    beforeStart,
+    lastCheck,
+    total: Math.max(0, lastCheck - beforeStart),
+  };
 }
 
 export type JobChecks = ReturnType<typeof jobChecksThisYear>;

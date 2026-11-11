@@ -6,7 +6,10 @@
 import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
-import { capForRequest } from "@/lib/pure/contributions/cap-request";
+import {
+  capForRequest,
+  capThisYear,
+} from "@/lib/pure/contributions/cap-request";
 import {
   BLANK_SALARY_ENTRY,
   type SalaryEntry,
@@ -207,13 +210,22 @@ const limits415 = {
   ira_limit: 7500,
   ira_catchup_limit: 1100,
 };
-const jobAt = (id: number) => ({
+const jobAt = (
+  id: number,
+  dates: { startDate: string; endDate: string | null } = {
+    startDate: "2020-01-01",
+    endDate: null,
+  },
+  payPeriod: "biweekly" | "monthly" = "biweekly",
+) => ({
   id,
   personId: 1,
-  payPeriod: "biweekly",
-  startDate: "2020-01-01",
-  endDate: null,
+  payPeriod,
+  ...dates,
   isSpeculative: false,
+  anchorPayDate: null,
+  bonusMonth: null,
+  bonusDayOfMonth: null,
 });
 const planRow = (id: number, jobId: number | null, value: number) => ({
   id,
@@ -265,5 +277,78 @@ describe("capForRequest — a What-If salary is the current job's only", () => {
   });
   it("counts both jobs' pay toward the IRA", () => {
     expect(kept(3)).toBeCloseTo(7500, 2);
+  });
+});
+
+describe("capThisYear — this tax year's checks", () => {
+  const perCheck = (
+    id: number,
+    jobId: number,
+    accountType: "401k" | "hsa",
+    value: number,
+  ) => ({
+    ...planRow(id, jobId, value),
+    accountType,
+    contributionMethod: "fixed_per_period" as const,
+    taxTreatment: accountType === "hsa" ? "hsa" : "pre_tax",
+    hsaCoverageType: accountType === "hsa" ? "self_only" : null,
+  });
+  const run = (
+    rows: ReturnType<typeof perCheck>[],
+    jobs: ReturnType<typeof jobAt>[],
+    pass = capThisYear<ReturnType<typeof perCheck>>,
+  ) =>
+    pass(
+      rows,
+      {
+        people: [{ id: 1, birthYear: 1990 }],
+        limits: {
+          ...limits415,
+          hsa_individual_limit: 4000,
+          hsa_catchup_limit: 1000,
+        },
+        filingStatus: "Single",
+        taxYear: 2030,
+        asOf: new Date(2030, 7, 14),
+      },
+      jobs,
+      new Map(jobs.map((j) => [j.id, salaryEntry(120000)])),
+      new Map(),
+    );
+  const monthly = (
+    id: number,
+    startDate: string,
+    endDate: string | null = null,
+  ) => jobAt(id, { startDate, endDate }, "monthly");
+
+  it("a job started July 1 pays six checks: a 500 HSA check fits this year, the rate is cut", () => {
+    // Six monthly checks of 500 = 3,000, under 4,000; a year of them (6,000) is cut to 4,000.
+    const rows = [perCheck(1, 1, "hsa", 500)];
+    const jobs = [monthly(1, "2030-07-01")];
+    expect(run(rows, jobs)[0]!.cappedValue).toBeCloseTo(500, 2);
+    expect(run(rows, jobs, capForRequest)[0]!.cappedValue).toBeCloseTo(
+      4000 / 12,
+      2,
+    );
+  });
+
+  it("an ended job's checks are already in: never cut, and the job held now takes the rest", () => {
+    // January to April at job 1: 4 × 2,500 = 10,000 already in. Job 2 from May: 8 × 2,500 =
+    // 20,000, held to 24,500 − 10,000 = 14,500 this year (1,812.50 a check).
+    const [earlier, now] = run(
+      [perCheck(1, 1, "401k", 2500), perCheck(2, 2, "401k", 2500)],
+      [monthly(1, "2030-01-01", "2030-04-30"), monthly(2, "2030-05-01")],
+    );
+    expect(earlier!.cappedValue).toBeCloseTo(2500, 2);
+    expect(now!.cappedValue).toBeCloseTo(1812.5, 2);
+  });
+
+  it("an HSA whose job ended before December 1 is held to its months", () => {
+    // January to April: 4,000 × 4/12 = 1,333.33 this year; 4 checks of 500 = 2,000, cut.
+    const [hsa] = run(
+      [perCheck(1, 1, "hsa", 500)],
+      [monthly(1, "2030-01-01", "2030-04-30")],
+    );
+    expect(hsa!.cap!.cappedAnnual).toBeCloseTo(4000 / 3, 2);
   });
 });

@@ -307,3 +307,89 @@ describe("this year's IRA room for someone 50 by Dec 31", () => {
     cents(await run(), { limit: 8_600, priorYearLimit: 7_000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// LM3: a save is judged on this tax year's checks too (402(g)(1) across employers)
+// ---------------------------------------------------------------------------
+
+/**
+ * Single, born 1985-01-15 (41), on 2026-04-14. Job 1 paid monthly January 1 to March 31 with
+ * 3,500 a check to a pre-tax 401(k): 3 × 3,500 = 10,500 already in. Job 2 from April 1, monthly
+ * (9 checks this year). One 402(g) limit across both (Notice 2023-62 § III.B), 24,500 in 2026
+ * (Notice 2025-67 p.1). Job 2's 401(k) at 24,000 a year fits a year's limit, but this year pays
+ * 9/12 of it, 18,000: 10,500 + 18,000 = 28,500, over. At 18,000 a year: 13,500 + 10,500 =
+ * 24,000, within.
+ */
+describe("limits/LM3-SAVE: a save over this year's limit is refused", () => {
+  let t: TestCaller;
+  let accountNow = 0;
+  let profileId = 0;
+  beforeAll(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    t = await createTestCaller();
+    const personId = await seedPerson(t.db, "Robin", "1985-01-15");
+    const monthly = { payPeriod: "monthly", payWeek: "na" } as const;
+    const earlierJob = seedJob(t.db, personId, {
+      ...monthly,
+      employerName: "Earlier Co",
+      startDate: "2026-01-01",
+      endDate: "2026-03-31",
+      annualSalary: "84000",
+    });
+    const jobNow = seedJob(t.db, personId, {
+      ...monthly,
+      employerName: "Now Co",
+      startDate: "2026-04-01",
+      annualSalary: "120000",
+    });
+    seedSingleFiler(t, personId);
+    const k401 = (jobId: number) =>
+      seedContributionAccount(t.db, {
+        personId,
+        jobId,
+        accountType: "401k",
+        taxTreatment: "pre_tax",
+      });
+    const accountEarlier = k401(earlierJob);
+    accountNow = k401(jobNow);
+    profileId = seedContributionProfile(t.db, {
+      name: "Active",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [String(accountEarlier)]: {
+            contributionValue: "3500",
+            contributionMethod: "fixed_per_period",
+          },
+          [String(accountNow)]: {
+            contributionValue: "0",
+            contributionMethod: "fixed_annual",
+          },
+        },
+      },
+    });
+    activate(t, profileId);
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+    t.cleanup();
+  });
+  const save = (value: string) =>
+    t.caller.contributionProfile.setAccountActiveFields({
+      profileId,
+      accountId: accountNow,
+      fields: { contributionValue: value, contributionMethod: "fixed_annual" },
+    });
+
+  it("limits/LM3-SAVE [LIM-07] 24,000 a year at the job held now is refused", async () => {
+    const refused = await save("24000").then(
+      () => 0,
+      () => 1,
+    );
+    cents(refused, 1);
+  });
+
+  it("limits/LM3-SAVE-ok [LIM-07] 18,000 a year saves", async () => {
+    await save("18000");
+  });
+});

@@ -69,7 +69,15 @@ export function findBonusPeriod(
  * after the job's last check this year (not its pay).
  */
 export function bonusCheckNumber(
-  input: PaycheckInput,
+  input: Pick<
+    PaycheckInput,
+    | "asOfDate"
+    | "payPeriod"
+    | "anchorPayDate"
+    | "endDate"
+    | "bonusMonth"
+    | "bonusDayOfMonth"
+  >,
   bonusGross: number,
 ): number | null {
   if (bonusGross <= 0) return null;
