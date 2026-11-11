@@ -218,20 +218,7 @@ export function ContributionCard({
 
       {c.employerMatchType !== "none" && (
         <div className="text-muted mt-1 flex flex-wrap items-center gap-1 text-xs">
-          {getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
-            <>
-              <InlineEdit
-                value={matchFigure}
-                onSave={saveMatchFigure}
-                formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
-                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                type="number"
-                className="text-muted"
-                isEditable={!readOnly}
-              />
-              <span>discount</span>
-            </>
-          ) : EMPLOYER_MATCH_VALUE_UNIT[c.employerMatchType] === "$" ? (
+          {EMPLOYER_MATCH_VALUE_UNIT[c.employerMatchType] === "$" ? (
             <>
               <span>Employer:</span>
               <InlineEdit
@@ -243,6 +230,19 @@ export function ContributionCard({
                 className="text-muted"
                 isEditable={!readOnly}
               />
+            </>
+          ) : getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
+            <>
+              <InlineEdit
+                value={matchFigure}
+                onSave={saveMatchFigure}
+                formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="text-muted"
+                isEditable={!readOnly}
+              />
+              <span>discount</span>
             </>
           ) : (
             <>
