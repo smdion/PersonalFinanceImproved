@@ -32,11 +32,9 @@
  * $250,000, N5 weekly); the semimonthly June 15 bonus is case
  * paycheck/PAY19-1 in `tests/pure/paycheck/answer-key-paycheck.test.ts`.
  *
- * The year-to-date panel (Y1) multiplies the average check by the checks
- * paid in the component (`annual-summary.tsx`); its figure is rebuilt
- * here from the router's per-check values the same way, so the fix
- * (v0.11 Paycheck "One yearTotals(schedule, first, last)") points this
- * case at the new year totals when it lands.
+ * The year-to-date panels (Y1) sum the router's year schedule in the
+ * component (`annual-summary.tsx`, `household-income-card.tsx`): the
+ * case sums it the same way, through `yearTotals`.
  */
 import "./setup-mocks";
 import { afterAll, beforeAll, describe, it, vi } from "vitest";
@@ -50,6 +48,7 @@ import {
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 import { withheldThroughPeriod } from "@/lib/pure/paycheck/year-schedule";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 import { cents, xfail } from "../fixtures/answer-key";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -600,27 +599,23 @@ describe("paycheck/Y1, Y2: year to date", () => {
   // SS 715.38, Medicare 167.31; FICA 13 × 882.69 = 11,474.97. Federal:
   // 1c 299,999.96; 2a 291,399.96; T26 Single row A 263,725, C 58,448,
   // D 35%: 2g 68,134.24; 2h 2,620.55. Net a check 11,538.46 − 2,620.55 −
-  // 715.38 − 167.31 = 8,035.22; 13 × = 104,457.86. Today the panel shows
-  // the average check (Social Security spread over the year) × 13.
+  // 715.38 − 167.31 = 8,035.22; 13 × = 104,457.86.
   const y1 = household({
     job: { ...BIWEEKLY, annualSalary: "300000" },
     now: "2026-07-02T12:00:00Z",
   });
-  xfail({
-    id: "paycheck/Y1 [PAY-33]",
-    todo: YEAR_TOTALS,
-    run: () => {
-      // annual-summary.tsx, Year to date: per-check figures × checks paid.
-      const pc = y1().paycheck;
-      const checks = Math.max(0, pc.periodsElapsedYtd - pc.periodsBeforeStart);
-      return {
-        checks,
-        fica: round2((pc.ficaSS + pc.ficaMedicare) * checks),
-        net: round2(pc.netPay * checks),
-      };
-    },
-    expected: { checks: 13, fica: 11_474.97, net: 104_457.86 },
-    today: { checks: 13, fica: 8_344.44, net: 107_588.39 },
+  it("paycheck/Y1 [PAY-33] year to date sums the checks paid, full Social Security until the base", () => {
+    // annual-summary.tsx, Year to date: the schedule's checks so far.
+    const pc = y1().paycheck;
+    const year = yearTotals(pc.yearSchedule, 1, pc.periodsElapsedYtd);
+    cents(
+      {
+        checks: pc.periodsElapsedYtd - pc.periodsBeforeStart,
+        fica: year.fica,
+        net: year.net,
+      },
+      { checks: 13, fica: 11_474.97, net: 104_457.86 },
+    );
   });
 
   // $100,000 biweekly from January 2 (3,846.15 a check), a $10,000 bonus

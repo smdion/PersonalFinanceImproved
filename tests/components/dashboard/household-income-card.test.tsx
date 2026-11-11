@@ -56,6 +56,8 @@ const summary = {
         // Withholding so far comes from the year schedule (the undated
         // bonus is on the last check).
         yearSchedule: Array.from({ length: 12 }, (_, i) => ({
+          gross: 5000,
+          netPay: i < 4 ? 3900 : 3750,
           federalWithholding: 600,
           ficaSS: 310,
           ficaMedicare: 72.5,
@@ -198,6 +200,9 @@ describe("HouseholdIncomeCard", () => {
     render(<HouseholdIncomeCard />);
     // (600 + 310 + 72.5) × 3 checks
     expect(screen.getByText("$2,947.50")).toBeInTheDocument();
+    // Net so far: the schedule's three checks (3,900 each), not 3 × the
+    // average check's 3,800.
+    expect(screen.getByText("$11,700.00")).toBeInTheDocument();
     expect(
       screen.queryByText("Additional Medicare Tax: example note"),
     ).not.toBeInTheDocument();

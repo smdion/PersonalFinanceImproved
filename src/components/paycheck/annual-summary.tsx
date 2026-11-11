@@ -6,6 +6,7 @@ import { FieldRow } from "@/components/ui/field-row";
 import { SectionHeader } from "./section-header";
 import type { PaycheckResult, ViewMode } from "./types";
 import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 
 type Totals = {
   gross: number;
@@ -110,9 +111,24 @@ export function AnnualSummary({
     : paycheck.periodsPerYear;
   const sum = (lines: { amount: number }[]) =>
     lines.reduce((s, d) => s + d.amount, 0);
+  // Year to date: the year schedule's checks so far (Social Security at the
+  // full rate until the wage base, not the year's average).
+  if (ytd) {
+    return (
+      <TotalsPanel
+        title="Year to date"
+        totals={yearTotals(
+          paycheck.yearSchedule,
+          1,
+          paycheck.periodsElapsedYtd,
+        )}
+        footnote={`${checks} of ${paycheck.periodsPerYear} checks`}
+      />
+    );
+  }
   return (
     <TotalsPanel
-      title={ytd ? "Year to date" : "Projected year"}
+      title="Projected year"
       totals={{
         gross: paycheck.gross * checks,
         preTax: sum(paycheck.preTaxDeductions) * checks,

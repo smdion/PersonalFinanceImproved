@@ -6,10 +6,28 @@ import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
+import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { RothIraLine } from "@/components/taxes/roth-ira-section";
+
+/** A person's regular checks: year to date from the year schedule (Social Security at the
+ *  full rate until the wage base, not the average), else a full year. */
+function regularPay(
+  pc: Pick<
+    PaycheckResult,
+    "yearSchedule" | "periodsElapsedYtd" | "gross" | "netPay" | "periodsPerYear"
+  >,
+  ytd: boolean,
+): { gross: number; net: number } {
+  if (ytd) return yearTotals(pc.yearSchedule, 1, pc.periodsElapsedYtd);
+  return {
+    gross: pc.gross * pc.periodsPerYear,
+    net: pc.netPay * pc.periodsPerYear,
+  };
+}
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
@@ -29,13 +47,7 @@ function HouseholdIncomeCardImpl() {
       : null;
 
   const people = data?.people.filter((d) => d.paycheck) ?? [];
-  const periods = (d: (typeof people)[0]) =>
-    isYtd
-      ? Math.max(
-          0,
-          d.paycheck!.periodsElapsedYtd - d.paycheck!.periodsBeforeStart,
-        )
-      : d.paycheck!.periodsPerYear;
+  const regular = (d: (typeof people)[0]) => regularPay(d.paycheck!, isYtd);
   const blendedOf = (d: (typeof people)[0]) =>
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/pure/paycheck/paycheck.types").BlendedAnnualTotals
@@ -78,7 +90,7 @@ function HouseholdIncomeCardImpl() {
       }) + totalBonusGross
     : !isYtd && income
       ? income.gross
-      : sumBy(people, (d) => d.paycheck!.gross * periods(d)) + totalBonusGross;
+      : sumBy(people, (d) => regular(d).gross) + totalBonusGross;
   const totalNetAnnual = isBlended
     ? sumBy(people, (d) => {
         const ba = blendedOf(d);
@@ -86,7 +98,7 @@ function HouseholdIncomeCardImpl() {
       }) + totalBonusNet
     : !isYtd && income
       ? income.netRegular + income.netBonus
-      : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
+      : sumBy(people, (d) => regular(d).net) + totalBonusNet;
   // Same words as the header's View toggle.
   const modeLabel = isYtd
     ? "Year to date"
@@ -115,7 +127,7 @@ function HouseholdIncomeCardImpl() {
                     <td className="text-muted w-24 py-0.5">{d.person.name}</td>
                     <td className="text-primary py-0.5 text-right font-medium tabular-nums">
                       {isYtd
-                        ? formatCurrency(d.paycheck!.gross * periods(d))
+                        ? formatCurrency(regular(d).gross)
                         : isBlended && ba
                           ? formatCurrency(ba.gross)
                           : formatCurrency(d.salary)}
