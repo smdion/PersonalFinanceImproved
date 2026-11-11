@@ -11,7 +11,7 @@ import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
-import { RothIraLine } from "@/components/taxes/roth-ira-section";
+import { RothIraLine } from "@/components/taxes/roth-ira-line";
 
 /** A person's regular checks from the year schedule (Social Security at the full rate until
  *  the wage base): year to date, or the whole year. */
