@@ -96,4 +96,27 @@ describe("AnnualSummary, Projected year", () => {
     expect(screen.getByText("$1,771.00")).toBeInTheDocument();
     expect(screen.getByText("2 of 4 checks")).toBeInTheDocument();
   });
+
+  it("a job ending this year counts only its checks to its last day", () => {
+    const empty = { ...row(3, 0, 0), gross: 0, federalWithholding: 0 };
+    const ending = {
+      ...paycheck,
+      yearSchedule: [
+        row(1, 823.5, 62),
+        row(2, 823.5, 62),
+        { ...empty, ficaMedicare: 0, afterEnd: true as const },
+        {
+          ...empty,
+          periodNumber: 4,
+          ficaMedicare: 0,
+          afterEnd: true as const,
+        },
+      ],
+    };
+    render(<AnnualSummary paycheck={ending} mode="projected" />);
+    // 2 × 1,000 gross and 2 × 823.50 net, not checks to Dec 31.
+    expect(screen.getByText("$2,000.00")).toBeInTheDocument();
+    expect(screen.getByText("$1,647.00")).toBeInTheDocument();
+    expect(screen.getByText("2 of 4 checks")).toBeInTheDocument();
+  });
 });

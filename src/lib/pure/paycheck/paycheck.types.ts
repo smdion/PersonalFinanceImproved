@@ -90,6 +90,9 @@ export type PeriodBreakdown = {
   /** A payday this year before the job started — not this job's check
    *  (every amount 0). Periods keep their calendar number. */
   beforeStart?: true;
+  /** A payday this year after the job's last day — not this job's check
+   *  (every amount 0). */
+  afterEnd?: true;
 };
 
 export type BonusEstimate = {

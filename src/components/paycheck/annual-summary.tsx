@@ -106,10 +106,12 @@ export function AnnualSummary({
   // Year-end estimate without salary-change data falls back to projected.
   const ytd = mode === "ytd";
   // The year schedule's checks (Social Security at the full rate until the
-  // wage base): to today, or the whole year. Rows before the job started
-  // are empty, so a part-year job counts only its own checks.
+  // wage base): to today, or the whole year. Rows before the job started or
+  // after it ends are empty, so a part-year job counts only its own checks.
   const last = ytd ? paycheck.periodsElapsedYtd : paycheck.periodsPerYear;
-  const checks = Math.max(0, last - paycheck.periodsBeforeStart);
+  const checks = paycheck.yearSchedule
+    .slice(0, last)
+    .filter((p) => !p.beforeStart && !p.afterEnd).length;
   return (
     <TotalsPanel
       title={ytd ? "Year to date" : "Projected year"}
