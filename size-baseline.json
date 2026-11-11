@@ -561,7 +561,7 @@
       "ContributionsCardImpl.map().map()": 251
     },
     "src/components/dashboard/household-income-card.tsx": {
-      "HouseholdIncomeCardImpl": 160
+      "HouseholdIncomeCardImpl": 157
     },
     "src/components/dashboard/linked-balance-card.tsx": {
       "LinkedBalanceCardImpl": 171

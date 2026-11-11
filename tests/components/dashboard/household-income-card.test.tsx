@@ -61,12 +61,13 @@ const summary = {
           federalWithholding: 600,
           ficaSS: 310,
           ficaMedicare: 72.5,
+          bonusGross: i === 11 ? 6000 : 0,
           bonusWithholding: i === 11 ? 1320 : 0,
-          bonusFica: i === 11 ? 459 : 0,
+          bonusFica: i === 11 ? 380 : 0,
         })),
       },
       // The year's figures; the bonus's net is its schedule row's.
-      earnings: { netRegular: 45600, netBonus: 4300 },
+      earnings: { bonus: 6000, netRegular: 45600, netBonus: 4300 },
       fullFormulaBonusEstimate: bonusEstimate(9000, 6450),
       resolvedBonusTerms: { bonusOverride: 6000 },
       blendedAnnual: { gross: 60000, netPay: 45600 },
@@ -193,6 +194,78 @@ describe("HouseholdIncomeCard", () => {
     // The detail is on the Taxes page, not the card.
     expect(screen.queryByText(/pre-tax in IRAs/)).not.toBeInTheDocument();
     expect(screen.queryByText(/range width/)).not.toBeInTheDocument();
+  });
+
+  it("year-end: a bonus after the job's last day isn't in the total", () => {
+    viewMode = "blended";
+    const person = summary.people[0]!;
+    setQuery("paycheck.computeSummary", {
+      ...summary,
+      people: [
+        {
+          ...person,
+          // The year's bonus isn't paid (its schedule row is empty).
+          paycheck: {
+            ...person.paycheck,
+            bonusAfterEnd: true,
+            yearSchedule: person.paycheck.yearSchedule.map((r) => ({
+              ...r,
+              bonusGross: 0,
+              bonusWithholding: 0,
+              bonusFica: 0,
+            })),
+          },
+          earnings: { ...person.earnings, bonus: 0, netBonus: 0 },
+        },
+      ],
+    });
+    render(<HouseholdIncomeCard />);
+    // 60,000 salary, not 66,000 with the bonus; no bonus row.
+    expect(screen.getAllByText("$60,000.00").length).toBeGreaterThan(0);
+    expect(screen.queryByText("$66,000.00")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\$6,000\.00 gross/)).not.toBeInTheDocument();
+  });
+
+  it("a job changed this year: the bonus beside this job's pay is this job's, not the year's", () => {
+    const person = summary.people[0]!;
+    // The year's earnings pool the old job's $3,000 bonus (paid, net $2,100)
+    // with this job's $6,000; the schedule row is this job's alone.
+    const changed = {
+      ...person,
+      // This job's bonus is paid on check 2.
+      paycheck: {
+        ...person.paycheck,
+        bonusPeriod: 2,
+        yearSchedule: person.paycheck.yearSchedule.map((r, i) => ({
+          ...r,
+          bonusGross: i === 1 ? 6000 : 0,
+          bonusWithholding: i === 1 ? 1320 : 0,
+          bonusFica: i === 1 ? 380 : 0,
+        })),
+      },
+      earnings: { ...person.earnings, bonus: 9000, netBonus: 6400 },
+    };
+    setQuery("paycheck.computeSummary", { ...summary, people: [changed] });
+    viewMode = "blended";
+    const blended = render(<HouseholdIncomeCard />);
+    // 60,000 this job's year + its 6,000 bonus, not + 9,000.
+    expect(screen.getByText("$66,000.00")).toBeInTheDocument();
+    expect(screen.queryByText("$69,000.00")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/\$6,000\.00 gross \/ \$4,300\.00 net/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\$9,000\.00 gross/)).not.toBeInTheDocument();
+    // Net: 45,600 + 4,300.
+    expect(screen.getByText("$49,900.00")).toBeInTheDocument();
+    blended.unmount();
+
+    viewMode = "ytd";
+    render(<HouseholdIncomeCard />);
+    // Three checks (15,000) + this job's bonus, paid on check 2.
+    expect(screen.getByText("$21,000.00")).toBeInTheDocument();
+    expect(screen.getByText("(paid)")).toBeInTheDocument();
+    // Net so far: 3 × 3,900 + 4,300.
+    expect(screen.getByText("$16,000.00")).toBeInTheDocument();
   });
 
   it("YTD taxes are withholding so far, without the annual notes", () => {

@@ -253,6 +253,8 @@ export function BonusSection({
   // Shown even with no bonus, so a bonus can be added here (a 0% row is
   // the way in) instead of the section disappearing.
   const hasBonus = bonusEstimate.bonusGross > 0;
+  // The job's check that pays the bonus this year: none when it falls outside start…last day.
+  const paidOnCheck = paycheck.yearSchedule.some((r) => r.bonusGross > 0);
   const fedRate = safeDivide(
     bonusEstimate.bonusFederalWithholding,
     bonusEstimate.bonusGross,
@@ -278,11 +280,17 @@ export function BonusSection({
           paidOnHint={
             paycheck.bonusPeriod != null
               ? `Pay period ${paycheck.bonusPeriod} of ${paycheck.periodsPerYear}`
-              : undefined
+              : paycheck.bonusUndated && paycheck.bonusAfterEnd
+                ? "No date, and the job ends this year: not counted"
+                : paycheck.bonusAfterEnd
+                  ? "After the job's last day: not paid this year"
+                  : paycheck.bonusBeforeStart
+                    ? "Before the job's start: not paid this year"
+                    : undefined
           }
         />
 
-        {hasBonus && (
+        {hasBonus && paidOnCheck && (
           <div className="border-subtle mt-1 space-y-1 border-t pt-2">
             <FieldRow label="Gross">
               <span className="font-medium">
