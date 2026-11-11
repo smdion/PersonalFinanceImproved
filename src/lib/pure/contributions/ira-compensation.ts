@@ -1,4 +1,5 @@
 import { sumBy } from "@/lib/utils/math";
+import type { CapContext, CapRow } from "./contribution-caps.types";
 
 /** Holds each limit group's IRA rows (`bounded`) to taxable compensation:
  *  own pay, and on a joint return the lower earner's spousal room. */
@@ -39,4 +40,30 @@ export function holdIraRowsToCompensation(
       );
     }
   }
+}
+
+export function compensationOf(
+  ctx: CapContext,
+  rows: readonly CapRow[],
+  kept: readonly number[],
+) {
+  const compensation = new Map(
+    ctx.people.map((p) => [
+      p.id,
+      p.wages === null
+        ? null
+        : Math.max(
+            0,
+            p.wages -
+              sumBy(
+                rows.flatMap((r, i) =>
+                  r.personId === p.id && r.reducesCompensation ? [i] : [],
+                ),
+                (i) => kept[i]!,
+              ),
+          ),
+    ]),
+  );
+
+  return { compensation };
 }

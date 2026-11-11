@@ -17,7 +17,10 @@ import {
   irsLimitBaseKey,
   resolveIrsLimit,
 } from "@/lib/pure/contributions/irs-limits";
-import { holdIraRowsToCompensation } from "@/lib/pure/contributions/ira-compensation";
+import {
+  compensationOf,
+  holdIraRowsToCompensation,
+} from "@/lib/pure/contributions/ira-compensation";
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { CapContext, CapRow } from "./contribution-caps.types";
@@ -404,23 +407,7 @@ export function capContributionsByLimitGroup(
 
   holdToAnnualAdditions(rows, ctx, { kept, factorOf, maxOf }); // 415(c), per employer
   // IRA bound on the capped pre-tax money: own pay; on a joint return the lower earner adds the other's pay less their IRA money.
-  const compensation = new Map(
-    ctx.people.map((p) => [
-      p.id,
-      p.wages === null
-        ? null
-        : Math.max(
-            0,
-            p.wages -
-              sumBy(
-                rows.flatMap((r, i) =>
-                  r.personId === p.id && r.reducesCompensation ? [i] : [],
-                ),
-                (i) => kept[i]!,
-              ),
-          ),
-    ]),
-  );
+  const { compensation } = compensationOf(ctx, rows, kept);
   const bounded = new Map<string, number[]>();
   rows.forEach((r, i) => {
     const group = getLimitGroup(r.accountType);
