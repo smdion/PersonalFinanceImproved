@@ -56,7 +56,7 @@ import {
   deductionLine,
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
-import { findActiveJob } from "@/lib/pure/household/profiles";
+import { findActiveJob, otherCurrentJobs } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
@@ -414,8 +414,7 @@ export async function computePaycheckSummary(
 
   const results = await Promise.all(
     people.map(async (person) => {
-      // Personal (jobless) contributions belong on this card with or without a
-      // current job, so this runs before the early returns below.
+      // Personal (jobless) contributions show with or without a job: before the early returns.
       const incompleteAccountIds = getIncompleteContribAccountIds(
         allContribs.filter(
           (c) =>
@@ -578,6 +577,7 @@ export async function computePaycheckSummary(
               ] ?? 0,
           })),
         rawContribs,
+        otherCurrentJobs: otherCurrentJobs(effectiveJobs, activeJob, asOfDate),
         /** The year's Social Security / Medicare rates, wage base and Additional
          *  Medicare threshold, from tax data: what "Check against your pay stub"
          *  works back from. */

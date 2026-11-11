@@ -11,6 +11,7 @@ import {
   canDeleteRetirementProfile,
   canRemoveColumn,
   findActiveJob,
+  otherCurrentJobs,
   filterActiveJobs,
   projectionJobs,
   workingYears,
@@ -253,6 +254,25 @@ describe("findActiveJob", () => {
     expect(findActiveJob([main, side], 1, TODAY)).toBe(main);
     const sameDay = [at(9, "2023-03-01"), at(4, "2023-03-01")];
     expect(findActiveJob(sameDay, 1, TODAY)?.id).toBe(4);
+  });
+
+  it("otherCurrentJobs names the other current jobs beside the one picked; none with one", () => {
+    const at = (id: number, employerName: string, endDate: string | null) => ({
+      id,
+      personId: 1,
+      employerName,
+      startDate: "2020-01-06",
+      endDate,
+      isSpeculative: false,
+    });
+    const jobs = [
+      at(1, "Alpine", null),
+      at(2, "Beacon", null),
+      at(3, "Old", "2021-01-01"),
+    ];
+    const picked = findActiveJob(jobs, 1, TODAY)!;
+    expect(otherCurrentJobs(jobs, picked, TODAY)).toEqual(["Beacon"]);
+    expect(otherCurrentJobs(jobs.slice(0, 1), picked, TODAY)).toEqual([]);
   });
 });
 

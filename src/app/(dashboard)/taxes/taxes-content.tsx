@@ -46,7 +46,10 @@ export function TaxesContent() {
           )}
           {data.householdTax && (
             <FocusTarget topic="rothIra">
-              <RothIraSection wageAgi={data.householdTax.wageAgi} />
+              <RothIraSection
+                wageAgi={data.householdTax.wageAgi}
+                people={data.people}
+              />
             </FocusTarget>
           )}
         </div>

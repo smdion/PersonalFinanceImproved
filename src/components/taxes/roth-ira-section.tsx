@@ -15,6 +15,8 @@ import type { InvestmentIncomeBasis } from "@/lib/pure/investments/investment-in
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
 import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira-advice";
+import { OtherJobsNotes } from "@/components/taxes/other-jobs-note";
+import type { RouterOutputs } from "@/lib/trpc";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",
@@ -28,7 +30,14 @@ const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
 const notCounted = () =>
   `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. Married filing separately isn't modelled: its Roth IRA phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)}.`;
 
-export function RothIraSection({ wageAgi }: { wageAgi: number }) {
+export function RothIraSection({
+  wageAgi,
+  people,
+}: {
+  wageAgi: number;
+  /** The paycheck summary's people: a second current job is noted. */
+  people: RouterOutputs["paycheck"]["computeSummary"]["people"];
+}) {
   const user = useUser();
   const { available, view, inputs, marginSetting, setMarginSetting } =
     useRothIra();
@@ -95,6 +104,10 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
           </span>
           <span>{formatCurrency(view.magi)}</span>
         </div>
+        <OtherJobsNotes
+          people={people}
+          counted="pay is in this MAGI, so it may be low: check the direct limit by hand"
+        />
         {j && (
           <>
             <div className="flex justify-between">

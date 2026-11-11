@@ -165,6 +165,21 @@ export function whatIfForJob<T extends JobLike & { id: number }, W>(
     : undefined;
 }
 
+/** Employers of a person's current jobs beside the one picked (findActiveJob):
+ *  only that one is counted; empty when it is their only current job. */
+export function otherCurrentJobs<T extends JobLike & { employerName: string }>(
+  jobs: readonly T[],
+  picked: T,
+  asOf: Date,
+): string[] {
+  return jobs
+    .filter(
+      (j) =>
+        j !== picked && j.personId === picked.personId && isJobCurrent(j, asOf),
+    )
+    .map((j) => j.employerName);
+}
+
 /** Every current job on `asOf` (isJobCurrent). */
 export function filterActiveJobs<T extends Omit<JobLike, "personId">>(
   jobs: readonly T[],

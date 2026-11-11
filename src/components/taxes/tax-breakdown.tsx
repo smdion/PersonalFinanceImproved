@@ -6,6 +6,7 @@
  */
 import { Card } from "@/components/ui/card";
 import { FilingStatusRow } from "@/components/taxes/filing-status-row";
+import { OtherJobsNotes } from "@/components/taxes/other-jobs-note";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   formatCurrency,
@@ -128,6 +129,10 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
               ]
             : [],
         )}
+        <OtherJobsNotes
+          people={data.people}
+          counted="pay and tax are counted here"
+        />
         {data.people.flatMap((d) =>
           "bonusNotCounted" in d
             ? d.bonusNotCounted.map((employer) => (
