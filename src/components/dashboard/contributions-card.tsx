@@ -42,7 +42,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { FundingBar } from "@/components/paycheck/funding-bar";
 import { PaceStatusText } from "./pace-status";
 import { CardQueryBoundary, queryPending } from "./utils";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();

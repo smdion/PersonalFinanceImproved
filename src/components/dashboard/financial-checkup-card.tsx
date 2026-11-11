@@ -18,7 +18,7 @@ import { type MilestoneResult } from "@/lib/pure/advice/milestones/milestones";
 import { meetsRateTarget } from "@/lib/pure/advice/milestones/milestones.shared";
 import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 import { useScenario } from "@/lib/context/scenario-context";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";

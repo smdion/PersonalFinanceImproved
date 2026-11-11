@@ -7,8 +7,7 @@
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc, type RouterError } from "@/lib/trpc";
 import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -19,17 +18,6 @@ import {
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/advice/milestones/milestones";
-
-/** The contribution-summary input every dashboard card sends. */
-export function useContributionSummaryInput() {
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contributionProfileInput } =
-    useEffectiveContributionProfileId();
-  return {
-    ...contributionProfileInput,
-    ...salaryProfileInput,
-  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-}
 
 /**
  * The household's milestones. Rows needing data a viewer may lack (portfolio,

@@ -36,7 +36,7 @@ import {
 } from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 import { renderJointAccount } from "./contribution-snapshot-joint";
 
 export function ContributionSnapshot() {

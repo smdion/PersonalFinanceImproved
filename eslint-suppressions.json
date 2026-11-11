@@ -3410,11 +3410,6 @@
       "count": 1
     }
   },
-  "src/lib/hooks/use-milestones.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    }
-  },
   "src/lib/hooks/use-paycheck-person-views.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 18

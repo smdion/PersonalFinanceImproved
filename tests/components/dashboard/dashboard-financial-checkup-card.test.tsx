@@ -67,8 +67,10 @@ vi.mock("@/lib/hooks/use-investing-findings", () => ({
   }),
 }));
 vi.mock("@/lib/hooks/use-milestones", () => ({
-  useContributionSummaryInput: () => ({}),
   useMilestones: () => milestonesState,
+}));
+vi.mock("@/lib/hooks/use-contribution-summary-input", () => ({
+  useContributionSummaryInput: () => ({}),
 }));
 
 vi.mock("@/lib/hooks/use-high-income-line", () => ({

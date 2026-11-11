@@ -4,10 +4,8 @@
  * The household's ranked recommendations, less dismissed or snoozed ones. The
  * Recommendations page and the dashboard Checkup both read this so counts agree.
  */
-import {
-  useContributionSummaryInput,
-  useMilestones,
-} from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
+import { useMilestones } from "@/lib/hooks/use-milestones";
 import { trpc } from "@/lib/trpc";
 import { recommendationsFromCaps } from "@/lib/pure/advice/recommendations-caps";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";

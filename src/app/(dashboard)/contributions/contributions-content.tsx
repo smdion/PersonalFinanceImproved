@@ -39,7 +39,7 @@ import {
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions/savings-rate";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 
 export function ContributionsContent() {
   const { viewMode } = useScenario();

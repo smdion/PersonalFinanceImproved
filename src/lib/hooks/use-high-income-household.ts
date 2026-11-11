@@ -7,7 +7,7 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 import {
   householdTotalCompensation,
   isHighIncomeHousehold,
