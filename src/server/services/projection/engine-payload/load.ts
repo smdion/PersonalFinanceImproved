@@ -43,9 +43,9 @@ export async function fetchRetirementData(
     allContribsRaw: db
       .select()
       .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
-    // Unfiltered: resolveTaxParams picks the year, anchoring every slice
-    // on one year.
+      .where(eq(schema.contributionAccounts.isActive, true))
+      .orderBy(asc(schema.contributionAccounts.id)),
+    // Unfiltered: resolveTaxParams picks the year, anchoring every slice on one.
     allLimits: db.select().from(schema.contributionLimits),
     snapshotData: getLatestSnapshot(db, opts?.snapshotId),
     salaryOverrideRows: db
