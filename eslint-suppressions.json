@@ -5271,7 +5271,7 @@
   },
   "src/server/services/contributions/profile.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 8
+      "count": 7
     },
     "ratchet/no-abbreviation": {
       "count": 13

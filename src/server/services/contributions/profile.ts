@@ -23,7 +23,7 @@ import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
  * Salary Profile); generic so callers get their own row types back with fields applied.
  */
 export function resolveProfile<
-  C extends { id: number },
+  C extends typeof schema.contributionAccounts.$inferSelect,
   J extends { id: number; personId: number },
   S extends {
     job: { id: number; personId: number };
@@ -45,33 +45,11 @@ export function resolveProfile<
   liveJobSalaries: S[],
   salaryProfileActiveMap: SalaryProfileActiveMap,
 ) {
-  const accountActiveFields = readContributionActiveFields(
-    profile.contributionActiveFields,
-    profile.id,
-  ).contributionAccounts;
-
-  // The merge applyContribActiveFields does: an account with no value in
-  // this profile has none anywhere, so it is excluded.
-  const activeContribs = liveContribs
-    .map((c) => {
-      const activeFields = accountActiveFields[String(c.id)];
-      // An entry may hold only other fields; without contributionValue the account
-      // resolves to nothing.
-      if (!activeFields || activeFields.contributionValue === undefined)
-        return null;
-      return {
-        ...c,
-        ...entryWithMergedRate(c, activeFields),
-        fromBonus: activeFields.fromBonus === true,
-      } as C & {
-        contributionValue: string | number;
-        contributionMethod: string;
-        isActive?: boolean;
-        fromBonus: boolean;
-      };
-    })
-    .filter((c): c is NonNullable<typeof c> => c !== null)
-    .filter((c) => c.isActive !== false);
+  const activeContribs = applyContribActiveFields(
+    liveContribs,
+    readContributionActiveFields(profile.contributionActiveFields, profile.id)
+      .contributionAccounts,
+  );
 
   // Jobs carry no Contribution-Profile-owned fields; pay schedule comes from the resolved
   // Salary Profile entry, the same axis as salary.
@@ -102,40 +80,42 @@ export function resolveProfile<
   };
 }
 
-/**
- * Contribution rows with a profile's active fields merged on (DB columns and profile-only
- * fields like displayNameCustom); `isActive=false` rows are filtered out.
- */
-export type ContribRowWithActiveFields =
-  typeof schema.contributionAccounts.$inferSelect & {
-    contributionValue: string | number;
-    contributionMethod: string;
-    /** Also taken from bonus checks — always set once active fields apply. */
-    fromBonus: boolean | undefined;
-    /** A Roth IRA account's route — absent = direct. */
-    rothRoute?: RothIraRoute;
-    displayNameCustom?: string;
-  };
+/** What a profile's active fields put on an account row (with profile-only
+ *  fields like displayNameCustom). */
+type ContributionActiveFields = {
+  contributionValue: string | number;
+  contributionMethod: string;
+  /** Also taken from bonus checks — always set once active fields apply. */
+  fromBonus: boolean | undefined;
+  /** A Roth IRA account's route — absent = direct. */
+  rothRoute?: RothIraRoute;
+  displayNameCustom?: string;
+};
 
-export function applyContribActiveFields(
-  rows: (
-    typeof schema.contributionAccounts.$inferSelect | ContribRowWithActiveFields
-  )[],
+export type ContribRowWithActiveFields =
+  typeof schema.contributionAccounts.$inferSelect & ContributionActiveFields;
+
+/** Account rows with a profile's active fields merged on; a row whose profile
+ *  sets no value is left out, as is an `isActive=false` row. */
+export function applyContribActiveFields<
+  R extends typeof schema.contributionAccounts.$inferSelect,
+>(
+  rows: readonly (R | (R & ContributionActiveFields))[],
   accountActiveFields: Record<string, Record<string, unknown>>,
   /**
    * `true` for the What-If sandbox layer over already-resolved rows: a row with no entry
    * at this layer keeps its earlier value instead of being excluded.
    */
   isOverlay = false,
-): ContribRowWithActiveFields[] {
+): (R & ContributionActiveFields)[] {
   return rows
-    .map((row): ContribRowWithActiveFields | null => {
+    .map((row): (R & ContributionActiveFields) | null => {
       const activeFields = accountActiveFields[String(row.id)];
       // The first layer needs a value (there's no base value to fall back
       // to); an overlay entry may change just another field (e.g. fromBonus)
       // of a row the first layer already resolved.
       if (!activeFields) {
-        return isOverlay ? (row as ContribRowWithActiveFields) : null;
+        return isOverlay ? (row as R & ContributionActiveFields) : null;
       }
       if (!isOverlay && activeFields.contributionValue === undefined)
         return null;
@@ -145,10 +125,10 @@ export function applyContribActiveFields(
         // An overlay layer that doesn't set it keeps the first layer's.
         fromBonus:
           (activeFields.fromBonus ??
-            (row as Partial<ContribRowWithActiveFields>).fromBonus) === true,
-      } as ContribRowWithActiveFields;
+            (row as Partial<ContributionActiveFields>).fromBonus) === true,
+      } as R & ContributionActiveFields;
     })
-    .filter((row): row is ContribRowWithActiveFields => row !== null)
+    .filter((row): row is R & ContributionActiveFields => row !== null)
     .filter((row) => row.isActive !== false);
 }
 

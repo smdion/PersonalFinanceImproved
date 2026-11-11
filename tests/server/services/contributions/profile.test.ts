@@ -167,7 +167,7 @@ describe("resolveProfile", () => {
     employerMatchType: null,
     employerMatchValue: null,
     employerMaxMatchPct: null,
-  };
+  } as unknown as (typeof import("@/lib/db/schema").contributionAccounts)["$inferSelect"];
 
   // A job carries no salary/bonus of its own any more — resolveProfile's J
   // generic only needs identity + payroll-basis fields. Salary/bonus
