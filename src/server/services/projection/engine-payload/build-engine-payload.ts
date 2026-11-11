@@ -724,13 +724,9 @@ export async function buildEnginePayload(
     ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
     expenseEndings,
-    // Always pass when user explicitly set a decumulation override, or when
-    // the computed decumulation budget differs from accumulation budget.
-    decumulationAnnualExpenses:
-      opts.decumulationExpenseOverride != null ||
-      decumulationExpenses !== accumulationExpenses
-        ? decumulationExpenses
-        : undefined,
+    // Always passed: retirement starts from the Retirement budget, and the
+    // Coast FIRE need test has a need, even when it equals the working one.
+    decumulationAnnualExpenses: decumulationExpenses,
     inflationRate: toNumber(settings.annualInflation),
     postRetirementInflationRate: settings.postRetirementInflation
       ? toNumber(settings.postRetirementInflation)

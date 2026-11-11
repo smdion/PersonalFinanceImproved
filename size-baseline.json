@@ -414,7 +414,7 @@
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 209,
     "src/server/services/projection/coast-fire.ts": 294,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 845,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 841,
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 445,
     "src/server/services/projection/projection-cache.ts": 183,
@@ -1065,7 +1065,7 @@
       "computeCoastFireSimulation": 230
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 768
+      "buildEnginePayload": 764
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 170

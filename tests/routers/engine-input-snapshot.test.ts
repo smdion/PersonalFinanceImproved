@@ -267,6 +267,13 @@ describe("engine input snapshot guard", () => {
     `);
   });
 
+  it("the Retirement budget is passed even when it equals the working budget", () => {
+    // Left out when the totals matched, so working-year budget changes
+    // carried into retirement and the Coast FIRE need test had no need.
+    const bei = payload.baseEngineInput;
+    expect(bei.decumulationAnnualExpenses).toBe(bei.annualExpenses);
+  });
+
   it("key numeric defaults match the seeded fixture — NO auto-update without human review", () => {
     // B6 content guard (v0.5.3). These are EXPLICIT assertions — not snapshots.
     // Any change to these numbers is a user-visible projection change and must

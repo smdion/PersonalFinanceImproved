@@ -25,9 +25,9 @@ $770,030.53
 Range $602,039.57 – $1,078,498.00 in 2080
 Baseline: $652,879.30 (fixed returns)
 Coast FIRE?
-Already ✓
-$47,546.95/yr sustainable
-vs $46,012.25 expenses
+2032 (Jordan, 48)
+$67,812.31/yr sustainable
+vs $64,034.84 expenses
 Simulation— what was run
 Default?Tax-aware?
 7.27%?
@@ -56,7 +56,7 @@ View Assumptions →
 Compute— what gets run
 Scenario?
 Baseline
-Coast FIRE (2026 (Jordan, 42))
+Coast FIRE (2032 (Jordan, 48))
 Coast FIRE (Today)
 Coast FIRE (Custom)
 Initial Rate
