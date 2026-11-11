@@ -117,6 +117,10 @@ describe("the match figure a form shows and stores", () => {
     expect(formatEmployerMatch("percent_of_contribution", null, null)).toBe(
       "0%",
     );
+    // A rate that can't be read shows the value, as the form and engine read it.
+    expect(formatEmployerMatch("percent_of_contribution", "50", "x")).toBe(
+      "50%",
+    );
     expect(formatEmployerMatch("dollar_match", "1500", null)).toBe(
       "$1,500.00/yr",
     );
