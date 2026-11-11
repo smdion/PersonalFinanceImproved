@@ -5,7 +5,14 @@
  */
 import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
-import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
+import {
+  capEffectiveContribs,
+  capForRequest,
+} from "@/lib/pure/contributions/cap-pass";
+import {
+  BLANK_SALARY_ENTRY,
+  type SalaryEntry,
+} from "@/lib/db/shapes/salary-entry-defaults";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import {
   annualContributionWithBonus,
@@ -168,5 +175,78 @@ describe("capEffectiveContribs", () => {
     );
     expect(acct!.annualContribution).toBeCloseTo(3000, 2); // 4,000 − 1,000
     expect(acct!.ficaExemptAnnualCap).toBeCloseTo(3000, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// capForRequest: the request's jobs and pay
+// ---------------------------------------------------------------------------
+
+const limits415 = {
+  "401k_employee_limit": 24500,
+  "401k_catchup_limit": 8000,
+  "401k_super_catchup_limit": 11250,
+  "401k_total_additions_limit": 72000,
+  ira_limit: 7500,
+  ira_catchup_limit: 1100,
+};
+const jobAt = (id: number) => ({
+  id,
+  personId: 1,
+  payPeriod: "biweekly",
+  startDate: "2020-01-01",
+  endDate: null,
+  isSpeculative: false,
+});
+const planRow = (id: number, jobId: number | null, value: number) => ({
+  id,
+  personId: 1,
+  jobId,
+  accountType: jobId === null ? "ira" : "401k",
+  contributionMethod: "fixed_annual",
+  contributionValue: String(value),
+  taxTreatment: jobId === null ? "tax_free" : "pre_tax",
+  employerMatchType: null,
+  employerMatchValue: null,
+  employerMaxMatchPct: null,
+  isPayrollDeducted: jobId !== null,
+});
+const salaryEntry = (salary: number): SalaryEntry => ({
+  ...BLANK_SALARY_ENTRY,
+  salary,
+});
+
+describe("capForRequest — a What-If salary is the current job's only", () => {
+  // Two current jobs: job 1 (first on file, the current job) pays 50,000 and job 2 pays
+  // 100,000 on the Salary Profile; a What-If salary of 2,000. Job 1 is paid 2,000, so its
+  // 5,000 401(k) is held to that pay (415(c)(1)(B)); job 2 keeps 100,000, so its 15,000
+  // fits; the IRA's compensation is 2,000 + 100,000 − 2,000 − 15,000 = 85,000 (219(f)(1)).
+  const capped = capForRequest(
+    [planRow(1, 1, 5000), planRow(2, 2, 15000), planRow(3, null, 7500)],
+    {
+      people: [{ id: 1, birthYear: 1990 }],
+      limits: limits415,
+      filingStatus: "Single",
+      taxYear: 2030,
+      asOf: new Date(2030, 2, 1),
+    },
+    [jobAt(1), jobAt(2)],
+    new Map([
+      [1, salaryEntry(50000)],
+      [2, salaryEntry(100000)],
+    ]),
+    new Map([[1, { salary: 2000 }]]),
+  );
+  const kept = (id: number) =>
+    capped.find((c) => c.id === id)!.cap!.cappedAnnual;
+
+  it("pays the What-If salary at the current job", () => {
+    expect(kept(1)).toBeCloseTo(2000, 2);
+  });
+  it("keeps the other job's Salary Profile pay", () => {
+    expect(kept(2)).toBeCloseTo(15000, 2);
+  });
+  it("counts both jobs' pay toward the IRA", () => {
+    expect(kept(3)).toBeCloseTo(7500, 2);
   });
 });

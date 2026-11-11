@@ -8,6 +8,7 @@ import type { ProfilePair } from "@/server/services/profile-selection";
 import {
   type ContribResolutionStatus,
   filterActiveJobs,
+  whatIfForJob,
 } from "@/lib/pure/household/profiles";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
@@ -15,7 +16,6 @@ import {
   type SalaryActiveMap,
   applySandboxSalaryEntries,
   resolveCompensation,
-  applyActiveSalary,
 } from "@/lib/pure/household/compensation";
 import {
   loadAndApplyContribProfile,
@@ -113,12 +113,10 @@ export async function resolveLinkedBudgetItemAmounts<
   const salaryByJobId = new Map<number, number>();
   for (const j of activeJobs) {
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-    // Regular paychecks only (base salary): what a bonus check takes isn't
-    // monthly cash flow.
-    salaryByJobId.set(
-      j.id,
-      applyActiveSalary(j.personId, comp.salary, effectiveSalaryMap),
-    );
+    // Regular paychecks only (base salary): a bonus check isn't monthly cash flow.
+    // A What-If salary is the current job's only (whatIfForJob).
+    const whatIf = whatIfForJob(j, activeJobs, scope.asOf, effectiveSalaryMap);
+    salaryByJobId.set(j.id, whatIf?.salary ?? comp.salary);
   }
 
   for (const c of activeContributions) {

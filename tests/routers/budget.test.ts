@@ -1616,6 +1616,48 @@ describe("budget router", () => {
 
       expect(after.contribAmount).toBeCloseTo(before.contribAmount!, 2);
     });
+
+    it("sandboxSalaryEntries pays the What-If salary at the person's current job only", async () => {
+      // Two current jobs; the first on file is the current job (findActiveJob). A What-If
+      // salary of 240,000 sets its pay; the second job keeps its Salary Profile 60,000.
+      const personId = await seedPerson(db);
+      const currentJob = seedJob(db, personId, { annualSalary: "90000" });
+      const otherJob = seedJob(db, personId, { annualSalary: "60000" });
+      const accountAt = (jobId: number) =>
+        seedLinkableContributionAccount(db, personId, { jobId });
+      const [atCurrent, atOther] = [accountAt(currentJob), accountAt(otherJob)];
+      const tenPercent = {
+        contributionValue: "10",
+        contributionMethod: "percent_of_salary",
+      };
+      const contribProfileId = seedContributionProfile(db, {
+        name: "What-If Per Job Profile",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(atCurrent)]: tenPercent,
+            [String(atOther)]: tenPercent,
+          },
+        },
+      });
+      const itemAt = (accountId: number, subcategory: string) =>
+        seedBudgetItem(db, profileId, {
+          category: "Investing",
+          subcategory,
+          amounts: [999],
+          contributionAccountId: accountId,
+        });
+      const currentItem = itemAt(atCurrent, "What-If Current Job Item");
+      const otherItem = itemAt(atOther, "What-If Other Job Item");
+
+      const result = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+        sandboxSalaryEntries: { [String(personId)]: { salary: 240000 } },
+      });
+      const monthly = (id: number) =>
+        result.rawItems!.find((i) => i.id === id)!.contribAmount;
+      expect(monthly(currentItem)).toBeCloseTo(24000 / 12, 2);
+      expect(monthly(otherItem)).toBeCloseTo(6000 / 12, 2);
+    });
   });
 
   // -------------------------------------------------------------------------

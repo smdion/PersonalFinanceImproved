@@ -143,6 +143,19 @@ export function findActiveJob<T extends JobLike>(
   return jobs.find((j) => j.personId === personId && isJobCurrent(j, asOf));
 }
 
+/** A job's What-If tweak: the person's current job's only (findActiveJob, as Paycheck reads it);
+ *  every other job keeps its Salary Profile pay. */
+export function whatIfForJob<T extends JobLike & { id: number }, W>(
+  job: T,
+  jobs: readonly T[],
+  asOf: Date,
+  whatIf: ReadonlyMap<number, W>,
+): W | undefined {
+  return findActiveJob(jobs, job.personId, asOf)?.id === job.id
+    ? whatIf.get(job.personId)
+    : undefined;
+}
+
 /** Every current job on `asOf` (isJobCurrent). */
 export function filterActiveJobs<T extends Omit<JobLike, "personId">>(
   jobs: readonly T[],

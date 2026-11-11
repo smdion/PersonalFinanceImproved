@@ -21,7 +21,7 @@ import {
 } from "./setup";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema-sqlite";
-import { cents, xfail } from "../fixtures/answer-key";
+import { cents } from "../fixtures/answer-key";
 
 const FIXED_NOW = new Date("2026-04-14T12:00:00Z");
 
@@ -157,10 +157,7 @@ describe("limits/D2-50: 415(c) dollar leg, 50+", () => {
  * on file) and 100,000 a year, with 10,000 a year pre-tax to a 401(k) at
  * the second. Taxable compensation (W-2 box 1) = 5,000 + 100,000 − 10,000
  * = 95,000 (219(f)(1); Pub 590-A Table 1-1), so the whole 7,500 IRA limit
- * (Notice 2025-67 p.4) fits. Today the cap pass sees one job per person,
- * the 5,000 one, takes the other job's 401(k) off it anyway and finds
- * compensation 0: the IRA is cut to 0 and a save is refused with "set it
- * to 0" (verdict "New: concurrent jobs"; the Paycheck gross is 192.31).
+ * (Notice 2025-67 p.4) fits: the cap pass counts both jobs' pay.
  */
 describe("limits/IRA-2JOB: all current jobs count toward pay", () => {
   let t: TestCaller;
@@ -225,36 +222,21 @@ describe("limits/IRA-2JOB: all current jobs count toward pay", () => {
     t.cleanup();
   });
 
-  xfail({
-    id: "limits/IRA-2JOB [LIM-07]",
-    todo: 'v0.11 Limits "All current jobs count in the cap pass and Paycheck"',
-    run: async () =>
+  it("limits/IRA-2JOB [LIM-07] IRA kept 7,500 on 95,000 of compensation", async () => {
+    cents(
       (await summaryFor(t, summaryProfileId, personId, "ira")).employeeContrib,
-    expected: 7_500,
-    today: 0,
+      7_500,
+    );
   });
 
   // The same rule at save time: raising the IRA from 0 to 7,500 is
-  // within the limit (1 = refused, 0 = saved).
-  xfail({
-    id: "limits/IRA-2JOB:save [LIM-07]",
-    todo: 'v0.11 Limits "All current jobs count in the cap pass and Paycheck"',
-    run: () =>
-      t.caller.contributionProfile
-        .setAccountActiveFields({
-          profileId: activeProfileId,
-          accountId: iraId,
-          fields: {
-            contributionValue: "7500",
-            contributionMethod: "fixed_annual",
-          },
-        })
-        .then(
-          () => 0,
-          (e: Error) => (/set it to 0/.test(e.message) ? 1 : -1),
-        ),
-    expected: 0,
-    today: 1,
+  // within the limit, so the save goes through.
+  it("limits/IRA-2JOB:save [LIM-07] the 7,500 IRA saves", async () => {
+    await t.caller.contributionProfile.setAccountActiveFields({
+      profileId: activeProfileId,
+      accountId: iraId,
+      fields: { contributionValue: "7500", contributionMethod: "fixed_annual" },
+    });
   });
 });
 

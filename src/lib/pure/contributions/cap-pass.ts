@@ -18,7 +18,11 @@ import {
   type ContributionRow,
   contributionRowAmounts,
 } from "./contribution-rows";
-import { type JobLike, findActiveJob } from "@/lib/pure/household/profiles";
+import {
+  type JobLike,
+  filterActiveJobs,
+  whatIfForJob,
+} from "@/lib/pure/household/profiles";
 import {
   type SalaryProfileActiveMap,
   type SalaryActiveMap,
@@ -191,8 +195,8 @@ export function capEffectiveContribs<R extends CapPassRow>(
   });
 }
 
-/** Cap a request's effective rows: each person's active job paid this
- *  year's pay (thisYearJobPay, the same pay the request's figures use). */
+/** Cap a request's effective rows: every job each person holds counts, paid this year's pay
+ *  (IRC 219(f)(1); thisYearJobPay; a What-If salary is the current job's only, whatIfForJob). */
 export function capForRequest<R extends CapPassRow>(
   rows: readonly R[],
   household: CapRequestHousehold,
@@ -200,26 +204,22 @@ export function capForRequest<R extends CapPassRow>(
   salaryProfileActiveMap: SalaryProfileActiveMap,
   salaryActiveMap: SalaryActiveMap,
 ): (R & CappedRowFields)[] {
-  // The job held on the request's date in its tax year, else on Dec 31.
+  // Jobs held on the request's date in its tax year, else on Dec 31.
   const asOf =
     household.taxYear === household.asOf.getFullYear()
       ? household.asOf
       : new Date(household.taxYear, 11, 31);
-  const activeJobs = household.people.flatMap((p) => {
-    const job = findActiveJob(jobs, p.id, asOf);
-    return job ? [job] : [];
-  });
+  const activeJobs = filterActiveJobs(jobs, asOf).filter((j) =>
+    household.people.some((p) => p.id === j.personId),
+  );
   return capEffectiveContribs(rows, {
     ...household,
     activeJobs,
     jobSalaries: activeJobs.map((job) => {
-      const pay = thisYearJobPay(job, salaryProfileActiveMap, salaryActiveMap);
-      return {
-        job: { id: job.id, personId: job.personId },
-        salary: pay.salary,
-        bonusGross: pay.bonusGross,
-        totalComp: pay.totalComp,
-      };
+      const whatIf = whatIfForJob(job, jobs, asOf, salaryActiveMap);
+      const pay = thisYearJobPay(job, salaryProfileActiveMap, whatIf);
+      const { salary, bonusGross, totalComp } = pay;
+      return { job, salary, bonusGross, totalComp };
     }),
   });
 }
