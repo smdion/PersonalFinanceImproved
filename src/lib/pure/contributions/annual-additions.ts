@@ -7,25 +7,37 @@ import {
 import { resolveIrsLimit } from "./irs-limits";
 import { ageInYear } from "@/lib/utils/date";
 import { sumBy } from "@/lib/utils/math";
+import { isAlreadyIn } from "./already-in";
 import type {
   CapContext,
   CapRow,
   PlanEmployer,
 } from "./contribution-caps.types";
 
-type JobPay = { job: { id: number }; salary: number; totalComp?: number };
+type JobPay = {
+  job: { id: number };
+  salary: number;
+  totalComp?: number;
+  /** The job ended before the date: its plan's money is already in. */
+  ended?: true;
+};
 
 /** A job's gross pay for the year: salary + bonus when known, else salary. */
 export const jobPay = (js: JobPay) => js.totalComp ?? js.salary;
 
-/** The employer of a row at `jobId` (none for a row with no job), with that job's pay. */
+/** The employer of a row at `jobId` (none for a row with no job), with that job's pay and whether
+ *  it ended before the date. */
 export function planEmployer(
   jobId: number | null,
   jobSalaries: readonly JobPay[],
 ): PlanEmployer | undefined {
   if (jobId === null) return undefined;
   const js = jobSalaries.find((s) => s.job.id === jobId);
-  return { key: jobId, pay: js ? jobPay(js) : null };
+  return {
+    key: jobId,
+    pay: js ? jobPay(js) : null,
+    ...(js?.ended ? { ended: true as const } : {}),
+  };
 }
 
 /** The 415(c) keys of a plan type (its annual-additions limit), or undefined when it has none. */
@@ -81,11 +93,9 @@ function largestFit(hi: number, fits: (d: number) => boolean): number {
   return lo;
 }
 
-/**
- * 415(c) per person per employer, after the 402(g) cut: deferrals + employer money within min(limit,
- * the job's gross pay); deferrals past it are catch-up (414(v)(3)(A)) up to the person's catch-up
- * left and the job's pay less other deferrals (414(v)(2)(A)(ii)). Only employee money is cut.
- */
+/** 415(c) per person per employer, after 402(g): deferrals + employer money within min(limit, pay);
+ *  the rest is catch-up up to what's left of it and pay less other deferrals (414(v)(3)(A),
+ *  (v)(2)(A)(ii)). Only employee money is cut; an ended job's plan goes first and is never cut. */
 export function holdToAnnualAdditions(
   rows: readonly CapRow[],
   ctx: CapContext,
@@ -99,7 +109,12 @@ export function holdToAnnualAdditions(
     plans.set(at, [...(plans.get(at) ?? []), i]);
   });
   const catchupLeft = new Map<number, number>();
-  for (const index of plans.values()) {
+  // A plan is one employer's rows (one job), so its first row says whether it ended.
+  const endedFirst = [...plans.values()].sort(
+    (a, b) =>
+      Number(isAlreadyIn(rows[b[0]!]!)) - Number(isAlreadyIn(rows[a[0]!]!)),
+  );
+  for (const index of endedFirst) {
     const first = rows[index[0]!]!;
     const keys = additionsKeys(first.accountType)!;
     const limit = ctx.limits[keys.totalAdditions];
@@ -122,8 +137,14 @@ export function holdToAnnualAdditions(
       d - Math.min(d, Math.max(0, bound - employer(d)));
     const fits = (d: number) =>
       catchupAt(d) <= Math.min(catchup, (pay ?? Infinity) - (d - catchupAt(d)));
-    const most = largestFit(bound + catchup, fits);
-    catchupLeft.set(pid, catchup - catchupAt(Math.min(kept, most)));
+    const already = isAlreadyIn(first);
+    const most = already
+      ? Math.max(kept, 0)
+      : largestFit(bound + catchup, fits);
+    catchupLeft.set(
+      pid,
+      Math.max(0, catchup - catchupAt(Math.min(kept, most))),
+    );
     // The person's configured money in the same limit group at their other employers (as
     // configured, so the result doesn't depend on which employer this pass reaches first).
     const elsewhere = rows.reduce(

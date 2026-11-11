@@ -271,6 +271,32 @@ describe("limits: several employers", () => {
     cents(roomAtB(45, 24_500), 0);
   });
 
+  it("limits/LM3-EARLIER [LIM-06] an ended job's deferrals are already in (2026, 45, 10,000 at an ended job, 20,000 now): 14,500 now", () => {
+    // One 402(g) limit across every employer in the year (402(g)(1)(A);
+    // Notice 2023-62 § III.B), and the ended job's 10,000 is already paid,
+    // so it isn't cut: 24,500 − 10,000 = 14,500 at the job held now.
+    const earlier = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10_000,
+      employer: { key: 1, pay: 40_000, ended: true },
+    });
+    const now = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 20_000,
+      employer: { key: 2, pay: 100_000 },
+    });
+    const capped = cap(2026, [person(1, 2026, 45, 140_000)], [now, earlier]);
+    cents(
+      {
+        earlier: capped.get(earlier.id)!.cappedAnnual,
+        now: capped.get(now.id)!.cappedAnnual,
+      },
+      { earlier: 10_000, now: 14_500 },
+    );
+  });
+
   it("limits/C20 [LIM-06] each plan bound by its own employer's pay (2026, 52, two jobs at 10,000, 32,500 asked at each): 20,000", () => {
     // 415(c)(1)(B) per employer: 10,000 + 10,000 = 20,000, under the
     // 32,500 personal cap; no catch-up fits at either (414(v)(2)(A)(ii):

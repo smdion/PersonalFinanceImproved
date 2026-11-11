@@ -1,5 +1,5 @@
-/** A plan row's employer: its job, and the job's gross pay this year (null = unknown). */
-export type PlanEmployer = { key: number; pay: number | null };
+/** A plan row's employer: its job, its gross pay this year (null = unknown), and `ended` before the date (money already in). */
+export type PlanEmployer = { key: number; pay: number | null; ended?: true };
 
 export type CapRow = {
   id: number;
@@ -24,10 +24,10 @@ export type CapPerson = {
   id: number;
   /** null = unknown — capped at the most any age allows. */
   birthYear: number | null;
-  /** Taxable pay for the year before pre-tax payroll money (salary, bonus,
-   *  other taxable pay); the pass takes off the capped pre-tax rows itself.
-   *  null = unknown (no compensation bound). */
+  /** Taxable pay before pre-tax payroll money (the pass takes those rows off); null = unknown. */
   wages: number | null;
+  /** The months an HSA covers (12-bit mask, bit 0 = January); absent = the whole year. */
+  coveredMonths?: number;
 };
 
 export type CapContext = {

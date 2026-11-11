@@ -25,6 +25,7 @@ import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { CapContext, CapRow } from "./contribution-caps.types";
 import { holdToAnnualAdditions } from "./annual-additions";
+import { monthsFor, participantOf } from "./already-in";
 
 type CapReason =
   /** Cut to the IRS limit. */
@@ -280,8 +281,9 @@ export function capContributionsByLimitGroup(
       jointCoverage,
     ]);
 
+    const held = monthsFor(coverageMatters, sharedFamily, ctx.people, byPerson);
     const sizeFor = (pid: number, cov: string | null) =>
-      sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits);
+      held(sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits), pid);
     /** Employer money that counts for these rows at `factor`. */
     const employerOf = (index: readonly number[], factor = 1) =>
       !cfg.matchCountsTowardLimit
@@ -298,14 +300,9 @@ export function capContributionsByLimitGroup(
     const participant = (
       pid: number,
       index: number[],
-      ownRoom: number,
-    ): Participant => ({
-      personId: pid,
-      rowIndex: index,
-      employee: sumBy(index, (i) => kept[i]!),
-      employerAt: (f) => employerOf(index, f),
-      ownRoom,
-    });
+      size?: Size,
+      family = false,
+    ) => participantOf(pid, rows, index, kept, employerOf, size, family);
     const apply = (parts: readonly Participant[], sharedLimit: number) => {
       const factors = capParticipants(parts, sharedLimit);
       const employerOver = sumBy(parts, (p) => sharedNeed(p, 0)) > sharedLimit;
@@ -345,7 +342,7 @@ export function capContributionsByLimitGroup(
           if (ageOf.get(s.pid) == null) flag(s.idx, "no-birth-date");
         });
         apply(
-          sized.map((s, k) => participant(s.pid, s.idx, sizes[k]!.catchup)),
+          sized.map((s, k) => participant(s.pid, s.idx, sizes[k], true)),
           sizes[0]!.base,
         );
       }
@@ -359,7 +356,7 @@ export function capContributionsByLimitGroup(
         if (ageOf.get(pid) == null) flag(index, "no-birth-date");
         if (coverageMatters && coverage.get(pid) == null)
           flag(index, "no-coverage");
-        apply([participant(pid, index, 0)], size.base + size.catchup);
+        apply([participant(pid, index, size)], size.base + size.catchup);
         groupLimits.set(
           group,
           (groupLimits.get(group) ?? 0) + size.base + size.catchup,
@@ -394,7 +391,7 @@ export function capContributionsByLimitGroup(
           sumBy(index, (i) => kept[i]!) +
           employerOf(index, factorOf[index[0]!]!),
       );
-    const jointPart = participant(-1, joint, 0);
+    const jointPart = participant(-1, joint);
     const room = maxEmployeeFor(jointPart, Math.max(0, ownedRoom));
     const total = sumBy(joint, (i) => kept[i]!);
     const factor = total > room ? room / total : 1;
