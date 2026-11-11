@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import Link from "next/link";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -15,11 +16,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
 import { type MilestoneResult } from "@/lib/pure/advice/milestones/milestones";
 import { meetsRateTarget } from "@/lib/pure/advice/milestones/milestones.shared";
-import {
-  householdSavings,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
-} from "@/lib/pure/contributions/savings-rate";
+import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
@@ -192,15 +189,16 @@ function FinancialCheckupCardImpl() {
 
   const contributionPeople =
     contribs.data?.people.filter((d) => d.result) ?? [];
-  const highIncome = isHighIncomeHousehold(
-    householdTotalCompensation(contributionPeople),
-    highIncomeThreshold,
-  );
+  const { highIncome, queries: highIncomeQueries } = useHighIncomeHousehold();
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
-    useSavingsRateOptions(highIncome);
+    useSavingsRateOptions(highIncome === true);
 
-  const queries = [milestones, contribs, highIncomeLine];
-  if (queryPending(queries) || highIncomeThreshold === undefined)
+  const queries = [milestones, contribs, highIncomeLine, ...highIncomeQueries];
+  if (
+    queryPending(queries) ||
+    highIncomeThreshold === undefined ||
+    highIncome === undefined
+  )
     return <CardQueryBoundary title="Financial Checkup" query={queries} />;
 
   const byId = new Map(milestones.results.map((r) => [r.id, r]));

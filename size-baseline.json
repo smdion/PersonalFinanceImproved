@@ -11,7 +11,7 @@
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 138,
     "src/app/(dashboard)/budget/budget-content.tsx": 635,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 350,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 944,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 922,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
     "src/app/(dashboard)/historical/historical-content.tsx": 932,
     "src/app/(dashboard)/house/house-content.tsx": 739,
@@ -47,16 +47,16 @@
     "src/components/contributions/contribution-accounts-card.tsx": 669,
     "src/components/contributions/contribution-accounts-contrib-row.tsx": 655,
     "src/components/contributions/contribution-accounts.tsx": 414,
-    "src/components/contributions/contribution-snapshot.tsx": 611,
+    "src/components/contributions/contribution-snapshot.tsx": 599,
     "src/components/contributions/contributions-section.tsx": 421,
-    "src/components/dashboard/contributions-card.tsx": 585,
+    "src/components/dashboard/contributions-card.tsx": 573,
     "src/components/dashboard/linked-balance-card.tsx": 432,
     "src/components/dashboard/living-costs-card.tsx": 604,
     "src/components/dashboard/retirement-card-figures.ts": 131,
     "src/components/dashboard/retirement-card-plan-rows.tsx": 52,
     "src/components/dashboard/retirement-card-rows.tsx": 112,
     "src/components/dashboard/retirement-card-stats.tsx": 200,
-    "src/components/dashboard/retirement-card.tsx": 177,
+    "src/components/dashboard/retirement-card.tsx": 172,
     "src/components/dashboard/savings-goals-card.tsx": 406,
     "src/components/debts/debts-card.tsx": 526,
     "src/components/debts/mortgage-settings.tsx": 800,
@@ -190,7 +190,7 @@
     "src/components/retirement-projection/table/projection-table-decum-balances.model.ts": 276,
     "src/components/retirement-projection/table/projection-table-decum-row.tsx": 846,
     "src/components/retirement-projection/table/projection-table-decum-withdrawals.model.ts": 230,
-    "src/components/retirement-projection/table/projection-table.tsx": 433,
+    "src/components/retirement-projection/table/projection-table.tsx": 431,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 618,
     "src/components/retirement-projection/use-projection-queries.ts": 813,
@@ -455,7 +455,7 @@
       "useBudgetPageState": 200
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
-      "ContributionsContent": 847,
+      "ContributionsContent": 826,
       "ContributionsContent.map()": 225,
       "ContributionsContent.map().map()": 160
     },
@@ -545,7 +545,7 @@
       "ContributionAccountsSettings": 383
     },
     "src/components/contributions/contribution-snapshot.tsx": {
-      "ContributionSnapshot": 567,
+      "ContributionSnapshot": 558,
       "ContributionSnapshot.map()": 385,
       "ContributionSnapshot.map().map()": 314
     },
@@ -557,7 +557,7 @@
       "useContributionAccountsMutations": 273
     },
     "src/components/dashboard/contributions-card.tsx": {
-      "ContributionsCardImpl": 535,
+      "ContributionsCardImpl": 525,
       "ContributionsCardImpl.map()": 269,
       "ContributionsCardImpl.map().map()": 251
     },
@@ -753,7 +753,7 @@
       "DecumulationRow.map()": 207
     },
     "src/components/retirement-projection/table/projection-table.tsx": {
-      "ProjectionTable": 397
+      "ProjectionTable": 394
     },
     "src/components/retirement-projection/tooltip-renderer.tsx": {
       "renderTooltip": 327

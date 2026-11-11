@@ -2,6 +2,7 @@
 
 /** Client content for the Contributions page — prefetched by page.tsx. */
 
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -35,12 +36,10 @@ import { contributionsSummaryLine } from "@/lib/pure/advice/plain-summary";
 import { PlainSummary } from "@/components/ui/plain-summary";
 import {
   householdSavings,
-  isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions/savings-rate";
-import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
 
 export function ContributionsContent() {
   const { viewMode } = useScenario();
@@ -51,24 +50,10 @@ export function ContributionsContent() {
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<ContributionPeriod>("annual");
   const [activeProfileId] = useActiveContributionProfile();
-  // Independent Salary Profile axis (the active profile).
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  // The active profile, resolved like Paycheck/Budget (docs/DESIGN.md "Profile
-  // Resolution"). Separate from selectedProfileId, a local compare picker.
-  const { profileId: effectiveActiveContributionProfileId } =
-    useEffectiveProfileId("contribution", {
-      validIds: profiles?.map((p) => p.id),
-      localSelection: null,
-      activeProfileId,
-    });
-  const dataInput = {
-    ...(effectiveActiveContributionProfileId != null
-      ? { contributionProfileId: effectiveActiveContributionProfileId }
-      : {}),
-    ...salaryProfileInput,
-  };
+  // The active profiles (docs/DESIGN.md "Profile Resolution"), the dashboard's
+  // input. Separate from selectedProfileId, a local compare picker.
   const summary = trpc.contribution.computeSummary.useQuery(
-    Object.keys(dataInput).length > 0 ? dataInput : undefined,
+    useContributionSummaryInput(),
   );
   const { data } = summary;
   const setPriorYear =
@@ -82,14 +67,7 @@ export function ContributionsContent() {
   const { threshold: highIncomeThreshold, error: highIncomeError } = highIncome;
   // Before the early returns (hooks): the switches are shared app-wide.
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
-    useSavingsRateOptions(
-      isHighIncomeHousehold(
-        (data?.people ?? [])
-          .filter((p) => p.salary > 0)
-          .reduce((s, p) => s + p.totalCompensation, 0),
-        highIncomeThreshold,
-      ),
-    );
+    useSavingsRateOptions(useHighIncomeHousehold().highIncome === true);
 
   // The top paycheck to-do, for the plain-words line.
   const { recommendations } = useRecommendations();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { memo } from "react";
 import Link from "next/link";
 import { settingsHref } from "@/lib/config/settings-sections";
@@ -29,7 +29,6 @@ import {
 import { PlanTimeRows, RetirementBudgetRow } from "./retirement-card-plan-rows";
 import { retirementCardFigures } from "./retirement-card-figures";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 
 function RetirementCardImpl() {
   const projection = useDashboardProjection();
@@ -39,14 +38,9 @@ function RetirementCardImpl() {
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
     useYearEndTargetingInput(),
   );
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
   // The match switch shared with every savings rate and contribution total.
-  const { excludeMatch } = useSavingsRateOptions(
-    isHighIncomeHousehold(
-      data && "combinedSalary" in data ? data.combinedSalary : 0,
-      highIncomeThreshold,
-    ),
-  );
+  const household = useHighIncomeHousehold();
+  const { excludeMatch } = useSavingsRateOptions(household.highIncome === true);
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
     { staleTime: 60_000, enabled: ready },
@@ -65,8 +59,9 @@ function RetirementCardImpl() {
       { ...engineInput, peekOnly: true },
       { staleTime: 0, enabled: ready },
     );
-  if (queryPending([projection, gate]))
-    return <CardQueryBoundary title="Retirement" query={[projection, gate]} />;
+  const queries = [projection, gate, ...household.queries];
+  if (queryPending(queries) || household.highIncome === undefined)
+    return <CardQueryBoundary title="Retirement" query={queries} />;
   if (data && "notConfigured" in data)
     return (
       <Card title="Retirement" href="/retirement">

@@ -3,7 +3,6 @@
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -27,41 +26,30 @@ import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   householdSavings,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions/savings-rate";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
 import { renderJointAccount } from "./contribution-snapshot-joint";
 
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
-  const [activeProfileId] = useProfileIdSetting(SK_ACTIVE_CONTRIB_PROFILE_ID);
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const contributionInput = {
-    ...(activeProfileId != null
-      ? { contributionProfileId: activeProfileId }
-      : {}),
-    ...salaryProfileInput,
-  };
-  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
+  const summary = trpc.contribution.computeSummary.useQuery(
+    useContributionSummaryInput(),
+  );
   const { data } = summary;
   const [contributionPeriod, setContributionPeriod] =
     useState<ContributionPeriod>("annual");
   const highIncome = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
-    isHighIncomeHousehold(
-      householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
-      highIncome.threshold,
-    ),
+    useHighIncomeHousehold().highIncome === true,
   );
 
   if (queryPending([summary, highIncome]) || highIncome.threshold === undefined)

@@ -118,6 +118,8 @@ beforeEach(() => {
     "projection.computeProjection",
     engineData as MockOutput<"projection.computeProjection">,
   );
+  // The household's pay for the match switch's high-income default.
+  setQuery("contribution.computeSummary", { people: [] });
   setQuery("projection.computeCoastFire", {
     result: { status: "found", coastFireAge: 50 },
   });

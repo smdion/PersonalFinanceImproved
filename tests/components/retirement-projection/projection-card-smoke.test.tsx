@@ -60,6 +60,12 @@ beforeEach(() => {
   setQuery("settings.appSettings.list", [
     { key: SK_RETIREMENT_MC_AUTOLOAD, value: false },
   ]);
+  // The household's pay for the match switch's high-income default.
+  setQuery("contribution.computeSummary", { people: [] });
+  setQuery("contribution.computeHighIncomeLine", {
+    threshold: 200_000,
+    basis: "MFJ",
+  });
   setQuery("projection.computeProjection", engineData);
 });
 
