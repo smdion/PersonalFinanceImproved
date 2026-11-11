@@ -56,14 +56,7 @@ describe("answer key: a job's last check", () => {
       endDate: new Date("2026-06-05T12:00:00Z"),
     });
     const { earnings } = yearEarnings(
-      {
-        id: 1,
-        employerName: "Acme",
-        startDate: "2026-01-02",
-        endDate: "2026-06-05",
-        payPeriod: "biweekly",
-        anchorPayDate: "2026-01-02",
-      },
+      { id: 1, employerName: "Acme", startDate: "2026-01-02" },
       paycheck,
       26,
       104_000,

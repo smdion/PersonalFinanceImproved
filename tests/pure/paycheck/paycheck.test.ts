@@ -813,14 +813,7 @@ describe("a job ending this year", () => {
         bonusDayOfMonth: 15,
       });
       return yearEarnings(
-        {
-          id: 1,
-          employerName: "Acme",
-          startDate: "2020-01-01",
-          endDate: "2025-06-10",
-          payPeriod: "biweekly",
-          anchorPayDate: "2025-01-03",
-        },
+        { id: 1, employerName: "Acme", startDate: "2020-01-01" },
         paycheck,
         26,
         input.annualSalary,
