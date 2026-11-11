@@ -14,6 +14,7 @@ import { getPeriodsPerYear } from "../../config/pay-periods";
 import { sumBracketTax } from "../tax/tax-brackets";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { calculateBonus } from "./bonus";
+import { additionalMedicareWithheld } from "./additional-medicare";
 import { findBonusPeriod } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
@@ -207,12 +208,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // Medicare on the FICA base, no cap. Additional Medicare past the threshold is averaged
   // over the year's checks, like Social Security; the year schedule shows the real checks.
   const additionalMedicarePerCheck =
-    (input.taxBrackets.medicareAdditionalRate *
-      Math.max(
-        0,
-        annualFicaBase - input.taxBrackets.medicareAdditionalThreshold,
-      )) /
-    periodsPerYear;
+    additionalMedicareWithheld(
+      input.taxBrackets,
+      annualFicaBase,
+      annualFicaBase,
+    ) / periodsPerYear;
   const ficaMedicare =
     ficaBase * input.taxBrackets.medicareRate + additionalMedicarePerCheck;
 

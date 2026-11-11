@@ -4,6 +4,7 @@
  * interest isn't in provisional income for SS taxation (no muni data model).
  */
 import type { TaxBracketInput } from "../paycheck/paycheck.types";
+import { additionalMedicareWithheld } from "../paycheck/additional-medicare";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { formatCurrency } from "../../utils/format";
 import { sumBracketTax } from "./tax-brackets";
@@ -119,9 +120,8 @@ export function calculateHouseholdTax(
   // Employers withhold the surtax per employee above the withholding
   // threshold; Form 8959 settles the difference at filing.
   const withheld = roundToCents(
-    sumBy(
-      people,
-      (p) => Math.max(0, p.ficaWages - withholdingThreshold) * rate,
+    sumBy(people, (p) =>
+      additionalMedicareWithheld(taxBrackets, p.ficaWages, p.ficaWages),
     ),
   );
   if (additionalMedicare - withheld >= 1) {

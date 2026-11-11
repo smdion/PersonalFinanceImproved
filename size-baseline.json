@@ -999,7 +999,7 @@
       "checkPaystub": 162
     },
     "src/lib/pure/paycheck/per-check.ts": {
-      "calculatePaycheck": 259
+      "calculatePaycheck": 258
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 316
