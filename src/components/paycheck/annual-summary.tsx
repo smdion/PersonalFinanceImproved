@@ -105,38 +105,15 @@ export function AnnualSummary({
 
   // Year-end estimate without salary-change data falls back to projected.
   const ytd = mode === "ytd";
-  // Year to date: the checks this job has paid (none before it started).
-  const checks = ytd
-    ? Math.max(0, paycheck.periodsElapsedYtd - paycheck.periodsBeforeStart)
-    : paycheck.periodsPerYear;
-  const sum = (lines: { amount: number }[]) =>
-    lines.reduce((s, d) => s + d.amount, 0);
-  // Year to date: the year schedule's checks so far (Social Security at the
-  // full rate until the wage base, not the year's average).
-  if (ytd) {
-    return (
-      <TotalsPanel
-        title="Year to date"
-        totals={yearTotals(
-          paycheck.yearSchedule,
-          1,
-          paycheck.periodsElapsedYtd,
-        )}
-        footnote={`${checks} of ${paycheck.periodsPerYear} checks`}
-      />
-    );
-  }
+  // The year schedule's checks (Social Security at the full rate until the
+  // wage base): to today, or the whole year. Rows before the job started
+  // are empty, so a part-year job counts only its own checks.
+  const last = ytd ? paycheck.periodsElapsedYtd : paycheck.periodsPerYear;
+  const checks = Math.max(0, last - paycheck.periodsBeforeStart);
   return (
     <TotalsPanel
-      title="Projected year"
-      totals={{
-        gross: paycheck.gross * checks,
-        preTax: sum(paycheck.preTaxDeductions) * checks,
-        federal: paycheck.federalWithholding * checks,
-        fica: (paycheck.ficaSS + paycheck.ficaMedicare) * checks,
-        postTax: sum(paycheck.postTaxDeductions) * checks,
-        net: paycheck.netPay * checks,
-      }}
+      title={ytd ? "Year to date" : "Projected year"}
+      totals={yearTotals(paycheck.yearSchedule, 1, last)}
       footnote={`${checks} of ${paycheck.periodsPerYear} checks`}
     />
   );

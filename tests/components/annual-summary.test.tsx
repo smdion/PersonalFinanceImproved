@@ -63,3 +63,37 @@ describe("AnnualSummary, Year to date", () => {
     expect(screen.getByText("2 of 4 checks")).toBeInTheDocument();
   });
 });
+
+describe("AnnualSummary, Projected year", () => {
+  it("sums the year's checks", () => {
+    render(<AnnualSummary paycheck={paycheck} mode="projected" />);
+    expect(screen.getByText("Projected year")).toBeInTheDocument();
+    // 2 × 823.50 + 2 × 885.50 (here the same as 4 × the average 854.50).
+    expect(screen.getByText("$3,418.00")).toBeInTheDocument();
+    expect(screen.getByText("4 of 4 checks")).toBeInTheDocument();
+  });
+
+  it("a job started this year counts only its own checks", () => {
+    const empty = { ...row(1, 0, 0), gross: 0, federalWithholding: 0 };
+    const partYear = {
+      ...paycheck,
+      periodsBeforeStart: 2,
+      yearSchedule: [
+        { ...empty, ficaMedicare: 0, beforeStart: true as const },
+        {
+          ...empty,
+          periodNumber: 2,
+          ficaMedicare: 0,
+          beforeStart: true as const,
+        },
+        row(3, 885.5, 0),
+        row(4, 885.5, 0),
+      ],
+    };
+    render(<AnnualSummary paycheck={partYear} mode="projected" />);
+    // 2 × 1,000 gross and 2 × 885.50 net, not a full year of 4 checks.
+    expect(screen.getByText("$2,000.00")).toBeInTheDocument();
+    expect(screen.getByText("$1,771.00")).toBeInTheDocument();
+    expect(screen.getByText("2 of 4 checks")).toBeInTheDocument();
+  });
+});
