@@ -17,6 +17,7 @@ import {
   irsLimitBaseKey,
   resolveIrsLimit,
 } from "@/lib/pure/contributions/irs-limits";
+import { holdIraRowsToCompensation } from "@/lib/pure/contributions/ira-compensation";
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { CapContext, CapRow } from "./contribution-caps.types";
@@ -447,27 +448,7 @@ export function capContributionsByLimitGroup(
     }
   };
   const spousal = includes(SPOUSAL_IRA_FILING_STATUSES, ctx.filingStatus);
-  for (const index of bounded.values()) {
-    if (spousal) {
-      // Everyone's compensation counts, IRA or not — usually only the
-      // spouse without pay contributes. Unknown for anyone = no bound.
-      const comps = [...compensation.values()];
-      if (comps.every((c) => c !== null))
-        holdTo(
-          index,
-          sumBy(comps, (c) => c!),
-        );
-      continue;
-    }
-    for (const pid of new Set(index.map((i) => rows[i]!.personId!))) {
-      const comp = compensation.get(pid) ?? null;
-      if (comp !== null)
-        holdTo(
-          index.filter((i) => rows[i]!.personId === pid),
-          comp,
-        );
-    }
-  }
+  holdIraRowsToCompensation(bounded, spousal, compensation, rows, holdTo);
 
   const out = new Map<number, CappedContribution>();
   rows.forEach((r, i) => {
