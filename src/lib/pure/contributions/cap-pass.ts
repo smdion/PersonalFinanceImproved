@@ -10,6 +10,7 @@ import {
 } from "@/lib/config/account-types";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { sumBy } from "@/lib/utils/math";
+import { toNumber } from "@/lib/utils/numbers";
 import { jobPay, planEmployer } from "./annual-additions";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
 import {
@@ -41,9 +42,8 @@ export type CapPassContext = {
   taxYear: number;
 };
 
-/** What the pass needs from the household — the same for every set of
- *  rows in a request (this tax year), whichever profile's pay applies;
- *  CapRequestHousehold adds the request's date (capForRequest). */
+/** What the pass needs from the household, the same for every row set in a request (this tax
+ *  year) whichever profile's pay applies; CapRequestHousehold adds its date (capForRequest). */
 export type CapPassHousehold = Omit<
   CapPassContext,
   "activeJobs" | "jobSalaries"
@@ -121,9 +121,9 @@ export function capEffectiveContribs<R extends CapPassRow>(
       annual: annualById.get(c.id)! * (scaled.has(c.id) ? factor : 1),
       salary: salaryById.get(c.id)!,
       employerMatchType: c.employerMatchType,
-      employerMatchValue: Number(c.employerMatchValue ?? 0),
+      employerMatchValue: toNumber(c.employerMatchValue),
       employerMatchRate: storedMatchRate(c.employerMatchRate),
-      employerMaxMatchPct: Number(c.employerMaxMatchPct ?? 0),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: "pre_tax" as const,
     }));
   const matchAt1 = computeGroupedEmployerMatch(matchRows(new Set(), 1));

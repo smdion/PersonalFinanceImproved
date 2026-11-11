@@ -138,6 +138,25 @@ describe("capEffectiveContribs", () => {
     ).toBeCloseTo(4000, 2);
   });
 
+  it("reads a match value as every other reader does (parseFloat): 100abc is 100, not none", () => {
+    const hsa = (employerMatchValue: string) =>
+      row({
+        personId: 2,
+        jobId: 20,
+        accountType: "hsa",
+        taxTreatment: "hsa",
+        hsaCoverageType: "self_only",
+        contributionMethod: "fixed_per_period" as const,
+        contributionValue: "400",
+        employerMatchType: "percent_of_contribution" as const,
+        employerMatchValue,
+      });
+    const [plain] = capEffectiveContribs([hsa("100")], ctx);
+    const [trailing] = capEffectiveContribs([hsa("100abc")], ctx);
+    expect(trailing!.cappedValue).toBeCloseTo(plain!.cappedValue!, 10);
+    expect(trailing!.cappedValue).toBeCloseTo(2000 / 12, 2);
+  });
+
   it("a re-run starts from the configured value (never compounds)", () => {
     const r = row({ contributionValue: "15" });
     const once = capEffectiveContribs([r], ctx);

@@ -3738,7 +3738,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 4
+      "count": 2
     }
   },
   "src/lib/pure/contributions/category-totals.ts": {
