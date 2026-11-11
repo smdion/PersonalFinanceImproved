@@ -10,6 +10,7 @@ import { getPeriodsPerYear } from "../../config/pay-periods";
 import { bonusCheckNumber } from "./bonus-check";
 import { yearTotals } from "./year-totals";
 import { additionalMedicareWithheld } from "./additional-medicare";
+import { lastCheckThisYear } from "./job-last-check";
 
 /**
  * Social Security withholding for one pay period, given the wage base cap.
@@ -73,7 +74,7 @@ export function householdWithheldSoFar(
 
 /**
  * Full-year schedule of every pay period, modeling the SS wage base cutoff (full, partial, then
- * $0) with the bonus in its month. Federal withholding is constant per period.
+ * $0) with the bonus in its month. Paydays outside the job (and a bonus dated there) are empty.
  */
 export function buildYearSchedule(
   input: PaycheckInput,
@@ -90,15 +91,14 @@ export function buildYearSchedule(
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
-
   const bonusPeriodNum = bonusCheckNumber(input, bonusEstimate.bonusGross);
+  const lastCheck = lastCheckThisYear(input, periodsPerYear);
 
   const schedule: PeriodBreakdown[] = [];
   let ytdFicaBase = 0; // Running total of FICA-taxable earnings
 
   for (let p = 1; p <= periodsPerYear; p++) {
-    if (p <= beforeStart) {
-      // Not this job's check (a bonus dated before the start isn't either).
+    if (p <= beforeStart || p > lastCheck) {
       schedule.push({
         periodNumber: p,
         gross: 0,
@@ -111,7 +111,7 @@ export function buildYearSchedule(
         bonusGross: 0,
         bonusWithholding: 0,
         bonusFica: 0,
-        beforeStart: true,
+        ...(p <= beforeStart ? { beforeStart: true } : { afterEnd: true }),
       });
       continue;
     }

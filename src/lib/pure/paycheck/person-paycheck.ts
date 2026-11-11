@@ -10,10 +10,6 @@ import {
 } from "@/lib/pure/household/household-income";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { yearTotals } from "@/lib/pure/paycheck/year-totals";
-import {
-  checksPaidYtd,
-  countPeriodsElapsed,
-} from "@/lib/pure/paycheck/pay-periods-in-year";
 import type { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   BlendedAnnualTotals,
@@ -71,7 +67,6 @@ export function checkPaychecks(
 
 export function yearEarnings<P>(
   activeJob: PaycheckYearJob,
-  taxYear: number,
   paycheck: ReturnType<typeof calculatePaycheck>,
   periodsPerYear: number,
   salary: number,
@@ -88,22 +83,13 @@ export function yearEarnings<P>(
   },
   person: P,
 ) {
-  // The job's checks this year: from its start to its last day (when that's later this year,
-  // the job's checks stop there), summed from the year schedule.
-  const lastDay =
-    activeJob.endDate != null &&
-    Number(String(activeJob.endDate).slice(0, 4)) === taxYear
-      ? new Date(`${String(activeJob.endDate).slice(0, 10)}T12:00:00Z`)
-      : null;
-  const anchor = activeJob.anchorPayDate ?? activeJob.startDate;
-  const firstCheck = 1 + paycheck.periodsBeforeStart;
-  const lastCheck = lastDay
-    ? Math.min(
-        periodsPerYear,
-        countPeriodsElapsed(lastDay, activeJob.payPeriod!, new Date(anchor)),
-      )
-    : periodsPerYear;
-  const year = yearTotals(paycheck.yearSchedule, firstCheck, lastCheck);
+  // The job's checks this year: the year schedule's rows from its start to its last day (the
+  // rows outside them are empty), the bonus row included when it's paid inside them.
+  const jobChecks = paycheck.yearSchedule.filter(
+    (p) => !p.beforeStart && !p.afterEnd,
+  );
+  const year = yearTotals(paycheck.yearSchedule, 1, periodsPerYear);
+  const bonusPaid = jobChecks.some((p) => p.bonusGross !== 0);
   const blendedAnnual: BlendedAnnualTotals = {
     gross: year.gross,
     federalWithholding: year.federal,
@@ -116,7 +102,7 @@ export function yearEarnings<P>(
     segments: [
       {
         salary,
-        periods: Math.max(0, lastCheck - firstCheck + 1),
+        periods: jobChecks.length,
         effectiveDate: null,
       },
     ],
@@ -130,32 +116,17 @@ export function yearEarnings<P>(
     paycheck,
     contributionAccounts: contributionAccounts,
     deductions,
-    checks: lastDay
-      ? checksPaidYtd(
-          lastDay,
-          activeJob.payPeriod!,
-          anchor,
-          periodsPerYear,
-          activeJob.startDate,
-        )
-      : periodsPerYear - paycheck.periodsBeforeStart,
-    bonusPaid:
-      !paycheck.bonusBeforeStart &&
-      (lastDay === null ||
-        (paycheck.bonusPeriod !== null &&
-          paycheck.bonusPeriod <=
-            countPeriodsElapsed(
-              lastDay,
-              activeJob.payPeriod!,
-              new Date(anchor),
-            ))),
+    checks: jobChecks.length,
+    bonusPaid,
   });
   const { endedJobs, endedYears, endedWithheld, undatedBonusEmployers } =
     endedJobYears(person, activeJob.id);
   // A job leaving this year whose bonus has no date: whether it's
   // paid before the last day isn't known, so it isn't counted.
   const bonusNotCounted = [
-    ...(lastDay && paycheck.bonusUndated ? [activeJob.employerName] : []),
+    ...(paycheck.bonusUndated && paycheck.bonusAfterEnd
+      ? [activeJob.employerName]
+      : []),
     ...undatedBonusEmployers,
   ];
   const earnings =

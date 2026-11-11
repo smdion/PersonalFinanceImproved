@@ -24,6 +24,7 @@ export interface JobForPaycheckInput {
   payWeek: PaycheckInput["payWeek"] | undefined;
   anchorPayDate: string | Date | null | undefined;
   startDate: string | Date;
+  endDate: string | null | undefined;
   bonusMonth: number | null | undefined;
   bonusDayOfMonth: number | null | undefined;
   additionalFedWithholding: string | number | null | undefined;
@@ -85,5 +86,8 @@ export function buildPaycheckInputForJob(
     bonusDayOfMonth: job.bonusDayOfMonth ?? null,
     asOfDate: resolved.asOfDate,
     startDate: new Date(job.startDate),
+    endDate: job.endDate
+      ? new Date(`${job.endDate.slice(0, 10)}T12:00:00Z`)
+      : null,
   };
 }

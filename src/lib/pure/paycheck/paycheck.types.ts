@@ -135,6 +135,9 @@ export type PaycheckInput = {
   /** The job's start date — a job started this year has no checks before
    *  it. Absent: paid all year. */
   startDate?: Date | null;
+  /** The job's last day — a job ending this year has no checks after it.
+   *  Absent: paid to the year's end. */
+  endDate?: Date | null;
 };
 
 export type PaycheckResult = {
@@ -164,6 +167,10 @@ export type PaycheckResult = {
   /** The bonus is dated before the job started — not this job's, so not
    *  in this year's pay (bonusPeriod is null then too). */
   bonusBeforeStart: boolean;
+  /** The bonus's check is after the job's last check this year (dated
+   *  after its last day, or undated for a job ending this year) — not in
+   *  this year's pay (bonusPeriod is null then too). */
+  bonusAfterEnd: boolean;
   /** A bonus amount with no month set (bonusPeriod is null then too). */
   bonusUndated: boolean;
   nextPayDate: string; // ISO date string of next upcoming payday

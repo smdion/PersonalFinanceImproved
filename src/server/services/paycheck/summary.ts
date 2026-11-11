@@ -519,7 +519,6 @@ export async function computePaycheckSummary(
         yearPayNote,
       } = yearEarnings(
         activeJob,
-        taxYear,
         paycheck,
         periodsPerYear,
         salary,

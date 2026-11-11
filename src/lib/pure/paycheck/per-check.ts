@@ -15,7 +15,7 @@ import { sumBracketTax } from "../tax/tax-brackets";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { calculateBonus } from "./bonus";
 import { additionalMedicareWithheld } from "./additional-medicare";
-import { findBonusPeriod } from "./bonus-check";
+import { bonusOnSchedule } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
 import {
@@ -241,7 +241,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   // ── Step 8: Year schedule ──
   // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
-  // before a job's start this year stay (numbering) but pay nothing.
+  // before a job's start or after its end this year stay (numbering) but pay nothing.
   const beforeStart = periodsBeforeStart(
     input.asOfDate,
     input.payPeriod,
@@ -278,24 +278,6 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     input.payWeek,
   );
 
-  // Determine which period the bonus lands in (for UI display)
-  // A bonus dated before the job started isn't this job's (the schedule
-  // leaves it out too).
-  const bonusPeriodFound =
-    input.bonusMonth != null && bonusEstimate.bonusGross > 0
-      ? findBonusPeriod(
-          input.asOfDate,
-          input.payPeriod,
-          input.anchorPayDate,
-          input.bonusMonth,
-          input.bonusDayOfMonth,
-        )
-      : null;
-  const bonusPeriod =
-    bonusPeriodFound !== null && bonusPeriodFound > beforeStart
-      ? bonusPeriodFound
-      : null;
-
   return {
     gross,
     earnings,
@@ -308,15 +290,13 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     postTaxDeductions,
     netPay: roundToCents(netPay),
     bonusEstimate,
-    bonusPeriod,
     extraPaycheckMonths,
     yearSchedule,
     periodsPerYear,
     periodsElapsedYtd,
     periodsBeforeStart: beforeStart,
-    bonusBeforeStart:
-      bonusPeriodFound !== null && bonusPeriodFound <= beforeStart,
-    bonusUndated: input.bonusMonth == null && bonusEstimate.bonusGross > 0,
+    // Where the bonus falls against the job's checks (for display).
+    ...bonusOnSchedule(input, bonusEstimate.bonusGross, beforeStart),
     nextPayDate,
     payFrequencyLabel,
     warnings,

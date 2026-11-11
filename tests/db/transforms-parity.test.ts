@@ -252,6 +252,7 @@ describe("paycheck-input.ts — PG string mode", () => {
       payWeek: "even",
       anchorPayDate: "2026-01-02",
       startDate: "2020-01-01",
+      endDate: null,
       bonusMonth: 3,
       bonusDayOfMonth: 15,
       additionalFedWithholding: "125.00", // jobs.additional_fed_withholding style string

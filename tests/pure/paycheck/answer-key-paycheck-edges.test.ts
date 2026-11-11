@@ -16,6 +16,7 @@ import { cents } from "../../fixtures/answer-key";
 import { deduction, job } from "../fixtures/paycheck-answer-key";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { yearEarnings } from "@/lib/pure/paycheck/person-paycheck";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 
 describe("answer key: the wage base on FICA wages", () => {
   it("paycheck/PAY16-P4 [PAY-16] § 125 money leaves the bonus room under the base", () => {
@@ -50,7 +51,10 @@ describe("answer key: a job's last check", () => {
       bonusMonth: 6,
       bonusDay: 5,
     });
-    const paycheck = calculatePaycheck(input);
+    const paycheck = calculatePaycheck({
+      ...input,
+      endDate: new Date("2026-06-05T12:00:00Z"),
+    });
     const { earnings } = yearEarnings(
       {
         id: 1,
@@ -60,7 +64,6 @@ describe("answer key: a job's last check", () => {
         payPeriod: "biweekly",
         anchorPayDate: "2026-01-02",
       },
-      2026,
       paycheck,
       26,
       104_000,
@@ -78,5 +81,17 @@ describe("answer key: a job's last check", () => {
       { salary: earnings.salary, bonus: earnings.bonus, gross: earnings.gross },
       { salary: 48_000, bonus: 10_000, gross: 58_000 },
     );
+  });
+
+  it("paycheck/PAY33-end [PAY-33] the Projected year of a job ending this year is its checks to its last day", () => {
+    // The same job, no bonus: its last day Friday June 5 is check 12, so
+    // its year is 12 × 4,000 = 48,000 gross, not 26 × 4,000 = 104,000 to
+    // December 31. The Projected panel sums every row of the schedule.
+    const paycheck = calculatePaycheck({
+      ...job({ salary: 104_000, period: "biweekly" }),
+      endDate: new Date("2026-06-05T12:00:00Z"),
+    });
+    const year = yearTotals(paycheck.yearSchedule, 1, 26);
+    cents(year.gross, 48_000);
   });
 });

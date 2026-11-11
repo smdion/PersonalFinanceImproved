@@ -531,10 +531,10 @@ describe("paycheck/N5: a 27-payday year", () => {
   // $52,000, the same 27 paydays, the job ending December 31: 27 checks
   // of 52,000 / 26 = 2,000, gross 54,000. Gross and net must come from
   // the same checks; the net isn't worked here, so the property is held:
-  // 27 rows, and the year's gross and net equal the rows' sums. Today the
-  // year's gross counts 27 checks (54,000) and its net 26 rows
-  // (26 × 1,690.85 = 43,962.10: 1c 52,000; 2a 43,400; T26 Single row
-  // A 19,900, C 1,240, D 12%: 2h 156.15; SS 124.00; Medicare 29.00).
+  // 27 rows, and the year's gross and net equal the rows' sums. Today
+  // both count the schedule's 26 rows (gross 52,000; net 26 × 1,690.85 =
+  // 43,962.10: 1c 52,000; 2a 43,400; T26 Single row A 19,900, C 1,240,
+  // D 12%: 2h 156.15; SS 124.00; Medicare 29.00), so no 27th check.
   const ending = household({
     job: {
       ...BIWEEKLY,
@@ -561,7 +561,7 @@ describe("paycheck/N5: a 27-payday year", () => {
       };
     },
     expected: { rows: 27, grossGap: 0, netGap: 0 },
-    today: { rows: 26, grossGap: 2_000, netGap: 0, net: 43_962.1 },
+    today: { rows: 26, grossGap: 0, netGap: 0, net: 43_962.1 },
   });
 });
 
