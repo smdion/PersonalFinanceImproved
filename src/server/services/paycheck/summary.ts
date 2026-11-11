@@ -29,7 +29,10 @@ import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
 } from "@/lib/pure/paycheck/budget-periods";
-import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
+import {
+  buildPaycheckInputForJob,
+  jobScheduleDates,
+} from "@/lib/pure/paycheck/paycheck-input";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
@@ -353,7 +356,7 @@ export async function computePaycheckSummary(
       });
       if (!ended) return [];
       const endedPaycheck = calculatePaycheck(ended.paycheckInput);
-      const anchor = job.anchorPayDate ?? job.startDate;
+      const anchor = jobScheduleDates(job).anchorPayDate;
       // Its paydays from the year's start (or its own) to its end.
       const checks = checksPaidYtd(
         end,
@@ -362,11 +365,7 @@ export async function computePaycheckSummary(
         ended.periodsPerYear,
         job.startDate,
       );
-      const paydaysToEnd = countPeriodsElapsed(
-        end,
-        job.payPeriod!,
-        new Date(anchor),
-      );
+      const paydaysToEnd = countPeriodsElapsed(end, job.payPeriod!, anchor);
       return [
         {
           employerName: job.employerName,
@@ -379,7 +378,7 @@ export async function computePaycheckSummary(
               countPeriodsElapsed(
                 end < asOfDate ? end : asOfDate,
                 job.payPeriod!,
-                new Date(anchor),
+                anchor,
               ),
               ended.periodsPerYear,
             ),

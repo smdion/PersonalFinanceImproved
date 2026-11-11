@@ -11,7 +11,10 @@ import {
   periodsBeforeStart,
   checksPaidYtd,
 } from "@/lib/pure/paycheck/pay-periods-in-year";
-import { lastCheckThisYear } from "@/lib/pure/paycheck/job-last-check";
+import {
+  jobChecksThisYear,
+  lastCheckThisYear,
+} from "@/lib/pure/paycheck/job-last-check";
 import { yearEarnings } from "@/lib/pure/paycheck/person-paycheck";
 import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/extra-paycheck-months";
 import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
@@ -752,6 +755,26 @@ describe("a job ending this year", () => {
     // Ending next year, or no end: paid to the year's end.
     expect(at(new Date("2026-02-01T12:00:00Z"))).toBe(26);
     expect(at(null)).toBe(26);
+  });
+
+  it("its checks this year: none before it, its last the twelfth", () => {
+    expect(jobChecksThisYear(input, 26)).toEqual({
+      beforeStart: 0,
+      lastCheck: 12,
+    });
+    // Started June 2: the eleven paydays before it aren't its checks.
+    const started = new Date("2025-06-02");
+    expect(
+      jobChecksThisYear(
+        {
+          ...input,
+          asOfDate: new Date("2025-08-01"),
+          startDate: started,
+          endDate: null,
+        },
+        26,
+      ),
+    ).toEqual({ beforeStart: 11, lastCheck: 26 });
   });
 
   it("the paydays after its last day are empty, as the paydays before a start are", () => {

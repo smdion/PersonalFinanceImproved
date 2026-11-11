@@ -8,6 +8,7 @@ import { safeDivide } from "@/lib/utils/math";
 import { parseLocalDateOnly, localMidnight } from "@/lib/utils/date";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { parseAppSettings } from "@/lib/pure/household/app-settings";
+import { jobScheduleDates } from "@/lib/pure/paycheck/paycheck-input";
 import {
   getTotalCompensation,
   resolveCompensation,
@@ -505,10 +506,9 @@ export async function buildYearEndHistory(
           // excluded, not defaulted to a guessed period count.
           if (job.payPeriod == null) continue;
           const ppy = payPeriodConfig(job.payPeriod)?.periodsPerYear ?? 12;
-          // Checks this job has paid out of the ones it pays THIS year (none before
-          // its start), so YTD ÷ ratio is this year's own total. Contributions' ytdRatio
-          // divides by a full year's checks instead.
-          const anchor = job.anchorPayDate ?? job.startDate;
+          // Checks paid out of those this job pays this year (none before its start), so YTD ÷
+          // ratio is this year's own total; Contributions' ytdRatio divides by a full year's.
+          const anchor = jobScheduleDates(job).anchorPayDate;
           const paid = checksPaidYtd(
             asOf,
             job.payPeriod,

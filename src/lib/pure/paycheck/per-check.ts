@@ -18,11 +18,11 @@ import { additionalMedicareWithheld } from "./additional-medicare";
 import { bonusOnSchedule } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
+import { jobChecksThisYear } from "./job-last-check";
 import {
   buildPayFrequencyLabel,
   countPeriodsElapsed,
   findNextPayDate,
-  periodsBeforeStart,
 } from "./pay-periods-in-year";
 
 /**
@@ -242,12 +242,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // ── Step 8: Year schedule ──
   // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
   // before a job's start or after its end this year stay (numbering) but pay nothing.
-  const beforeStart = periodsBeforeStart(
-    input.asOfDate,
-    input.payPeriod,
-    input.anchorPayDate,
-    input.startDate,
-  );
+  const checks = jobChecksThisYear(input, periodsPerYear);
   const yearSchedule = buildYearSchedule(
     input,
     gross,
@@ -256,11 +251,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     ficaBase,
     totalPostTax,
     bonusEstimate,
-    beforeStart,
+    checks,
   );
 
   // Paydays so far this year by the calendar — the year schedule's index
-  // (checks this job paid = this − beforeStart).
+  // (checks this job paid = this − checks.beforeStart).
   const periodsElapsedYtd = countPeriodsElapsed(
     input.asOfDate,
     input.payPeriod,
@@ -294,9 +289,9 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     yearSchedule,
     periodsPerYear,
     periodsElapsedYtd,
-    periodsBeforeStart: beforeStart,
+    periodsBeforeStart: checks.beforeStart,
     // Where the bonus falls against the job's checks (for display).
-    ...bonusOnSchedule(input, bonusEstimate.bonusGross, beforeStart),
+    ...bonusOnSchedule(input, bonusEstimate.bonusGross, checks.beforeStart),
     nextPayDate,
     payFrequencyLabel,
     warnings,

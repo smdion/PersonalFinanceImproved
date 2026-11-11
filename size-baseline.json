@@ -335,10 +335,10 @@
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 115,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 258,
     "src/lib/pure/paycheck/paystub-check.ts": 427,
-    "src/lib/pure/paycheck/per-check.ts": 304,
+    "src/lib/pure/paycheck/per-check.ts": 299,
     "src/lib/pure/paycheck/person-paycheck.ts": 154,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
-    "src/lib/pure/paycheck/year-schedule.ts": 188,
+    "src/lib/pure/paycheck/year-schedule.ts": 187,
     "src/lib/pure/retirement/relocation.ts": 469,
     "src/lib/pure/simulation/inflation-risk.ts": 23,
     "src/lib/pure/simulation/monte-carlo.ts": 304,
@@ -408,7 +408,7 @@
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 91,
     "src/server/services/paycheck/job-net-pay.ts": 259,
-    "src/server/services/paycheck/summary.ts": 658,
+    "src/server/services/paycheck/summary.ts": 657,
     "src/server/services/performance/finalize-year.ts": 436,
     "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
@@ -1000,7 +1000,7 @@
       "checkPaystub": 162
     },
     "src/lib/pure/paycheck/per-check.ts": {
-      "calculatePaycheck": 238
+      "calculatePaycheck": 233
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 316
@@ -1049,13 +1049,13 @@
       "createPortfolioSnapshot": 270
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 492
+      "buildYearEndHistory": 491
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 219
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 568,
+      "computePaycheckSummary": 564,
       "computePaycheckSummary.results.map()": 201
     },
     "src/server/services/performance/finalize-year.ts": {
