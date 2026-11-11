@@ -3881,12 +3881,22 @@
       "count": 1
     }
   },
+  "src/lib/pure/contributions/roth-ira-pro-rata.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
+  "src/lib/pure/contributions/roth-ira-summary.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/lib/pure/contributions/roth-ira.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 8
+      "count": 5
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

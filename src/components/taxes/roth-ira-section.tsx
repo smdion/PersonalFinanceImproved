@@ -14,7 +14,7 @@ import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import type { InvestmentIncomeBasis } from "@/lib/pure/investments/investment-income";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
-import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira";
+import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira-advice";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",

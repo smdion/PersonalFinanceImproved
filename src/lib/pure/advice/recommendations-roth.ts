@@ -9,10 +9,8 @@ import type {
 } from "@/lib/pure/advice/recommendations";
 import { formatCurrency } from "@/lib/utils/format";
 import { filingStatusLabel } from "@/lib/config/display-labels";
-import {
-  rothIraAdvice,
-  type RothIraView,
-} from "@/lib/pure/contributions/roth-ira";
+import type { RothIraView } from "@/lib/pure/contributions/roth-ira";
+import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira-advice";
 
 export function recommendationsFromRothIra(
   view: RothIraView | null,

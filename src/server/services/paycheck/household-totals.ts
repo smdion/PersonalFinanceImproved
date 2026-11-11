@@ -2,10 +2,8 @@ import type * as schema from "@/lib/db/schema";
 import { paysMedical, isRothIncomeLimited } from "@/lib/config/account-types";
 import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
-import {
-  rothIraRouteOf,
-  rothIraSummary,
-} from "@/lib/pure/contributions/roth-ira";
+import { rothIraRouteOf } from "@/lib/pure/contributions/roth-ira";
+import { rothIraSummary } from "@/lib/pure/contributions/roth-ira-summary";
 import {
   type computeAnnualEarnings,
   sumHouseholdIncome,

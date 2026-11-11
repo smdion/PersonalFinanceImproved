@@ -51,7 +51,7 @@ import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import {
   judgeRothIra,
   rothIraAllowed,
-} from "@/lib/pure/contributions/roth-ira";
+} from "@/lib/pure/contributions/roth-ira-judge";
 import { megaBackdoorRoom } from "@/lib/pure/advice/milestones/input";
 import { computeEmployerMatch } from "@/lib/pure/contributions/employer-match";
 import { taxDataLimitMap } from "../../helpers/tax-data";

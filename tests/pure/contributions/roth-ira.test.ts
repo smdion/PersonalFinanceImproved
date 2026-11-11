@@ -1,13 +1,17 @@
 import { describe, it, expect } from "vitest";
 import {
   buildRothIraView,
-  pendingConversion,
-  judgeRothIra,
-  preTaxIraByPerson,
-  rothIraAllowed,
-  rothIraSummary,
   backdoorPlanned,
 } from "@/lib/pure/contributions/roth-ira";
+import {
+  judgeRothIra,
+  rothIraAllowed,
+} from "@/lib/pure/contributions/roth-ira-judge";
+import {
+  pendingConversion,
+  preTaxIraByPerson,
+} from "@/lib/pure/contributions/roth-ira-pro-rata";
+import { rothIraSummary } from "@/lib/pure/contributions/roth-ira-summary";
 import {
   medicareLiabilityKey,
   rothIraPhaseoutKeys,

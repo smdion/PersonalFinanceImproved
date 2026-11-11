@@ -22,7 +22,7 @@ import {
   NO_CLAMP,
   retiree,
 } from "../../fixtures/answer-key-simulation";
-import { judgeRothIra } from "@/lib/pure/contributions/roth-ira";
+import { judgeRothIra } from "@/lib/pure/contributions/roth-ira-judge";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 
 const SINGLE_2026 = { start: 153_000, end: 168_000 };
