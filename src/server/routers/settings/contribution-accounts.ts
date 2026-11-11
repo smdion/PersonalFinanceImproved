@@ -94,6 +94,25 @@ const limitedTypeHasOwnerIssue = {
   path: ["ownership"],
 };
 
+// A joint account with no job has no pay of its own: a match on a percent of
+// its contribution can't be figured, so it takes a dollar match (or a job).
+const jointMatchIsDollar = (data: {
+  ownership?: string;
+  jobId?: number | null;
+  employerMatchType: string;
+}) =>
+  !(
+    data.ownership === "joint" &&
+    data.jobId == null &&
+    data.employerMatchType === "percent_of_contribution"
+  );
+
+const jointMatchIsDollarIssue = {
+  message:
+    "A joint account with no job has no pay to match a percent of: use a dollar match, or tie it to a job.",
+  path: ["employerMatchType"],
+};
+
 export const contributionAccountsProcedures = {
   contributionAccounts: createTRPCRouter({
     /** Every contribution account, by person (joint first), then id: the
@@ -115,7 +134,8 @@ export const contributionAccountsProcedures = {
       .input(
         contributionAccountInput
           .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue)
-          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue),
+          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue)
+          .refine(jointMatchIsDollar, jointMatchIsDollarIssue),
       )
       .mutation(async ({ ctx, input }) => {
         // When linked to a master account, sync parentCategory from its parentCategory
@@ -197,7 +217,8 @@ export const contributionAccountsProcedures = {
           .object({ id: z.number().int() })
           .extend(contributionAccountInput.shape)
           .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue)
-          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue),
+          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue)
+          .refine(jointMatchIsDollar, jointMatchIsDollarIssue),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Validate priorYearContribAmount only allowed for eligible account types

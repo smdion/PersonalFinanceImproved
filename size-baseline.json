@@ -262,13 +262,13 @@
     "src/lib/pure/contributions/contribution-caps.ts": 579,
     "src/lib/pure/contributions/contribution-caps.types.ts": 45,
     "src/lib/pure/contributions/contribution-order.ts": 83,
-    "src/lib/pure/contributions/contribution-rows.ts": 194,
+    "src/lib/pure/contributions/contribution-rows.ts": 192,
     "src/lib/pure/contributions/display-specs.ts": 136,
     "src/lib/pure/contributions/irs-limits.ts": 209,
     "src/lib/pure/contributions/joint-accounts.ts": 176,
     "src/lib/pure/contributions/paycheck-accounts.ts": 157,
     "src/lib/pure/contributions/person-snapshot.ts": 215,
-    "src/lib/pure/contributions/profile-contrib-data.ts": 325,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 324,
     "src/lib/pure/contributions/profile-fields.ts": 45,
     "src/lib/pure/contributions/roth-ira.ts": 177,
     "src/lib/pure/contributions/savings-rate.ts": 140,
@@ -952,7 +952,7 @@
       "capContributionsByLimitGroup": 251
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 233
+      "buildProfileContribData": 232
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189

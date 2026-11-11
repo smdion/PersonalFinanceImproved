@@ -149,7 +149,7 @@ describe("projection specs (buildProfileContribData — profile switches use it 
     );
   });
 
-  it("a joint per-check account counts on the household's one schedule; with two schedules it's dropped, flagged", () => {
+  it("a joint per-check account counts on the household's one schedule; with two schedules, or as a percent, it's dropped, flagged", () => {
     const joint = {
       ...k401(),
       id: 2,
@@ -176,6 +176,20 @@ describe("projection specs (buildProfileContribData — profile switches use it 
     const mixed = run([...jobs, { id: 2, personId: 2, payPeriod: "monthly" }]);
     expect(mixed.contributionSpecs).toHaveLength(0);
     expect(mixed.incompleteAccountIds).toEqual([2]);
+    const percent = buildProfileContribData(
+      [
+        {
+          ...joint,
+          contributionMethod: "percent_of_salary",
+          contributionValue: "6",
+        },
+      ],
+      jobs,
+      [{ ...pay[0]!, totalComp: SALARY }],
+      ctx,
+    );
+    expect(percent.contributionSpecs).toHaveLength(0);
+    expect(percent.incompleteAccountIds).toEqual([2]);
   });
 });
 

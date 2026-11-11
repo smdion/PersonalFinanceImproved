@@ -163,9 +163,8 @@ export function buildProfileContribData(
     ) as Record<AccountCategory, number>;
   const employerMatchRateByCategory = matchRates(employerMatchByCategory);
 
-  // Per-account specs. A `fixed_per_period` account with no resolvable pay
-  // period is dropped and reported in specBuilderIncompleteIds instead (see
-  // rowPaySchedule).
+  // Per-account specs. An account rowPaySchedule finds incomplete is dropped
+  // and reported in specBuilderIncompleteIds instead.
   const specBuilderIncompleteIds: number[] = [];
   const contributionSpecs: ContributionSpec[] = activeContributions
     .filter((c) => {
@@ -181,6 +180,11 @@ export function buildProfileContribData(
       let baseAnnual: number;
       let periodsPerYear: number | undefined;
 
+      const schedule = rowPaySchedule(c, activeJobs);
+      if (schedule.incomplete) {
+        specBuilderIncompleteIds.push(c.id);
+        return null;
+      }
       let salaryFraction = 1;
       const js = jobPayFor(c, jobSalaries);
       let personPayShare: number | undefined;
@@ -203,12 +207,7 @@ export function buildProfileContribData(
         personPayShare = safeDivide(pay, personTotal, 1);
       } else if (method === "fixed_per_period") {
         value = cv;
-        const resolved = rowPaySchedule(c, activeJobs);
-        if (resolved.incomplete) {
-          specBuilderIncompleteIds.push(c.id);
-          return null;
-        }
-        periodsPerYear = resolved.periodsPerYear;
+        periodsPerYear = schedule.periodsPerYear;
         // Includes the bonus check's one extra deduction, when it carries one.
         baseAnnual = roundToCents(
           js
@@ -223,7 +222,7 @@ export function buildProfileContribData(
           annualContributionWithBonus(
             c,
             js ?? { salary: 0 },
-            rowPaySchedule(c, activeJobs).periodsPerYear,
+            schedule.periodsPerYear,
           ),
         );
       }

@@ -897,6 +897,20 @@ describe("settings.contributionAccounts CRUD", () => {
     expect(acct!.personId).toBeNull();
   });
 
+  it("refuses a percent-of-contribution match on a joint account with no job: it has no pay of its own", async () => {
+    await expect(
+      caller.settings.contributionAccounts.create({
+        personId: null,
+        accountType: "brokerage",
+        parentCategory: "Portfolio",
+        taxTreatment: "after_tax",
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: "0.5",
+        ownership: "joint",
+      }),
+    ).rejects.toThrow(/no pay to match a percent of/);
+  });
+
   it("create round-trips a full field payload (institution, label, subType, HSA coverage, match fields)", async () => {
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Fidelity",

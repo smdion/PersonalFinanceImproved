@@ -201,7 +201,19 @@ describe("rowPaySchedule: the one schedule a row's per-check amount runs on", ()
     ).toBe(12);
   });
 
-  it("only a per-check amount can be incomplete", () => {
+  it("a household joint percent is incomplete: it has no pay of its own", () => {
+    const jointPercent = perCheck({
+      ownership: "joint",
+      personId: null,
+      contributionMethod: "percent_of_salary",
+    });
+    expect(rowPaySchedule(jointPercent, twoJobs).incomplete).toBe(true);
+    expect(
+      rowPaySchedule({ ...jointPercent, jobId: 1 }, twoJobs).incomplete,
+    ).toBe(false);
+  });
+
+  it("an individual row is incomplete only as a per-check amount", () => {
     expect(
       rowPaySchedule(perCheck({ contributionMethod: "fixed_monthly" }), [])
         .incomplete,

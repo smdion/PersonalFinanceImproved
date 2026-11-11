@@ -26,9 +26,9 @@ function isHouseholdJointRow(row: {
   return row.ownership === "joint" && row.jobId === null;
 }
 
-/** A row's job and the pay schedule its per-check amount runs on: its own job's; with no job, its
- *  person's, or for a household joint row (no job) the one schedule every active job pays on. With
- *  none, a per-check row is `incomplete` ($0, flagged); `periodsPerYear` 0 is never divided by. */
+/** A row's job and per-check pay schedule: its own job's; with no job, its person's; a household
+ *  joint row, the one schedule all active jobs share. `incomplete` ($0, flagged): a per-check row
+ *  with none, or a joint percent (no pay of its own). `periodsPerYear` 0 is never divided by. */
 export function rowPaySchedule<J extends JobRef>(
   row: {
     contributionMethod?: string | null;
@@ -47,14 +47,12 @@ export function rowPaySchedule<J extends JobRef>(
         : activeJobs.filter((j) => j.personId === row.personId).slice(0, 1);
   const schedules = new Set(jobs.flatMap((j) => j.payPeriod ?? []));
   const [only] = schedules;
-  const job = joint ? undefined : jobs[0];
-  return only !== undefined && schedules.size === 1
-    ? { periodsPerYear: getPeriodsPerYear(only), incomplete: false, job }
-    : {
-        periodsPerYear: 0,
-        incomplete: row.contributionMethod === "fixed_per_period",
-        job,
-      };
+  const periodsPerYear =
+    only !== undefined && schedules.size === 1 ? getPeriodsPerYear(only) : 0;
+  const incomplete =
+    (periodsPerYear === 0 && row.contributionMethod === "fixed_per_period") ||
+    (joint && row.contributionMethod === "percent_of_salary");
+  return { periodsPerYear, incomplete, job: joint ? undefined : jobs[0] };
 }
 
 /** Minimal fields needed from the DB contribution_accounts row. */
