@@ -10,6 +10,7 @@ The supported install is the Docker image with the sample compose file (README ย
 2. `docker compose up -d`. On every start, `docker-entrypoint.sh` runs `db-migrate.ts`: a pre-upgrade backup, then pending migrations, then the reference-data seed, then the server.
 3. Check `GET /api/health` reports `ok` and the expected version.
 4. Put a reverse proxy in front for HTTPS and set `NEXTAUTH_URL` and `AUTH_TRUST_HOST=true` (README ยง Deployment).
+5. A public `DEMO_ONLY` server needs that proxy to supply the client's address (`TRUSTED_PROXY_HEADER`, README): every visitor shares the demo session, so the rate limits key visitors by address, and with `none` they all share one bucket (5 demo profile activations a minute between them).
 
 ## Deploy gate
 

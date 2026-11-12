@@ -11,6 +11,7 @@ import type {
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { DebtKind } from "@/lib/config/enum-values";
 import type { W4FilingStatus } from "@/lib/config/filing-status";
+import type { DemoProfileSlug } from "./slugs";
 
 /**
  * A demo persona's complete dataset: every table the app reads, internally
@@ -18,7 +19,7 @@ import type { W4FilingStatus } from "@/lib/config/filing-status";
  */
 
 export type DemoProfile = {
-  slug: string;
+  slug: DemoProfileSlug;
   name: string;
   description: string;
   /** The chooser card's stats. Income and portfolio size are derived from the

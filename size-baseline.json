@@ -358,7 +358,7 @@
     "src/server/routers/assets.ts": 264,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 533,
-    "src/server/routers/demo.ts": 79,
+    "src/server/routers/demo.ts": 65,
     "src/server/routers/milestones.ts": 50,
     "src/server/routers/net-worth/comparison.ts": 245,
     "src/server/routers/net-worth/index.ts": 19,

@@ -114,11 +114,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `demo`
 
-| Procedure              | Kind     | Auth                 | Source    | Description                                                                                                                                                                                                                     |
-| ---------------------- | -------- | -------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `demo.activateProfile` | mutation | `protectedProcedure` | `demo.ts` | Activate a demo profile: create its schema and seed it. protectedProcedure on purpose: writes go to an isolated per-user demo schema and must work in DEMO_ONLY mode (RULES.md § Permission & Security Gates rule 3 exception). |
-| `demo.deactivateDemo`  | mutation | `protectedProcedure` | `demo.ts` | Deactivate demo mode by clearing the HttpOnly cookie. protectedProcedure on purpose: it changes cookie state, not app data, and must work in DEMO_ONLY mode (RULES.md § Permission & Security Gates rule 3 exception).          |
-| `demo.listProfiles`    | query    | `protectedProcedure` | `demo.ts` | List available demo profiles.                                                                                                                                                                                                   |
+| Procedure              | Kind     | Auth                 | Source    | Description                                                                                                                                                                                                            |
+| ---------------------- | -------- | -------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `demo.activateProfile` | mutation | `protectedProcedure` | `demo.ts` | Activate a demo profile: rebuild its shared schema and seed it, at most 5 a minute per visitor. protectedProcedure on purpose: must work in DEMO_ONLY mode (RULES.md § Permission & Security Gates rule 3 exception).  |
+| `demo.deactivateDemo`  | mutation | `protectedProcedure` | `demo.ts` | Deactivate demo mode by clearing the HttpOnly cookie. protectedProcedure on purpose: it changes cookie state, not app data, and must work in DEMO_ONLY mode (RULES.md § Permission & Security Gates rule 3 exception). |
+| `demo.listProfiles`    | query    | `protectedProcedure` | `demo.ts` | List available demo profiles.                                                                                                                                                                                          |
 
 ## `historical`
 
