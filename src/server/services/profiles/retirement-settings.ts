@@ -14,6 +14,7 @@ import {
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import { strategyParamInputShape } from "@/lib/config/withdrawal-strategy-inputs";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import { resolveRetirementProfileId } from "@/server/data/retirement-profiles";
@@ -49,9 +50,7 @@ export const retirementSettingsInput = z.object({
   discretionaryWithdrawalOrder: z
     .enum(["roth_first", "brokerage_first"])
     .optional(),
-  withdrawalRoutingMode: z
-    .enum(["bracket_filling", "waterfall", "percentage"])
-    .optional(),
+  withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES).optional(),
   /** Persisted household default for the withdrawal ORDER. `null` clears it
    *  back to `getDefaultDecumulationOrder()`; omit the key to leave it. */
   withdrawalOrder: storedWithdrawalOrderSchema.nullable().optional(),

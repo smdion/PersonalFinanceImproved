@@ -7,6 +7,7 @@ import {
   accountCategoryEnum,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 
 export const lumpSumSchema = z
   .array(
@@ -34,9 +35,7 @@ export const decumulationDefaultsInputSchema = z
     // `.optional()`, never `.default(...)`: a default would hide the saved
     // value; `buildDecumulationDefaults` owns the fallback (client > DB
     // setting, then the config default for order and splits).
-    withdrawalRoutingMode: z
-      .enum(["bracket_filling", "waterfall", "percentage"])
-      .optional(),
+    withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES).optional(),
     withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
     withdrawalSplits: z
       .record(z.enum(accountCategoryEnum()), z.number())
@@ -57,9 +56,7 @@ export const decumulationDefaultsInputSchema = z
 export const decumulationOverrideArraySchema = z.array(
   z.object({
     year: z.number().int(),
-    withdrawalRoutingMode: z
-      .enum(["bracket_filling", "waterfall", "percentage"])
-      .optional(),
+    withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES).optional(),
     withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
     // Per-category fields set only some categories (the engine's Partial).
     withdrawalSplits: z

@@ -3,13 +3,12 @@
 // are IRS limits plus tighter user caps, and the more restrictive one wins.
 
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { WithdrawalRoutingMode } from "@/lib/config/withdrawal-routing";
 
-/**
- * How contributions are distributed. Waterfall (default) fills accounts in priority
- * order up to their cap; percentage splits by fixed %, and any share over an
- * account's cap redistributes proportionally to the rest.
- */
-export type RoutingMode = "waterfall" | "percentage" | "bracket_filling";
+/** How money is routed across accounts (`WITHDRAWAL_ROUTING_MODES`). Waterfall fills
+ *  accounts in priority order up to their cap; percentage splits by fixed %, and any
+ *  share over an account's cap redistributes proportionally to the rest. */
+export type RoutingMode = WithdrawalRoutingMode;
 
 /**
  * Tax treatment for routing. Only 401k and IRA offer the choice; HSA is always

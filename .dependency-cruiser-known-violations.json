@@ -35,11 +35,6 @@
     "to": "src/lib/db/migrate/reference-data.ts"
   },
   {
-    "rule": "foundation-is-the-floor",
-    "from": "src/lib/config/withdrawal-routing.ts",
-    "to": "src/lib/pure/engine/types/index.ts"
-  },
-  {
     "rule": "no-circular",
     "from": "src/lib/db/pg/contribution-profiles.ts",
     "to": "src/lib/db/pg/scenarios.ts"
@@ -101,11 +96,6 @@
   },
   {
     "rule": "ui-never-bundles-zod",
-    "from": "src/components/profiles/salary/salary-profile-edit-actions.ts",
-    "to": "src/lib/db/shapes/salary-entry-edit.ts"
-  },
-  {
-    "rule": "ui-never-bundles-zod",
     "from": "src/components/milestones/foo-ladder.tsx",
     "to": "src/lib/pure/advice/milestones/milestones.ts"
   },
@@ -123,6 +113,11 @@
     "rule": "ui-never-bundles-zod",
     "from": "src/components/performance/update-performance-form.tsx",
     "to": "src/lib/pure/investments/performance-annotations.ts"
+  },
+  {
+    "rule": "ui-never-bundles-zod",
+    "from": "src/components/profiles/salary/salary-profile-edit-actions.ts",
+    "to": "src/lib/db/shapes/salary-entry-edit.ts"
   },
   {
     "rule": "ui-never-bundles-zod",

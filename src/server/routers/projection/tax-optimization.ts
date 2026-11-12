@@ -9,13 +9,11 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import { firstBreakEvenYear } from "@/lib/pure/retirement/conversion-break-even";
-import type {
-  DecumulationOverride,
-  RoutingMode,
-} from "@/lib/pure/engine/types";
+import type { DecumulationOverride } from "@/lib/pure/engine/types";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { taxYearFlags } from "@/lib/pure/advice/report/year-table";
 import { accountCategoryEnum } from "@/lib/config/account-types";
+import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   prepareEngineInput,
   prepareProjectionRun,
@@ -27,24 +25,7 @@ import {
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine/types";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
-/**
- * `RoutingMode` as a Zod enum (never `z.string()`, `docs/RULES.md`); `satisfies`
- * ties the tuple to the engine's `RoutingMode` union.
- */
-const ROUTING_MODES = [
-  "waterfall",
-  "percentage",
-  "bracket_filling",
-] as const satisfies readonly RoutingMode[];
-// Exhaustiveness the other direction: every RoutingMode is listed above.
-type _RoutingModeCovered =
-  Exclude<RoutingMode, (typeof ROUTING_MODES)[number]> extends never
-    ? true
-    : ["RoutingMode has a value missing from ROUTING_MODES", RoutingMode];
-const _routingModeCovered: _RoutingModeCovered = true;
-void _routingModeCovered;
-
-const zRoutingMode = z.enum(ROUTING_MODES);
+const zRoutingMode = z.enum(WITHDRAWAL_ROUTING_MODES);
 
 /**
  * Which profile(s) / budget / snapshot to project, mirroring `computeProjection`'s
