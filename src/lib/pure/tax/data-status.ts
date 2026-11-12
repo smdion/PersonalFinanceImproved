@@ -17,10 +17,12 @@ export function taxYearDeadline(
   return new Date(calendarYear, due.month - 1, due.day, 23, 59, 59);
 }
 
-/** The newest tax year a table should already have, as of `now`. */
+/** The newest tax year a table should already have, as of `now`: the newest whose due date has
+ *  passed (a January due date falls in the tax year itself, so this year's may not have). */
 export function expectedTaxYear(due: TaxDataSection["due"], now: Date): number {
   const next = now.getFullYear() + 1;
-  return now > taxYearDeadline(next, due) ? next : next - 1;
+  if (now > taxYearDeadline(next, due)) return next;
+  return now > taxYearDeadline(next - 1, due) ? next - 1 : next - 2;
 }
 
 type TaxDataSectionStatus = TaxDataSection & {

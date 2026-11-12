@@ -18,17 +18,28 @@ const all = (years: number[]) => ({
 });
 
 describe("expectedTaxYear / taxYearDeadline", () => {
-  it("IRS figures for next year are due Nov 30 this year; poverty levels Jan 31 of the year", () => {
-    expect(taxYearDeadline(2027, { month: 11, day: 30 }).toDateString()).toBe(
-      new Date(2026, 10, 30).toDateString(),
+  it("IRS and CMS figures for next year are due Dec 31 this year (the year ships whole, after Pub 15-T); poverty levels Jan 31 of the year", () => {
+    expect(taxYearDeadline(2027, { month: 12, day: 31 }).toDateString()).toBe(
+      new Date(2026, 11, 31).toDateString(),
     );
     expect(taxYearDeadline(2027, { month: 1, day: 31 }).toDateString()).toBe(
       new Date(2027, 0, 31).toDateString(),
     );
-    expect(expectedTaxYear({ month: 11, day: 30 }, new Date(2026, 9, 25))).toBe(
+    expect(
+      expectedTaxYear({ month: 12, day: 31 }, new Date(2026, 11, 15)),
+    ).toBe(2026);
+    expect(expectedTaxYear({ month: 12, day: 31 }, new Date(2027, 0, 2))).toBe(
+      2027,
+    );
+  });
+});
+
+describe("expectedTaxYear in January", () => {
+  it("poverty levels for the new year aren't expected before their Jan 31 due date", () => {
+    expect(expectedTaxYear({ month: 1, day: 31 }, new Date(2027, 0, 5))).toBe(
       2026,
     );
-    expect(expectedTaxYear({ month: 11, day: 30 }, new Date(2026, 11, 2))).toBe(
+    expect(expectedTaxYear({ month: 1, day: 31 }, new Date(2027, 1, 2))).toBe(
       2027,
     );
   });
@@ -45,10 +56,18 @@ describe("taxDataStatus", () => {
     expect(s.sections[0]!.upcoming?.year).toBe(2027);
   });
 
-  it("in December without next year's IRS figures: behind", () => {
+  it("in mid-December without next year's figures: not behind yet (Pub 15-T comes about Dec 11)", () => {
     const s = taxDataStatus(
       { yearsByTable: { ...all([2026]), fpl_by_household: [2026] } },
-      new Date(2026, 11, 5),
+      new Date(2026, 11, 15),
+    );
+    expect(s.needsAttention).toBe(false);
+  });
+
+  it("in January without the year's IRS and CMS figures: behind", () => {
+    const s = taxDataStatus(
+      { yearsByTable: { ...all([2026]), fpl_by_household: [2026] } },
+      new Date(2027, 0, 5),
     );
     const behind = s.sections.filter((x) => x.behind).map((x) => x.table);
     // Poverty levels for 2027 aren't due until January.
