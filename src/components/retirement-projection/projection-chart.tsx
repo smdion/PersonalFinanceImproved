@@ -42,10 +42,6 @@ import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
 import { renderRetirementLine } from "./retirement-year-line";
 
-// Skeleton lives in its own file so the parent (retirement-projection/index.tsx)
-// can render it without pulling recharts in via this module's import graph.
-export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
-
 // The sporadic per-strategy spending adjustments worth marking, read by both
 // the chart-data pinning pass and the marker/tooltip build. RMD-Based and
 // Spending-Decline act every year, so they are not events.
