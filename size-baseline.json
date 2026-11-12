@@ -50,7 +50,7 @@
     "src/components/contributions/contribution-snapshot.tsx": 599,
     "src/components/contributions/contributions-section.tsx": 421,
     "src/components/dashboard/contributions-card.tsx": 573,
-    "src/components/dashboard/linked-balance-card.tsx": 432,
+    "src/components/dashboard/linked-balance-card.tsx": 428,
     "src/components/dashboard/living-costs-card.tsx": 604,
     "src/components/dashboard/retirement-card-figures.ts": 131,
     "src/components/dashboard/retirement-card-plan-rows.tsx": 52,

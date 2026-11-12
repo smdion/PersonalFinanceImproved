@@ -36,6 +36,8 @@ export type CurrentBalanceInput = {
   feedIds?: readonly number[];
   performanceAccountId: number | null;
   label: string;
+  /** The whole account's name (a part's label names the part too). */
+  account: string;
   /** The feeds' balance; null with no feed covering this money. */
   reported: number | null;
   /** The oldest day those feeds' data reflects; null when it can't be told. */
@@ -55,6 +57,8 @@ export type CurrentBalance = {
   feedIds: readonly number[];
   performanceAccountId: number | null;
   label: string;
+  /** The whole account's name (a part's label names the part too). */
+  account: string;
   source: BalanceSource;
   noSnapshot: boolean;
   snapshot: number;
@@ -181,6 +185,7 @@ export function currentBalance(
     feedIds: a.feedIds ?? [],
     performanceAccountId: a.performanceAccountId,
     label: a.label,
+    account: a.account,
     source: caughtUp ? "reported" : "snapshot",
     noSnapshot,
     snapshot: a.snapshot,
@@ -291,6 +296,7 @@ export function pairFeedsWithParts(args: {
       feedIds: [f.id],
       performanceAccountId: null,
       label: feedName(f.id),
+      account: feedName(f.id),
       reported: f.balance,
       reportedDay: f.dataDay,
       snapshot: 0,
@@ -316,6 +322,7 @@ export function pairFeedsWithParts(args: {
         feedIds: ids(mine),
         performanceAccountId: id,
         label: accountName(id),
+        account: accountName(id),
         reported: total(mine),
         reportedDay: oldest(mine),
         snapshot: myParts.reduce((t, p) => t + p.amount, 0),
@@ -331,6 +338,7 @@ export function pairFeedsWithParts(args: {
         feedIds: ids(linked),
         performanceAccountId: id,
         label: `${accountName(id)} — ${part.label}`,
+        account: accountName(id),
         reported: linked.length > 0 ? total(linked) : null,
         reportedDay: linked.length > 0 ? oldest(linked) : null,
         snapshot: part.amount,
