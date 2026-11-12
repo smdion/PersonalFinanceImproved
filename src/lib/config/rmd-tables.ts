@@ -1,7 +1,14 @@
-// IRS Uniform Lifetime Table for Required Minimum Distributions (IRS Pub 590-B, Table III);
-// SECURE 2.0 start ages via getRmdStartAge(). The engine imports these and hardcodes no RMD
-// knowledge.
+// IRS Uniform Lifetime Table for Required Minimum Distributions (IRS Pub 590-B, Table III), the
+// Joint and Last Survivor Table beside it (rmd-joint-life-table.ts); SECURE 2.0 start ages via
+// getRmdStartAge(). The engine imports these and hardcodes no RMD knowledge.
 import { roundToCents } from "../utils/math";
+import { ageInYear } from "../utils/date";
+import {
+  FILING_STATUS_RULES,
+  filingTable,
+  type ReturnFilingStatus,
+} from "./filing-status";
+import { jointLifeDivisor } from "./rmd-joint-life-table";
 
 /** IRS Uniform Lifetime Table — divisor by age (ages 72–120). */
 export const UNIFORM_LIFETIME_TABLE: Record<number, number> = {
@@ -56,26 +63,55 @@ export const UNIFORM_LIFETIME_TABLE: Record<number, number> = {
   120: 2.0,
 };
 
-/**
- * Get the RMD divisor for a given age, or null if age is below the table.
- * For ages above 120, uses the age-120 divisor (2.0).
- */
-export function getRmdFactor(age: number): number | null {
+/** The RMD divisor for the owner's age, or null below the table (ages above 120 read the 120
+ *  row). Table II at the spouse's age when the spouse is the sole beneficiary and more than 10
+ *  years younger (Reg. § 1.401(a)(9)-5(c)(2)); otherwise Table III, the Uniform Lifetime. */
+export function getRmdFactor(
+  age: number,
+  soleBeneficiarySpouseAge?: number | null,
+): number | null {
   if (age < 72) return null;
-  if (age > 120) return UNIFORM_LIFETIME_TABLE[120] ?? null;
-  return UNIFORM_LIFETIME_TABLE[age] ?? null;
+  const row = Math.min(age, 120);
+  if (
+    soleBeneficiarySpouseAge != null &&
+    soleBeneficiarySpouseAge >= 0 &&
+    age - soleBeneficiarySpouseAge > 10
+  )
+    return (
+      jointLifeDivisor(row, Math.min(soleBeneficiarySpouseAge, 120)) ?? null
+    );
+  return UNIFORM_LIFETIME_TABLE[row] ?? null;
 }
 
-/** The RMD: prior-year-end Traditional balance ÷ this age's Uniform Lifetime divisor, shared by
+/** The RMD: prior-year-end Traditional balance ÷ `getRmdFactor`'s divisor, shared by
  *  enforcement and the QCD-ordering hoist (docs/RULES.md Single Computation Path). null when
  *  `age` is below the table; callers decide what "no RMD" means. */
 export function computeRmdAmount(
   priorYearEndTradBalance: number,
   age: number,
+  soleBeneficiarySpouseAge?: number | null,
 ): number | null {
-  const factor = getRmdFactor(age);
+  const factor = getRmdFactor(age, soleBeneficiarySpouseAge);
   if (factor == null || factor <= 0) return null;
   return roundToCents(priorYearEndTradBalance / factor);
+}
+
+/** Each person's sole-beneficiary spouse's age in `year`, for `getRmdFactor`: on a joint return
+ *  of two, the other spouse (Ledgr has no beneficiary input); none otherwise. */
+export function soleBeneficiarySpouseAges(
+  filingStatus: ReturnFilingStatus | undefined,
+  people: ReadonlyMap<number, { birthYear: number }>,
+  year: number,
+): Map<number, number> {
+  const joint =
+    filingStatus != null &&
+    filingTable(FILING_STATUS_RULES, filingStatus).peopleOnReturn === 2;
+  const [a, b] = [...people];
+  if (!joint || people.size !== 2 || !a || !b) return new Map();
+  return new Map([
+    [a[0], ageInYear(b[1].birthYear, year)],
+    [b[0], ageInYear(a[1].birthYear, year)],
+  ]);
 }
 
 /** SECURE 2.0 RMD start age: 72 if born ≤ 1950, 73 for 1951–1959, 75 if born ≥ 1960. */

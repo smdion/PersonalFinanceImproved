@@ -39,7 +39,9 @@ describe("per-owner RMDs through the engine", () => {
   it("routing took enough from Bo: Ann's RMD still comes from Ann, and income doesn't rise", () => {
     const [first, second] = decumYears(household(accounts));
     const required = person(first!, 1)!.amount;
-    expect(required).toBeCloseTo(500000 / 22, 0);
+    // Ann 78, Bo 65 on a joint return: Bo is over 10 years younger, so
+    // Table II 78/65 = 24.1 (Reg. 1.401(a)(9)-9(d)).
+    expect(required).toBeCloseTo(500000 / 24.1, 0);
     expect(person(first!, 2)).toBeUndefined();
     // The next year's RMD base shows what left Ann's own account.
     expect(person(second!, 1)!.priorYearEndTradBalance).toBeCloseTo(
@@ -112,7 +114,8 @@ describe("per-owner RMDs through the engine", () => {
         acct("Bo 401k", "401k", 500000, 2),
       ]),
     );
-    expect(person(years[0]!, 1)!.amount).toBeCloseTo(20000, 0);
+    // 440,000 at Table II 78/65 = 24.1 (Bo is 13 years younger).
+    expect(person(years[0]!, 1)!.amount).toBeCloseTo(440000 / 24.1, 0);
     const warned = years.flatMap((y) => y.warnings ?? []);
     expect(warned.filter((w) => w.includes("has no owner"))).toHaveLength(1);
   });

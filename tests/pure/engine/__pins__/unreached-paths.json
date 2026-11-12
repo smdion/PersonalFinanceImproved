@@ -7,28 +7,28 @@
    "spending": 29000,
    "afterTaxNeed": 0,
    "targetWithdrawal": 0,
-   "totalWithdrawal": 27272.73,
-   "totalTraditionalWithdrawal": 27272.73,
+   "totalWithdrawal": 24896.27,
+   "totalTraditionalWithdrawal": 24896.27,
    "totalRothWithdrawal": 0,
-   "taxCost": 6481.82,
-   "ssTaxCost": 1027.27,
+   "taxCost": 5768.88,
+   "ssTaxCost": 789.63,
    "ssIncome": 30000,
-   "taxableSS": 5136.36,
+   "taxableSS": 3948.14,
    "penaltyCost": 0,
-   "rmdAmount": 27272.73,
+   "rmdAmount": 24896.27,
    "rmdByPerson": [
     {
      "personId": 1,
      "personName": "Ann",
-     "amount": 27272.73,
-     "divisor": 22,
+     "amount": 24896.27,
+     "divisor": 24.1,
      "priorYearEndTradBalance": 600000,
      "age": 78
     }
    ],
    "rmdOverrodeRouting": true,
    "rmdShortfallAmount": 0,
-   "rmdExcessAmount": 21790.91,
+   "rmdExcessAmount": 20127.39,
    "qcdAmount": 0,
    "rothConversionAmount": 0,
    "rothConversionTaxCost": 0,
@@ -37,10 +37,10 @@
    "accounts": [
     {
      "name": "Ann IRA",
-     "balance": 572727.27,
+     "balance": 575103.73,
      "contribution": 0,
      "draw": {
-      "withdrawal": 27272.73,
+      "withdrawal": 24896.27,
       "eligibilityLocked": false,
       "reason": {
        "kind": "no_owner"
@@ -52,7 +52,7 @@
     },
     {
      "name": "Ann brokerage",
-     "balance": 71790.91,
+     "balance": 70127.39,
      "contribution": 0,
      "draw": {
       "withdrawal": 0,
@@ -162,13 +162,13 @@
    "ssIncome": 0,
    "taxableSS": 0,
    "penaltyCost": 0,
-   "rmdAmount": 22727.27,
+   "rmdAmount": 20746.89,
    "rmdByPerson": [
     {
      "personId": 1,
      "personName": "Ann",
-     "amount": 22727.27,
-     "divisor": 22,
+     "amount": 20746.89,
+     "divisor": 24.1,
      "priorYearEndTradBalance": 500000,
      "age": 78
     }
@@ -176,7 +176,7 @@
    "rmdOverrodeRouting": false,
    "rmdShortfallAmount": 0,
    "rmdExcessAmount": 0,
-   "rmdReassignedAmount": 22727.27,
+   "rmdReassignedAmount": 20746.89,
    "qcdAmount": 0,
    "rothConversionAmount": 0,
    "rothConversionTaxCost": 0,
@@ -185,10 +185,10 @@
    "accounts": [
     {
      "name": "Ann IRA",
-     "balance": 477272.73,
+     "balance": 479253.11,
      "contribution": 0,
      "draw": {
-      "withdrawal": 22727.27,
+      "withdrawal": 20746.89,
       "eligibilityLocked": false,
       "reason": {
        "kind": "no_owner"
@@ -200,10 +200,10 @@
     },
     {
      "name": "Bo 401k",
-     "balance": 472727.27,
+     "balance": 470746.89,
      "contribution": 0,
      "draw": {
-      "withdrawal": 27272.73,
+      "withdrawal": 29253.11,
       "eligibilityLocked": false,
       "reason": {
        "kind": "no_owner"

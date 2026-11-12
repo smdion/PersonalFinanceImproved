@@ -760,13 +760,13 @@ export function DecumulationMethodologyContent() {
         </h4>
         <p>
           RMDs are enforced after withdrawal routing completes, not during. The
-          engine computes the RMD using the prior year-end Traditional balance
-          divided by the IRS Uniform Lifetime Table factor for your age. RMD
-          start age follows SECURE 2.0 rules: age 73 for those born 1951-1959,
-          age 75 for those born 1960+. If your routed Traditional withdrawals
-          already meet or exceed the RMD, no adjustment is needed. If they fall
-          short, the shortfall is distributed proportionally across your
-          Traditional accounts.
+          engine divides the prior year-end Traditional balance by the IRS
+          Uniform Lifetime Table factor for your age (Joint Life Table: a spouse
+          on a joint return over 10 years younger). RMD start age follows SECURE
+          2.0 rules: age 73 for those born 1951-1959, age 75 for those born
+          1960+. If your routed Traditional withdrawals already meet or exceed
+          the RMD, no adjustment is needed. If they fall short, the shortfall is
+          distributed proportionally across your Traditional accounts.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">Roth conversions</h4>

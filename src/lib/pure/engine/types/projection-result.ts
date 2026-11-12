@@ -463,8 +463,8 @@ export type EngineDecumulationYear = {
   // --- RMD fields ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
-  /** Per-person RMDs: `amount = priorYearEndTradBalance / divisor` (Uniform Lifetime Table for
-   *  `age`); `divisor` undefined when `getRmdFactor` has no entry for the age. */
+  /** Per-person RMDs: `amount = priorYearEndTradBalance / divisor` (`getRmdFactor` for `age`:
+   *  Table III, or Table II for a spouse over 10 years younger); undefined below the table. */
   rmdByPerson?: {
     personId: number;
     personName: string;

@@ -182,8 +182,6 @@ function ownerRmds(
   });
 }
 
-const NO_JOINT_LIFE =
-  'v0.11 Retirement rules "Retirement rules the skeptic confirmed" (verdict K-A: no Joint Life table)';
 const QCD_AGE =
   'v0.11 Retirement rules "Retirement rules the skeptic confirmed" (verdict K-C: QCD gate is 70 in the year, not 70½ on the date)';
 
@@ -255,17 +253,12 @@ describe("answer key: the RMD amount", () => {
     cents(computeRmdAmount(100_000, 75)!, 4_065.04);
   });
 
-  describe("ret/P2 [RET-02]", () => {
+  it("ret/P2 [RET-02] 100,000 at 75, spouse 64 and sole beneficiary: 3,952.57 (Pub 590-B p.8 prints 3,953)", () => {
     // Same, spouse 64, 11 years younger and sole beneficiary: Table II
     // 75/64 = 25.3 (Pub 590-B p.8's own example). 100,000 ÷ 25.3 =
-    // 3,952.569… → 3,952.57 (Pub prints 3,953). Today Table III: 4,065.04.
-    xfail({
-      id: "ret/P2 [RET-02]",
-      todo: NO_JOINT_LIFE,
-      run: () => computeRmdAmount(100_000, 75)!,
-      expected: 3_952.57,
-      today: 4_065.04,
-    });
+    // 3,952.569… → 3,952.57 (Pub prints 3,953). Table III gave 4,065.04.
+    expect(getRmdFactor(75, 64)).toBe(25.3);
+    cents(computeRmdAmount(100_000, 75, 64)!, 3_952.57);
   });
 
   it("ret/P3 [RET-03] Justin, 73 on 12/15/2025, 2024 balance 38,400: 1,449.06 (Pub 590-B p.12 prints 1,450)", () => {
@@ -355,41 +348,43 @@ describe("answer key: the RMD amount", () => {
     cents(r.rmdShortfallAmount, 0);
   });
 
-  describe("ret/R18 [RET-02]", () => {
-    // Owner 80, spouse 69, sole beneficiary: 11 years, so Table II 80/69
-    // = 20.9. 1,000,000 ÷ 20.9 = 47,846.889… → 47,846.89. Today Table III
-    // 20.2: 49,504.95.
-    xfail({
-      id: "ret/R18 [RET-02]",
-      todo: NO_JOINT_LIFE,
-      run: () => computeRmdAmount(1_000_000, 80)!,
-      expected: 47_846.89,
-      today: 49_504.95,
-    });
+  it("ret/R18 [RET-02] owner 80, spouse 69, sole beneficiary: 47,846.89, and through the engine", () => {
+    // 11 years, so Table II 80/69 = 20.9. 1,000,000 ÷ 20.9 = 47,846.889…
+    // → 47,846.89. Table III 20.2 gave 49,504.95.
+    cents(computeRmdAmount(1_000_000, 80, 69)!, 47_846.89);
+    // The engine takes the other spouse on a joint return as the sole
+    // beneficiary (Ledgr has no beneficiary input). Owner born 1946 (80 in
+    // 2026), spouse 1957 (69, no RMD of her own): Table II 80/69 = 20.9,
+    // 1,000,000 ÷ 20.9 = 47,846.89.
+    const year = engineYear(
+      [
+        { personId: 1, name: "Ann", birthYear: 1946 },
+        { personId: 2, name: "Bo", birthYear: 1957 },
+      ],
+      [acct("H IRA", "ira", 1_000_000, 1)],
+    );
+    expect(year.rmdByPerson).toHaveLength(1);
+    expect(year.rmdByPerson![0]!.divisor).toBe(20.9);
+    cents(year.rmdByPerson![0]!.amount, 47_846.89);
+    cents(year.rmdAmount, 47_846.89);
   });
 
   it("ret/R19 [RET-02] owner 80, spouse 70, exactly 10 years: Table III, 49,504.95", () => {
     // Table II needs more than 10 years (Reg. -5(c)(2)(ii)): 1,000,000 ÷
     // 20.2 = 49,504.950… → 49,504.95.
-    cents(computeRmdAmount(1_000_000, 80)!, 49_504.95);
+    cents(computeRmdAmount(1_000_000, 80, 70)!, 49_504.95);
   });
 
-  describe("ret/R20 [RET-02]", () => {
-    // Owner 73, spouse 62, sole beneficiary: 11 years, Table II 73/62 =
-    // 27.2 (both the regulation and the Pub). 800,000 ÷ 27.2 = 29,411.764…
-    // → 29,411.76. Today Table III 26.5: 30,188.68.
-    xfail({
-      id: "ret/R20 [RET-02]",
-      todo: NO_JOINT_LIFE,
-      run: () => computeRmdAmount(800_000, 73)!,
-      expected: 29_411.76,
-      today: 30_188.68,
-    });
+  it("ret/R20 [RET-02] owner 73, spouse 62, sole beneficiary: 29,411.76", () => {
+    // 11 years, Table II 73/62 = 27.2 (both the regulation and the Pub).
+    // 800,000 ÷ 27.2 = 29,411.764… → 29,411.76. Table III 26.5 gave
+    // 30,188.68.
+    cents(computeRmdAmount(800_000, 73, 62)!, 29_411.76);
   });
 
   it("ret/R21 [RET-02] owner 73, spouse 63, 10 years: 30,188.68", () => {
     // Table III: 800,000 ÷ 26.5 = 30,188.679… → 30,188.68.
-    cents(computeRmdAmount(800_000, 73)!, 30_188.68);
+    cents(computeRmdAmount(800_000, 73, 63)!, 30_188.68);
   });
 
   it("ret/R22 [RET-02] owner 80, spouse 69, spouse and a child co-beneficiaries: 49,504.95", () => {
@@ -398,19 +393,13 @@ describe("answer key: the RMD amount", () => {
     cents(computeRmdAmount(1_000_000, 80)!, 49_504.95);
   });
 
-  describe("ret/R24 [RET-02]", () => {
-    // Owner 90, spouse 76, sole beneficiary: Table II. The regulation's
-    // cell is 14.7 (Reg. -9(d)); Pub 590-B Table II prints 14.8 (DOC-3;
-    // the regulation governs). 500,000 ÷ 14.7 = 34,013.605… → 34,013.61
-    // (the Pub cell would give 33,783.78). Today Table III 12.2:
-    // 500,000 ÷ 12.2 = 40,983.606… → 40,983.61.
-    xfail({
-      id: "ret/R24 [RET-02]",
-      todo: NO_JOINT_LIFE,
-      run: () => computeRmdAmount(500_000, 90)!,
-      expected: 34_013.61,
-      today: 40_983.61,
-    });
+  it("ret/R24 [RET-02] owner 90, spouse 76, sole beneficiary: 34,013.61 (the regulation's 14.7, not the Pub's 14.8)", () => {
+    // Table II. The regulation's cell is 14.7 (Reg. -9(d)); Pub 590-B
+    // Table II prints 14.8 (DOC-3; the regulation governs). 500,000 ÷ 14.7
+    // = 34,013.605… → 34,013.61 (the Pub cell would give 33,783.78).
+    // Table III 12.2 gave 500,000 ÷ 12.2 = 40,983.606… → 40,983.61.
+    expect(getRmdFactor(90, 76)).toBe(14.7);
+    cents(computeRmdAmount(500_000, 90, 76)!, 34_013.61);
   });
 
   it("ret/R25 [RET-02] age 120, 100,000: 50,000", () => {
