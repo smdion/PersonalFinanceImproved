@@ -32,7 +32,7 @@ import {
   cacheGet,
   BudgetApiError,
 } from "@/lib/budget-api";
-import type { BudgetMonthDetail } from "@/lib/budget-api";
+import type { BudgetMonthDetail } from "@/lib/budget-api/types";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import { goalClient } from "../helpers/goal-client";
 

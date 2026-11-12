@@ -1,15 +1,8 @@
 // Budget API — public exports
 
-export type {
-  BudgetAPIClient,
-  GoalShape,
-  PreparedGoalWrite,
-} from "./interface";
+export type { BudgetAPIClient, PreparedGoalWrite } from "./interface";
 export type {
   BudgetAccount,
-  BudgetCategoryGroup,
-  BudgetMonthDetail,
-  BudgetTransaction,
   BudgetApiService,
   YnabConfig,
   ActualConfig,

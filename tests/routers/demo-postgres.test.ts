@@ -267,7 +267,8 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   it("two builds of one demo profile at once seed it once", async () => {
     const { buildDemoSchema } =
       await import("@/server/services/demo/demo-schema");
-    const { getDemoProfile, isDemoProfileSlug } = await import("@/lib/demo");
+    const { getDemoProfile } = await import("@/lib/demo");
+    const { isDemoProfileSlug } = await import("@/lib/demo/slugs");
     const { profiles } = await (await callerFor(null)).demo.listProfiles();
     const slug = profiles[0]!.slug;
     if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
@@ -286,7 +287,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   it("a demo-only server keeps a profile built today; another day, older migrations or a household install rebuild it", async () => {
     const { buildDemoSchema } =
       await import("@/server/services/demo/demo-schema");
-    const { isDemoProfileSlug } = await import("@/lib/demo");
+    const { isDemoProfileSlug } = await import("@/lib/demo/slugs");
     const { profiles } = await (await callerFor(null)).demo.listProfiles();
     const slug = profiles[0]!.slug;
     if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
