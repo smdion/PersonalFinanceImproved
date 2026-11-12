@@ -51,7 +51,6 @@ export function runDecumulationYear(
     hasIndividualAccounts,
     indAccounts,
     indKey,
-    indParentCat,
   } = ctx;
   const {
     balances,
@@ -60,7 +59,6 @@ export function runDecumulationYear(
     indBalance,
     indBasis,
     brokBasis,
-    spendingState,
   } = state;
 
   const { decumulationDefaults, perPersonBirthYears } = input;
@@ -177,7 +175,6 @@ export function runDecumulationYear(
   } = rmd;
 
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
-  const { decumulationIndWithdrawal, basisDraws } = drawn;
 
   const priced = priceYearTax(ctx, state, thisYear, {
     need,
@@ -219,41 +216,18 @@ export function runDecumulationYear(
   const { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom } =
     yearCliffChecks(ctx, state, thisYear, flow);
 
-  const {
-    decumBrokerageContribution,
-    decumContributionByAccount,
-    decumRampAmount,
-  } = decumulationPortfolioContributions(
-    input,
-    yearIndex,
-    state,
+  const contributions = decumulationPortfolioContributions(
     ctx,
-    indKey,
-    indAccounts,
-    indBalance,
+    state,
+    yearIndex,
   );
+  const { decumBrokerageContribution, decumRampAmount } = contributions;
 
   const { decumulationIndYearBalances, yearEnd } = closeDecumulationYear(
-    returnRate,
-    balances,
-    accountBalance,
-    state,
-    spendingState,
-    hasIndividualAccounts,
-    indAccounts,
-    indKey,
-    indBalance,
     ctx,
-    decumContributionByAccount,
-    indBasis,
-    indParentCat,
-    decumulationIndWithdrawal,
-    basisDraws,
-    brokBasis,
-    eligibility,
-    routeWarnings,
-    year,
-    age,
+    state,
+    thisYear,
+    { ...flow, contributions },
   );
 
   const yearProjection: EngineDecumulationYear = {

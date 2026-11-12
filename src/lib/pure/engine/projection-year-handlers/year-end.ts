@@ -1,10 +1,6 @@
 /** The decumulation year's close: growth, year-end state and balances. */
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
-import {
-  computeNonRetirementExclusion,
-  type computeWithdrawalEligibility,
-} from "@/lib/pure/accounts/eligibility";
-import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
+import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import { scopedBalances } from "../balance-utils";
 import { cleanupDust } from "../balance-deduction";
 import {
@@ -20,33 +16,33 @@ import {
   reconcileIndividualToAggregate,
 } from "../individual-accounts/reconcile";
 import { updatePerPersonTradBalance } from "./helpers";
-import type { ProjectionContext, ProjectionLoopState } from "./types";
+import type {
+  DecumulationYear,
+  ProjectionContext,
+  ProjectionLoopState,
+} from "./types";
+import type { DecumulationFlow } from "./tax-year-settlement";
+import type { decumulationPortfolioContributions } from "./portfolio-contributions";
 
 /** The year closed: growth applied, next year's RMD and strategy state set,
  *  each account's row built, dust cleared, accounts reconciled to the
  *  aggregate, and retirement depletion tracked. */
 export function closeDecumulationYear(
-  returnRate: number,
-  balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  state: ProjectionLoopState,
-  spendingState: ProjectionLoopState["spendingState"],
-  hasIndividualAccounts: boolean,
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
   ctx: ProjectionContext,
-  decumContributionByAccount: Map<string, number>,
-  indBasis: ProjectionLoopState["indBasis"],
-  indParentCat: ProjectionContext["indParentCat"],
-  decumulationIndWithdrawal: Map<string, number>,
-  basisDraws: Map<string, BasisDraw>,
-  brokBasis: ProjectionLoopState["brokBasis"],
-  eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
-  routeWarnings: string[],
-  year: number,
-  age: number,
+  state: ProjectionLoopState,
+  thisYear: DecumulationYear,
+  flow: Pick<DecumulationFlow, "route" | "drawn"> & {
+    contributions: ReturnType<typeof decumulationPortfolioContributions>;
+  },
 ) {
+  const { hasIndividualAccounts, indAccounts, indKey, indParentCat } = ctx;
+  const { balances, accountBalance, spendingState } = state;
+  const { indBalance, indBasis, brokBasis } = state;
+  const { year, age, eligibility } = thisYear;
+  const { returnRate } = thisYear.setup;
+  const { decumContributionByAccount } = flow.contributions;
+  const { decumulationIndWithdrawal, basisDraws } = flow.drawn;
+  const { routeWarnings } = flow.route;
   // Apply growth
   applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
 

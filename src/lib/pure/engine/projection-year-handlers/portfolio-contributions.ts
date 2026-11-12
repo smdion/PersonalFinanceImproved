@@ -11,14 +11,12 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 /** Contributions that continue into retirement and the brokerage ramp, per
  *  account: shown on the Portfolio page, never added to balances. */
 export function decumulationPortfolioContributions(
-  input: ProjectionContext["input"],
-  yearIndex: number,
-  state: ProjectionLoopState,
   ctx: ProjectionContext,
-  indKey: ProjectionContext["indKey"],
-  indAccounts: ProjectionContext["indAccounts"],
-  indBalance: ProjectionLoopState["indBalance"],
+  state: ProjectionLoopState,
+  yearIndex: number,
 ) {
+  const { input, indKey, indAccounts } = ctx;
+  const { indBalance } = state;
   // Portfolio contributions after retirement, for the Portfolio page only:
   // never added to balances (Portfolio accounts are read-only inputs here;
   // parentCategory sets the boundary).
