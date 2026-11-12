@@ -1,8 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import {
-  DEMO_SCHEMA_MARKER_PREFIX,
-  DEMO_SHARED_TABLES,
-  MIGRATION_STAMP_SUBQUERY,
+  DEMO_SCHEMA_STATE_SQL,
+  demoSchemaStateParams,
 } from "@/lib/db/migrate/demo-schema-marker";
 import { devBypass } from "./auth-mode";
 import { ZodError, z } from "zod/v4";
@@ -197,15 +196,8 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     // schema that is missing, lacks a table, or has a stale migration stamp is
     // refused (except demo.* procedures, which never read app data).
     const { rows } = (await client.query(
-      `SELECT to_regnamespace($1) IS NOT NULL AND NOT EXISTS (
-         SELECT 1 FROM pg_tables p WHERE p.schemaname = 'public'
-           AND p.tablename <> ALL($3::text[])
-           AND NOT EXISTS (SELECT 1 FROM pg_tables d
-             WHERE d.schemaname = $1 AND d.tablename = p.tablename)
-       ) AND obj_description(to_regnamespace($1)::oid, 'pg_namespace')
-         = $2 || ${MIGRATION_STAMP_SUBQUERY}
-       AS complete`,
-      [ctx.demoSchema, DEMO_SCHEMA_MARKER_PREFIX, DEMO_SHARED_TABLES],
+      DEMO_SCHEMA_STATE_SQL,
+      demoSchemaStateParams(ctx.demoSchema),
     )) as { rows: { complete: boolean }[] };
     if (!rows[0]?.complete) {
       if (path.startsWith("demo.")) return await next({ ctx });

@@ -6,6 +6,7 @@ import * as path from "path";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
   MIGRATION_STAMP_SUBQUERY,
+  markerStampSql,
 } from "./src/lib/db/migrate/demo-schema-marker";
 import {
   parseSimulationPresets,
@@ -1211,8 +1212,8 @@ export async function runPostgres() {
     // schema's current structure on next activation. Demo schemas are
     // sandboxes the demo router (src/server/routers/demo.ts) builds with
     // CREATE TABLE LIKE public.x and stamps with the applied-migration
-    // count and last hash (src/lib/db/migrate/demo-schema-marker.ts); any whose
-    // stamp doesn't match the current one was built for an older structure. Checked on
+    // count and last hash, then its seeded day (src/lib/db/migrate/demo-schema-marker.ts);
+    // any whose stamp doesn't match the current one was built for an older structure. Checked on
     // EVERY start, not just when a migration ran, so a failed drop is
     // retried — and it's fatal: a stale schema can't be left in place
     // (requests refuse to use it, but it must not linger silently).
@@ -1222,8 +1223,8 @@ export async function runPostgres() {
         const { rows: stale } = await demoClient.query<{ nspname: string }>(
           `SELECT n.nspname FROM pg_namespace n
             WHERE n.nspname LIKE 'demo\\_%'
-              AND obj_description(n.oid, 'pg_namespace') IS DISTINCT FROM
-                  $1 || ${MIGRATION_STAMP_SUBQUERY}
+              AND ${markerStampSql("obj_description(n.oid, 'pg_namespace')")}
+                  IS DISTINCT FROM $1 || ${MIGRATION_STAMP_SUBQUERY}
             ORDER BY n.nspname`,
           [DEMO_SCHEMA_MARKER_PREFIX],
         );

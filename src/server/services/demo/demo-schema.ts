@@ -3,9 +3,11 @@
  *  and the profile's seed. */
 import { sql } from "drizzle-orm";
 import {
-  DEMO_SCHEMA_MARKER_PREFIX,
+  DEMO_SCHEMA_STATE_SQL,
   DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SQL,
+  demoSchemaMarker,
+  demoSchemaStateParams,
 } from "@/lib/db/migrate/demo-schema-marker";
 import { applyReferenceData } from "@/lib/db/migrate/reference-data";
 import * as schema from "@/lib/db/schema";
@@ -18,6 +20,10 @@ import {
 } from "@/lib/demo";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 import { lockForTransaction } from "@/server/data/lock-row";
+import { calendarDateOf } from "@/lib/utils/calendar-date";
+
+/** DEMO_SCHEMA_STATE_SQL's row. */
+type DemoSchemaState = { complete: boolean | null; seeded_on: string };
 
 /**
  * Escape a SQL identifier (schema/table/sequence name) to prevent injection.
@@ -51,6 +57,17 @@ export async function buildDemoSchema(
     await cdb.transaction(async (tx) => {
       const run = (text: string) => tx.execute(sql.raw(text));
       await lockForTransaction(tx, `demo-schema-build:${schemaName}`);
+      // A demo-only server's visitors share each profile: one complete and
+      // seeded today is kept. A household install's activate resets it.
+      if (process.env.DEMO_ONLY === "true") {
+        const { rows }: { rows: DemoSchemaState[] } = await serial.client.query(
+          DEMO_SCHEMA_STATE_SQL,
+          demoSchemaStateParams(schemaName),
+        );
+        const [state] = rows;
+        if (state?.complete && state.seeded_on === calendarDateOf(seededOn))
+          return;
+      }
       await run(`CREATE SCHEMA IF NOT EXISTS ${quotedSchema}`);
 
       // Copy table structure from public schema into demo schema
@@ -97,9 +114,8 @@ export async function buildDemoSchema(
       // "<count>:<hex hash>" — interpolated, so check its shape.
       if (!/^\d+:[0-9a-f]*$/.test(stamp))
         throw new Error(`Unexpected migration stamp: ${stamp}`);
-      await run(
-        `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${stamp}'`,
-      );
+      const marker = demoSchemaMarker(stamp, calendarDateOf(seededOn));
+      await run(`COMMENT ON SCHEMA ${quotedSchema} IS '${marker}'`);
     });
   } finally {
     // Queries still queued run on the demo schema before the reset.

@@ -283,6 +283,62 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     expect(people).toHaveLength(rows[0]!.n);
   });
 
+  it("a demo-only server keeps a profile built today; another day, older migrations or a household install rebuild it", async () => {
+    const { buildDemoSchema } =
+      await import("@/server/services/demo/demo-schema");
+    const { isDemoProfileSlug } = await import("@/lib/demo");
+    const { profiles } = await (await callerFor(null)).demo.listProfiles();
+    const slug = profiles[0]!.slug;
+    if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
+    const demoOnly = process.env.DEMO_ONLY;
+    const build = (iso: string, server: "demo-only" | "household") => {
+      if (server === "demo-only") process.env.DEMO_ONLY = "true";
+      else delete process.env.DEMO_ONLY;
+      return buildDemoSchema(slug, new Date(iso));
+    };
+    const edit = () =>
+      admin.query(
+        `UPDATE "${schemaName}".people SET name = 'A visitor edit' WHERE id = (SELECT min(id) FROM "${schemaName}".people)`,
+      );
+    const kept = async () => {
+      const { rows } = await admin.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM "${schemaName}".people WHERE name = 'A visitor edit'`,
+      );
+      return rows[0]!.n === 1;
+    };
+    try {
+      await build("2026-06-02T12:00:00Z", "household");
+      await edit();
+      await build("2026-06-02T15:00:00Z", "demo-only");
+      expect(await kept()).toBe(true);
+
+      await build("2026-06-03T12:00:00Z", "demo-only");
+      expect(await kept()).toBe(false);
+
+      await edit();
+      await admin.query(
+        `COMMENT ON SCHEMA "${schemaName}" IS 'ledgr-migrations:0: seeded:2026-06-03'`,
+      );
+      await build("2026-06-03T12:00:00Z", "demo-only");
+      expect(await kept()).toBe(false);
+
+      await edit();
+      await build("2026-06-03T12:00:00Z", "household");
+      expect(await kept()).toBe(false);
+
+      // A restart's stale-schema drop leaves one built for today's migrations.
+      runMigrator();
+      const { rows } = await admin.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM pg_namespace WHERE nspname = $1",
+        [schemaName],
+      );
+      expect(rows[0]!.n).toBe(1);
+    } finally {
+      if (demoOnly === undefined) delete process.env.DEMO_ONLY;
+      else process.env.DEMO_ONLY = demoOnly;
+    }
+  }, 120_000);
+
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(

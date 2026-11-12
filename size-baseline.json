@@ -433,7 +433,7 @@
     "src/server/services/sync/simplefin/sync.ts": 550,
     "src/server/services/sync/sync-all.ts": 249,
     "src/server/services/sync/sync-names.ts": 171,
-    "src/server/trpc.ts": 516
+    "src/server/trpc.ts": 508
   },
   "functions": {
     "src/app/(dashboard)/assets/assets-content.tsx": {
