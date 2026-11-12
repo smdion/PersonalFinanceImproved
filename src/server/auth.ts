@@ -211,6 +211,8 @@ const fullAuthConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (session.user) {
+        // The per-user rate limit keys by it (trpc.ts); Auth.js leaves it unset.
+        if (typeof token.sub === "string") session.user.id = token.sub;
         session.user.role = token.role as "admin" | "viewer";
         // A token from an older version may carry no permissions.
         session.user.permissions =

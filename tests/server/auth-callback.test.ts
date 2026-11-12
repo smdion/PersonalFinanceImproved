@@ -49,14 +49,22 @@ vi.mock("@/lib/logger", () => ({
 }));
 // next-auth and the local config import; the side effect of NextAuth(fullConfig)
 // runs at module load, but with everything mocked it's a no-op.
+const nextAuthConfig = vi.hoisted(() => ({
+  current: null as null | {
+    callbacks: {
+      session: (args: {
+        session: { user?: Record<string, unknown> };
+        token: Record<string, unknown>;
+      }) => { user?: Record<string, unknown> };
+    };
+  },
+}));
 vi.mock("next-auth", () => ({
   CredentialsSignin: class extends Error {},
-  default: () => ({
-    handlers: {},
-    auth: vi.fn(),
-    signIn: vi.fn(),
-    signOut: vi.fn(),
-  }),
+  default: (config: NonNullable<typeof nextAuthConfig.current>) => {
+    nextAuthConfig.current = config;
+    return { handlers: {}, auth: vi.fn(), signIn: vi.fn(), signOut: vi.fn() };
+  },
 }));
 vi.mock("next-auth/providers/credentials", () => ({
   default: () => ({}),
@@ -278,3 +286,17 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
 // vitest's afterEach is import-able from the global setup file; declare it
 // here to keep the tests self-contained.
 import { afterEach } from "vitest";
+
+describe("the session callback", () => {
+  it("gives the session the token's subject as the user id", () => {
+    const session = nextAuthConfig.current!.callbacks.session({
+      session: { user: { name: "A", email: "a@a.com" } },
+      token: { sub: "7", role: "viewer", permissions: ["budget"] },
+    });
+    expect(session.user).toMatchObject({
+      id: "7",
+      role: "viewer",
+      permissions: ["budget"],
+    });
+  });
+});
