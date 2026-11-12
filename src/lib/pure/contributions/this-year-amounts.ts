@@ -4,9 +4,9 @@ import {
   type ContributionRow,
   type JobRef,
   type JobSalaryRef,
-  contributionRowAmounts,
   jobPayFor,
 } from "./contribution-rows";
+import { contributionRowAmounts } from "./row-amounts";
 
 /** A job's pay for the cap pass: base salary and bonus, `totalComp` (the W-2 pay before pre-tax
  *  money that bounds an IRA), the `share` of a year's regular checks it pays (absent = all) and

@@ -8,10 +8,10 @@ import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
-  contributionRowAmounts,
   rowPaySchedule,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
+import { contributionRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
 const hsa = (method: ContributionMethod, value: number): ContributionRow => ({
   id: 1,

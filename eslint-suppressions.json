@@ -3782,7 +3782,7 @@
       "count": 2
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 1
     }
   },
   "src/lib/pure/contributions/controlled-overrides.ts": {
@@ -3895,6 +3895,11 @@
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
+    }
+  },
+  "src/lib/pure/contributions/row-amounts.ts": {
+    "ratchet/no-unregistered-fallback": {
+      "count": 2
     }
   },
   "src/lib/pure/contributions/savings-rate.ts": {

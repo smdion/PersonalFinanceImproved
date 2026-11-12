@@ -262,7 +262,7 @@
     "src/lib/pure/contributions/contribution-caps.ts": 563,
     "src/lib/pure/contributions/contribution-caps.types.ts": 45,
     "src/lib/pure/contributions/contribution-order.ts": 83,
-    "src/lib/pure/contributions/contribution-rows.ts": 192,
+    "src/lib/pure/contributions/contribution-rows.ts": 149,
     "src/lib/pure/contributions/display-specs.ts": 136,
     "src/lib/pure/contributions/irs-limits.ts": 209,
     "src/lib/pure/contributions/joint-accounts.ts": 176,

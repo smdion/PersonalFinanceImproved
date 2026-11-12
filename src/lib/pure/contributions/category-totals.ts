@@ -11,12 +11,12 @@ import {
 import type { CapPassed } from "./contribution-caps";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
-import {
-  contributionRowAmounts,
-  type ContributionRow,
-  type JobRef,
-  type JobSalaryRef,
+import type {
+  ContributionRow,
+  JobRef,
+  JobSalaryRef,
 } from "./contribution-rows";
+import { contributionRowAmounts } from "./row-amounts";
 
 /** Per-category contribution totals with tax breakdown. */
 type ContributionCategorySummary = {
