@@ -2,13 +2,23 @@
  *  filing-status sets). The resolver is lib/pure/tax/resolve-tax-params.ts. */
 
 import type { HsaCoverageType } from "./enum-values";
-import type { ReturnFilingStatus } from "./filing-status";
+import type { FilingStatusKey, ReturnFilingStatus } from "./filing-status";
 
 /** Pub 590-A Worksheet 2-2: a reduced Roth IRA limit rounds UP to the next
  *  multiple of this, and any amount above $0 but below the floor becomes
  *  the floor (statutory, IRC 408A(c)(3) — not indexed). */
 export const ROTH_IRA_REDUCED_LIMIT_ROUNDING = 10;
 export const ROTH_IRA_REDUCED_LIMIT_FLOOR = 200;
+
+/** The senior deduction's phase-out start row: joint returns have their own (IRC
+ *  151(d)(5)(C)(iii)), every other return the unmarried one. */
+export const SENIOR_PHASEOUT_START_KEY: Readonly<
+  Record<FilingStatusKey, string>
+> = {
+  MFJ: "obbba_senior_deduction_phaseout_start_mfj",
+  Single: "obbba_senior_deduction_phaseout_start_unmarried",
+  HOH: "obbba_senior_deduction_phaseout_start_unmarried",
+};
 
 /** The yearly limit rows for a filing status (lower-cased in the key,
  *  matching `standard_deduction_<status>`). */

@@ -2,7 +2,7 @@
 // thresholds and 50%/85% inclusion rates are not indexed to inflation (IRC §86(c)).
 
 import {
-  filingTable,
+  jointTable,
   type FilingStatusKey,
   type ReturnFilingStatus,
 } from "./filing-status";
@@ -26,5 +26,5 @@ export const SS_TAX_TIER2_INCLUSION_RATE = 0.85;
 export function ssTaxThresholdsFor(
   status: ReturnFilingStatus,
 ): SsTaxThresholds {
-  return filingTable(SS_TAX_THRESHOLDS, status);
+  return jointTable(SS_TAX_THRESHOLDS, status);
 }

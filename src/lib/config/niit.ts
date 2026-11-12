@@ -3,7 +3,7 @@
 // distributions aren't investment income, but Roth conversions raise MAGI.
 
 import {
-  filingTable,
+  survivorTable,
   type FilingStatusKey,
   type ReturnFilingStatus,
 } from "./filing-status";
@@ -20,5 +20,5 @@ export const NIIT_THRESHOLDS: Record<FilingStatusKey, number> = {
 
 /** A return status's NIIT MAGI threshold. */
 export function niitThresholdFor(status: ReturnFilingStatus): number {
-  return filingTable(NIIT_THRESHOLDS, status);
+  return survivorTable(NIIT_THRESHOLDS, status);
 }

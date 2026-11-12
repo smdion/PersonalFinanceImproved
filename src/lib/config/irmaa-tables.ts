@@ -2,7 +2,7 @@
 // per-person annual surcharges (Part B + D). Tiers apply at `magi > threshold`, so a MAGI exactly
 // at CMS's top tier (≥ $750,000 jointly / $500,000) lands one tier low (a $1 edge, kept).
 
-import type { ReturnFilingStatus } from "./filing-status";
+import { filingRules, type ReturnFilingStatus } from "./filing-status";
 
 export type IrmaaBracket = {
   magiThreshold: number;
@@ -19,7 +19,7 @@ function bracketsFor(
   brackets: IrmaaBracketTable,
   filingStatus: ReturnFilingStatus,
 ): IrmaaBracket[] {
-  const b = brackets[filingStatus];
+  const b = brackets[filingRules(filingStatus).jointRow];
   if (!b || b.length === 0)
     throw new Error(`No IRMAA brackets for filing status ${filingStatus}`);
   return b;

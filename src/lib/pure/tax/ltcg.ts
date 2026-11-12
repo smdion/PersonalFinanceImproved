@@ -1,7 +1,10 @@
 // Long-term capital gains tax. Brackets are per filing status on total
 // taxable income (ordinary + gains), passed in from the year's tax data.
 
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import {
+  filingRules,
+  type ReturnFilingStatus,
+} from "@/lib/config/filing-status";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 
 /** Gross ordinary income against the standard deduction (undefined subtracts
@@ -38,7 +41,7 @@ function bracketsFor(
   brackets: LtcgBracketTable,
   filingStatus: ReturnFilingStatus,
 ): { threshold: number; rate: number }[] {
-  const raw = brackets[filingStatus];
+  const raw = brackets[filingRules(filingStatus).survivorRow];
   if (!raw || raw.length === 0)
     throw new Error(`No LTCG brackets for filing status ${filingStatus}`);
   // Normalize null thresholds to Infinity (the stored open top bracket).

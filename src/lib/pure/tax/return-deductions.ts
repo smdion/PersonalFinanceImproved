@@ -4,7 +4,12 @@
  * the phaseout basis (this year's isn't known yet), so decumulation year 1 gets $0.
  */
 
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import {
+  filingRules,
+  jointTable,
+  type ReturnFilingStatus,
+} from "@/lib/config/filing-status";
+import { SENIOR_PHASEOUT_START_KEY } from "@/lib/config/tax-params";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 
 type ObbbaSeniorDeductionInput = {
@@ -80,14 +85,18 @@ export function returnDeductionTerms(
   limits: Record<string, number>,
   filingStatus: ReturnFilingStatus | null,
 ): ReturnDeductionTerms {
+  const rules = filingStatus ? filingRules(filingStatus) : null;
   return {
-    basic: filingStatus
-      ? requireLimit(limits, `standard_deduction_${filingStatus.toLowerCase()}`)
-      : undefined,
-    addOnPerCondition: filingStatus
+    basic: rules
       ? requireLimit(
           limits,
-          filingStatus === "MFJ"
+          `standard_deduction_${rules.survivorRow.toLowerCase()}`,
+        )
+      : undefined,
+    addOnPerCondition: rules
+      ? requireLimit(
+          limits,
+          rules.marriedAddOn
             ? "additional_std_deduction_65_married"
             : "additional_std_deduction_65_unmarried",
         )
@@ -95,9 +104,7 @@ export function returnDeductionTerms(
     senior: {
       perPerson: limits["obbba_senior_deduction_per_person"],
       phaseoutStart: filingStatus
-        ? filingStatus === "MFJ"
-          ? limits["obbba_senior_deduction_phaseout_start_mfj"]
-          : limits["obbba_senior_deduction_phaseout_start_unmarried"]
+        ? limits[jointTable(SENIOR_PHASEOUT_START_KEY, filingStatus)]
         : undefined,
       phaseoutRate: limits["obbba_senior_deduction_phaseout_rate"],
       sunsetYear: limits["obbba_senior_deduction_sunset_year"],
