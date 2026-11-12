@@ -5177,7 +5177,7 @@
   },
   "src/server/routers/version.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/services/advice/milestone-inputs.ts": {

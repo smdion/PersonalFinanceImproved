@@ -15,6 +15,7 @@ import { settleFirstRunGate } from "@/server/data/first-run";
 import { createVersion, restoreVersion } from "@/lib/db/backup/version-logic";
 import { versionRetention } from "@/lib/db/backup/version-retention";
 import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
+import { previewedRows } from "@/lib/db/backup/installation-rows";
 import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 import {
   VERSION_PREVIEW_WITHHELD_TABLES,
@@ -89,11 +90,10 @@ export const versionRouter = createTRPCRouter({
       if (VERSION_PREVIEW_WITHHELD_TABLES.includes(input.tableName))
         return { rows: [], rowCount: tableData.rowCount, withheld: true };
 
-      const allRows = tableData.data as unknown[];
-      return {
-        rows: allRows.slice(0, 50),
-        rowCount: tableData.rowCount,
-      };
+      const shown = previewedRows(input.tableName, tableData.data, {
+        asAdmin: ctx.session.user.role === "admin",
+      });
+      return { rows: shown.slice(0, 50), rowCount: shown.length };
     }),
 
   /** Create a new manual version. */

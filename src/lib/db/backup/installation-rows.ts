@@ -211,8 +211,24 @@ export function householdOnlyTables(
       Object.fromEntries(shown.map((c) => [c, row[c]])),
     );
   }
-  out["app_settings"] = rowsOf(tables["app_settings"]).filter(
-    (r) => !isAccessSettingKey(r.key),
-  );
+  out["app_settings"] = householdSettings(tables["app_settings"]);
   return out;
+}
+
+/** The settings rows without access settings: what a non-admin's export
+ *  holds and their version preview shows. */
+function householdSettings(rows: unknown): Row[] {
+  return rowsOf(rows).filter((r) => !isAccessSettingKey(r.key));
+}
+
+/** A version preview's rows of one table: someone who isn't an admin sees no
+ *  access setting, as their export holds none. */
+export function previewedRows(
+  name: string,
+  rows: unknown,
+  by: { asAdmin: boolean },
+): Row[] {
+  return by.asAdmin || name !== "app_settings"
+    ? rowsOf(rows)
+    : householdSettings(rows);
 }
