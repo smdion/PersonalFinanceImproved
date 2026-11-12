@@ -5,7 +5,7 @@
 import { toNumber } from "@/lib/utils/numbers";
 import type * as schema from "@/lib/db/schema";
 import { calendarYear } from "@/lib/utils/date";
-import type { fetchRetirementData } from "./load";
+import type { RetirementData } from "./load";
 
 type SettingsRow = typeof schema.retirementSettings.$inferSelect;
 type ProfilePersonRow = typeof schema.retirementProfilePeople.$inferSelect;
@@ -61,7 +61,7 @@ export function settingsFor(personId: number, profile: ActiveProfileRows) {
  * age display and editing), with the what-if retirement age applied.
  */
 export function perPersonSettingsFor(
-  people: Awaited<ReturnType<typeof fetchRetirementData>>["people"],
+  people: RetirementData["people"],
   activeProfileRows: ActiveProfileRows,
   opts: { retirementAgeDelta?: number },
 ) {

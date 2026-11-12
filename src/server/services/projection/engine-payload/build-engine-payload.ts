@@ -58,7 +58,7 @@ import {
   profileSwitchFrom,
 } from "./profile-switches";
 import { retirementContributions } from "@/lib/pure/contributions/retirement-contributions";
-import { applyProfiles, type fetchRetirementData } from "./load";
+import { applyProfiles, type RetirementData } from "./load";
 import { perPersonSettingsFor, type ActiveProfileRows } from "./settings-for";
 import { budgetSummaries } from "./display";
 import { resolveTaxYear } from "@/lib/pure/tax/resolve-tax-year";
@@ -77,7 +77,7 @@ import type { Db } from "@/lib/db";
  */
 export async function buildEnginePayload(
   db: Db,
-  data: Awaited<ReturnType<typeof fetchRetirementData>>,
+  data: RetirementData,
   opts: {
     asOf: Date;
     contributionProfileId?: number;
@@ -100,7 +100,6 @@ export async function buildEnginePayload(
 ) {
   const {
     people,
-    allJobs,
     retSettings,
     retProfiles,
     retProfilePeople,
@@ -108,7 +107,6 @@ export async function buildEnginePayload(
     returnRates,
     allContribsRaw,
     allLimits,
-    snapshotData,
     salaryOverrideRows,
     budgetOverrideRows,
     allBudgetProfiles,
@@ -121,14 +119,12 @@ export async function buildEnginePayload(
     allTaxParams,
     brokerageGoalRows,
     allAppSettings,
-    jobLinkRows,
-    accountBasisRows,
     defaultPreset,
     classBucketRows,
   } = data;
 
   const { salaryProfileActiveMap, allContribs, patchedJobs, profileOpts } =
-    await applyProfiles(db, data, opts, allContribsRaw, allJobs);
+    await applyProfiles(db, data, opts);
 
   const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
@@ -280,21 +276,13 @@ export async function buildEnginePayload(
     personNameById,
     birthYearByPersonId,
     individualAccounts,
-  } = startingAccounts(
-    snapshotData,
-    people,
-    perfAccounts,
+  } = startingAccounts(data, {
     settings,
     activeProfileId,
     opts,
-    allAppSettings,
-    retProfiles,
     perPersonSettings,
-    allJobs,
-    jobLinkRows,
-    accountBasisRows,
     asOfDate,
-  );
+  });
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,

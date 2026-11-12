@@ -3,7 +3,7 @@ import type { Db } from "@/lib/db";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { budgetColumnSum } from "@/lib/pure/budget/item-amount";
-import type { fetchRetirementData } from "./load";
+import type { RetirementData } from "./load";
 
 /**
  * Each budget profile's column totals (the budget override's "from
@@ -11,12 +11,8 @@ import type { fetchRetirementData } from "./load";
  * account resolves to, not the stale `amounts` column.
  */
 export async function budgetSummaries(
-  allBudgetProfiles: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allBudgetProfiles"],
-  allBudgetItems: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allBudgetItems"],
+  allBudgetProfiles: RetirementData["allBudgetProfiles"],
+  allBudgetItems: RetirementData["allBudgetItems"],
   db: Db,
   opts: {
     asOf: Date;

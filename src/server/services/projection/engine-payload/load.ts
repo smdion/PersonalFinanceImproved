@@ -111,6 +111,9 @@ export async function fetchRetirementData(
   };
 }
 
+/** What fetchRetirementData returns: each read's result, by name. */
+export type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
+
 /**
  * Applies the Salary Profile, then the Contribution Profile (its jobs carry
  * their pay-schedule/W-4 fields from the Salary Profile), to every active
@@ -118,15 +121,8 @@ export async function fetchRetirementData(
  */
 export async function applyProfiles<
   O extends { contributionProfileId?: number; salaryProfileId?: number },
->(
-  db: Db,
-  data: Awaited<ReturnType<typeof fetchRetirementData>>,
-  opts: O,
-  allContributionsRaw: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allContribsRaw"],
-  allJobs: Awaited<ReturnType<typeof fetchRetirementData>>["allJobs"],
-) {
+>(db: Db, data: RetirementData, opts: O) {
+  const { allContribsRaw: allContributionsRaw, allJobs } = data;
   const salaryProfileActiveMap =
     data.salaryProfileRow !== undefined
       ? applySalaryProfileRow(data.salaryProfileRow)

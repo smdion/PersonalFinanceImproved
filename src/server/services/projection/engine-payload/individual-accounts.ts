@@ -23,9 +23,7 @@ import type {
   RothBasisMeta,
 } from "@/lib/pure/accounts/account-balances.types";
 import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
-import type { fetchRetirementData } from "./load";
-
-type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
+import type { RetirementData } from "./load";
 
 export function buildIndividualAccounts({
   allJobs,

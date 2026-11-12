@@ -8,7 +8,7 @@ import {
 } from "@/lib/pure/accounts/basis-consistency";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { buildIndividualAccounts } from "./individual-accounts";
-import type { fetchRetirementData } from "./load";
+import type { RetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
 
 /**
@@ -17,26 +17,29 @@ import type { perPersonSettingsFor } from "./settings-for";
  * engine draws from with its owner's dates.
  */
 export function startingAccounts(
-  snapshotData: Awaited<ReturnType<typeof fetchRetirementData>>["snapshotData"],
-  people: Awaited<ReturnType<typeof fetchRetirementData>>["people"],
-  perfAccounts: Awaited<ReturnType<typeof fetchRetirementData>>["perfAccounts"],
-  settings: typeof schema.retirementSettings.$inferSelect,
-  activeProfileId: number | null,
-  opts: { retirementProfileId?: number },
-  allAppSettings: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["allAppSettings"],
-  retProfiles: Awaited<ReturnType<typeof fetchRetirementData>>["retProfiles"],
-  perPersonSettings: ReturnType<
-    typeof perPersonSettingsFor
-  >["perPersonSettings"],
-  allJobs: Awaited<ReturnType<typeof fetchRetirementData>>["allJobs"],
-  jobLinkRows: Awaited<ReturnType<typeof fetchRetirementData>>["jobLinkRows"],
-  accountBasisRows: Awaited<
-    ReturnType<typeof fetchRetirementData>
-  >["accountBasisRows"],
-  asOfDate: Date,
+  data: RetirementData,
+  profile: {
+    settings: typeof schema.retirementSettings.$inferSelect;
+    activeProfileId: number | null;
+    opts: { retirementProfileId?: number };
+    perPersonSettings: ReturnType<
+      typeof perPersonSettingsFor
+    >["perPersonSettings"];
+    asOfDate: Date;
+  },
 ) {
+  const {
+    snapshotData,
+    people,
+    perfAccounts,
+    allAppSettings,
+    retProfiles,
+    allJobs,
+    jobLinkRows,
+    accountBasisRows,
+  } = data;
+  const { settings, activeProfileId, opts, perPersonSettings, asOfDate } =
+    profile;
   // Portfolio by tax bucket + per-account balances (combined for engine).
   // Shared with the Tax Buckets analysis tool — see src/lib/pure/accounts/tax-buckets/tax-buckets.ts.
   const taxBucketBreakdown = computeTaxBucketBreakdown(
