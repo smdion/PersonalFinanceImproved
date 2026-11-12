@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
-import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
 import { getSessionUserLabel } from "@/server/trpc";
-import { refuseWhileDemoActive } from "@/server/services/demo/demo-session";
+import { versionRouteCaller } from "@/server/services/versions/route-gate";
 import { importBackup, type BackupData } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
@@ -88,22 +87,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Require a session with version permission or admin. Only `next dev` with
-    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
-    const allowDev = devBypass() === "admin";
-    const session = await auth();
-    if (!allowDev && !session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (
-      !allowDev &&
-      session?.user.role !== "admin" &&
-      !session?.user.permissions.includes("version")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    const demoActive = await refuseWhileDemoActive("import");
-    if (demoActive) return demoActive;
+    const caller = await versionRouteCaller("import", auth);
+    if (caller instanceof Response) return caller;
 
     // Parse multipart form data, refused past the size limit before it's all held
     if (Number(request.headers.get("content-length")) > MAX_REQUEST_SIZE)
@@ -150,8 +135,8 @@ export async function POST(request: Request) {
       db as Parameters<typeof importBackup>[0],
       backup,
       {
-        asAdmin: allowDev || session?.user.role === "admin",
-        user: session ? getSessionUserLabel(session) : "dev",
+        asAdmin: caller.asAdmin,
+        user: caller.session ? getSessionUserLabel(caller.session) : "dev",
       },
     );
     await settleFirstRunGate(db, "import");
