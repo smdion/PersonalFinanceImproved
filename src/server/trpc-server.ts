@@ -51,7 +51,7 @@ function prefetchShellQueries(
     h.sec.getStatus.prefetch(),
     ...(canSeeHoldings ? [h.investments.computeHealth.prefetch()] : []),
     h.contributionProfile.list.prefetch(),
-    h.contributionProfile.compareData.prefetch(),
+    h.contributionProfile.getComparisonData.prefetch(),
     h.salaryProfile.list.prefetch(),
     h.retirement.retirementProfiles.list.prefetch(),
     h.budget.listProfiles.prefetch(),

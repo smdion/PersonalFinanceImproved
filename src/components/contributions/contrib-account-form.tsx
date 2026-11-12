@@ -109,7 +109,8 @@ export function ContributionAccountForm({
   const { data: jobs } = trpc.settings.jobs.list.useQuery();
   const { data: existingAccounts } =
     trpc.settings.contributionAccounts.list.useQuery();
-  const { data: compareData } = trpc.contributionProfile.compareData.useQuery();
+  const { data: compareData } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const [v, setV] = useState<ContribAccountFormValues>(() =>
     defaultsFor(initialValues),
   );

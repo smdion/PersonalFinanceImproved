@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Contribution Profile compare: accounts × profiles from `compareData`. "Not set"
+ * Contribution Profile compare: accounts × profiles from `getComparisonData`. "Not set"
  * is a real gap (accounts hold no value of their own); cells use
  * resolveContributionFieldDisplayState.
  */
@@ -13,7 +13,8 @@ import {
 } from "@/lib/pure/household/profiles";
 
 export function ContributionProfileCompare() {
-  const { data, isLoading } = trpc.contributionProfile.compareData.useQuery();
+  const { data, isLoading } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const utils = trpc.useUtils();
   const setAccountActive =
     trpc.settings.contributionAccounts.setActive.useMutation({

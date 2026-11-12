@@ -254,7 +254,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "version.getSchedule" },
   { path: "version.getUpgradeBanner" },
   { path: "contributionProfile.list" },
-  { path: "contributionProfile.compareData" },
+  { path: "contributionProfile.getComparisonData" },
   {
     path: "contributionProfile.getById",
     input: ({ ids }) => ({ id: ids.contributionProfile }),

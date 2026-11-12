@@ -79,7 +79,7 @@ export function ContributionAccountsSettings() {
   // Powers each row's "$X in <profile name>" status line: the account carries
   // no value, only the active Contribution Profile's entry does.
   const { data: contributionCompareData } =
-    trpc.contributionProfile.compareData.useQuery();
+    trpc.contributionProfile.getComparisonData.useQuery();
   const activeProfileName =
     contributionProfilesList?.find((p) => p.id === activeContributionProfileId)
       ?.name ?? null;

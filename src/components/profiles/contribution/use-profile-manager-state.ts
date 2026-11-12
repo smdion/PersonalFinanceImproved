@@ -12,7 +12,8 @@ export function useProfileManagerState() {
     useActiveContributionProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
-  const { data: compareData } = trpc.contributionProfile.compareData.useQuery();
+  const { data: compareData } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
     null,
   );

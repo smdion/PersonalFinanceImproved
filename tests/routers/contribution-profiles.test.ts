@@ -661,8 +661,9 @@ describe("contributionProfiles coverage", () => {
         expect(jordanDetail.accountName).toContain("Jordan");
         expect(alexDetail.accountName).not.toBe(jordanDetail.accountName);
 
-        // compareData shares the identical fix.
-        const compareResult = await caller.contributionProfile.compareData();
+        // getComparisonData shares the identical fix.
+        const compareResult =
+          await caller.contributionProfile.getComparisonData();
         const alexCompare = compareResult.accounts.find(
           (a) => a.id === alexIraId,
         )!;
@@ -1350,9 +1351,9 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── COMPAREDATA: lightweight data for the swap-diff + compare view ──
+  // ── GETCOMPARISONDATA: lightweight data for the swap-diff + compare view ──
 
-  describe("compareData", () => {
+  describe("getComparisonData", () => {
     it("returns every profile and every account with active fields keyed by account id", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
@@ -1370,7 +1371,7 @@ describe("contributionProfiles coverage", () => {
           },
         });
 
-        const result = await caller.contributionProfile.compareData();
+        const result = await caller.contributionProfile.getComparisonData();
 
         expect(result.accounts.length).toBeGreaterThanOrEqual(1);
         const account = result.accounts.find((a) => a.id === acctId)!;
@@ -1395,7 +1396,7 @@ describe("contributionProfiles coverage", () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedContribProfile(db, { name: "CompareEmpty" });
-        const result = await caller.contributionProfile.compareData();
+        const result = await caller.contributionProfile.getComparisonData();
         const profile = result.profiles.find((p) => p.id === profileId)!;
         expect(profile.accountActiveFields).toEqual({});
       } finally {
@@ -1421,7 +1422,7 @@ describe("contributionProfiles coverage", () => {
           employerMatchType: "none",
         });
 
-        const result = await caller.contributionProfile.compareData();
+        const result = await caller.contributionProfile.getComparisonData();
         const tradAccount = result.accounts.find((a) => a.id === trad)!;
         const rothAccount = result.accounts.find((a) => a.id === roth)!;
         expect(tradAccount.accountName).not.toBe(rothAccount.accountName);
@@ -1434,7 +1435,7 @@ describe("contributionProfiles coverage", () => {
       // Real bug: an IRA (held at Vanguard, no employer relationship) was
       // showing the person's CURRENT job's employer name instead — e.g.
       // "Alex IRA (TechCorp)" instead of "Alex IRA (Vanguard)" — because
-      // compareData synthesized "institution" from the current job for
+      // getComparisonData synthesized "institution" from the current job for
       // every account type, ignoring the account's real linked institution.
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
@@ -1453,7 +1454,7 @@ describe("contributionProfiles coverage", () => {
           employerMatchType: "none",
         });
 
-        const result = await caller.contributionProfile.compareData();
+        const result = await caller.contributionProfile.getComparisonData();
         const ira = result.accounts.find((a) => a.id === iraId)!;
         expect(ira.accountName).toContain("Vanguard");
         expect(ira.accountName).not.toContain("TechCorp");
@@ -1557,7 +1558,7 @@ describe("contributionProfiles coverage", () => {
           unset: ["isActive"],
         });
 
-        const compare = await caller.contributionProfile.compareData();
+        const compare = await caller.contributionProfile.getComparisonData();
         const profile = compare.profiles.find((p) => p.id === profileId)!;
         expect(profile.accountActiveFields[String(accountId)]).toBeUndefined();
       } finally {

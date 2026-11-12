@@ -251,7 +251,7 @@ export const contributionProfileRouter = createTRPCRouter({
    * plus each profile's raw active-fields map, keyed by account id. Skips `getById`'s
    * per-profile perf-account matching and name disambiguation.
    */
-  compareData: protectedProcedure.query(async ({ ctx }) => {
+  getComparisonData: protectedProcedure.query(async ({ ctx }) => {
     const profiles = await ctx.db
       .select()
       .from(schema.contributionProfiles)
