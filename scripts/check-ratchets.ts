@@ -32,7 +32,9 @@
  * the renamed lines adds. In a commit whose `Rename-path:` check-commit
  * proves (AR9: re-running scripts/rename-trpc-path.ts on the parent gives
  * its tree), a size entry may rise by what the script wrote, with no
- * trailer: the rise is the script's own output. A re-recorded baseline
+ * trailer: the rise is the script's own output; and a known-list entry
+ * whose key its pairs rename, value kept, is the same entry
+ * (ratchets/rename-path.ts). A re-recorded baseline
  * file needs `Baseline-rerecord: <glob> — <reason>` from a commit that
  * changes it.
  * A known-list entry whose key changes and nothing else is excused by that
@@ -76,6 +78,7 @@ import {
   gitIn,
   mechanicalProblem,
   parseNumstat,
+  readRenamePaths,
   readRenames,
   renamePathProblem,
   structuralMoves,
@@ -85,6 +88,7 @@ import {
 import { functionEntries } from "./check-size-baseline";
 import { attributeMoves, groupsOf, parseDiff } from "./ratchets/moves";
 import { RAISE, excuse, importLines } from "./ratchets/raise";
+import { renamedListEntry } from "./ratchets/rename-path";
 import {
   KNOWN_RENAMED,
   knownRenamed,
@@ -626,6 +630,29 @@ export function checkRatchets(
         if (problem === undefined)
           excused.push(
             `${where}, by the proven "${RENAME_PATH}:" (rename-trpc-path.ts re-run on the parent gives this tree)`,
+          );
+        else
+          failures.push(
+            `${where}: a ${RENAME_PATH}: commit check-commit doesn't prove (${problem})`,
+          );
+        continue;
+      }
+      // A known-list key the commit's own Rename-path: pairs rename, its
+      // value kept (the old key gone): the same entry, once proven.
+      const renamedFrom =
+        pathRename && LIST_FILES.includes(rise.file)
+          ? renamedListEntry(
+              rise,
+              readRenamePaths(message).map?.paths ?? [],
+              treeAt(git, `${sha}^`)(rise.file),
+              treeAt(git, sha)(rise.file),
+            )
+          : undefined;
+      if (renamedFrom !== undefined) {
+        const problem = pathRenameProblem();
+        if (problem === undefined)
+          excused.push(
+            `${where}, by the proven "${RENAME_PATH}:" (renames ${renamedFrom.split(" › ").slice(1).join(" › ")}, value kept)`,
           );
         else
           failures.push(
