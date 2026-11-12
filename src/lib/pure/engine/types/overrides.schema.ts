@@ -5,7 +5,9 @@
 import { z } from "zod/v4";
 import {
   accountCategoryEnum,
+  buildCategoryRecord,
   PARENT_CATEGORY_VALUES,
+  type AccountCategory,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 
@@ -27,6 +29,35 @@ export const lumpSumSchema = z
   )
   .optional();
 
+/** The Roth-or-Traditional preference per account category. A key that
+ *  names no category is dropped, never refused: the engine reads categories only. */
+const withdrawalTaxPreferenceSchema = z
+  .record(z.string(), z.enum(["traditional", "roth"]))
+  .transform((preference) => {
+    const kept: Partial<Record<AccountCategory, "traditional" | "roth">> = {};
+    for (const category of accountCategoryEnum()) {
+      const value = preference[category];
+      if (value !== undefined) kept[category] = value;
+    }
+    return kept;
+  });
+
+/** Splits with every category, a category left out at 0%. */
+function fillSplits(
+  splits: Partial<Record<AccountCategory, number>>,
+): Record<AccountCategory, number> {
+  const filled = buildCategoryRecord(() => 0);
+  for (const category of accountCategoryEnum()) {
+    const value = splits[category];
+    if (value !== undefined) filled[category] = value;
+  }
+  return filled;
+}
+
+/** Whether a year may draw money the 10% early-withdrawal penalty applies
+ *  to (DecumulationDefaults.avoidPenalizedWithdrawals). */
+const avoidPenalizedWithdrawalsSchema = z.boolean().optional();
+
 /** Top-level `decumulationDefaults` query input: the live withdrawal
  *  settings a client may send over the household's saved ones. No
  *  `withdrawalRate`: the rate always comes from retirement_settings. */
@@ -37,12 +68,13 @@ export const decumulationDefaultsInputSchema = z
     // setting, then the config default for order and splits).
     withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES).optional(),
     withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    // Partial like a year's override: a category left out takes 0%.
     withdrawalSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number())
+      .partialRecord(z.enum(accountCategoryEnum()), z.number())
+      .transform(fillSplits)
       .optional(),
-    withdrawalTaxPreference: z
-      .record(z.string(), z.enum(["traditional", "roth"]))
-      .default({}),
+    withdrawalTaxPreference: withdrawalTaxPreferenceSchema.default({}),
+    avoidPenalizedWithdrawals: avoidPenalizedWithdrawalsSchema,
   })
   // No routing mode, order or splits in the object default either: a caller
   // that omits `decumulationDefaults` (Tax Optimization's comparisons) must
@@ -62,12 +94,8 @@ export const decumulationOverrideArraySchema = z.array(
     withdrawalSplits: z
       .partialRecord(z.enum(accountCategoryEnum()), z.number())
       .optional(),
-    withdrawalTaxPreference: z
-      .partialRecord(
-        z.enum(accountCategoryEnum()),
-        z.enum(["traditional", "roth"]),
-      )
-      .optional(),
+    withdrawalTaxPreference: withdrawalTaxPreferenceSchema.optional(),
+    avoidPenalizedWithdrawals: avoidPenalizedWithdrawalsSchema,
     // Dollar cap per account per year; excess need moves to the next account.
     withdrawalAccountCaps: z
       .partialRecord(z.enum(accountCategoryEnum()), z.number())
@@ -102,11 +130,11 @@ export const storedWithdrawalOrderSchema = z
     message: "withdrawalOrder must not repeat an account category",
   });
 
-/** The household's saved percentage-mode splits, as fractions. The sum
- *  check is loose on purpose: a one-field edit pushes it off 100% for a
- *  moment, and the engine redistributes any shortfall. */
+/** The saved percentage-mode splits, as fractions, a category left out at 0%.
+ *  The sum check is loose on purpose: a one-field edit pushes it off 100%
+ *  for a moment. */
 export const storedWithdrawalSplitsSchema = z
-  .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+  .partialRecord(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
   .refine(
     (rec) => {
       const sum = Object.values(rec).reduce((s, v) => s + v, 0);
@@ -115,4 +143,5 @@ export const storedWithdrawalSplitsSchema = z
     {
       message: "withdrawalSplits values must be in the neighbourhood of 100%",
     },
-  );
+  )
+  .transform(fillSplits);

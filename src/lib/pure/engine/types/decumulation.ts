@@ -174,15 +174,11 @@ export type DecumulationDefaults = {
   rmdSmoothingMaxBracketTarget?: number;
 };
 
-type DecumulationOverrideRow = z.infer<
-  typeof decumulationOverrideArraySchema
->[number];
 /** One year's decumulation override, sticky-forward like
  *  AccumulationOverride; fields in `decumulationOverrideArraySchema`. */
-export type DecumulationOverride = DecumulationOverrideRow & {
-  /** Engine-only, so not API-settable. See DecumulationDefaults. */
-  avoidPenalizedWithdrawals?: boolean;
-};
+export type DecumulationOverride = z.infer<
+  typeof decumulationOverrideArraySchema
+>[number];
 
 /**
  * The fully resolved decumulation config for a single year.

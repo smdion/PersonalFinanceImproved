@@ -12,6 +12,12 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
+import { resolveDecumulationConfig } from "@/lib/pure/engine/override-resolution";
+import {
+  decumulationDefaultsInputSchema,
+  decumulationOverrideArraySchema,
+  storedWithdrawalSplitsSchema,
+} from "@/lib/pure/engine/types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getDefaultDecumulationOrder,
@@ -109,5 +115,70 @@ describe("buildDecumulationDefaults — withdrawalOrder / withdrawalSplits resol
     );
     expect(out.withdrawalOrder).toEqual(getDefaultDecumulationOrder());
     expect(out.withdrawalSplits).toEqual(DEFAULT_WITHDRAWAL_SPLITS);
+  });
+});
+
+describe("the withdrawal settings' one schema", () => {
+  it("applies a sent avoidPenalizedWithdrawals: the defaults and a year's override", () => {
+    const client = decumulationDefaultsInputSchema.parse({
+      avoidPenalizedWithdrawals: false,
+    });
+    const defaults = buildDecumulationDefaults(makeSettings(), client, RATES);
+    expect(
+      resolveDecumulationConfig(2040, defaults, []).avoidPenalizedWithdrawals,
+    ).toBe(false);
+
+    const overrides = decumulationOverrideArraySchema.parse([
+      { year: 2045, avoidPenalizedWithdrawals: true },
+    ]);
+    expect(
+      resolveDecumulationConfig(2044, defaults, overrides)
+        .avoidPenalizedWithdrawals,
+    ).toBe(false);
+    expect(
+      resolveDecumulationConfig(2045, defaults, overrides)
+        .avoidPenalizedWithdrawals,
+    ).toBe(true);
+  });
+
+  it("leaves avoidPenalizedWithdrawals at its default (avoid) when not sent", () => {
+    const defaults = buildDecumulationDefaults(
+      makeSettings(),
+      NO_CLIENT,
+      RATES,
+    );
+    expect(
+      resolveDecumulationConfig(2040, defaults, []).avoidPenalizedWithdrawals,
+    ).toBe(true);
+  });
+
+  it("drops a tax-preference key that names no account category, in both inputs, never refusing it", () => {
+    const client = decumulationDefaultsInputSchema.parse({
+      withdrawalTaxPreference: { "401k": "roth", "401(k)": "traditional" },
+    });
+    expect(client.withdrawalTaxPreference).toEqual({ "401k": "roth" });
+    const [override] = decumulationOverrideArraySchema.parse([
+      {
+        year: 2040,
+        withdrawalTaxPreference: { ira: "traditional", x: "roth" },
+      },
+    ]);
+    expect(override!.withdrawalTaxPreference).toEqual({ ira: "traditional" });
+  });
+
+  it("takes partial splits, a category left out at 0%, sent or saved", () => {
+    const client = decumulationDefaultsInputSchema.parse({
+      withdrawalSplits: { "401k": 0.6, brokerage: 0.4 },
+    });
+    expect(client.withdrawalSplits).toEqual({
+      "401k": 0.6,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0.4,
+    });
+    expect(
+      storedWithdrawalSplitsSchema.parse({ ira: 0.5, brokerage: 0.5 }),
+    ).toEqual({ "401k": 0, "403b": 0, ira: 0.5, hsa: 0, brokerage: 0.5 });
   });
 });

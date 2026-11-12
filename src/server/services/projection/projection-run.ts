@@ -171,6 +171,7 @@ export function buildDecumulationDefaults(
     withdrawalSplits: clientDefaults.withdrawalSplits ??
       saved.withdrawalSplits ?? { ...CONFIG_WITHDRAWAL_SPLITS },
     withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference,
+    avoidPenalizedWithdrawals: clientDefaults.avoidPenalizedWithdrawals,
     distributionTaxRates,
     withdrawalStrategy: readStoredStrategy(settings.withdrawalStrategy),
     strategyParams: buildStrategyParams(settings),
