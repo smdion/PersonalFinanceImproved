@@ -71,7 +71,7 @@ beforeEach(() => {
 
 describe("NewSnapshotForm fill from SimpleFIN", () => {
   it("fills linked balances and labels them", () => {
-    setQuery("investments.suggestSnapshot", {
+    setQuery("investments.listSnapshotSuggestions", {
       snapshotDate: "2025-01-01",
       amounts: [{ key: "11_preTax__1", amount: 104321.5 }],
       accounts: [

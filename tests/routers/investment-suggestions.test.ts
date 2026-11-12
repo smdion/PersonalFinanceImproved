@@ -376,7 +376,7 @@ describe("investment suggestions", () => {
   });
 
   it("suggests snapshot balances from linked accounts", async () => {
-    const s = await ctx.caller.investments.suggestSnapshot();
+    const s = await ctx.caller.investments.listSnapshotSuggestions();
     expect(s.amounts.map((r) => r.amount).sort((x, y) => x - y)).toEqual([
       6100, 9000, 10300, 11500,
     ]);
@@ -539,7 +539,7 @@ describe("investment suggestions", () => {
       .set({ isIncluded: false })
       .where(eq(sqliteSchema.simplefinAccounts.id, feeds.brk!))
       .run();
-    const snap = await ctx.caller.investments.suggestSnapshot();
+    const snap = await ctx.caller.investments.listSnapshotSuggestions();
     expect(snap.amounts.some((r) => r.amount === 6100)).toBe(false);
     const insights = await ctx.caller.investments.computeAccountInsights();
     expect(insights.every((i) => i.live?.total !== 6100)).toBe(true);

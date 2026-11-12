@@ -155,10 +155,10 @@ export function NewSnapshotForm({
 
   const { data: snapshotTotals } = trpc.netWorth.listSnapshotTotals.useQuery();
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.suggestSnapshot.useQuery(
-    undefined,
-    { retry: false },
-  );
+  const { data: suggestions } =
+    trpc.investments.listSnapshotSuggestions.useQuery(undefined, {
+      retry: false,
+    });
   const [filled, setFilled] = useState(false);
   const [accountNotes, setAccountNotes] = useState<
     Map<number, NonNullable<typeof suggestions>["accounts"][number]>

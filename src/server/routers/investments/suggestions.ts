@@ -48,7 +48,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * Suggested balances for a new portfolio snapshot, by snapshot
    * sub-account key, from linked SimpleFIN accounts.
    */
-  suggestSnapshot: portfolioProcedure.query(async ({ ctx }) => {
+  listSnapshotSuggestions: portfolioProcedure.query(async ({ ctx }) => {
     const [context, accounts, mix, perfAccounts] = await Promise.all([
       loadFeedContext(ctx.db),
       loadAccounts(ctx.db),

@@ -296,7 +296,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "investments.computeComparison", input: none },
   { path: "investments.getSimulationGlidePaths" },
   { path: "investments.getHoldingsOverview" },
-  { path: "investments.suggestSnapshot" },
+  { path: "investments.listSnapshotSuggestions" },
   {
     path: "investments.listPerformanceSuggestions",
     input: () => ({ year: 2026 }),
