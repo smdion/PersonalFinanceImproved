@@ -63,7 +63,7 @@ interface CoastFireCardProps {
   /** Coast FIRE simulation result from use-projection-queries.ts. It runs on
    *  demand (once a Coast FIRE scenario is selected), so the card shows the
    *  deterministic age first and upgrades to combined when it arrives. */
-  coastFireMcResult?: CoastFireSimulationResult;
+  coastFireSimulationResult?: CoastFireSimulationResult;
   /** True while the shared coast MC query is fetching. */
   coastFireSimulationLoading?: boolean;
   /** When the Coast FIRE MC result was computed — ISO string, or null when
@@ -78,7 +78,7 @@ interface CoastFireCardProps {
 export function CoastFireCard({
   input,
   ageLabel,
-  coastFireMcResult,
+  coastFireSimulationResult,
   coastFireSimulationLoading = false,
   coastFireSimulationComputedAt,
   coastFireSimulationNotConfigured,
@@ -92,9 +92,9 @@ export function CoastFireCard({
   );
 
   const det = deterministic?.result ?? undefined;
-  const simulationAvailable = coastFireMcResult != null;
+  const simulationAvailable = coastFireSimulationResult != null;
   const hasGapAmount =
-    simulationAvailable && hasCoastFireGapAmount(coastFireMcResult);
+    simulationAvailable && hasCoastFireGapAmount(coastFireSimulationResult);
 
   return (
     <KpiCard
@@ -106,7 +106,7 @@ export function CoastFireCard({
         `Baseline is a single expected-return path (same math as the Baseline scenario) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
         ...(hasGapAmount
           ? [
-              `Why stopping today fails: in ${formatPercent(coastFireMcResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
+              `Why stopping today fails: in ${formatPercent(coastFireSimulationResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireSimulationResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
             ]
           : []),
       ]}
@@ -115,12 +115,16 @@ export function CoastFireCard({
           prefetching, combined baseline+simulated once it lands. Does NOT
           show "Already ✓" unless BOTH baseline and simulated agree. */}
       {simulationAvailable ? (
-        <CombinedStatus det={det} mc={coastFireMcResult} ageLabel={ageLabel} />
+        <CombinedStatus
+          det={det}
+          mc={coastFireSimulationResult}
+          ageLabel={ageLabel}
+        />
       ) : (
         <DeterministicStatus result={det} ageLabel={ageLabel} />
       )}
       <div className="mt-auto pt-2">
-        {coastFireSimulationLoading && !coastFireMcResult && (
+        {coastFireSimulationLoading && !coastFireSimulationResult && (
           <div className="text-caption text-muted animate-pulse">
             Running simulations...
           </div>
@@ -138,7 +142,7 @@ export function CoastFireCard({
         {simulationAvailable && (
           <SimulatedDetail
             ageLabel={ageLabel}
-            mc={coastFireMcResult}
+            mc={coastFireSimulationResult}
             computedAt={coastFireSimulationComputedAt}
           />
         )}

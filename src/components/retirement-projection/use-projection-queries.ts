@@ -165,7 +165,7 @@ export function useProjectionQueries(
   const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
 
   // sharedInput is baseSharedInput as-is: the Coast FIRE deterministic line
-  // comes from coastFireMcResult.deterministicProjection at the derived layer,
+  // comes from coastFireSimulationResult.deterministicProjection at the derived layer,
   // switching atomically with the MC bands instead of refetching the engine.
   const sharedInput = baseSharedInput;
   const debouncedInput = useDebouncedValue(sharedInput, PROJECTION_DEBOUNCE_MS);
@@ -181,8 +181,8 @@ export function useProjectionQueries(
   );
   // Defaults false: the background Coast FIRE MC probe adds ~4-6s of server
   // work per page load. Turning it on trades that for instant scenario
-  // switching (see coastFireMcQuery).
-  const [coastFireMcAutoloadEnabled] = usePersistedToggle(
+  // switching (see coastFireSimulationQuery).
+  const [coastFireSimulationAutoloadEnabled] = usePersistedToggle(
     SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD,
     false,
   );
@@ -275,7 +275,7 @@ export function useProjectionQueries(
       debouncedBaseInput,
     ],
   );
-  // Shared with coastFireMcQuery and its re-run so both poll the same progress
+  // Shared with coastFireSimulationQuery and its re-run so both poll the same progress
   // entry. Derived from the input (not a per-mount random id) so progress
   // resumes after a remount (see monte-carlo-worker-client.ts runId).
   const coastFireSimulationRunId = useMemo(
@@ -294,7 +294,7 @@ export function useProjectionQueries(
   const runMonteCarlo = async () => {
     setActiveSimulationReruns((n) => n + 1);
     try {
-      // Same ids mcQuery / coastFireMcQuery poll progress under (consts below,
+      // Same ids mcQuery / coastFireSimulationQuery poll progress under (consts below,
       // initialized before any click), so a manual re-run reports live progress.
       const result = await utils.projection.computeSimulation.fetch({
         ...runMonteCarloInput,
@@ -309,7 +309,7 @@ export function useProjectionQueries(
       setActiveSimulationReruns((n) => n - 1);
     }
   };
-  const runCoastFireMc = async () => {
+  const runCoastFireSimulation = async () => {
     setActiveSimulationReruns((n) => n + 1);
     try {
       const result = await utils.projection.computeCoastFireSimulation.fetch({
@@ -328,7 +328,7 @@ export function useProjectionQueries(
   /** Both baseline MC + Coast FIRE MC together — what the "Re-run" button
    *  actually triggers. */
   const rerunAllMc = async () => {
-    await Promise.all([runMonteCarlo(), runCoastFireMc()]);
+    await Promise.all([runMonteCarlo(), runCoastFireSimulation()]);
   };
 
   // Coast FIRE "Custom Age" probe: explicit-run, since each check is a
@@ -493,28 +493,29 @@ export function useProjectionQueries(
     );
 
   // Coast FIRE MC runs on demand once a Coast FIRE scenario is selected, or
-  // always with `coastFireMcAutoloadEnabled`. Keep in sync with
+  // always with `coastFireSimulationAutoloadEnabled`. Keep in sync with
   // `inCoastFireScenario` below; exposed for index.tsx's progress-strip phase.
   const coastFireSimulationQueryEnabled =
-    coastFireMcAutoloadEnabled ||
+    coastFireSimulationAutoloadEnabled ||
     projectionView === "coastFire" ||
     projectionView === "coastFireToday";
-  const coastFireMcQuery = trpc.projection.computeCoastFireSimulation.useQuery(
-    { ...debouncedBaseInput, runId: coastFireSimulationRunId },
-    {
-      enabled:
-        coastFireSimulationQueryEnabled &&
-        engineQuery.isSuccess &&
-        !engineQuery.isFetching,
-      placeholderData: (prev) => prev,
-      staleTime: 5 * PROJECTION_STALE_TIME_MS,
-    },
-  );
+  const coastFireSimulationQuery =
+    trpc.projection.computeCoastFireSimulation.useQuery(
+      { ...debouncedBaseInput, runId: coastFireSimulationRunId },
+      {
+        enabled:
+          coastFireSimulationQueryEnabled &&
+          engineQuery.isSuccess &&
+          !engineQuery.isFetching,
+        placeholderData: (prev) => prev,
+        staleTime: 5 * PROJECTION_STALE_TIME_MS,
+      },
+    );
   // Live progress of the Coast FIRE binary search's current probe (resets to 0
   // per probe); also polls during a manual re-run, which reuses
   // coastFireSimulationRunId.
   const coastFireSimulationProgressEnabled =
-    coastFireMcQuery.isFetching || isRerunning;
+    coastFireSimulationQuery.isFetching || isRerunning;
   const coastFireSimulationProgressInterval = useBoundedPollInterval(
     400,
     SIMULATION_PROGRESS_POLL_MAX,
@@ -532,13 +533,13 @@ export function useProjectionQueries(
     );
   // Cast: tRPC widens the nested mcResult across the binary-search branches;
   // the calculator authors it directly from calculateMonteCarlo().
-  const coastFireMcResult = coastFireMcQuery.data?.result?.mcResult as
-    MonteCarloResult | undefined;
+  const coastFireSimulationResult = coastFireSimulationQuery.data?.result
+    ?.mcResult as MonteCarloResult | undefined;
   // "Coast FIRE (Today)": contributions stop at the CURRENT age; the router
   // returns it as `stopNowMcResult`. Null when mcResult already is "today"
   // (already_coast, or a retiree's failing plan), so fall back to it.
-  const coastFireTodayMcResult = (coastFireMcQuery.data?.result
-    ?.stopNowMcResult ?? coastFireMcQuery.data?.result?.mcResult) as
+  const coastFireTodaySimulationResult = (coastFireSimulationQuery.data?.result
+    ?.stopNowMcResult ?? coastFireSimulationQuery.data?.result?.mcResult) as
     MonteCarloResult | undefined;
 
   // Rate-Seeded scenario: computeSimulation with the
@@ -609,13 +610,13 @@ export function useProjectionQueries(
 
   // inCoastFireScenario: which MC source to LOAD (spinner shows before data);
   // useCoastFireSimulation: which to READ once the active result exists. Both
-  // variants' results come from the same coastFireMcQuery response.
+  // variants' results come from the same coastFireSimulationQuery response.
   const inCoastFireScenario =
     projectionView === "coastFire" || projectionView === "coastFireToday";
   const activeCoastFireSimulationResult =
     projectionView === "coastFireToday"
-      ? coastFireTodayMcResult
-      : coastFireMcResult;
+      ? coastFireTodaySimulationResult
+      : coastFireSimulationResult;
   // Which non-baseline scenario, if any, is active: Coast FIRE (all variants)
   // and Rate-Seeded source their deterministic line + MC bands from their own
   // MonteCarloResult (Custom's is plain state; see checkCoastFireCustomAge).
@@ -644,7 +645,8 @@ export function useProjectionQueries(
         : projectionView === "coastFireCustom"
           ? coastFireProbeLoading
           : inCoastFireScenario
-            ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+            ? coastFireSimulationQuery.isLoading ||
+              coastFireSimulationQuery.isFetching
             : mcQuery.isLoading || mcQuery.isFetching));
 
   const simulationBandsByYear = useMemo(() => {
@@ -759,15 +761,15 @@ export function useProjectionQueries(
     coastFireAge,
     bracketOptimizerQuery,
     bracketOptimizerResult,
-    coastFireMcQuery,
+    coastFireSimulationQuery,
     coastFireSimulationQueryEnabled,
     simulationProgressQuery,
     simulationPrefetchProgressQuery,
     coastFireSimulationProgressQuery,
     rateSeededSimulationProgressQuery,
     coastFireProbeProgressQuery,
-    coastFireMcResult,
-    coastFireTodayMcResult,
+    coastFireSimulationResult,
+    coastFireTodaySimulationResult,
     activeCoastFireSimulationResult,
     rateSeededMcQuery,
     rateSeededSimulationResult,
@@ -780,8 +782,8 @@ export function useProjectionQueries(
     runSimulation,
     mcAutoloadEnabled,
     runMonteCarlo,
-    coastFireMcAutoloadEnabled,
-    runCoastFireMc,
+    coastFireSimulationAutoloadEnabled,
+    runCoastFireSimulation,
     rerunAllMc,
     isRerunning,
     clearProjectionCacheMutation,

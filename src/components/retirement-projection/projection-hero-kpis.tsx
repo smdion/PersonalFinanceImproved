@@ -108,7 +108,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     simulationLoading,
     debouncedBaseInput,
     projectionView,
-    coastFireMcQuery,
+    coastFireSimulationQuery,
     activeAltMcResult,
     dollarMode,
     ageLabel,
@@ -382,14 +382,20 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         {/* Card 5: Coast FIRE */}
         <CoastFireCard
           input={debouncedBaseInput}
-          coastFireMcResult={coastFireMcQuery.data?.result ?? undefined}
-          coastFireSimulationLoading={
-            coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+          coastFireSimulationResult={
+            coastFireSimulationQuery.data?.result ?? undefined
           }
-          coastFireSimulationComputedAt={coastFireMcQuery.data?.computedAt}
+          coastFireSimulationLoading={
+            coastFireSimulationQuery.isLoading ||
+            coastFireSimulationQuery.isFetching
+          }
+          coastFireSimulationComputedAt={
+            coastFireSimulationQuery.data?.computedAt
+          }
           coastFireSimulationNotConfigured={
-            coastFireMcQuery.data && "notConfigured" in coastFireMcQuery.data
-              ? coastFireMcQuery.data.notConfigured
+            coastFireSimulationQuery.data &&
+            "notConfigured" in coastFireSimulationQuery.data
+              ? coastFireSimulationQuery.data.notConfigured
               : null
           }
           ageLabel={ageLabel}
@@ -453,7 +459,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       {/* Coast FIRE — 4th card in deterministic mode */}
       <CoastFireCard
         input={debouncedBaseInput}
-        coastFireMcResult={undefined}
+        coastFireSimulationResult={undefined}
         coastFireSimulationLoading={false}
         ageLabel={ageLabel}
       />

@@ -8,7 +8,7 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
-    coastFireMcQuery,
+    coastFireSimulationQuery,
     rateSeededMcQuery,
     coastFireProbeLoading,
     isRerunning,
@@ -25,7 +25,7 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
     engineQuery.isFetching ||
     mcPrefetchQuery.isFetching ||
     mcQuery.isFetching ||
-    coastFireMcQuery.isFetching ||
+    coastFireSimulationQuery.isFetching ||
     rateSeededMcQuery.isFetching ||
     coastFireProbeLoading ||
     isRerunning;
@@ -34,7 +34,7 @@ export function RecalculatingBanner({ state }: { state: ProjectionState }) {
   // chain matters only when two overlap (Re-run starts two).
   const simulationProgress = mcQuery.isFetching
     ? (simulationProgressQuery.data ?? null)
-    : coastFireMcQuery.isFetching
+    : coastFireSimulationQuery.isFetching
       ? (coastFireSimulationProgressQuery.data ?? null)
       : rateSeededMcQuery.isFetching
         ? (rateSeededSimulationProgressQuery.data ?? null)

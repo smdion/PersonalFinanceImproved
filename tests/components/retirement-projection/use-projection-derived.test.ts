@@ -183,7 +183,7 @@ function makeQueries(
     },
     contributionProfilesQuery: { data: undefined },
     salaryProfilesQuery: { data: undefined },
-    coastFireMcResult: undefined,
+    coastFireSimulationResult: undefined,
     ...overrides,
   } as unknown as ProjectionQueries;
 }
@@ -265,12 +265,12 @@ describe("useProjectionDerived", () => {
           // queries (computed once in use-projection-queries.ts, generalized
           // 2026-08-28 to also cover the Rate-Seeded scenario alongside
           // Coast FIRE) instead of re-deriving it from
-          // `coastFireMcResult`/`coastFireTodayMcResult` itself (code
+          // `coastFireSimulationResult`/`coastFireTodaySimulationResult` itself (code
           // review, 2026-08-27 — that re-derivation used to happen
           // independently in 3 places). Set all three so this mock matches
           // what the real hook would have produced for the view
           // "coastFire".
-          coastFireMcResult: {
+          coastFireSimulationResult: {
             deterministicProjection: { projectionByYear: coastYears },
           },
           activeCoastFireSimulationResult: {

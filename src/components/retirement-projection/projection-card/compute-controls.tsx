@@ -21,14 +21,14 @@ export function ComputeControls({
     projectionMode,
     projectionView,
     setProjectionView,
-    coastFireMcQuery,
+    coastFireSimulationQuery,
     coastFireAge: deterministicCoastFireAge,
   } = state;
   const isSimulation = projectionMode === "monteCarlo";
   // Availability comes from the deterministic age, which always runs (the
   // simulation's probe starts only once this scenario is picked); the label
   // prefers the simulated age once loaded, and none when already coasting.
-  const coastFireSimulationData = coastFireMcQuery.data?.result;
+  const coastFireSimulationData = coastFireSimulationQuery.data?.result;
   const coastFireAge =
     coastFireSimulationData?.status === "found"
       ? coastFireSimulationData.coastFireAge

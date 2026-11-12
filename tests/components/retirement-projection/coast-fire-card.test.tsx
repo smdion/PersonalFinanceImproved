@@ -114,7 +114,7 @@ describe("CoastFireCard", () => {
       <CoastFireCard
         ageLabel={(age) => `Age ${age}`}
         input={baseInput}
-        coastFireMcResult={{
+        coastFireSimulationResult={{
           coastFireAge: 55,
           status: "found",
           successRate: 0.92,
@@ -145,7 +145,7 @@ describe("CoastFireCard", () => {
       <CoastFireCard
         ageLabel={(age) => `Age ${age}`}
         input={baseInput}
-        coastFireMcResult={{
+        coastFireSimulationResult={{
           coastFireAge: null,
           status: "unreachable",
           successRate: 0.6,
@@ -177,7 +177,7 @@ describe("CoastFireCard", () => {
         ageLabel={(age) => `Age ${age}`}
         input={baseInput}
         coastFireSimulationLoading
-        coastFireMcResult={undefined}
+        coastFireSimulationResult={undefined}
       />,
     );
     expect(screen.getByText("Running simulations...")).toBeInTheDocument();

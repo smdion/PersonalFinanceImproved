@@ -9,11 +9,11 @@ export function ProjectionLoaderStrip({ state }: { state: ProjectionState }) {
     mcPrefetchQuery,
     mcAutoloadEnabled,
     coastFireSimulationQueryEnabled,
-    coastFireMcQuery,
+    coastFireSimulationQuery,
     autoloadEnabled,
     runSimulation,
     runMonteCarlo,
-    runCoastFireMc,
+    runCoastFireSimulation,
   } = state;
   const enginePhase = engineQuery.isLoading
     ? ("active" as const)
@@ -32,12 +32,12 @@ export function ProjectionLoaderStrip({ state }: { state: ProjectionState }) {
         : ("pending" as const);
 
   // "disabled" hides the strip. coastFireSimulationQueryEnabled is the value that
-  // gates coastFireMcQuery itself, so the two always agree.
+  // gates coastFireSimulationQuery itself, so the two always agree.
   const coastFireSimulationPhase = !coastFireSimulationQueryEnabled
     ? ("disabled" as const)
-    : coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+    : coastFireSimulationQuery.isLoading || coastFireSimulationQuery.isFetching
       ? ("active" as const)
-      : coastFireMcQuery.data
+      : coastFireSimulationQuery.data
         ? ("done" as const)
         : ("pending" as const);
 
@@ -53,7 +53,7 @@ export function ProjectionLoaderStrip({ state }: { state: ProjectionState }) {
         showActionState={showActionState}
         onRunSimulation={runSimulation}
         onRunMonteCarlo={runMonteCarlo}
-        onRunCoastFireSimulation={runCoastFireMc}
+        onRunCoastFireSimulation={runCoastFireSimulation}
       />
     </div>
   );

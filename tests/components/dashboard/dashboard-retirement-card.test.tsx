@@ -88,7 +88,7 @@ const milestoneInputsAre = (
 ) => setQuery("milestones.computeInputs", data);
 const mcPeekIs = (data: MockOutput<"projection.getSimulationSummary">) =>
   setQuery("projection.getSimulationSummary", data);
-const coastFireMcPeekIs = (
+const coastFireSimulationPeekIs = (
   data: MockOutput<"projection.computeCoastFireSimulation">,
 ) => setQuery("projection.computeCoastFireSimulation", data);
 
@@ -113,7 +113,7 @@ beforeEach(() => {
   resetTrpcMock();
   milestoneInputsAre(undefined);
   mcPeekIs({ result: null });
-  coastFireMcPeekIs({ result: null });
+  coastFireSimulationPeekIs({ result: null });
   // A partial engine answer: only what the card reads.
   setQuery(
     "projection.computeProjection",
@@ -129,7 +129,7 @@ beforeEach(() => {
 describe("RetirementCard dashboard cache-peek features", () => {
   it("shows nothing extra when neither peek query has cached data", () => {
     mcPeekIs({ result: null });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.queryByText("Simulated success")).toBeNull();
     expect(
@@ -142,7 +142,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
       result: { successRate: 0.92, todayBands: [] },
       computedAt: new Date().toISOString(),
     });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
@@ -156,7 +156,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
 
   it("shows the simulated Coast FIRE age next to the deterministic baseline", () => {
     mcPeekIs({ result: null });
-    coastFireMcPeekIs({
+    coastFireSimulationPeekIs({
       result: { status: "found", coastFireAge: 55 },
     });
     render(<RetirementCard />);
@@ -179,7 +179,7 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
       },
       computedAt: new Date().toISOString(),
     });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText("$620,000.00")).toBeInTheDocument();
     expect(screen.getByText(/simulated median/)).toBeInTheDocument();
@@ -190,7 +190,7 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
 
   it("without a simulation: the labelled baseline and a pointer to run one", () => {
     mcPeekIs({ result: null });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     render(<RetirementCard />);
     expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
     const prompt = screen.getByText(/Run a simulation on the Retirement page/);
@@ -206,7 +206,7 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
 describe("RetirementCard scope", () => {
   it("counts Retirement accounts only, like the Retirement page", () => {
     mcPeekIs({ result: null });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     const saved = engineData.result.projectionByYear;
     const savedSpecs = (engineData as Record<string, unknown>)
       .contributionSpecs;
@@ -298,7 +298,7 @@ describe("RetirementCard readiness follows the household's checkpoint table", ()
 
   it("uses Money Guy's liquid investments by default", () => {
     mcPeekIs({ result: null });
-    coastFireMcPeekIs({ result: null });
+    coastFireSimulationPeekIs({ result: null });
     milestoneInputsAre({ checkpointSource: "moneyGuy", years: [now] });
     render(<RetirementCard />);
     // 600k / 200k = 3.0×

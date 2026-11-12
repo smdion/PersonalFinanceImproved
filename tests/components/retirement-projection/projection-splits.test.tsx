@@ -158,12 +158,12 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     simulationBandsByYear: null,
     simulationIsPrefetch: false,
     mcChartPending: false,
-    coastFireMcQuery: {
+    coastFireSimulationQuery: {
       data: null,
       isLoading: false,
       isFetching: false,
     },
-    coastFireMcResult: null,
+    coastFireSimulationResult: null,
     debouncedBaseInput: null,
     projectionView: "baseline",
 

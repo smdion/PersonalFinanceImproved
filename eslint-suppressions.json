@@ -1919,7 +1919,7 @@
   },
   "src/components/retirement-projection/coast-fire-card.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 6
     }
   },
   "src/components/retirement-projection/decumulation-config.tsx": {
@@ -2099,11 +2099,6 @@
       "count": 1
     }
   },
-  "src/components/retirement-projection/projection-card/compute-controls.tsx": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/components/retirement-projection/projection-card/decumulation-panel.tsx": {
     "ratchet/no-abbreviation": {
       "count": 2
@@ -2119,7 +2114,7 @@
   },
   "src/components/retirement-projection/projection-card/loader-strip.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 2
     }
   },
   "src/components/retirement-projection/projection-card/projection-results.tsx": {
@@ -2129,7 +2124,7 @@
   },
   "src/components/retirement-projection/projection-card/recalculating-banner.tsx": {
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/retirement-projection/projection-card/report-controls.tsx": {
@@ -2196,7 +2191,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 5
     }
   },
   "src/components/retirement-projection/projection-loader.tsx": {
@@ -2392,7 +2387,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 16
+      "count": 11
     }
   },
   "src/components/retirement-projection/use-projection-state.ts": {

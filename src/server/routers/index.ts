@@ -5,7 +5,7 @@ import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import { contributionRouter } from "./contribution";
 import { mortgageRouter } from "./mortgage";
-import { networthRouter } from "./net-worth";
+import { netWorthRouter } from "./net-worth";
 import { milestonesRouter } from "./milestones";
 import { savingsRouter } from "./savings";
 import { brokerageRouter } from "./brokerage";
@@ -38,7 +38,7 @@ export const appRouter = createTRPCRouter({
   budget: budgetRouter,
   contribution: contributionRouter,
   mortgage: mortgageRouter,
-  netWorth: networthRouter,
+  netWorth: netWorthRouter,
   milestones: milestonesRouter,
   savings: savingsRouter,
   brokerage: brokerageRouter,
