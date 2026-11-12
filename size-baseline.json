@@ -379,7 +379,7 @@
     "src/server/routers/salary-profiles.ts": 364,
     "src/server/routers/savings/api-sync.ts": 14,
     "src/server/routers/savings/index.ts": 28,
-    "src/server/routers/savings/profile-allocations.ts": 359,
+    "src/server/routers/savings/profile-allocations.ts": 347,
     "src/server/routers/settings/admin.ts": 408,
     "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 799,

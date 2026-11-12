@@ -881,7 +881,7 @@ describe("savings.convertGoalToBudgetItem", () => {
     ).rejects.toThrow("Savings goal not found");
   });
 
-  it("throws PRECONDITION_FAILED when no active budget profile exists", async () => {
+  it("refuses with no active budget profile, as every budget edit does", async () => {
     const freshCtx = await createTestCaller();
     try {
       const freshGoalId = seedSavingsGoal(freshCtx.db, {
@@ -895,7 +895,25 @@ describe("savings.convertGoalToBudgetItem", () => {
           subcategory: "Something",
           isEssential: false,
         }),
-      ).rejects.toThrow("No active budget profile");
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "No active profile",
+      });
+    } finally {
+      freshCtx.cleanup();
+    }
+  });
+
+  it("refuses a recalculation with no budget profile, or one that was deleted", async () => {
+    const freshCtx = await createTestCaller();
+    try {
+      const refused = { code: "BAD_REQUEST", message: "No active profile" };
+      await expect(
+        freshCtx.caller.savings.recalculateAllocation(),
+      ).rejects.toMatchObject(refused);
+      await expect(
+        freshCtx.caller.savings.lockInAllocationPercent({ profileId: 999_999 }),
+      ).rejects.toMatchObject(refused);
     } finally {
       freshCtx.cleanup();
     }

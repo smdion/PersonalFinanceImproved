@@ -14,7 +14,7 @@ import {
   loadSavingsGoalLinks,
   copySavingsGoalLinks,
 } from "@/server/data/category-links";
-import { lockedTargetBudgetProfile } from "@/server/data/budget-profile-lock";
+import { requireLockedBudgetProfile } from "@/server/services/budget/budget-client";
 import { zCalendarDate, zDecimal } from "@/lib/utils/zod-fields";
 import {
   targetModeSchema,
@@ -162,12 +162,7 @@ export const goalProcedures = {
         // Target profile: input.profileId (a non-active profile a Plan uses
         // or the page shows), else the active one, read under its row lock
         // (the item is sized by its columns).
-        const profile = await lockedTargetBudgetProfile(tx, input.profileId);
-        if (!profile)
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "No active budget profile",
-          });
+        const profile = await requireLockedBudgetProfile(tx, input.profileId);
         // The funding carries over: the item budgets what this profile was
         // putting into the goal each month, in every column.
         const funding = await getResolvedGoalAllocations(

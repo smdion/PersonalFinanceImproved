@@ -21,7 +21,7 @@ import {
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
 } from "@/server/services/savings/savings-allocation";
-import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
+import { requireBudgetProfile } from "@/server/services/budget/budget-client";
 import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import {
@@ -196,15 +196,9 @@ export const profileAllocationProcedures = {
     .mutation(async ({ ctx, input }) => {
       const [goals, targetProfile] = await Promise.all([
         ctx.db.select().from(schema.savingsGoals),
-        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+        requireBudgetProfile(ctx.db, input?.profileId),
       ]);
-      const targetProfileId = targetProfile?.id;
-      if (targetProfileId === undefined) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No active budget profile to recalculate against",
-        });
-      }
+      const targetProfileId = targetProfile.id;
 
       // Resolve against the target profile's own allocations: percentage vs flat-dollar
       // is decided per profile.
@@ -282,15 +276,9 @@ export const profileAllocationProcedures = {
     .mutation(async ({ ctx, input }) => {
       const [goals, targetProfile] = await Promise.all([
         ctx.db.select().from(schema.savingsGoals),
-        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+        requireBudgetProfile(ctx.db, input?.profileId),
       ]);
-      const targetProfileId = targetProfile?.id;
-      if (targetProfileId === undefined) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No active budget profile to recalculate against",
-        });
-      }
+      const targetProfileId = targetProfile.id;
 
       const resolvedByGoal = await getResolvedGoalAllocations(
         ctx.db,
