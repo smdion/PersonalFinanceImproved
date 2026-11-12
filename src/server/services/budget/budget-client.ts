@@ -24,17 +24,16 @@ export async function requireActiveBudgetApi(
 }
 
 /** The active budget API and its client; PRECONDITION_FAILED when none is
- *  active or its connection is missing (`noClientMessage`). */
+ *  active or its connection is missing. */
 export async function requireBudgetClient(
   db: Db,
-  noClientMessage = "Budget API client not available",
 ): Promise<{ service: BudgetApiService; client: BudgetAPIClient }> {
   const service = await requireActiveBudgetApi(db);
   const client = await getClientForService(db, service);
   if (!client) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: noClientMessage,
+      message: "Budget API client not available",
     });
   }
   return { service, client };

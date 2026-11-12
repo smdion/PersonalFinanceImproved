@@ -427,7 +427,7 @@
     "src/server/services/simulation/monte-carlo-projection.ts": 338,
     "src/server/services/sync/budget-api-push.ts": 409,
     "src/server/services/sync/preview.ts": 428,
-    "src/server/services/sync/savings-goal-push.ts": 216,
+    "src/server/services/sync/savings-goal-push.ts": 213,
     "src/server/services/sync/simplefin.ts": 296,
     "src/server/services/sync/simplefin/ingest.ts": 522,
     "src/server/services/sync/simplefin/sync.ts": 550,
@@ -1097,7 +1097,7 @@
       "computeSyncPreview": 401
     },
     "src/server/services/sync/savings-goal-push.ts": {
-      "pushContributionsToApi": 188
+      "pushContributionsToApi": 185
     },
     "src/server/services/sync/simplefin/sync.ts": {
       "runSimplefinSync": 190
