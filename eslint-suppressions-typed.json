@@ -336,7 +336,7 @@
   },
   "src/server/trpc.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 4
     }
   }
 }
