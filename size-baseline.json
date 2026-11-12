@@ -353,7 +353,7 @@
     "src/server/data/investments.ts": 632,
     "src/server/data/jobs.ts": 17,
     "src/server/data/retirement-profiles.ts": 19,
-    "src/server/data/salaries.ts": 38,
+    "src/server/data/salaries.ts": 22,
     "src/server/data/snapshots.ts": 115,
     "src/server/routers/assets.ts": 264,
     "src/server/routers/budget/index.ts": 21,
@@ -393,7 +393,7 @@
     "src/server/services/budget/annual-expenses.ts": 54,
     "src/server/services/budget/linked-items.ts": 166,
     "src/server/services/contributions/account-edits.ts": 202,
-    "src/server/services/contributions/caps.ts": 326,
+    "src/server/services/contributions/caps.ts": 319,
     "src/server/services/contributions/live-data.ts": 85,
     "src/server/services/contributions/profile-detail.ts": 129,
     "src/server/services/contributions/profile.ts": 289,
@@ -405,15 +405,15 @@
     "src/server/services/net-worth/other-assets.ts": 85,
     "src/server/services/net-worth/snapshot-write.ts": 291,
     "src/server/services/net-worth/year-assets.ts": 211,
-    "src/server/services/net-worth/year-end-history.ts": 587,
+    "src/server/services/net-worth/year-end-history.ts": 584,
     "src/server/services/paycheck/household-totals.ts": 91,
-    "src/server/services/paycheck/job-net-pay.ts": 259,
+    "src/server/services/paycheck/job-net-pay.ts": 256,
     "src/server/services/paycheck/summary.ts": 655,
     "src/server/services/performance/finalize-year.ts": 436,
     "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
     "src/server/services/profiles/retirement-year.ts": 51,
-    "src/server/services/profiles/salary-profile.ts": 209,
+    "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 294,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 821,
     "src/server/services/projection/engine-payload/load.ts": 156,
@@ -1027,7 +1027,7 @@
       "computeBudgetActiveSummary": 217
     },
     "src/server/services/contributions/contribution-mix.ts": {
-      "loadContributionMix": 168
+      "loadContributionMix": 164
     },
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 630,
@@ -1049,10 +1049,10 @@
       "createPortfolioSnapshot": 270
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 491
+      "buildYearEndHistory": 488
     },
     "src/server/services/paycheck/job-net-pay.ts": {
-      "computeJobNetPayPerCheck": 219
+      "computeJobNetPayPerCheck": 216
     },
     "src/server/services/paycheck/summary.ts": {
       "computePaycheckSummary": 561,

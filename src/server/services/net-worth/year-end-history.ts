@@ -16,7 +16,6 @@ import {
 } from "@/lib/pure/household/compensation";
 import { loadAndApplySalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import {
@@ -55,6 +54,7 @@ import {
   type YearEndRow,
 } from "@/lib/pure/net-worth/year-end-rows";
 import { yearEndWealthMetrics } from "@/lib/pure/net-worth/year-end-metrics";
+import { activeProfileIdFrom } from "@/server/data/active-profile";
 
 // ---------------------------------------------------------------------------
 // Year-end history rows (used by historical + networth routers)
@@ -145,14 +145,11 @@ export async function buildYearEndHistory(
 
   // Bonus terms resolve against the globally-ACTIVE Salary Profile: this
   // builds a permanent net_worth_annual record, a recorded fact.
-  const activeSalaryProfileId = Number(
-    settings.find((s) => s.key === SK_ACTIVE_SALARY_PROFILE_ID)?.value ?? NaN,
-  );
-  const salaryProfileActiveMap: SalaryProfileActiveMap = Number.isFinite(
-    activeSalaryProfileId,
-  )
-    ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
-    : new Map();
+  const activeSalaryProfileId = activeProfileIdFrom(settings, "salary");
+  const salaryProfileActiveMap: SalaryProfileActiveMap =
+    activeSalaryProfileId !== null
+      ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
+      : new Map();
 
   // Build cumulative home improvements by year from items table (source of truth).
   // The net_worth_annual.home_improvements_cumulative column is per-year, not cumulative — ignore it.

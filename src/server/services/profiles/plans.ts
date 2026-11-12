@@ -6,12 +6,7 @@
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_ACTIVE_RETIREMENT_PROFILE_ID,
-  SK_ACTIVE_SALARY_PROFILE_ID,
-  SK_LAST_APPLIED_PLAN_ID,
-} from "@/lib/constants/settings-keys";
+import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
 import {
   PLAN_PROFILE_COLUMN,
   PLAN_PROFILE_KIND_LABELS,
@@ -27,6 +22,10 @@ import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-
 import type { Permission } from "@/lib/config/permissions";
 import type { Db } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
+import {
+  ACTIVE_SETTING_KEY,
+  activeProfileIdFrom,
+} from "@/server/data/active-profile";
 
 /** Who may make a profile of each kind active — the rule that kind's own
  *  "make active" enforces (budget.setActiveProfile, contributionProfile /
@@ -37,12 +36,6 @@ const SET_ACTIVE_PERMISSION: Record<PlanProfileKind, Permission | "admin"> = {
   salary: "contributionProfile",
   retirement: "admin",
 };
-
-export const ACTIVE_SETTING_KEY = {
-  contribution: SK_ACTIVE_CONTRIB_PROFILE_ID,
-  salary: SK_ACTIVE_SALARY_PROFILE_ID,
-  retirement: SK_ACTIVE_RETIREMENT_PROFILE_ID,
-} as const;
 
 export const PROFILE_TABLE = {
   budget: schema.budgetProfiles,
@@ -87,13 +80,9 @@ async function readActiveProfileIds(db: Db): Promise<PlanProfileIds> {
       .from(schema.budgetProfiles)
       .where(eq(schema.budgetProfiles.isActive, true)),
   ]);
-  const setting = (key: string) => {
-    const v = settings.find((s) => s.key === key)?.value;
-    return typeof v === "number" ? v : v == null ? null : Number(v) || null;
-  };
   return {
-    salary: setting(SK_ACTIVE_SALARY_PROFILE_ID),
-    contribution: setting(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    salary: activeProfileIdFrom(settings, "salary"),
+    contribution: activeProfileIdFrom(settings, "contribution"),
     budget: activeBudget[0]?.id ?? null,
     retirement: resolveRetirementProfileIdFrom(settings, retirementProfiles),
   };

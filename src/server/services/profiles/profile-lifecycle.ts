@@ -13,13 +13,15 @@ import {
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
-import { storedInteger } from "@/lib/utils/stored-integer";
 import {
-  ACTIVE_SETTING_KEY,
   PROFILE_TABLE,
   assertNoPlanUses,
 } from "@/server/services/profiles/plans";
 import { upsertSetting } from "@/server/data/settings";
+import {
+  ACTIVE_SETTING_KEY,
+  activeProfileIdFrom,
+} from "@/server/data/active-profile";
 import { refuseEntriesWithoutJobs } from "@/server/services/profiles/salary-entry-writes";
 import { firstRow } from "@/lib/utils/first-row";
 import type { Ack } from "@/lib/http/probe-result";
@@ -44,9 +46,8 @@ const ACTIVE_FOR_DELETE: Record<
   LifecycleKind,
   (settingRows: ActiveSettingRow[], profiles: { id: number }[]) => number | null
 > = {
-  // The stored setting, a number or a numeric string, as its readers take it.
-  contribution: (rows) => storedInteger(rows[0]?.value, null),
-  salary: (rows) => storedInteger(rows[0]?.value, null),
+  contribution: (rows) => activeProfileIdFrom(rows, "contribution"),
+  salary: (rows) => activeProfileIdFrom(rows, "salary"),
   // Resolved: unset or stale means the lowest id, the one the engine reads.
   retirement: (rows, profiles) =>
     resolveRetirementProfileIdFrom(rows, profiles),

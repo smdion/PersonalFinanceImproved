@@ -21,7 +21,6 @@ import {
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriod } from "@/lib/config/enum-values";
@@ -32,6 +31,7 @@ import {
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
 import type { DbOrTx } from "@/lib/db";
+import { activeProfileId } from "@/server/data/active-profile";
 
 /**
  * Net pay per check for a job from live data, persisted as a recorded fact (no What-If sandbox):
@@ -63,7 +63,7 @@ export async function computeJobNetPayPerCheck(
     rawJobContribs,
     rawPersonalContribs,
     allLimitRows,
-    activeContribSetting,
+    activeContribProfileId,
     allTaxParams,
     [jobPerson],
   ] = await Promise.all([
@@ -92,10 +92,7 @@ export async function computeJobNetPayPerCheck(
         ),
       ),
     db.select().from(schema.contributionLimits),
-    db
-      .select()
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+    activeProfileId(db, "contribution"),
     db.select().from(schema.taxParams),
     db
       .select({ dateOfBirth: schema.people.dateOfBirth })
@@ -122,10 +119,10 @@ export async function computeJobNetPayPerCheck(
   );
 
   // Accounts carry no contribution value: the active Contribution Profile's.
-  const activeContribProfileId = Number(activeContribSetting[0]?.value ?? NaN);
-  const contribProfile = Number.isFinite(activeContribProfileId)
-    ? await fetchContributionProfile(db, activeContribProfileId)
-    : null;
+  const contribProfile =
+    activeContribProfileId !== null
+      ? await fetchContributionProfile(db, activeContribProfileId)
+      : null;
   const contribActiveFieldsRoot = contribProfile
     ? readContributionActiveFields(
         contribProfile.contributionActiveFields,

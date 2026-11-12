@@ -15,7 +15,7 @@ import {
   salaryEntrySchema,
 } from "@/lib/db/shapes/json-schemas";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
-import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { activeProfileId } from "@/server/data/active-profile";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import {
@@ -51,7 +51,7 @@ async function refreshExtraPaycheckRoutingIfActive(
   profileId: number,
 ): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
   try {
-    const activeId = await resolveActiveSalaryProfileId(db);
+    const activeId = await activeProfileId(db, "salary");
     if (activeId !== profileId) return undefined;
 
     // Re-read the row in its own transaction: a caller's in-memory `salaries`

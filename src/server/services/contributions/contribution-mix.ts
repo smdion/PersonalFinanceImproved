@@ -13,7 +13,6 @@ import type {
   ContributionMix,
 } from "@/lib/pure/investments/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { toNumber } from "@/lib/utils/numbers";
 import {
   contribRemainingFraction,
@@ -37,6 +36,7 @@ import { loadAndApplyContribProfile } from "@/server/services/contributions/prof
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
+import { activeProfileId } from "@/server/data/active-profile";
 
 export async function loadContributionMix(
   db: Db,
@@ -44,24 +44,20 @@ export async function loadContributionMix(
   /** Tracked account → the day its latest contribution actually arrived (live data). */
   contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
-  const [allJobs, contribs, activeProfile] = await Promise.all([
+  const [allJobs, contribs, profileId] = await Promise.all([
     db.select().from(schema.jobs),
     db
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+    activeProfileId(db, "contribution"),
   ]);
-  const profileId = Number(activeProfile[0]?.value ?? NaN);
   if (!contribs.some((c) => c.performanceAccountId != null)) return new Map();
 
   const salaryMap = await loadEffectiveSalaryProfile(db, null);
   const { contribs: effective, jobs } = await loadAndApplyContribProfile(
     db,
-    Number.isFinite(profileId) ? profileId : null,
+    profileId,
     contribs,
     filterActiveJobs(allJobs, asOf),
     salaryMap,

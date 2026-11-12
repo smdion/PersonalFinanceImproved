@@ -5230,7 +5230,7 @@
   },
   "src/server/services/contributions/caps.ts": {
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 7
     }
   },
   "src/server/services/contributions/contribution-mix.ts": {
@@ -5400,7 +5400,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 9
+      "count": 8
     }
   },
   "src/server/services/paycheck/summary.ts": {

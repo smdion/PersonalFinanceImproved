@@ -8,7 +8,7 @@ import {
   savingsProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { activeProfileId } from "@/server/data/active-profile";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { mergeSalaryEntries } from "@/server/services/profiles/salary-entry-writes";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
@@ -27,7 +27,7 @@ async function writeJobExtraPaycheckRouting(
   jobId: number,
   routing: ExtraPaycheckRoutingData | null,
 ): Promise<void> {
-  const activeId = await resolveActiveSalaryProfileId(db);
+  const activeId = await activeProfileId(db, "salary");
   if (activeId == null) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",

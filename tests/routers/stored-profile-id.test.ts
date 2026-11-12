@@ -1,16 +1,12 @@
 /**
  * A stored active Contribution or Salary Profile id that isn't a whole
- * number: the three paths that feed it to a summary refuse it as the
- * summary's own procedure refuses that id (BAD_REQUEST, its message);
- * the What-If income figure catches it as null. A value that isn't a
- * number at all reads as no profile picked, as before.
+ * number is refused with BAD_REQUEST by the one reader (activeProfileId),
+ * on every path that reads it: never read as no profile, never $0.
  */
 import "./setup-mocks";
-import { describe, it, expect, onTestFinished, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { zPaycheckSummaryInput } from "@/server/services/paycheck/summary";
-import { zContributionSummaryInput } from "@/server/services/contributions/summary";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -48,94 +44,34 @@ async function withHousehold<T>(
   }
 }
 
-/** What a summary's procedure answers for that id: the refusal to match. */
-async function refusal(call: () => Promise<unknown>) {
-  const error = await call().then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toMatchObject({ code: "BAD_REQUEST" });
-  return (error as Error).message;
-}
-
-const BAD: Array<[string, string, Stored, number]> = [
-  ["2.5", SK_ACTIVE_CONTRIB_PROFILE_ID, 2.5, 2.5],
-  ['"1e400"', SK_ACTIVE_CONTRIB_PROFILE_ID, "1e400", Infinity],
-  ["2.5 (salary)", SK_ACTIVE_SALARY_PROFILE_ID, 2.5, 2.5],
+const BAD: Array<[string, string, Stored]> = [
+  ["2.5", SK_ACTIVE_CONTRIB_PROFILE_ID, 2.5],
+  ['"1e400"', SK_ACTIVE_CONTRIB_PROFILE_ID, "1e400"],
+  ['"abc"', SK_ACTIVE_CONTRIB_PROFILE_ID, "abc"],
+  ["2.5 (salary)", SK_ACTIVE_SALARY_PROFILE_ID, 2.5],
 ];
 
-describe.each(BAD)("a stored active id of %s", (_label, key, value, id) => {
-  const field =
-    key === SK_ACTIVE_CONTRIB_PROFILE_ID
-      ? "contributionProfileId"
-      : "salaryProfileId";
-
-  it("budget.listProfiles: the paycheck summary's BAD_REQUEST", async () => {
-    await withHousehold({ [key]: value }, async ({ caller }) => {
-      const message = await refusal(() =>
-        caller.paycheck.computeSummary({ [field]: id }),
-      );
-      await expect(caller.budget.listProfiles()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message,
+describe.each(BAD)(
+  "a stored active id of %s is refused",
+  (_label, key, value) => {
+    const refused = { code: "BAD_REQUEST" };
+    it("on the Budget page's profiles, its summary and the milestones", async () => {
+      await withHousehold({ [key]: value }, async ({ caller }) => {
+        await expect(caller.budget.listProfiles()).rejects.toMatchObject(
+          refused,
+        );
+        await expect(
+          caller.budget.computeActiveSummary(),
+        ).rejects.toMatchObject(refused);
+        await expect(caller.milestones.recordReached()).rejects.toMatchObject(
+          refused,
+        );
       });
     });
-  });
-
-  it("budget.computeActiveSummary: the take-home figure is null, the rest computes", async () => {
-    await withHousehold({ [key]: value }, async ({ caller }) => {
-      const summary = await caller.budget.computeActiveSummary();
-      expect(summary?.netMonthlyIncome).toBeNull();
-      expect(summary?.result).toBeTruthy();
-    });
-  });
-
-  it("milestones.recordReached: the contribution summary's BAD_REQUEST", async () => {
-    await withHousehold({ [key]: value }, async ({ caller }) => {
-      const message = await refusal(() =>
-        caller.contribution.computeSummary({ [field]: id }),
-      );
-      await expect(caller.milestones.recordReached()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message,
-      });
-    });
-  });
-});
+  },
+);
 
 describe("stored active ids that the paths accept", () => {
-  it('"abc" reads as no profile picked, the same as none stored', async () => {
-    // One clock for both runs (recordReached dates what it records); the
-    // database stamps each row's creation itself, so those are left out.
-    vi.useFakeTimers({
-      toFake: ["Date"],
-      now: new Date("2026-03-07T18:00:00Z"),
-    });
-    onTestFinished(() => {
-      vi.useRealTimers();
-    });
-    const none = await withHousehold({}, async ({ caller }) => ({
-      profiles: await caller.budget.listProfiles(),
-      summary: await caller.budget.computeActiveSummary(),
-      reached: await caller.milestones.recordReached(),
-    }));
-    const abc = await withHousehold(
-      { [SK_ACTIVE_CONTRIB_PROFILE_ID]: "abc" },
-      async ({ caller }) => ({
-        profiles: await caller.budget.listProfiles(),
-        summary: await caller.budget.computeActiveSummary(),
-        reached: await caller.milestones.recordReached(),
-      }),
-    );
-    const unstamped = (v: unknown): unknown =>
-      JSON.parse(
-        JSON.stringify(v, (k, val: unknown) =>
-          k === "createdAt" || k === "updatedAt" ? undefined : val,
-        ),
-      );
-    expect(unstamped(abc)).toEqual(unstamped(none));
-  });
-
   it("a whole-number id computes on every path", async () => {
     const h = await createTestCaller();
     try {
@@ -150,21 +86,4 @@ describe("stored active ids that the paths accept", () => {
       h.cleanup();
     }
   });
-});
-
-// summaryProfileIdsInput parses with the paycheck schema's id fields for
-// both summaries: the contribution schema must refuse the same ids.
-it("the paycheck and contribution summaries parse profile ids alike", () => {
-  const ids = [1, 0, -3, 2.5, Infinity, NaN, 2 ** 53, "7", null];
-  const verdicts = (schema: {
-    safeParse: (v: unknown) => { success: boolean };
-  }) =>
-    ids.flatMap((id) =>
-      (["contributionProfileId", "salaryProfileId"] as const).map(
-        (field) => schema.safeParse({ [field]: id }).success,
-      ),
-    );
-  expect(verdicts(zContributionSummaryInput)).toEqual(
-    verdicts(zPaycheckSummaryInput),
-  );
 });
