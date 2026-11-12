@@ -12,6 +12,7 @@ describe("a joint account paid per paycheck", () => {
     jobId: null,
     personId: null,
     ownership: "joint" as const,
+    employerMatchType: "none",
   };
   it("is complete when everyone shares a schedule", () => {
     const { periodsPerYear, incomplete } = rowPaySchedule(joint, [

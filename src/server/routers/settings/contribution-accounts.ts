@@ -23,6 +23,7 @@ import {
   EMPLOYER_MATCH_TYPE_VALUES,
   HSA_COVERAGE_TYPE_VALUES,
   ACCOUNT_OWNERSHIP_VALUES,
+  type AccountOwnership,
 } from "@/lib/config/enum-values";
 import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
@@ -31,6 +32,8 @@ import {
   refreshEntryRates,
 } from "@/server/services/contributions/match-writes";
 import { firstRow } from "@/lib/utils/first-row";
+import { isJointPercentRow } from "@/lib/pure/contributions/row-pay";
+import { JOINT_PERCENT_REFUSED } from "@/lib/config/display-labels";
 
 // No contributionMethod/contributionValue: an account is structural; the amount and
 // method are always a Contribution Profile's active-field entry (contributionProfile.update).
@@ -94,22 +97,16 @@ const limitedTypeHasOwnerIssue = {
   path: ["ownership"],
 };
 
-// A joint account with no job has no pay of its own: a match on a percent of
+// A joint account with no job has no pay of its own (isJointPercentRow): a match on a percent of
 // its contribution can't be figured, so it takes a dollar match (or a job).
 const jointMatchIsDollar = (data: {
-  ownership?: string;
+  ownership: AccountOwnership;
   jobId?: number | null;
   employerMatchType: string;
-}) =>
-  !(
-    data.ownership === "joint" &&
-    data.jobId == null &&
-    data.employerMatchType === "percent_of_contribution"
-  );
+}) => !isJointPercentRow({ ...data, jobId: data.jobId ?? null });
 
 const jointMatchIsDollarIssue = {
-  message:
-    "A joint account with no job has no pay to match a percent of: use a dollar match, or tie it to a job.",
+  message: JOINT_PERCENT_REFUSED.match,
   path: ["employerMatchType"],
 };
 

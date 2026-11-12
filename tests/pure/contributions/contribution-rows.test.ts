@@ -10,7 +10,10 @@ import {
   annualContributionWithBonus,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
-import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
+import {
+  isJointPercentRow,
+  rowPaySchedule,
+} from "@/lib/pure/contributions/row-pay";
 import { contributionRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
 const hsa = (method: ContributionMethod, value: number): ContributionRow => ({
@@ -162,6 +165,7 @@ describe("rowPaySchedule: the one schedule a row's per-check amount runs on", ()
     jobId: null,
     personId: 1,
     ownership: "individual",
+    employerMatchType: "none",
     ...over,
   });
   const twoJobs = [
@@ -219,5 +223,52 @@ describe("rowPaySchedule: the one schedule a row's per-check amount runs on", ()
       rowPaySchedule(perCheck({ contributionMethod: "fixed_monthly" }), [])
         .incomplete,
     ).toBe(false);
+  });
+});
+
+describe("isJointPercentRow: a joint account with no job takes no percent", () => {
+  const joint = {
+    ownership: "joint" as const,
+    jobId: null,
+    contributionMethod: "fixed_monthly",
+    employerMatchType: "none",
+  };
+  it("a percent of salary or a percent-of-contribution match; never with a job or a person", () => {
+    expect(isJointPercentRow(joint)).toBe(false);
+    expect(
+      isJointPercentRow({ ...joint, contributionMethod: "percent_of_salary" }),
+    ).toBe(true);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        employerMatchType: "percent_of_contribution",
+      }),
+    ).toBe(true);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        jobId: 1,
+        employerMatchType: "percent_of_contribution",
+      }),
+    ).toBe(false);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        ownership: "individual",
+        contributionMethod: "percent_of_salary",
+      }),
+    ).toBe(false);
+  });
+
+  it("a stored joint dollar amount with a percent match reads $0, incomplete", () => {
+    const row = {
+      ...joint,
+      personId: null,
+      employerMatchType: "percent_of_contribution",
+    };
+    expect(
+      rowPaySchedule(row, [{ id: 1, personId: 1, payPeriod: "biweekly" }])
+        .incomplete,
+    ).toBe(true);
   });
 });

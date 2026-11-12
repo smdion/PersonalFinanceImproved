@@ -16,13 +16,17 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
-import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
+import {
+  JOINT_PERCENT_REFUSED,
+  taxTreatmentToShortLabel,
+} from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
+import { isJointPercentRow } from "@/lib/pure/contributions/row-pay";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { contributionAccountName } from "@/server/services/contributions/account-name";
 import {
@@ -52,37 +56,44 @@ const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 type Entry = Record<string, unknown>;
 
 /**
- * A joint account with no jobId has no salary to resolve percent_of_salary against
- * (it would compute $0). contributionMethod is set only in profiles, so every write that
- * can set percent_of_salary (create, update, setAccountActiveFields) runs this check.
+ * Refuse profile fields that would give a joint account with no job a percent (isJointPercentRow),
+ * each read over its account's stored fields. Every write that sets a method or a match type runs it.
  */
-async function assertNoJointPercentOfSalaryWithoutJob(
+async function assertNoJointPercent(
   db: Db,
-  contributionActiveFields:
-    | { contributionAccounts?: Record<string, { contributionMethod?: string }> }
+  entries:
+    | Record<
+        string,
+        { contributionMethod?: string; employerMatchType?: string | null }
+      >
     | undefined,
 ): Promise<void> {
-  const incomingAccounts = contributionActiveFields?.contributionAccounts ?? {};
-  const percentOfSalaryIds = Object.entries(incomingAccounts)
-    .filter(([, f]) => f.contributionMethod === "percent_of_salary")
-    .map(([id]) => Number(id));
-  if (percentOfSalaryIds.length === 0) return;
-
+  const ids = Object.keys(entries ?? {}).map(Number);
+  if (!entries || ids.length === 0) return;
   const accounts = await db
     .select({
       id: schema.contributionAccounts.id,
       ownership: schema.contributionAccounts.ownership,
       jobId: schema.contributionAccounts.jobId,
+      employerMatchType: schema.contributionAccounts.employerMatchType,
     })
     .from(schema.contributionAccounts)
-    .where(inArray(schema.contributionAccounts.id, percentOfSalaryIds));
-  const invalid = accounts.find((a) => a.ownership === "joint" && !a.jobId);
-  if (invalid) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message:
-        "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-    });
+    .where(inArray(schema.contributionAccounts.id, ids));
+  for (const account of accounts) {
+    const entry = entries[String(account.id)];
+    const row = {
+      ...account,
+      contributionMethod: entry?.contributionMethod,
+      employerMatchType: entry?.employerMatchType ?? account.employerMatchType,
+    };
+    if (isJointPercentRow(row))
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message:
+          row.contributionMethod === "percent_of_salary"
+            ? JOINT_PERCENT_REFUSED.salary
+            : JOINT_PERCENT_REFUSED.match,
+      });
   }
 }
 
@@ -319,9 +330,9 @@ export const contributionProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await assertNoJointPercentOfSalaryWithoutJob(
+      await assertNoJointPercent(
         ctx.db,
-        input.contributionActiveFields,
+        input.contributionActiveFields.contributionAccounts,
       );
       const contributionActiveFields = await activeFieldsWithMatchRates(
         ctx.db,
@@ -345,7 +356,7 @@ export const contributionProfileRouter = createTRPCRouter({
     )
     .mutation(({ ctx, input }) =>
       duplicateProfile(ctx.db, "contribution", input, (fields) =>
-        assertNoJointPercentOfSalaryWithoutJob(ctx.db, fields),
+        assertNoJointPercent(ctx.db, fields.contributionAccounts),
       ),
     ),
 
@@ -376,9 +387,9 @@ export const contributionProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      await assertNoJointPercentOfSalaryWithoutJob(
+      await assertNoJointPercent(
         ctx.db,
-        input.contributionActiveFields,
+        input.contributionActiveFields?.contributionAccounts,
       );
       // Over the limits on a future switch: saved, with a warning.
       const { asOf } = ctx.scope;
@@ -434,22 +445,9 @@ export const contributionProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.fields.contributionMethod === "percent_of_salary") {
-        const [account] = await ctx.db
-          .select({
-            ownership: schema.contributionAccounts.ownership,
-            jobId: schema.contributionAccounts.jobId,
-          })
-          .from(schema.contributionAccounts)
-          .where(eq(schema.contributionAccounts.id, input.accountId));
-        if (account?.ownership === "joint" && !account.jobId) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-          });
-        }
-      }
+      await assertNoJointPercent(ctx.db, {
+        [input.accountId]: input.fields,
+      });
 
       const { asOf } = ctx.scope;
       let limitWarning: string | null = null;

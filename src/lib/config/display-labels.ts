@@ -378,3 +378,11 @@ export function budgetApiServiceLabel(
   if (service === "simplefin") return "SimpleFIN";
   return "the budget API";
 }
+
+/** Why a joint account with no job refuses a percent: it has no pay of its own. */
+export const JOINT_PERCENT_REFUSED = {
+  salary:
+    "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+  match:
+    "A joint account with no job has no pay to match a percent of: use a dollar match, or tie it to a job.",
+} as const;

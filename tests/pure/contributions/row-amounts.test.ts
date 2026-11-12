@@ -23,6 +23,7 @@ const row = (
   personId: null,
   jobId: extra.jobId ?? null,
   ownership: "joint" as const,
+  employerMatchType: "none",
   contributionMethod,
   contributionValue,
   fromBonus: undefined,
