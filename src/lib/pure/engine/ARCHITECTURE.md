@@ -26,6 +26,7 @@ projection-year-handlers/    one year of work
   year-deduction.ts          the year's standard deduction, grown, with the senior add-ons
   year-need.ts               the after-tax need and the withdrawal that meets it
   year-draws.ts              the draw routed by mode, then followed to each account
+  tax-settlement.ts          settleYearTax: the tax-settlement stage over the two files below
   tax-year-settlement.ts     the tax priced and settled in today's order (UD-04, UD-08)
   conversion-year-reprice.ts the conversion year's gains re-priced, then NIIT
   funding-shortfall.ts       the unmet need (raw) and whether it's material
@@ -139,6 +140,8 @@ spending-strategies/         the eight spending strategies, each (params, input)
 13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
 15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
+
+Steps 9 to 11 are one stage, the tax settlement: `settleYearTax` (`tax-settlement.ts`) runs them in order and returns what each settled. The year's tax is priced with one deduction, `priced.standardDeduction`, which the conversion and the re-price read back.
 
 `decumulationYearRow` (`decumulation-row.ts`) then builds the year's row: it reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
 

@@ -14,13 +14,7 @@ import type {
 } from "./types";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { enforceYearRmd, qcdStep } from "./rmd-step";
-import {
-  priceYearTax,
-  pricedYearParts,
-  settleYearDraws,
-  yearRothConversion,
-} from "./tax-year-settlement";
-import { repriceConversionYear } from "./conversion-year-reprice";
+import { settleYearTax } from "./tax-settlement";
 import { fundingShortfallForYear } from "./funding-shortfall";
 import { distributeYearDraws, routeYearDraw } from "./year-draws";
 import { yearNeed } from "./year-need";
@@ -141,24 +135,9 @@ export function runDecumulationYear(
   const route = routeYearDraw(ctx, state, thisYear, need, rothDivergence);
   const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
-  const priced = priceYearTax(ctx, state, thisYear, {
-    need,
-    route,
-    rmd,
-    drawn,
-  });
-  const parts = pricedYearParts(state, { need, route, rmd, priced });
-
-  const settled = { need, route, rmd, drawn, priced, parts };
-  const settle = settleYearDraws(ctx, state, thisYear, settled);
-  const conversion = yearRothConversion(ctx, state, thisYear, settled);
-  const repriced = repriceConversionYear(ctx, thisYear, {
-    rmd,
-    priced,
-    parts,
-    conversion,
-  });
-  const flow = { ...settled, conversion, repriced };
+  const drawnFlow = { need, route, rmd, drawn };
+  const { settle, ...taxed } = settleYearTax(ctx, state, thisYear, drawnFlow);
+  const flow = { ...drawnFlow, ...taxed };
   const shortfall = fundingShortfallForYear(state, thisYear, flow);
   const cliffs = yearCliffChecks(ctx, state, thisYear, flow);
 
