@@ -89,7 +89,7 @@ const accountRows: AccountRow[] = [
 describe("UpdatePerformanceForm", () => {
   beforeEach(() => {
     resetTrpcMock();
-    setQuery("networth.portfolioSnapshots.getLatest", {
+    setQuery("netWorth.portfolioSnapshots.getLatest", {
       snapshot: { snapshotDate: "2026-01-01" },
       accounts: [{ performanceAccountId: 101, amount: "115000" }],
     });

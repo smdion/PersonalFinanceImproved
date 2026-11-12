@@ -34,7 +34,7 @@ export const appRouter = createTRPCRouter({
   budget: budgetRouter,
   contribution: contributionRouter,
   mortgage: mortgageRouter,
-  networth: networthRouter,
+  netWorth: networthRouter,
   milestones: milestonesRouter,
   savings: savingsRouter,
   brokerage: brokerageRouter,

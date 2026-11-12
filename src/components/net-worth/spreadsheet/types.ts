@@ -1,9 +1,9 @@
 // Shared types for spreadsheet view components, read from what
-// trpc.networth.computeDetailedHistory returns.
+// trpc.netWorth.computeDetailedHistory returns.
 import type { RouterOutputs } from "@/lib/trpc";
 
 export type DetailedHistoryRow =
-  RouterOutputs["networth"]["computeDetailedHistory"]["years"][number];
+  RouterOutputs["netWorth"]["computeDetailedHistory"]["years"][number];
 
 /** Tax-type distribution within a parent category. */
 export type TaxLocationBreakdown = NonNullable<

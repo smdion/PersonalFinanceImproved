@@ -131,7 +131,7 @@ describe("MortgageSettings smoke", () => {
     // Every mortgage figure (payoff summary, Debt Payoff) and Net Worth's
     // mortgage balance refresh, not just the loan list.
     expect(utilsCalls("mortgage.invalidate")).not.toHaveLength(0);
-    expect(utilsCalls("networth.invalidate")).not.toHaveLength(0);
+    expect(utilsCalls("netWorth.invalidate")).not.toHaveLength(0);
   });
 
   it("the add-loan form's labels reach their fields", () => {

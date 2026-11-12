@@ -10,13 +10,13 @@ export function usePortfolioSnapshotMutations() {
   const utils = trpc.useUtils();
 
   const invalidateSnapshotQueries = () => {
-    utils.networth.computeSummary.invalidate();
-    utils.networth.listHistory.invalidate();
-    utils.networth.listSnapshots.invalidate();
-    utils.networth.portfolioSnapshots.getLatest.invalidate();
+    utils.netWorth.computeSummary.invalidate();
+    utils.netWorth.listHistory.invalidate();
+    utils.netWorth.listSnapshots.invalidate();
+    utils.netWorth.portfolioSnapshots.getLatest.invalidate();
   };
 
-  const deleteSnapshot = trpc.networth.portfolioSnapshots.delete.useMutation({
+  const deleteSnapshot = trpc.netWorth.portfolioSnapshots.delete.useMutation({
     onSuccess: invalidateSnapshotQueries,
   });
 
@@ -26,7 +26,7 @@ export function usePortfolioSnapshotMutations() {
    *  the server rejects otherwise). The server re-derives that year's performance
    *  and resyncs to the budget API (`apiSyncResult`). */
   const updateAccountBalance =
-    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
+    trpc.netWorth.portfolioSnapshots.updateAccount.useMutation({
       onSuccess: invalidateSnapshotQueries,
     });
 

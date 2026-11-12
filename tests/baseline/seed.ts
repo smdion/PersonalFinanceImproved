@@ -17,7 +17,7 @@ type Inputs = inferRouterInputs<AppRouter>;
 type ContribInput = Inputs["settings"]["contributionAccounts"]["create"];
 type PerfInput = Inputs["performance"]["performanceAccounts"]["create"];
 type SnapshotRow =
-  Inputs["networth"]["portfolioSnapshots"]["create"]["accounts"][number];
+  Inputs["netWorth"]["portfolioSnapshots"]["create"]["accounts"][number];
 type RetirementInput = Inputs["retirement"]["retirementSettings"]["upsert"];
 
 /** The caller every baseline seeds and reads through (admin session). */
@@ -231,7 +231,7 @@ export async function seedHousehold(
     })),
   );
   if (rows.length > 0)
-    await call.networth.portfolioSnapshots.create({
+    await call.netWorth.portfolioSnapshots.create({
       snapshotDate: SNAPSHOT_DATE,
       accounts: rows,
     });

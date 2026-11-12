@@ -61,7 +61,7 @@ export function useContributionAccountsMutations({
         utils.performance.performanceAccounts.invalidate();
         utils.retirement.invalidate();
         utils.projection.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.invalidate();
       },
     },
   );
@@ -99,18 +99,18 @@ export function useContributionAccountsMutations({
     });
 
   const updatePortfolioAccountMut =
-    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
+    trpc.netWorth.portfolioSnapshots.updateAccount.useMutation({
       onSuccess: () => {
-        utils.networth.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.portfolioSnapshots.getLatest.invalidate();
+        utils.netWorth.invalidate();
       },
     });
 
   const createPortfolioAccountMut =
-    trpc.networth.portfolioSnapshots.createAccount.useMutation({
+    trpc.netWorth.portfolioSnapshots.createAccount.useMutation({
       onSuccess: () => {
-        utils.networth.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.portfolioSnapshots.getLatest.invalidate();
+        utils.netWorth.invalidate();
       },
     });
 

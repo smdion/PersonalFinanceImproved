@@ -137,7 +137,7 @@ describe("debts router", () => {
         .values({ key: "current_other_liabilities", value: 1500 })
         .run();
       await caller.debts.create(loan);
-      const nw = await caller.networth.computeSummary();
+      const nw = await caller.netWorth.computeSummary();
       expect(nw?.otherLiabilities).toBe(21500);
       expect(nw?.otherLiabilitiesParts).toEqual({
         manual: 1500,

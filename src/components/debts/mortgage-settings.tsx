@@ -284,7 +284,7 @@ export function MortgageSettings() {
   // what-ifs) and Net Worth's mortgage balance, not just these lists.
   const invalidateMortgage = () => {
     utils.mortgage.invalidate();
-    utils.networth.invalidate();
+    utils.netWorth.invalidate();
   };
   const { data, isLoading } = trpc.mortgage.mortgageLoans.list.useQuery();
   const { data: extraPayments } =

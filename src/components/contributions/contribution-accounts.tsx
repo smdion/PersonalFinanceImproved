@@ -38,7 +38,7 @@ export function ContributionAccountsSettings() {
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
-    trpc.networth.portfolioSnapshots.getLatest.useQuery();
+    trpc.netWorth.portfolioSnapshots.getLatest.useQuery();
   // SimpleFIN detail per account — hidden (no error) without the portfolio
   // permission these need.
   const { data: insights } = trpc.investments.computeAccountInsights.useQuery(

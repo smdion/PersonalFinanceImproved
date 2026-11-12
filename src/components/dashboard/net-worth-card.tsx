@@ -15,7 +15,7 @@ import { calendarDateOf } from "@/lib/utils/calendar-date";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
-  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.netWorth.computeSummary.useQuery(targeting);
   const { data } = summary;
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   // The snapshot plus what's changed since — the Current Balances card's

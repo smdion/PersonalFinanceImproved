@@ -77,7 +77,7 @@ export async function getLatestSnapshot(
     )
     .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id))
     // Stable insertion order — matches the Snapshot History panel
-    // (networth.getSnapshots) so the latest snapshot reads the same on both
+    // (netWorth.listSnapshots) so the latest snapshot reads the same on both
     // surfaces and doesn't reshuffle after an inline balance edit.
     .orderBy(asc(schema.portfolioAccounts.id));
 

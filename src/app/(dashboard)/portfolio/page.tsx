@@ -1,5 +1,5 @@
 /**
- * Portfolio server page: prefetches networth.computeSummary (holdings,
+ * Portfolio server page: prefetches netWorth.computeSummary (holdings,
  * allocations, categories). Prefetch errors fall back to the client fetch.
  */
 
@@ -9,7 +9,7 @@ import { PortfolioContent } from "./portfolio-content";
 
 export default async function PortfolioPage() {
   const dehydratedState = await prefetchForPage(async (helpers) => {
-    await helpers.networth.computeSummary.prefetch().catch(() => undefined);
+    await helpers.netWorth.computeSummary.prefetch().catch(() => undefined);
   });
 
   return (

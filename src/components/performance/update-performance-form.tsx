@@ -34,7 +34,7 @@ export function UpdatePerformanceForm({
   onSaved,
 }: UpdatePerformanceFormProps) {
   const { data: latestSnap, isLoading: loadingSnap } =
-    trpc.networth.portfolioSnapshots.getLatest.useQuery();
+    trpc.netWorth.portfolioSnapshots.getLatest.useQuery();
   const batchMutation = trpc.performance.batchUpdateAccounts.useMutation({
     onSuccess: onSaved,
   });

@@ -31,8 +31,8 @@ vi.mock("@/lib/trpc", async () => ({
 const P = {
   updateContrib: "settings.contributionAccounts.update",
   createContrib: "settings.contributionAccounts.create",
-  updatePortfolioAccount: "networth.portfolioSnapshots.updateAccount",
-  createPortfolioAccount: "networth.portfolioSnapshots.createAccount",
+  updatePortfolioAccount: "netWorth.portfolioSnapshots.updateAccount",
+  createPortfolioAccount: "netWorth.portfolioSnapshots.createAccount",
   updatePerf: "performance.performanceAccounts.update",
   createPerf: "performance.performanceAccounts.create",
   deletePerf: "performance.performanceAccounts.delete",
@@ -329,7 +329,7 @@ describe("useContributionAccountsMutations", () => {
     );
     expect(invalidated("retirement.invalidate")).toBe(true);
     expect(invalidated("projection.invalidate")).toBe(true);
-    expect(invalidated("networth.invalidate")).toBe(true);
+    expect(invalidated("netWorth.invalidate")).toBe(true);
   });
 
   it("updateContribMut's onSuccess invalidates contributionAccounts, retirement, and projection", async () => {
@@ -355,8 +355,8 @@ describe("useContributionAccountsMutations", () => {
     >[0]);
     settleMutation(P.updatePortfolioAccount);
     expect(
-      invalidated("networth.portfolioSnapshots.getLatest.invalidate"),
+      invalidated("netWorth.portfolioSnapshots.getLatest.invalidate"),
     ).toBe(true);
-    expect(invalidated("networth.invalidate")).toBe(true);
+    expect(invalidated("netWorth.invalidate")).toBe(true);
   });
 });

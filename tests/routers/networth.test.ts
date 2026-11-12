@@ -122,20 +122,20 @@ describe("networth router", () => {
 
   describe("computeSummary", () => {
     it("does not throw with minimal DB", async () => {
-      await expect(caller.networth.computeSummary()).resolves.toBeDefined();
+      await expect(caller.netWorth.computeSummary()).resolves.toBeDefined();
     });
 
     // The figures' presence is in the router baseline (17 households);
     // these three parts aren't.
     it("returns the house flag, people and other-asset items", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(result).toHaveProperty("hasHouse");
       expect(result).toHaveProperty("people");
       expect(result).toHaveProperty("otherAssetItems");
     });
 
     it("with no mortgage, other liabilities or home, those figures are 0", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       // With seeded snapshots, portfolioTotal should be > 0
       expect(result.portfolioTotal).toBeGreaterThanOrEqual(0);
       expect(result.mortgageBalance).toBe(0);
@@ -144,12 +144,12 @@ describe("networth router", () => {
     });
 
     it("hasHouse is false when no active mortgage exists", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(result.hasHouse).toBe(false);
     });
 
     it("people array contains the seeded person", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(Array.isArray(result.people)).toBe(true);
       expect(result.people.length).toBeGreaterThanOrEqual(1);
       expect(result.people[0]).toHaveProperty("id");
@@ -157,23 +157,23 @@ describe("networth router", () => {
     });
 
     it("portfolioAccounts is an array", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(Array.isArray(result.portfolioAccounts)).toBe(true);
     });
 
     it("otherAssetItems is an array", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(Array.isArray(result.otherAssetItems)).toBe(true);
     });
 
     it("snapshotDate reflects the latest snapshot", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       // Data was seeded with snapshots, so snapshotDate should be a string
       expect(typeof result.snapshotDate).toBe("string");
     });
 
     it("withdrawalRate matches seeded retirement settings", async () => {
-      const result = await caller.networth.computeSummary();
+      const result = await caller.netWorth.computeSummary();
       expect(typeof result.withdrawalRate).toBe("number");
       expect(result.withdrawalRate).toBeCloseTo(0.04);
     });
@@ -183,7 +183,7 @@ describe("networth router", () => {
 
   describe("listSnapshotTotals", () => {
     it("returns snapshot date/total pairs ordered by date", async () => {
-      const result = await caller.networth.listSnapshotTotals();
+      const result = await caller.netWorth.listSnapshotTotals();
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
       expect(result[0]!.date).toBe("2024-06-15");
@@ -193,7 +193,7 @@ describe("networth router", () => {
     });
 
     it("splits each snapshot by account, adding up to its total", async () => {
-      const result = await caller.networth.listSnapshotTotals();
+      const result = await caller.netWorth.listSnapshotTotals();
       for (const snap of result) {
         expect(snap.byAccount.length).toBeGreaterThan(0);
         expect(snap.byAccount.reduce((t, a) => t + a.amount, 0)).toBeCloseTo(
@@ -209,7 +209,7 @@ describe("networth router", () => {
 
   describe("listSnapshots", () => {
     it("returns paginated snapshots with accounts", async () => {
-      const result = await caller.networth.listSnapshots({
+      const result = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 10,
       });
@@ -222,7 +222,7 @@ describe("networth router", () => {
     });
 
     it("filters by date range", async () => {
-      const result = await caller.networth.listSnapshots({
+      const result = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 10,
         dateFrom: "2025-01-01",
@@ -232,7 +232,7 @@ describe("networth router", () => {
     });
 
     it("returns empty for out-of-range dates", async () => {
-      const result = await caller.networth.listSnapshots({
+      const result = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 10,
         dateFrom: "2026-01-01",
@@ -242,13 +242,13 @@ describe("networth router", () => {
     });
 
     it("paginates correctly", async () => {
-      const page1 = await caller.networth.listSnapshots({
+      const page1 = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 1,
       });
       expect(page1.snapshots.length).toBe(1);
       expect(page1.totalPages).toBe(2);
-      const page2 = await caller.networth.listSnapshots({
+      const page2 = await caller.netWorth.listSnapshots({
         page: 2,
         pageSize: 1,
       });
@@ -263,7 +263,7 @@ describe("networth router", () => {
 
   describe("computeComparison", () => {
     it("compares net worth at two dates", async () => {
-      const result = await caller.networth.computeComparison({
+      const result = await caller.netWorth.computeComparison({
         dateFrom: "2024-06-01",
         dateTo: "2025-01-20",
       });
@@ -273,7 +273,7 @@ describe("networth router", () => {
     });
 
     it("includes portfolio breakdown by tax type", async () => {
-      const result = await caller.networth.computeComparison({
+      const result = await caller.netWorth.computeComparison({
         dateFrom: "2024-06-01",
         dateTo: "2025-01-20",
       });
@@ -287,7 +287,7 @@ describe("networth router", () => {
     });
 
     it("includes category breakdown", async () => {
-      const result = await caller.networth.computeComparison({
+      const result = await caller.netWorth.computeComparison({
         dateFrom: "2024-06-01",
         dateTo: "2025-01-20",
       });
@@ -300,7 +300,7 @@ describe("networth router", () => {
     });
 
     it("includes limitations array", async () => {
-      const result = await caller.networth.computeComparison({
+      const result = await caller.netWorth.computeComparison({
         dateFrom: "2024-06-01",
         dateTo: "2025-01-20",
       });
@@ -313,7 +313,7 @@ describe("networth router", () => {
 
   describe("listHistory", () => {
     it("returns year-end history array with birth year", async () => {
-      const result = await caller.networth.listHistory();
+      const result = await caller.netWorth.listHistory();
       expect(Array.isArray(result.years)).toBe(true);
       // dateOfBirth "1990-01-01" → birth year may be 1989 or 1990 depending on date parsing
       expect(result.primaryBirthYear).toBeGreaterThanOrEqual(1989);
@@ -332,7 +332,7 @@ describe("networth router", () => {
       } = await createTestCaller(viewerSession);
       try {
         await seedFullData(viewerDb);
-        const result = await viewerCaller.networth.computeSummary();
+        const result = await viewerCaller.netWorth.computeSummary();
         expect(result).toBeDefined();
       } finally {
         viewerCleanup();
@@ -341,7 +341,7 @@ describe("networth router", () => {
   });
 });
 
-describe("networth.portfolioSnapshots.getLatest", () => {
+describe("netWorth.portfolioSnapshots.getLatest", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -356,7 +356,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
   afterAll(() => cleanup());
 
   it("returns null when no snapshots exist", async () => {
-    const result = await caller.networth.portfolioSnapshots.getLatest();
+    const result = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(result).toBeNull();
   });
 
@@ -369,7 +369,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
       { performanceAccountId: perfAcctId, amount: "50000", taxType: "preTax" },
     ]);
 
-    const result = await caller.networth.portfolioSnapshots.getLatest();
+    const result = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(result).not.toBeNull();
     expect(result!.snapshot.snapshotDate).toBe("2025-06-30");
     expect(Array.isArray(result!.accounts)).toBe(true);
@@ -377,7 +377,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
   });
 
   it("snapshot accounts include the correct amount", async () => {
-    const result = await caller.networth.portfolioSnapshots.getLatest();
+    const result = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(result).not.toBeNull();
     expect(result!.accounts[0]!.amount).toBe("50000");
   });
@@ -395,13 +395,13 @@ describe("networth.portfolioSnapshots.getLatest", () => {
       },
     ]);
 
-    const result = await caller.networth.portfolioSnapshots.getLatest();
+    const result = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(result).not.toBeNull();
     expect(result!.snapshot.snapshotDate).toBe("2025-12-31");
   });
 
   it("returned snapshot has expected shape", async () => {
-    const result = await caller.networth.portfolioSnapshots.getLatest();
+    const result = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(result).not.toBeNull();
     expect(result).toHaveProperty("snapshot");
     expect(result).toHaveProperty("accounts");
@@ -410,7 +410,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
   });
 });
 
-describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () => {
+describe("netWorth.portfolioSnapshots createAccount/updateAccount/delete", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -437,7 +437,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   afterAll(() => cleanup());
 
   it("creates a new account in an existing snapshot", async () => {
-    const result = await caller.networth.portfolioSnapshots.createAccount({
+    const result = await caller.netWorth.portfolioSnapshots.createAccount({
       snapshotId: snapId,
       institution: "Schwab",
       taxType: "afterTax",
@@ -454,7 +454,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("new account appears in getLatest", async () => {
-    const latest = await caller.networth.portfolioSnapshots.getLatest();
+    const latest = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(latest).not.toBeNull();
     expect(latest!.accounts.length).toBeGreaterThanOrEqual(2);
     const found = latest!.accounts.find(
@@ -465,11 +465,11 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("updates an account owner", async () => {
-    await caller.networth.portfolioSnapshots.updateAccount({
+    await caller.netWorth.portfolioSnapshots.updateAccount({
       id: createdAcctId,
       ownerPersonId: personId,
     });
-    const latest = await caller.networth.portfolioSnapshots.getLatest();
+    const latest = await caller.netWorth.portfolioSnapshots.getLatest();
     const found = latest!.accounts.find(
       (a: { id: number }) => a.id === createdAcctId,
     );
@@ -477,11 +477,11 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("toggles isActive on an account", async () => {
-    await caller.networth.portfolioSnapshots.updateAccount({
+    await caller.netWorth.portfolioSnapshots.updateAccount({
       id: createdAcctId,
       isActive: false,
     });
-    const latest = await caller.networth.portfolioSnapshots.getLatest();
+    const latest = await caller.netWorth.portfolioSnapshots.getLatest();
     const found = latest!.accounts.find(
       (a: { id: number }) => a.id === createdAcctId,
     );
@@ -489,10 +489,10 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("updateAccount with no changes is a no-op", async () => {
-    await caller.networth.portfolioSnapshots.updateAccount({
+    await caller.netWorth.portfolioSnapshots.updateAccount({
       id: createdAcctId,
     });
-    const latest = await caller.networth.portfolioSnapshots.getLatest();
+    const latest = await caller.netWorth.portfolioSnapshots.getLatest();
     const found = latest!.accounts.find(
       (a: { id: number }) => a.id === createdAcctId,
     );
@@ -500,7 +500,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("creates account with performanceAccountId link", async () => {
-    const result = await caller.networth.portfolioSnapshots.createAccount({
+    const result = await caller.netWorth.portfolioSnapshots.createAccount({
       snapshotId: snapId,
       institution: "Fidelity",
       taxType: "preTax",
@@ -520,7 +520,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
       isActive: false,
     });
     await expect(
-      caller.networth.portfolioSnapshots.createAccount({
+      caller.netWorth.portfolioSnapshots.createAccount({
         snapshotId: snapId,
         institution: "Valic",
         taxType: "preTax",
@@ -533,7 +533,7 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 
   it("creates account with subType and label", async () => {
-    const result = await caller.networth.portfolioSnapshots.createAccount({
+    const result = await caller.netWorth.portfolioSnapshots.createAccount({
       snapshotId: snapId,
       institution: "Vanguard",
       taxType: "taxFree",
@@ -552,16 +552,16 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
     const newSnapId = seedSnapshot(db, "2025-03-01", [
       { performanceAccountId: perfAcctId, amount: "70000" },
     ]);
-    await caller.networth.portfolioSnapshots.delete({ id: newSnapId });
+    await caller.netWorth.portfolioSnapshots.delete({ id: newSnapId });
 
-    const latest = await caller.networth.portfolioSnapshots.getLatest();
+    const latest = await caller.netWorth.portfolioSnapshots.getLatest();
     expect(latest).not.toBeNull();
     expect(latest!.snapshot.id).toBe(snapId);
   });
 
   it("delete is idempotent for non-existent snapshot", async () => {
     // Should not throw
-    await caller.networth.portfolioSnapshots.delete({ id: 99999 });
+    await caller.netWorth.portfolioSnapshots.delete({ id: 99999 });
   });
 });
 
@@ -589,7 +589,7 @@ describe("networth snapshot account order is stable across an inline balance edi
         { performanceAccountId: p3, amount: "25000", taxType: "afterTax" },
       ]);
 
-      const before = await caller.networth.listSnapshots({
+      const before = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 10,
       });
@@ -602,12 +602,12 @@ describe("networth snapshot account order is stable across an inline balance edi
 
       // Edit the MIDDLE account's balance — the case that reshuffled the row
       // before the ORDER BY was added.
-      await caller.networth.portfolioSnapshots.updateAccount({
+      await caller.netWorth.portfolioSnapshots.updateAccount({
         id: orderBefore[1]!,
         amount: "999999",
       });
 
-      const afterList = await caller.networth.listSnapshots({
+      const afterList = await caller.netWorth.listSnapshots({
         page: 1,
         pageSize: 10,
       });
@@ -615,7 +615,7 @@ describe("networth snapshot account order is stable across an inline balance edi
         afterList.snapshots[0]!.accounts.map((a: { id: number }) => a.id),
       ).toEqual(orderBefore);
 
-      const afterLatest = await caller.networth.portfolioSnapshots.getLatest();
+      const afterLatest = await caller.netWorth.portfolioSnapshots.getLatest();
       expect(afterLatest!.accounts.map((a: { id: number }) => a.id)).toEqual(
         orderBefore,
       );
@@ -628,7 +628,7 @@ describe("networth snapshot account order is stable across an inline balance edi
 // NOTE: portfolioSnapshots.create uses db.transaction() which is incompatible
 // with better-sqlite3 async pattern in tests. Tested via E2E instead.
 
-describe("networth.portfolioSnapshots.delete", () => {
+describe("netWorth.portfolioSnapshots.delete", () => {
   it("deletes an existing snapshot", async () => {
     const ctx = await createTestCaller(adminSession);
     try {
@@ -644,9 +644,9 @@ describe("networth.portfolioSnapshots.delete", () => {
         },
       ]);
 
-      await ctx.caller.networth.portfolioSnapshots.delete({ id: snapId });
+      await ctx.caller.netWorth.portfolioSnapshots.delete({ id: snapId });
 
-      const latest = await ctx.caller.networth.portfolioSnapshots.getLatest();
+      const latest = await ctx.caller.netWorth.portfolioSnapshots.getLatest();
       expect(latest).toBeNull();
     } finally {
       ctx.cleanup();
@@ -657,7 +657,7 @@ describe("networth.portfolioSnapshots.delete", () => {
     const ctx = await createTestCaller(adminSession);
     try {
       await expect(
-        ctx.caller.networth.portfolioSnapshots.delete({ id: 99999 }),
+        ctx.caller.netWorth.portfolioSnapshots.delete({ id: 99999 }),
       ).resolves.toBeDefined();
     } finally {
       ctx.cleanup();
@@ -669,7 +669,7 @@ describe("portfolioSnapshots.create", () => {
   it("creates a snapshot with no accounts", async () => {
     const ctx = await createTestCaller(adminSession);
     try {
-      const result = await ctx.caller.networth.portfolioSnapshots.create({
+      const result = await ctx.caller.netWorth.portfolioSnapshots.create({
         snapshotDate: "2025-06-15",
         accounts: [],
       });
@@ -685,7 +685,7 @@ describe("portfolioSnapshots.create", () => {
       const perfAcctId = seedPerformanceAccount(ctx.db, {
         parentCategory: "Portfolio",
       });
-      const result = await ctx.caller.networth.portfolioSnapshots.create({
+      const result = await ctx.caller.netWorth.portfolioSnapshots.create({
         snapshotDate: "2025-06-15",
         accounts: [
           {
@@ -723,7 +723,7 @@ describe("portfolioSnapshots.create", () => {
       const openPerfAcctId = seedPerformanceAccount(ctx.db, {
         institution: "Fidelity",
       });
-      const result = await ctx.caller.networth.portfolioSnapshots.create({
+      const result = await ctx.caller.netWorth.portfolioSnapshots.create({
         snapshotDate: "2025-06-15",
         accounts: [
           {
@@ -799,7 +799,7 @@ describe("portfolioSnapshots.create", () => {
         .where(eq(schema.performanceAccounts.id, perfAcctId));
 
       // A new snapshot is created after closure.
-      await ctx.caller.networth.portfolioSnapshots.create({
+      await ctx.caller.netWorth.portfolioSnapshots.create({
         snapshotDate: "2025-06-15",
         accounts: [
           {
@@ -828,7 +828,7 @@ describe("portfolioSnapshots.create", () => {
 // updateAccount — balance edit (latest snapshot only) + CONFLICT on duplicate
 // ---------------------------------------------------------------------------
 
-describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
+describe("netWorth.portfolioSnapshots.updateAccount — balance edit", () => {
   it("edits an amount on the latest snapshot and re-derives ending balances", async () => {
     const ctx = await createTestCaller(adminSession);
     try {
@@ -870,7 +870,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, snapId));
 
-      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+      const res = await ctx.caller.netWorth.portfolioSnapshots.updateAccount({
         id: row!.id,
         amount: "62500",
       });
@@ -910,7 +910,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .where(eq(schema.portfolioAccounts.snapshotId, oldSnapId));
 
       await expect(
-        ctx.caller.networth.portfolioSnapshots.updateAccount({
+        ctx.caller.netWorth.portfolioSnapshots.updateAccount({
           id: oldRow!.id,
           amount: "99999",
         }),
@@ -951,7 +951,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, snapId));
 
-      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+      const res = await ctx.caller.netWorth.portfolioSnapshots.updateAccount({
         id: row!.id,
         amount: "25000",
       });
@@ -989,7 +989,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .select()
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, snapId));
-      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+      const res = await ctx.caller.netWorth.portfolioSnapshots.updateAccount({
         id: row!.id,
         label: "Renamed",
       });
@@ -1009,7 +1009,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
     try {
       seedSnapshot(ctx.db, "2025-07-04", []);
       await expect(
-        ctx.caller.networth.portfolioSnapshots.create({
+        ctx.caller.netWorth.portfolioSnapshots.create({
           snapshotDate: "2025-07-04",
           accounts: [],
         }),

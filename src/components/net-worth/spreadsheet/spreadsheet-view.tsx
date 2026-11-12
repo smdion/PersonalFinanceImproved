@@ -60,13 +60,13 @@ export function SpreadsheetView({
   const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
   const { data: detailedData } =
-    trpc.networth.computeDetailedHistory.useQuery(targeting);
+    trpc.netWorth.computeDetailedHistory.useQuery(targeting);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
 
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => {
       utils.settings.appSettings.invalidate();
-      utils.networth.invalidate();
+      utils.netWorth.invalidate();
     },
   });
 

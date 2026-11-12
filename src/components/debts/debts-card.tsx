@@ -57,7 +57,7 @@ export function DebtsCard() {
   const { data: people } = trpc.settings.people.list.useQuery();
   const done = () => {
     utils.debts.invalidate();
-    utils.networth.invalidate();
+    utils.netWorth.invalidate();
     utils.milestones.invalidate();
   };
   const create = trpc.debts.create.useMutation({ onSuccess: done });

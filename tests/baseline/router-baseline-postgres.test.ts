@@ -33,7 +33,7 @@ const KNOWN_GAPS: Record<string, string[]> = {
   // sets and a snapshot's per-account totals. Same numbers; the lists
   // would show in another order.
   "*/settings.taxBrackets.list": ["unordered"],
-  "*/networth.listSnapshotTotals": ["unordered"],
+  "*/netWorth.listSnapshotTotals": ["unordered"],
 };
 
 // Not imported from ../routers/setup: that module loads the db module (as

@@ -175,7 +175,7 @@ describe("RetirementContent smoke", () => {
     // list is the "nothing to resolve" case: the hook leaves the active id
     // alone rather than re-pointing it.
     setQuery("salaryProfile.list", []);
-    setQuery("networth.listSnapshotTotals", []);
+    setQuery("netWorth.listSnapshotTotals", []);
     // The fixture is a partial projection with the stored-row field types,
     // which the procedure's (serialized) output type doesn't have.
     const projection: unknown = mockProjectionData;

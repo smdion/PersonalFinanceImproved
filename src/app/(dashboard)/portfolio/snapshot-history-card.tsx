@@ -20,8 +20,8 @@ export type PortfolioSnapshotHistoryProps = {
     snapshotDate: string,
     rawAmount: string,
   ) => Promise<void>;
-  paginatedSnapshots: RouterOutputs["networth"]["listSnapshots"] | undefined;
-  rawSnapshots: RouterOutputs["networth"]["listSnapshots"]["snapshots"];
+  paginatedSnapshots: RouterOutputs["netWorth"]["listSnapshots"] | undefined;
+  rawSnapshots: RouterOutputs["netWorth"]["listSnapshots"]["snapshots"];
   resyncPush: ReturnType<typeof usePortfolioSnapshotMutations>["resyncPush"];
   setExpandedSnapshot: Dispatch<SetStateAction<number | null>>;
   setShowAll: Dispatch<SetStateAction<boolean>>;

@@ -55,7 +55,7 @@ export function AssetsContent() {
   const invalidateAll = () => {
     utils.assets.invalidate();
     utils.historical.invalidate();
-    utils.networth.invalidate();
+    utils.netWorth.invalidate();
   };
 
   const updateMutation = trpc.assets.updateAsset.useMutation({

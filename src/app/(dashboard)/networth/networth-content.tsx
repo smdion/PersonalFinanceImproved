@@ -59,9 +59,9 @@ import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 export function NetWorthContent() {
   const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
-  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.netWorth.computeSummary.useQuery(targeting);
   const { data } = summary;
-  const { data: historyData } = trpc.networth.listHistory.useQuery(targeting);
+  const { data: historyData } = trpc.netWorth.listHistory.useQuery(targeting);
   // Today's estimate from live balances — hidden (no error) without the
   // portfolio permission it needs.
   const { data: liveSinceSnapshot } =
@@ -77,7 +77,7 @@ export function NetWorthContent() {
   const [chartXAxis, setChartXAxis] = useState<"year" | "age">("year");
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => {
-      utils.networth.invalidate();
+      utils.netWorth.invalidate();
       utils.settings.appSettings.invalidate();
     },
   });

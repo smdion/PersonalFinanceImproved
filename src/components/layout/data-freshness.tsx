@@ -32,7 +32,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       utils.budget.invalidate();
       utils.assets.invalidate();
       utils.mortgage.invalidate();
-      utils.networth.invalidate();
+      utils.netWorth.invalidate();
     },
   });
   const simplefinSyncMut = trpc.simplefin.syncNow.useMutation({
