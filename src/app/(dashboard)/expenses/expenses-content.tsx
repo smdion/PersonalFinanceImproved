@@ -322,7 +322,7 @@ export function ExpensesContent() {
       };
     }, [budgetVsActual]);
 
-  const savingsRate = useMemo(
+  const leftOverShare = useMemo(
     () =>
       monthlyNetIncome > 0
         ? (monthlyNetIncome - totalActual) / monthlyNetIncome
@@ -380,16 +380,16 @@ export function ExpensesContent() {
             color={overUnderTextColor(totalActual - totalBudgeted)}
           />
           <SummaryCard
-            label="Savings Rate"
-            value={monthlyNetIncome > 0 ? formatPercent(savingsRate, 1) : "—"}
+            label="Left Over After Spending"
+            value={monthlyNetIncome > 0 ? formatPercent(leftOverShare, 1) : "—"}
             sub={
               formatCurrency(Math.max(0, monthlyNetIncome - totalActual)) +
-              " saved"
+              " left over"
             }
             color={
-              savingsRate >= 0.2
+              leftOverShare >= 0.2
                 ? "text-green-600"
-                : savingsRate >= 0.1
+                : leftOverShare >= 0.1
                   ? "text-amber-600"
                   : "text-red-600"
             }
