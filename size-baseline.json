@@ -952,7 +952,7 @@
       "capContributionsByLimitGroup": 231
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 232
+      "buildProfileContribData": 230
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189

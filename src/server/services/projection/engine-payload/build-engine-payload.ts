@@ -216,8 +216,7 @@ export async function buildEnginePayload(
     opts,
   );
 
-  // Each person's current job, or the next one they start; its dates bound
-  // the years it's worked (workingYearsByPerson, below).
+  // Each person's current job, or the next one they start; its dates bound the years worked.
   const activeJobs = projectionJobs(patchedJobs, asOfDate);
   // Every date in the plan, from each person's own age and dates.
   const timeline = householdTimeline({
@@ -343,7 +342,7 @@ export async function buildEnginePayload(
     people,
     birthYearByPersonId,
     thisYearFiling,
-    currentYear,
+    asOfDate,
     allContribs,
     activeJobs,
     jobSalaries,
@@ -494,6 +493,7 @@ export async function buildEnginePayload(
     capPassed: c.capPassed,
     cappedValue: c.cappedValue,
     cap: c.cap,
+    leftThisYear: c.leftThisYear,
   });
   const contribDataJobs = activeJobs.map((j) => ({
     id: j.id,

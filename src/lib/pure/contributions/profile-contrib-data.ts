@@ -22,6 +22,7 @@ import {
 } from "./contribution-rows";
 import { aggregateContributionsByCategory } from "./category-totals";
 import { matchAccountForContribution } from "./account-match";
+import { yearZeroFields } from "./cap-request";
 
 /** Context needed from the main buildEnginePayload for spec building. */
 type ProfileContributionContext = {
@@ -84,6 +85,7 @@ type ContributionInputRow = {
   hsaCoverageType?: string | null;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
+  leftThisYear?: number;
 };
 
 /**
@@ -274,9 +276,7 @@ export function buildProfileContribData(
           ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["contributionScaling"],
         hsaCoverageType: c.hsaCoverageType ?? null,
-        ...(c.cap && c.cap.overBy > 0
-          ? { configuredAnnual: c.cap.annual }
-          : {}),
+        ...yearZeroFields(c),
         employerShare: safeDivide(
           employerMatchById.get(c.id) ?? 0,
           employerMatchByCategory[cat],

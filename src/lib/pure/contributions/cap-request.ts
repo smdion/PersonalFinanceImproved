@@ -14,6 +14,7 @@ import {
 } from "@/lib/config/account-types";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
+import { safeDivide } from "@/lib/utils/math";
 import {
   type JobLike,
   filterActiveJobs,
@@ -29,6 +30,7 @@ import {
   jobScheduleDates,
 } from "@/lib/pure/paycheck/paycheck-input";
 import { jobChecksThisYear } from "@/lib/pure/paycheck/job-last-check";
+import { checksPaidYtd } from "@/lib/pure/paycheck/pay-periods-in-year";
 import { bonusCheckNumber } from "@/lib/pure/paycheck/bonus-check";
 
 /** A job as the request's cap pass reads it: its dates, pay schedule and bonus date. */
@@ -40,7 +42,7 @@ export type CapJob = JobRef &
   >;
 
 /** A job's pay over a year: salary, its bonus and the two together. */
-type JobYearPay = CapJobPay & { bonusGross: number; totalComp: number };
+export type JobYearPay = CapJobPay & { bonusGross: number; totalComp: number };
 
 const dayOf = (date: string | Date) =>
   typeof date === "string" ? date.slice(0, 10) : calendarDateOf(date);
@@ -213,3 +215,62 @@ export function capForSaveCheck<R extends CapPassRow>(
     overOf(thisYear[k]!.cap) > overOf(c.cap) ? thisYear[k]! : c,
   );
 }
+
+/**
+ * Engine year 0 for a job that starts or ends in the tax year: each IRS-limited row's money left
+ * this year, its capped amount on this year's checks less the share its checks paid through
+ * `asOf` (spread evenly over the checks). Other rows have none: their year 0 prorates by months.
+ */
+export function withLeftThisYear<R extends CapPassRow & CappedRowFields>(
+  rows: readonly R[],
+  household: CapRequestHousehold,
+  jobs: readonly CapJob[],
+  jobSalaries: readonly JobYearPay[],
+): (R & { leftThisYear?: number })[] {
+  const year = String(household.taxYear);
+  const edge = (j: CapJob) =>
+    dayOf(j.startDate).startsWith(year) ||
+    (!!j.endDate && dayOf(j.endDate).startsWith(year));
+  if (!jobs.some(edge)) return [...rows];
+  const payOf = (job: CapJob) => {
+    const pay = jobSalaries.find((js) => js.job.id === job.id);
+    if (!pay)
+      throw new Error(`Job ${job.id} has no pay in the cap pass's input`);
+    return pay;
+  };
+  const { asOf } = household;
+  const input = thisYearInput(rows, household, jobs, asOf, jobs, payOf);
+  const thisYear = capEffectiveContribs(rows, { ...household, ...input });
+  return rows.map((r, k) => {
+    const job = jobs.find((j) => j.id === r.jobId);
+    const cap = thisYear[k]!.cap;
+    if (!job?.payPeriod || !edge(job) || !cap) return r;
+    const periods = getPeriodsPerYear(job.payPeriod);
+    const dates = jobScheduleDates(job);
+    const { total } = jobChecksThisYear(
+      { asOfDate: asOf, payPeriod: job.payPeriod, ...dates },
+      periods,
+    );
+    const paid = Math.min(
+      total,
+      checksPaidYtd(
+        asOf,
+        job.payPeriod,
+        dates.anchorPayDate,
+        periods,
+        dates.startDate,
+      ),
+    );
+    const left = safeDivide(cap.cappedAnnual * (total - paid), total, 0);
+    return { ...r, leftThisYear: Math.max(0, left) };
+  });
+}
+
+/** A spec's year-0 fields: an over-limit row's configured yearly money (the late-year rule), and a
+ *  part-year job's money left this year (withLeftThisYear), which year 0 reads first. */
+export const yearZeroFields = (
+  c: Pick<CappedRowFields, "cap"> & { leftThisYear?: number },
+) => ({
+  ...(c.cap && c.cap.overBy > 0 ? { configuredAnnual: c.cap.annual } : {}),
+  ...(c.leftThisYear !== undefined ? { leftThisYear: c.leftThisYear } : {}),
+});

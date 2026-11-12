@@ -9,6 +9,7 @@ import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
 import {
   capAtYearRate,
   capForRequest,
+  withLeftThisYear,
 } from "@/lib/pure/contributions/cap-request";
 import {
   BLANK_SALARY_ENTRY,
@@ -351,5 +352,40 @@ describe("capForRequest — this tax year's checks", () => {
       [monthly(1, "2030-01-01", "2030-04-30")],
     );
     expect(hsa!.cap!.cappedAnnual).toBeCloseTo(4000 / 3, 2);
+  });
+});
+
+describe("withLeftThisYear — engine year 0 for a job starting or ending this year", () => {
+  const hsaRow = {
+    ...planRow(1, 1, 500),
+    accountType: "hsa",
+    contributionMethod: "fixed_per_period" as const,
+    taxTreatment: "hsa",
+    hsaCoverageType: "self_only",
+  };
+  const household = {
+    people: [{ id: 1, birthYear: 1990 }],
+    limits: { hsa_individual_limit: 4000, hsa_catchup_limit: 1000 },
+    filingStatus: "Single",
+    taxYear: 2030,
+    asOf: new Date(2030, 7, 14),
+  };
+  const left = (startDate: string) => {
+    const job = jobAt(1, { startDate, endDate: null }, "monthly");
+    const pay = { job, salary: 120000, bonusGross: 0, totalComp: 120000 };
+    const ctx = { ...household, activeJobs: [job], jobSalaries: [pay] };
+    const [row] = withLeftThisYear(
+      capEffectiveContribs([hsaRow], ctx),
+      household,
+      [job],
+      [pay],
+    );
+    return row!.leftThisYear;
+  };
+  it("a job started July 1: this year's 3,000, less two of its six checks paid by August 14", () => {
+    expect(left("2030-07-01")).toBeCloseTo(2000, 2);
+  });
+  it("a job held all year has none: its year 0 prorates by months", () => {
+    expect(left("2020-01-01")).toBeUndefined();
   });
 });
