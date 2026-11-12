@@ -106,7 +106,7 @@
     "happy-dom": "21.0.4",
     "husky": "^9.1.7",
     "jscpd": "5.4.2",
-    "knip": "5.62.0",
+    "knip": "6.44.2",
     "lint-staged": "^17.6.0",
     "postcss": "^8",
     "prettier": "^3.9.10",
