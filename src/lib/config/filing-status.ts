@@ -12,9 +12,11 @@ export type ReturnFilingStatus = ReturnFilingStatusSpelling & {
   readonly __filing?: "return";
 };
 
-/** A per-status tax table's row (tax data and the config tables are keyed by it); a return
- *  status reads one through its rules (`survivorRow`, `jointRow`). */
-export type FilingStatusKey = "MFJ" | "Single" | "HOH";
+/** The rows every per-status tax table has (tax data and the config tables), in order; a
+ *  return status reads one through its rules (`survivorRow`, `jointRow`). */
+export const TAX_TABLE_ROWS = ["MFJ", "Single", "HOH"] as const;
+/** A per-status tax table's row: tables are keyed by it. */
+export type FilingStatusKey = (typeof TAX_TABLE_ROWS)[number];
 
 export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
 export type W4FilingStatus = (typeof W4_FILING_STATUS_VALUES)[number] & {

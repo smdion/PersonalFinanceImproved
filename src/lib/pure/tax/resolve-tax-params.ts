@@ -2,7 +2,7 @@
  *  tables; optional `tax_params` rows just label the `version`. Year: the requested one, else
  *  newest with data; a missing requested year follows `onMissing`; no rows at all throws. */
 
-import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
+import { TAX_TABLE_ROWS } from "@/lib/config/filing-status";
 
 /**
  * The three per-slice entry shapes, kept local so the resolver has no
@@ -260,7 +260,7 @@ function completeYears<R extends { taxYear: number; filingStatus: string }>(
         byYear.set(r.taxYear, new Set()).get(r.taxYear)!
       ).add(r.filingStatus);
   return [...byYear]
-    .filter(([, statuses]) => FILING_STATUS_ORDER.every((f) => statuses.has(f)))
+    .filter(([, statuses]) => TAX_TABLE_ROWS.every((f) => statuses.has(f)))
     .map(([y]) => y)
     .sort((a, b) => a - b);
 }

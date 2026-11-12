@@ -8,7 +8,7 @@ import {
   type TaxDataYear,
 } from "@/lib/db/migrate/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
-import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
+import { TAX_TABLE_ROWS } from "@/lib/config/filing-status";
 import {
   fplByHouseholdAmountsSchema,
   irmaaBracketsSchema,
@@ -296,7 +296,7 @@ export function validateTaxDataFile(
       if (sec?.exception && !(sec.exception.reason && sec.exception.source))
         add(`${y} ${s}: exception without reason and source`);
     }
-    const statuses = [...FILING_STATUS_ORDER].sort().join(",");
+    const statuses = [...TAX_TABLE_ROWS].sort().join(",");
     if (
       Object.keys(d.withholding?.tables ?? {})
         .sort()

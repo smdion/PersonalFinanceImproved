@@ -3,7 +3,7 @@
  * (`pnpm tax-data:schema`; a test fails when they're stale).
  */
 import { TAX_LIMIT_KEYS } from "@/lib/config/tax-limit-keys";
-import { FILING_STATUS_ORDER } from "@/lib/config/filing-status";
+import { TAX_TABLE_ROWS } from "@/lib/config/filing-status";
 import type { TaxDataFile } from "@/lib/db/migrate/reference-reconcile-core";
 
 /** Where the generated schemas go (relative to the repo root). */
@@ -32,8 +32,8 @@ const exception = {
 /** A section's per-filing-status object (every status, nothing else). */
 const byStatus = (item: object) => ({
   type: "object",
-  required: [...FILING_STATUS_ORDER],
-  properties: Object.fromEntries(FILING_STATUS_ORDER.map((s) => [s, item])),
+  required: [...TAX_TABLE_ROWS],
+  properties: Object.fromEntries(TAX_TABLE_ROWS.map((s) => [s, item])),
   additionalProperties: false,
 });
 
