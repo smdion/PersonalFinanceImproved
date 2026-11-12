@@ -102,6 +102,8 @@ export const onboardingProcedures = {
 
     try {
       const wellKnown = `${issuer}/.well-known/openid-configuration`;
+      // Plain fetch, not fetchChecked: the URL is the operator's own env,
+      // never a request's, and the issuer is usually a LAN host.
       const res = await fetch(wellKnown, {
         signal: AbortSignal.timeout(5000),
       });
