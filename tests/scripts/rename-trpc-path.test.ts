@@ -3,13 +3,22 @@
  * comes from the message's `Rename-path:` trailers; every kind of place a
  * path is written follows; a second run, committed or not, changes nothing.
  */
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   readRenamePaths,
   renamePathTrailers,
 } from "../../scripts/check-commit";
 import { raisedFor } from "../../scripts/check-size-baseline";
-import { makeFixture, type Fixture } from "./rename-trpc-path-fixture";
+import { OWN_FILES } from "../../scripts/rename-trpc-path";
+import {
+  RENAME_MESSAGE,
+  SCRIPT,
+  makeFixture,
+  type Fixture,
+} from "./rename-trpc-path-fixture";
 
 const abbreviationCount = (f: Fixture) =>
   (
@@ -138,5 +147,38 @@ describe("rename-trpc-path.ts on an invented router", () => {
     f.git("commit", "-q", "-m", "refactor: renamed\n\nWhy.");
     f.rename();
     expect(f.git("status", "--porcelain")).toBe("");
+  }, 120_000);
+
+  it("never edits its own files, whose examples name paths as written", () => {
+    // One file per OWN_FILES entry (a glob's `*` as "-x"), each naming
+    // the old path in code, a string and a comment; the script's own path
+    // is a plain file here, so the run goes through the real script.
+    const own = OWN_FILES.map((g) => g.replace("*", "-x"));
+    const text = [
+      "// `gadgets.listContribRows` → `gadgets.listContributionRows`",
+      'export const paths = ["gadgets.listContribRows"];',
+      "export const call = (trpc: any) => trpc.gadgets.listContribRows.useQuery();",
+      "",
+    ].join("\n");
+    for (const file of own) {
+      fs.rmSync(path.join(f.dir, file), { force: true });
+      fs.mkdirSync(path.dirname(path.join(f.dir, file)), { recursive: true });
+      fs.writeFileSync(path.join(f.dir, file), text);
+    }
+    f.git("add", "-A");
+    f.git("commit", "-q", "-m", "chore: own files\n\nWhy.");
+    const message = path.join(f.dir, ".git", "own-message.txt");
+    fs.writeFileSync(message, RENAME_MESSAGE);
+    const out = execFileSync(
+      "npx",
+      ["tsx", SCRIPT, "--root", f.dir, "--message", message],
+      { cwd: f.dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    for (const file of own) expect(f.read(file)).toBe(text);
+    // The rename itself still ran, and named none of them as a leftover.
+    expect(f.read("tests/gadgets.test.ts")).toContain(
+      '"gadgets.listContributionRows"',
+    );
+    expect(out).not.toMatch(/leftover/);
   }, 120_000);
 });

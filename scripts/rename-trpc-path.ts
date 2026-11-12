@@ -24,7 +24,8 @@
  * idempotent: skipped when `to` is there and `from` isn't).
  *
  * What it rewrites, in the worktree (git ls-files; never CHANGELOG.md,
- * drizzle*, .scratch, node_modules, src/lib/generated):
+ * drizzle*, .scratch, node_modules, src/lib/generated, or its own files,
+ * OWN_FILES):
  *   - code (.ts/.tsx/.js/.mjs/.cjs), by syntax tree, never by plain text:
  *     property-access chains (`trpc.networth.computeSummary.useQuery`,
  *     `utils.networth.invalidate()`, `ctx.caller.networth...`), indexed
@@ -835,6 +836,7 @@ function moveFiles(files: string[]) {
       newMod = stripExt(to);
     for (const file of files.map((f) => (f === from ? to : f))) {
       if (!/\.(tsx?|jsx?|mjs|cjs)$/.test(file) || !plainFile(file)) continue;
+      if (SKIP.some((r) => r.test(file))) continue;
       const text = fs.readFileSync(abs(file), "utf8");
       const self = file === to;
       const was = self ? from : file;
@@ -901,7 +903,26 @@ function moveFiles(files: string[]) {
 // The sweep
 // ---------------------------------------------------------------------------
 
+/**
+ * The codemod's own files: their examples and fixtures name paths as
+ * written, so a run never edits them (git pathspec globs).
+ */
+export const OWN_FILES = [
+  "scripts/rename-trpc-path.ts",
+  "tests/scripts/rename-trpc-path*.ts",
+  "tests/scripts/check-commit-rename-path.test.ts",
+  "tests/scripts/check-ratchets-rename-path.test.ts",
+];
+const globRegExp = (glob: string) =>
+  new RegExp(
+    `^${glob.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*")}$`,
+  );
+const OWN_FILE_PATTERNS = OWN_FILES.map(globRegExp);
+/** A pathspec that leaves the codemod's own files out of a git grep. */
+const OWN_FILES_EXCLUDED = OWN_FILES.map((g) => `:(exclude,glob)${g}`);
+
 const SKIP = [
+  ...OWN_FILE_PATTERNS,
   /^CHANGELOG\.md$/,
   /^docs\/CHANGELOG-.*\.md$/,
   /^drizzle(-sqlite)?\//,
@@ -1092,6 +1113,7 @@ async function main(reportFile: string | undefined) {
           "--",
           ".",
           ":!CHANGELOG.md",
+          ...OWN_FILES_EXCLUDED,
         )
           .split("\n")
           .filter(Boolean))
@@ -1188,6 +1210,7 @@ async function main(reportFile: string | undefined) {
           ":!docs/CHANGELOG-*",
           ":!drizzle",
           ":!drizzle-sqlite",
+          ...OWN_FILES_EXCLUDED,
         );
       } catch {
         continue;
