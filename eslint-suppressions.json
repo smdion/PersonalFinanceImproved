@@ -5292,7 +5292,7 @@
   },
   "src/server/services/demo/demo-schema.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/demo/demo-seed.ts": {

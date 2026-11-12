@@ -1,7 +1,7 @@
 import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import type { DemoProfile } from "@/lib/demo";
 import * as schema from "@/lib/db/schema";
-import type { db as appDb } from "@/lib/db";
+import type { DbOrTx } from "@/lib/db";
 import { getParentCategory } from "@/lib/config/account-types";
 import { accountMatchColumns } from "@/lib/pure/contributions/match-writes";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -15,7 +15,7 @@ import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-re
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
 export async function seedProfile(
-  db: typeof appDb,
+  db: DbOrTx,
   profile: DemoProfile,
   seededOn: Date,
 ) {

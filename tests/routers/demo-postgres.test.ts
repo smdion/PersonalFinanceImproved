@@ -264,6 +264,25 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     expect(contribution.people.length).toBe(rows.length);
   });
 
+  it("two builds of one demo profile at once seed it once", async () => {
+    const { buildDemoSchema } =
+      await import("@/server/services/demo/demo-schema");
+    const { getDemoProfile, isDemoProfileSlug } = await import("@/lib/demo");
+    const { profiles } = await (await callerFor(null)).demo.listProfiles();
+    const slug = profiles[0]!.slug;
+    if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
+    await Promise.all([
+      buildDemoSchema(slug, new Date("2026-06-01T12:00:00Z")),
+      buildDemoSchema(slug, new Date("2026-06-01T12:00:00Z")),
+    ]);
+    const { rows } = await admin.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM "${schemaName}".people`,
+    );
+    expect(rows[0]!.n).toBe(getDemoProfile(slug)!.people.length);
+    const people = await (await callerFor(schemaName)).settings.people.list();
+    expect(people).toHaveLength(rows[0]!.n);
+  });
+
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(
