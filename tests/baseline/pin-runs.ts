@@ -364,8 +364,9 @@ export async function finalizeVariantWrites(
   return written;
 }
 
-/** Part c's: ids, timestamps and timings (numbers.ts). */
-const NOT_TEXT = /^id$|Id$|Ids$|At$|Ms$/;
+/** Part c's: ids, timestamps and timings (numbers.ts); and the per-account
+ *  rows' `accountKey`, an identity like an id, not text. */
+const NOT_TEXT = /^id$|Id$|Ids$|At$|Ms$|^accountKey$/;
 const NUMBER_TEXT = /^-?\d+(\.\d+)?$/;
 
 export type TextTree =

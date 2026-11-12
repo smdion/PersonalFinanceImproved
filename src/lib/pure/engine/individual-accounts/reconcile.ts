@@ -22,7 +22,7 @@ import {
   getTotalBalance,
 } from "../../accounts/account-balance";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
-import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { accountKeyOf, type IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
   type RothBasisState,
@@ -115,15 +115,20 @@ export function buildIndividualYearBalances(
           }
         : {};
 
+    const part = {
+      accountKey: accountKeyOf(ia),
+      performanceAccountId: ia.performanceAccountId,
+      name: ia.name,
+      category: ia.category,
+      taxType: ia.taxType,
+      ownerName: ia.ownerName,
+      ownerPersonId: ia.ownerPersonId,
+      parentCategory: indParentCat.get(k),
+      balance,
+    };
     if (phase === "accumulation") {
       return {
-        name: ia.name,
-        category: ia.category,
-        taxType: ia.taxType,
-        ownerName: ia.ownerName,
-        ownerPersonId: ia.ownerPersonId,
-        parentCategory: indParentCat.get(k),
-        balance,
+        ...part,
         contribution: maps.contribs?.get(k) ?? 0,
         employerMatch: maps.match?.get(k) ?? 0,
         growth: maps.growth?.get(k) ?? 0,
@@ -146,13 +151,7 @@ export function buildIndividualYearBalances(
     }
 
     return {
-      name: ia.name,
-      category: ia.category,
-      taxType: ia.taxType,
-      ownerName: ia.ownerName,
-      ownerPersonId: ia.ownerPersonId,
-      parentCategory: indParentCat.get(k),
-      balance,
+      ...part,
       contribution: maps.contribs?.get(k) ?? 0,
       employerMatch: 0,
       growth: maps.growth?.get(k) ?? 0,

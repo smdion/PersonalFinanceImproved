@@ -6,7 +6,7 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../../config/account-types";
-import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { accountKeyOf, type IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   accrueContributionBasis,
   drawFromBasis,
@@ -38,11 +38,9 @@ export function retirementFirst<T>(
   return retirement.length > 0 ? retirement : [...items];
 }
 
-/** The standard composite key. Includes `ownerPersonId`, so two people's same-named accounts
- *  stay apart (eligibility is per owner too); a joint account keys on `"joint"`. */
+/** The ledger's key function: each account part's `accountKeyOf`. */
 export function makeIndKey(): IndKeyFn {
-  return (ia) =>
-    `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
+  return accountKeyOf;
 }
 
 /** Adds `amount` to account `account` in each of the year's maps `into`

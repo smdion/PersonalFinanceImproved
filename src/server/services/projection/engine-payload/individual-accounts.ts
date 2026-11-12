@@ -144,6 +144,7 @@ export function buildIndividualAccounts({
           : undefined;
         return {
           name: a.name,
+          performanceAccountId: soleAccountId(a.performanceAccountIds),
           category: cat as AccountCategory,
           taxType: a.taxType,
           accountType: a.accountType,
@@ -152,8 +153,7 @@ export function buildIndividualAccounts({
           ownerName: a.ownerName,
           ownerPersonId: a.ownerPersonId,
           parentCategory: a.parentCategory,
-          ruleOf55: eligibility?.ruleOf55,
-          rothBasisMeta: eligibility?.rothBasisMeta,
+          ...eligibility,
           ownerBirthYear:
             a.ownerPersonId != null
               ? birthYearByPersonId.get(a.ownerPersonId)
@@ -194,4 +194,9 @@ export function buildIndividualAccounts({
         ]
       : []),
   ];
+}
+
+/** A part's performance account, when it has exactly one. */
+function soleAccountId(ids: readonly number[] | undefined): number | undefined {
+  return ids?.length === 1 ? ids[0] : undefined;
 }

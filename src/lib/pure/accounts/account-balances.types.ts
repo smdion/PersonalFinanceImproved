@@ -5,6 +5,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import type { SeparationSource } from "@/lib/pure/accounts/early-access";
+import type { AccountKey } from "@/lib/pure/accounts/account-part";
 
 export type RothBasisMeta = {
   year: number;
@@ -46,6 +47,8 @@ export type AccountBalances = Record<AccountCategory, AccountBalance>;
 export type IndividualAccountInput = {
   /** Display name (e.g. "Alice HSA", "Bob Roth IRA"). */
   name: string;
+  /** The account's performance account, only when this part has exactly one. */
+  performanceAccountId?: number;
   /** Waterfall category this account belongs to. */
   category: AccountCategory;
   /** Tax type: 'taxFree' for Roth, 'preTax'/'hsa'/'afterTax' for others. */
@@ -96,6 +99,10 @@ export type IndividualAccountInput = {
 
 /** Per-account balance tracked through the engine projection. */
 export type IndividualAccountYearBalance = {
+  /** The part's identity (`accountKeyOf`): joins rows across years and views. */
+  accountKey: AccountKey;
+  /** As on `IndividualAccountInput`: only when the part has exactly one. */
+  performanceAccountId?: number;
   name: string;
   category: AccountCategory;
   taxType: string;

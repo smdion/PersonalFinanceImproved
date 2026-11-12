@@ -4,12 +4,18 @@ import { describe, it, expect } from "vitest";
 import { buildEligibilityNote } from "@/components/retirement-projection/table/account-notes";
 import type { IndividualAccountYearBalance } from "@/lib/pure/accounts/account-balances.types";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
+import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 
 const rothIra = (
   reason: EligibilityReason,
   withdrawal: number,
   eligibilityLocked = false,
 ): IndividualAccountYearBalance => ({
+  accountKey: accountKeyOf({
+    name: "Roth IRA",
+    category: "ira",
+    taxType: "taxFree",
+  }),
   name: "Roth IRA",
   category: "ira",
   taxType: "taxFree",
