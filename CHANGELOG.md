@@ -114,6 +114,7 @@ Each line is one corrected rule, with the case that shows it. Your own figures m
 
 ### Fixed
 
+- **Current Balances names each account that sends no holdings once,** under the daily list ("Not in daily changes (no holdings): …"), by its account's name, with its balance changes on hover. It was repeated on most daily lines again whenever its balance didn't change on one of them, and an account held in parts was named once per part.
 - **An inline edit ends exactly once:** Escape then leaving the field no longer saves the cancelled value, and Enter then leaving it no longer saves twice (inline numbers, the Upcoming transactions table, every inline edit).
 - **The restore dialog reports a failed pre-restore backup** ("The backup failed, so nothing was restored: …"; it silently did nothing), makes one backup per opening instead of one per retry, no longer shows the last failure when reopened, and the backup's description reads `Auto-created before restoring "<name>"`.
 - **Backups across databases:** a SQLite backup restores on PostgreSQL (and the reverse) with its timestamps; a PostgreSQL import checks every foreign key before it commits; an export and a saved version read every table from one snapshot, so a backup taken during a sync is whole; the PostgreSQL pre-upgrade backup keeps each date's day on a server east of UTC; a restore writes a JSON null and a JSON string as themselves on both databases.
@@ -213,10 +214,11 @@ One line per change the release lets you see; "if any" marks what most household
 
 - [ ] `DEMO_ONLY` server (the demo canary): visitors behind the proxy each get their own limits (`TRUSTED_PROXY_HEADER`); a sixth demo activation in a minute is refused; a page with no demo profile chosen goes to the picker.
 - [ ] Any script calling `/api/trpc`: uses the new paths (CHANGELOG § Upgrading → API).
+- [ ] Current Balances: each account that sends no holdings is named once, under the daily list ("Not in daily changes (no holdings): …"); no daily line names one; hover shows its balance changes.
 
 ### Under the hood
 
-**Counts (v0.10.6 → v0.11.0):** 238 commits; `src/` 426 files, +7,612 / −4,905; copied code 25 blocks / 529 lines → 20 / 442. Since v0.10.0: 1,267 commits in v0.10.1–v0.10.6.
+**Counts (v0.10.6 → v0.11.0):** 241 commits; `src/` 430 files, +7,683 / −4,967; copied code 25 blocks / 529 lines → 20 / 442. Since v0.10.0: 1,267 commits in v0.10.1–v0.10.6.
 
 - **Figure changes are checked by CI:** a commit that re-records a pinned figure names its item, each figure it moves with its cause (`Figure-change:`) and the baseline's count of moved figures; an expected-failure flip names its case; a figure commit updates its `docs/CALCULATIONS.md` row; a breaking change carries an `API:` line; a tRPC path rename is proven by re-running its codemod.
 - **Answer-key cases flipped** from "expected to fail" to plain passes with each fix that names them (tax, paycheck, limits, Coast FIRE); six hand-worked golden projections replace the engine snapshot's date check.
