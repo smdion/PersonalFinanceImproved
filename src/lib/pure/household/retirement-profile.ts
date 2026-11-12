@@ -50,12 +50,8 @@ export function pickProfileSettingsRow<
   profileId: number | null,
   primaryPersonId: number | null,
 ): T | undefined {
-  if (profileId == null) {
-    return primaryPersonId != null
-      ? rows.find((r) => r.personId === primaryPersonId)
-      : rows[0];
-  }
-  const inProfile = rows.filter((r) => r.profileId === profileId);
+  const inProfile =
+    profileId == null ? rows : rows.filter((r) => r.profileId === profileId);
   return (
     (primaryPersonId != null
       ? inProfile.find((r) => r.personId === primaryPersonId)
