@@ -5400,7 +5400,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 8
+      "count": 7
     }
   },
   "src/server/services/paycheck/summary.ts": {
@@ -5408,7 +5408,7 @@
       "count": 2
     },
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 10
     },
     "ratchet/no-unregistered-fallback": {
       "count": 2
@@ -5537,7 +5537,7 @@
   },
   "src/server/services/projection/engine-payload/load.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-abbreviation": {
       "count": 7

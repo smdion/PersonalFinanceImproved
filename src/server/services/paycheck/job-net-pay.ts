@@ -31,7 +31,6 @@ import {
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
 import type { DbOrTx } from "@/lib/db";
-import { activeProfileId } from "@/server/data/active-profile";
 
 /**
  * Net pay per check for a job from live data, persisted as a recorded fact (no What-If sandbox):
@@ -63,7 +62,6 @@ export async function computeJobNetPayPerCheck(
     rawJobContribs,
     rawPersonalContribs,
     allLimitRows,
-    activeContribProfileId,
     allTaxParams,
     [jobPerson],
   ] = await Promise.all([
@@ -92,7 +90,6 @@ export async function computeJobNetPayPerCheck(
         ),
       ),
     db.select().from(schema.contributionLimits),
-    activeProfileId(db, "contribution"),
     db.select().from(schema.taxParams),
     db
       .select({ dateOfBirth: schema.people.dateOfBirth })
@@ -119,10 +116,7 @@ export async function computeJobNetPayPerCheck(
   );
 
   // Accounts carry no contribution value: the active Contribution Profile's.
-  const contribProfile =
-    activeContribProfileId !== null
-      ? await fetchContributionProfile(db, activeContribProfileId)
-      : null;
+  const contribProfile = await fetchContributionProfile(db, null);
   const contribActiveFieldsRoot = contribProfile
     ? readContributionActiveFields(
         contribProfile.contributionActiveFields,

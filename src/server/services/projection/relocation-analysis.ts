@@ -322,9 +322,9 @@ export async function computeRelocationAnalysis(
     };
   };
 
-  // Resolve contribution profiles per scenario. No profile (or a missing id)
-  // resolves against an empty active-fields map: zero contributions, since
-  // accounts carry no value of their own.
+  // Resolve contribution profiles per scenario (fetchContributionProfile: none
+  // named is the active one). A missing id resolves against an empty
+  // active-fields map: zero contributions, accounts carry no value of their own.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
@@ -333,9 +333,7 @@ export async function computeRelocationAnalysis(
     referenceDate.getFullYear(),
   );
   const resolveContributionProfile = async (profileId: number | null) => {
-    const profile = profileId
-      ? await fetchContributionProfile(ctx.db, profileId)
-      : null;
+    const profile = await fetchContributionProfile(ctx.db, profileId);
 
     // jobSalaries already reflects the active Salary Profile: this is the
     // relocation analysis's comparison arm, so no Plan-specific salary applies.

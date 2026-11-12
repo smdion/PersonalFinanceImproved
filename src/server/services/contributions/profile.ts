@@ -18,6 +18,7 @@ import {
 import type { Db } from "@/lib/db";
 import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
 import { readStoredMatchType } from "@/lib/db/stored-match-type";
+import { activeProfileId } from "@/server/data/active-profile";
 
 /**
  * Resolve a profile against live data (`liveJobSalaries` already reflects the active
@@ -202,26 +203,25 @@ export function applyDeductionActiveFields(
     .filter((d): d is DeductionRowWithActiveFields => d !== null);
 }
 
-/**
- * Fetch a contribution profile by id; null when no id is given or the row is
- * gone. A profile with empty contributionActiveFields applies nothing.
- */
+/** The Contribution Profile a request runs on: the id given, else the active one; null only when
+ *  none is active or the id is gone. Empty contributionActiveFields apply nothing. */
 export async function fetchContributionProfile(
   db: Db,
   profileId: number | null | undefined,
 ): Promise<typeof schema.contributionProfiles.$inferSelect | null> {
-  if (profileId == null) return null;
+  const id = profileId ?? (await activeProfileId(db, "contribution"));
+  if (id === null) return null;
   const profiles = await db
     .select()
     .from(schema.contributionProfiles)
-    .where(eq(schema.contributionProfiles.id, profileId));
+    .where(eq(schema.contributionProfiles.id, id));
   return profiles[0] ?? null;
 }
 
 /**
  * Load a profile by ID and apply its active fields: contribs (+ deductions when
  * `allDeductions` is passed) and jobs merged with the caller's `salaryProfileActiveMap`.
- * With no profile selected (or the row gone) no contribution resolves.
+ * With none active (or the row gone) no contribution resolves.
  */
 export async function loadAndApplyContribProfile(
   db: Db,

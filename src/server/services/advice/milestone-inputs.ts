@@ -308,7 +308,7 @@ export async function activeMilestoneInput(ctx: {
   const setting = (key: string) =>
     settingRows.find((r) => r.key === key)?.value ?? null;
   const portfolio = ctx.scope.can("portfolio");
-  // Contributions need the profile ids the page sends; with none they're $0.
+  // The page's profile ids, else the active ones.
   const profileIds = summaryProfileIdsInput(await resolveProfileSelection(ctx));
   const [
     inputs,

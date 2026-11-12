@@ -592,6 +592,12 @@ callers with no page context pick none. A linked item's dollars are computed onc
 columns. Migration 0009 dropped the old per-column profile ids. Never add a
 per-column profile back — a different set of profiles is a different Plan.
 
+A request that names no profile runs on the active one, resolved in one place
+per kind: `fetchContributionProfile` (`server/services/contributions/profile.ts`)
+and `loadEffectiveSalaryProfile`, each reading the active id through
+`activeProfileId` (`server/data/active-profile.ts`), which refuses a stored id that
+isn't a whole number. None of them is ever "no profile" while one is active.
+
 **`null` means two different things and must not be conflated:**
 
 - In a **Plan slot**, `null` means "names no profile —

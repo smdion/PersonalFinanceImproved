@@ -17,7 +17,6 @@ import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
-import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
@@ -37,7 +36,6 @@ import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-pr
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
-import { fetchContributionProfile } from "@/server/services/contributions/profile";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { jointRows } from "@/lib/pure/contributions/row-amounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
@@ -170,16 +168,7 @@ export async function computePaycheckSummary(
   // Accounts with no active value under this profile (applyContribActiveFields
   // excludes them) are surfaced per person, so a card never shows a quietly
   // shrunk total.
-  const contribProfileRow = await fetchContributionProfile(
-    ctx.db,
-    input?.contributionProfileId,
-  );
-  const accountActiveFields = contribProfileRow
-    ? readContributionActiveFields(
-        contribProfileRow.contributionActiveFields,
-        contribProfileRow.id,
-      ).contributionAccounts
-    : {};
+  const accountActiveFields = profileResult.contribActiveFields;
   // The What-If tab's sandbox edits apply last, through the same merge
   // function: one more layer, never a second resolution path.
   const sandboxed = applyContribActiveFields(

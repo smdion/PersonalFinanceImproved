@@ -127,7 +127,7 @@ export async function buildEnginePayload(
     classBucketRows,
   } = data;
 
-  const { salaryProfileActiveMap, allContribs, patchedJobs } =
+  const { salaryProfileActiveMap, allContribs, patchedJobs, profileOpts } =
     await applyProfiles(db, data, opts, allContribsRaw, allJobs);
 
   const primaryPerson = getPrimaryPerson(people);
@@ -213,7 +213,7 @@ export async function buildEnginePayload(
     allBudgetProfiles,
     allBudgetItems,
     db,
-    opts,
+    profileOpts,
   );
 
   // Each person's current job, or the next one they start; its dates bound the years worked.
@@ -426,7 +426,7 @@ export async function buildEnginePayload(
     allBudgetProfiles,
     allBudgetItems,
     globalActiveCol,
-    opts,
+    opts: profileOpts,
   });
   const annualExpensesVal = accumulationExpenses;
   const expenseEndings = await loadExpenseEndings(db, {

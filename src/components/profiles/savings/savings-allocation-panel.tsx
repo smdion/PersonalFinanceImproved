@@ -62,8 +62,7 @@ export function SavingsAllocationPanel({
   const { data: summaries } =
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
   // "Unspent" comes per profile from budget.listProfiles (take-home under the
-  // active profiles minus spending and savings). A client pay query here would
-  // apply no profile at all.
+  // active profiles minus spending and savings).
 
   if (profilesLoading) {
     return (

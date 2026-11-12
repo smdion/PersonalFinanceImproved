@@ -114,7 +114,7 @@
     "src/components/profiles/salary/salary-profile-entry.tsx": 255,
     "src/components/profiles/salary/salary-profile-list.tsx": 190,
     "src/components/profiles/salary/salary-profile-manager.tsx": 152,
-    "src/components/profiles/savings/savings-allocation-panel.tsx": 438,
+    "src/components/profiles/savings/savings-allocation-panel.tsx": 437,
     "src/components/profiles/what-if/use-what-if-sandbox.ts": 251,
     "src/components/profiles/what-if/what-if-budget-step.tsx": 171,
     "src/components/profiles/what-if/what-if-contributions-step.tsx": 93,
@@ -407,8 +407,8 @@
     "src/server/services/net-worth/year-assets.ts": 211,
     "src/server/services/net-worth/year-end-history.ts": 584,
     "src/server/services/paycheck/household-totals.ts": 91,
-    "src/server/services/paycheck/job-net-pay.ts": 256,
-    "src/server/services/paycheck/summary.ts": 655,
+    "src/server/services/paycheck/job-net-pay.ts": 250,
+    "src/server/services/paycheck/summary.ts": 644,
     "src/server/services/performance/finalize-year.ts": 436,
     "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
@@ -416,10 +416,10 @@
     "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 294,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 821,
-    "src/server/services/projection/engine-payload/load.ts": 156,
+    "src/server/services/projection/engine-payload/load.ts": 150,
     "src/server/services/projection/engine-payload/profile-switches.ts": 445,
     "src/server/services/projection/projection-cache.ts": 183,
-    "src/server/services/projection/relocation-analysis.ts": 454,
+    "src/server/services/projection/relocation-analysis.ts": 452,
     "src/server/services/projection/relocation-projection.ts": 484,
     "src/server/services/projection/strategy-analysis.ts": 682,
     "src/server/services/savings/summary.ts": 329,
@@ -1027,7 +1027,7 @@
       "computeBudgetActiveSummary": 217
     },
     "src/server/services/contributions/contribution-mix.ts": {
-      "loadContributionMix": 164
+      "loadContributionMix": 163
     },
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 630,
@@ -1052,10 +1052,10 @@
       "buildYearEndHistory": 488
     },
     "src/server/services/paycheck/job-net-pay.ts": {
-      "computeJobNetPayPerCheck": 216
+      "computeJobNetPayPerCheck": 211
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 561,
+      "computePaycheckSummary": 552,
       "computePaycheckSummary.results.map()": 201
     },
     "src/server/services/performance/finalize-year.ts": {
@@ -1075,7 +1075,7 @@
       "buildProfileSwitches": 276
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 357
+      "computeRelocationAnalysis": 355
     },
     "src/server/services/projection/relocation-projection.ts": {
       "computeRelocationFiProjection": 437

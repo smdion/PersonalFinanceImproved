@@ -14,7 +14,7 @@ import { applySalaryProfileRow } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   applyContribProfileRow,
-  loadAndApplyContribProfile,
+  fetchContributionProfile,
 } from "@/server/services/contributions/profile";
 
 /** Every DB table the projection and the Simulation read, by name. */
@@ -73,15 +73,11 @@ export async function fetchRetirementData(
       .where(eq(schema.brokerageGoals.isActive, true))
       .orderBy(asc(schema.brokerageGoals.targetYear)),
     allAppSettings: db.select().from(schema.appSettings),
-    // The contribution profile's row (null = not found) when its id is known
-    // here; undefined when absent, and buildEnginePayload loads it itself.
-    contributionProfileRow: opts?.contributionProfileId
-      ? db
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, opts.contributionProfileId))
-          .then((r) => r[0] ?? null)
-      : Promise.resolve(undefined as undefined),
+    // The Contribution Profile the projection runs on (fetchContributionProfile).
+    contributionProfileRow: fetchContributionProfile(
+      db,
+      opts?.contributionProfileId,
+    ),
     // Same batching for the independent Salary Profile axis.
     salaryProfileRow: opts?.salaryProfileId
       ? db
@@ -118,12 +114,14 @@ export async function fetchRetirementData(
 /**
  * Applies the Salary Profile, then the Contribution Profile (its jobs carry
  * their pay-schedule/W-4 fields from the Salary Profile), to every active
- * contribution account, read from `data` when the caller fetched the row.
+ * contribution account; the Contribution Profile is the row `data` resolved.
  */
-export async function applyProfiles(
+export async function applyProfiles<
+  O extends { contributionProfileId?: number; salaryProfileId?: number },
+>(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
-  opts: { contributionProfileId?: number; salaryProfileId?: number },
+  opts: O,
   allContributionsRaw: Awaited<
     ReturnType<typeof fetchRetirementData>
   >["allContribsRaw"],
@@ -134,23 +132,19 @@ export async function applyProfiles(
       ? applySalaryProfileRow(data.salaryProfileRow)
       : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
 
-  const contributionProfileResult =
-    data.contributionProfileRow !== undefined
-      ? applyContribProfileRow(
-          data.contributionProfileRow,
-          allContributionsRaw,
-          allJobs,
-          salaryProfileActiveMap,
-        )
-      : await loadAndApplyContribProfile(
-          db,
-          opts.contributionProfileId,
-          allContributionsRaw,
-          allJobs,
-          salaryProfileActiveMap,
-        );
+  const contributionProfileResult = applyContribProfileRow(
+    data.contributionProfileRow,
+    allContributionsRaw,
+    allJobs,
+    salaryProfileActiveMap,
+  );
   const allContribs = contributionProfileResult.contribs;
   const patchedJobs = contributionProfileResult.jobs;
+  // Every later read runs on the Contribution Profile resolved here.
+  const profileOpts = {
+    ...opts,
+    contributionProfileId: data.contributionProfileRow?.id,
+  };
 
-  return { salaryProfileActiveMap, allContribs, patchedJobs };
+  return { salaryProfileActiveMap, allContribs, patchedJobs, profileOpts };
 }

@@ -36,7 +36,6 @@ import { loadAndApplyContribProfile } from "@/server/services/contributions/prof
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
-import { activeProfileId } from "@/server/data/active-profile";
 
 export async function loadContributionMix(
   db: Db,
@@ -44,20 +43,19 @@ export async function loadContributionMix(
   /** Tracked account → the day its latest contribution actually arrived (live data). */
   contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
-  const [allJobs, contribs, profileId] = await Promise.all([
+  const [allJobs, contribs] = await Promise.all([
     db.select().from(schema.jobs),
     db
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    activeProfileId(db, "contribution"),
   ]);
   if (!contribs.some((c) => c.performanceAccountId != null)) return new Map();
 
   const salaryMap = await loadEffectiveSalaryProfile(db, null);
   const { contribs: effective, jobs } = await loadAndApplyContribProfile(
     db,
-    profileId,
+    null,
     contribs,
     filterActiveJobs(allJobs, asOf),
     salaryMap,

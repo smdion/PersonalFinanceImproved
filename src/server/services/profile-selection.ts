@@ -1,5 +1,5 @@
 // The Contribution and Salary Profiles a request runs on: each one the page
-// picked (null: none), else the active one (DESIGN § Profile Resolution).
+// picked, else the active one (DESIGN § Profile Resolution).
 import { inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
