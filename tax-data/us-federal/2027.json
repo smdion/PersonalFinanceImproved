@@ -15,33 +15,33 @@
   },
   "limits": {
     "401k_employee_limit": {
-      "value": null,
-      "source": "",
+      "value": 25500,
+      "source": "IRS Notice 2026-66",
       "notes": "Elective deferrals (IRC 402(g))"
     },
     "401k_catchup_limit": {
-      "value": null,
-      "source": "",
+      "value": 8500,
+      "source": "IRS Notice 2026-66",
       "notes": "Additional if age 50+"
     },
     "401k_super_catchup_limit": {
-      "value": null,
-      "source": "",
+      "value": 11750,
+      "source": "IRS Notice 2026-66",
       "notes": "Ages 60–63 catch-up, in place of the age-50 one (SECURE 2.0)"
     },
     "401k_total_additions_limit": {
-      "value": null,
-      "source": "",
+      "value": 75000,
+      "source": "IRS Notice 2026-66",
       "notes": "IRC 415(c): employee + employer + after-tax, catch-up excluded"
     },
     "ira_limit": {
-      "value": null,
-      "source": "",
+      "value": 7500,
+      "source": "IRS Notice 2026-66",
       "notes": "IRA contribution limit (IRC 219(b)(5)(A)), traditional and Roth combined"
     },
     "ira_catchup_limit": {
-      "value": null,
-      "source": "",
+      "value": 1100,
+      "source": "IRS Notice 2026-66",
       "notes": "Additional if age 50+"
     },
     "hsa_family_limit": {
@@ -120,33 +120,33 @@
       "notes": "Additional Medicare Tax owed above this, HOH; fixed by law"
     },
     "roth_ira_phaseout_start_mfj": {
-      "value": null,
-      "source": "",
+      "value": 250000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out start, MFJ"
     },
     "roth_ira_phaseout_end_mfj": {
-      "value": null,
-      "source": "",
+      "value": 260000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out end, MFJ"
     },
     "roth_ira_phaseout_start_single": {
-      "value": null,
-      "source": "",
+      "value": 158000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out start, Single"
     },
     "roth_ira_phaseout_end_single": {
-      "value": null,
-      "source": "",
+      "value": 173000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out end, Single"
     },
     "roth_ira_phaseout_start_hoh": {
-      "value": null,
-      "source": "",
+      "value": 158000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out start, HOH"
     },
     "roth_ira_phaseout_end_hoh": {
-      "value": null,
-      "source": "",
+      "value": 173000,
+      "source": "IRS Notice 2026-66",
       "notes": "Roth IRA contribution MAGI phase-out end, HOH"
     },
     "hdhp_min_deductible_self": {
@@ -195,8 +195,8 @@
       "notes": "Last tax year the senior deduction applies (it covers years before 2029)"
     },
     "qcd_annual_limit": {
-      "value": null,
-      "source": "",
+      "value": 114000,
+      "source": "IRS Notice 2026-66",
       "notes": "Qualified charitable distributions from IRAs, per person (IRC 408(d)(8))"
     }
   },

@@ -103,12 +103,12 @@ The `limits` keys, generated from `src/lib/config/tax-limit-keys.ts` (and each a
 
 | Key                                               | Name                                                    | Settings card                  | Kind              | Latest source          |
 | ------------------------------------------------- | ------------------------------------------------------- | ------------------------------ | ----------------- | ---------------------- |
-| `401k_employee_limit`                             | Annual limit                                            | 401k                           | inflation-indexed |                        |
-| `401k_catchup_limit`                              | Catch-up (50+)                                          | 401k                           | inflation-indexed |                        |
-| `401k_super_catchup_limit`                        | Super catch-up (60–63)                                  | 401k                           | inflation-indexed |                        |
-| `401k_total_additions_limit`                      | Total additions (employee + employer)                   | 401k                           | inflation-indexed |                        |
-| `ira_limit`                                       | Annual limit                                            | IRA                            | inflation-indexed |                        |
-| `ira_catchup_limit`                               | Catch-up (50+)                                          | IRA                            | inflation-indexed |                        |
+| `401k_employee_limit`                             | Annual limit                                            | 401k                           | inflation-indexed | IRS Notice 2026-66     |
+| `401k_catchup_limit`                              | Catch-up (50+)                                          | 401k                           | inflation-indexed | IRS Notice 2026-66     |
+| `401k_super_catchup_limit`                        | Super catch-up (60–63)                                  | 401k                           | inflation-indexed | IRS Notice 2026-66     |
+| `401k_total_additions_limit`                      | Total additions (employee + employer)                   | 401k                           | inflation-indexed | IRS Notice 2026-66     |
+| `ira_limit`                                       | Annual limit                                            | IRA                            | inflation-indexed | IRS Notice 2026-66     |
+| `ira_catchup_limit`                               | Catch-up (50+)                                          | IRA                            | inflation-indexed | IRS Notice 2026-66     |
 | `hsa_individual_limit`                            | Self-only                                               | HSA                            | inflation-indexed | IRS Rev. Proc. 2026-24 |
 | `hsa_family_limit`                                | Family                                                  | HSA                            | inflation-indexed | IRS Rev. Proc. 2026-24 |
 | `hsa_catchup_limit`                               | Catch-up (55+)                                          | HSA                            | fixed by law      | IRC 223(b)(3)          |
@@ -130,15 +130,15 @@ The `limits` keys, generated from `src/lib/config/tax-limit-keys.ts` (and each a
 | `fica_medicare_surtax_liability_mfj`              | Additional Medicare: owed above, married filing jointly | Social Security & Medicare     | fixed by law      | IRC 3101(b)(2)         |
 | `fica_medicare_surtax_liability_single`           | Additional Medicare: owed above, single                 | Social Security & Medicare     | fixed by law      | IRC 3101(b)(2)         |
 | `fica_medicare_surtax_liability_hoh`              | Additional Medicare: owed above, head of household      | Social Security & Medicare     | fixed by law      | IRC 3101(b)(2)         |
-| `roth_ira_phaseout_start_mfj`                     | Phase-out starts, married filing jointly                | Roth IRA eligibility           | inflation-indexed |                        |
-| `roth_ira_phaseout_end_mfj`                       | Phase-out ends, married filing jointly                  | Roth IRA eligibility           | inflation-indexed |                        |
-| `roth_ira_phaseout_start_single`                  | Phase-out starts, single                                | Roth IRA eligibility           | inflation-indexed |                        |
-| `roth_ira_phaseout_end_single`                    | Phase-out ends, single                                  | Roth IRA eligibility           | inflation-indexed |                        |
-| `roth_ira_phaseout_start_hoh`                     | Phase-out starts, head of household                     | Roth IRA eligibility           | inflation-indexed |                        |
-| `roth_ira_phaseout_end_hoh`                       | Phase-out ends, head of household                       | Roth IRA eligibility           | inflation-indexed |                        |
+| `roth_ira_phaseout_start_mfj`                     | Phase-out starts, married filing jointly                | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
+| `roth_ira_phaseout_end_mfj`                       | Phase-out ends, married filing jointly                  | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
+| `roth_ira_phaseout_start_single`                  | Phase-out starts, single                                | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
+| `roth_ira_phaseout_end_single`                    | Phase-out ends, single                                  | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
+| `roth_ira_phaseout_start_hoh`                     | Phase-out starts, head of household                     | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
+| `roth_ira_phaseout_end_hoh`                       | Phase-out ends, head of household                       | Roth IRA eligibility           | inflation-indexed | IRS Notice 2026-66     |
 | `hdhp_min_deductible_self`                        | Minimum deductible, self-only                           | HSA eligibility (HDHP)         | inflation-indexed | IRS Rev. Proc. 2026-24 |
 | `hdhp_min_deductible_family`                      | Minimum deductible, family                              | HSA eligibility (HDHP)         | inflation-indexed | IRS Rev. Proc. 2026-24 |
-| `qcd_annual_limit`                                | Most an IRA can give to charity, per person             | Charitable distributions (QCD) | inflation-indexed |                        |
+| `qcd_annual_limit`                                | Most an IRA can give to charity, per person             | Charitable distributions (QCD) | inflation-indexed | IRS Notice 2026-66     |
 | `supplemental_tax_rate`                           | Bonus (supplemental) withholding rate                   | Withholding                    | rate set by law   |                        |
 
 <!-- END:keys -->
