@@ -1,13 +1,12 @@
 /** Each contribution row's yearly employee money and the pay its match uses. */
 import {
   annualContributionWithBonus,
-  isHouseholdJointRow,
   jobPayFor,
-  rowPaySchedule,
   type ContributionRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
+import { isHouseholdJointRow, rowPaySchedule } from "./row-pay";
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 import { filterActiveJobs, type JobLike } from "@/lib/pure/household/profiles";
 import { roundToCents } from "@/lib/utils/math";

@@ -34,10 +34,8 @@ import {
   storedMatchRate,
 } from "@/lib/pure/contributions/employer-match";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
-import {
-  annualContributionWithBonus,
-  rowPaySchedule,
-} from "@/lib/pure/contributions/contribution-rows";
+import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(

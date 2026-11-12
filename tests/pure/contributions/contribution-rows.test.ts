@@ -8,9 +8,9 @@ import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
-  rowPaySchedule,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import { contributionRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
 const hsa = (method: ContributionMethod, value: number): ContributionRow => ({

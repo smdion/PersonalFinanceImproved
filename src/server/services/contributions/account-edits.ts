@@ -6,7 +6,7 @@ import type { ContribSaveChecker } from "@/server/services/contributions/caps";
 import { mergeSalaryProfileJobFields } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { DbOrTx, Db } from "@/lib/db";
-import { rowPaySchedule } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 
 /**
  * Inverse of computeAnnualContribution for flat-dollar methods (budget-linked accounts

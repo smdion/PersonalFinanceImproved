@@ -13,12 +13,12 @@ import {
 } from "./employer-match";
 import {
   jobPayFor,
-  rowPaySchedule,
   annualContributionWithBonus,
   type ContributionRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
+import { rowPaySchedule } from "./row-pay";
 
 type PersonRef = { id: number; name: string };
 

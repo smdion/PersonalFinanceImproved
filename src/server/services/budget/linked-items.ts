@@ -22,7 +22,7 @@ import {
   applyContribActiveFields,
 } from "@/server/services/contributions/profile";
 import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
-import { rowPaySchedule } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 

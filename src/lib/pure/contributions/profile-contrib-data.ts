@@ -17,9 +17,9 @@ import { toNumber } from "@/lib/utils/numbers";
 import {
   jobPayFor,
   annualContributionWithBonus,
-  rowPaySchedule,
   type ContributionRow,
 } from "./contribution-rows";
+import { rowPaySchedule } from "./row-pay";
 import { aggregateContributionsByCategory } from "./category-totals";
 import { matchAccountForContribution } from "./account-match";
 import { yearZeroFields } from "./cap-request";
