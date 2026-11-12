@@ -10,7 +10,7 @@ import {
   numericCell,
   type BracketRow,
 } from "./bracket-table-editor";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 
 type LtcgEntry = { threshold: number | null; rate: number };
 
@@ -91,7 +91,7 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
         updateMutation.mutate({
           id: rowId,
           taxYear: row.taxYear,
-          filingStatus: row.filingStatus as ReturnFilingStatus,
+          filingStatus: row.filingStatus as FilingStatusKey,
           brackets,
         });
       }}

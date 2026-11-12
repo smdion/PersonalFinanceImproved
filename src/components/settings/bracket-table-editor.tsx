@@ -11,9 +11,9 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { SettingsQueryBoundary, queryPending } from "./settings-query-boundary";
 import type { BoundaryQuery } from "@/components/ui/query-boundary";
 import {
-  FILING_STATUS_ORDER,
+  TAX_TABLE_ROWS,
   filingTable,
-  type ReturnFilingStatus,
+  type FilingStatusKey,
 } from "@/lib/config/filing-status";
 import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 
@@ -85,7 +85,7 @@ type Props<TEntry> = {
   onUpdateRow: (rowId: number, brackets: TEntry[]) => void;
   onCreateRow: (
     taxYear: number,
-    filingStatus: ReturnFilingStatus,
+    filingStatus: FilingStatusKey,
     brackets: TEntry[],
   ) => Promise<unknown>;
   onDeleteRow: (rowId: number) => Promise<unknown>;
@@ -133,12 +133,12 @@ export function BracketTableEditor<TEntry>({
       for (const row of rows.filter((r) => r.taxYear === effectiveCopyFrom)) {
         await onCreateRow(
           year,
-          row.filingStatus as ReturnFilingStatus,
+          row.filingStatus as FilingStatusKey,
           row.brackets,
         );
       }
     } else {
-      for (const fs of FILING_STATUS_ORDER) {
+      for (const fs of TAX_TABLE_ROWS) {
         await onCreateRow(year, fs, defaultBrackets);
       }
     }
@@ -191,7 +191,7 @@ export function BracketTableEditor<TEntry>({
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {FILING_STATUS_ORDER.map((status) => {
+        {TAX_TABLE_ROWS.map((status) => {
           const row = yearData.find((r) => r.filingStatus === status);
           if (!row) return null;
           return (

@@ -14,6 +14,7 @@ import {
 import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/budget-apps";
 import {
   RETURN_FILING_STATUS_VALUES,
+  TAX_TABLE_ROWS,
   W4_FILING_STATUS_VALUES,
 } from "@/lib/config/filing-status";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
@@ -139,16 +140,12 @@ export function closedSetColumns(): ClosedSetColumn[] {
       { filingStatus: W4_FILING_STATUS_VALUES, origin },
       ["origin"],
     ),
-    ...columnsOf(
-      s.ltcgBrackets,
-      { filingStatus: RETURN_FILING_STATUS_VALUES, origin },
-      ["origin"],
-    ),
-    ...columnsOf(
-      s.irmaaBrackets,
-      { filingStatus: RETURN_FILING_STATUS_VALUES, origin },
-      ["origin"],
-    ),
+    ...columnsOf(s.ltcgBrackets, { filingStatus: TAX_TABLE_ROWS, origin }, [
+      "origin",
+    ]),
+    ...columnsOf(s.irmaaBrackets, { filingStatus: TAX_TABLE_ROWS, origin }, [
+      "origin",
+    ]),
     ...columnsOf(s.contributionLimits, { origin }, ["origin"]),
     ...columnsOf(s.fplByHousehold, { origin }, ["origin"]),
     ...columnsOf(

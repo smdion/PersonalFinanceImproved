@@ -210,13 +210,13 @@ const taxBracketInput = z.object({
 
 const ltcgBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  filingStatus: filing.returnFilingStatusSchema,
+  filingStatus: filing.taxTableRowSchema,
   brackets: ltcgBracketsSchema,
 });
 
 const irmaaBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
-  filingStatus: filing.returnFilingStatusSchema,
+  filingStatus: filing.taxTableRowSchema,
   brackets: irmaaBracketsSchema,
 });
 

@@ -14,7 +14,7 @@ import { decimal } from "../pg-decimal";
 import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {
-  ReturnFilingStatus,
+  FilingStatusKey,
   W4FilingStatus,
 } from "@/lib/config/filing-status";
 import { referenceOriginColumns } from "./contributions";
@@ -66,7 +66,7 @@ export const ltcgBrackets = pgTable(
   {
     id: serial("id").primaryKey(),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<FilingStatusKey>().notNull(),
     brackets: jsonb("brackets").$type<LtcgBracketEntry[]>().notNull(),
     ...referenceOriginColumns,
   },
@@ -90,7 +90,7 @@ export const irmaaBrackets = pgTable(
   {
     id: serial("id").primaryKey(),
     taxYear: integer("tax_year").notNull(),
-    filingStatus: text("filing_status").$type<ReturnFilingStatus>().notNull(),
+    filingStatus: text("filing_status").$type<FilingStatusKey>().notNull(),
     brackets: jsonb("brackets").$type<IrmaaBracketEntry[]>().notNull(),
     ...referenceOriginColumns,
   },
