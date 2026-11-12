@@ -40,6 +40,7 @@ import type {
   PersonSnapshot,
 } from "@/lib/pure/contributions/summary.types";
 import { jointAccountRows } from "@/lib/pure/contributions/joint-accounts";
+import { isHouseholdJointRow } from "@/lib/pure/contributions/contribution-rows";
 import {
   contributionAccountsFor,
   perContributionRows,
@@ -673,9 +674,7 @@ export async function computeContributionSummary(
   );
 
   // Joint accounts — computed at household level, not attributed to any person
-  const jointContribs = effectiveContributions.filter(
-    (c) => c.ownership === "joint",
-  );
+  const jointContribs = effectiveContributions.filter(isHouseholdJointRow);
   const jointAccountTypes: AccountTypeSnapshot[] = [];
   // A joint account's IRS limit (a family HSA) through the same resolver
   // as each person's, at the oldest member's Dec 31 age for any catch-up.

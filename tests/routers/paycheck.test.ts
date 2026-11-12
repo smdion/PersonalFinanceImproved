@@ -1355,6 +1355,56 @@ describe("paycheck router — joint contributions", () => {
   });
 });
 
+describe("paycheck router — a joint account tied to a job", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+  let accountId: number;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+    const personId = await seedPerson(ctx.db, "Joint Job Person", "1990-01-01");
+    const jobId = seedJob(ctx.db, personId, { annualSalary: "100000" });
+    accountId = ctx.db
+      .insert(schema.contributionAccounts)
+      .values({
+        personId: null,
+        jobId,
+        accountType: "brokerage",
+        parentCategory: "Portfolio",
+        taxTreatment: "after_tax",
+        employerMatchType: "none",
+        isActive: true,
+        ownership: "joint",
+      })
+      .returning({ id: schema.contributionAccounts.id })
+      .get().id;
+    profileId = seedContributionProfile(ctx.db, {
+      name: "Joint Job Profile",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [accountId]: {
+            contributionValue: "1000",
+            contributionMethod: "fixed_monthly",
+          },
+        },
+      },
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("sits in its job's rows, not in jointContribs", async () => {
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
+    expect(result.jointContribs).toHaveLength(0);
+    expect(result.people[0]!.rawContribs.map((c) => c.id)).toContain(accountId);
+  });
+});
+
 // ── contributionAccounts.create with performanceAccountId ────────────────
 
 describe("settings.contributionAccounts — performanceAccountId-linked create", () => {

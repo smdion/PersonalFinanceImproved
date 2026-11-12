@@ -397,7 +397,7 @@
     "src/server/services/contributions/live-data.ts": 85,
     "src/server/services/contributions/profile-detail.ts": 129,
     "src/server/services/contributions/profile.ts": 289,
-    "src/server/services/contributions/summary.ts": 719,
+    "src/server/services/contributions/summary.ts": 718,
     "src/server/services/debts/other-liabilities.ts": 54,
     "src/server/services/demo/demo-seed.ts": 462,
     "src/server/services/investments/current-balances.ts": 465,
@@ -1030,7 +1030,7 @@
       "loadContributionMix": 168
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 633,
+      "computeContributionSummary": 631,
       "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
@@ -1055,7 +1055,7 @@
       "computeJobNetPayPerCheck": 219
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 564,
+      "computePaycheckSummary": 563,
       "computePaycheckSummary.results.map()": 201
     },
     "src/server/services/performance/finalize-year.ts": {

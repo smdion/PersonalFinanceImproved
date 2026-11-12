@@ -19,7 +19,7 @@ import {
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
 
 /** A joint row the household pays; a joint row tied to a job sits in that job's rows. */
-function isHouseholdJointRow(row: {
+export function isHouseholdJointRow(row: {
   ownership?: AccountOwnership | null;
   jobId: number | null;
 }): boolean {
