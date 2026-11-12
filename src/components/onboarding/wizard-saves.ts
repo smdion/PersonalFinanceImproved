@@ -14,9 +14,9 @@ export function finishSetup(
   setIsSaving: Dispatch<SetStateAction<boolean>>,
   setError: Dispatch<SetStateAction<string | null>>,
   people: PersonDraft[],
-  createPerson: ReturnType<typeof trpc.settings.people.create.useMutation>,
+  createPerson: ReturnType<typeof trpc.people.create.useMutation>,
   jobs: JobDraft[],
-  createJob: ReturnType<typeof trpc.settings.jobs.create.useMutation>,
+  createJob: ReturnType<typeof trpc.jobs.create.useMutation>,
   utils: ReturnType<typeof trpc.useUtils>,
   updateSalaryProfile: ReturnType<typeof trpc.salaryProfile.update.useMutation>,
   setTaxDataSyncEnabled: ReturnType<

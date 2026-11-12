@@ -128,7 +128,7 @@ export function NewSnapshotForm({
   const { data: perfAccounts, isLoading: loadingPerfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: people, isLoading: loadingPeople } =
-    trpc.settings.people.list.useQuery();
+    trpc.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const createMutation = trpc.netWorth.portfolioSnapshots.create.useMutation({
     onSuccess: (data) => {

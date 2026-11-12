@@ -94,7 +94,7 @@ describe.each([
       "brokerage.invalidate",
       "budget.invalidate",
       "savings.invalidate",
-      "settings.contributionAccounts.invalidate",
+      "contribution.accounts.invalidate",
     ])
       expect(utilsCalls(path), path).not.toHaveLength(0);
   });

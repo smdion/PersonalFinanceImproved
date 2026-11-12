@@ -14,7 +14,7 @@ import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import type { ContributionMethod } from "@/lib/config/enum-values";
 
 type Inputs = inferRouterInputs<AppRouter>;
-type ContribInput = Inputs["settings"]["contributionAccounts"]["create"];
+type ContribInput = Inputs["contribution"]["accounts"]["create"];
 type PerfInput = Inputs["performance"]["performanceAccounts"]["create"];
 type SnapshotRow =
   Inputs["netWorth"]["portfolioSnapshots"]["create"]["accounts"][number];
@@ -131,7 +131,7 @@ export async function seedHousehold(
 ): Promise<SeededIds> {
   const people: Record<string, number> = {};
   for (const p of h.people) {
-    const r = await call.settings.people.create({
+    const r = await call.people.create({
       name: p.name,
       dateOfBirth: p.dateOfBirth,
       isPrimaryUser: p.isPrimaryUser,
@@ -143,7 +143,7 @@ export async function seedHousehold(
 
   const jobs: Record<string, number> = {};
   for (const j of h.jobs) {
-    const r = await call.settings.jobs.create({
+    const r = await call.jobs.create({
       personId: need(person(j.person), j.person),
       employerName: j.employerName,
       startDate: j.startDate,
@@ -166,7 +166,7 @@ export async function seedHousehold(
 
   const deductions: Record<string, { amountPerPeriod: string }> = {};
   for (const d of h.deductions) {
-    const r = await call.settings.deductions.create({
+    const r = await call.paycheck.deductions.create({
       jobId: need(job(d.job), d.job),
       deductionName: d.deductionName,
       isPretax: d.isPretax,
@@ -196,7 +196,7 @@ export async function seedHousehold(
     perf[a.key] = need(created, `account ${a.key}`).id;
     for (const c of a.contrib) {
       const { job: jobKey, person: personKey, value, method, ...rest } = c;
-      const r = await call.settings.contributionAccounts.create({
+      const r = await call.contribution.accounts.create({
         ...rest,
         jobId: job(jobKey),
         personId: person(personKey),

@@ -65,7 +65,7 @@ beforeEach(() => {
     mockLatest as MockOutput<"netWorth.portfolioSnapshots.getLatest">,
   );
   setQuery("performance.performanceAccounts.list", mockPerf);
-  setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+  setQuery("people.list", [{ id: 1, name: "Alice" }]);
   setMutationResult(CREATE, { apiSyncResult: { pushed: false } });
 });
 

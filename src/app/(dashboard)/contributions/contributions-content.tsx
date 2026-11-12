@@ -57,7 +57,7 @@ export function ContributionsContent() {
   );
   const { data } = summary;
   const setPriorYear =
-    trpc.settings.contributionAccounts.setPriorYearAmount.useMutation({
+    trpc.contribution.accounts.setPriorYearAmount.useMutation({
       onSuccess: () => utils.contribution.computeSummary.invalidate(),
     });
   const [selectedProfileId, setSelectedProfileId] = useState<

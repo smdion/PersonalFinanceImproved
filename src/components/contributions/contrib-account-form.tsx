@@ -105,10 +105,9 @@ export function ContributionAccountForm({
   onCancel: () => void;
   isPending?: boolean;
 }) {
-  const { data: people } = trpc.settings.people.list.useQuery();
-  const { data: jobs } = trpc.settings.jobs.list.useQuery();
-  const { data: existingAccounts } =
-    trpc.settings.contributionAccounts.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
+  const { data: jobs } = trpc.jobs.list.useQuery();
+  const { data: existingAccounts } = trpc.contribution.accounts.list.useQuery();
   const { data: compareData } =
     trpc.contributionProfile.getComparisonData.useQuery();
   const [v, setV] = useState<ContribAccountFormValues>(() =>

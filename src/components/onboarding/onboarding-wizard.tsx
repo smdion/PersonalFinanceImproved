@@ -44,8 +44,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const firstRun = trpc.settings.getFirstRunState.useQuery();
   const adminNeeded = firstRun.data?.adminNeeded === true;
   const createLocalAdmin = trpc.settings.createLocalAdmin.useMutation();
-  const createPerson = trpc.settings.people.create.useMutation();
-  const createJob = trpc.settings.jobs.create.useMutation();
+  const createPerson = trpc.people.create.useMutation();
+  const createJob = trpc.jobs.create.useMutation();
   const updateSalaryProfile = trpc.salaryProfile.update.useMutation();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
   const setTaxDataSyncEnabled =

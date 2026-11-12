@@ -54,7 +54,7 @@ export function capContributions<
     taxYear: currentYear,
   };
   // A jobless row is active when its person is known, or when it has no
-  // person: a joint account (settings/contribution-accounts.ts), which
+  // person: a joint account (contribution/accounts.ts), which
   // would otherwise drop out of every total.
   const capped = capEffectiveContribs(
     allContributions

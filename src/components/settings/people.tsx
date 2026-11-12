@@ -11,15 +11,15 @@ export function PeopleSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.people.list.useQuery();
-  const deleteMut = trpc.settings.people.delete.useMutation({
-    onSuccess: () => utils.settings.people.list.invalidate(),
+  const { data, isLoading } = trpc.people.list.useQuery();
+  const deleteMut = trpc.people.delete.useMutation({
+    onSuccess: () => utils.people.list.invalidate(),
   });
-  const createMut = trpc.settings.people.create.useMutation({
-    onSuccess: () => utils.settings.people.list.invalidate(),
+  const createMut = trpc.people.create.useMutation({
+    onSuccess: () => utils.people.list.invalidate(),
   });
-  const updateMut = trpc.settings.people.update.useMutation({
-    onSuccess: () => utils.settings.people.list.invalidate(),
+  const updateMut = trpc.people.update.useMutation({
+    onSuccess: () => utils.people.list.invalidate(),
   });
 
   return (

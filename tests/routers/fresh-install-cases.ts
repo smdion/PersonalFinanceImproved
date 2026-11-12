@@ -92,12 +92,12 @@ async function firstRun(install: FreshInstall): Promise<number> {
     password: "Fresh-install-pass-1",
   });
   const admin = install.caller(firstAdminSession);
-  const person = await admin.settings.people.create({
+  const person = await admin.people.create({
     name: "Robin",
     dateOfBirth: "1985-06-15",
     isPrimaryUser: true,
   });
-  const job = await admin.settings.jobs.create({
+  const job = await admin.jobs.create({
     personId: person!.id,
     employerName: "Employer",
     startDate: "2026-01-05",

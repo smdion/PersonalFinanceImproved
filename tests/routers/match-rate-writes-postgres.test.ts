@@ -84,7 +84,7 @@ describe.skipIf(skipWithoutPostgres)("match writes (PostgreSQL)", () => {
       personId: Number(person["id"]),
       jobId: 0,
       row: async (id) => {
-        const r = (await caller.settings.contributionAccounts.list()).find(
+        const r = (await caller.contribution.accounts.list()).find(
           (x) => x.id === id,
         )!;
         return {

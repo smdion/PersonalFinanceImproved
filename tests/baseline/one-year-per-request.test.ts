@@ -142,7 +142,7 @@ const WRITES: WriteCase[] = [
   {
     name: "turning the HSA back on is judged against the year's limit",
     write: (caller, ids) =>
-      caller.settings.contributionAccounts.setActive({
+      caller.contribution.accounts.setActive({
         id: ids.contrib[1]!,
         isActive: true,
       }),
@@ -150,7 +150,7 @@ const WRITES: WriteCase[] = [
   {
     name: "a prior-year HSA amount is stored against last year",
     write: (caller, ids) =>
-      caller.settings.contributionAccounts.setPriorYearAmount({
+      caller.contribution.accounts.setPriorYearAmount({
         id: ids.contrib[1]!,
         priorYearContribAmount: "1000",
       }),

@@ -239,7 +239,7 @@ export function WhatIfDeductionsEditor({
     patch: Partial<Omit<DeductionAddition, "localId" | "personId">>,
   ) => void;
   onRemoveAddition: (localId: number) => void;
-  /** `settings.deductions.create` is admin-gated — only admins see the
+  /** `paycheck.deductions.create` is admin-gated — only admins see the
    *  "Make this real" affordance. */
   canManagePaycheck: boolean;
   onMakeReal: (addition: DeductionAddition, jobId: number) => void;
@@ -401,7 +401,7 @@ export function WhatIfContributionsEditor({
     patch: Partial<Omit<ContributionAddition, "localId" | "personId">>,
   ) => void;
   onRemoveAddition: (localId: number) => void;
-  /** `settings.contributionAccounts.create` is admin-gated — only admins
+  /** `contribution.accounts.create` is admin-gated — only admins
    *  see the "Make this real" affordance. */
   canManagePaycheck: boolean;
   onMakeReal: (addition: ContributionAddition) => void;

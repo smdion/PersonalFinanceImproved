@@ -39,7 +39,7 @@ const SCHEMA_DOCS_OUT = path.join(ROOT, "docs/SCHEMA.md");
 // import). Each procedure is listed under the client path it's called by.
 
 interface ProcedureEntry {
-  /** The client path, e.g. `settings.people.list`. */
+  /** The client path, e.g. `people.list`. */
   path: string;
   /** The router it's mounted under in the root router, e.g. `settings`. */
   router: string;

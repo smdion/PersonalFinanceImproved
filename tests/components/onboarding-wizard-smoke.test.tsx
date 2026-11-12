@@ -33,9 +33,9 @@ beforeEach(() => {
   setQuery("salaryProfile.list", [{ id: 1, name: "Baseline", salaries: {} }]);
   setQuery("settings.appSettings.list", []);
   let nextPersonId = 41;
-  setMutationResult("settings.people.create", () => ({ id: nextPersonId++ }));
+  setMutationResult("people.create", () => ({ id: nextPersonId++ }));
   let nextJobId = 51;
-  setMutationResult("settings.jobs.create", () => ({ id: nextJobId++ }));
+  setMutationResult("jobs.create", () => ({ id: nextJobId++ }));
   setMutationResult("settings.createLocalAdmin", { id: 1 });
 });
 
@@ -128,11 +128,11 @@ describe("OnboardingWizard smoke", () => {
         password: "Smoke-admin-pass-1",
       },
     ]);
-    expect(mutationCalls("settings.people.create")).toMatchObject([
+    expect(mutationCalls("people.create")).toMatchObject([
       { name: "Robin", dateOfBirth: expect.stringMatching(/^1984/) },
       { name: "Sasha", dateOfBirth: expect.stringMatching(/^1986/) },
     ]);
-    expect(mutationCalls("settings.jobs.create")).toMatchObject([
+    expect(mutationCalls("jobs.create")).toMatchObject([
       { personId: 41, employerName: "Northwind Clinic" },
       { personId: 42, employerName: "Harbor Schools" },
     ]);

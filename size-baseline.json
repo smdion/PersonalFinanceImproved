@@ -9,14 +9,14 @@
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 138,
-    "src/app/(dashboard)/budget/budget-content.tsx": 635,
+    "src/app/(dashboard)/budget/budget-content.tsx": 634,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 332,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 922,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
     "src/app/(dashboard)/historical/historical-content.tsx": 932,
     "src/app/(dashboard)/house/house-content.tsx": 739,
     "src/app/(dashboard)/networth/networth-content.tsx": 418,
-    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 655,
+    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 652,
     "src/app/(dashboard)/performance/performance-content.tsx": 842,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 155,
     "src/app/(dashboard)/portfolio/portfolio-panels.tsx": 87,
@@ -42,7 +42,7 @@
     "src/app/(dashboard)/upkeep/utilities/utilities-content.tsx": 517,
     "src/app/(dashboard)/versions/versions-content.tsx": 743,
     "src/components/budget/budget-summary-table.tsx": 570,
-    "src/components/contributions/contrib-account-form.tsx": 597,
+    "src/components/contributions/contrib-account-form.tsx": 596,
     "src/components/contributions/contrib-card.tsx": 360,
     "src/components/contributions/contribution-accounts-card.tsx": 669,
     "src/components/contributions/contribution-accounts-contrib-row.tsx": 655,
@@ -102,7 +102,7 @@
     "src/components/profiles/contribution/profile-editor.tsx": 102,
     "src/components/profiles/contribution/profile-inline-editor.tsx": 135,
     "src/components/profiles/contribution/profile-manager-parts.tsx": 318,
-    "src/components/profiles/contribution/use-inline-editor.ts": 209,
+    "src/components/profiles/contribution/use-inline-editor.ts": 208,
     "src/components/profiles/contribution/use-new-profile-save.ts": 121,
     "src/components/profiles/contribution/use-profile-manager-state.ts": 103,
     "src/components/profiles/retirement/retirement-profile-tab.tsx": 503,
@@ -383,7 +383,6 @@
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 347,
     "src/server/routers/settings/admin.ts": 408,
-    "src/server/routers/settings/paycheck.ts": 13,
     "src/server/routers/settings/tax-limits.ts": 799,
     "src/server/routers/simplefin/accounts.ts": 79,
     "src/server/routers/simplefin/index.ts": 16,
@@ -448,7 +447,7 @@
       "BrokerageGoalsSection": 293
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 563
+      "BudgetContent": 562
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 270
@@ -485,7 +484,7 @@
       "NetWorthContent": 360
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
-      "PaycheckContent": 614,
+      "PaycheckContent": 611,
       "PaycheckContent.map()": 308
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
@@ -556,7 +555,7 @@
       "ContributionsSection.map()": 170
     },
     "src/components/contributions/use-contribution-accounts-mutations.ts": {
-      "useContributionAccountsMutations": 273
+      "useContributionAccountsMutations": 271
     },
     "src/components/dashboard/contributions-card.tsx": {
       "ContributionsCardImpl": 525,

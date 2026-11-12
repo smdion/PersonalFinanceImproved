@@ -32,9 +32,9 @@ import type { Holding } from "@/components/investments/fund-holding-row";
 export function ContributionAccountsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
-  const { data: people } = trpc.settings.people.list.useQuery();
-  const { data: jobs } = trpc.settings.jobs.list.useQuery();
-  const { data: contribs } = trpc.settings.contributionAccounts.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
+  const { data: jobs } = trpc.jobs.list.useQuery();
+  const { data: contribs } = trpc.contribution.accounts.list.useQuery();
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =

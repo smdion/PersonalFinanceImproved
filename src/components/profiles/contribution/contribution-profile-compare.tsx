@@ -16,13 +16,12 @@ export function ContributionProfileCompare() {
   const { data, isLoading } =
     trpc.contributionProfile.getComparisonData.useQuery();
   const utils = trpc.useUtils();
-  const setAccountActive =
-    trpc.settings.contributionAccounts.setActive.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.contributionProfile.invalidate();
-      },
-    });
+  const setAccountActive = trpc.contribution.accounts.setActive.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.contributionProfile.invalidate();
+    },
+  });
 
   if (isLoading) {
     return (

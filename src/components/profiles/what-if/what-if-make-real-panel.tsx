@@ -13,13 +13,13 @@ import type { Dispatch, SetStateAction } from "react";
 
 export type WhatIfMakeRealPanelProps = {
   createContributionAccount: ReturnType<
-    typeof trpc.settings.contributionAccounts.create.useMutation
+    typeof trpc.contribution.accounts.create.useMutation
   >;
   handleSaveMakeReal: (values: ContribAccountFormValues) => void;
   makeRealAddition: ContributionAddition | null;
   setMakeRealAddition: Dispatch<SetStateAction<ContributionAddition | null>>;
   updateContributionAccount: ReturnType<
-    typeof trpc.settings.contributionAccounts.update.useMutation
+    typeof trpc.contribution.accounts.update.useMutation
   >;
 };
 

@@ -115,16 +115,16 @@ describe("debts router", () => {
   it("a person who owns a debt can't be deleted — a clear message, not a foreign-key error", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const p = await caller.settings.people.create({
+      const p = await caller.people.create({
         name: "Pat",
         dateOfBirth: "1990-05-01",
       });
       const d = await caller.debts.create({ ...loan, ownerPersonId: p!.id });
-      await expect(
-        caller.settings.people.delete({ id: p!.id }),
-      ).rejects.toThrow(/own Student loans on Liabilities/);
+      await expect(caller.people.delete({ id: p!.id })).rejects.toThrow(
+        /own Student loans on Liabilities/,
+      );
       await caller.debts.update({ id: d!.id, ownerPersonId: null });
-      await caller.settings.people.delete({ id: p!.id });
+      await caller.people.delete({ id: p!.id });
     } finally {
       cleanup();
     }

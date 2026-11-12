@@ -300,7 +300,7 @@ describe("RequestScope", () => {
         const app = createCallerFactory(appRouter)(ctx);
         const probe = createCallerFactory(probeRouter)(ctx);
         expect(await probe.names()).toEqual([]);
-        await app.settings.people.create({
+        await app.people.create({
           name: "New",
           dateOfBirth: "1990-01-02",
           isPrimaryUser: true,

@@ -30,7 +30,7 @@ export function AccountBalanceOverview() {
     trpc.netWorth.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
   // Hidden (no error) without the portfolio permission it needs.
   const { data: holdings } = trpc.investments.getHoldingsOverview.useQuery(
     undefined,

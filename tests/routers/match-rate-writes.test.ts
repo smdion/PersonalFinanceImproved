@@ -51,7 +51,7 @@ afterEach(() => t.cleanup());
 matchRateWriteCases(() => h);
 
 async function percentAccount(value: string) {
-  const created = await t.caller.settings.contributionAccounts.create({
+  const created = await t.caller.contribution.accounts.create({
     accountType: "401k",
     parentCategory: "Retirement",
     taxTreatment: "pre_tax",

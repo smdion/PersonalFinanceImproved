@@ -24,7 +24,7 @@ export type InlineRowProps = {
   clearDraft: (key: string) => void;
   patchAccount: (accountId: number, changes: Record<string, unknown>) => void;
   setAccountActive: ReturnType<
-    typeof trpc.settings.contributionAccounts.setActive.useMutation
+    typeof trpc.contribution.accounts.setActive.useMutation
   >;
   commitText: (
     draftKey: string,
@@ -57,7 +57,7 @@ export type ActiveFieldsRoot = {
   deductions?: Record<string, Record<string, unknown>>;
 };
 
-/** A raw paycheck_deductions row, as returned by settings.deductions.list. */
+/** A raw paycheck_deductions row, as returned by paycheck.deductions.list. */
 export type DeductionRow = {
   id: number;
   jobId: number;

@@ -210,44 +210,41 @@ export function PaycheckContent() {
     return Array.from(yrs).sort((a, b) => b - a);
   })();
   const currentYear = new Date().getFullYear();
-  const updateJob = trpc.settings.jobs.update.useMutation({
+  const updateJob = trpc.jobs.update.useMutation({
     onSuccess: () => {
       utils.paycheck.invalidate();
       utils.contribution.invalidate();
     },
   });
-  const updateDeduction = trpc.settings.deductions.update.useMutation({
+  const updateDeduction = trpc.paycheck.deductions.update.useMutation({
     onSuccess: () => utils.paycheck.invalidate(),
   });
-  const createDeduction = trpc.settings.deductions.create.useMutation({
+  const createDeduction = trpc.paycheck.deductions.create.useMutation({
     onSuccess: () => {
       utils.paycheck.invalidate();
     },
   });
-  const deleteDeduction = trpc.settings.deductions.delete.useMutation({
+  const deleteDeduction = trpc.paycheck.deductions.delete.useMutation({
     onSuccess: () => utils.paycheck.invalidate(),
   });
-  const updateContribution =
-    trpc.settings.contributionAccounts.update.useMutation({
-      onSuccess: () => {
-        utils.paycheck.invalidate();
-        utils.contribution.invalidate();
-      },
-    });
-  const createContribution =
-    trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: () => {
-        utils.paycheck.invalidate();
-        utils.contribution.invalidate();
-      },
-    });
-  const deleteContribution =
-    trpc.settings.contributionAccounts.delete.useMutation({
-      onSuccess: () => {
-        utils.paycheck.invalidate();
-        utils.contribution.invalidate();
-      },
-    });
+  const updateContribution = trpc.contribution.accounts.update.useMutation({
+    onSuccess: () => {
+      utils.paycheck.invalidate();
+      utils.contribution.invalidate();
+    },
+  });
+  const createContribution = trpc.contribution.accounts.create.useMutation({
+    onSuccess: () => {
+      utils.paycheck.invalidate();
+      utils.contribution.invalidate();
+    },
+  });
+  const deleteContribution = trpc.contribution.accounts.delete.useMutation({
+    onSuccess: () => {
+      utils.paycheck.invalidate();
+      utils.contribution.invalidate();
+    },
+  });
 
   if (queryPending(personViews)) {
     return (
@@ -441,7 +438,7 @@ export function PaycheckContent() {
                           }
                           // Only real job columns left: employerName and
                           // title (jobs.update's trimmed schema — see
-                          // settings/jobs.ts). Household setup: admin.
+                          // routers/jobs.ts). Household setup: admin.
                           if (!setupEditable) return;
                           updateJob.mutate({
                             id: job.id,

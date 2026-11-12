@@ -29,7 +29,7 @@ export function useActiveSalaryProfile(): [
         utils.brokerage.invalidate(),
         utils.budget.invalidate(),
         utils.savings.invalidate(),
-        utils.settings.contributionAccounts.invalidate(),
+        utils.contribution.accounts.invalidate(),
       ]),
   });
   const [activeId, setActiveId] = useProfileIdSetting(

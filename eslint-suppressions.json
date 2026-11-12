@@ -5102,7 +5102,7 @@
       "count": 1
     }
   },
-  "src/server/routers/settings/contribution-accounts.ts": {
+  "src/server/routers/contribution/accounts.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 8
     },

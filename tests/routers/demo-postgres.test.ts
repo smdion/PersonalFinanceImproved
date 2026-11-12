@@ -88,7 +88,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   });
 
   it("serves data calls with a demo profile active", async () => {
-    const people = await (await callerFor(schemaName)).settings.people.list();
+    const people = await (await callerFor(schemaName)).people.list();
     expect(people.length).toBeGreaterThan(0);
   });
 
@@ -279,7 +279,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
       `SELECT count(*)::int AS n FROM "${schemaName}".people`,
     );
     expect(rows[0]!.n).toBe(getDemoProfile(slug)!.people.length);
-    const people = await (await callerFor(schemaName)).settings.people.list();
+    const people = await (await callerFor(schemaName)).people.list();
     expect(people).toHaveLength(rows[0]!.n);
   });
 
@@ -342,7 +342,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(
-      (await callerFor(schemaName)).settings.people.list(),
+      (await callerFor(schemaName)).people.list(),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 });

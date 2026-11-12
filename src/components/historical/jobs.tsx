@@ -40,22 +40,22 @@ export function JobsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data: people } = trpc.settings.people.list.useQuery();
-  const { data: rawData, isLoading } = trpc.settings.jobs.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
+  const { data: rawData, isLoading } = trpc.jobs.list.useQuery();
   // The auto-provisioned speculative job (a peg for Salary Profile what-ifs) isn't
   // employment history: it shows only in the Salary Profile editor's job picker.
   const data = useMemo(
     () => rawData?.filter((j: Job) => !j.isSpeculative),
     [rawData],
   );
-  const deleteMut = trpc.settings.jobs.delete.useMutation({
-    onSuccess: () => utils.settings.jobs.list.invalidate(),
+  const deleteMut = trpc.jobs.delete.useMutation({
+    onSuccess: () => utils.jobs.list.invalidate(),
   });
-  const createMut = trpc.settings.jobs.create.useMutation({
-    onSuccess: () => utils.settings.jobs.list.invalidate(),
+  const createMut = trpc.jobs.create.useMutation({
+    onSuccess: () => utils.jobs.list.invalidate(),
   });
-  const updateMut = trpc.settings.jobs.update.useMutation({
-    onSuccess: () => utils.settings.jobs.list.invalidate(),
+  const updateMut = trpc.jobs.update.useMutation({
+    onSuccess: () => utils.jobs.list.invalidate(),
   });
 
   const personName = useCallback(

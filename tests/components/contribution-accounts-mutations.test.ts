@@ -29,8 +29,8 @@ vi.mock("@/lib/trpc", async () => ({
 }));
 
 const P = {
-  updateContrib: "settings.contributionAccounts.update",
-  createContrib: "settings.contributionAccounts.create",
+  updateContrib: "contribution.accounts.update",
+  createContrib: "contribution.accounts.create",
   updatePortfolioAccount: "netWorth.portfolioSnapshots.updateAccount",
   createPortfolioAccount: "netWorth.portfolioSnapshots.createAccount",
   updatePerf: "performance.performanceAccounts.update",
@@ -52,8 +52,7 @@ const invalidated = (path: string) => utilsCalls(path).length > 0;
 
 type PerfAccount =
   RouterOutputs["performance"]["performanceAccounts"]["list"][number];
-type Contrib =
-  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+type Contrib = RouterOutputs["contribution"]["accounts"]["list"][number];
 
 const basePerfAccount: PerfAccount = {
   id: 1,
@@ -339,7 +338,7 @@ describe("useContributionAccountsMutations", () => {
     );
     result.current.handleContribUpdate(baseContrib, {});
     settleMutation(P.updateContrib);
-    expect(invalidated("settings.contributionAccounts.invalidate")).toBe(true);
+    expect(invalidated("contribution.accounts.invalidate")).toBe(true);
     expect(invalidated("retirement.invalidate")).toBe(true);
     expect(invalidated("projection.invalidate")).toBe(true);
   });

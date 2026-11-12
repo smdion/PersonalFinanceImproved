@@ -552,9 +552,8 @@ export function BudgetContent({
               // Creating a Plan is settings.scenarios.create — scenarioProcedure,
               // a different permission from the Budget page's own gate.
               canCreatePlan={hasPermission(user, "scenario")}
-              // settings.deductions.create / settings.contributionAccounts
-              // .create are adminProcedure — a stricter gate than either
-              // permission above.
+              // paycheck.deductions.create / contribution.accounts.create are
+              // adminProcedure — a stricter gate than either permission above.
               canManagePaycheck={isAdmin(user)}
             />
           </CardBoundary>

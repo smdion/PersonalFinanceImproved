@@ -17,7 +17,7 @@ import type { z } from "zod/v4";
 import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/shapes/json-schemas";
 
 type ContributionRecord =
-  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+  RouterOutputs["contribution"]["accounts"]["list"][number];
 
 type PerfAccountRecord =
   RouterOutputs["performance"]["performanceAccounts"]["list"][number];
@@ -80,23 +80,21 @@ export function useContributionAccountsMutations({
     },
   );
 
-  const updateContributionMut =
-    trpc.settings.contributionAccounts.update.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
+  const updateContributionMut = trpc.contribution.accounts.update.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.retirement.invalidate();
+      utils.projection.invalidate();
+    },
+  });
 
-  const createContributionMut =
-    trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
+  const createContributionMut = trpc.contribution.accounts.create.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.retirement.invalidate();
+      utils.projection.invalidate();
+    },
+  });
 
   const updatePortfolioAccountMut =
     trpc.netWorth.portfolioSnapshots.updateAccount.useMutation({

@@ -32,9 +32,9 @@ const row = {
 beforeEach(() => {
   resetTrpcMock();
   // The writes don't settle: the tests read what was sent.
-  holdMutation("settings.earnings.create");
-  holdMutation("settings.earnings.update");
-  holdMutation("settings.earnings.delete");
+  holdMutation("paycheck.earnings.create");
+  holdMutation("paycheck.earnings.update");
+  holdMutation("paycheck.earnings.delete");
 });
 
 describe("OtherPaySection", () => {
@@ -45,7 +45,7 @@ describe("OtherPaySection", () => {
     );
     expect(picker).toHaveValue("imputed");
     fireEvent.change(picker, { target: { value: "paidTaxed" } });
-    expect(mutationCalls("settings.earnings.update")).toContainEqual(
+    expect(mutationCalls("paycheck.earnings.update")).toContainEqual(
       expect.objectContaining({
         id: 3,
         isCash: true,
@@ -69,7 +69,7 @@ describe("OtherPaySection", () => {
       target: { value: "imputed" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(mutationCalls("settings.earnings.create")).toEqual([
+    expect(mutationCalls("paycheck.earnings.create")).toEqual([
       {
         jobId: 1,
         earningName: "Group life",
@@ -78,7 +78,7 @@ describe("OtherPaySection", () => {
         ficaTaxable: true,
       },
     ]);
-    expect(mutationCallOptions("settings.earnings.create")).toEqual([
+    expect(mutationCallOptions("paycheck.earnings.create")).toEqual([
       expect.anything(),
     ]);
   });

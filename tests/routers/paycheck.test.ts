@@ -5,8 +5,8 @@
  * with optional input params, and with a full job + deductions + contributions
  * setup — using an isolated SQLite database per suite.
  *
- * Also tests settings/paycheck CRUD procedures: people, jobs,
- * contributionAccounts, deductions.
+ * Also tests the household CRUD procedures: people, jobs,
+ * contribution.accounts, paycheck.deductions.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -214,7 +214,7 @@ describe("paycheck router — optional input params", () => {
 
 // ── Settings: People CRUD ───────────────────────────────────────────────────
 
-describe("settings.people CRUD", () => {
+describe("people CRUD", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -227,13 +227,13 @@ describe("settings.people CRUD", () => {
   afterAll(() => cleanup());
 
   it("list returns empty array initially", async () => {
-    const result = await caller.settings.people.list();
+    const result = await caller.people.list();
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
   });
 
   it("create adds a person and returns it", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "Jane Doe",
       dateOfBirth: "1990-05-15",
     });
@@ -244,13 +244,13 @@ describe("settings.people CRUD", () => {
   });
 
   it("list returns one person after create", async () => {
-    const result = await caller.settings.people.list();
+    const result = await caller.people.list();
     expect(result).toHaveLength(1);
     expect(result[0]!.name).toBe("Jane Doe");
   });
 
   it("create a second person", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "John Smith",
       dateOfBirth: "1988-12-01",
       isPrimaryUser: true,
@@ -260,16 +260,16 @@ describe("settings.people CRUD", () => {
   });
 
   it("list returns both people ordered by id", async () => {
-    const result = await caller.settings.people.list();
+    const result = await caller.people.list();
     expect(result).toHaveLength(2);
     expect(result[0]!.name).toBe("Jane Doe");
     expect(result[1]!.name).toBe("John Smith");
   });
 
   it("update changes a person's name", async () => {
-    const people = await caller.settings.people.list();
+    const people = await caller.people.list();
     const id = people[0]!.id;
-    const updated = await caller.settings.people.update({
+    const updated = await caller.people.update({
       id,
       name: "Jane Updated",
       dateOfBirth: "1990-05-15",
@@ -278,25 +278,25 @@ describe("settings.people CRUD", () => {
   });
 
   it("delete removes a person once someone else is primary", async () => {
-    const people = await caller.settings.people.list();
+    const people = await caller.people.list();
     const id = people[1]!.id;
-    await expect(caller.settings.people.delete({ id })).rejects.toThrow(
+    await expect(caller.people.delete({ id })).rejects.toThrow(
       /primary person/,
     );
-    await caller.settings.people.update({
+    await caller.people.update({
       id: people[0]!.id,
       name: "Jane Updated",
       dateOfBirth: "1990-05-15",
       isPrimaryUser: true,
     });
-    await caller.settings.people.update({
+    await caller.people.update({
       id,
       name: "John Smith",
       dateOfBirth: "1988-12-01",
       isPrimaryUser: false,
     });
-    await caller.settings.people.delete({ id });
-    const remaining = await caller.settings.people.list();
+    await caller.people.delete({ id });
+    const remaining = await caller.people.list();
     expect(remaining).toHaveLength(1);
     expect(remaining[0]!.name).toBe("Jane Updated");
   });
@@ -309,11 +309,11 @@ describe("settings.people CRUD", () => {
 // Every retirement_profiles row must hold a retirement_settings + a
 // retirement_profile_people row for every person. Person B has no such row
 // itself yet when the new person is created, so build-engine-payload has
-// nothing to invent one from -- settings/people.ts's people.create fans a
+// nothing to invent one from -- routers/people.ts's people.create fans a
 // row into every EXISTING profile, sourced from that profile's primary
 // person, the same rule retirementProfiles.duplicate uses.
 
-describe("settings.people.create fans out to every existing retirement profile", () => {
+describe("people.create fans out to every existing retirement profile", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -353,7 +353,7 @@ describe("settings.people.create fans out to every existing retirement profile",
   afterAll(() => cleanup());
 
   it("a person with retirement rows in every profile can be deleted", async () => {
-    const b = await caller.settings.people.create({
+    const b = await caller.people.create({
       name: "Person B",
       dateOfBirth: "1990-01-01",
     });
@@ -364,7 +364,7 @@ describe("settings.people.create fans out to every existing retirement profile",
       .where(eq(schema.retirementSettings.personId, b!.id))
       .all();
     expect(rows.length).toBeGreaterThan(0);
-    await caller.settings.people.delete({ id: b!.id });
+    await caller.people.delete({ id: b!.id });
     expect(
       db
         .select()
@@ -375,18 +375,18 @@ describe("settings.people.create fans out to every existing retirement profile",
   });
 
   it("the primary person can't be deleted while others remain", async () => {
-    const c = await caller.settings.people.create({
+    const c = await caller.people.create({
       name: "Person C",
       dateOfBirth: "1992-01-01",
     });
-    await expect(
-      caller.settings.people.delete({ id: personA }),
-    ).rejects.toThrow(/primary person/);
-    await caller.settings.people.delete({ id: c!.id });
+    await expect(caller.people.delete({ id: personA })).rejects.toThrow(
+      /primary person/,
+    );
+    await caller.people.delete({ id: c!.id });
   });
 
   it("gives the new person a retirement_settings row cloned from the primary person's, in every existing profile", async () => {
-    const newPerson = await caller.settings.people.create({
+    const newPerson = await caller.people.create({
       name: "Person B",
       dateOfBirth: "1987-06-01",
     });
@@ -411,11 +411,11 @@ describe("settings.people.create fans out to every existing retirement profile",
   });
 });
 
-describe("settings.people.create with zero existing retirement profiles does nothing extra", () => {
+describe("people.create with zero existing retirement profiles does nothing extra", () => {
   it("does not error when there are no retirement_profiles rows to fan out to", async () => {
     const { caller, cleanup } = await createTestCaller();
     try {
-      const person = await caller.settings.people.create({
+      const person = await caller.people.create({
         name: "Nobody's Household Yet",
         dateOfBirth: "1990-01-01",
       });
@@ -428,7 +428,7 @@ describe("settings.people.create with zero existing retirement profiles does not
   });
 });
 
-describe("settings.people.create auto-provisions a speculative job", () => {
+describe("people.create auto-provisions a speculative job", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -441,11 +441,11 @@ describe("settings.people.create auto-provisions a speculative job", () => {
   afterAll(() => cleanup());
 
   it("gives a newly-created person exactly one speculative job, atomically", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "New Person",
       dateOfBirth: "1995-01-01",
     });
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     const personJobs = jobs.filter((j) => j.personId === person!.id);
     expect(personJobs).toHaveLength(1);
     expect(personJobs[0]!.isSpeculative).toBe(true);
@@ -456,41 +456,39 @@ describe("settings.people.create auto-provisions a speculative job", () => {
   it("the speculative job never appears in the Jobs Settings list a user would see", async () => {
     // Mirrors historical/jobs.tsx's client-side filter — the peg is only
     // ever surfaced through the Salary Profile editor's job picker.
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     const visibleJobs = jobs.filter((j) => !j.isSpeculative);
     expect(visibleJobs.every((j) => !j.isSpeculative)).toBe(true);
     expect(jobs.some((j) => j.isSpeculative)).toBe(true);
   });
 
   it("deleting a person with only the speculative job succeeds (no FK block)", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "Deletable",
       dateOfBirth: "1999-01-01",
     });
-    await caller.settings.people.delete({ id: person!.id });
-    const remaining = await caller.settings.people.list();
+    await caller.people.delete({ id: person!.id });
+    const remaining = await caller.people.list();
     expect(remaining.some((p) => p.id === person!.id)).toBe(false);
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     expect(jobs.some((j) => j.personId === person!.id)).toBe(false);
   });
 
   it("deleting a person with a REAL job still correctly fails", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "Employed",
       dateOfBirth: "1993-01-01",
     });
-    await caller.settings.jobs.create({
+    await caller.jobs.create({
       personId: person!.id,
       employerName: "Real Co",
       startDate: "2022-01-01",
     });
-    await expect(
-      caller.settings.people.delete({ id: person!.id }),
-    ).rejects.toThrow();
+    await expect(caller.people.delete({ id: person!.id })).rejects.toThrow();
   });
 });
 
-describe("settings.jobs.delete rejects deleting a speculative job", () => {
+describe("jobs.delete rejects deleting a speculative job", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -503,25 +501,25 @@ describe("settings.jobs.delete rejects deleting a speculative job", () => {
   afterAll(() => cleanup());
 
   it("throws rather than deleting the speculative peg", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "Guarded",
       dateOfBirth: "1991-01-01",
     });
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     const speculativeJob = jobs.find(
       (j) => j.personId === person!.id && j.isSpeculative,
     )!;
-    await expect(
-      caller.settings.jobs.delete({ id: speculativeJob.id }),
-    ).rejects.toThrow(/speculative/i);
-    const stillThere = await caller.settings.jobs.list();
+    await expect(caller.jobs.delete({ id: speculativeJob.id })).rejects.toThrow(
+      /speculative/i,
+    );
+    const stillThere = await caller.jobs.list();
     expect(stillThere.some((j) => j.id === speculativeJob.id)).toBe(true);
   });
 });
 
 // ── Settings: Jobs CRUD ─────────────────────────────────────────────────────
 
-describe("settings.jobs CRUD", () => {
+describe("jobs CRUD", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -538,12 +536,12 @@ describe("settings.jobs CRUD", () => {
   afterAll(() => cleanup());
 
   it("list returns empty array initially", async () => {
-    const result = await caller.settings.jobs.list();
+    const result = await caller.jobs.list();
     expect(result).toHaveLength(0);
   });
 
   it("create adds a job with no salary or payroll-config of its own", async () => {
-    const job = await caller.settings.jobs.create({
+    const job = await caller.jobs.create({
       personId,
       employerName: "Acme Corp",
       startDate: "2022-01-15",
@@ -555,14 +553,14 @@ describe("settings.jobs CRUD", () => {
   });
 
   it("list returns one job after create", async () => {
-    const result = await caller.settings.jobs.list();
+    const result = await caller.jobs.list();
     expect(result).toHaveLength(1);
   });
 
   it("update does not touch salary — a job carries none of its own", async () => {
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     const id = jobs[0]!.id;
-    const updated = await caller.settings.jobs.update({
+    const updated = await caller.jobs.update({
       id,
       personId,
       employerName: "Acme Corp Renamed",
@@ -573,7 +571,7 @@ describe("settings.jobs CRUD", () => {
   });
 
   it("create a job with endDate", async () => {
-    const job = await caller.settings.jobs.create({
+    const job = await caller.jobs.create({
       personId,
       employerName: "Old Corp",
       startDate: "2018-06-01",
@@ -583,11 +581,11 @@ describe("settings.jobs CRUD", () => {
   });
 
   it("delete removes a job", async () => {
-    const jobs = await caller.settings.jobs.list();
+    const jobs = await caller.jobs.list();
     expect(jobs).toHaveLength(2);
     const id = jobs[1]!.id;
-    await caller.settings.jobs.delete({ id });
-    const remaining = await caller.settings.jobs.list();
+    await caller.jobs.delete({ id });
+    const remaining = await caller.jobs.list();
     expect(remaining).toHaveLength(1);
   });
 });
@@ -629,7 +627,7 @@ describe("deleting a job removes its Salary Profile entries", () => {
           .returning()
           .get().id,
     );
-    await caller.settings.jobs.delete({ id: deleted });
+    await caller.jobs.delete({ id: deleted });
     for (const id of profiles)
       expect(Object.keys(salariesOf(id))).toEqual([String(kept)]);
   });
@@ -683,11 +681,11 @@ describe("deleting a job removes its Salary Profile entries", () => {
   });
 
   it("people.delete drops the speculative job's entries with it", async () => {
-    const person = await caller.settings.people.create({
+    const person = await caller.people.create({
       name: "Pegged",
       dateOfBirth: "1995-01-01",
     });
-    const speculative = (await caller.settings.jobs.list()).find(
+    const speculative = (await caller.jobs.list()).find(
       (j) => j.personId === person!.id && j.isSpeculative,
     )!;
     const id = db
@@ -698,7 +696,7 @@ describe("deleting a job removes its Salary Profile entries", () => {
       })
       .returning()
       .get().id;
-    await caller.settings.people.delete({ id: person!.id });
+    await caller.people.delete({ id: person!.id });
     expect(salariesOf(id)).toEqual({});
   });
 });
@@ -707,7 +705,7 @@ describe("deleting a job removes its Salary Profile entries", () => {
 
 // ── Settings: Deductions CRUD ───────────────────────────────────────────────
 
-describe("settings.deductions CRUD", () => {
+describe("paycheck.deductions CRUD", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -725,12 +723,12 @@ describe("settings.deductions CRUD", () => {
   afterAll(() => cleanup());
 
   it("list returns empty array initially", async () => {
-    const result = await caller.settings.deductions.list();
+    const result = await caller.paycheck.deductions.list();
     expect(result).toHaveLength(0);
   });
 
   it("create adds a pre-tax deduction", async () => {
-    const ded = await caller.settings.deductions.create({
+    const ded = await caller.paycheck.deductions.create({
       jobId,
       deductionName: "Health Insurance",
       isPretax: true,
@@ -743,7 +741,7 @@ describe("settings.deductions CRUD", () => {
   });
 
   it("create adds an after-tax deduction", async () => {
-    const ded = await caller.settings.deductions.create({
+    const ded = await caller.paycheck.deductions.create({
       jobId,
       deductionName: "Parking",
       isPretax: false,
@@ -754,14 +752,14 @@ describe("settings.deductions CRUD", () => {
   });
 
   it("list returns both deductions", async () => {
-    const result = await caller.settings.deductions.list();
+    const result = await caller.paycheck.deductions.list();
     expect(result).toHaveLength(2);
   });
 
   it("update changes a deduction", async () => {
-    const deds = await caller.settings.deductions.list();
+    const deds = await caller.paycheck.deductions.list();
     const id = deds[0]!.id;
-    const updated = await caller.settings.deductions.update({
+    const updated = await caller.paycheck.deductions.update({
       id,
       jobId,
       deductionName: "Health Insurance Premium",
@@ -774,16 +772,16 @@ describe("settings.deductions CRUD", () => {
 
   it("rejects a FICA-exempt deduction that isn't pre-tax (create and update)", async () => {
     await expect(
-      caller.settings.deductions.create({
+      caller.paycheck.deductions.create({
         jobId,
         deductionName: "After-tax but exempt",
         isPretax: false,
         ficaExempt: true,
       }),
     ).rejects.toThrow(/FICA-exempt deduction must also be pre-tax/);
-    const deds = await caller.settings.deductions.list();
+    const deds = await caller.paycheck.deductions.list();
     await expect(
-      caller.settings.deductions.update({
+      caller.paycheck.deductions.update({
         id: deds[0]!.id,
         jobId,
         deductionName: "Health Insurance Premium",
@@ -791,21 +789,21 @@ describe("settings.deductions CRUD", () => {
         ficaExempt: true,
       }),
     ).rejects.toThrow(/FICA-exempt deduction must also be pre-tax/);
-    expect(await caller.settings.deductions.list()).toHaveLength(2);
+    expect(await caller.paycheck.deductions.list()).toHaveLength(2);
   });
 
   it("delete removes a deduction", async () => {
-    const deds = await caller.settings.deductions.list();
+    const deds = await caller.paycheck.deductions.list();
     const id = deds[1]!.id;
-    await caller.settings.deductions.delete({ id });
-    const remaining = await caller.settings.deductions.list();
+    await caller.paycheck.deductions.delete({ id });
+    const remaining = await caller.paycheck.deductions.list();
     expect(remaining).toHaveLength(1);
   });
 });
 
 // ── Settings: Contribution Accounts CRUD ────────────────────────────────────
 
-describe("settings.contributionAccounts CRUD", () => {
+describe("contribution.accounts CRUD", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -824,12 +822,12 @@ describe("settings.contributionAccounts CRUD", () => {
   afterAll(() => cleanup());
 
   it("list returns empty array initially", async () => {
-    const result = await caller.settings.contributionAccounts.list();
+    const result = await caller.contribution.accounts.list();
     expect(result).toHaveLength(0);
   });
 
   it("create adds a 401k contribution account", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       jobId,
       accountType: "401k",
@@ -846,7 +844,7 @@ describe("settings.contributionAccounts CRUD", () => {
   });
 
   it("create adds an IRA contribution account (no job)", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "ira",
       parentCategory: "Retirement",
@@ -858,14 +856,14 @@ describe("settings.contributionAccounts CRUD", () => {
   });
 
   it("list returns both contribution accounts", async () => {
-    const result = await caller.settings.contributionAccounts.list();
+    const result = await caller.contribution.accounts.list();
     expect(result).toHaveLength(2);
   });
 
   it("update changes a contribution account", async () => {
-    const accts = await caller.settings.contributionAccounts.list();
+    const accts = await caller.contribution.accounts.list();
     const id = accts[0]!.id;
-    const updated = await caller.settings.contributionAccounts.update({
+    const updated = await caller.contribution.accounts.update({
       id,
       personId,
       jobId,
@@ -884,7 +882,7 @@ describe("settings.contributionAccounts CRUD", () => {
   });
 
   it("create a joint brokerage contribution account", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId: null,
       accountType: "brokerage",
       parentCategory: "Portfolio",
@@ -899,7 +897,7 @@ describe("settings.contributionAccounts CRUD", () => {
 
   it("refuses a percent-of-contribution match on a joint account with no job: it has no pay of its own", async () => {
     await expect(
-      caller.settings.contributionAccounts.create({
+      caller.contribution.accounts.create({
         personId: null,
         accountType: "brokerage",
         parentCategory: "Portfolio",
@@ -917,7 +915,7 @@ describe("settings.contributionAccounts CRUD", () => {
       accountType: "hsa",
       parentCategory: "Retirement",
     });
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       jobId,
       accountType: "hsa",
@@ -952,7 +950,7 @@ describe("settings.contributionAccounts CRUD", () => {
     expect(acct!.notes).toBe("Full-field creation smoke test");
     expect(acct!.isPayrollDeducted).toBe(true);
 
-    const updated = await caller.settings.contributionAccounts.update({
+    const updated = await caller.contribution.accounts.update({
       id: acct!.id,
       personId,
       jobId,
@@ -979,11 +977,11 @@ describe("settings.contributionAccounts CRUD", () => {
   });
 
   it("delete removes a contribution account", async () => {
-    const accts = await caller.settings.contributionAccounts.list();
+    const accts = await caller.contribution.accounts.list();
     const initialCount = accts.length;
     const id = accts[accts.length - 1]!.id;
-    await caller.settings.contributionAccounts.delete({ id });
-    const remaining = await caller.settings.contributionAccounts.list();
+    await caller.contribution.accounts.delete({ id });
+    const remaining = await caller.contribution.accounts.list();
     expect(remaining).toHaveLength(initialCount - 1);
   });
 });
@@ -1405,9 +1403,9 @@ describe("paycheck router — a joint account tied to a job", () => {
   });
 });
 
-// ── contributionAccounts.create with performanceAccountId ────────────────
+// ── contribution.accounts.create with performanceAccountId ───────────────
 
-describe("settings.contributionAccounts — performanceAccountId-linked create", () => {
+describe("contribution.accounts — performanceAccountId-linked create", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1429,7 +1427,7 @@ describe("settings.contributionAccounts — performanceAccountId-linked create",
   afterAll(() => cleanup());
 
   it("syncs parentCategory from performanceAccount and creates inactive stubs", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
@@ -1443,7 +1441,7 @@ describe("settings.contributionAccounts — performanceAccountId-linked create",
     expect(acct!.parentCategory).toBe("Retirement");
 
     // Should auto-create stub for the other supported tax treatment (tax_free for 401k)
-    const allAccts = await caller.settings.contributionAccounts.list();
+    const allAccts = await caller.contribution.accounts.list();
     const linkedAccts = allAccts.filter(
       (a) => a.performanceAccountId === perfAcctId,
     );
@@ -1455,9 +1453,9 @@ describe("settings.contributionAccounts — performanceAccountId-linked create",
   });
 });
 
-// ── contributionAccounts.create without performanceAccountId ─────────────
+// ── contribution.accounts.create without performanceAccountId ────────────
 
-describe("settings.contributionAccounts — no performanceAccountId", () => {
+describe("contribution.accounts — no performanceAccountId", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1474,7 +1472,7 @@ describe("settings.contributionAccounts — no performanceAccountId", () => {
   afterAll(() => cleanup());
 
   it("does not create stubs when no performanceAccountId", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
@@ -1486,14 +1484,14 @@ describe("settings.contributionAccounts — no performanceAccountId", () => {
     expect(acct!.parentCategory).toBe("Portfolio");
 
     // Only 1 account, no stubs
-    const allAccts = await caller.settings.contributionAccounts.list();
+    const allAccts = await caller.contribution.accounts.list();
     expect(allAccts).toHaveLength(1);
   });
 });
 
-// ── contributionAccounts.update — priorYearContribAmount validation ──────
+// ── contribution.accounts.update — priorYearContribAmount validation ─────
 
-describe("settings.contributionAccounts — update priorYearContrib validation", () => {
+describe("contribution.accounts — update priorYearContrib validation", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1509,7 +1507,7 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
     personId = await seedPerson(db, "PriorYear Person", "1990-01-01");
 
     // Create a 401k account (does NOT support prior year contrib)
-    const acct401k = await caller.settings.contributionAccounts.create({
+    const acct401k = await caller.contribution.accounts.create({
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
@@ -1518,7 +1516,7 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
     acctId401k = acct401k!.id;
 
     // Create an IRA account (supports prior year contrib)
-    const acctIra = await caller.settings.contributionAccounts.create({
+    const acctIra = await caller.contribution.accounts.create({
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
@@ -1531,7 +1529,7 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
 
   it("throws when setting priorYearContribAmount on 401k (unsupported)", async () => {
     await expect(
-      caller.settings.contributionAccounts.update({
+      caller.contribution.accounts.update({
         id: acctId401k,
         personId,
         accountType: "401k",
@@ -1543,7 +1541,7 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
   });
 
   it("allows priorYearContribAmount on IRA (supported)", async () => {
-    const updated = await caller.settings.contributionAccounts.update({
+    const updated = await caller.contribution.accounts.update({
       id: acctIdIra,
       personId,
       accountType: "ira",
@@ -1555,9 +1553,9 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
   });
 });
 
-// ── contributionAccounts.update — performanceAccountId sync ──────────────
+// ── contribution.accounts.update — performanceAccountId sync ─────────────
 
-describe("settings.contributionAccounts — update with performanceAccountId", () => {
+describe("contribution.accounts — update with performanceAccountId", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1580,7 +1578,7 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
 
   it("syncs parentCategory from performanceAccount on update", async () => {
     // Create without linking
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
@@ -1589,7 +1587,7 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
     });
 
     // Update with performanceAccountId — should sync to Portfolio
-    const updated = await caller.settings.contributionAccounts.update({
+    const updated = await caller.contribution.accounts.update({
       id: acct!.id,
       personId,
       accountType: "brokerage",
@@ -1602,7 +1600,7 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
 
   it("reads existing performanceAccountId when not provided in update input", async () => {
     // Create linked to a performance account
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
@@ -1611,7 +1609,7 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
     });
 
     // Update without specifying performanceAccountId — should still sync from existing link
-    const updated = await caller.settings.contributionAccounts.update({
+    const updated = await caller.contribution.accounts.update({
       id: acct!.id,
       personId,
       accountType: "brokerage",
@@ -1623,9 +1621,9 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
   });
 });
 
-// ── contributionAccounts.setActive ───────────────────────────────────────
+// ── contribution.accounts.setActive ──────────────────────────────────────
 
-describe("settings.contributionAccounts.setActive", () => {
+describe("contribution.accounts.setActive", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1642,7 +1640,7 @@ describe("settings.contributionAccounts.setActive", () => {
   afterAll(() => cleanup());
 
   it("flips isActive without requiring the full account shape", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
@@ -1651,13 +1649,13 @@ describe("settings.contributionAccounts.setActive", () => {
     });
     expect(acct!.isActive).toBe(false);
 
-    const restored = await caller.settings.contributionAccounts.setActive({
+    const restored = await caller.contribution.accounts.setActive({
       id: acct!.id,
       isActive: true,
     });
     expect(restored!.isActive).toBe(true);
 
-    const removed = await caller.settings.contributionAccounts.setActive({
+    const removed = await caller.contribution.accounts.setActive({
       id: acct!.id,
       isActive: false,
     });
@@ -1665,7 +1663,7 @@ describe("settings.contributionAccounts.setActive", () => {
   });
 
   it("leaves every other field on the row untouched", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
@@ -1673,7 +1671,7 @@ describe("settings.contributionAccounts.setActive", () => {
       label: "Keep me",
     });
 
-    const updated = await caller.settings.contributionAccounts.setActive({
+    const updated = await caller.contribution.accounts.setActive({
       id: acct!.id,
       isActive: false,
     });
@@ -1683,9 +1681,9 @@ describe("settings.contributionAccounts.setActive", () => {
   });
 });
 
-// ── contributionAccounts.setPriorYearAmount ──────────────────────────────
+// ── contribution.accounts.setPriorYearAmount ─────────────────────────────
 
-describe("settings.contributionAccounts.setPriorYearAmount", () => {
+describe("contribution.accounts.setPriorYearAmount", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1702,18 +1700,17 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
   afterAll(() => cleanup());
 
   it("sets priorYearContribAmount for IRA account", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "ira",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
     });
 
-    const result =
-      await caller.settings.contributionAccounts.setPriorYearAmount({
-        id: acct!.id,
-        priorYearContribAmount: "2500",
-      });
+    const result = await caller.contribution.accounts.setPriorYearAmount({
+      id: acct!.id,
+      priorYearContribAmount: "2500",
+    });
 
     expect(result).toBeDefined();
     expect(result!.priorYearContribAmount).toBe("2500");
@@ -1721,24 +1718,23 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
   });
 
   it("sets priorYearContribAmount for HSA account", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "hsa",
       taxTreatment: "hsa",
       employerMatchType: "none",
     });
 
-    const result =
-      await caller.settings.contributionAccounts.setPriorYearAmount({
-        id: acct!.id,
-        priorYearContribAmount: "1000",
-      });
+    const result = await caller.contribution.accounts.setPriorYearAmount({
+      id: acct!.id,
+      priorYearContribAmount: "1000",
+    });
 
     expect(result!.priorYearContribAmount).toBe("1000");
   });
 
   it("throws for 401k (unsupported prior year)", async () => {
-    const acct = await caller.settings.contributionAccounts.create({
+    const acct = await caller.contribution.accounts.create({
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
@@ -1746,7 +1742,7 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
     });
 
     await expect(
-      caller.settings.contributionAccounts.setPriorYearAmount({
+      caller.contribution.accounts.setPriorYearAmount({
         id: acct!.id,
         priorYearContribAmount: "5000",
       }),
@@ -1755,7 +1751,7 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
 
   it("throws for non-existent contribution account", async () => {
     await expect(
-      caller.settings.contributionAccounts.setPriorYearAmount({
+      caller.contribution.accounts.setPriorYearAmount({
         id: 99999,
         priorYearContribAmount: "100",
       }),
@@ -1765,7 +1761,7 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
 
 // ── Jobs with optional fields ────────────────────────────────────────────
 
-describe("settings.jobs — optional fields", () => {
+describe("jobs — optional fields", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1787,7 +1783,7 @@ describe("settings.jobs — optional fields", () => {
     // input no longer accepts them at all (stripped, not rejected, since
     // jobInput isn't `.strict()`). See salary-profiles.test.ts for coverage
     // of those 11 fields on a Salary Profile entry instead.
-    const job = await caller.settings.jobs.create({
+    const job = await caller.jobs.create({
       personId,
       employerName: "FullCo",
       title: "Senior Engineer",

@@ -1,11 +1,7 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, and } from "drizzle-orm";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  adminProcedure,
-} from "../../trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { deleteJobsAndEntries } from "@/server/data/delete-jobs";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";

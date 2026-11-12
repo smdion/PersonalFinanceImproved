@@ -54,7 +54,7 @@ export function DebtsCard() {
   const utils = trpc.useUtils();
   const { data: debts } = trpc.debts.list.useQuery();
   const { data: summary } = trpc.debts.computeSummary.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
   const done = () => {
     utils.debts.invalidate();
     utils.netWorth.invalidate();

@@ -111,7 +111,7 @@ const jointMatchIsDollarIssue = {
 };
 
 export const contributionAccountsProcedures = {
-  contributionAccounts: createTRPCRouter({
+  accounts: createTRPCRouter({
     /** Every contribution account, by person (joint first), then id: the
      *  same order on both databases, and after any edit. */
     list: protectedProcedure.query(({ ctx }) =>

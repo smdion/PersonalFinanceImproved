@@ -52,7 +52,7 @@ const adminSession: Session = {
 
 /** Each page's main read, called as the page calls it on first load. */
 const READS: [string, (caller: Caller) => Promise<unknown>][] = [
-  ["settings.people.list", (c) => c.settings.people.list()],
+  ["people.list", (c) => c.people.list()],
   ["paycheck.computeSummary", (c) => c.paycheck.computeSummary()],
   ["contribution.computeSummary", (c) => c.contribution.computeSummary()],
   ["budget.listProfiles", (c) => c.budget.listProfiles()],
@@ -210,8 +210,8 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
       timeout,
     );
 
-    it("settings.people.list returns the seeded household", async () => {
-      const people = await (await caller()).settings.people.list();
+    it("people.list returns the seeded household", async () => {
+      const people = await (await caller()).people.list();
       expect(people.map((person) => person.name).sort()).toEqual(
         profile.people.map((person) => person.name).sort(),
       );

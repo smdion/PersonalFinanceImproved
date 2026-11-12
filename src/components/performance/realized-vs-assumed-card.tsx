@@ -16,7 +16,7 @@ import { calendarYear } from "@/lib/utils/date";
 export function RealizedVsAssumedCard() {
   const { data: perf } = trpc.performance.computeSummary.useQuery();
   const { data: rates } = trpc.retirement.returnRates.list.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
   if (!perf || !rates || !people) return null;
 
   const primary = people.find((p) => p.isPrimaryUser) ?? people[0];

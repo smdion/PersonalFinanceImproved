@@ -160,7 +160,7 @@ describe("PortfolioContent smoke", () => {
     setQuery("netWorth.listSnapshotTotals", mockSnapshotTotals);
     setQuery("netWorth.listSnapshots", mockPaginatedSnapshots);
     setQuery("netWorth.portfolioSnapshots.getLatest", mockLatestSnap);
-    setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+    setQuery("people.list", [{ id: 1, name: "Alice" }]);
     setQuery("performance.performanceAccounts.list", mockPerfAccounts);
     setQuery("sync.getSyncStatus", {
       service: null,

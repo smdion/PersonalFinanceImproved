@@ -19,7 +19,7 @@ beforeEach(() => {
     ],
   });
   setQuery("retirement.returnRates.list", [{ age: 30, rateOfReturn: "0.08" }]);
-  setQuery("settings.people.list", [{ id: 1, dateOfBirth: "1985-01-01" }]);
+  setQuery("people.list", [{ id: 1, dateOfBirth: "1985-01-01" }]);
 });
 
 const { RealizedVsAssumedCard } =

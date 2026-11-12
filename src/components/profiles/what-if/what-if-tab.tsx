@@ -303,7 +303,7 @@ export function WhatIfTab({
   const deductionMakeRealAdditionRef = useRef<DeductionAddition | null>(null);
   const setDeductionActiveFields =
     trpc.contributionProfile.setDeductionActiveFields.useMutation();
-  const createDeduction = trpc.settings.deductions.create.useMutation({
+  const createDeduction = trpc.paycheck.deductions.create.useMutation({
     onSuccess: (created) => {
       const addition = deductionMakeRealAdditionRef.current;
       const finish = () => {
@@ -395,12 +395,12 @@ export function WhatIfTab({
     toast.error(err.message || "Failed to add contribution account");
   };
   const createContributionAccount =
-    trpc.settings.contributionAccounts.create.useMutation({
+    trpc.contribution.accounts.create.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });
   const updateContributionAccount =
-    trpc.settings.contributionAccounts.update.useMutation({
+    trpc.contribution.accounts.update.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });

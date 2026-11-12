@@ -66,10 +66,10 @@ export function AddContributionAccountPanel({
   addingAccount: boolean;
   setAddingAccount: Dispatch<SetStateAction<boolean>>;
   updateContributionAccount: ReturnType<
-    typeof trpc.settings.contributionAccounts.update.useMutation
+    typeof trpc.contribution.accounts.update.useMutation
   >;
   createContributionAccount: ReturnType<
-    typeof trpc.settings.contributionAccounts.create.useMutation
+    typeof trpc.contribution.accounts.create.useMutation
   >;
 }) {
   return (

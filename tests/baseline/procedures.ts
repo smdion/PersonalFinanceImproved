@@ -65,11 +65,11 @@ const activeSelection = ({ ids }: ProcedureContext) => ({
 });
 
 export const PROCEDURES: BaselineProcedure[] = [
-  { path: "settings.people.list" },
-  { path: "settings.jobs.list" },
-  { path: "settings.contributionAccounts.list" },
-  { path: "settings.earnings.list" },
-  { path: "settings.deductions.list" },
+  { path: "people.list" },
+  { path: "jobs.list" },
+  { path: "contribution.accounts.list" },
+  { path: "paycheck.earnings.list" },
+  { path: "paycheck.deductions.list" },
   { path: "settings.taxData.listSectionSources" },
   { path: "settings.taxData.getStatus" },
   { path: "settings.contributionLimits.list" },

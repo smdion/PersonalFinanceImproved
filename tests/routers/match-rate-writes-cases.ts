@@ -42,7 +42,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
   const entries = (id: number) => h().entries(id);
 
   async function percentAccount(value: string) {
-    const created = await h().caller.settings.contributionAccounts.create({
+    const created = await h().caller.contribution.accounts.create({
       ...account,
       personId: h().personId,
       jobId: h().jobId,
@@ -52,7 +52,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
     return created!.id;
   }
   const update = (id: number, fields: Record<string, unknown>) =>
-    h().caller.settings.contributionAccounts.update({
+    h().caller.contribution.accounts.update({
       id,
       ...account,
       personId: h().personId,
@@ -121,7 +121,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
 
   describe("an account's type change", () => {
     it("an entry that takes its type from the account follows it, and keeps its rate", async () => {
-      const a = (await h().caller.settings.contributionAccounts.create({
+      const a = (await h().caller.contribution.accounts.create({
         ...account,
         personId: h().personId,
         jobId: h().jobId,
@@ -161,7 +161,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
     // Q22 (advisor E9 list item 3): a rate 0016 or a write baked from a
     // non-percent account is the entry's own; nothing bakes it again.
     it("keeps a borrowed rate when the account's value changes", async () => {
-      const a = (await h().caller.settings.contributionAccounts.create({
+      const a = (await h().caller.contribution.accounts.create({
         ...account,
         personId: h().personId,
         jobId: h().jobId,
@@ -235,7 +235,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
     });
 
     it("does not bound a value an entry borrows", async () => {
-      const a = (await h().caller.settings.contributionAccounts.create({
+      const a = (await h().caller.contribution.accounts.create({
         ...account,
         personId: h().personId,
         jobId: h().jobId,
@@ -269,7 +269,7 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
 
     // M14 (advisor E9 F2): a dollar value is no rate already stored.
     it("refuses a dollar value kept across a switch to percent", async () => {
-      const a = (await h().caller.settings.contributionAccounts.create({
+      const a = (await h().caller.contribution.accounts.create({
         ...account,
         personId: h().personId,
         jobId: h().jobId,

@@ -27,9 +27,13 @@ import { secRouter } from "./sec";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { taxBucketsRouter } from "./tax-buckets";
+import { jobsProcedures } from "./jobs";
+import { peopleProcedures } from "./people";
 
 export const appRouter = createTRPCRouter({
   settings: settingsRouter,
+  ...peopleProcedures,
+  ...jobsProcedures,
   paycheck: paycheckRouter,
   budget: budgetRouter,
   contribution: contributionRouter,

@@ -29,7 +29,7 @@ const REAL_DB_DIRS = [
 const NOT_YET_CALLED: Record<string, string> = {
   "demo.deactivateDemo":
     "demo sessions exist only on PostgreSQL; no PostgreSQL test calls it yet",
-  "settings.earnings.update": "no test yet (found by TS3)",
+  "paycheck.earnings.update": "no test yet (found by TS3)",
   "settings.taxDataSync.checkNow": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.saveGrowth": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.setEnabled": "no test yet (found by TS3)",
