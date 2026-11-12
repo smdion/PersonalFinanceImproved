@@ -9,24 +9,19 @@ import { calculateProjection } from "../engine";
 import { runInflationPath } from "../engine/inflation-path";
 import { strategyAnchorRate } from "@/lib/pure/retirement/gk-anchor-rate";
 import { createPRNG, sampleBlendedReturn, sampleNormalMeanStd } from "./random";
-import type { MonteCarloInput } from "./monte-carlo.types";
+import type { TrialSetup } from "./monte-carlo.types";
 import type { ProjectionInput, EngineDecumulationYear } from "../engine/types";
 import { roundToCents, safeDivide } from "../../utils/math";
 import { SIMULATION_SPENDING_STABILITY_THRESHOLD } from "../../constants";
 
+/** The trials' records: each one's balances, verdict and spending, by year. */
+export type TrialRecords = ReturnType<typeof runTrials>;
+
 export function runTrials(
-  engineInput: ProjectionInput,
-  numTrials: number,
+  setup: TrialSetup,
   onProgress: ((done: number, total: number) => void) | undefined,
-  seed: number,
-  assetClasses: MonteCarloInput["assetClasses"],
-  choleskyL: number[][],
-  glidePath: MonteCarloInput["glidePath"],
-  clampMin: number,
-  clampMax: number,
-  inflationRisk: MonteCarloInput["inflationRisk"],
-  strategyUsesRaise: boolean,
 ) {
+  const { engineInput, numTrials, inflationRisk, strategyUsesRaise } = setup;
   // Compute deterministic projection first (always returned for comparison)
   const deterministicProjection = calculateProjection(engineInput);
 
@@ -107,7 +102,7 @@ export function runTrials(
     ) {
       onProgress(trial, numTrials);
     }
-    const rng = createPRNG(seed + trial);
+    const rng = createPRNG(setup.seed + trial);
 
     // Generate randomized return rates for this trial
     const trialReturnRates: { label: string; rate: number }[] = [];
@@ -117,15 +112,15 @@ export function runTrials(
       // blended by this age's glide path.
       let annualReturn = sampleBlendedReturn(
         rng,
-        assetClasses,
-        choleskyL,
-        glidePath,
+        setup.assetClasses,
+        setup.choleskyL,
+        setup.glidePath,
         age,
       );
 
       // Clamp extreme returns (prevent unrealistic scenarios)
-      annualReturn = Math.max(annualReturn, clampMin);
-      annualReturn = Math.min(annualReturn, clampMax);
+      annualReturn = Math.max(annualReturn, setup.clampMin);
+      annualReturn = Math.min(annualReturn, setup.clampMax);
 
       trialReturnRates.push({ label: `Age ${age}`, rate: annualReturn });
     }

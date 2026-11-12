@@ -343,10 +343,10 @@
     "src/lib/pure/paycheck/year-schedule.ts": 187,
     "src/lib/pure/retirement/relocation.ts": 469,
     "src/lib/pure/simulation/inflation-risk.ts": 23,
-    "src/lib/pure/simulation/monte-carlo.ts": 304,
+    "src/lib/pure/simulation/monte-carlo.ts": 246,
     "src/lib/pure/simulation/stress-test-run.ts": 108,
-    "src/lib/pure/simulation/trial-run.ts": 317,
-    "src/lib/pure/simulation/trial-summary.ts": 299,
+    "src/lib/pure/simulation/trial-run.ts": 312,
+    "src/lib/pure/simulation/trial-summary.ts": 290,
     "src/lib/pure/sync/budget-preview.ts": 354,
     "src/lib/simplefin/client.ts": 458,
     "src/lib/tax-data/validate.ts": 395,
@@ -1010,7 +1010,7 @@
       "calculateBrokerageGoals": 212
     },
     "src/lib/pure/simulation/trial-run.ts": {
-      "runTrials": 301
+      "runTrials": 293
     },
     "src/lib/tax-data/validate.ts": {
       "validateTaxDataFile": 163

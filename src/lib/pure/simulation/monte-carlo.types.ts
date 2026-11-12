@@ -165,3 +165,18 @@ export type MonteCarloResult = {
   computeTimeMs: number;
   warnings: string[];
 };
+
+/** What every trial runs on, fixed before the first one (monte-carlo.ts's trialSetup). */
+export type TrialSetup = {
+  engineInput: ProjectionInput;
+  numTrials: number;
+  assetClasses: MonteCarloInput["assetClasses"];
+  glidePath: MonteCarloInput["glidePath"];
+  inflationRisk: MonteCarloInput["inflationRisk"];
+  seed: number;
+  clampMin: number;
+  clampMax: number;
+  strategyUsesRaise: boolean;
+  correlationMatrix: number[][];
+  choleskyL: number[][];
+};

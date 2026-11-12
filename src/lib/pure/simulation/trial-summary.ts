@@ -1,13 +1,13 @@
 /** What the Simulation's trials add up to: percentiles, bands and rates. */
 import { planRetirementAge } from "@/lib/pure/household/household-timeline";
-import type { PlanFailureReason } from "../retirement/plan-outcome";
 import { blendedReturnStats } from "./random";
 import type {
-  MonteCarloInput,
   MonteCarloPercentileBand,
+  TrialSetup,
   DistributionSummary,
 } from "./monte-carlo.types";
 import type { ProjectionInput } from "../engine/types";
+import type { TrialRecords } from "./trial-run";
 import { sumBy, safeDivide } from "../../utils/math";
 import { SIMULATION_SPENDING_STABILITY_THRESHOLD } from "../../constants";
 
@@ -57,20 +57,9 @@ export function computeDistribution(values: number[]): DistributionSummary {
   };
 }
 
-export function balanceBands(
-  gkAnchorRates: number[],
-  assetClasses: MonteCarloInput["assetClasses"],
-  correlationMatrix: number[][],
-  glidePath: MonteCarloInput["glidePath"],
-  startAge: number,
-  priceLevelsByYear: number[][],
-  inflationRisk: MonteCarloInput["inflationRisk"],
-  yearsToRetirement: number,
-  numYears: number,
-  balancesByYear: number[][],
-  engineInput: ProjectionInput,
-  balancesTodayByYear: number[][],
-) {
+export function balanceBands(setup: TrialSetup, records: TrialRecords) {
+  const { inflationRisk, engineInput } = setup;
+  const { startAge, numYears, gkAnchorRates } = records;
   const sortedAnchors = [...gkAnchorRates].sort((a, b) => a - b);
   const gkAnchorRange =
     sortedAnchors.length > 0
@@ -82,13 +71,13 @@ export function balanceBands(
 
   const assumptionsFor = (yearIndex: number) => {
     const stats = blendedReturnStats(
-      assetClasses,
-      correlationMatrix,
-      glidePath,
+      setup.assetClasses,
+      setup.correlationMatrix,
+      setup.glidePath,
       startAge + yearIndex,
     );
     if (!stats) return {};
-    const levels = [...(priceLevelsByYear[yearIndex] ?? [])].sort(
+    const levels = [...(records.priceLevelsByYear[yearIndex] ?? [])].sort(
       (a, b) => a - b,
     );
     const inflation =
@@ -102,7 +91,7 @@ export function balanceBands(
             },
           }
         : undefined;
-    const retired = yearIndex >= yearsToRetirement;
+    const retired = yearIndex >= records.yearsToRetirement;
     return {
       assumptions: {
         ...stats,
@@ -115,7 +104,7 @@ export function balanceBands(
   // Aggregate into percentile bands
   const percentileBands: MonteCarloPercentileBand[] = [];
   for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
-    const balances = balancesByYear[yearIndex]!;
+    const balances = records.balancesByYear[yearIndex]!;
     if (balances.length === 0) continue;
     const sorted = [...balances].sort((a, b) => a - b);
     const mean = sumBy(balances, (v) => v) / balances.length;
@@ -138,7 +127,7 @@ export function balanceBands(
   // The same bands in today's dollars — each trial deflated before sorting.
   const percentileBandsToday: MonteCarloPercentileBand[] = [];
   for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
-    const balances = balancesTodayByYear[yearIndex]!;
+    const balances = records.balancesTodayByYear[yearIndex]!;
     if (balances.length === 0) continue;
     const sorted = [...balances].sort((a, b) => a - b);
     percentileBandsToday.push({
@@ -161,9 +150,7 @@ export function balanceBands(
 
 export function stabilityBands(
   engineInput: ProjectionInput,
-  numDecumulationYears: number,
-  stratRatiosByDecumulationYear: number[][],
-  budgetRatiosByDecumulationYear: number[][],
+  records: TrialRecords,
 ) {
   // Spending stability ratio bands (per decumulation year)
   const retirementStartAge = planRetirementAge(engineInput);
@@ -171,8 +158,8 @@ export function stabilityBands(
 
   const stratRatioBands: MonteCarloPercentileBand[] = [];
   const budgetRatioBands: MonteCarloPercentileBand[] = [];
-  for (let di = 0; di < numDecumulationYears; di++) {
-    const stratRatios = stratRatiosByDecumulationYear[di]!;
+  for (let di = 0; di < records.numDecumulationYears; di++) {
+    const stratRatios = records.stratRatiosByDecumulationYear[di]!;
     if (stratRatios.length === 0) continue;
     const sortedStrat = [...stratRatios].sort((a, b) => a - b);
     const stratMean = sumBy(stratRatios, (v) => v) / stratRatios.length;
@@ -196,7 +183,7 @@ export function stabilityBands(
       breachRate: stratBreachRate,
     });
 
-    const budgetRatios = budgetRatiosByDecumulationYear[di]!;
+    const budgetRatios = records.budgetRatiosByDecumulationYear[di]!;
     if (budgetRatios.length > 0) {
       const sortedBudget = [...budgetRatios].sort((a, b) => a - b);
       const budgetMean = sumBy(budgetRatios, (v) => v) / budgetRatios.length;
@@ -233,21 +220,17 @@ export function stabilityBands(
   return { spendingStabilityBands };
 }
 
-export function trialOutcomes(
-  hadPenaltyAvoidedShortfall: boolean[],
-  penaltyAvoidedShortfallAmountsPV: number[],
-  spendingStableCount: number,
-  numTrials: number,
-  budgetStableCount: number,
-  terminalBalances: number[],
-  failureAges: number[],
-  terminalBalancesToday: number[],
-  failureReasonCounts: Record<PlanFailureReason, number>,
-) {
+export function trialOutcomes(records: TrialRecords, numTrials: number) {
+  const {
+    terminalBalances,
+    failureAges,
+    failureReasonCounts,
+    terminalBalancesToday,
+  } = records;
   // Median total shortfall (today's dollars) among only the trials that hit one: how much
   // more penalty-free money would close the gap.
-  const shortfallAmountsAmongAffected = penaltyAvoidedShortfallAmountsPV
-    .filter((_, i) => hadPenaltyAvoidedShortfall[i])
+  const shortfallAmountsAmongAffected = records.penaltyAvoidedShortfallAmountsPV
+    .filter((_, i) => records.hadPenaltyAvoidedShortfall[i])
     .sort((a, b) => a - b);
   const medianPenaltyAvoidedShortfallPV =
     shortfallAmountsAmongAffected.length > 0
@@ -255,10 +238,18 @@ export function trialOutcomes(
       : 0;
 
   // Spending stability: % of trials where withdrawals met ≥75% of initial (inflation-adjusted)
-  const spendingStabilityRate = safeDivide(spendingStableCount, numTrials, 0);
+  const spendingStabilityRate = safeDivide(
+    records.spendingStableCount,
+    numTrials,
+    0,
+  );
 
   // Budget stability: same metric but against user's retirement budget
-  const budgetStabilityRate = safeDivide(budgetStableCount, numTrials, null);
+  const budgetStabilityRate = safeDivide(
+    records.budgetStableCount,
+    numTrials,
+    null,
+  );
 
   // Terminal balance stats
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);

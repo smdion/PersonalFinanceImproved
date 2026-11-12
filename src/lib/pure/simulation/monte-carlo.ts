@@ -8,7 +8,11 @@ import {
   buildCorrelationMatrix,
   type GlidePathEntry,
 } from "./random";
-import type { MonteCarloInput, MonteCarloResult } from "./monte-carlo.types";
+import type {
+  MonteCarloInput,
+  MonteCarloResult,
+  TrialSetup,
+} from "./monte-carlo.types";
 import {
   percentile,
   computeDistribution,
@@ -103,75 +107,23 @@ export function calculateMonteCarlo(
 ): MonteCarloResult {
   const startTime = performance.now();
   const warnings: string[] = [];
-  const {
-    engineInput,
-    numTrials,
-    assetClasses,
-    glidePath,
-    inflationRisk,
-    seed,
-    clampMin,
-    clampMax,
-    strategyUsesRaise,
-    correlationMatrix,
-    choleskyL,
-  } = trialSetup(input, warnings);
+  const setup = trialSetup(input, warnings);
+  const { numTrials } = setup;
+  const records = runTrials(setup, onProgress);
   const {
     deterministicProjection,
-    startAge,
-    numYears,
-    balancesByYear,
-    balancesTodayByYear,
-    numDecumulationYears,
-    stratRatiosByDecumulationYear,
-    budgetRatiosByDecumulationYear,
     terminalBalances,
     terminalBalancesToday,
     hadPenaltyAvoidedShortfall,
     trialSucceeded,
-    penaltyAvoidedShortfallAmountsPV,
-    failureAges,
-    failureReasonCounts,
     sustainableWithdrawals,
     sustainableWithdrawalsPV,
-    spendingStableCount,
-    budgetStableCount,
-    gkAnchorRates,
-    priceLevelsByYear,
-    yearsToRetirement,
-  } = runTrials(
-    engineInput,
-    numTrials,
-    onProgress,
-    seed,
-    assetClasses,
-    choleskyL,
-    glidePath,
-    clampMin,
-    clampMax,
-    inflationRisk,
-    strategyUsesRaise,
-  );
+  } = records;
   const { percentileBands, percentileBandsToday } = balanceBands(
-    gkAnchorRates,
-    assetClasses,
-    correlationMatrix,
-    glidePath,
-    startAge,
-    priceLevelsByYear,
-    inflationRisk,
-    yearsToRetirement,
-    numYears,
-    balancesByYear,
-    engineInput,
-    balancesTodayByYear,
+    setup,
+    records,
   );
-  const { spendingStabilityBands } = stabilityBands(
-    engineInput,
-    numDecumulationYears,
-    stratRatiosByDecumulationYear,
-    budgetRatiosByDecumulationYear,
-  );
+  const { spendingStabilityBands } = stabilityBands(setup.engineInput, records);
   // Success rate: % of trials the plan judge passes (assessPlan).
   const successCount = trialSucceeded.filter(Boolean).length;
   const successRate = safeDivide(successCount, numTrials, 0);
@@ -198,17 +150,7 @@ export function calculateMonteCarlo(
     sortedTerminalToday,
     p5FailureAge,
     failureReasonRates,
-  } = trialOutcomes(
-    hadPenaltyAvoidedShortfall,
-    penaltyAvoidedShortfallAmountsPV,
-    spendingStableCount,
-    numTrials,
-    budgetStableCount,
-    terminalBalances,
-    failureAges,
-    terminalBalancesToday,
-    failureReasonCounts,
-  );
+  } = trialOutcomes(records, numTrials);
 
   const computeTimeMs = Math.round(performance.now() - startTime);
 
@@ -246,7 +188,7 @@ export function calculateMonteCarlo(
   };
 }
 
-function trialSetup(input: MonteCarloInput, warnings: string[]) {
+function trialSetup(input: MonteCarloInput, warnings: string[]): TrialSetup {
   const {
     engineInput,
     numTrials,
