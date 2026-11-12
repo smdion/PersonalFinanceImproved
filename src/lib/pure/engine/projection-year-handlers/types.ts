@@ -204,9 +204,6 @@ export type PreYearSetup = {
    *  (input.workingYearsByPerson): theirs zeroed, in spec order. Undefined
    *  = state.contributionSpecs as they are. */
   yearSpecs?: ContributionSpec[];
-  /** A job starts or ends this year: its whole-year approximation applies
-   *  (year 0 then runs on the specs, not this year's paycheck amounts). */
-  jobEdgeThisYear: boolean;
   /** Someone with a job has stopped working (a partial retirement, or a job
    *  over before its holder retires), so pay may not cover the budget. A
    *  job that hasn't started yet doesn't count: nothing changed. */

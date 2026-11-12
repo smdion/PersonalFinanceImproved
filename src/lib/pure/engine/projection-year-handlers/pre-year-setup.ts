@@ -264,13 +264,6 @@ export function runPreYearSetup(
       ...NO_MONEY_THIS_YEAR,
       employerShare: 0,
     }));
-  // A job starting or ending this year (its own dates, not a retirement:
-  // a person retiring next year works all of this one).
-  const jobEdgeThisYear =
-    isAccumulation &&
-    Object.values(input.workingYearsByPerson ?? {}).some(
-      (w) => w.start === year || w.end === year,
-    );
 
   // Retirement money only, before the expenses block (the Rate-Seeded seed needs it):
   // Portfolio-parented accounts never size retirement spending. Computed once per
@@ -411,7 +404,6 @@ export function runPreYearSetup(
     effectiveSalaryByPerson,
     hasBonusAdjustment,
     yearSpecs,
-    jobEdgeThisYear,
     gapYear,
     savingStopped,
   };

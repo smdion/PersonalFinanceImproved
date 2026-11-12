@@ -23,11 +23,10 @@ export function yearZeroBasis(
   contributionSpecs: ProjectionLoopState["contributionSpecs"],
 ) {
   // Year 0 uses the paycheck's per-account amounts (salary × rate can make
-  // false overflow), unless a job starts or ends this year or someone isn't
-  // at work: the paycheck doesn't know that; the specs do.
+  // false overflow), unless someone isn't at work: the paycheck doesn't know
+  // that; the specs do. A job starting or ending this year: its cut below.
   const useRealContributions =
     yearIndex === 0 &&
-    !setup.jobEdgeThisYear &&
     !setup.yearSpecs &&
     activeBaseYearContributions &&
     activeBaseYearEmployerMatch;
