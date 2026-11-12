@@ -12,8 +12,8 @@ import {
   convertBackup,
   runConverterSqlite,
   type DataConverter,
-  type RowDelete,
 } from "@/lib/db/migrate/migration-converters";
+import type { RowDelete } from "@/lib/db/migrate/converter-writes";
 import { SCHEMA_REFERENCES } from "@/lib/db/backup/restore-conversions";
 import pgJournal from "../../drizzle/meta/_journal.json";
 

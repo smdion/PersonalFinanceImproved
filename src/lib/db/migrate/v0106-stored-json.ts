@@ -7,7 +7,7 @@ import { RETIRED_LIMITS_CONVERTER } from "./v0106-retired-limits";
 import { AFTER_TAX_EXEMPT_CONVERTER } from "./v0106-after-tax-exempt";
 import { SALARY_ENTRIES_CONVERTER } from "./v0106-salary-entries";
 
-/** The stored-JSON tag. */
+/** @internal The stored-JSON tag (tests import it; knip --production). */
 export const STORED_JSON_TAG = "0020_v0106_stored_json";
 
 export const STORED_JSON_CONVERTERS = {

@@ -38,13 +38,7 @@ import { JOB_ENTRIES_CONVERTER, JOB_ENTRIES_TAG } from "./v0110-job-entries";
 /** A table's rows as read: snake_case keys, JSON as object or text. */
 export type ConverterTables = Record<string, readonly unknown[] | undefined>;
 
-export type {
-  ConverterResult,
-  Reference,
-  RowDelete,
-  RowInsert,
-  RowUpdate,
-} from "./converter-writes";
+export type { ConverterResult, Reference } from "./converter-writes";
 
 export type DataConverter = {
   /** The tables it reads; one that doesn't exist reads as absent. */

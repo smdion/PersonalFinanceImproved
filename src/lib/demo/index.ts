@@ -12,12 +12,7 @@ import {
 } from "./slugs";
 
 export type { DemoProfile } from "./types";
-export {
-  DEMO_COOKIE,
-  demoSchemaName,
-  isDemoProfileSlug,
-  type DemoProfileSlug,
-} from "./slugs";
+export { DEMO_COOKIE, demoSchemaName, type DemoProfileSlug } from "./slugs";
 
 const PROFILES = {
   "single-income": singleIncomeProfile,

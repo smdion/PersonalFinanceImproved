@@ -363,7 +363,7 @@ describe("ProjectionHeroKpis", () => {
 describe("ProjectionChartSkeleton", () => {
   it("renders loading state", async () => {
     const { ProjectionChartSkeleton } =
-      await import("@/components/retirement-projection/projection-chart");
+      await import("@/components/retirement-projection/projection-chart-skeleton");
     render(<ProjectionChartSkeleton phase="simulation" />);
     expect(screen.getByText("Balance Projection")).toBeInTheDocument();
     expect(screen.getByText(/Simulating/)).toBeInTheDocument();

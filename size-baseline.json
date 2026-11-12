@@ -158,7 +158,7 @@
     "src/components/retirement-projection/projection-card/slide-panels.tsx": 124,
     "src/components/retirement-projection/projection-card/table-area.tsx": 42,
     "src/components/retirement-projection/projection-card/use-projection-report.ts": 82,
-    "src/components/retirement-projection/projection-chart.tsx": 1075,
+    "src/components/retirement-projection/projection-chart.tsx": 1071,
     "src/components/retirement-projection/projection-display.ts": 141,
     "src/components/retirement-projection/projection-hero-kpis.tsx": 468,
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": 319,
