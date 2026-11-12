@@ -1,5 +1,6 @@
 /** Domain types for the projection card — tooltip data shapes, accumulation/decumulation override form types, serialized override payloads, and account split computation inputs. */
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { WithdrawalRoutingMode } from "@/lib/config/withdrawal-routing";
 import {
   getDefaultAccumulationOrder,
   getDefaultDecumulationOrder,
@@ -198,7 +199,7 @@ export const emptyAccumForm: AccumOverrideForm = {
 export type DecumOverrideForm = {
   year: string;
   personName: string; // '' = household-wide
-  withdrawalRoutingMode: "waterfall" | "percentage" | "";
+  withdrawalRoutingMode: WithdrawalRoutingMode | "";
   withdrawalOrder: AccountCategory[];
   withdrawalSplits: Record<AccountCategory, string>;
   withdrawalTaxPreference: Record<AccountCategory, "traditional" | "roth" | "">;
@@ -265,7 +266,7 @@ export type AccumOverride = {
 export type DecumOverride = {
   year: number;
   personName?: string; // when set, override applies to this person only
-  withdrawalRoutingMode?: "waterfall" | "percentage";
+  withdrawalRoutingMode?: WithdrawalRoutingMode;
   withdrawalOrder?: AccountCategory[];
   withdrawalSplits?: Partial<Record<AccountCategory, number>>;
   withdrawalTaxPreference?: Record<string, "traditional" | "roth">;

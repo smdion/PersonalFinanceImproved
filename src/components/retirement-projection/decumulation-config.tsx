@@ -19,11 +19,11 @@ import {
   WITHDRAWAL_ROUTING_MODE_LABELS,
   WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
+  type WithdrawalRoutingMode,
 } from "@/lib/config/withdrawal-routing";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
 import { renderSplitsTotalWarning } from "./withdrawal-splits-warning";
 
-type RoutingModeLiteral = "bracket_filling" | "waterfall" | "percentage";
 /** Shared small heading for the config sub-sections below. (Formerly lived
  *  in overrides-panel.tsx alongside a since-deleted unified panel; that
  *  file's only remaining export, so folded in here — its one consumer.) */
@@ -52,8 +52,8 @@ type DecumulationConfigProps = {
   personFilterName: string;
   showDecumConfig: boolean;
   setShowDecumConfig: (v: boolean) => void;
-  withdrawalRoutingMode: RoutingModeLiteral;
-  setWithdrawalRoutingMode: (v: RoutingModeLiteral) => void;
+  withdrawalRoutingMode: WithdrawalRoutingMode;
+  setWithdrawalRoutingMode: (v: WithdrawalRoutingMode) => void;
   /** Whether the user clicked a mode button this session. Gates only what this panel
    *  displays, not what's sent (use-projection-queries.ts); untouched, display derives
    *  from `persistedWithdrawalRoutingMode`, since `withdrawalRoutingMode` is a seed literal. */
@@ -136,15 +136,15 @@ export function DecumulationConfig({
           persistedWithdrawalRoutingMode as keyof typeof WITHDRAWAL_ROUTING_MODE_LABELS
         ]
       : null;
-  const persistedMode: RoutingModeLiteral =
+  const persistedMode: WithdrawalRoutingMode =
     persistedWithdrawalRoutingMode &&
     persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
-      ? (persistedWithdrawalRoutingMode as RoutingModeLiteral)
+      ? (persistedWithdrawalRoutingMode as WithdrawalRoutingMode)
       : DEFAULT_WITHDRAWAL_ROUTING_MODE;
   // What this panel shows: the plan default until the user clicks a mode this session, then
   // their choice (the untouched `withdrawalRoutingMode` is a seed literal and could show the
   // wrong editor). Display only; what's sent is gated on `touched` in use-projection-queries.ts.
-  const displayedMode: RoutingModeLiteral = withdrawalRoutingModeTouched
+  const displayedMode: WithdrawalRoutingMode = withdrawalRoutingModeTouched
     ? withdrawalRoutingMode
     : persistedMode;
   const modeLabel = WITHDRAWAL_ROUTING_MODE_LABELS[displayedMode];
@@ -237,7 +237,7 @@ export function DecumulationConfig({
             <div className="bg-surface-primary inline-flex rounded-md border p-0.5">
               {(
                 Object.entries(WITHDRAWAL_ROUTING_MODE_LABELS) as [
-                  "bracket_filling" | "waterfall" | "percentage",
+                  WithdrawalRoutingMode,
                   string,
                 ][]
               ).map(([key, label]) => (

@@ -17,7 +17,10 @@ import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
-import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
+import {
+  DEFAULT_WITHDRAWAL_ROUTING_MODE,
+  type WithdrawalRoutingMode,
+} from "@/lib/config/withdrawal-routing";
 import type {
   AccumOverrideForm,
   DecumOverrideForm,
@@ -33,18 +36,14 @@ export function useProjectionFormState() {
   // --- Withdrawal config --- (seeded from defaultDecumulationConfig())
   // Routing mode is sent only once touched; until then the server resolves
   // the persisted `withdrawal_routing_mode`, so the initial value is unused.
-  const [withdrawalRoutingMode, setWithdrawalRoutingModeRaw] = useState<
-    "bracket_filling" | "waterfall" | "percentage"
-  >(DEFAULT_WITHDRAWAL_ROUTING_MODE);
+  const [withdrawalRoutingMode, setWithdrawalRoutingModeRaw] =
+    useState<WithdrawalRoutingMode>(DEFAULT_WITHDRAWAL_ROUTING_MODE);
   const [withdrawalRoutingModeTouched, setWithdrawalRoutingModeTouched] =
     useState(false);
-  const setWithdrawalRoutingMode = useCallback(
-    (v: "bracket_filling" | "waterfall" | "percentage") => {
-      setWithdrawalRoutingModeRaw(v);
-      setWithdrawalRoutingModeTouched(true);
-    },
-    [],
-  );
+  const setWithdrawalRoutingMode = useCallback((v: WithdrawalRoutingMode) => {
+    setWithdrawalRoutingModeRaw(v);
+    setWithdrawalRoutingModeTouched(true);
+  }, []);
   // Touched-gated like `withdrawalRoutingMode`: order/splits are sent only once
   // edited this session; until then the server resolves the persisted
   // `withdrawal_order` / `withdrawal_splits`.
