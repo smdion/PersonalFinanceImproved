@@ -895,6 +895,15 @@ describe("retirement projection edge cases", () => {
     ).toThrow("No return rate configured");
   });
 
+  it("refuses an age or birth year that isn't a number", () => {
+    expect(() =>
+      calculateProjection(makeBaseProjection({ perPersonBirthYears: [NaN] })),
+    ).toThrow("not a number");
+    expect(() =>
+      calculateProjection(makeBaseProjection({ currentAge: NaN })),
+    ).toThrow("not a number");
+  });
+
   it("clamps extreme inflation rate and warns", () => {
     const result = calculateProjection(
       makeBaseProjection({ inflationRate: 5.0 }),

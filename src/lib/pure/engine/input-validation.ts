@@ -62,6 +62,10 @@ export function validateEngineInputs(
         );
     }
   }
+  // A NaN age would read as "nobody 65+" and turn on the ACA logic.
+  const ages = [input.currentAge, ...(input.perPersonBirthYears ?? [])];
+  if (!ages.every(Number.isFinite))
+    throw new Error("A person's age or birth year is not a number");
   let { salaryGrowthRate, inflationRate } = input;
   let postRetirementInflationRate =
     input.postRetirementInflationRate ?? inflationRate;
