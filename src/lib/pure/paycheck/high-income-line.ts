@@ -4,7 +4,10 @@
  * number of people (two or more read as a couple), and the basis says so.
  */
 import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import {
+  filingRules,
+  type ReturnFilingStatus,
+} from "@/lib/config/filing-status";
 
 export type HighIncomeLineBasis = ReturnFilingStatus | "people";
 
@@ -31,7 +34,7 @@ export function defaultHighIncomeLine(
   if (filingStatus)
     return {
       threshold:
-        filingStatus === "MFJ"
+        filingRules(filingStatus).peopleOnReturn === 2
           ? HIGH_INCOME_LINE.married
           : HIGH_INCOME_LINE.single,
       basis: filingStatus,

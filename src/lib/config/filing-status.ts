@@ -27,10 +27,10 @@ export type FilingStatusRules = {
   /** Position in every list of return statuses (pickers). */
   readonly order: number;
   /** The tax-table row for the rules the statute writes "joint return or surviving spouse"
-   *  (the basic standard deduction, LTCG, NIIT). */
+   *  (the rate table and basic standard deduction, LTCG, NIIT, the Roth IRA range). */
   readonly survivorRow: FilingStatusKey;
   /** The row for the rules it writes for a joint return alone (Social Security's base
-   *  amounts, the senior deduction's phase-out start, IRMAA). */
+   *  amounts, Additional Medicare, the senior deduction's phase-out start, IRMAA). */
   readonly jointRow: FilingStatusKey;
   /** IRC 63(f)(3): married or a surviving spouse takes the lower 65+ add-on. */
   readonly marriedAddOn: boolean;

@@ -1,8 +1,7 @@
 /** This year's household return, as the Taxes page shows it. */
 import type * as schema from "@/lib/db/schema";
 import {
-  FILING_STATUS_RULES,
-  filingTable,
+  filingRules,
   parseReturnFilingStatus,
 } from "@/lib/config/filing-status";
 import { ADDITIONAL_STANDARD_DEDUCTION_AGE } from "@/lib/constants";
@@ -25,11 +24,13 @@ export function householdReturnTax(
   limitsRecord: Record<string, number>,
   taxYear: number,
 ) {
+  const status = parseReturnFilingStatus(filingStatus);
+  if (!status) return null;
+  const row = filingRules(status).survivorRow;
   const bracketRow = allBrackets.find(
-    (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
+    (b) => b.filingStatus === row && b.w4Checkbox === false,
   );
   if (!bracketRow) return null;
-  const status = parseReturnFilingStatus(filingStatus);
   // People 65+ at Dec 31 of the tax year, at most as many as the return has.
   const over65 = Math.min(
     results.filter(
@@ -37,13 +38,13 @@ export function householdReturnTax(
         limitAge(r.person.dateOfBirth, taxYear) >=
         ADDITIONAL_STANDARD_DEDUCTION_AGE,
     ).length,
-    status ? filingTable(FILING_STATUS_RULES, status).peopleOnReturn : 0,
+    filingRules(status).peopleOnReturn,
   );
   return calculateHouseholdTax({
     people: results.flatMap((r) => (r.earnings ? [r.earnings] : [])),
     taxBrackets: liabilityBracketInput(bracketRow, limitsMap),
     medicareLiabilityThreshold:
-      limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
+      limitsRecord[medicareLiabilityKey(status)] ?? null,
     ageDeductions: {
       terms: returnDeductionTerms(limitsRecord, status),
       over65,

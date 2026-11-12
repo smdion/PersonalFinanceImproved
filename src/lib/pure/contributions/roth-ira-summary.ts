@@ -14,6 +14,7 @@ import { irsLimitOrNull } from "@/lib/pure/contributions/irs-limits";
 import { ageInYear } from "@/lib/utils/date";
 import { sumBy } from "@/lib/utils/math";
 import { rothIraPhaseoutKeys } from "@/lib/config/tax-params";
+import { parseReturnFilingStatus } from "@/lib/config/filing-status";
 
 export type RothIraSummary = {
   filingStatus: string;
@@ -65,9 +66,11 @@ export function rothIraSummary(args: {
 }): RothIraSummary | null {
   const iraCategory = getAllCategories().find(isRothIncomeLimited);
   if (!args.filingStatus || !iraCategory) return null;
-  const keys = rothIraPhaseoutKeys(args.filingStatus);
-  const start = args.limits[keys.start];
-  const end = args.limits[keys.end];
+  // A stored status Ledgr doesn't know reads no range rather than a guessed one.
+  const status = parseReturnFilingStatus(args.filingStatus);
+  const keys = status ? rothIraPhaseoutKeys(status) : null;
+  const start = keys ? args.limits[keys.start] : undefined;
+  const end = keys ? args.limits[keys.end] : undefined;
   return {
     filingStatus: args.filingStatus,
     phaseOut: start !== undefined && end !== undefined ? { start, end } : null,

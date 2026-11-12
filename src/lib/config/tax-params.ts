@@ -2,7 +2,11 @@
  *  filing-status sets). The resolver is lib/pure/tax/resolve-tax-params.ts. */
 
 import type { HsaCoverageType } from "./enum-values";
-import type { FilingStatusKey, ReturnFilingStatus } from "./filing-status";
+import {
+  filingRules,
+  type FilingStatusKey,
+  type ReturnFilingStatus,
+} from "./filing-status";
 
 /** Pub 590-A Worksheet 2-2: a reduced Roth IRA limit rounds UP to the next
  *  multiple of this, and any amount above $0 but below the floor becomes
@@ -20,22 +24,23 @@ export const SENIOR_PHASEOUT_START_KEY: Readonly<
   HOH: "obbba_senior_deduction_phaseout_start_unmarried",
 };
 
-/** The yearly limit rows for a filing status (lower-cased in the key,
- *  matching `standard_deduction_<status>`). */
-export function rothIraPhaseoutKeys(filingStatus: string): {
+/** The yearly Roth IRA range rows for a filing status (lower-cased in the key, matching
+ *  `standard_deduction_<status>`): a surviving spouse reads the joint range. */
+export function rothIraPhaseoutKeys(filingStatus: ReturnFilingStatus): {
   start: string;
   end: string;
 } {
-  const s = filingStatus.toLowerCase();
+  const s = filingRules(filingStatus).survivorRow.toLowerCase();
   return {
     start: `roth_ira_phaseout_start_${s}`,
     end: `roth_ira_phaseout_end_${s}`,
   };
 }
 
-/** The Additional Medicare LIABILITY threshold row for a filing status. */
-export function medicareLiabilityKey(filingStatus: string): string {
-  return `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`;
+/** The Additional Medicare LIABILITY threshold row for a filing status (IRC 3101(b)(2):
+ *  joint returns alone have their own). */
+export function medicareLiabilityKey(filingStatus: ReturnFilingStatus): string {
+  return `fica_medicare_surtax_liability_${filingRules(filingStatus).jointRow.toLowerCase()}`;
 }
 
 /** A pre-tax IRA balance below this share of the person's IRA limit gets no pro-rata

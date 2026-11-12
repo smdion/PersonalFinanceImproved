@@ -1,4 +1,5 @@
 /** The engine payload's tax year. */
+import { filingRules } from "@/lib/config/filing-status";
 import type { retirementFilingStatus } from "@/lib/pure/tax/filing-status";
 import {
   resolveTaxParams,
@@ -72,7 +73,9 @@ export function resolveTaxYear(
     );
 
   // A complete year has every status's table: never a guessed empty one.
-  const withholding = resolvedTax.withholdingBrackets?.[filingStatus]?.false;
+  const withholding =
+    resolvedTax.withholdingBrackets?.[filingRules(filingStatus).survivorRow]
+      ?.false;
   if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
   const bracketData = withholding as {
     threshold: number;
