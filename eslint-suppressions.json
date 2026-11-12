@@ -3225,7 +3225,7 @@
   },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 9
+      "count": 8
     },
     "ratchet/no-abbreviation": {
       "count": 26

@@ -5,7 +5,6 @@ import {
   getDefaultDecumulationOrder,
   buildCategoryRecord,
   categoriesWithTaxPreference,
-  getLimitGroup,
 } from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
@@ -183,7 +182,7 @@ export const emptyAccumForm: AccumOverrideForm = {
     string
   >,
   taxSplits: Object.fromEntries(
-    categoriesWithTaxPreference().map((cat) => [getLimitGroup(cat) ?? cat, ""]),
+    categoriesWithTaxPreference().map((cat) => [cat, ""]),
   ),
   accountCaps: buildCategoryRecord(() => "") as Record<AccountCategory, string>,
   taxTypeCaps: { traditional: "", roth: "" },

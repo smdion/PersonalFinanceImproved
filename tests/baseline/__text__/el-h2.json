@@ -1,6 +1,10 @@
 {
  "accountDepletions": [
   {
+   "category": "403b",
+   "subType": "roth"
+  },
+  {
    "category": "ira",
    "subType": "traditional"
   },

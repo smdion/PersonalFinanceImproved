@@ -477,18 +477,14 @@ export function getAccountTypeConfig(
 // Engine helpers — replace hardcoded if-chains
 // ---------------------------------------------------------------------------
 
-/** The Roth fraction for a category from tax splits. */
+/** The Roth fraction for a category from tax splits: its own split, never
+ *  its IRS limit group's (a 402(g) group shares a limit, not a tax split). */
 export function getRothFraction(
   category: AccountCategory,
   taxSplits: Partial<Record<AccountCategory, number>>,
 ): number {
-  const cfg = ACCOUNT_TYPE_CONFIG[category];
-  if (!cfg.supportsRothSplit) return 0;
-  const lookupKey =
-    cfg.irsLimitGroup && cfg.irsLimitGroup !== category // config: a group may be unset
-      ? (cfg.irsLimitGroup as AccountCategory)
-      : category;
-  return taxSplits[lookupKey] ?? 0;
+  if (!ACCOUNT_TYPE_CONFIG[category].supportsRothSplit) return 0;
+  return taxSplits[category] ?? 0;
 }
 
 /** The effective contribution limit for a category. */

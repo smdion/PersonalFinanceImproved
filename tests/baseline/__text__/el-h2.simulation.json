@@ -3138,6 +3138,10 @@
     "deterministicProjection": {
      "accountDepletions": [
       {
+       "category": "403b",
+       "subType": "roth"
+      },
+      {
        "category": "ira",
        "subType": "traditional"
       },
@@ -6271,6 +6275,10 @@
   "result": {
    "deterministicProjection": {
     "accountDepletions": [
+     {
+      "category": "403b",
+      "subType": "roth"
+     },
      {
       "category": "ira",
       "subType": "traditional"

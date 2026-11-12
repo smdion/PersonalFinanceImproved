@@ -112,8 +112,8 @@ export function useProjectionState(props: UseProjectionStateProps) {
       }
       if (hasSplits) o.accountSplits = splits;
       const ts: Record<string, number> = {};
-      for (const [groupKey, val] of Object.entries(form.accumForm.taxSplits)) {
-        if (val !== "") ts[groupKey] = parseFloat(val) / 100;
+      for (const [category, val] of Object.entries(form.accumForm.taxSplits)) {
+        if (val !== "") ts[category] = parseFloat(val) / 100;
       }
       if (Object.keys(ts).length > 0) o.taxSplits = ts;
       const caps = enteredCaps(form.accumForm.accountCaps);

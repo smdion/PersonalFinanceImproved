@@ -227,7 +227,7 @@
     "src/lib/budget-api/actual-mappers.ts": 162,
     "src/lib/budget-api/ynab-client.ts": 371,
     "src/lib/budget-api/ynab-mappers.ts": 132,
-    "src/lib/config/account-types.ts": 837,
+    "src/lib/config/account-types.ts": 833,
     "src/lib/config/milestones.ts": 664,
     "src/lib/config/withdrawal-strategies.ts": 754,
     "src/lib/constants.ts": 349,

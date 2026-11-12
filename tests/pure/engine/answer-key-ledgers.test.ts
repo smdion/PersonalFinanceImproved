@@ -42,7 +42,7 @@ import type {
   EngineYearProjection,
   ProjectionResult,
 } from "@/lib/pure/engine/types";
-import { ledgerRow, runOneYear, xfail } from "../../fixtures/answer-key";
+import { cents, ledgerRow, runOneYear, xfail } from "../../fixtures/answer-key";
 import {
   ledgerInput,
   money,
@@ -57,7 +57,6 @@ import {
 const END_YEAR = `v0.11 Engine "Plan 'to 95' stops at 94" (D10: run the end year)`;
 const SAME_YEAR_MAGI = `v0.11 Tax "Senior deduction must use same-year MAGI in every year"`;
 const GAP_YEARS = `v0.11 Engine "Gap years use the one solver and the one deduction function"`;
-const ROTH_SPLIT_403B = `v0.11 Engine "Plan 'to 95' stops at 94" (its 403(b) part: "403(b) reads the 401(k)'s Roth split")`;
 
 /** Flow columns of a ledger row the engine reports. */
 const FLOWS = [
@@ -461,31 +460,20 @@ describe("answer key: engine ledger H2 (two earners, gap years)", () => {
   });
 
   describe("engine/E3", () => {
-    // Verdict E3 (`account-types.ts:516-520`, `getRothFraction`): a
-    // 403(b) reads the 401(k)'s Roth share through its IRS limit group, so
-    // A's 403(b) takes B's 401(k) split. A puts 5% × 110,000 = 5,500 into
-    // A's Traditional 403(b) in 2026 (`H2.accounts.csv`). Today the 401(k)
-    // share, B's 1,700 Roth of 10,200 = 1/6, marks 916.67 of A's money
-    // Roth; A has no Roth 403(b), and it isn't saved anywhere: 5,500 × 5/6
-    // = 4,583.33. Shows only with the payload's
-    // base-year contributions filled (year 0 then runs the slot path).
-    // Pinned today by `tests/config/account-type-config.test.ts:219`
-    // ("403b shares 401k split"), the only test the fix changes.
-    xfail({
-      id: "engine/E3 [ENG-10]",
-      todo: ROTH_SPLIT_403B,
-      run: () => {
-        const r = runOneYear(
-          ledgerInput(readHousehold("H2"), { baseYear: true }),
-          2026,
-        );
-        const a = r.individualAccountBalances.find(
-          (x) => x.name === "A-403b-trad",
-        );
-        return { contribution: a?.contribution ?? NaN };
-      },
-      expected: { contribution: 5_500 },
-      today: { contribution: 4_583.33 },
+    // A 403(b) reads its own Roth share, not the 401(k)'s through their IRS
+    // limit group. A puts 5% × 110,000 = 5,500 into A's Traditional 403(b)
+    // in 2026 (`H2.accounts.csv`); A has no Roth 403(b), so all 5,500 lands
+    // in A-403b-trad. Shows only with the payload's base-year contributions
+    // filled (year 0 then runs the slot path).
+    it("engine/E3 [ENG-10] the 403(b) reads its own Roth split", () => {
+      const r = runOneYear(
+        ledgerInput(readHousehold("H2"), { baseYear: true }),
+        2026,
+      );
+      const a = r.individualAccountBalances.find(
+        (x) => x.name === "A-403b-trad",
+      );
+      cents({ contribution: a?.contribution ?? NaN }, { contribution: 5_500 });
     });
   });
 });

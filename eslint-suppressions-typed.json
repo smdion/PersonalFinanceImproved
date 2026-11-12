@@ -141,7 +141,7 @@
   },
   "src/lib/config/account-types.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/db/compat.ts": {
