@@ -973,7 +973,7 @@
       "runDecumulationYear": 529
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
-      "runPreYearSetup": 387
+      "runPreYearSetup": 378
     },
     "src/lib/pure/engine/rmd-enforcement.ts": {
       "enforceOwnerRmds": 152

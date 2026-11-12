@@ -177,14 +177,14 @@ export function routeYearSlots(
     // Pro-rate year 0 spec-based employee contributions (routeFromSpecs computes full-year amounts)
     if (proRate < 1) {
       for (const slot of slots) {
-        // The late-year cut comes off the slot's employee money; its tax
-        // parts follow by the same ratio.
+        // Year 0's cut (negative: more left than the months give) moves the slot's employee
+        // money; its tax parts follow by the same ratio.
         const full = slot.employeeContrib;
         slot.employeeContrib = roundToCents(
           Math.max(0, full * proRate - lateYearCut[slot.category]),
         );
         const partRatio =
-          lateYearCut[slot.category] > 0 && full > 0
+          lateYearCut[slot.category] !== 0 && full > 0
             ? slot.employeeContrib / full
             : proRate;
         // The Portfolio part pro-rates with the slot (the ceiling below

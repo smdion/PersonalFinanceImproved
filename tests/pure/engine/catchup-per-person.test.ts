@@ -243,5 +243,46 @@ describe("year 0 — a contribution over its IRS limit, late in the year", () =>
     );
     // So far over that the limit was reached before now: nothing left.
     expect(run(spec(200000))).toBe(0);
+    // A job starting or ending this year: year 0 is the money its checks have left this year,
+    // more or less than the months left would give.
+    expect(run({ ...spec(), leftThisYear: 15000 })).toBeCloseTo(15000, 1);
+    expect(run({ ...spec(30000), leftThisYear: 1000 })).toBeCloseTo(1000, 1);
+  });
+
+  it("saving stopped in a gap year: a spec keeps nothing, whatever it had left", () => {
+    const run = (gapYearStopSaving: boolean) => {
+      const year0 = calculateProjection(
+        makeInput({
+          asOfDate: new Date("2025-10-01"),
+          contributionSpecs: [
+            {
+              category: "401k" as AccountCategory,
+              name: "401k",
+              method: "fixed_monthly",
+              value: 1000,
+              salaryFraction: 1,
+              baseAnnual: 12000,
+              taxTreatment: "pre_tax",
+              allocationPriority: 0,
+              personId: 1,
+              leftThisYear: 5000,
+            },
+          ],
+          salaryByPerson: { 1: 100000, 2: 50000 },
+          // Person 1's job ends this year; person 2's ended last year (a gap year).
+          workingYearsByPerson: {
+            1: { start: null, end: 2025 },
+            2: { start: null, end: 2024 },
+          },
+          gapYearStopSaving,
+        }),
+      ).projectionByYear[0]!;
+      if (year0.phase !== "accumulation") throw new Error("accumulation");
+      return (
+        year0.slots.find((x) => x.category === "401k")?.employeeContrib ?? 0
+      );
+    };
+    expect(run(false)).toBeCloseTo(5000, 1);
+    expect(run(true)).toBe(0);
   });
 });

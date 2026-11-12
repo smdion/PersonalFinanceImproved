@@ -35,18 +35,18 @@ export function yearZeroBasis(
   // Pro-rate year 0 contributions/match based on months remaining in the year
   const proRate = yearIndex === 0 ? firstYearFraction : 1;
 
-  // Late in year 0, an over-limit contribution was paid at its configured
-  // rate so far: what's left is max(0, capped − configured × elapsed), not
-  // capped × the rest of the year. The cut per category, off the pro-rated.
+  // Year 0 counts what's left this year: a part-year job's (leftThisYear), or an over-limit row
+  // paid at its configured rate so far, max(0, capped − configured × elapsed). The cut per
+  // category comes off the pro-rated (negative: more is left than the months give).
   const lateYearCut = buildCategoryRecord(() => 0);
   if (yearIndex === 0)
     for (const s of contributionSpecs ?? []) {
-      if (s.configuredAnnual === undefined) continue;
-      const left = Math.max(
-        0,
-        s.baseAnnual - s.configuredAnnual * (1 - proRate),
-      );
-      lateYearCut[s.category] += Math.max(0, s.baseAnnual * proRate - left);
+      const left =
+        s.leftThisYear ??
+        (s.configuredAnnual === undefined
+          ? s.baseAnnual * proRate
+          : Math.max(0, s.baseAnnual - s.configuredAnnual * (1 - proRate)));
+      lateYearCut[s.category] += s.baseAnnual * proRate - left;
     }
   const totalLateYearCut = sumBy(Object.values(lateYearCut), (v) => v);
 
