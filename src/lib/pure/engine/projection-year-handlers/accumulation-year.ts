@@ -60,7 +60,6 @@ export function runAccumulationYear(
   const {
     balances,
     accountBalance,
-    activeEmployerMatchRateByCategory,
     activeBaseYearContributions,
     activeBaseYearEmployerMatch,
     activeEmployerMatchByParentCat,
@@ -101,22 +100,11 @@ export function runAccumulationYear(
     );
   const { targetContribution, yearEmployerMatch, personPay, contribution } =
     yearContributionTarget(
-      useRealContributions,
-      activeBaseYearContributions,
-      proRate,
-      totalLateYearCut,
-      contributionSpecs,
-      projectedSalary,
-      lgf,
-      config,
-      activeBaseYearEmployerMatch,
-      activeEmployerMatchRateByCategory,
-      input,
-      hasPerPersonSalary,
-      projectedSalaryByPerson,
-      currentSalary,
-      setup,
+      ctx,
       state,
+      setup,
+      { useRealContributions, proRate, lateYearCut, totalLateYearCut },
+      { config, lgf, contributionSpecs },
     );
   const { capped, yearLimits } = yearContributionLimits(
     contributionSpecs,

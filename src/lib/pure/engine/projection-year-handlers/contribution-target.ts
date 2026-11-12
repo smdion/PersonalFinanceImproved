@@ -54,25 +54,25 @@ export function yearZeroBasis(
 
 /** The year's contribution target and employer match, before IRS caps. */
 export function yearContributionTarget(
-  useRealContributions: ReturnType<
-    typeof yearZeroBasis
-  >["useRealContributions"],
-  activeBaseYearContributions: ProjectionLoopState["activeBaseYearContributions"],
-  proRate: number,
-  totalLateYearCut: number,
-  contributionSpecs: ProjectionLoopState["contributionSpecs"],
-  projectedSalary: number,
-  lgf: number,
-  config: ReturnType<typeof resolveAccumulationConfig>,
-  activeBaseYearEmployerMatch: ProjectionLoopState["activeBaseYearEmployerMatch"],
-  activeEmployerMatchRateByCategory: ProjectionLoopState["activeEmployerMatchRateByCategory"],
-  input: ProjectionContext["input"],
-  hasPerPersonSalary: boolean,
-  projectedSalaryByPerson: PreYearSetup["effectiveSalaryByPerson"],
-  currentSalary: number,
-  setup: PreYearSetup,
+  ctx: ProjectionContext,
   state: ProjectionLoopState,
+  setup: PreYearSetup,
+  basis: ReturnType<typeof yearZeroBasis>,
+  terms: {
+    config: ReturnType<typeof resolveAccumulationConfig>;
+    lgf: number;
+    contributionSpecs: ProjectionLoopState["contributionSpecs"];
+  },
 ) {
+  const { useRealContributions, proRate, totalLateYearCut } = basis;
+  const { config, lgf, contributionSpecs } = terms;
+  const { hasPerPersonSalary, input } = ctx;
+  const { effectiveSalary: projectedSalary } = setup;
+  const projectedSalaryByPerson = setup.effectiveSalaryByPerson;
+  const activeBaseYearContributions = state.activeBaseYearContributions;
+  const activeBaseYearEmployerMatch = state.activeBaseYearEmployerMatch;
+  const activeEmployerMatchRateByCategory =
+    state.activeEmployerMatchRateByCategory;
   let targetContribution: number;
   if (useRealContributions) {
     targetContribution = roundToCents(
@@ -119,7 +119,7 @@ export function yearContributionTarget(
   if (!useRealContributions && hasPerPersonSalary && contributionSpecs) {
     const payRatio = (personId: number | null | undefined) =>
       personId == null
-        ? safeDivide(projectedSalary, currentSalary, 0)
+        ? safeDivide(projectedSalary, input.currentSalary, 0)
         : safeDivide(
             projectedSalaryByPerson.get(personId) ?? 0,
             baseSalaryByPerson[personId] ?? 0,
@@ -140,7 +140,7 @@ export function yearContributionTarget(
         (spec.employerShare ?? 0) *
         (activeBaseYearEmployerMatch?.[spec.category] ??
           Math.max(0, activeEmployerMatchRateByCategory[spec.category] ?? 0) *
-            currentSalary) *
+            input.currentSalary) *
         payRatio(spec.personId) *
         proRate;
     for (const cat of getAllCategories())
