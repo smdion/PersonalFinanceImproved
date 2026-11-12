@@ -45,6 +45,7 @@ function k401(
     employerMaxMatchPct: "0.04",
     isPayrollDeducted: null as boolean | null,
     fromBonus: false as boolean | undefined,
+    ownership: "individual" as "individual" | "joint",
     // As the IRS-limit cap pass leaves them (none over a limit here).
     capPassed: true as const,
     ...over,

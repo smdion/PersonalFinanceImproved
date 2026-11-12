@@ -67,6 +67,7 @@ function row(
     employerMaxMatchPct: null,
     isPayrollDeducted: true,
     fromBonus: false,
+    ownership: "individual",
     ...over,
   };
 }
@@ -241,6 +242,7 @@ const planRow = (id: number, jobId: number | null, value: number) => ({
   employerMatchValue: null,
   employerMaxMatchPct: null,
   isPayrollDeducted: jobId !== null,
+  ownership: "individual" as const,
 });
 const salaryEntry = (salary: number): SalaryEntry => ({
   ...BLANK_SALARY_ENTRY,

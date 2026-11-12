@@ -8,10 +8,7 @@ import {
   isRetirementCategory,
   isTaxFree,
 } from "@/lib/config/account-types";
-import {
-  computeAnnualContribution,
-  parseEmployerMatch,
-} from "@/lib/pure/contributions/contribution-amount";
+import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import type { AccountViewMetrics } from "@/lib/pure/contributions/view-metrics";
@@ -25,14 +22,11 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
 import type { AccountTypeSnapshot } from "@/lib/pure/contributions/summary.types";
-import {
-  rowPaySchedule,
-  type JobRef,
-} from "@/lib/pure/contributions/contribution-rows";
+import { jointRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
 export function jointAccountRows(
-  jointContribs: ContributionAccountRow[],
-  activeJobs: readonly JobRef[],
+  contributions: ContributionAccountRow[],
+  jobs: Parameters<typeof jointRowAmounts>[1],
   perfLabelMap: Map<number, string>,
   asOfDate: Date,
   liveThroughToday: Set<number>,
@@ -42,16 +36,11 @@ export function jointAccountRows(
   limitsRecord: Record<string, number>,
   jointAccountTypes: AccountTypeSnapshot[],
 ) {
-  for (const c of jointContribs) {
-    const val = toNumber(String(c.contributionValue));
-    // No applicable schedule: a per-check amount is $0 (rowPaySchedule).
-    const { periodsPerYear } = rowPaySchedule(c, activeJobs);
-    const annual = computeAnnualContribution(
-      c.contributionMethod,
-      val,
-      0, // a joint account has no salary: a percent reads as $0
-      periodsPerYear,
-    );
+  for (const { row: c, annual, periodsPerYear } of jointRowAmounts(
+    contributions,
+    jobs,
+    asOfDate,
+  )) {
     const match = parseEmployerMatch(
       c.employerMatchType,
       toNumber(c.employerMatchValue),

@@ -469,31 +469,11 @@ export async function buildEnginePayload(
     accountBreakdownByCategory,
   };
 
+  // The row as the profile's contribution data reads it: its type narrowed, no label as null.
   const toContribDataRow = (c: (typeof activeContribs)[number]) => ({
-    id: c.id,
-    personId: c.personId,
-    jobId: c.jobId,
+    ...c,
     accountType: c.accountType as AccountCategory,
-    subType: c.subType,
     label: c.label ?? null,
-    parentCategory: c.parentCategory,
-    contributionMethod: c.contributionMethod,
-    contributionValue: c.contributionValue,
-    taxTreatment: c.taxTreatment,
-    employerMatchType: c.employerMatchType,
-    employerMatchValue: c.employerMatchValue,
-    employerMatchRate: c.employerMatchRate,
-    employerMaxMatchPct: c.employerMaxMatchPct,
-    isPayrollDeducted: c.isPayrollDeducted,
-    fromBonus: c.fromBonus,
-    performanceAccountId: c.performanceAccountId,
-    targetAnnual: c.targetAnnual,
-    allocationPriority: c.allocationPriority,
-    hsaCoverageType: c.hsaCoverageType,
-    capPassed: c.capPassed,
-    cappedValue: c.cappedValue,
-    cap: c.cap,
-    leftThisYear: c.leftThisYear,
   });
   const contribDataJobs = activeJobs.map((j) => ({
     id: j.id,

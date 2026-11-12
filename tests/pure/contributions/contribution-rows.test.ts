@@ -29,6 +29,7 @@ const hsa = (method: ContributionMethod, value: number): ContributionRow => ({
   employerMaxMatchPct: null,
   isPayrollDeducted: true,
   fromBonus: true,
+  ownership: "individual",
 });
 
 const jobs = [{ id: 1, personId: 1, payPeriod: "biweekly" }];

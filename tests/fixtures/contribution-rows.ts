@@ -39,6 +39,7 @@ export function makeContribRow(
     employerMatchType: null as EmployerMatchType | null,
     employerMatchValue: null,
     employerMaxMatchPct: null,
+    ownership: "individual" as const,
     fromBonus: undefined as boolean | undefined,
     // Rows as the IRS-limit cap pass leaves them (none over a limit here).
     capPassed: true as const,

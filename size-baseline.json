@@ -10,7 +10,7 @@
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 138,
     "src/app/(dashboard)/budget/budget-content.tsx": 635,
-    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 350,
+    "src/app/(dashboard)/budget/use-budget-derived-data.ts": 332,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 922,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
     "src/app/(dashboard)/historical/historical-content.tsx": 932,
@@ -256,7 +256,7 @@
     "src/lib/pure/contributions/account-match.ts": 66,
     "src/lib/pure/contributions/account-type-snapshots.ts": 289,
     "src/lib/pure/contributions/accumulation-order.ts": 28,
-    "src/lib/pure/contributions/cap-pass.ts": 185,
+    "src/lib/pure/contributions/cap-pass.ts": 181,
     "src/lib/pure/contributions/category-totals.ts": 146,
     "src/lib/pure/contributions/contribution-amount.ts": 74,
     "src/lib/pure/contributions/contribution-caps.ts": 563,
@@ -265,7 +265,7 @@
     "src/lib/pure/contributions/contribution-rows.ts": 149,
     "src/lib/pure/contributions/display-specs.ts": 136,
     "src/lib/pure/contributions/irs-limits.ts": 209,
-    "src/lib/pure/contributions/joint-accounts.ts": 176,
+    "src/lib/pure/contributions/joint-accounts.ts": 165,
     "src/lib/pure/contributions/paycheck-accounts.ts": 157,
     "src/lib/pure/contributions/person-snapshot.ts": 215,
     "src/lib/pure/contributions/profile-contrib-data.ts": 324,
@@ -397,7 +397,7 @@
     "src/server/services/contributions/live-data.ts": 85,
     "src/server/services/contributions/profile-detail.ts": 129,
     "src/server/services/contributions/profile.ts": 289,
-    "src/server/services/contributions/summary.ts": 718,
+    "src/server/services/contributions/summary.ts": 716,
     "src/server/services/debts/other-liabilities.ts": 54,
     "src/server/services/demo/demo-seed.ts": 462,
     "src/server/services/investments/current-balances.ts": 465,
@@ -408,14 +408,14 @@
     "src/server/services/net-worth/year-end-history.ts": 587,
     "src/server/services/paycheck/household-totals.ts": 91,
     "src/server/services/paycheck/job-net-pay.ts": 259,
-    "src/server/services/paycheck/summary.ts": 657,
+    "src/server/services/paycheck/summary.ts": 655,
     "src/server/services/performance/finalize-year.ts": 436,
     "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 122,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 209,
     "src/server/services/projection/coast-fire.ts": 294,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 841,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 821,
     "src/server/services/projection/engine-payload/load.ts": 156,
     "src/server/services/projection/engine-payload/profile-switches.ts": 445,
     "src/server/services/projection/projection-cache.ts": 183,
@@ -449,7 +449,7 @@
       "BudgetContent": 563
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
-      "useBudgetDerivedData": 286
+      "useBudgetDerivedData": 270
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
       "useBudgetPageState": 200
@@ -1030,7 +1030,7 @@
       "loadContributionMix": 168
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 631,
+      "computeContributionSummary": 630,
       "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
@@ -1055,7 +1055,7 @@
       "computeJobNetPayPerCheck": 219
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 563,
+      "computePaycheckSummary": 561,
       "computePaycheckSummary.results.map()": 201
     },
     "src/server/services/performance/finalize-year.ts": {
@@ -1066,7 +1066,7 @@
       "computeCoastFireSimulation": 230
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 764
+      "buildEnginePayload": 744
     },
     "src/server/services/projection/engine-payload/individual-accounts.ts": {
       "buildIndividualAccounts": 170

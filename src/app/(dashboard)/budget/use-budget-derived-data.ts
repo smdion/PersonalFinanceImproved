@@ -6,14 +6,12 @@
  * null `data` yields safe empty outputs.
  */
 
-import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContributions,
-  jointContributionMonthly,
 } from "@/components/budget/helpers";
 import { normalizeContributionKey } from "@/lib/config/account-types";
 import type {
@@ -153,26 +151,10 @@ export function useBudgetDerivedData({
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
-      for (const c of pData.jointContribs as Array<{
-        id: number;
-        accountType: string;
-        contributionMethod: Parameters<typeof jointContributionMonthly>[0];
-        contributionValue: string | number;
-        cappedValue?: number;
-      }>) {
+      for (const c of pData.jointContribs) {
         if (linkedContributionAccountIds.has(c.id)) continue;
-        const val = computeValue(c) || 0;
-        // Joint money has no pay schedule of its own: the first paycheck's.
-        const periods = (
-          pData.people as { paycheck: { periodsPerYear: number } | null }[]
-        ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
-        const monthly = jointContributionMonthly(
-          c.contributionMethod,
-          val,
-          periods,
-        );
         const key = normalizeContributionKey(c.accountType);
-        if (key) map.set(key, (map.get(key) ?? 0) + monthly);
+        if (key) map.set(key, (map.get(key) ?? 0) + c.monthly);
       }
 
       return map;

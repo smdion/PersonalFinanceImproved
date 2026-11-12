@@ -40,7 +40,6 @@ import type {
   PersonSnapshot,
 } from "@/lib/pure/contributions/summary.types";
 import { jointAccountRows } from "@/lib/pure/contributions/joint-accounts";
-import { isHouseholdJointRow } from "@/lib/pure/contributions/contribution-rows";
 import {
   contributionAccountsFor,
   perContributionRows,
@@ -55,7 +54,7 @@ import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContributionWindow } from "@/lib/utils/date";
 import { limitAge } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
-import { filterActiveJobs, findActiveJob } from "@/lib/pure/household/profiles";
+import { findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
@@ -674,7 +673,6 @@ export async function computeContributionSummary(
   );
 
   // Joint accounts — computed at household level, not attributed to any person
-  const jointContribs = effectiveContributions.filter(isHouseholdJointRow);
   const jointAccountTypes: AccountTypeSnapshot[] = [];
   // A joint account's IRS limit (a family HSA) through the same resolver
   // as each person's, at the oldest member's Dec 31 age for any catch-up.
@@ -683,8 +681,8 @@ export async function computeContributionSummary(
     ...people.map((p) => limitAge(p.dateOfBirth, currentYear)),
   );
   jointAccountRows(
-    jointContribs,
-    filterActiveJobs(effectiveJobs, asOfDate),
+    effectiveContributions,
+    effectiveJobs,
     perfLabelMap,
     asOfDate,
     liveThroughToday,

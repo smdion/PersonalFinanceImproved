@@ -81,7 +81,7 @@ type ContributionInputRow = {
   performanceAccountId?: number | null;
   targetAnnual?: string | number | null;
   allocationPriority: number;
-  ownership?: AccountOwnership | null;
+  ownership: AccountOwnership;
   hsaCoverageType?: string | null;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
@@ -268,7 +268,7 @@ export function buildProfileContribData(
           (c.performanceAccountId
             ? ctx.perfCategoryMap.get(c.performanceAccountId)
             : undefined),
-        ownership: c.ownership ?? "individual",
+        ownership: c.ownership,
         retirementBehavior: (c.performanceAccountId
           ? ctx.perfRetirementBehaviorMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["retirementBehavior"],

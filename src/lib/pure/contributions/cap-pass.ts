@@ -58,13 +58,12 @@ export type CapPassRow = {
   isPayrollDeducted?: boolean | null;
   fromBonus?: boolean;
   hsaCoverageType?: string | null;
+  ownership: ContributionRow["ownership"];
 };
 
-/** The aggregate's row shape, from a pass row. */
+/** The aggregate's row shape, from a pass row: its absent fields defaulted, amounts as stored. */
 const asContributionRow = (c: CapPassRow): ContributionRow => ({
-  id: c.id,
-  personId: c.personId,
-  jobId: c.jobId,
+  ...c,
   accountType: c.accountType as ContributionRow["accountType"],
   subType: c.subType ?? null,
   label: c.label ?? null,
@@ -72,13 +71,10 @@ const asContributionRow = (c: CapPassRow): ContributionRow => ({
   contributionMethod: c.contributionMethod ?? "percent_of_salary",
   contributionValue: c.contributionValue ?? 0,
   taxTreatment: c.taxTreatment ?? "pre_tax",
-  employerMatchType: c.employerMatchType,
   employerMatchValue:
     c.employerMatchValue == null ? null : String(c.employerMatchValue),
-  employerMatchRate: c.employerMatchRate,
   employerMaxMatchPct:
     c.employerMaxMatchPct == null ? null : String(c.employerMaxMatchPct),
-  isPayrollDeducted: c.isPayrollDeducted,
   fromBonus: c.fromBonus,
 });
 

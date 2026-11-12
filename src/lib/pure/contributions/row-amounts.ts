@@ -1,6 +1,7 @@
 /** Each contribution row's yearly employee money and the pay its match uses. */
 import {
   annualContributionWithBonus,
+  isHouseholdJointRow,
   jobPayFor,
   rowPaySchedule,
   type ContributionRow,
@@ -8,6 +9,66 @@ import {
   type JobSalaryRef,
 } from "./contribution-rows";
 import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
+import { filterActiveJobs, type JobLike } from "@/lib/pure/household/profiles";
+import { roundToCents } from "@/lib/utils/math";
+
+/** The fields one row's yearly amount reads. */
+type RowAmountInput = Parameters<typeof rowPaySchedule>[0] &
+  Parameters<typeof annualContributionWithBonus>[0];
+
+/** One row's yearly employee money, on its pay schedule (rowPaySchedule) and its job's pay
+ *  (jobPayFor; `salary` and `bonusGross` as used); an `incomplete` row is $0. The one per-row
+ *  amount every path reads. */
+export function rowAnnualContribution(
+  c: RowAmountInput,
+  activeJobs: readonly JobRef[],
+  jobSalaries: readonly JobSalaryRef[],
+): {
+  annual: number;
+  incomplete: boolean;
+  periodsPerYear: number;
+  salary: number;
+  bonusGross: number | undefined;
+} {
+  const pay = jobPayFor(c, jobSalaries);
+  const salary = pay?.salary ?? 0;
+  const bonusGross = pay?.bonusGross;
+  const { periodsPerYear, incomplete } = rowPaySchedule(c, activeJobs);
+  const annual = incomplete
+    ? 0
+    : annualContributionWithBonus(c, { salary, bonusGross }, periodsPerYear);
+  return { annual, incomplete, periodsPerYear, salary, bonusGross };
+}
+
+/** The household's joint rows (isHouseholdJointRow), each with its yearly money, on the jobs
+ *  current on `asOf`. A household joint row has no pay of its own. */
+export function jointRowAmounts<
+  R extends RowAmountInput & { isActive: boolean },
+>(
+  rows: readonly R[],
+  jobs: readonly (JobRef & Omit<JobLike, "personId">)[],
+  asOf: Date,
+) {
+  const activeJobs = filterActiveJobs(jobs, asOf);
+  return rows
+    .filter((c) => c.isActive && isHouseholdJointRow(c))
+    .map((row) => ({ row, ...rowAnnualContribution(row, activeJobs, []) }));
+}
+
+/** The household's joint rows with their monthly money in cents and whether it's incomplete. */
+export function jointRows<R extends RowAmountInput & { isActive: boolean }>(
+  rows: readonly R[],
+  jobs: Parameters<typeof jointRowAmounts>[1],
+  asOf: Date,
+) {
+  return jointRowAmounts(rows, jobs, asOf).map(
+    ({ row, annual, incomplete }) => ({
+      ...row,
+      monthly: roundToCents(annual / 12),
+      incomplete,
+    }),
+  );
+}
 
 /**
  * Each row's yearly employee money (computeValue), the pay its match uses, and rows with an
@@ -27,24 +88,16 @@ export function contributionRowAmounts(
   const annualById = new Map<number, number>();
   const bonusGroups = matchPayGroupsWithBonus([...activeContributions]);
   for (const c of activeContributions) {
-    const js = jobPayFor(c, jobSalaries);
-    const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = rowPaySchedule(
+    const { annual, incomplete, salary, bonusGross } = rowAnnualContribution(
       c,
       activeJobs,
+      jobSalaries,
     );
     if (incomplete) incompleteAccountIds.push(c.id);
-    const annual = incomplete
-      ? 0
-      : annualContributionWithBonus(
-          c,
-          { salary, bonusGross: js?.bonusGross },
-          periods,
-        );
     // Match on the pay the deferrals came from, bonus checks included.
     salaryById.set(
       c.id,
-      salary + (bonusGroups.has(matchGroupKey(c)) ? (js?.bonusGross ?? 0) : 0),
+      salary + (bonusGroups.has(matchGroupKey(c)) ? (bonusGross ?? 0) : 0),
     );
     annualById.set(c.id, annual);
   }

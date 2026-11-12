@@ -39,7 +39,7 @@ import { applyContribActiveFields } from "@/server/services/contributions/profil
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
 import { fetchContributionProfile } from "@/server/services/contributions/profile";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
-import { isHouseholdJointRow } from "@/lib/pure/contributions/contribution-rows";
+import { jointRows } from "@/lib/pure/contributions/row-amounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
@@ -616,9 +616,7 @@ export async function computePaycheckSummary(
     }),
   );
 
-  const jointContribs = effectiveContribs.filter(
-    (c) => c.isActive && isHouseholdJointRow(c),
-  );
+  const jointContribs = jointRows(effectiveContribs, effectiveJobs, asOfDate);
   const {
     householdIncome,
     householdFilingStatus,

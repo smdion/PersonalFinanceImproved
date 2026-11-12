@@ -19,7 +19,7 @@ import {
 
 /** A joint row the household pays; a joint row tied to a job sits in that job's rows. */
 export function isHouseholdJointRow(row: {
-  ownership?: AccountOwnership | null;
+  ownership: AccountOwnership;
   jobId: number | null;
 }): boolean {
   return row.ownership === "joint" && row.jobId === null;
@@ -33,7 +33,7 @@ export function rowPaySchedule<J extends JobRef>(
     contributionMethod?: string | null;
     jobId: number | null;
     personId: number | null;
-    ownership?: AccountOwnership | null;
+    ownership: AccountOwnership;
   },
   activeJobs: readonly J[],
 ): { periodsPerYear: number; incomplete: boolean; job: J | undefined } {
@@ -76,7 +76,7 @@ export type ContributionRow = {
   fromBonus: boolean | undefined;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
-  ownership?: AccountOwnership | null;
+  ownership: AccountOwnership;
 };
 
 export type JobRef = {

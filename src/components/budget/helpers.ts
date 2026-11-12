@@ -170,20 +170,6 @@ function monthlyContribution(
   return computeAnnualContribution(method, value, salary, periodsPerYear) / 12;
 }
 
-/**
- * A joint contribution's monthly figure. Joint money has no pay of its own:
- * a percent is $0, and a per-check amount follows the first paycheck's schedule (`periodsPerYear`,
- * undefined when nobody has one).
- */
-export function jointContributionMonthly(
-  method: ContributionMethod,
-  value: number,
-  periodsPerYear: number | undefined,
-): number {
-  if (method === "fixed_per_period" && !periodsPerYear) return value / 12;
-  return monthlyContribution(method, value, 0, periodsPerYear ?? 0);
-}
-
 /** Sum of all sinking-fund monthly commitments. */
 export function computeTotalSinking(
   sinkingFunds: SinkingFundLine[] | null | undefined,
