@@ -153,7 +153,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "retirement.returnRates.list" },
   { path: "projection.computeProjection", input: activeSelection },
   { path: "projection.computeCoastFire", input: activeSelection },
-  { path: "projection.computeCoastFireMC", input: activeSelection },
+  { path: "projection.computeCoastFireSimulation", input: activeSelection },
   {
     path: "projection.computeCoastFireProbe",
     // Five years from now, or the last working year if sooner; a
@@ -173,11 +173,11 @@ export const PROCEDURES: BaselineProcedure[] = [
   },
   // After the run above, with its input: the dashboard tile's cache read.
   {
-    path: "projection.peekMonteCarloSummary",
+    path: "projection.getSimulationSummary",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
   { path: "projection.computeStrategyComparison", input: activeSelection },
-  { path: "projection.analyzeStrategy", input: activeSelection },
+  { path: "projection.computeStrategyAnalysis", input: activeSelection },
   { path: "projection.computeStressTest", input: activeSelection },
   {
     path: "projection.computeRelocationFiProjection",
@@ -188,9 +188,9 @@ export const PROCEDURES: BaselineProcedure[] = [
     }),
   },
   { path: "projection.relocationScenarios.list" },
-  { path: "projection.projectTaxYears", input: activeSelection },
+  { path: "projection.computeTaxProjection", input: activeSelection },
   {
-    path: "projection.compareWithdrawalStrategies",
+    path: "projection.computeWithdrawalStrategyComparison",
     // The three the Tax optimization page compares.
     input: (ctx) => ({
       ...activeSelection(ctx),
@@ -210,12 +210,12 @@ export const PROCEDURES: BaselineProcedure[] = [
     }),
   },
   {
-    path: "projection.rothConversionWhatIf",
+    path: "projection.computeRothConversionWhatIf",
     variant: "optimize",
     input: (ctx) => ({ ...activeSelection(ctx), mode: "optimize" }),
   },
   {
-    path: "projection.rothConversionWhatIf",
+    path: "projection.computeRothConversionWhatIf",
     variant: "explicit",
     input: (ctx) => ({
       ...activeSelection(ctx),
@@ -228,7 +228,7 @@ export const PROCEDURES: BaselineProcedure[] = [
     input: activeSelection,
   },
   {
-    path: "projection.sweepSocialSecurityClaimingAges",
+    path: "projection.computeSocialSecurityClaimingSweep",
     input: (ctx) => {
       const { key, id } = primary(ctx);
       const pia = Number(ctx.household.retirement[key]?.ssMonthly ?? 0);

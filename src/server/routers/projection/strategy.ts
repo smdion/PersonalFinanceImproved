@@ -1,5 +1,5 @@
 /**
- * `computeStrategyComparison`, `analyzeStrategy` and `updateAssetClassOverrides`. Both
+ * `computeStrategyComparison`, `computeStrategyAnalysis` and `updateAssetClassOverrides`. Both
  * procedures build decumulation defaults via `buildDecumulationDefaults` (projection-run.ts) and
  * override only the compared variable (withdrawalStrategy + strategyParams per candidate).
  */
@@ -44,7 +44,7 @@ export const strategyRouter = createTRPCRouter({
     .query(({ ctx, input }) => computeStrategyComparison(ctx, input)),
 
   /** Analyze the active strategy — run what-if MC scenarios and return ranked recommendations. */
-  analyzeStrategy: protectedProcedure
+  computeStrategyAnalysis: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
       z

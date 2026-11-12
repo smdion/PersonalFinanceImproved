@@ -17,7 +17,7 @@
  *
  * The same for the Simulation and Coast FIRE rows (v0.10.4 plan commit
  * 27c, owner Q2: added as pins), whose `draw` and `roth` flags and reasons
- * no file compared: each of `computeCoastFire`, `computeCoastFireMC`,
+ * no file compared: each of `computeCoastFire`, `computeCoastFireSimulation`,
  * `computeCoastFireProbe` and `computeMonteCarloProjection`, called with
  * the router baseline's input, kept the same way, must equal
  * `__text__/<household>.simulation.json` (pin-runs.ts simulationText).

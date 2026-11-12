@@ -39,7 +39,7 @@ import {
 } from "@/server/services/projection/projection-cache";
 import { writeStamp } from "@/lib/utils/clock";
 
-/** `computeCoastFireMC`'s cacheable result, every branch of the search
+/** `computeCoastFireSimulation`'s cacheable result, every branch of the search
  *  (a not-configured state returns none and is never cached). */
 type CoastFireSimulationResult = {
   coastFireAge: number | null;

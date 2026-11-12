@@ -419,7 +419,7 @@ export async function projectionText(
  *  pin keeps (v0.10.4 plan commit 27c). */
 const SIMULATIONS = [
   "projection.computeCoastFire",
-  "projection.computeCoastFireMC",
+  "projection.computeCoastFireSimulation",
   "projection.computeCoastFireProbe",
   "projection.computeMonteCarloProjection",
 ].map((p) => PROCEDURES.find((procedure) => procedure.path === p)!);

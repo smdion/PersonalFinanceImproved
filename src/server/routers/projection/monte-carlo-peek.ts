@@ -22,7 +22,7 @@ const callMonteCarlo = createCallerFactory(monteCarloRouter);
 
 export const monteCarloPeekRouter = createTRPCRouter({
   /** The cached Simulation's success rate, today's bands and run time. */
-  peekMonteCarloSummary: protectedProcedure
+  getSimulationSummary: protectedProcedure
     // Checked by computeMonteCarloProjection's own input schema below.
     .input(z.custom<PeekInput>((v) => typeof v === "object" && v !== null))
     .query(async ({ ctx, input }) => {

@@ -49,7 +49,7 @@ export function renderWithdrawalRow(
 /** The Coast FIRE row: the baseline age, and the simulated one when run. */
 export function renderCoastFireRow(
   coastFireSimulationPeek:
-    RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
+    RouterOutputs["projection"]["computeCoastFireSimulation"] | undefined,
   ageLabel: (age: number) => string,
   coastFireData: Extract<
     RouterOutputs["projection"]["computeCoastFire"],
@@ -91,9 +91,9 @@ export function renderCoastFireRow(
 /** When the last simulation ran, when one has. */
 export function renderLastRunRow(
   simulationPeek:
-    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+    RouterOutputs["projection"]["getSimulationSummary"] | undefined,
   coastFireSimulationPeek:
-    RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
+    RouterOutputs["projection"]["computeCoastFireSimulation"] | undefined,
 ) {
   const lastRunAt = [
     simulationPeek?.computedAt,

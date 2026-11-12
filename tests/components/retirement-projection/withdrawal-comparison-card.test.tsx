@@ -33,7 +33,7 @@ vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("../trpc-mock")).trpc,
 }));
 
-const ANALYZE = "projection.analyzeStrategy";
+const ANALYZE = "projection.computeStrategyAnalysis";
 
 const strategies: ComponentProps<
   typeof WithdrawalComparisonCard

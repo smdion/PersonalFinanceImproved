@@ -14,14 +14,7 @@ const ROUTERS = path.resolve(__dirname, "../../src/server/routers");
 const VERB = /^(?:get|list|compute)(?:[A-Z]|$)/;
 
 /** Queries named before the rule; each is renamed with its callers. */
-const OFF_PREFIX_KNOWN = [
-  "projection.analyzeStrategy",
-  "projection.compareWithdrawalStrategies",
-  "projection.peekMonteCarloSummary",
-  "projection.projectTaxYears",
-  "projection.rothConversionWhatIf",
-  "projection.sweepSocialSecurityClaimingAges",
-];
+const OFF_PREFIX_KNOWN: string[] = [];
 
 /** A query path whose last part doesn't start with a read verb. */
 const offPrefix = (queryPath: string) =>

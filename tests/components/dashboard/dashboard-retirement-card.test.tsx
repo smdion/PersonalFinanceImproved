@@ -86,10 +86,11 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
 const milestoneInputsAre = (
   data: MockOutput<"milestones.computeInputs"> | undefined,
 ) => setQuery("milestones.computeInputs", data);
-const mcPeekIs = (data: MockOutput<"projection.peekMonteCarloSummary">) =>
-  setQuery("projection.peekMonteCarloSummary", data);
-const coastFireMcPeekIs = (data: MockOutput<"projection.computeCoastFireMC">) =>
-  setQuery("projection.computeCoastFireMC", data);
+const mcPeekIs = (data: MockOutput<"projection.getSimulationSummary">) =>
+  setQuery("projection.getSimulationSummary", data);
+const coastFireMcPeekIs = (
+  data: MockOutput<"projection.computeCoastFireSimulation">,
+) => setQuery("projection.computeCoastFireSimulation", data);
 
 // A line of 0 puts every household over it, so the match is left out of the
 // totals by default — what the scope test below reads.

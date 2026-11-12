@@ -29,7 +29,7 @@ export function retirementCardFigures(
     >;
   },
   simulationSummary:
-    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+    RouterOutputs["projection"]["getSimulationSummary"] | undefined,
 ) {
   const { settings, irsGroupLimits, portfolioByTaxTypeByParentCat } = projected;
   const retirementResult = {

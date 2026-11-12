@@ -13,8 +13,8 @@ vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
 }));
 
-const ROTH = "projection.rothConversionWhatIf";
-const COMPARE = "projection.compareWithdrawalStrategies";
+const ROTH = "projection.computeRothConversionWhatIf";
+const COMPARE = "projection.computeWithdrawalStrategyComparison";
 
 beforeEach(() => {
   resetTrpcMock();

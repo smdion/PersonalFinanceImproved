@@ -18,13 +18,16 @@ import {
 import { WITHDRAWAL_ROUTING_MODE_LABELS } from "@/lib/config/withdrawal-routing";
 
 type Selection = Partial<
-  Pick<RouterInputs["projection"]["compareWithdrawalStrategies"], "selection">
+  Pick<
+    RouterInputs["projection"]["computeWithdrawalStrategyComparison"],
+    "selection"
+  >
 >;
 
 // Orders are read from config when called. The default decumulation order
 // is already pre-tax-first ("traditional first"); "brokerage first" hoists
 // the overflow/taxable bucket to the front.
-function presetStrategies(): RouterInputs["projection"]["compareWithdrawalStrategies"]["strategies"] {
+function presetStrategies(): RouterInputs["projection"]["computeWithdrawalStrategyComparison"]["strategies"] {
   const tradFirst = getDefaultDecumulationOrder();
   const brokerageFirst = [
     ...tradFirst.filter((c) => isOverflowTarget(c)),
@@ -49,10 +52,11 @@ function ordersMatch(a: readonly string[], b: readonly string[]): boolean {
 
 export function WithdrawalComparison({ selection }: { selection: Selection }) {
   const strategies = presetStrategies();
-  const comparison = trpc.projection.compareWithdrawalStrategies.useQuery(
-    { ...selection, strategies },
-    { placeholderData: (prev) => prev },
-  );
+  const comparison =
+    trpc.projection.computeWithdrawalStrategyComparison.useQuery(
+      { ...selection, strategies },
+      { placeholderData: (prev) => prev },
+    );
   const { data } = comparison;
 
   if (queryPending(comparison))

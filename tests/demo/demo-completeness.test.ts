@@ -86,8 +86,8 @@ const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
     (c) => c.taxBuckets.computeBreakdown(),
   ],
   [
-    "tax-optimization: projection.projectTaxYears",
-    (c) => c.projection.projectTaxYears({}),
+    "tax-optimization: projection.computeTaxProjection",
+    (c) => c.projection.computeTaxProjection({}),
   ],
   [
     "tools: projection.relocationScenarios.list",

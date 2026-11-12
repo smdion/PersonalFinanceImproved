@@ -3,7 +3,7 @@
  * Assumptions band lets you VIEW a non-active Retirement Profile without activating
  * it (same "view without activating" contract computeProjection/
  * computeStrategyComparison already honor via retirementProfileId), but
- * computeMonteCarloProjection/computeCoastFire/computeCoastFireMC/
+ * computeMonteCarloProjection/computeCoastFire/computeCoastFireSimulation/
  * computeCoastFireProbe never accepted that field at all — so the band's
  * "view a non-active profile" silently never reached the actual
  * chart/table data, which kept showing the globally-active profile's
@@ -14,7 +14,7 @@
  * computeCoastFire which is deterministic) — both thread through the same
  * baseSharedInput object client-side (use-projection-queries.ts) and the
  * same buildEnginePayload({ retirementProfileId }) call server-side as
- * computeCoastFireMC/computeCoastFireProbe, so proving these two honor it
+ * computeCoastFireSimulation/computeCoastFireProbe, so proving these two honor it
  * is strong evidence the shared plumbing is correct for all four.
  */
 import "./setup-mocks";

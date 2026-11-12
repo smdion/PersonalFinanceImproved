@@ -312,12 +312,12 @@ export function useProjectionQueries(
   const runCoastFireMc = async () => {
     setActiveSimulationReruns((n) => n + 1);
     try {
-      const result = await utils.projection.computeCoastFireMC.fetch({
+      const result = await utils.projection.computeCoastFireSimulation.fetch({
         ...debouncedBaseInput,
         runId: coastFireSimulationRunId,
         forceRefresh: true,
       });
-      utils.projection.computeCoastFireMC.setData(
+      utils.projection.computeCoastFireSimulation.setData(
         { ...debouncedBaseInput, runId: coastFireSimulationRunId },
         result,
       );
@@ -398,7 +398,7 @@ export function useProjectionQueries(
       utils.projection.computeProjection.invalidate();
       utils.projection.computeMonteCarloProjection.invalidate();
       utils.projection.computeCoastFire.invalidate();
-      utils.projection.computeCoastFireMC.invalidate();
+      utils.projection.computeCoastFireSimulation.invalidate();
     },
   });
 
@@ -499,7 +499,7 @@ export function useProjectionQueries(
     coastFireMcAutoloadEnabled ||
     projectionView === "coastFire" ||
     projectionView === "coastFireToday";
-  const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
+  const coastFireMcQuery = trpc.projection.computeCoastFireSimulation.useQuery(
     { ...debouncedBaseInput, runId: coastFireSimulationRunId },
     {
       enabled:

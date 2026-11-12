@@ -30,7 +30,7 @@ export const socialSecurityRouter = createTRPCRouter({
    * Omitted `decumulationDefaults` = persisted settings; `selection` = the page's picks. Every
    * candidate uses a PIA-derived benefit, so it isn't comparable for a non-PIA household.
    */
-  sweepSocialSecurityClaimingAges: protectedProcedure
+  computeSocialSecurityClaimingSweep: protectedProcedure
     .input(
       z.strictObject({
         personId: z.number().int(),

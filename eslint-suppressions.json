@@ -5028,11 +5028,6 @@
       "count": 1
     }
   },
-  "src/server/routers/projection/coast-fire.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/server/routers/projection/scenarios.ts": {
     "ratchet/no-abbreviation": {
       "count": 2

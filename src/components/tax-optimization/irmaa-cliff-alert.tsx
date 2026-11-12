@@ -8,7 +8,7 @@ import type { RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 
 export type TaxYearRow =
-  RouterOutputs["projection"]["projectTaxYears"]["rows"][number];
+  RouterOutputs["projection"]["computeTaxProjection"]["rows"][number];
 
 export function IrmaaCliffAlert({ rows }: { rows: TaxYearRow[] }) {
   const surchargeYears = rows.filter((r) => r.irmaaSurcharge > 0);

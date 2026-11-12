@@ -1,6 +1,6 @@
 /**
  * Coast FIRE endpoints: `computeCoastFire` (deterministic binary search for the earliest
- * age stopping contributions still funds expenses) and `computeCoastFireMC` (Simulation).
+ * age stopping contributions still funds expenses) and `computeCoastFireSimulation` (Simulation).
  */
 import { z } from "zod/v4";
 import {
@@ -58,7 +58,7 @@ export const coastFireRouter = createTRPCRouter({
    * `COMPARISON_SEED` and the default preset. Monotonicity is approximate (tax cliffs), so
    * `lo - 1` is re-probed and a pass returns a warning. Rate-limited (~5-6 probes).
    */
-  computeCoastFireMC: protectedProcedure
+  computeCoastFireSimulation: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
       z.strictObject({

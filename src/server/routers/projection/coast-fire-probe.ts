@@ -1,6 +1,6 @@
 /**
  * Coast FIRE Custom Age probe: "what happens if I stop at age N" for any N, where
- * `computeCoastFireMC` answers only the earliest passing age or "today". Its own file:
+ * `computeCoastFireSimulation` answers only the earliest passing age or "today". Its own file:
  * the result shape differs (see `CoastFireProbeResult`).
  */
 import { z } from "zod/v4";
@@ -20,7 +20,7 @@ import { computeCoastFireProbe } from "@/server/services/projection/coast-fire-p
 export const coastFireProbeRouter = createTRPCRouter({
   /**
    * One Simulation run with contributions and employer match zeroed from `probeAge` on,
-   * via `buildCoastFireProfileSwitches` (computeCoastFireMC's probe mechanism).
+   * via `buildCoastFireProfileSwitches` (computeCoastFireSimulation's probe mechanism).
    * Returns `CoastFireProbeResult`.
    */
   computeCoastFireProbe: protectedProcedure

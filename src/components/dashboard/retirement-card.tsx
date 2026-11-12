@@ -48,14 +48,14 @@ function RetirementCardImpl() {
   // Peek-only reads of the projection cache: never start a simulation run (slow,
   // rate-limited); show the last run if inputs still match. Null = nothing cached.
   const { data: simulationSummary } =
-    trpc.projection.peekMonteCarloSummary.useQuery(
+    trpc.projection.getSimulationSummary.useQuery(
       engineInput,
       // Always re-read: a run made on the Retirement page should show here
       // as soon as the dashboard is opened again.
       { staleTime: 0, enabled: ready },
     );
   const { data: coastFireSimulationSummary } =
-    trpc.projection.computeCoastFireMC.useQuery(
+    trpc.projection.computeCoastFireSimulation.useQuery(
       { ...engineInput, peekOnly: true },
       { staleTime: 0, enabled: ready },
     );

@@ -14,7 +14,7 @@ vi.mock("@/components/ui/help-tip", () => ({
 }));
 
 // SocialSecuritySection renders ClaimingAgeExplorer once a person has PIA
-// set, which calls trpc.projection.sweepSocialSecurityClaimingAges.useQuery
+// set, which calls trpc.projection.computeSocialSecurityClaimingSweep.useQuery
 // directly (same pattern as RothExplorer — see tests/components/
 // tax-optimization.test.tsx's own mock). Every existing test in this file
 // leaves PIA unset, so ClaimingAgeExplorer never mounts and this mock is
@@ -23,7 +23,7 @@ vi.mock("@/lib/trpc", async () => ({
   trpc: (await import("./trpc-mock")).trpc,
 }));
 
-const SWEEP = "projection.sweepSocialSecurityClaimingAges";
+const SWEEP = "projection.computeSocialSecurityClaimingSweep";
 /** Each render's sweep query call: [input, options]. */
 const sweepCalls = () =>
   queryCalls(SWEEP).map((input, i) => [input, queryOptions(SWEEP)[i]]);

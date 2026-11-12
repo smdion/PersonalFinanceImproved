@@ -41,7 +41,7 @@ export type Context = {
   session: Session | null;
   demoSchema: string | null;
   /** Set only by `internalCtx()` below, never from request data: a nested
-   *  call for a signed-in request (e.g. `peekMonteCarloSummary`) skips the
+   *  call for a signed-in request (e.g. `getSimulationSummary`) skips the
    *  authenticated rate limit; every other middleware still runs. */
   internal?: boolean;
   /** The HTTP request's shared reads (`scope.load`); none in a mutation. */

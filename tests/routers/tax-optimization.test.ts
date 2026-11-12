@@ -1,6 +1,6 @@
 /**
- * Tax Optimization surface — `projection.projectTaxYears` /
- * `compareWithdrawalStrategies` / `rothConversionWhatIf`.
+ * Tax Optimization surface — `projection.computeTaxProjection` /
+ * `computeWithdrawalStrategyComparison` / `computeRothConversionWhatIf`.
  *
  * Mirrors `withdrawal-bracket-optimizer.test.ts`: null/empty result when
  * unseeded, a real shape with a fixed seeded household, auth gating, and
@@ -76,18 +76,18 @@ function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
     .run();
 }
 
-describe("projection router — projectTaxYears", () => {
+describe("projection router — computeTaxProjection", () => {
   it("no return rate: each tool says to set one, instead of the engine throwing", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
       db.delete(schema.returnRateTable).run();
-      expect(await caller.projection.projectTaxYears({})).toMatchObject({
+      expect(await caller.projection.computeTaxProjection({})).toMatchObject({
         rows: [],
         notConfigured: "no_return_rate",
       });
       expect(
-        await caller.projection.compareWithdrawalStrategies({
+        await caller.projection.computeWithdrawalStrategyComparison({
           strategies: [
             { label: "A", mode: "waterfall" },
             { label: "B", mode: "bracket_filling" },
@@ -95,7 +95,9 @@ describe("projection router — projectTaxYears", () => {
         }),
       ).toMatchObject({ strategies: [], notConfigured: "no_return_rate" });
       expect(
-        await caller.projection.rothConversionWhatIf({ mode: "optimize" }),
+        await caller.projection.computeRothConversionWhatIf({
+          mode: "optimize",
+        }),
       ).toMatchObject({ result: null, notConfigured: "no_return_rate" });
     } finally {
       cleanup();
@@ -105,7 +107,7 @@ describe("projection router — projectTaxYears", () => {
   it("returns an empty result when no retirement data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       expect(res).toEqual({ rows: [], meta: null });
     } finally {
       cleanup();
@@ -118,7 +120,9 @@ describe("projection router — projectTaxYears", () => {
       expires: "",
     } as never);
     try {
-      await expect(caller.projection.projectTaxYears({})).rejects.toThrow();
+      await expect(
+        caller.projection.computeTaxProjection({}),
+      ).rejects.toThrow();
     } finally {
       cleanup();
     }
@@ -129,7 +133,7 @@ describe("projection router — projectTaxYears", () => {
     try {
       seedTaxOptHousehold(db);
 
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       // The engine's decumulation phase spans retirementAge..endAge
       // exclusive of the final age — 25 years for 65->90.
       expect(res.rows.length).toBe(END_AGE - RETIREMENT_AGE);
@@ -159,7 +163,7 @@ describe("projection router — projectTaxYears", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       // Headline figures first.
       expect(res.rows).toHaveLength(25);
       expect(res.rows[0]!.federalTax).toBe(198.47);
@@ -244,7 +248,7 @@ describe("projection router — withdrawal routing DB fallback", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      // No client override is ever sent here (compareWithdrawalStrategies's
+      // No client override is ever sent here (computeWithdrawalStrategyComparison's
       // input carries no decumulationDefaults) — this only proves the DB
       // value if the household's own persisted setting differs from
       // "bracket_filling" and the resolved mode reflects THAT, not the
@@ -253,7 +257,7 @@ describe("projection router — withdrawal routing DB fallback", () => {
         .set({ withdrawalRoutingMode: "waterfall" })
         .run();
 
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           { label: "A", mode: "waterfall" },
           { label: "B", mode: "bracket_filling" },
@@ -277,12 +281,12 @@ describe("projection router — withdrawal routing DB fallback", () => {
   });
 });
 
-describe("projection router — compareWithdrawalStrategies", () => {
+describe("projection router — computeWithdrawalStrategyComparison", () => {
   it("scores each strategy and names the cheapest as baselineLabel", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           {
             label: "Traditional first",
@@ -294,7 +298,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
       });
       // 2 named strategies + the server's own "Your current settings" baseline
       // row (the household's real resolved defaults, scored the same way —
-      // see compareWithdrawalStrategies's docblock).
+      // see computeWithdrawalStrategyComparison's docblock).
       expect(res.strategies).toHaveLength(3);
       expect(
         res.strategies.some((s) => s.label === "Your current settings"),
@@ -319,7 +323,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           {
             label: "trad-first",
@@ -342,12 +346,12 @@ describe("projection router — compareWithdrawalStrategies", () => {
   });
 });
 
-describe("projection router — rothConversionWhatIf", () => {
+describe("projection router — computeRothConversionWhatIf", () => {
   it("optimize mode delegates to optimizeRothBracketTarget (candidates sorted by netCost)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.rothConversionWhatIf({
+      const res = await caller.projection.computeRothConversionWhatIf({
         mode: "optimize",
       });
       expect(res.mode).toBe("optimize");
@@ -374,12 +378,12 @@ describe("projection router — rothConversionWhatIf", () => {
       seedTaxOptHousehold(db);
 
       // Baseline projection to learn the horizon + starting Traditional balance.
-      const base = await caller.projection.projectTaxYears({});
+      const base = await caller.projection.computeTaxProjection({});
       const firstYear = base.rows[0]!.year;
       const lastYear = base.rows[base.rows.length - 1]!.year;
       const startingTraditional = base.rows[0]!.balanceByTaxType.preTax;
 
-      const res = await caller.projection.rothConversionWhatIf({
+      const res = await caller.projection.computeRothConversionWhatIf({
         mode: "explicit",
         conversionTargets: [{ year: firstYear, targetRate: 0.24 }],
       });

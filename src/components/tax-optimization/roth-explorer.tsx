@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Roth conversion explorer over `rothConversionWhatIf`: "Optimize" (optimizeRothBracketTarget's
+ * Roth conversion explorer over `computeRothConversionWhatIf`: "Optimize" (optimizeRothBracketTarget's
  * lifetime-tax search) or a target rate from a start year, shown before/after with break-even year
  * and a per-year table. User-set values are "adjusted", never "overridden".
  */
@@ -12,14 +12,14 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Selection = Partial<
-  Pick<RouterInputs["projection"]["rothConversionWhatIf"], "selection">
+  Pick<RouterInputs["projection"]["computeRothConversionWhatIf"], "selection">
 >;
 
 export function RothExplorer({ selection }: { selection: Selection }) {
   const [targetPercent, setTargetPercent] = useState(22);
   const [startYear, setStartYear] = useState<number | "">("");
 
-  const optimize = trpc.projection.rothConversionWhatIf.useQuery(
+  const optimize = trpc.projection.computeRothConversionWhatIf.useQuery(
     { ...selection, mode: "optimize" as const },
     { placeholderData: (prev) => prev },
   );
@@ -30,7 +30,7 @@ export function RothExplorer({ selection }: { selection: Selection }) {
   const candidates = optResult?.candidates ?? [];
 
   // Explicit-schedule run only fires once a start year is chosen.
-  const explicit = trpc.projection.rothConversionWhatIf.useQuery(
+  const explicit = trpc.projection.computeRothConversionWhatIf.useQuery(
     startYear === ""
       ? { ...selection, mode: "optimize" as const } // inert placeholder; disabled below
       : {

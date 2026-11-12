@@ -111,7 +111,7 @@ export async function computeMonteCarloProjection(
   } = payload;
 
   // Build the full engine input — mirrors getProjection so MC respects the same overrides.
-  // Note: Coast FIRE scenario rendering goes through computeCoastFireMC (which returns
+  // Note: Coast FIRE scenario rendering goes through computeCoastFireSimulation (which returns
   // its final-probe mcResult for the chart), NOT this procedure with a coast flag.
   const engineInput = {
     ...(await prepareEngineInput(ctx.db, payload, input)),

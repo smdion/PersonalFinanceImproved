@@ -2,7 +2,7 @@
 
 /**
  * Coast FIRE hero KPI card: the deterministic age always; once the scenario view or "Validate"
- * runs `computeCoastFireMC`, that one result powers this card and the chart's fan bands.
+ * runs `computeCoastFireSimulation`, that one result powers this card and the chart's fan bands.
  */
 
 import { DEFAULT_SIMULATION } from "@/lib/constants";
@@ -23,9 +23,11 @@ type CoastFireInput = Parameters<
   typeof trpc.projection.computeCoastFire.useQuery
 >[0];
 
-/** The part of computeCoastFireMC's result the card reads. */
+/** The part of computeCoastFireSimulation's result the card reads. */
 type CoastFireSimulationResult = Pick<
-  NonNullable<RouterOutputs["projection"]["computeCoastFireMC"]["result"]>,
+  NonNullable<
+    RouterOutputs["projection"]["computeCoastFireSimulation"]["result"]
+  >,
   | "coastFireAge"
   | "status"
   | "successRate"

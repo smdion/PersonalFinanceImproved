@@ -128,7 +128,7 @@
     "src/components/profiles/what-if/what-if-savings-step.tsx": 46,
     "src/components/profiles/what-if/what-if-step.tsx": 59,
     "src/components/profiles/what-if/what-if-tab.tsx": 570,
-    "src/components/retirement-projection/coast-fire-card.tsx": 391,
+    "src/components/retirement-projection/coast-fire-card.tsx": 393,
     "src/components/retirement-projection/decumulation-config.tsx": 441,
     "src/components/retirement-projection/index.tsx": 159,
     "src/components/retirement-projection/overrides/override-field-parts.tsx": 118,

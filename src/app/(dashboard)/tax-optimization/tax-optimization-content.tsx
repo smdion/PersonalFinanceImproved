@@ -3,7 +3,7 @@
 /**
  * Tax Optimization: Roth-conversion explorer and withdrawal-strategy comparison, each
  * scoring many engine runs. Assumptions edit via the shared `AssumptionsBand` (active
- * Retirement Profile); `projectTaxYears` feeds the IRMAA callout and brackets note.
+ * Retirement Profile); `computeTaxProjection` feeds the IRMAA callout and brackets note.
  */
 import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useMemo, useState } from "react";
@@ -59,7 +59,7 @@ export function TaxOptimizationContent() {
   });
   const meta = metaQuery.data;
 
-  const taxQuery = trpc.projection.projectTaxYears.useQuery(selection, {
+  const taxQuery = trpc.projection.computeTaxProjection.useQuery(selection, {
     placeholderData: (prev) => prev,
   });
 

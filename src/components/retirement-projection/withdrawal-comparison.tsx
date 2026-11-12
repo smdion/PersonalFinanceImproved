@@ -85,7 +85,7 @@ export function WithdrawalComparisonCard({
   const [analyzerEnabled, setAnalyzerEnabled] = useState(false);
 
   // Analyzer query — only runs when user opts in
-  const analyzerQuery = trpc.projection.analyzeStrategy.useQuery(
+  const analyzerQuery = trpc.projection.computeStrategyAnalysis.useQuery(
     analyzerInput ?? {},
     { enabled: analyzerEnabled && !!analyzerInput },
   );

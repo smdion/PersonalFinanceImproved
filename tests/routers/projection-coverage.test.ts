@@ -984,10 +984,10 @@ describe("projection router — computeMonteCarloProjection", () => {
 });
 
 // ---------------------------------------------------------------------------
-// peekMonteCarloSummary — the dashboard tile's slice of a cached run
+// getSimulationSummary — the dashboard tile's slice of a cached run
 // ---------------------------------------------------------------------------
 
-describe("projection router — peekMonteCarloSummary", () => {
+describe("projection router — getSimulationSummary", () => {
   it("returns the cached run's success rate, today's bands and run time, never running trials", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1002,7 +1002,7 @@ describe("projection router — peekMonteCarloSummary", () => {
         seed: 42,
       } as const;
       const runsBefore = mcRuns.count;
-      const empty = await caller.projection.peekMonteCarloSummary(input);
+      const empty = await caller.projection.getSimulationSummary(input);
       expect(empty).toEqual({ result: null, computedAt: null });
       expect(mcRuns.count).toBe(runsBefore);
 
@@ -1013,7 +1013,7 @@ describe("projection router — peekMonteCarloSummary", () => {
         peekOnly: true,
       });
       assert(full.result && "simulationInputs" in full);
-      const peek = await caller.projection.peekMonteCarloSummary(input);
+      const peek = await caller.projection.getSimulationSummary(input);
       expect(mcRuns.count).toBe(runsBefore + 1);
       expect(peek).toEqual({
         result: {
@@ -1043,7 +1043,7 @@ describe("projection router — peekMonteCarloSummary", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       await expect(
-        caller.projection.peekMonteCarloSummary({ numTrials: 5 }),
+        caller.projection.getSimulationSummary({ numTrials: 5 }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     } finally {
       cleanup();
@@ -1802,7 +1802,7 @@ describe("projection router — MC edge cases", () => {
         preset: "aggressive",
       });
       expect(comparison).toMatchObject({ notConfigured: "no_presets" });
-      const analysis = await caller.projection.analyzeStrategy({
+      const analysis = await caller.projection.computeStrategyAnalysis({
         preset: "aggressive",
       });
       expect(analysis).toMatchObject({
@@ -1970,14 +1970,14 @@ describe("projection router — MC edge cases", () => {
 });
 
 // ---------------------------------------------------------------------------
-// analyzeStrategy
+// computeStrategyAnalysis
 // ---------------------------------------------------------------------------
 
-describe("projection router — analyzeStrategy", () => {
+describe("projection router — computeStrategyAnalysis", () => {
   it("returns empty recommendations when no retirement data exists", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const response = await caller.projection.analyzeStrategy();
+      const response = await caller.projection.computeStrategyAnalysis();
       expect(response.baseline).toBeNull();
       expect(response.recommendations).toEqual([]);
       expect(response.strategyLabel).toBe("");
@@ -1992,7 +1992,7 @@ describe("projection router — analyzeStrategy", () => {
       seedFullProjectionData(db);
       // No asset classes or glide path
       clearSimulationPresets(db);
-      const response = await caller.projection.analyzeStrategy();
+      const response = await caller.projection.computeStrategyAnalysis();
       expect(response.baseline).toBeNull();
       expect(response.recommendations).toEqual([]);
     } finally {
@@ -2010,7 +2010,7 @@ describe("projection router — analyzeStrategy", () => {
       seedDefaultMcPreset(db);
       seedCorrelations(db);
 
-      const response = await caller.projection.analyzeStrategy();
+      const response = await caller.projection.computeStrategyAnalysis();
 
       expect(response.baseline).not.toBeNull();
       expect(response.baseline!.successRate).toBeGreaterThanOrEqual(0);
@@ -2044,7 +2044,7 @@ describe("projection router — analyzeStrategy", () => {
         .set({ withdrawalStrategy: "guyton_klinger" })
         .run();
 
-      const response = await caller.projection.analyzeStrategy();
+      const response = await caller.projection.computeStrategyAnalysis();
 
       expect(response.baseline).not.toBeNull();
       expect(response.strategyLabel).toBe("Guardrails (Guyton-Klinger)");
@@ -2158,9 +2158,9 @@ describe("projection router — computeCoastFire", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeCoastFireMC
+// computeCoastFireSimulation
 // ---------------------------------------------------------------------------
-// computeCoastFireMC fetches `mc_preset_glide_paths` via raw SQL
+// computeCoastFireSimulation fetches `mc_preset_glide_paths` via raw SQL
 // (coast-fire.ts). This call site was missed by the original F5 fix
 // (commit 53c9fa5) because it uses a generic type parameter —
 // `ctx.db.execute<{...}>(...)` — which the grep used to find F5's other
@@ -2168,13 +2168,13 @@ describe("projection router — computeCoastFire", () => {
 // closes). Found via this test file during T14 work and fixed in a
 // follow-up commit by switching to compat.ts's queryRaw(), same as F5.
 
-describe("projection router — computeCoastFireMC", () => {
+describe("projection router — computeCoastFireSimulation", () => {
   it("says there are no simulation presets instead of unreachable", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
       clearSimulationPresets(db);
-      const response = await caller.projection.computeCoastFireMC({});
+      const response = await caller.projection.computeCoastFireSimulation({});
       expect(response).toEqual({
         result: null,
         computedAt: null,
@@ -2198,7 +2198,7 @@ describe("projection router — computeCoastFireMC", () => {
         .set({ isActive: false })
         .where(eq(schema.assetClassParams.id, 2))
         .run();
-      const response = await caller.projection.computeCoastFireMC({});
+      const response = await caller.projection.computeCoastFireSimulation({});
       expect(response).toMatchObject({ notConfigured: "glide_path_mismatch" });
     } finally {
       cleanup();
@@ -2228,7 +2228,7 @@ describe("projection router — computeCoastFireMC", () => {
       seedFullProjectionData(db);
       clearSimulationPresets(db);
       seedDefaultMcPreset(db);
-      const response = await caller.projection.computeCoastFireMC({});
+      const response = await caller.projection.computeCoastFireSimulation({});
       expect(response).toMatchObject({ notConfigured: "no_asset_classes" });
     } finally {
       cleanup();
@@ -2238,7 +2238,7 @@ describe("projection router — computeCoastFireMC", () => {
   it("returns a null result when no data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const response = await caller.projection.computeCoastFireMC({});
+      const response = await caller.projection.computeCoastFireSimulation({});
       expect(response).toEqual({ result: null, computedAt: null });
     } finally {
       cleanup();
@@ -2271,7 +2271,7 @@ describe("projection router — computeCoastFireMC", () => {
         })
         .run();
 
-      const response = await caller.projection.computeCoastFireMC({});
+      const response = await caller.projection.computeCoastFireSimulation({});
       expect(response.result).not.toBeNull();
       expect(typeof response.result?.successRate).toBe("number");
     } finally {
@@ -2304,7 +2304,7 @@ describe("projection router — computeCoastFireMC", () => {
         })
         .run();
 
-      const response = await caller.projection.computeCoastFireMC({
+      const response = await caller.projection.computeCoastFireSimulation({
         decumulationDefaults: { withdrawalRoutingMode: "waterfall" },
       });
       expect(response.result).not.toBeNull();
@@ -2425,7 +2425,7 @@ describe("projection router — computeCoastFireProbe", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeCoastFireMC — persistent projection cache
+// computeCoastFireSimulation — persistent projection cache
 // ---------------------------------------------------------------------------
 
 function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
@@ -2447,7 +2447,7 @@ function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
     .run();
 }
 
-describe("projection router — computeCoastFireMC cache", () => {
+describe("projection router — computeCoastFireSimulation cache", () => {
   fewTrialsForCacheTests();
 
   it("a second identical call is served from cache (same result, one cache row)", async () => {
@@ -2460,9 +2460,9 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedGlidePath(db);
       seedDefaultMcPreset(db);
 
-      const first = await caller.projection.computeCoastFireMC({});
+      const first = await caller.projection.computeCoastFireSimulation({});
       const runsAfterFirst = mcRuns.count;
-      const second = await caller.projection.computeCoastFireMC({});
+      const second = await caller.projection.computeCoastFireSimulation({});
 
       expect(second.result).toEqual(first.result);
       expect(runsAfterFirst).toBeGreaterThan(0);
@@ -2484,13 +2484,15 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedGlidePath(db);
       seedDefaultMcPreset(db);
 
-      await caller.projection.computeCoastFireMC({});
+      await caller.projection.computeCoastFireSimulation({});
       const before = db.select().from(schema.projectionCache).all();
       expect(before).toHaveLength(1);
       const computedAtBefore = before[0]!.computedAt;
       const runsBefore = mcRuns.count;
 
-      await caller.projection.computeCoastFireMC({ forceRefresh: true });
+      await caller.projection.computeCoastFireSimulation({
+        forceRefresh: true,
+      });
 
       const after = db.select().from(schema.projectionCache).all();
       expect(after).toHaveLength(1);
@@ -2514,7 +2516,7 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedDefaultMcPreset(db);
 
       const runsBefore = mcRuns.count;
-      const response = await caller.projection.computeCoastFireMC({
+      const response = await caller.projection.computeCoastFireSimulation({
         peekOnly: true,
       });
 
@@ -2538,9 +2540,9 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedGlidePath(db);
       seedDefaultMcPreset(db);
 
-      const real = await caller.projection.computeCoastFireMC({});
+      const real = await caller.projection.computeCoastFireSimulation({});
       const runsAfterReal = mcRuns.count;
-      const peeked = await caller.projection.computeCoastFireMC({
+      const peeked = await caller.projection.computeCoastFireSimulation({
         peekOnly: true,
       });
 

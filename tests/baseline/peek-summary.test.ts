@@ -1,6 +1,6 @@
 /**
  * The dashboard Retirement tile shows the same figures from
- * `projection.peekMonteCarloSummary` as it did from the full
+ * `projection.getSimulationSummary` as it did from the full
  * `computeMonteCarloProjection` peek, for every baseline household: the
  * tile's own derivations (success rate and its tone, nest-egg median and
  * range at any target age) are computed from both recorded responses and
@@ -48,7 +48,7 @@ function fromFull(household: string): Tile {
 
 /** What the card reads from the summary today. */
 function fromSummary(household: string): Tile {
-  const peek = read(household, "projection.peekMonteCarloSummary") as {
+  const peek = read(household, "projection.getSimulationSummary") as {
     result: { successRate: number; todayBands: Band[] } | null;
   };
   return peek.result
