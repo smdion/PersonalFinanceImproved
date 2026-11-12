@@ -452,6 +452,13 @@ const rateLimitedAuthedBase = baseProcedure.use(
 
 // ── Procedures ──
 
+/** The request's session; UNAUTHORIZED when it has none. */
+function requireSession(ctx: Context): Session {
+  if (!ctx.session?.user)
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
+  return ctx.session;
+}
+
 // Public — no auth required (health check), rate-limited
 export const publicProcedure = baseProcedure
   .use(rateLimitMiddleware)
@@ -460,44 +467,24 @@ export const publicProcedure = baseProcedure
 // Protected — requires valid session (all dashboard queries), rate-limited per user
 export const protectedProcedure = rateLimitedAuthedBase
   .meta({ auth: "protected" })
-  .use(async ({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not authenticated",
-      });
-    }
-    return next({
-      ctx: { ...ctx, session: ctx.session },
-    });
-  });
+  .use(async ({ ctx, next }) =>
+    next({ ctx: { ...ctx, session: requireSession(ctx) } }),
+  );
 
 // Admin — requires Admin role + logs mutations to change_log
 export const adminProcedure = rateLimitedAuthedBase
   .meta({ auth: "admin" })
   .use(async ({ ctx, next, path, type, getRawInput }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not authenticated",
-      });
-    }
-    if (ctx.session.user.role !== "admin") {
+    const session = requireSession(ctx);
+    if (session.user.role !== "admin") {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "Admin access required",
       });
     }
-    const result = await next({
-      ctx: { ...ctx, session: ctx.session },
-    });
-    if (type === "mutation" && result.ok) {
-      logMutation(
-        ctx.session,
-        path,
-        await getRawInput().catch(() => undefined),
-      );
-    }
+    const result = await next({ ctx: { ...ctx, session } });
+    if (type === "mutation" && result.ok)
+      logMutation(session, path, await getRawInput().catch(() => undefined));
     return result;
   });
 
@@ -506,28 +493,16 @@ function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })
     .use(async ({ ctx, next, path, type, getRawInput }) => {
-      if (!ctx.session?.user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Not authenticated",
-        });
-      }
-      if (!userHasPermission(ctx.session.user, permission)) {
+      const session = requireSession(ctx);
+      if (!userHasPermission(session.user, permission)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `${permission} permission required`,
         });
       }
-      const result = await next({
-        ctx: { ...ctx, session: ctx.session },
-      });
-      if (type === "mutation" && result.ok) {
-        logMutation(
-          ctx.session,
-          path,
-          await getRawInput().catch(() => undefined),
-        );
-      }
+      const result = await next({ ctx: { ...ctx, session } });
+      if (type === "mutation" && result.ok)
+        logMutation(session, path, await getRawInput().catch(() => undefined));
       return result;
     });
 }
