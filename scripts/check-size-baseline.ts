@@ -5,6 +5,8 @@
  * An unrecorded file over FILE_LIMIT fails. New long functions are caught by
  * ESLint's max-lines-per-function. `--update` lowers entries, never raises.
  * `--move <old> <new>…` keeps a moved file's entries under its new path.
+ * `--raise-renamed <file>…` records the given files' grown entries at their
+ * size (rename-trpc-path.ts only: a proven path rename's re-wrap).
  * `--record <part>…` records each part of a split at its size, so a part
  * can't regrow to the limit; a part over the limit is refused. With
  * `--from <old>`, the parts' long functions carry the old file's entries, a
@@ -280,6 +282,46 @@ export function lowered(baseline: Baseline, measured: Baseline): Baseline {
     }
   }
   return { files, functions };
+}
+
+/**
+ * A path rename's raises (AR9, rename-trpc-path.ts): each recorded entry of
+ * `files` that grew is set to its size, and a file of `files` over the limit
+ * is recorded. Nothing else changes; check-ratchets excuses these rises only
+ * in a commit whose `Rename-path:` check-commit proves.
+ */
+export function raisedFor(
+  baseline: Baseline,
+  measured: Baseline,
+  files: string[],
+): { baseline: Baseline; raised: string[] } {
+  const out: Baseline = {
+    files: { ...baseline.files },
+    functions: Object.fromEntries(
+      Object.entries(baseline.functions).map(([f, fns]) => [f, { ...fns }]),
+    ),
+  };
+  const raised: string[] = [];
+  for (const file of files) {
+    const lines = measured.files[file];
+    if (lines === undefined) continue;
+    const recorded = out.files[file];
+    if (
+      (recorded !== undefined && lines > recorded) ||
+      (recorded === undefined && lines > FILE_LIMIT)
+    ) {
+      out.files[file] = lines;
+      raised.push(`${file} ${recorded ?? 0} → ${lines}`);
+    }
+    for (const [name, was] of Object.entries(out.functions[file] ?? {})) {
+      const now = measured.functions[file]?.[name];
+      if (now !== undefined && now > was) {
+        out.functions[file]![name] = now;
+        raised.push(`${file} ${name}() ${was} → ${now}`);
+      }
+    }
+  }
+  return { baseline: out, raised };
 }
 
 /** Moves each old path's entries to its new path; never changes a count. */
@@ -931,6 +973,12 @@ function main(argv: string[]): number {
       );
     return 0;
   }
+  if (mode === "--raise-renamed") {
+    const { baseline, raised } = raisedFor(readBaseline(), measured, args);
+    if (raised.length > 0) writeBaseline(baseline);
+    for (const line of raised) console.log(`raised ${line}`);
+    return 0;
+  }
   if (mode === "--update") {
     writeBaseline(lowered(readBaseline(), measured));
     console.log(`Lowered ${BASELINE_PATH} to today's counts.`);
@@ -952,6 +1000,8 @@ function main(argv: string[]): number {
 
 if (
   process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  // Real paths: a worktree may hold the script as a symlink.
+  fs.realpathSync(path.resolve(process.argv[1])) ===
+    fs.realpathSync(fileURLToPath(import.meta.url))
 )
   process.exitCode = main(process.argv.slice(2));

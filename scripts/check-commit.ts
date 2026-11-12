@@ -24,10 +24,23 @@
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
  * revert says why in its own words: git's "This reverts commit …" line
  * alone isn't a reason. A commit that re-records a pinned figure names its
- * item, each moved figure and baseline-diff.ts's count (v0.11 G1).
+ * item, each moved figure and baseline-diff.ts's count (v0.11 G1). A
+ * `Rename-path:` commit (AR9) is proven by re-running the parent's
+ * scripts/rename-trpc-path.ts on the parent, in a temporary worktree, with
+ * the commit's trailers: the tree must be the commit's byte for byte, and
+ * the commit then counts as `Mechanical:` (renamePathProblem).
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -79,6 +92,8 @@ export type CommitFacts = {
   priorFixes: Map<Spot, number>;
   /** Why a `Mechanical:` commit isn't a move (undefined: it is, or no trailer). */
   notMechanical?: string;
+  /** Why a `Rename-path:` commit isn't proven (undefined: it is, or no trailer). */
+  notRenamePath?: string;
   /** Why a `Comments-only:` commit changes code (undefined: it doesn't, or no trailer). */
   notCommentsOnly?: string;
   /** Answer-key expected failures the commit flips or deletes (G2). */
@@ -139,6 +154,10 @@ const MACHINE_TRAILERS = new Set([
   "Signed-off-by",
   "Mechanical",
   "Rename",
+  "Rename-path",
+  "Rename-path-move",
+  "Rename-path-delete",
+  "Rename-path-edit",
   "Comments-only",
   "Ratchet-raise",
   "Known-renamed",
@@ -3819,6 +3838,228 @@ export function mechanicalProblem(
 }
 
 // ---------------------------------------------------------------------------
+// Proven tRPC path renames (AR9 proof, owner 2026-11-11): `Rename-path:`
+// ---------------------------------------------------------------------------
+
+export const RENAME_PATH = "Rename-path";
+export const RENAME_PATH_MOVE = "Rename-path-move";
+export const RENAME_PATH_DELETE = "Rename-path-delete";
+export const RENAME_PATH_EDIT = "Rename-path-edit";
+export const RENAME_PATH_SCRIPT = "scripts/rename-trpc-path.ts";
+
+/** One rename-trpc-path run, as the commit's trailers give it. */
+export type RenamePathMap = {
+  paths: [string, string][];
+  moves: [string, string][];
+  edits: { file: string; from: string; to: string }[];
+  deletes: string[];
+};
+
+const PROCEDURE_PATH = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
+const REPO_FILE = /^[\w@.()[\]/-]+$/;
+const ARROW_SPLIT = /\s+(?:→|->)\s+/;
+
+/** A JSON string at the start of `text`, and what follows it. */
+function leadingJsonString(
+  text: string,
+): { value: string; rest: string } | undefined {
+  if (!text.startsWith('"')) return undefined;
+  for (let i = 1; i < text.length; i++) {
+    if (text[i] === "\\") i++;
+    else if (text[i] === '"') {
+      try {
+        const value: unknown = JSON.parse(text.slice(0, i + 1));
+        if (typeof value === "string")
+          return { value, rest: text.slice(i + 1) };
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The commit's `Rename-path:` trailers as one map, and any malformed line:
+ *
+ *   Rename-path: <old.path> → <new.path>[, <old> → <new>…]
+ *   Rename-path-move: <old file> → <new file>
+ *   Rename-path-delete: <file>
+ *   Rename-path-edit: <file> <JSON string from> → <JSON string to>
+ *
+ * Undefined map: the message carries no `Rename-path:` line.
+ */
+export function readRenamePaths(raw: string): {
+  map?: RenamePathMap;
+  problems: string[];
+} {
+  const problems: string[] = [];
+  const map: RenamePathMap = { paths: [], moves: [], edits: [], deletes: [] };
+  for (const value of trailerValues(raw, RENAME_PATH))
+    for (const part of value.split(",").map((s) => s.trim())) {
+      const [from, to, extra] = part.split(ARROW_SPLIT);
+      if (
+        !from ||
+        !to ||
+        extra !== undefined ||
+        from === to ||
+        !PROCEDURE_PATH.test(from) ||
+        !PROCEDURE_PATH.test(to)
+      )
+        problems.push(
+          `"${RENAME_PATH}: ${part}": write ${RENAME_PATH}: <old.path> → <new.path>`,
+        );
+      else if (map.paths.some(([f]) => f === from))
+        problems.push(`${RENAME_PATH}: ${from} is renamed twice`);
+      else map.paths.push([from, to]);
+    }
+  for (const value of trailerValues(raw, RENAME_PATH_MOVE)) {
+    const [from, to, extra] = value.split(ARROW_SPLIT);
+    if (
+      !from ||
+      !to ||
+      extra !== undefined ||
+      ![from, to].every((f) => REPO_FILE.test(f))
+    )
+      problems.push(
+        `"${RENAME_PATH_MOVE}: ${value}": write ${RENAME_PATH_MOVE}: <old file> → <new file>`,
+      );
+    else map.moves.push([from, to]);
+  }
+  for (const value of trailerValues(raw, RENAME_PATH_DELETE)) {
+    if (!REPO_FILE.test(value))
+      problems.push(
+        `"${RENAME_PATH_DELETE}: ${value}": write ${RENAME_PATH_DELETE}: <file>`,
+      );
+    else map.deletes.push(value);
+  }
+  for (const value of trailerValues(raw, RENAME_PATH_EDIT)) {
+    const space = value.indexOf(" ");
+    const file = space < 0 ? "" : value.slice(0, space);
+    const from = leadingJsonString(value.slice(space + 1));
+    const arrow = from && /^\s+(?:→|->)\s+/.exec(from.rest);
+    const to = arrow
+      ? leadingJsonString(from.rest.slice(arrow[0].length))
+      : undefined;
+    if (!REPO_FILE.test(file) || !from || !to || to.rest.trim() !== "")
+      problems.push(
+        `"${RENAME_PATH_EDIT}: ${value.slice(0, 80)}": write ${RENAME_PATH_EDIT}: <file> <JSON string from> → <JSON string to>`,
+      );
+    else map.edits.push({ file, from: from.value, to: to.value });
+  }
+  const used =
+    map.paths.length + map.moves.length + map.edits.length + map.deletes.length;
+  if (map.paths.length === 0) {
+    if (used > 0 || problems.length > 0)
+      problems.push(`a ${RENAME_PATH}-* line needs a ${RENAME_PATH}: line`);
+    return { problems };
+  }
+  return { map, problems };
+}
+
+/** The trailer lines that give `map` (rename-trpc-path.ts --print-trailers). */
+export function renamePathTrailers(map: RenamePathMap): string[] {
+  return [
+    ...map.paths.map(([from, to]) => `${RENAME_PATH}: ${from} → ${to}`),
+    ...map.moves.map(([from, to]) => `${RENAME_PATH_MOVE}: ${from} → ${to}`),
+    ...map.edits.map(
+      (e) =>
+        `${RENAME_PATH_EDIT}: ${e.file} ${JSON.stringify(e.from)} → ${JSON.stringify(e.to)}`,
+    ),
+    ...map.deletes.map((d) => `${RENAME_PATH_DELETE}: ${d}`),
+  ];
+}
+
+const hasRenamePath = (raw: string) =>
+  trailerValues(raw, RENAME_PATH).length > 0;
+
+/**
+ * Why a `Rename-path:` commit isn't proven: rename-trpc-path.ts as the
+ * parent holds it, run on the parent in a temporary worktree with the
+ * commit's own trailers, must give the commit's tree byte for byte.
+ * `expectedTree` is the commit's tree (or the staged one); undefined: proven.
+ */
+export function renamePathProblem(
+  raw: string,
+  parentRef: string,
+  expectedTree: string,
+  run: Git = git,
+): string | undefined {
+  const { map, problems } = readRenamePaths(raw);
+  if (problems.length > 0) return problems.join("; ");
+  if (!map) return `no ${RENAME_PATH}: line`;
+  const parent = run("rev-parse", "--verify", `${parentRef}^{commit}`).trim();
+  try {
+    run("cat-file", "-e", `${parent}:${RENAME_PATH_SCRIPT}`);
+  } catch {
+    return `the parent ${parent.slice(0, 8)} has no ${RENAME_PATH_SCRIPT} to re-run`;
+  }
+  const top = run("rev-parse", "--show-toplevel").trim();
+  const scratch = mkdtempSync(path.join(tmpdir(), "rename-path-"));
+  const tree = path.join(scratch, "tree");
+  const messageFile = path.join(scratch, "message.txt");
+  writeFileSync(messageFile, raw);
+  try {
+    run(
+      "-c",
+      "core.hooksPath=/dev/null",
+      "worktree",
+      "add",
+      "--detach",
+      "--quiet",
+      tree,
+      parent,
+    );
+    const modules = path.join(top, "node_modules");
+    if (existsSync(modules))
+      symlinkSync(realpathSync(modules), path.join(tree, "node_modules"));
+    try {
+      execFileSync(
+        "npx",
+        ["tsx", RENAME_PATH_SCRIPT, "--root", tree, "--message", messageFile],
+        {
+          cwd: tree,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          maxBuffer: 1 << 28,
+        },
+      );
+    } catch (e) {
+      const err = e as { stderr?: string; message?: string };
+      return `${RENAME_PATH_SCRIPT} failed on the parent: ${String(
+        err.stderr || err.message,
+      )
+        .trim()
+        .slice(0, 400)}`;
+    }
+    const inTree = gitIn(tree);
+    inTree("add", "-A");
+    const made = inTree("write-tree").trim();
+    if (made === expectedTree) return undefined;
+    const differing = run(
+      "diff",
+      "--no-renames",
+      "--name-only",
+      made,
+      expectedTree,
+    )
+      .split("\n")
+      .filter(Boolean);
+    const shown = differing.slice(0, 20).join(", ");
+    const more =
+      differing.length > 20 ? ` and ${differing.length - 20} more` : "";
+    return `re-running ${RENAME_PATH_SCRIPT} on the parent ${parent.slice(0, 8)} gives a different tree; differing paths: ${shown}${more}`;
+  } finally {
+    try {
+      run("worktree", "remove", "--force", tree);
+    } catch {
+      /* never added */
+    }
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Comments-only commits (owner V6, v0.10.5)
 // ---------------------------------------------------------------------------
 
@@ -4056,9 +4297,19 @@ function flipWarnings(facts: CommitFacts): Warning[] {
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
-  const claimed = "Mechanical" in message.trailers;
-  const mechanical = claimed && facts.notMechanical === undefined;
-  if (claimed && facts.notMechanical !== undefined) {
+  // A proven Rename-path: commit is Mechanical: (its proof replaces the
+  // move and Rename: proofs, which can't read a path rename).
+  const pathRename = RENAME_PATH in message.trailers;
+  const claimed = "Mechanical" in message.trailers || pathRename;
+  const mechanical = pathRename
+    ? facts.notRenamePath === undefined
+    : claimed && facts.notMechanical === undefined;
+  if (pathRename && facts.notRenamePath !== undefined) {
+    warnings.push({
+      rule: "rename-path",
+      text: `${RENAME_PATH}: not proven: ${facts.notRenamePath}`,
+    });
+  } else if (!pathRename && claimed && facts.notMechanical !== undefined) {
     warnings.push({
       rule: "mechanical",
       text: `Mechanical: is for a move or rename only: ${facts.notMechanical}`,
@@ -4210,9 +4461,18 @@ export function countPriorFixes(
 }
 
 function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
-  const message = parseMessage(git("log", "-1", "--format=%B", sha));
+  const raw = git("log", "-1", "--format=%B", sha);
+  const message = parseMessage(raw);
+  const pathRename = hasRenamePath(raw);
+  const notRenamePath = pathRename
+    ? renamePathProblem(
+        raw,
+        `${sha}^`,
+        git("rev-parse", `${sha}^{tree}`).trim(),
+      )
+    : undefined;
   const notMechanical =
-    "Mechanical" in message.trailers
+    "Mechanical" in message.trailers && !pathRename
       ? mechanicalProblem(
           git("log", "-1", "--format=%B", sha),
           parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
@@ -4238,6 +4498,7 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     spots,
     priorFixes: countPriorFixes(spots, time, history, sha),
     notMechanical,
+    notRenamePath,
     notCommentsOnly: notComments,
     droppedXfails:
       flips.length > 0
@@ -4256,16 +4517,22 @@ function report(label: string, warnings: Warning[]) {
 }
 
 function runMessageFile(file: string): Warning[] {
-  const message = parseMessage(readFileSync(file, "utf8"));
+  const raw = readFileSync(file, "utf8");
+  const message = parseMessage(raw);
   if (message.subject.startsWith("Merge ")) return [];
   const files = parseNumstat(git("diff", "--cached", "--numstat"));
   const spots = spotsFromDiff(git("diff", "--cached", "-U0", "--", "src/"));
   const now = Math.floor(Date.now() / 1000);
   const history = readHistory(now - FIX_WINDOW_DAYS * DAY_SECONDS);
+  const pathRename = hasRenamePath(raw);
+  // The staged change against HEAD: the tree a commit would get.
+  const notRenamePath = pathRename
+    ? renamePathProblem(raw, "HEAD", git("write-tree").trim())
+    : undefined;
   const notMechanical =
-    "Mechanical" in message.trailers
+    "Mechanical" in message.trailers && !pathRename
       ? mechanicalProblem(
-          readFileSync(file, "utf8"),
+          raw,
           parseNumstat(git("diff", "--cached", "-M", "--numstat")),
           git("diff", "--cached", "-M", FULL_CONTEXT),
         )
@@ -4284,6 +4551,7 @@ function runMessageFile(file: string): Warning[] {
     spots,
     priorFixes: countPriorFixes(spots, now + 1, history),
     notMechanical,
+    notRenamePath,
     notCommentsOnly: notComments,
     droppedXfails:
       flips.length > 0

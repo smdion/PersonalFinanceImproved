@@ -29,8 +29,12 @@
  * the code lines left rise by exactly the import lines. Every excused rise
  * is printed. In a `Mechanical:` commit whose `Rename:` check-commit
  * proves (owner Q2), a size entry rises by the lines prettier's re-wrap of
- * the renamed lines adds. A re-recorded baseline file needs
- * `Baseline-rerecord: <glob> — <reason>` from a commit that changes it.
+ * the renamed lines adds. In a commit whose `Rename-path:` check-commit
+ * proves (AR9: re-running scripts/rename-trpc-path.ts on the parent gives
+ * its tree), a size entry may rise by what the script wrote, with no
+ * trailer: the rise is the script's own output. A re-recorded baseline
+ * file needs `Baseline-rerecord: <glob> — <reason>` from a commit that
+ * changes it.
  * A known-list entry whose key changes and nothing else is excused by that
  * commit's `Known-renamed:` trailer (scripts/ratchets/known-renamed.ts).
  *
@@ -66,12 +70,14 @@ import {
 } from "./ratchets/code-limits";
 import {
   RENAME,
+  RENAME_PATH,
   RERECORD,
   commitsIn,
   gitIn,
   mechanicalProblem,
   parseNumstat,
   readRenames,
+  renamePathProblem,
   structuralMoves,
   trailerValues,
   type Git,
@@ -576,6 +582,17 @@ export function checkRatchets(
   ) => {
     const mechanical = trailerValues(message, "Mechanical").length > 0;
     const renamed = trailerValues(message, RENAME).length > 0;
+    const pathRename = trailerValues(message, RENAME_PATH).length > 0;
+    let proof: { problem: string | undefined } | undefined;
+    const pathRenameProblem = () =>
+      (proof ??= {
+        problem: renamePathProblem(
+          message,
+          `${sha}^`,
+          git("rev-parse", `${sha}^{tree}`).trim(),
+          git,
+        ),
+      }).problem;
     let read: Moves | undefined;
     const moves = () => (read ??= movesOf(git, sha));
     const undone = reverted(message);
@@ -600,6 +617,20 @@ export function checkRatchets(
         excused.push(
           `${where}, by the revert of ${short(undone!)}: back to its value before it`,
         );
+        continue;
+      }
+      // Every size rise: a proven commit's tree is the script's output byte
+      // for byte, so no rise in it can come from anywhere else.
+      if (pathRename && rise.file === SIZE_FILE) {
+        const problem = pathRenameProblem();
+        if (problem === undefined)
+          excused.push(
+            `${where}, by the proven "${RENAME_PATH}:" (rename-trpc-path.ts re-run on the parent gives this tree)`,
+          );
+        else
+          failures.push(
+            `${where}: a ${RENAME_PATH}: commit check-commit doesn't prove (${problem})`,
+          );
         continue;
       }
       const moved = renamed
