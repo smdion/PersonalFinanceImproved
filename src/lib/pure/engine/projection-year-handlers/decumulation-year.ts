@@ -1,14 +1,9 @@
 /** The decumulation year: runDecumulationYear calls its stages in order. */
 import { socialSecurityForYear } from "../social-security-income";
 import { retirementBrokerageBasisRatio } from "../brokerage-basis";
-import type { EngineDecumulationYear } from "../types/projection-result";
-import { roundToCents, sumBy } from "../../../utils/math";
-import {
-  getAllCategories,
-  nonMedicalPenaltyRate,
-} from "../../../config/account-types";
+import { sumBy } from "../../../utils/math";
+import { getAllCategories } from "../../../config/account-types";
 import { countReachingAgeRule } from "@/lib/pure/household/age";
-import { cloneAccountBalances } from "../balance-utils";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type {
@@ -33,6 +28,7 @@ import { growYearTaxTables } from "./year-tax-tables";
 import { decumulationPortfolioContributions } from "./portfolio-contributions";
 import { yearCliffChecks } from "./year-cliffs";
 import { closeDecumulationYear } from "./year-end";
+import { decumulationYearRow } from "./decumulation-row";
 
 /** One decumulation year, its stages in today's order; each stage's file
  *  names its decision (UD-04 in rmd-step.ts and tax-year-settlement.ts,
@@ -43,23 +39,15 @@ export function runDecumulationYear(
   yearIndex: number,
   setup: PreYearSetup,
 ): void {
-  const { age, year, returnRate, strategyAction, retirementBalance } = setup;
+  const { age, year, retirementBalance } = setup;
   const {
     input,
-    budgetOverrideMap,
     sortedDecumulationOverrides,
     hasIndividualAccounts,
     indAccounts,
     indKey,
   } = ctx;
-  const {
-    balances,
-    accountBalance,
-    priorYearEndTradBalance,
-    indBalance,
-    indBasis,
-    brokBasis,
-  } = state;
+  const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
 
   const { decumulationDefaults, perPersonBirthYears } = input;
 
@@ -104,10 +92,8 @@ export function runDecumulationYear(
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
   const owed = rmdIncomeByOwner(ctx, state, year);
-  const { rmdByPerson } = owed;
 
   const qcd = qcdStep(ctx, state, year, config);
-  const { totalQcd, qcdByPerson } = qcd;
 
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
@@ -129,7 +115,6 @@ export function runDecumulationYear(
       : 0;
 
   const tables = growYearTaxTables(ctx, state, year, age);
-  const { grownStandardDeduction } = tables;
 
   const personsAge65Plus = countReachingAgeRule(
     perPersonBirthYears,
@@ -148,175 +133,51 @@ export function runDecumulationYear(
     ssIncome,
     personsAge65Plus,
     retirementBasisRatio,
+    ssIncomeByPerson,
+    estTraditionalPortion,
+    priorYearEndTradBalance: state.priorYearEndTradBalance,
   };
   const need = yearNeed(ctx, state, thisYear);
-  const { afterTaxNeed, targetWithdrawal } = need;
-
   const route = routeYearDraw(ctx, state, thisYear, need, rothDivergence);
-  const {
-    preWithdrawalAcctBal,
-    routeResult,
-    slots,
-    routeWarnings,
-    penaltyAvoidedShortfall,
-    nonRetirementShortfall,
-  } = route;
-
   const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
-  const {
-    totalWithdrawal,
-    totalRothWithdrawal,
-    totalTraditionalWithdrawal,
-    rmdDivisor,
-    ownerRmd,
-    rmdOverrodeRouting,
-    rmdShortfallAmount,
-    rmdAmount,
-  } = rmd;
-
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
-
   const priced = priceYearTax(ctx, state, thisYear, {
     need,
     route,
     rmd,
     drawn,
   });
-  const { taxableSS } = priced;
   const parts = pricedYearParts(state, { need, route, rmd, priced });
-  const { penaltyCost, ssTaxCost, grossUpFactor } = parts;
 
   const settled = { need, route, rmd, drawn, priced, parts };
-  const { rmdExcessAmount } = settleYearDraws(ctx, state, thisYear, settled);
-
+  const settle = settleYearDraws(ctx, state, thisYear, settled);
   const conversion = yearRothConversion(ctx, state, thisYear, settled);
-  const {
-    rothConversionAmount,
-    rothConversionTaxCost,
-    rmdSmoothingShortfall,
-    rothConversionIrmaaCapped,
-  } = conversion;
-
   const repriced = repriceConversionYear(ctx, thisYear, {
     rmd,
     priced,
     parts,
     conversion,
   });
-  const { taxCost, postConversionLtcgRate, niitAmount } = repriced;
   const flow = { ...settled, conversion, repriced };
-
-  const {
-    deliveredAfterTax,
-    shortfallMaterialityFloor,
-    unmetNeedRaw,
-    unmetNeedMaterial,
-  } = fundingShortfallForYear(state, thisYear, flow);
-
-  const { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom } =
-    yearCliffChecks(ctx, state, thisYear, flow);
+  const shortfall = fundingShortfallForYear(state, thisYear, flow);
+  const cliffs = yearCliffChecks(ctx, state, thisYear, flow);
 
   const contributions = decumulationPortfolioContributions(
     ctx,
     state,
     yearIndex,
   );
-  const { decumBrokerageContribution, decumRampAmount } = contributions;
+  const yearFlow = { ...flow, contributions };
+  const closed = closeDecumulationYear(ctx, state, thisYear, yearFlow);
 
-  const { decumulationIndYearBalances, yearEnd } = closeDecumulationYear(
-    ctx,
-    state,
-    thisYear,
-    { ...flow, contributions },
+  state.projectionByYear.push(
+    decumulationYearRow(ctx, state, thisYear, yearFlow, {
+      owed,
+      qcd,
+      settle,
+      shortfall,
+      cliffs,
+      closed,
+    }),
   );
-
-  const yearProjection: EngineDecumulationYear = {
-    year,
-    age,
-    phase: "decumulation",
-    projectedExpenses: roundToCents(state.projectedExpenses),
-    spending: roundToCents(
-      deliveredAfterTax -
-        irmaaPaid -
-        (config.rmdExcessHandling === "reinvest" ? rmdExcessAmount : 0) +
-        ssIncome,
-    ),
-    withdrawalSized: state.portfolioWithdrawal !== null,
-    budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
-    hasBudgetOverride: budgetOverrideMap.has(year),
-    brokerageContribution: decumBrokerageContribution,
-    brokerageRampContribution: decumRampAmount,
-    targetWithdrawal,
-    config,
-    slots,
-    totalWithdrawal,
-    totalRothWithdrawal,
-    totalTraditionalWithdrawal,
-    taxCost,
-    // On the withdrawal: tax on Social Security is owed whether or not
-    // anything is withdrawn (`ssTaxCost`, shown on its own line).
-    effectiveTaxRate:
-      totalWithdrawal > 0 ? (taxCost - ssTaxCost) / totalWithdrawal : 0,
-    ssTaxCost,
-    ssIncome,
-    ssIncomeByPerson,
-    afterTaxNeed,
-    grossUpFactor,
-    estTraditionalPortion,
-    bracketTraditionalCap: routeResult.traditionalCap,
-    standardDeduction: grownStandardDeduction,
-    discretionaryTierBreakdown: routeResult.tierBreakdown,
-    rothBasisCapacity: routeResult.rothBasisCapacity,
-    brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
-    unmetNeed: unmetNeedRaw,
-    unmetNeedMaterial,
-    shortfallMaterialityFloor,
-    penaltyAvoidedShortfall,
-    nonRetirementShortfall,
-    penaltyCost,
-    deliveredAfterTax,
-    penaltyLockedStillExcluded: eligibility
-      ? roundToCents(
-          sumBy(
-            getAllCategories().filter((c) => nonMedicalPenaltyRate(c) == null),
-            (c) => eligibility.penaltyExposedTotalStillExcluded[c],
-          ),
-        )
-      : undefined,
-    preWithdrawalAcctBal,
-    retirementBalance: yearEnd.retirementBalance,
-    allAccountsBalance: yearEnd.allAccountsBalance,
-    balanceByTaxType: { ...balances },
-    balanceByAccount: cloneAccountBalances(accountBalance),
-    individualAccountBalances: decumulationIndYearBalances,
-    returnRate,
-    annualizedReturnRate: returnRate,
-    rmdAmount,
-    rmdByPerson,
-    rmdDivisor,
-    priorYearEndTradBalance,
-    rmdOverrodeRouting,
-    rmdShortfallAmount,
-    ...(ownerRmd && ownerRmd.rmdReassignedAmount > 0
-      ? { rmdReassignedAmount: ownerRmd.rmdReassignedAmount }
-      : {}),
-    rmdExcessAmount,
-    rmdSmoothingShortfall,
-    qcdAmount: totalQcd,
-    qcdByPerson: qcdByPerson.length > 0 ? qcdByPerson : undefined,
-    taxableSS,
-    ltcgRate: postConversionLtcgRate,
-    rothConversionAmount,
-    rothConversionTaxCost,
-    rothConversionIrmaaCapped,
-    strategyAction,
-    niitAmount,
-    irmaaCost,
-    ...(irmaaPaid > 0 ? { irmaaPaid } : {}),
-    acaSubsidyPreserved,
-    acaMagiHeadroom,
-    warnings: routeWarnings,
-  };
-
-  state.projectionByYear.push(yearProjection);
 }

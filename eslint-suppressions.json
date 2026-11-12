@@ -4088,15 +4088,17 @@
       "count": 7
     }
   },
-  "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-    "max-lines-per-function": {
+  "src/lib/pure/engine/projection-year-handlers/decumulation-row.ts": {
+    "ratchet/no-guarded-division": {
       "count": 1
-    },
+    }
+  },
+  "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
     "ratchet/no-abbreviation": {
-      "count": 9
+      "count": 6
     },
     "ratchet/no-guarded-division": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": {

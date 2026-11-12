@@ -36,6 +36,7 @@ import type {
   growLtcgBrackets,
   growWithholdingBrackets,
 } from "../bracket-growth";
+import type { socialSecurityForYear } from "../social-security-income";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -243,4 +244,11 @@ export type DecumulationYear = {
   ssIncome: number;
   personsAge65Plus: number;
   retirementBasisRatio: number | undefined;
+  ssIncomeByPerson: ReturnType<
+    typeof socialSecurityForYear
+  >["ssIncomeByPerson"];
+  /** Traditional's share of the retirement balance after the QCD (the row's). */
+  estTraditionalPortion: number;
+  /** Last year-end's Traditional balance, read before the close resets it. */
+  priorYearEndTradBalance: number;
 };

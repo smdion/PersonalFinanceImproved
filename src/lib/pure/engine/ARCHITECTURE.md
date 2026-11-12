@@ -32,6 +32,7 @@ projection-year-handlers/    one year of work
   year-cliffs.ts             IRMAA and ACA cliff checks
   portfolio-contributions.ts Portfolio contributions after retirement, reported only
   year-end.ts                growth, year-end state, account rows, reconciliation
+  decumulation-row.ts        the decumulation year's row, from what its stages settled
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
@@ -121,7 +122,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 
 **Budget lines that end** — `expense-endings.ts`: a loan's line leaves as a share of each phase's budget the year after payoff. Typed figures and rate-seeded retirements are left alone.
 
-**Decumulation** — `runDecumulationYear` (`decumulation-year.ts`) calls its stages in this order:
+**Decumulation** — `runDecumulationYear` (`decumulation-year.ts`) calls its stages in this order. What the year settles before its first draw (config, eligibility, the grown tax tables, Social Security, people 65+) is one `DecumulationYear` (`types.ts`); each later stage takes it and the earlier stages' results it reads, by name (`DecumulationFlow` in `tax-year-settlement.ts`, `RepricedFlow` in `conversion-year-reprice.ts`):
 
 1. `resolveDecumulationConfig` — the year's settings; `computeWithdrawalEligibility` for each account
 2. `rmdIncomeByOwner` (`decumulation-income.ts`) — each owner's RMD for the year
@@ -139,7 +140,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
 15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 
-The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
+`decumulationYearRow` (`decumulation-row.ts`) then builds the year's row: it reports `retirementBalance` / `allAccountsBalance`, unmet need and its reasons; `assessPlan` (`lib/pure/retirement/plan-outcome.ts`) judges the run.
 
 ## Undecided engine decisions
 

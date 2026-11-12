@@ -291,7 +291,8 @@
     "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 236,
     "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 182,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 67,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 322,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-row.ts": 159,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 183,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 152,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 97,
@@ -969,9 +970,6 @@
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 181
-    },
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
-      "runDecumulationYear": 283
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 370
