@@ -242,31 +242,23 @@ describe("firstDecumulationYearStatedNeed when retirement starts before a full y
     expect(result.firstDecumulationYearStatedNeed).toBe(48000);
   });
 
-  // Known Gap (v0.11, advisor A1 F3): the stated need re-derives the seed
-  // and skips one of its rules. An override in the retirement year (still
-  // a working year when retiring mid-year) stops the loop's ending cut in
-  // the first decumulation year, but not the stated need's: $51,660 here
-  // against the loop's $73,800. Fix: record the need from the seed the
-  // loop used (budget-only expenses after the override and ending blocks).
-  it.fails(
-    "v0.11 records the need from the seed: with an override in the retirement year and an ending the next, it equals the first year's budget-only expenses",
-    () => {
-      const { result, row } = firstRow(
-        makeInput({
-          retirementYear: AS_OF.getFullYear(),
-          budgetOverrides: [{ year: AS_OF.getFullYear(), value: 5000 }],
-          expenseEndings: [
-            {
-              year: AS_OF.getFullYear() + 1,
-              accumulation: 0,
-              decumulation: 0.3,
-            },
-          ],
-        }),
-      );
-      expect(result.firstDecumulationYearStatedNeed).toBe(
-        row.budgetOnlyExpenses,
-      );
-    },
-  );
+  // An override in the retirement year (still a working year when retiring
+  // mid-year) stops the loop's ending cut in the first decumulation year;
+  // the stated need is the budget the loop seeded, so it skips the cut too.
+  it("with an override in the retirement year and an ending the next, it equals the first year's budget-only expenses", () => {
+    const { result, row } = firstRow(
+      makeInput({
+        retirementYear: AS_OF.getFullYear(),
+        budgetOverrides: [{ year: AS_OF.getFullYear(), value: 5000 }],
+        expenseEndings: [
+          {
+            year: AS_OF.getFullYear() + 1,
+            accumulation: 0,
+            decumulation: 0.3,
+          },
+        ],
+      }),
+    );
+    expect(result.firstDecumulationYearStatedNeed).toBe(row.budgetOnlyExpenses);
+  });
 });

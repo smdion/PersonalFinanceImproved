@@ -7,7 +7,7 @@ import { expenseEndingFactor } from "../expense-endings";
 import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
-import { firstYearStatedNeed } from "./stated-need";
+import { recordStatedNeed } from "./stated-need";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-accounts/contributions";
@@ -285,8 +285,6 @@ export function runPreYearSetup(
     retirementBalance,
     inflation,
     yearIndex,
-    ctx,
-    year,
   );
 
   // Apply a budget override (sticky-forward) or inflate expenses, using the
@@ -334,6 +332,7 @@ export function runPreYearSetup(
     state.projectedExpenses *= factor;
     state.budgetOnlyExpenses *= factor;
   }
+  if (decumulationExpensesJustSet) recordStatedNeed(state, ctx, yearIndex);
 
   // --- Spending Strategy Dispatch ---
   let strategyAction: string | null = null;
@@ -437,8 +436,6 @@ function seedRetirementSpending(
   retirementBalance: number,
   inflation: ProjectionContext["inflation"],
   yearIndex: number,
-  ctx: ProjectionContext,
-  year: number,
 ) {
   const decumulationExpensesJustSet =
     !isAccumulation &&
@@ -458,11 +455,6 @@ function seedRetirementSpending(
     // to track), before anything downstream changes projectedExpenses.
     state.budgetOnlyExpenses = state.projectedExpenses;
     state.decumulationExpensesSet = true;
-    state.firstDecumulationYearStatedNeed = firstYearStatedNeed(
-      ctx,
-      year,
-      yearIndex,
-    );
   }
 
   return { decumulationExpensesJustSet };

@@ -4,34 +4,24 @@
  * tests the first year's actual spending against.
  */
 import { roundToCents } from "../../../utils/math";
-import { expenseEndingFactor } from "../expense-endings";
-import type { ProjectionContext } from "./types";
+import type { ProjectionContext, ProjectionLoopState } from "./types";
 
-/** Null without a decumulation budget. This year's budget override replaces
- *  the inflated budget, unless rate-seeded (that scenario ignores a
- *  same-year override); a loan paid off by then takes the seed's cut. */
-export function firstYearStatedNeed(
+/** The stated need, once the first decumulation year's budget is set: the
+ *  budget the loop seeded, after this year's override and any loan ending;
+ *  rate-seeded (no budget seed), the inflated budget; null without a budget. */
+export function recordStatedNeed(
+  state: ProjectionLoopState,
   ctx: ProjectionContext,
-  year: number,
   yearIndex: number,
-): number | null {
-  const { input, inflation, budgetOverrideMap } = ctx;
-  if (input.decumulationAnnualExpenses == null) return null;
-  const firstYearOverride =
-    input.rateSeededDecumulationYear1 !== true
-      ? budgetOverrideMap.get(year)
-      : undefined;
-  return roundToCents(
-    firstYearOverride ??
-      input.decumulationAnnualExpenses *
-        inflation.growth(yearIndex) *
-        (input.rateSeededDecumulationYear1
-          ? 1
-          : expenseEndingFactor({
-              endings: input.expenseEndings,
-              phase: "decumulation",
-              year,
-              seeded: true,
-            })),
+): void {
+  const { input, inflation } = ctx;
+  if (input.decumulationAnnualExpenses == null) {
+    state.firstDecumulationYearStatedNeed = null;
+    return;
+  }
+  state.firstDecumulationYearStatedNeed = roundToCents(
+    input.rateSeededDecumulationYear1 === true
+      ? input.decumulationAnnualExpenses * inflation.growth(yearIndex)
+      : state.budgetOnlyExpenses,
   );
 }
