@@ -14,7 +14,7 @@ import type { routeForMode } from "../withdrawal-routing";
 import type { rmdIncomeByOwner } from "./decumulation-income";
 import type { resolveDecumulationConfig } from "../override-resolution";
 import type {
-  PreYearSetup,
+  DecumulationYear,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
@@ -123,23 +123,23 @@ export function qcdStep(
  *  D1), today's behaviour: a short RMD adds Traditional on top of the routed
  *  draw; excess past the need is reinvested or spent (`rmdExcessHandling`). */
 export function enforceYearRmd(
-  slots: ReturnType<typeof routeForMode>["slots"],
-  perOwnerRmd: boolean,
-  rmdStartAge: ProjectionContext["rmdStartAge"],
-  age: number,
-  priorYearEndTradBalance: number,
-  rmdByPerson: ReturnType<typeof rmdIncomeByOwner>["rmdByPerson"],
-  qcdByPerson: ReturnType<typeof qcdStep>["qcdByPerson"],
   ctx: ProjectionContext,
-  accountBalance: ProjectionLoopState["accountBalance"],
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
-  nonRetirement: PreYearSetup["nonRetirement"],
-  routeWarnings: string[],
   state: ProjectionLoopState,
-  perPersonRmdTotal: number | undefined,
+  thisYear: DecumulationYear,
+  route: {
+    slots: ReturnType<typeof routeForMode>["slots"];
+    routeWarnings: string[];
+  },
+  owed: ReturnType<typeof rmdIncomeByOwner>,
+  qcd: ReturnType<typeof qcdStep>,
 ) {
+  const { rmdStartAge, indAccounts, indKey } = ctx;
+  const { priorYearEndTradBalance, accountBalance, indBalance } = state;
+  const { age } = thisYear;
+  const { nonRetirement } = thisYear.setup;
+  const { slots, routeWarnings } = route;
+  const { perOwnerRmd, rmdByPerson, perPersonRmdTotal } = owed;
+  const { qcdByPerson } = qcd;
   let totalWithdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const totalRothWithdrawal = roundToCents(
     sumBy(slots, (s) => s.rothWithdrawal),

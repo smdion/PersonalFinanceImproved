@@ -20,40 +20,48 @@ import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
 import type { resolveDecumulationConfig } from "../override-resolution";
 import { applyLumpSums } from "./lump-sum";
-import type { routeForMode } from "../withdrawal-routing";
-import type { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
+import type { yearNeed } from "./year-need";
+import type { distributeYearDraws, routeYearDraw } from "./year-draws";
+import type { enforceYearRmd } from "./rmd-step";
 import type {
   growIrmaaBrackets,
-  growLtcgBrackets,
   growWithholdingBrackets,
 } from "../bracket-growth";
-import type { yearNeed } from "./year-need";
 import type {
+  DecumulationYear,
   PreYearSetup,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
 
+/** What a decumulation year's stages have settled so far, by stage; each
+ *  later stage takes the ones it reads (`Pick`). */
+export type DecumulationFlow = {
+  need: ReturnType<typeof yearNeed>;
+  route: ReturnType<typeof routeYearDraw>;
+  rmd: ReturnType<typeof enforceYearRmd>;
+  drawn: ReturnType<typeof distributeYearDraws>;
+  priced: ReturnType<typeof priceYearTax>;
+  parts: ReturnType<typeof pricedYearParts>;
+};
+
 /** The year's tax from its routed (post-RMD) draws, with Social Security's
  *  taxable share re-derived from that income; priceTax re-prices it later. */
 export function priceYearTax(
-  slots: ReturnType<typeof routeForMode>["slots"],
-  balances: ProjectionLoopState["balances"],
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
-  grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined,
-  grownStandardDeduction: number | undefined,
-  grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
-  filingStatus: ProjectionContext["input"]["filingStatus"],
-  totalTraditionalWithdrawal: number,
-  totalRothWithdrawal: number,
-  rothTaxSplit: { taxableGrowth: number },
-  earlyWithdrawalPenalty: { penaltyCost: number },
-  brokerageBasisRatio: ReturnType<
-    typeof deriveBasisRankingInputs
-  >["brokerageBasisRatio"],
-  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
-  ssIncome: number,
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+  thisYear: DecumulationYear,
+  flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "drawn">,
 ) {
+  const { filingStatus } = ctx.input;
+  const { balances } = state;
+  const { taxRates, ssIncome } = thisYear;
+  const { grownTaxBrackets, grownStandardDeduction, grownLtcgBrackets } =
+    thisYear.tables;
+  const { slots, brokerageBasisRatio } = flow.route;
+  const { totalTraditionalWithdrawal, totalRothWithdrawal } = flow.rmd;
+  const { rothTaxSplit, earlyWithdrawalPenalty } = flow.drawn;
+  const { taxEstimate } = flow.need;
   // One pricing call, shared with withdrawal-solver.ts's estimate and used
   // again after the conversion (never a hand copy of its formula).
   const priceTax = (ss: number, brokerageTaxCostOverride?: number) =>
@@ -93,15 +101,14 @@ export function priceYearTax(
 /** The priced year's parts the settlement reads (the brokerage slot's basis
  *  and gains, penalty and SS tax, the surplus credit), and the post-RMD gross-up. */
 export function pricedYearParts(
-  taxFromSlots: ReturnType<typeof priceYearTax>["taxFromSlots"],
-  slots: ReturnType<typeof routeForMode>["slots"],
-  balances: ProjectionLoopState["balances"],
-  ssSurplus: number,
-  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
-  rmdOverrodeRouting: boolean,
-  afterTaxNeed: number,
   state: ProjectionLoopState,
+  flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced">,
 ) {
+  const { balances } = state;
+  const { taxFromSlots } = flow.priced;
+  const { slots } = flow.route;
+  const { ssSurplus, taxEstimate, afterTaxNeed } = flow.need;
+  const { rmdOverrodeRouting } = flow.rmd;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
   // This year's taxable income, non-qualified Roth growth included, as
@@ -156,28 +163,20 @@ export function pricedYearParts(
 /** The year's draws settled: deducted, lump sums in, the RMD excess reinvested
  *  or spent (UD-04, pending D1: the RMD adds to the draw), depletions tracked. */
 export function settleYearDraws(
-  slots: ReturnType<typeof routeForMode>["slots"],
-  balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  brokerageBasisPortion: number,
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
-  brokBasis: ProjectionLoopState["brokBasis"],
-  config: ReturnType<typeof resolveDecumulationConfig>,
   ctx: ProjectionContext,
   state: ProjectionLoopState,
-  taxFromSlots: ReturnType<typeof priceYearTax>["taxFromSlots"],
-  surplusCredit: ReturnType<typeof pricedYearParts>["surplusCredit"],
-  rmdOverrodeRouting: boolean,
-  totalWithdrawal: number,
-  afterTaxNeed: number,
-  hasIndividualAccounts: boolean,
-  depletionTracked: ProjectionLoopState["depletionTracked"],
-  accountDepletions: ProjectionLoopState["accountDepletions"],
-  year: number,
-  age: number,
+  thisYear: DecumulationYear,
+  flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
+  const { indAccounts, indKey, hasIndividualAccounts } = ctx;
+  const { balances, accountBalance, indBalance, brokBasis } = state;
+  const { depletionTracked, accountDepletions } = state;
+  const { config, year, age } = thisYear;
+  const { slots } = flow.route;
+  const { brokerageBasisPortion, surplusCredit } = flow.parts;
+  const { taxFromSlots } = flow.priced;
+  const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
+  const { afterTaxNeed } = flow.need;
   // Deduct withdrawals from tax buckets and per-account balances
   deductWithdrawals({ slots, balances, accountBalance, brokerageBasisPortion });
 

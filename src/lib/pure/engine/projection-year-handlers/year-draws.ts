@@ -5,19 +5,13 @@ import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { depleteIndividualBasis } from "../individual-accounts/ledger";
 import { distributeWithdrawals } from "../individual-accounts/withdrawals";
-import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
+import type { enforceYearRmd } from "./rmd-step";
+import type { yearNeed } from "./year-need";
 import type { BasisDraw } from "@/lib/pure/accounts/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/tax/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/accounts/early-withdrawal-penalty";
 import type {
-  growLtcgBrackets,
-  growWithholdingBrackets,
-} from "../bracket-growth";
-import type { resolveDecumulationConfig } from "../override-resolution";
-import type { enforceYearRmd } from "./rmd-step";
-import type { yearNeed } from "./year-need";
-import type {
-  PreYearSetup,
+  DecumulationYear,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
@@ -25,27 +19,21 @@ import type {
 /** The year's target withdrawal routed across accounts by the configured
  *  mode, through the dispatch the solver's estimate shares. */
 export function routeYearDraw(
-  accountBalance: ProjectionLoopState["accountBalance"],
-  balances: ProjectionLoopState["balances"],
-  retirementBasisRatio: number | undefined,
-  hasIndividualAccounts: boolean,
-  indBasis: ProjectionLoopState["indBasis"],
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
-  year: number,
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
-  config: ReturnType<typeof resolveDecumulationConfig>,
-  targetWithdrawal: number,
-  grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined,
-  taxEstimate: ReturnType<typeof yearNeed>["taxEstimate"],
-  filingStatus: ProjectionContext["input"]["filingStatus"],
-  grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
-  grownStandardDeduction: number | undefined,
-  eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
-  nonRetirement: PreYearSetup["nonRetirement"],
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+  thisYear: DecumulationYear,
+  need: ReturnType<typeof yearNeed>,
   rothDivergence: string | null,
 ) {
+  const { hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { filingStatus } = ctx.input;
+  const { accountBalance, balances, indBasis, indBalance } = state;
+  const { year, taxRates, config, eligibility, retirementBasisRatio } =
+    thisYear;
+  const { nonRetirement } = thisYear.setup;
+  const { grownTaxBrackets, grownLtcgBrackets, grownStandardDeduction } =
+    thisYear.tables;
+  const { targetWithdrawal, taxEstimate } = need;
   // Routing reads the tracked per-account balances; a copy is kept as
   // the year's pre-withdrawal row.
   const accountBalances = accountBalance;
@@ -120,18 +108,19 @@ export function routeYearDraw(
 /** The routed draw followed to each account (RMD pins kept), its Roth basis
  *  drawn, the Roth growth's taxable share, and any early-withdrawal penalty. */
 export function distributeYearDraws(
-  indBalance: ProjectionLoopState["indBalance"],
-  hasIndividualAccounts: boolean,
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  brokBasis: ProjectionLoopState["brokBasis"],
-  slots: ReturnType<typeof routeForMode>["slots"],
-  eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
-  ownerRmd: ReturnType<typeof enforceYearRmd>["ownerRmd"],
-  routeWarnings: string[],
-  indBasis: ProjectionLoopState["indBasis"],
-  year: number,
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+  thisYear: DecumulationYear,
+  flow: {
+    route: ReturnType<typeof routeYearDraw>;
+    rmd: ReturnType<typeof enforceYearRmd>;
+  },
 ) {
+  const { hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { indBalance, brokBasis, indBasis } = state;
+  const { year, eligibility } = thisYear;
+  const { slots, routeWarnings } = flow.route;
+  const { ownerRmd } = flow.rmd;
   // Draws reach accounts before tax: the tax reads this year's Roth basis
   // draws, and only indBalance/indBasis change here. indBalance is copied first for
   // the basis draw's pro-rata ratio.

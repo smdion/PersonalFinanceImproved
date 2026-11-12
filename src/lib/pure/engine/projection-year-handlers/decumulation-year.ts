@@ -52,8 +52,6 @@ export function runDecumulationYear(
     indAccounts,
     indKey,
     indParentCat,
-    rmdStartAge,
-    rmdStartAgeByPerson,
   } = ctx;
   const {
     balances,
@@ -64,8 +62,6 @@ export function runDecumulationYear(
     brokBasis,
     spendingState,
     incomeHistory,
-    depletionTracked,
-    accountDepletions,
   } = state;
 
   const {
@@ -117,13 +113,11 @@ export function runDecumulationYear(
     age,
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
-  const { perOwnerRmd, perPersonRmdTotal, rmdByPerson } = rmdIncomeByOwner(
-    ctx,
-    state,
-    year,
-  );
+  const owed = rmdIncomeByOwner(ctx, state, year);
+  const { rmdByPerson } = owed;
 
-  const { totalQcd, qcdByPerson } = qcdStep(ctx, state, year, config);
+  const qcd = qcdStep(ctx, state, year, config);
+  const { totalQcd, qcdByPerson } = qcd;
 
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
@@ -150,7 +144,6 @@ export function runDecumulationYear(
     grownStandardDeduction,
     grownLtcgBrackets,
     grownIrmaaBracketsForCheck,
-    grownIrmaaBracketsForCap,
     fplGrowthFactor,
   } = tables;
 
@@ -172,45 +165,21 @@ export function runDecumulationYear(
     personsAge65Plus,
     retirementBasisRatio,
   };
-  const { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal } = yearNeed(
-    ctx,
-    state,
-    thisYear,
-  );
+  const need = yearNeed(ctx, state, thisYear);
+  const { afterTaxNeed, targetWithdrawal } = need;
 
+  const route = routeYearDraw(ctx, state, thisYear, need, rothDivergence);
   const {
     preWithdrawalAcctBal,
-    brokerageBasisRatio,
-    resolvedConversionTarget,
     routeResult,
     slots,
     routeWarnings,
     routedUnmetNeed,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
-  } = routeYearDraw(
-    accountBalance,
-    balances,
-    retirementBasisRatio,
-    hasIndividualAccounts,
-    indBasis,
-    indAccounts,
-    indKey,
-    indBalance,
-    year,
-    taxRates,
-    config,
-    targetWithdrawal,
-    grownTaxBrackets,
-    taxEstimate,
-    filingStatus,
-    grownLtcgBrackets,
-    grownStandardDeduction,
-    eligibility,
-    nonRetirement,
-    rothDivergence,
-  );
+  } = route;
 
+  const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
   const {
     totalWithdrawal,
     totalRothWithdrawal,
@@ -220,102 +189,30 @@ export function runDecumulationYear(
     rmdOverrodeRouting,
     rmdShortfallAmount,
     rmdAmount,
-  } = enforceYearRmd(
-    slots,
-    perOwnerRmd,
-    rmdStartAge,
-    age,
-    priorYearEndTradBalance,
-    rmdByPerson,
-    qcdByPerson,
-    ctx,
-    accountBalance,
-    indAccounts,
-    indKey,
-    indBalance,
-    nonRetirement,
-    routeWarnings,
-    state,
-    perPersonRmdTotal,
-  );
+  } = rmd;
 
-  const {
-    decumulationIndWithdrawal,
-    basisDraws,
-    rothTaxSplit,
-    earlyWithdrawalPenalty,
-  } = distributeYearDraws(
-    indBalance,
-    hasIndividualAccounts,
-    indAccounts,
-    indKey,
-    brokBasis,
-    slots,
-    eligibility,
-    ownerRmd,
-    routeWarnings,
-    indBasis,
-    year,
-  );
+  const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
+  const { decumulationIndWithdrawal, basisDraws } = drawn;
 
-  const { priceTax, taxableSS, taxFromSlots } = priceYearTax(
-    slots,
-    balances,
-    taxRates,
-    grownTaxBrackets,
-    grownStandardDeduction,
-    grownLtcgBrackets,
-    filingStatus,
-    totalTraditionalWithdrawal,
-    totalRothWithdrawal,
-    rothTaxSplit,
-    earlyWithdrawalPenalty,
-    brokerageBasisRatio,
-    taxEstimate,
-    ssIncome,
-  );
+  const priced = priceYearTax(ctx, state, thisYear, {
+    need,
+    route,
+    rmd,
+    drawn,
+  });
+  const { priceTax, taxableSS, taxFromSlots } = priced;
+  const parts = pricedYearParts(state, { need, route, rmd, priced });
   const {
-    brokerageBasisPortion,
     brokerageGainsPortion,
     actualTaxableIncome,
     penaltyCost,
     ssTaxCost,
     surplusCredit,
     grossUpFactor,
-  } = pricedYearParts(
-    taxFromSlots,
-    slots,
-    balances,
-    ssSurplus,
-    taxEstimate,
-    rmdOverrodeRouting,
-    afterTaxNeed,
-    state,
-  );
+  } = parts;
 
-  const { rmdExcessAmount } = settleYearDraws(
-    slots,
-    balances,
-    accountBalance,
-    brokerageBasisPortion,
-    indAccounts,
-    indKey,
-    indBalance,
-    brokBasis,
-    config,
-    ctx,
-    state,
-    taxFromSlots,
-    surplusCredit,
-    rmdOverrodeRouting,
-    totalWithdrawal,
-    afterTaxNeed,
-    hasIndividualAccounts,
-    depletionTracked,
-    accountDepletions,
-    year,
-    age,
-  );
+  const flow = { need, route, rmd, priced, parts };
+  const { rmdExcessAmount } = settleYearDraws(ctx, state, thisYear, flow);
 
   const {
     rothConversionAmount,
@@ -325,7 +222,7 @@ export function runDecumulationYear(
   } = yearRothConversion(
     config,
     hasIndividualAccounts,
-    rmdStartAgeByPerson,
+    ctx.rmdStartAgeByPerson,
     indAccounts,
     ctx,
     indBalance,
@@ -339,13 +236,13 @@ export function runDecumulationYear(
     taxRates,
     grownTaxBrackets,
     grownStandardDeduction,
-    resolvedConversionTarget,
+    route.resolvedConversionTarget,
     taxableSS,
     taxFromSlots,
     brokerageGainsPortion,
     input,
     enableIrmaaAwareness,
-    grownIrmaaBracketsForCap,
+    tables.grownIrmaaBracketsForCap,
     filingStatus,
     accountBalance,
     nonRetirement,
