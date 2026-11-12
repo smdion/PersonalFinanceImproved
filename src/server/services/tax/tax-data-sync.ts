@@ -26,6 +26,7 @@ import {
 } from "@/lib/tax-data/signature";
 import { checkTaxDataFile } from "@/lib/tax-data/checked-file";
 import { log } from "@/lib/logger";
+import { fetchChecked } from "@/lib/http/external-request";
 import type { Db } from "@/lib/db";
 import { writeStamp } from "@/lib/utils/clock";
 import { readStoredSetting } from "@/lib/db/stored-setting";
@@ -62,9 +63,14 @@ const lastCheckShape: z.ZodType<TaxDataLastCheck | null> = z
   })
   .nullable();
 
+type Fetch = (url: string, init: RequestInit) => Promise<Response>;
+
+/** Through the outbound URL check: GitHub, and its release download hosts. */
+const checkedFetch: Fetch = (url, init) => fetchChecked(url, init, "taxData");
+
 /** Where to fetch from (tests point this at a fake). */
 type TaxDataSource = {
-  fetch?: typeof fetch;
+  fetch?: Fetch;
   downloadBase?: string;
 };
 
@@ -116,13 +122,9 @@ function releaseTag(): string {
 }
 
 /** GET as text with a time and size cap; null on 404. */
-async function getText(
-  url: string,
-  doFetch: typeof fetch,
-): Promise<string | null> {
+async function getText(url: string, doFetch: Fetch): Promise<string | null> {
   const res = await doFetch(url, {
     headers: { "User-Agent": USER_AGENT },
-    redirect: "follow",
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   if (res.status === 404) return null;
@@ -194,7 +196,7 @@ export async function checkForTaxDataUpdate(
     const url =
       (source.downloadBase ?? "https://github.com") +
       `/${TAX_DATA_REPO}/releases/download/${releaseTag()}/${TAX_DATA_ASSET}`;
-    const assetText = await getText(url, source.fetch ?? fetch);
+    const assetText = await getText(url, source.fetch ?? checkedFetch);
     // Nothing published yet.
     if (assetText === null) return await done({ result: "current" });
     const signed = unpackSignedTaxData(assetText);
