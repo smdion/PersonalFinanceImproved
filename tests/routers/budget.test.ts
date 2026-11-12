@@ -1532,6 +1532,22 @@ describe("budget router", () => {
       expect(linked.contribStatus?.[0]).toBe("no_pay_period");
     });
 
+    it("a percent account of a person with a job but none of its own reads the person's job pay, as on the Contributions page", async () => {
+      const personId = await seedPerson(db, "Linked Jobless Percent");
+      seedJob(db, personId, { annualSalary: "120000" });
+      const { itemId, contribProfileId } = await seedLinkedItem({
+        contributionMethod: "percent_of_salary",
+        contributionValue: "6",
+        personId,
+      });
+      const before = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+      });
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      // 6% of $120,000 is $7,200 a year: $600 a month (was $0).
+      expect(linked.contribAmount).toBeCloseTo(600, 2);
+    });
+
     it("rejects editing a percent_of_salary-linked item with a clear error", async () => {
       const { itemId, contribProfileId } = await seedLinkedItem({
         contributionMethod: "percent_of_salary",

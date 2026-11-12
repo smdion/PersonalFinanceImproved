@@ -301,7 +301,7 @@ export function computeBonusGross(
 /**
  * This year's pay for a job: Salary Profile compensation plus the job's own What-If
  * tweak (whatIfForJob: the current job's only), and the set bonus when there is one.
- * Read by the IRS-limit cap pass. `totalComp` = salary + this year's bonus.
+ * `totalComp` = salary + this year's bonus.
  */
 export function thisYearJobPay(
   job: { id: number },

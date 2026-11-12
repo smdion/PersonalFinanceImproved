@@ -15,7 +15,7 @@ import {
   type SalaryOverrideEntry,
   type SalaryActiveMap,
   applySandboxSalaryEntries,
-  resolveCompensation,
+  thisYearJobPay,
 } from "@/lib/pure/household/compensation";
 import {
   loadAndApplyContribProfile,
@@ -105,26 +105,26 @@ export async function resolveLinkedBudgetItemAmounts<
 
   const salaryByJobId = new Map<number, number>();
   for (const j of activeJobs) {
-    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-    // Regular paychecks only (base salary): a bonus check isn't monthly cash flow.
-    // A What-If salary is the current job's only (whatIfForJob).
+    // Base salary only (a bonus check isn't monthly cash flow); What-If: current job only.
     const whatIf = whatIfForJob(j, activeJobs, scope.asOf, effectiveSalaryMap);
-    salaryByJobId.set(j.id, whatIf?.salary ?? comp.salary);
+    const { salary } = thisYearJobPay(j, salaryProfileActiveMap, whatIf);
+    salaryByJobId.set(j.id, salary);
   }
 
   for (const c of activeContributions) {
     if (!linkedContributionIds.has(c.id)) continue;
     const val = computeValue(c);
-    const { periodsPerYear: jobPeriodsPerYear, incomplete } = rowPaySchedule(
-      c,
-      activeJobs,
-    );
+    const {
+      periodsPerYear: jobPeriodsPerYear,
+      incomplete,
+      job,
+    } = rowPaySchedule(c, activeJobs);
     if (incomplete) {
       incompleteIds.add(c.id);
       contributionMonthlyById.set(c.id, 0);
       continue;
     }
-    const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
+    const salary = job ? (salaryByJobId.get(job.id) ?? 0) : 0;
     const annual = computeAnnualContribution(
       c.contributionMethod,
       val,
