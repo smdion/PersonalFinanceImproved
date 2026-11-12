@@ -22,18 +22,15 @@ import type {
 /** Each owner's QCD this year, debited from that owner's own
  *  Retirement-parented IRAs and from the aggregate trackers. */
 export function qcdStep(
-  hasIndividualAccounts: boolean,
-  rmdStartAgeByPerson: ProjectionContext["rmdStartAgeByPerson"],
-  year: number,
-  indAccounts: ProjectionContext["indAccounts"],
   ctx: ProjectionContext,
-  indBalance: ProjectionLoopState["indBalance"],
-  indKey: ProjectionContext["indKey"],
-  decumulationDefaults: ProjectionContext["input"]["decumulationDefaults"],
+  state: ProjectionLoopState,
+  year: number,
   config: ReturnType<typeof resolveDecumulationConfig>,
-  balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
 ) {
+  const { hasIndividualAccounts, rmdStartAgeByPerson, indAccounts, indKey } =
+    ctx;
+  const { decumulationDefaults } = ctx.input;
+  const { indBalance, balances, accountBalance } = state;
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
   // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd), not the RMD
   // start age, so it reads every tracked person, not only rmdByPerson.

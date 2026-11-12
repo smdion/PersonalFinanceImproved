@@ -9,13 +9,12 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 /** Each RMD owner's amount this year, with the divisor and balance behind
  *  it: per owner when accounts are tracked and someone has an RMD age. */
 export function rmdIncomeByOwner(
-  year: number,
-  input: ProjectionContext["input"],
   ctx: ProjectionContext,
-  hasIndividualAccounts: boolean,
-  rmdStartAgeByPerson: ProjectionContext["rmdStartAgeByPerson"],
-  priorYearEndTradByPerson: ProjectionLoopState["priorYearEndTradByPerson"],
+  state: ProjectionLoopState,
+  year: number,
 ) {
+  const { input, hasIndividualAccounts, rmdStartAgeByPerson } = ctx;
+  const { priorYearEndTradByPerson } = state;
   // Each owner's RMD from their own Traditional balance and age, before
   // routing: the QCD takes part of it ahead of the tax estimate. Without
   // tracked accounts or RMD ages, the household path applies instead.

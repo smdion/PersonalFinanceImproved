@@ -11,13 +11,12 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 /** The year's tax tables, each grown from its own table year: brackets, the
  *  standard deduction, LTCG and IRMAA brackets, and the ACA cliff's factor. */
 export function growYearTaxTables(
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
   ctx: ProjectionContext,
+  state: ProjectionLoopState,
   year: number,
-  perPersonBirthYears: ProjectionContext["input"]["perPersonBirthYears"],
   age: number,
-  incomeHistory: ProjectionLoopState["incomeHistory"],
 ) {
+  const taxRates = ctx.input.decumulationDefaults.distributionTaxRates;
   // Brackets and the standard deduction are inflation-indexed, so each grows
   // from its own table year (taxTableYears; bracket-growth.ts says why NIIT
   // and Social Security thresholds stay flat).
@@ -34,11 +33,11 @@ export function growYearTaxTables(
     ? growWithholdingBrackets(taxRates.taxBrackets, bracketGrowth)
     : undefined;
   const { grownStandardDeduction } = yearStandardDeduction(
-    perPersonBirthYears,
+    ctx.input.perPersonBirthYears,
     year,
     age,
     taxRates,
-    incomeHistory,
+    state.incomeHistory,
     taxGrowth,
   );
   // LTCG brackets, grown from their own year.

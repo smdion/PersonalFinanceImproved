@@ -12,6 +12,7 @@ import { cloneAccountBalances } from "../balance-utils";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type {
+  DecumulationYear,
   PreYearSetup,
   ProjectionContext,
   ProjectionLoopState,
@@ -42,14 +43,7 @@ export function runDecumulationYear(
   yearIndex: number,
   setup: PreYearSetup,
 ): void {
-  const {
-    age,
-    year,
-    returnRate,
-    strategyAction,
-    retirementBalance,
-    totalBalance,
-  } = setup;
+  const { age, year, returnRate, strategyAction, retirementBalance } = setup;
   const {
     input,
     budgetOverrideMap,
@@ -65,7 +59,6 @@ export function runDecumulationYear(
     balances,
     accountBalance,
     priorYearEndTradBalance,
-    priorYearEndTradByPerson,
     indBalance,
     indBasis,
     brokBasis,
@@ -125,27 +118,12 @@ export function runDecumulationYear(
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
   const { perOwnerRmd, perPersonRmdTotal, rmdByPerson } = rmdIncomeByOwner(
-    year,
-    input,
     ctx,
-    hasIndividualAccounts,
-    rmdStartAgeByPerson,
-    priorYearEndTradByPerson,
+    state,
+    year,
   );
 
-  const { totalQcd, qcdByPerson } = qcdStep(
-    hasIndividualAccounts,
-    rmdStartAgeByPerson,
-    year,
-    indAccounts,
-    ctx,
-    indBalance,
-    indKey,
-    decumulationDefaults,
-    config,
-    balances,
-    accountBalance,
-  );
+  const { totalQcd, qcdByPerson } = qcdStep(ctx, state, year, config);
 
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
@@ -166,6 +144,7 @@ export function runDecumulationYear(
       ? Math.max(0, retirementPreTax) / retirementBalance
       : 0;
 
+  const tables = growYearTaxTables(ctx, state, year, age);
   const {
     grownTaxBrackets,
     grownStandardDeduction,
@@ -173,14 +152,7 @@ export function runDecumulationYear(
     grownIrmaaBracketsForCheck,
     grownIrmaaBracketsForCap,
     fplGrowthFactor,
-  } = growYearTaxTables(
-    taxRates,
-    ctx,
-    year,
-    perPersonBirthYears,
-    age,
-    incomeHistory,
-  );
+  } = tables;
 
   const personsAge65Plus = countReachingAgeRule(
     perPersonBirthYears,
@@ -188,32 +160,22 @@ export function runDecumulationYear(
     "medicare",
     year,
   );
-  const { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal } = yearNeed(
-    state,
-    ssIncome,
-    input,
-    incomeHistory,
-    enableIrmaaAwareness,
-    filingStatus,
-    personsAge65Plus,
-    grownIrmaaBracketsForCheck,
-    config,
-    taxRates,
-    grownTaxBrackets,
-    grownStandardDeduction,
-    grownLtcgBrackets,
-    balances,
-    accountBalance,
-    totalBalance,
-    retirementBasisRatio,
-    eligibility,
-    nonRetirement,
-    hasIndividualAccounts,
-    indAccounts,
-    indKey,
-    indBalance,
-    indBasis,
+  const thisYear: DecumulationYear = {
     year,
+    age,
+    setup,
+    config,
+    eligibility,
+    taxRates,
+    tables,
+    ssIncome,
+    personsAge65Plus,
+    retirementBasisRatio,
+  };
+  const { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal } = yearNeed(
+    ctx,
+    state,
+    thisYear,
   );
 
   const {

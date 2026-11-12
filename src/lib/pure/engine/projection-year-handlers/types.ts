@@ -29,6 +29,13 @@ import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
+import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
+import type { resolveDecumulationConfig } from "../override-resolution";
+import type {
+  growIrmaaBrackets,
+  growLtcgBrackets,
+  growWithholdingBrackets,
+} from "../bracket-growth";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -211,4 +218,29 @@ export type PreYearSetup = {
   /** Nobody saves this year: nobody's at work, or the household chose to
    *  stop in gap years. */
   savingStopped: boolean;
+};
+
+/** The year's tax tables, each grown to the year (year-tax-tables.ts). */
+export type YearTaxTables = {
+  grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined;
+  grownStandardDeduction: number | undefined;
+  grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>;
+  grownIrmaaBracketsForCheck: ReturnType<typeof growIrmaaBrackets>;
+  grownIrmaaBracketsForCap: ReturnType<typeof growIrmaaBrackets>;
+  fplGrowthFactor: number;
+};
+
+/** A decumulation year's facts, settled before its first draw: each stage
+ *  from the need on reads them here, by name. */
+export type DecumulationYear = {
+  year: number;
+  age: number;
+  setup: PreYearSetup;
+  config: ReturnType<typeof resolveDecumulationConfig>;
+  eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined;
+  taxRates: ProjectionInput["decumulationDefaults"]["distributionTaxRates"];
+  tables: YearTaxTables;
+  ssIncome: number;
+  personsAge65Plus: number;
+  retirementBasisRatio: number | undefined;
 };

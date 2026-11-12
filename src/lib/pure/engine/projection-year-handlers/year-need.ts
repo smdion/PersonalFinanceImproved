@@ -1,17 +1,10 @@
 /** The decumulation year's after-tax need, and the withdrawal that meets it. */
 import { roundToCents } from "../../../utils/math";
 import { yearMagi } from "@/lib/pure/tax/year-income";
-import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
-import type {
-  growIrmaaBrackets,
-  growLtcgBrackets,
-  growWithholdingBrackets,
-} from "../bracket-growth";
 import { checkHouseholdIrmaa } from "../household-irmaa";
-import type { resolveDecumulationConfig } from "../override-resolution";
 import { estimateWithdrawalTaxCost } from "../withdrawal-solver";
 import type {
-  PreYearSetup,
+  DecumulationYear,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
@@ -20,32 +13,19 @@ import type {
  *  then the gross withdrawal the solver sizes to cover it and its tax; a
  *  withdrawal-sized year's need is what that withdrawal delivers. */
 export function yearNeed(
+  ctx: ProjectionContext,
   state: ProjectionLoopState,
-  ssIncome: number,
-  input: ProjectionContext["input"],
-  incomeHistory: ProjectionLoopState["incomeHistory"],
-  enableIrmaaAwareness: ProjectionContext["input"]["enableIrmaaAwareness"],
-  filingStatus: ProjectionContext["input"]["filingStatus"],
-  personsAge65Plus: number,
-  grownIrmaaBracketsForCheck: ReturnType<typeof growIrmaaBrackets>,
-  config: ReturnType<typeof resolveDecumulationConfig>,
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
-  grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined,
-  grownStandardDeduction: number | undefined,
-  grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
-  balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  totalBalance: PreYearSetup["totalBalance"],
-  retirementBasisRatio: number | undefined,
-  eligibility: ReturnType<typeof computeWithdrawalEligibility> | undefined,
-  nonRetirement: PreYearSetup["nonRetirement"],
-  hasIndividualAccounts: boolean,
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
-  indBasis: ProjectionLoopState["indBasis"],
-  year: number,
+  thisYear: DecumulationYear,
 ) {
+  const { input, hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { enableIrmaaAwareness, filingStatus } = input;
+  const { incomeHistory, balances, accountBalance, indBalance, indBasis } =
+    state;
+  const { year, config, eligibility, taxRates, ssIncome } = thisYear;
+  const { personsAge65Plus, retirementBasisRatio } = thisYear;
+  const { totalBalance, nonRetirement } = thisYear.setup;
+  const { grownIrmaaBracketsForCheck, grownTaxBrackets } = thisYear.tables;
+  const { grownStandardDeduction, grownLtcgBrackets } = thisYear.tables;
   // The year's after-tax need: spending less Social Security — or, when
   // the strategy sized the gross withdrawal (Social Security on top), what
   // that withdrawal delivers after tax (set from the estimate below).
