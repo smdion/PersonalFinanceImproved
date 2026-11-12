@@ -1,10 +1,16 @@
 /**
  * `demo.activateProfile` rebuilds a demo profile's shared schema, so it
- * takes the expensive tier: 5 a minute per visitor. On SQLite each call is
- * refused for its dialect after the limiter, which is all this needs.
+ * takes the expensive tier: 5 a minute per visitor. Each call is refused for
+ * its dialect after the limiter (the dialect is pinned to SQLite, so the
+ * router suite's PostgreSQL run doesn't build a schema), which is all this needs.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+vi.mock("@/lib/db/dialect", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/db/dialect")>()),
+  isPostgres: () => false,
+}));
 import * as limiter from "@/lib/rate-limit";
 import { createCallerFactory, type Context } from "@/server/trpc";
 import { demoRouter } from "@/server/routers/demo";
