@@ -133,7 +133,6 @@ describe("answer key: the conversion amount and its tax", () => {
         ssIncome: 0,
         taxRates: {},
         tables: {
-          grownStandardDeduction: 32_200,
           grownLtcgBrackets: ltcg2026,
           grownTaxBrackets: undefined,
         },
@@ -150,6 +149,7 @@ describe("answer key: the conversion amount and its tax", () => {
             return { taxCost: brokerageTaxCost };
           },
           taxableSS: 0,
+          standardDeduction: 32_200,
         },
         parts: { actualTaxableIncome: 50_000, brokerageGainsPortion: 40_000 },
         rmd: { totalTraditionalWithdrawal: 50_000 },
@@ -177,7 +177,6 @@ describe("answer key: a conversion year's gains, line 25", () => {
         ssIncome: 0,
         taxRates: { taxMultiplier: 1 },
         tables: {
-          grownStandardDeduction: 16_100,
           grownLtcgBrackets: ltcg2026,
           grownTaxBrackets: singleTable,
         },
@@ -194,6 +193,7 @@ describe("answer key: a conversion year's gains, line 25", () => {
             return { taxCost: brokerageTaxCost };
           },
           taxableSS: 0,
+          standardDeduction: 16_100,
         },
         parts: { actualTaxableIncome: 55_550, brokerageGainsPortion: 950 },
         rmd: { totalTraditionalWithdrawal: 55_550 },

@@ -16,6 +16,25 @@ export type RepricedFlow = DecumulationFlow & {
   repriced: ReturnType<typeof repriceConversionYear>;
 };
 
+/** The year's income as priced, by stream, with `rothConversions` of
+ *  conversion: what its MAGI readings and the year's history read. */
+function pricedYearIncome(
+  thisYear: Pick<DecumulationYear, "ssIncome">,
+  flow: Pick<DecumulationFlow, "rmd" | "priced" | "parts">,
+  rothConversions: number,
+): YearIncome {
+  return {
+    traditionalDraws: flow.rmd.totalTraditionalWithdrawal,
+    rothTaxableGrowth: flow.priced.taxFromSlots.rothTaxableGrowth,
+    rothConversions,
+    realizedGains: flow.parts.brokerageGainsPortion,
+    socialSecurity: {
+      gross: thisYear.ssIncome,
+      taxable: flow.priced.taxableSS,
+    },
+  };
+}
+
 /** The conversion year's gains re-priced, then NIIT, after the RMD excess is
  *  reinvested: today's order (funding NIIT first is v0.11). */
 export function repriceConversionYear(
@@ -24,15 +43,16 @@ export function repriceConversionYear(
   flow: Pick<DecumulationFlow, "rmd" | "priced" | "parts" | "conversion">,
 ) {
   const { filingStatus } = ctx.input;
-  const { ssIncome, tables } = thisYear;
-  const { grownStandardDeduction, grownLtcgBrackets } = tables;
+  const { tables } = thisYear;
+  const { grownLtcgBrackets } = tables;
   const taxRates = {
     ...thisYear.taxRates,
     taxBrackets: tables.grownTaxBrackets,
   };
   const { taxFromSlots, priceTax, taxableSS } = flow.priced;
+  // The deduction priceYearTax priced the year with (the conversion's too).
+  const grownStandardDeduction = flow.priced.standardDeduction;
   const { actualTaxableIncome, brokerageGainsPortion } = flow.parts;
-  const { totalTraditionalWithdrawal } = flow.rmd;
   const { rothConversionAmount } = flow.conversion;
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   let taxCost = taxFromSlots.taxCost;
@@ -82,13 +102,7 @@ export function repriceConversionYear(
             : taxRates.brokerage;
   }
 
-  const income: YearIncome = {
-    traditionalDraws: totalTraditionalWithdrawal,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    rothConversions: rothConversionAmount,
-    realizedGains: brokerageGainsPortion,
-    socialSecurity: { gross: ssIncome, taxable: taxableSS },
-  };
+  const income = pricedYearIncome(thisYear, flow, rothConversionAmount);
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   // Applies to lesser of net investment income or MAGI exceeding threshold.
   // Roth conversions raise MAGI but are NOT net investment income.

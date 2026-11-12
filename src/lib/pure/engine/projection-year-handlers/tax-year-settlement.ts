@@ -51,8 +51,8 @@ export function priceYearTax(
   const { filingStatus } = ctx.input;
   const { balances } = state;
   const { taxRates, ssIncome } = thisYear;
-  const { grownTaxBrackets, grownStandardDeduction, grownLtcgBrackets } =
-    thisYear.tables;
+  const { grownTaxBrackets, grownLtcgBrackets } = thisYear.tables;
+  const standardDeduction = thisYear.tables.grownStandardDeduction; // all year
   const { slots, brokerageBasisRatio } = flow.route;
   const { totalTraditionalWithdrawal, totalRothWithdrawal } = flow.rmd;
   const { rothTaxSplit, earlyWithdrawalPenalty } = flow.drawn;
@@ -67,7 +67,7 @@ export function priceYearTax(
       taxRates: {
         ...taxRates,
         taxBrackets: grownTaxBrackets,
-        standardDeduction: grownStandardDeduction,
+        standardDeduction,
         ltcgBrackets: grownLtcgBrackets,
       },
       filingStatus,
@@ -90,7 +90,7 @@ export function priceYearTax(
     taxFromSlots = priceTax(taxableSS);
   }
 
-  return { priceTax, taxableSS, taxFromSlots };
+  return { priceTax, taxableSS, taxFromSlots, standardDeduction };
 }
 
 /** The priced year's parts the settlement reads (the brokerage slot's basis
@@ -244,12 +244,12 @@ export function yearRothConversion(
   const { indBalance, balances, brokBasis, accountBalance } = state;
   const { config, year, taxRates } = thisYear;
   const { nonRetirement } = thisYear.setup;
-  const { grownTaxBrackets, grownStandardDeduction, grownIrmaaBracketsForCap } =
-    thisYear.tables;
+  const { grownTaxBrackets, grownIrmaaBracketsForCap } = thisYear.tables;
   const { totalTraditionalWithdrawal, totalWithdrawal } = flow.rmd;
   const { targetWithdrawal } = flow.need;
   const { resolvedConversionTarget } = flow.route;
   const { taxableSS, taxFromSlots } = flow.priced;
+  const grownStandardDeduction = flow.priced.standardDeduction;
   const { brokerageGainsPortion } = flow.parts;
   // RMD-aware conversion smoothing (rmd-smoothing.ts), sized each year from
   // each owner's current Traditional balance (indBalance, after this year's
