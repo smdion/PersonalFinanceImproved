@@ -6,12 +6,8 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-
-vi.mock("@/lib/db/dialect", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/db/dialect")>()),
-  isPostgres: () => false,
-}));
 import * as limiter from "@/lib/rate-limit";
+import * as dialect from "@/lib/db/dialect";
 import { createCallerFactory, type Context } from "@/server/trpc";
 import { demoRouter } from "@/server/routers/demo";
 
@@ -38,6 +34,7 @@ function visitor(id = "visitor-1"): Context {
 describe("demo.activateProfile's rate limit", () => {
   beforeEach(() => {
     vi.mocked(limiter.rateLimit).mockImplementation(actual.rateLimit);
+    vi.spyOn(dialect, "isPostgres").mockReturnValue(false);
   });
 
   it("refuses a visitor's sixth activation in a minute", async () => {
