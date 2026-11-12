@@ -1,7 +1,7 @@
 /**
  * Engine-backed relocation projection (current vs relocation budget, earliest safe move
  * year, year-by-year rows, optional blended run switching at moveYear), plus CRUD for
- * the Tools page's saved relocation scenarios.
+ * the Tools page's saved relocation scenarios, and the Relocation tool's analysis.
  */
 import { z } from "zod/v4";
 import { zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
@@ -16,8 +16,10 @@ import { relocationScenarioParamsSchema } from "@/lib/db/shapes/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
 import { writeStamp } from "@/lib/utils/clock";
 import { computeRelocationFiProjection } from "@/server/services/projection/relocation-projection";
+import { relocationAnalysisProcedures } from "./relocation-analysis";
 
 export const relocationProjectionRouter = createTRPCRouter({
+  ...relocationAnalysisProcedures,
   /**
    * Runs the full projection engine for current vs relocation scenarios to find the earliest
    * year the user can move and still retire at retirementAge; returns comparison rows and,

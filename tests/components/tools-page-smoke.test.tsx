@@ -164,7 +164,7 @@ describe("ToolsPage smoke", () => {
       inflationRate: 0.035,
       baseYear: 2026,
     });
-    setQuery("retirement.computeRelocationAnalysis", mockRelocData);
+    setQuery("projection.computeRelocationAnalysis", mockRelocData);
     // No write settles: the test reads that the save was sent.
     for (const path of [
       "settings.appSettings.upsert",

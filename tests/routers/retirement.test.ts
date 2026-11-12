@@ -240,20 +240,20 @@ describe("retirement router", () => {
   describe("computeRelocationAnalysis -- early returns", () => {
     it("returns without throwing on an empty DB", async () => {
       const result =
-        await caller.retirement.computeRelocationAnalysis(minimalInput);
+        await caller.projection.computeRelocationAnalysis(minimalInput);
       expect(result).toBeDefined();
     });
 
     it("returns null result and null budgetInfo when DB has no people or settings", async () => {
       const result =
-        await caller.retirement.computeRelocationAnalysis(minimalInput);
+        await caller.projection.computeRelocationAnalysis(minimalInput);
       expect(result.result).toBeNull();
       expect(result.budgetInfo).toBeNull();
     });
 
     it("has expected top-level shape", async () => {
       const result =
-        await caller.retirement.computeRelocationAnalysis(minimalInput);
+        await caller.projection.computeRelocationAnalysis(minimalInput);
       expect(result).toHaveProperty("result");
       expect(result).toHaveProperty("budgetInfo");
     });
@@ -261,13 +261,13 @@ describe("retirement router", () => {
     it("returns null when person exists but no retirement settings", async () => {
       await seedPerson(db);
       const result =
-        await caller.retirement.computeRelocationAnalysis(minimalInput);
+        await caller.projection.computeRelocationAnalysis(minimalInput);
       expect(result.result).toBeNull();
       expect(result.budgetInfo).toBeNull();
     });
 
     it("accepts optional fields (empty override arrays) without throwing", async () => {
-      const result = await caller.retirement.computeRelocationAnalysis({
+      const result = await caller.projection.computeRelocationAnalysis({
         ...minimalInput,
         yearAdjustments: [],
         contributionOverrides: [],
@@ -287,7 +287,7 @@ describe("retirement router", () => {
         await createTestCaller(viewerSession);
       try {
         const result =
-          await viewerCaller.retirement.computeRelocationAnalysis(minimalInput);
+          await viewerCaller.projection.computeRelocationAnalysis(minimalInput);
         expect(result).toBeDefined();
       } finally {
         viewerCleanup();
@@ -354,7 +354,7 @@ describe("retirement router -- populated data", () => {
   afterAll(() => cleanup());
 
   it("returns non-null result with fully populated data", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -367,7 +367,7 @@ describe("retirement router -- populated data", () => {
   });
 
   it("result contains expected relocation fields", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -393,7 +393,7 @@ describe("retirement router -- populated data", () => {
   });
 
   it("budgetInfo contains profile summaries and indices", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -416,7 +416,7 @@ describe("retirement router -- populated data", () => {
   });
 
   it("returns contribution profile data in response", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -435,7 +435,7 @@ describe("retirement router -- populated data", () => {
   });
 
   it("same profile/column for both sides yields zero expense delta", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -448,7 +448,7 @@ describe("retirement router -- populated data", () => {
   });
 
   it("produces projectionByYear array", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -465,7 +465,7 @@ describe("retirement router -- populated data", () => {
   // dropped — annualContributions came back 0 and projectionByYear balance
   // never grew beyond the starting snapshot amount.
   it("contributions are non-zero and projection balance grows when retirement accounts exist", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -519,7 +519,7 @@ describe("retirement router -- expense overrides", () => {
   afterAll(() => cleanup());
 
   it("currentExpenseOverride overrides the budget profile expenses", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -534,7 +534,7 @@ describe("retirement router -- expense overrides", () => {
   });
 
   it("relocationExpenseOverride overrides relocation expenses", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -548,7 +548,7 @@ describe("retirement router -- expense overrides", () => {
   });
 
   it("both overrides at once", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -616,7 +616,7 @@ describe("retirement router -- different profiles for current vs relocation", ()
   afterAll(() => cleanup());
 
   it("relocation to a more expensive city increases expenses", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: cheapProfileId,
       currentBudgetColumn: 0,
       relocationProfileId: expensiveProfileId,
@@ -630,7 +630,7 @@ describe("retirement router -- different profiles for current vs relocation", ()
   });
 
   it("relocation to a cheaper city decreases expenses", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: expensiveProfileId,
       currentBudgetColumn: 0,
       relocationProfileId: cheapProfileId,
@@ -676,7 +676,7 @@ describe("retirement router -- year adjustments", () => {
   afterAll(() => cleanup());
 
   it("year adjustments are accepted and do not throw", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -690,7 +690,7 @@ describe("retirement router -- year adjustments", () => {
   });
 
   it("year adjustments can reference a profileId+column", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -742,7 +742,7 @@ describe("retirement router -- contribution overrides", () => {
   afterAll(() => cleanup());
 
   it("contribution overrides are accepted and result is non-null", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -791,7 +791,7 @@ describe("retirement router -- large purchases", () => {
   afterAll(() => cleanup());
 
   it("large purchases are accepted and impact the result", async () => {
-    const resultWithout = await caller.retirement.computeRelocationAnalysis({
+    const resultWithout = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -799,7 +799,7 @@ describe("retirement router -- large purchases", () => {
       largePurchases: [],
     });
 
-    const resultWith = await caller.retirement.computeRelocationAnalysis({
+    const resultWith = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -830,7 +830,7 @@ describe("retirement router -- large purchases", () => {
   });
 
   it("large purchase with sale proceeds reduces portfolio hit", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -893,7 +893,7 @@ describe("retirement router -- return rates", () => {
   afterAll(() => cleanup());
 
   it("uses return rate table for projection (does not throw)", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -910,7 +910,7 @@ describe("retirement router -- return rates", () => {
       relocationProfileId: profileId,
       relocationBudgetColumn: 0,
     };
-    const sparse = await caller.retirement.computeRelocationAnalysis(input);
+    const sparse = await caller.projection.computeRelocationAnalysis(input);
     // Fill every gap with the rate already in effect there (inserted
     // directly — the router would collapse them).
     const breakpoints: [number, string][] = [
@@ -925,7 +925,7 @@ describe("retirement router -- return rates", () => {
       const rate = breakpoints.filter(([a]) => a <= age).at(-1)![1];
       await seedReturnRate(db, age, rate);
     }
-    const perAge = await caller.retirement.computeRelocationAnalysis(input);
+    const perAge = await caller.projection.computeRelocationAnalysis(input);
     expect(perAge.result!.projectionByYear).toEqual(
       sparse.result!.projectionByYear,
     );
@@ -974,7 +974,7 @@ describe("retirement router -- selected scenario", () => {
   afterAll(() => cleanup());
 
   it("uses selected scenario withdrawal rate (lower FI target)", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1034,7 +1034,7 @@ describe("retirement router -- multi-column budget profiles", () => {
   afterAll(() => cleanup());
 
   it("uses weighted annual total for multi-column profiles with columnMonths", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: multiColProfileId,
       currentBudgetColumn: 0,
       relocationProfileId: multiColProfileId,
@@ -1046,7 +1046,7 @@ describe("retirement router -- multi-column budget profiles", () => {
   });
 
   it("profile summaries include weightedAnnualTotal", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: multiColProfileId,
       currentBudgetColumn: 0,
       relocationProfileId: multiColProfileId,
@@ -1091,7 +1091,7 @@ describe("retirement router -- no snapshot", () => {
   afterAll(() => cleanup());
 
   it("returns non-null result with zero portfolio", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1175,7 +1175,7 @@ describe("retirement router -- contribution profiles", () => {
   afterAll(() => cleanup());
 
   it("null contribution profile uses live DB data", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1190,7 +1190,7 @@ describe("retirement router -- contribution profiles", () => {
   });
 
   it("contribution profile ID switches contribution data", async () => {
-    const resultLive = await caller.retirement.computeRelocationAnalysis({
+    const resultLive = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1199,7 +1199,7 @@ describe("retirement router -- contribution profiles", () => {
       relocationContributionProfileId: null,
     });
 
-    const resultProfile = await caller.retirement.computeRelocationAnalysis({
+    const resultProfile = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1250,7 +1250,7 @@ describe("retirement router -- person + settings but no budget profiles", () => 
 
   it("returns null result when budget profiles are empty", async () => {
     const result =
-      await caller.retirement.computeRelocationAnalysis(minimalInput);
+      await caller.projection.computeRelocationAnalysis(minimalInput);
     expect(result.result).toBeNull();
     expect(result.budgetInfo).toBeNull();
   });
@@ -1283,7 +1283,7 @@ describe("retirement router -- mismatched profile IDs", () => {
   afterAll(() => cleanup());
 
   it("returns null when current profile ID does not exist", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: 99999,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1294,7 +1294,7 @@ describe("retirement router -- mismatched profile IDs", () => {
   });
 
   it("returns null when relocation profile ID does not exist", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: 99999,
@@ -1347,7 +1347,7 @@ describe("retirement router -- multiple people", () => {
   afterAll(() => cleanup());
 
   it("works with multiple people -- uses primary person for settings", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1414,7 +1414,7 @@ describe("retirement router -- portfolio-category account filtering", () => {
   afterAll(() => cleanup());
 
   it("only counts Retirement-category accounts in portfolio total", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: profileId,
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
@@ -1496,7 +1496,7 @@ describe("retirement router -- all optional inputs combined", () => {
   afterAll(() => cleanup());
 
   it("handles all inputs simultaneously", async () => {
-    const result = await caller.retirement.computeRelocationAnalysis({
+    const result = await caller.projection.computeRelocationAnalysis({
       currentProfileId: currentProfileId,
       currentBudgetColumn: 0,
       relocationProfileId: relocProfileId,
@@ -1645,7 +1645,7 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
         .returning({ id: schema.contributionProfiles.id })
         .get();
 
-      const result = await caller.retirement.computeRelocationAnalysis({
+      const result = await caller.projection.computeRelocationAnalysis({
         currentProfileId,
         currentBudgetColumn: 0,
         relocationProfileId: currentProfileId,
@@ -1760,7 +1760,7 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
         .get();
 
       const call = () =>
-        caller.retirement.computeRelocationAnalysis({
+        caller.projection.computeRelocationAnalysis({
           currentProfileId,
           currentBudgetColumn: 0,
           relocationProfileId: currentProfileId,
@@ -1842,7 +1842,7 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       const on = await profileWith("From bonus", true);
       const off = await profileWith("Salary only", false);
 
-      const result = await caller.retirement.computeRelocationAnalysis({
+      const result = await caller.projection.computeRelocationAnalysis({
         currentProfileId: budgetId,
         currentBudgetColumn: 0,
         relocationProfileId: budgetId,

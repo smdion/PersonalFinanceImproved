@@ -137,7 +137,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "savings.savingsGoals.list" },
   { path: "brokerage.listGoals" },
   { path: "brokerage.computeSummary" },
-  { path: "retirement.computeRelocationAnalysis", input: relocation },
+  { path: "projection.computeRelocationAnalysis", input: relocation },
   { path: "retirement.retirementProfilePeople.list" },
   { path: "retirement.retirementSettings.list" },
   { path: "retirement.retirementSalaryOverrides.list" },

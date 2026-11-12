@@ -335,7 +335,7 @@ export function ToolsContent() {
     ],
   );
   const debouncedRelocInput = useDebouncedValue(relocInput, 600);
-  const relocQuery = trpc.retirement.computeRelocationAnalysis.useQuery(
+  const relocQuery = trpc.projection.computeRelocationAnalysis.useQuery(
     debouncedRelocInput,
     {
       enabled: effectiveCurrentProfileId > 0 && effectiveTargetProfileId > 0,
