@@ -240,15 +240,22 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     const install = await callerFor(null, reads);
     const names = (s: { people: { person: { name: string } }[] }) =>
       s.people.map((p) => p.person.name);
+    // A demo-only server refuses a request with no demo profile chosen.
+    const demoOnly = process.env.DEMO_ONLY === "true";
+    const publicNames = () =>
+      install.paycheck.computeSummary().then(names, (e: unknown) => {
+        if (demoOnly) return "refused";
+        throw e;
+      });
     const [publicFirst, demoSummary, contribution, publicAfter] =
       await Promise.all([
-        install.paycheck.computeSummary(),
+        publicNames(),
         demo.paycheck.computeSummary(),
         demo.contribution.computeSummary(),
-        install.paycheck.computeSummary(),
+        publicNames(),
       ]);
-    expect(names(publicFirst)).toEqual([]);
-    expect(names(publicAfter)).toEqual([]);
+    expect(publicFirst).toEqual(demoOnly ? "refused" : []);
+    expect(publicAfter).toEqual(demoOnly ? "refused" : []);
     const { rows } = await admin.query<{ name: string }>(
       `SELECT name FROM "${schemaName}".people ORDER BY id`,
     );

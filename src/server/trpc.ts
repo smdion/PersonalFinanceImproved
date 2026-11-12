@@ -20,6 +20,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
 import { DEMO_COOKIE, demoSchemaName } from "@/lib/demo/slugs";
+import { DemoSessionEnded, demoSessionEnded } from "@/lib/demo/session-ended";
 import {
   notifyMutationSucceeded,
   onMutationSucceeded,
@@ -108,11 +109,6 @@ export async function createContext(): Promise<Context> {
 
   return { db, session, demoSchema, reads: createReadMemo() };
 }
-
-/** The cause of a request refused for its demo profile (missing or built
- *  before the latest migration) — the client shows the way back to the
- *  demo picker instead of retrying. */
-export class DemoSessionEnded extends Error {}
 
 const t = initTRPC
   .context<Context>()
@@ -213,13 +209,9 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     )) as { rows: { complete: boolean }[] };
     if (!rows[0]?.complete) {
       if (path.startsWith("demo.")) return await next({ ctx });
-      const message =
-        "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.";
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message,
-        cause: new DemoSessionEnded(message),
-      });
+      throw demoSessionEnded(
+        "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.",
+      );
     }
     await client.query(`SET search_path TO ${quotedSchema}, public`);
     const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
@@ -235,14 +227,18 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   }
 });
 
-// Demo-only mode: block all mutations except demo profile management
+// Demo-only mode: only demo profile management writes, and every read is a
+// demo profile's, never the database's own tables.
 const demoOnlyGuard = t.middleware(async ({ ctx, next, type, path }) => {
-  if (isDemoOnly && type === "mutation" && !path.startsWith("demo.")) {
+  if (!isDemoOnly || path.startsWith("demo.")) return next({ ctx });
+  if (type === "mutation") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "This is a read-only demo instance. Data cannot be modified.",
     });
   }
+  if (!ctx.demoSchema)
+    throw demoSessionEnded("Choose a demo profile to continue.");
   return next({ ctx });
 });
 
@@ -395,7 +391,7 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
   const result = await next();
   if (!result.ok) {
     const err = result.error;
-    // Skip expected auth/permission/validation errors — only log server-side problems
+    // Skip expected refusals (auth, validation, an ended demo session)
     const skipCodes = new Set([
       "UNAUTHORIZED",
       "FORBIDDEN",
@@ -403,7 +399,7 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
       "BAD_REQUEST",
       "TOO_MANY_REQUESTS",
     ]);
-    if (!skipCodes.has(err.code)) {
+    if (!skipCodes.has(err.code) && !(err.cause instanceof DemoSessionEnded)) {
       log("error", "trpc_error", {
         path,
         type,
