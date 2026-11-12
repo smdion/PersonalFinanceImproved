@@ -4913,7 +4913,7 @@
   },
   "src/server/routers/budget/item-links.ts": {
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     }
   },
   "src/server/routers/budget/items.ts": {

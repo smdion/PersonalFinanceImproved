@@ -95,7 +95,7 @@ export const PROCEDURES: BaselineProcedure[] = [
     path: "budget.listMortgageItemChoices",
     input: loan((loanId) => ({ loanId })),
   },
-  { path: "budget.listContribAccountsForLinking" },
+  { path: "budget.listContributionAccountsForLinking" },
   { path: "budget.listApiCategories", input: none },
   { path: "budget.listApiActuals", input: none },
   { path: "contribution.computeHighIncomeLine" },

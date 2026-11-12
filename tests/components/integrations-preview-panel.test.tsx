@@ -180,7 +180,7 @@ async function settle() {
 
 beforeEach(() => {
   resetTrpcMock();
-  setQuery("budget.listContribAccountsForLinking", [
+  setQuery("budget.listContributionAccountsForLinking", [
     { id: 7, displayLabel: "Jordan 401k" },
     { id: 8, displayLabel: "Jordan HSA" },
   ]);

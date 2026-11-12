@@ -129,63 +129,65 @@ export const itemLinkProcedures = {
 
   /** Non-payroll contribution accounts for the linking UI: jobId === null means take-home
    *  pay funds it (IRA, brokerage); job-linked ones are already on the paycheck. */
-  listContribAccountsForLinking: protectedProcedure.query(async ({ ctx }) => {
-    const [contribs, people, perfAccounts] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.contributionAccounts)
-        .where(eq(schema.contributionAccounts.isActive, true)),
-      ctx.db.select().from(schema.people),
-      ctx.db.select().from(schema.performanceAccounts),
-    ]);
+  listContributionAccountsForLinking: protectedProcedure.query(
+    async ({ ctx }) => {
+      const [contribs, people, perfAccounts] = await Promise.all([
+        ctx.db
+          .select()
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.isActive, true)),
+        ctx.db.select().from(schema.people),
+        ctx.db.select().from(schema.performanceAccounts),
+      ]);
 
-    const personMap = new Map(people.map((p) => [p.id, p.name]));
-    const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
+      const personMap = new Map(people.map((p) => [p.id, p.name]));
+      const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-    // Non-payroll = no job link — these come from take-home pay
-    const filtered = contribs.filter((c) => c.jobId === null);
+      // Non-payroll = no job link — these come from take-home pay
+      const filtered = contribs.filter((c) => c.jobId === null);
 
-    return filtered.map((c) => {
-      const perf = c.performanceAccountId
-        ? perfMap.get(c.performanceAccountId)
-        : null;
-      // This row's own ownership wins over the linked performance account's: a
-      // joint master can hold contribution rows each with a real owner, and
-      // "Joint ..." would hide whose row it is (as in portfolioAccountLabel).
-      const ownerPersonId = c.ownership === "individual" ? c.personId : null;
-      // Always pass a perf-shaped object: portfolioAccountLabel reads ownership
-      // only from perf.ownershipType, so `undefined` would drop an unlinked joint
-      // account's "Joint" prefix.
-      const label = portfolioAccountLabel(
-        {
+      return filtered.map((c) => {
+        const perf = c.performanceAccountId
+          ? perfMap.get(c.performanceAccountId)
+          : null;
+        // This row's own ownership wins over the linked performance account's: a
+        // joint master can hold contribution rows each with a real owner, and
+        // "Joint ..." would hide whose row it is (as in portfolioAccountLabel).
+        const ownerPersonId = c.ownership === "individual" ? c.personId : null;
+        // Always pass a perf-shaped object: portfolioAccountLabel reads ownership
+        // only from perf.ownershipType, so `undefined` would drop an unlinked joint
+        // account's "Joint" prefix.
+        const label = portfolioAccountLabel(
+          {
+            accountType: c.accountType,
+            subType: c.subType,
+            label: c.label,
+            institution: perf?.institution ?? "",
+          },
+          perf
+            ? {
+                displayName: perf.displayName,
+                accountLabel: perf.accountLabel,
+                ownershipType: perf.ownershipType,
+              }
+            : {
+                displayName: null,
+                accountLabel: null,
+                ownershipType: c.ownership,
+              },
+          ownerPersonId,
+          personMap,
+        );
+        // One person's accounts often share owner + institution + type (Roth and
+        // Traditional IRA), so tax treatment is always appended, as the Portfolio
+        // page always shows it, rather than only on a detected collision.
+        const taxLabel = TAX_TREATMENT_LABELS[c.taxTreatment] ?? c.taxTreatment;
+        return {
+          id: c.id,
           accountType: c.accountType,
-          subType: c.subType,
-          label: c.label,
-          institution: perf?.institution ?? "",
-        },
-        perf
-          ? {
-              displayName: perf.displayName,
-              accountLabel: perf.accountLabel,
-              ownershipType: perf.ownershipType,
-            }
-          : {
-              displayName: null,
-              accountLabel: null,
-              ownershipType: c.ownership,
-            },
-        ownerPersonId,
-        personMap,
-      );
-      // One person's accounts often share owner + institution + type (Roth and
-      // Traditional IRA), so tax treatment is always appended, as the Portfolio
-      // page always shows it, rather than only on a detected collision.
-      const taxLabel = TAX_TREATMENT_LABELS[c.taxTreatment] ?? c.taxTreatment;
-      return {
-        id: c.id,
-        accountType: c.accountType,
-        displayLabel: `${label} — ${taxLabel}`,
-      };
-    });
-  }),
+          displayLabel: `${label} — ${taxLabel}`,
+        };
+      });
+    },
+  ),
 };
