@@ -34,6 +34,17 @@ describe("expectedTaxYear / taxYearDeadline", () => {
   });
 });
 
+describe("expectedTaxYear in January", () => {
+  it("poverty levels for the new year aren't expected before their Jan 31 due date", () => {
+    expect(expectedTaxYear({ month: 1, day: 31 }, new Date(2027, 0, 5))).toBe(
+      2026,
+    );
+    expect(expectedTaxYear({ month: 1, day: 31 }, new Date(2027, 1, 2))).toBe(
+      2027,
+    );
+  });
+});
+
 describe("taxDataStatus", () => {
   it("in October with this year's data: current, next year coming", () => {
     const s = taxDataStatus(
