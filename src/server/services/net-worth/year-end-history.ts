@@ -57,7 +57,7 @@ import { yearEndWealthMetrics } from "@/lib/pure/net-worth/year-end-metrics";
 import { activeProfileIdFrom } from "@/server/data/active-profile";
 
 // ---------------------------------------------------------------------------
-// Year-end history rows (used by historical + networth routers)
+// Year-end history rows (used by the historical and netWorth routers)
 // ---------------------------------------------------------------------------
 
 /**

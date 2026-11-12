@@ -64,10 +64,10 @@ interface CoastFireCardProps {
    *  demand (once a Coast FIRE scenario is selected), so the card shows the
    *  deterministic age first and upgrades to combined when it arrives. */
   coastFireSimulationResult?: CoastFireSimulationResult;
-  /** True while the shared coast MC query is fetching. */
+  /** True while the shared Coast FIRE Simulation query is fetching. */
   coastFireSimulationLoading?: boolean;
-  /** When the Coast FIRE MC result was computed — ISO string, or null when
-   *  it came from a fresh (uncached) run just now. Surfaced so the user can
+  /** When the Coast FIRE Simulation result was computed: an ISO string, or
+   *  null when it came from a fresh (uncached) run just now, so the user can
    *  tell a cached result apart from a just-computed one. */
   coastFireSimulationComputedAt?: string | null;
   /** Why the simulated answer can't be computed (no preset, classes or

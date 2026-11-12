@@ -165,8 +165,8 @@ export function useProjectionQueries(
   const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
 
   // sharedInput is baseSharedInput as-is: the Coast FIRE deterministic line
-  // comes from coastFireSimulationResult.deterministicProjection at the derived layer,
-  // switching atomically with the MC bands instead of refetching the engine.
+  // comes from coastFireSimulationResult.deterministicProjection at the derived
+  // layer, switching with the Simulation bands instead of refetching the engine.
   const sharedInput = baseSharedInput;
   const debouncedInput = useDebouncedValue(sharedInput, PROJECTION_DEBOUNCE_MS);
 
@@ -179,8 +179,8 @@ export function useProjectionQueries(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
-  // Defaults false: the background Coast FIRE MC probe adds ~4-6s of server
-  // work per page load. Turning it on trades that for instant scenario
+  // Defaults false: the background Coast FIRE Simulation probe adds ~4-6s of
+  // server work per page load. Turning it on trades that for instant scenario
   // switching (see coastFireSimulationQuery).
   const [coastFireSimulationAutoloadEnabled] = usePersistedToggle(
     SK_RETIREMENT_COASTFIRE_SIMULATION_AUTOLOAD,
@@ -275,9 +275,9 @@ export function useProjectionQueries(
       debouncedBaseInput,
     ],
   );
-  // Shared with coastFireSimulationQuery and its re-run so both poll the same progress
-  // entry. Derived from the input (not a per-mount random id) so progress
-  // resumes after a remount (see monte-carlo-worker-client.ts runId).
+  // Shared with coastFireSimulationQuery and its re-run so both poll the same
+  // progress entry. Derived from the input (not a per-mount random id) so
+  // progress resumes after a remount (see monte-carlo-worker-client.ts runId).
   const coastFireSimulationRunId = useMemo(
     () => JSON.stringify(debouncedBaseInput),
     [debouncedBaseInput],
@@ -294,8 +294,8 @@ export function useProjectionQueries(
   const runMonteCarlo = async () => {
     setActiveSimulationReruns((n) => n + 1);
     try {
-      // Same ids mcQuery / coastFireSimulationQuery poll progress under (consts below,
-      // initialized before any click), so a manual re-run reports live progress.
+      // Same ids mcQuery / coastFireSimulationQuery poll progress under (consts
+      // below, set before any click), so a manual re-run reports live progress.
       const result = await utils.projection.computeSimulation.fetch({
         ...runMonteCarloInput,
         runId: simulationRunId,
@@ -325,8 +325,8 @@ export function useProjectionQueries(
       setActiveSimulationReruns((n) => n - 1);
     }
   };
-  /** Both baseline MC + Coast FIRE MC together — what the "Re-run" button
-   *  actually triggers. */
+  /** Both the baseline Simulation and the Coast FIRE Simulation: what the
+   *  "Re-run" button triggers. */
   const rerunAllMc = async () => {
     await Promise.all([runMonteCarlo(), runCoastFireSimulation()]);
   };
@@ -492,9 +492,9 @@ export function useProjectionQueries(
       },
     );
 
-  // Coast FIRE MC runs on demand once a Coast FIRE scenario is selected, or
-  // always with `coastFireSimulationAutoloadEnabled`. Keep in sync with
-  // `inCoastFireScenario` below; exposed for index.tsx's progress-strip phase.
+  // The Coast FIRE Simulation runs on demand once a Coast FIRE scenario is
+  // selected, or always with `coastFireSimulationAutoloadEnabled`. Kept in step
+  // with `inCoastFireScenario` below; index.tsx's progress strip reads it.
   const coastFireSimulationQueryEnabled =
     coastFireSimulationAutoloadEnabled ||
     projectionView === "coastFire" ||
