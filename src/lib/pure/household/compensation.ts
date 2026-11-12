@@ -230,6 +230,7 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
     return {
       ...j,
       payPeriod: entry?.payPeriod,
+      salaryDivisor: entry?.salaryDivisor,
       payWeek: entry?.payWeek,
       anchorPayDate: entry?.anchorPayDate,
       budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth,
@@ -279,10 +280,7 @@ export function getTotalCompensation(
   return baseSalary + bonus;
 }
 
-/**
- * Compute gross bonus amount.
- * Formula: salary × bonusPercent × bonusMultiplier × (monthsInBonusYear / 12).
- */
+/** Gross bonus: salary × bonusPercent × bonusMultiplier × (monthsInBonusYear / 12). */
 export function computeBonusGross(
   salary: number,
   bonusPercent: string | null,

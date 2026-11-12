@@ -21,6 +21,7 @@ import {
   PAY_WEEK_VALUES,
   PORTFOLIO_TAX_TYPE_VALUES,
   RETIREMENT_BEHAVIOR_VALUES,
+  SALARY_DIVISOR_VALUES,
   SECURITY_FACT_SOURCE_VALUES,
   SECURITY_KIND_VALUES,
   TARGET_MODE_VALUES,
@@ -48,6 +49,7 @@ export const employerMatchTypeSchema = z.enum(EMPLOYER_MATCH_TYPE_VALUES);
 export const hsaCoverageTypeSchema = z.enum(HSA_COVERAGE_TYPE_VALUES);
 export const accountOwnershipSchema = z.enum(ACCOUNT_OWNERSHIP_VALUES);
 export const bonusDestinationSchema = z.enum(BONUS_DESTINATION_VALUES);
+export const salaryDivisorSchema = z.enum(SALARY_DIVISOR_VALUES);
 export const budgetApiServiceSchema = z.enum(BUDGET_API_SERVICE_VALUES);
 export const apiSyncDirectionSchema = z.enum(API_SYNC_DIRECTION_VALUES);
 export const retirementBehaviorSchema = z.enum(RETIREMENT_BEHAVIOR_VALUES);

@@ -14,6 +14,16 @@ export const PAY_PERIOD_VALUES = [
 ] as const;
 export type PayPeriod = (typeof PAY_PERIOD_VALUES)[number];
 
+// ── Salary divisor ──
+
+/** What a job's salary is divided by for each check (a Salary Profile entry's `salaryDivisor`):
+ *  the pay schedule's usual periods (26 biweekly: a 27-payday year pays an extra check), or
+ *  the year's own paydays (27 in a 27-payday year: the year's pay stays the salary). */
+export const SALARY_DIVISOR_VALUES = ["pay_periods", "paydays"] as const;
+export type SalaryDivisor = (typeof SALARY_DIVISOR_VALUES)[number];
+/** A Salary Profile entry with no `salaryDivisor` reads this. */
+export const DEFAULT_SALARY_DIVISOR: SalaryDivisor = "pay_periods";
+
 // ── Investment transaction kind (SimpleFIN ingest) ──
 // Only `contribution` and `withdrawal` move money into or out of an account;
 // everything else happens inside it (see simplefin-transaction-rules).

@@ -2,7 +2,7 @@
  *  earnings, the withholding tables, the contribution accounts a check
  *  pays into, and the per-check, bonus and blended-year results. */
 
-import type { TaxTreatment } from "@/lib/config/enum-values";
+import type { SalaryDivisor, TaxTreatment } from "@/lib/config/enum-values";
 import type { FilingStatusKey } from "@/lib/config/filing-status";
 
 export type PayPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly";
@@ -115,6 +115,9 @@ export type BonusEstimate = {
 export type PaycheckInput = {
   annualSalary: number;
   payPeriod: PayPeriodType;
+  /** What the salary is divided by for each check (the Salary Profile entry's). Absent: the
+   *  pay schedule's usual periods (DEFAULT_SALARY_DIVISOR). */
+  salaryDivisor?: SalaryDivisor;
   payWeek: "even" | "odd" | "na";
   anchorPayDate: Date; // a known payday for this job, used to derive extra paycheck months
   supplementalTaxRate: number; // IRS supplemental withholding rate (e.g. 0.22)

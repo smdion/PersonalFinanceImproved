@@ -8,6 +8,7 @@ import {
   payPeriodSchema,
   payWeekSchema,
   bonusDestinationSchema,
+  salaryDivisorSchema,
   contributionMethodSchema,
   employerMatchTypeSchema,
 } from "@/lib/config/enum-values.schema";
@@ -247,11 +248,12 @@ export const salaryEntrySchema = z
     bonusPercent: z.number().nonnegative(),
     bonusMultiplier: z.number().nonnegative(),
     monthsInBonusYear: z.number().min(0).max(12),
-    /** This year's actual paid-out bonus, pinned once known — orthogonal to
-     *  the formula fields above, which growth/projection math always uses
-     *  untouched. Only the live Paycheck display reads this. */
+    /** This year's actual paid-out bonus, pinned once known; the formula fields above (what
+     *  growth/projection math uses) stay untouched. Only the live Paycheck display reads it. */
     bonusOverride: z.number().nonnegative().nullable(),
     payPeriod: payPeriodSchema,
+    /** Absent = DEFAULT_SALARY_DIVISOR, so older entries need no backfill. */
+    salaryDivisor: salaryDivisorSchema.optional(),
     payWeek: payWeekSchema,
     /** `null` is a real, complete value ("no anchor, use start date"). */
     anchorPayDate: z
@@ -267,12 +269,10 @@ export const salaryEntrySchema = z
     bonusMonth: z.number().int().min(1).max(12).nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
     bonusDayOfMonth: z.number().int().min(1).max(31).nullable(),
-    /** `null` is a real, complete value ("no extra-paycheck routing
-     *  configured for this job"). See extraPaycheckRoutingSchema above. */
+    /** `null` is real and complete: no extra-paycheck routing for this job. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
-    /** Where this job's bonus goes: into the budget (absent) or extra
-     *  spending outside it — Living Costs shows its take-home as its own
-     *  bar. */
+    /** Where this job's bonus goes: into the budget (absent) or extra spending outside it
+     *  (Living Costs shows its take-home as its own bar). */
     bonusDestination: bonusDestinationSchema.optional(),
     /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
      *  none — the same as `{}`, so older entries need no backfill. */

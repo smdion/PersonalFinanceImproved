@@ -6,6 +6,7 @@ import {
   BONUS_DESTINATION_VALUES,
   PAY_PERIOD_VALUES,
   PAY_WEEK_VALUES,
+  SALARY_DIVISOR_VALUES,
 } from "../../config/enum-values";
 import { W4_FILING_STATUS_VALUES } from "../../config/filing-status";
 import { isCalendarDate } from "../../utils/date";
@@ -112,6 +113,8 @@ export const SALARY_ENTRY_FIELDS: Fields = {
   monthsInBonusYear: { check: numberIn(0, 12) },
   bonusOverride: { check: nullable(atLeastZero) },
   payPeriod: { check: oneOf(PAY_PERIODS) },
+  // A key a later release added: the config's values, optional.
+  salaryDivisor: { check: oneOf(SALARY_DIVISOR_VALUES), optional: true },
   payWeek: { check: oneOf(PAY_WEEKS) },
   anchorPayDate: { check: nullable(isStoredDate) },
   budgetPeriodsPerMonth: {

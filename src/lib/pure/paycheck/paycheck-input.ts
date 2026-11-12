@@ -21,6 +21,8 @@ import { requireLimit } from "@/lib/pure/tax/tax-limits";
  */
 export interface JobForPaycheckInput {
   payPeriod: PaycheckInput["payPeriod"] | undefined;
+  /** Optional in the entry: absent is the pay schedule's usual periods. */
+  salaryDivisor?: PaycheckInput["salaryDivisor"];
   payWeek: PaycheckInput["payWeek"] | undefined;
   anchorPayDate: string | Date | null | undefined;
   startDate: string | Date;
@@ -57,6 +59,7 @@ export function buildPaycheckInputForJob(
   return {
     annualSalary: resolved.salary,
     payPeriod: job.payPeriod!,
+    ...(job.salaryDivisor ? { salaryDivisor: job.salaryDivisor } : {}),
     payWeek: job.payWeek!,
     ...jobScheduleDates(job),
     supplementalTaxRate: requireLimit(
