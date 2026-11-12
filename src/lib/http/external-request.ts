@@ -190,6 +190,27 @@ export async function fetchChecked(
   }
 }
 
+/** A service's request path, built by pathOf: every value in it is encoded. */
+export type RequestPath = string & { readonly __brand: "RequestPath" };
+
+/** A service's request path with each value encoded as one path segment or
+ *  query value (`pathOf\`/accounts/${id}\``): a stored id can't add a segment, a
+ *  query or a fragment; "", "." and ".." (a URL resolves the dots) are refused. */
+export function pathOf(
+  parts: TemplateStringsArray,
+  ...values: (string | number)[]
+): RequestPath {
+  const path = parts.reduce((built, part, i) => {
+    if (i >= values.length) return built + part;
+    const value = String(values[i]);
+    if (value === "" || value === "." || value === "..")
+      throw new Error(`${JSON.stringify(value)} can't be a request path value`);
+    return built + part + encodeURIComponent(value);
+  }, "");
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the one place a RequestPath is made
+  return path as RequestPath;
+}
+
 /** An endpoint as a pattern: ids become `:id`, the query goes. */
 function endpointPattern(endpoint: string): string {
   return endpoint

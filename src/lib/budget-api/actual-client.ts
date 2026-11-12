@@ -24,7 +24,7 @@ import {
   retold,
   serviceError,
 } from "./errors";
-import { externalRequest } from "@/lib/http/external-request";
+import { externalRequest, pathOf } from "@/lib/http/external-request";
 import type { z } from "zod/v4";
 import { actualSchemas } from "./actual-schemas";
 import {
@@ -161,14 +161,14 @@ export class ActualClient implements BudgetAPIClient {
     };
     // Strip trailing slash
     const base = serverUrl.replace(/\/$/, "");
-    this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
+    this.budgetPath = base + pathOf`/v1/budgets/${budgetSyncId}`;
     // Keyed by wrapper, not budget: the wrapper holds one loaded budget.
     this.gate = gateFor(base);
   }
 
   /** Internal fetch wrapper — see externalRequest (lib/http). */
   private send<S extends z.ZodType>(
-    path: string,
+    path: ReturnType<typeof pathOf>,
     schema: S,
     init?: RequestInit,
   ): Promise<z.infer<S>> {
@@ -184,7 +184,7 @@ export class ActualClient implements BudgetAPIClient {
 
   /** send() behind the wrapper's cold-load gate — see WrapperGate above. */
   private async request<S extends z.ZodType>(
-    path: string,
+    path: ReturnType<typeof pathOf>,
     schema: S,
     init?: RequestInit,
     retried = false,
@@ -237,7 +237,7 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async testConnection(): Promise<void> {
-    await this.request("/accounts", actualSchemas.accounts);
+    await this.request(pathOf`/accounts`, actualSchemas.accounts);
   }
 
   async getBudgetName(): Promise<string> {
@@ -249,7 +249,7 @@ export class ActualClient implements BudgetAPIClient {
   // -- Accounts --
 
   async getAccounts(): Promise<BudgetAccount[]> {
-    const res = await this.request("/accounts", actualSchemas.accounts);
+    const res = await this.request(pathOf`/accounts`, actualSchemas.accounts);
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
     // Balances in parallel; a transient failure gets one more try alone (the
@@ -300,11 +300,12 @@ export class ActualClient implements BudgetAPIClient {
     accountId: string,
     asOfDate?: string,
   ): Promise<number> {
-    // cutoff_date is inclusive and read as a local date by the wrapper, so
-    // the wrapper's time zone doesn't move the figure; without it the
-    // balance is "up to the wrapper's today".
+    // cutoff_date is inclusive, read by the wrapper as a local date (its zone
+    // can't move it); without it the balance is up to the wrapper's today.
     const res = await this.request(
-      `/accounts/${accountId}/balance${asOfDate ? `?cutoff_date=${asOfDate}` : ""}`,
+      asOfDate
+        ? pathOf`/accounts/${accountId}/balance?cutoff_date=${asOfDate}`
+        : pathOf`/accounts/${accountId}/balance`,
       actualSchemas.balance,
     );
     return fromCents(res.data);
@@ -318,8 +319,8 @@ export class ActualClient implements BudgetAPIClient {
   async getCategories(now: Date): Promise<BudgetCategoryGroup[]> {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const [groupsRes, catsRes, monthDetail] = await Promise.all([
-      this.request("/categorygroups", actualSchemas.categoryGroups),
-      this.request("/categories", actualSchemas.categories),
+      this.request(pathOf`/categorygroups`, actualSchemas.categoryGroups),
+      this.request(pathOf`/categories`, actualSchemas.categories),
       this.getMonthDetail(currentMonth),
     ]);
 
@@ -353,7 +354,7 @@ export class ActualClient implements BudgetAPIClient {
    *  `ActualMonth` objects; only `GET /months/:id` carries
    *  income/budgeted/spent, so each month in range is fetched on its own. */
   async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
-    const res = await this.request("/months", actualSchemas.monthIds);
+    const res = await this.request(pathOf`/months`, actualSchemas.monthIds);
     const inRange = res.data.filter((id) => id >= start && id <= end);
     // Batched, not one unbounded Promise.all fan-out — a wide date range could otherwise fire dozens of
     // concurrent requests at the actual-http-api wrapper at once. No
@@ -368,7 +369,7 @@ export class ActualClient implements BudgetAPIClient {
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
     const res = await this.request(
-      `/months/${toActualMonthId(month)}`,
+      pathOf`/months/${toActualMonthId(month)}`,
       actualSchemas.month,
     );
     const detail = mapMonthDetail(res.data);
@@ -382,7 +383,7 @@ export class ActualClient implements BudgetAPIClient {
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
     const readNote = async (cat: BudgetCategory) => {
       const noteRes = await this.request(
-        `/notes/category/${cat.id}`,
+        pathOf`/notes/category/${cat.id}`,
         actualSchemas.note,
       );
       const noteGoal =
@@ -422,7 +423,7 @@ export class ActualClient implements BudgetAPIClient {
     amount: number,
   ): Promise<void> {
     await this.request(
-      `/months/${toActualMonthId(month)}/categories/${categoryId}`,
+      pathOf`/months/${toActualMonthId(month)}/categories/${categoryId}`,
       actualSchemas.written,
       {
         method: "PATCH",
@@ -442,7 +443,7 @@ export class ActualClient implements BudgetAPIClient {
     const templateShape: ActualTemplateShape =
       shape === "monthly" ? "fixed" : "target-balance";
     const noteRes = await this.request(
-      `/notes/category/${categoryId}`,
+      pathOf`/notes/category/${categoryId}`,
       actualSchemas.note,
     );
     const merged = mergeGoalIntoNote(noteRes.data, templateShape, targetAmount);
@@ -452,7 +453,7 @@ export class ActualClient implements BudgetAPIClient {
     return {
       apply: async () => {
         await this.request(
-          `/notes/category/${categoryId}`,
+          pathOf`/notes/category/${categoryId}`,
           actualSchemas.written,
           {
             method: "PUT",
@@ -469,9 +470,9 @@ export class ActualClient implements BudgetAPIClient {
     // Actual lists transactions per account, with ids only: names come from
     // one read of each list, and a bad list fails the sync before any write.
     const [accounts, categories, payees] = await Promise.all([
-      this.request("/accounts", actualSchemas.accounts),
-      this.request("/categories", actualSchemas.categories),
-      this.request("/payees", actualSchemas.payees),
+      this.request(pathOf`/accounts`, actualSchemas.accounts),
+      this.request(pathOf`/categories`, actualSchemas.categories),
+      this.request(pathOf`/payees`, actualSchemas.payees),
     ]);
     const categoryNames = new Map(categories.data.map((c) => [c.id, c.name]));
     const payeeNameById = payeeNames(payees.data, accounts.data);
@@ -481,7 +482,7 @@ export class ActualClient implements BudgetAPIClient {
       if (account.closed) continue;
       try {
         const res = await this.request(
-          `/accounts/${account.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+          pathOf`/accounts/${account.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
           actualSchemas.transactions,
         );
         allTx.push(
@@ -525,7 +526,7 @@ export class ActualClient implements BudgetAPIClient {
     // response is only `{"message":"ok"}` with no id, so the transaction is
     // looked back up by its deterministic `imported_id` to get its real id.
     await this.request(
-      `/accounts/${tx.accountId}/transactions`,
+      pathOf`/accounts/${tx.accountId}/transactions`,
       actualSchemas.written,
       {
         method: "POST",
@@ -565,20 +566,15 @@ export class ActualClient implements BudgetAPIClient {
     // Exactly the day it wrote: the wrapper's lists otherwise end at its
     // own today, so a later-dated transaction was posted but never found.
     const res = await this.request(
-      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
+      pathOf`/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
       actualSchemas.transactions,
     );
     return res.data.find((t) => t.imported_id === importedId)?.id ?? null;
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {
-    await this.request(
-      `/transactions/${transactionId}`,
-      actualSchemas.written,
-      {
-        method: "DELETE",
-      },
-    );
+    const path = pathOf`/transactions/${transactionId}`;
+    await this.request(path, actualSchemas.written, { method: "DELETE" });
   }
 
   async getAccountTransactions(
@@ -586,7 +582,7 @@ export class ActualClient implements BudgetAPIClient {
     sinceDate: string,
   ): Promise<BudgetTransaction[]> {
     const res = await this.request(
-      `/accounts/${accountId}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+      pathOf`/accounts/${accountId}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
       actualSchemas.transactions,
     );
     // Its one reader matches on the memo, so no names are looked up.
@@ -613,7 +609,7 @@ export class ActualClient implements BudgetAPIClient {
       if (tx.reconciled) transaction.cleared = true;
     }
 
-    await this.request(`/transactions/${txId}`, actualSchemas.written, {
+    await this.request(pathOf`/transactions/${txId}`, actualSchemas.written, {
       method: "PATCH",
       body: JSON.stringify({ transaction }),
     });

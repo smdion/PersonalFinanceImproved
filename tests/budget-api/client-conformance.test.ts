@@ -458,6 +458,18 @@ const actual: World = {
           expect(sent.map((s) => s.method)).toEqual(["DELETE"]);
         },
       },
+      {
+        // A stored id is one path segment: it can't add a segment or a query.
+        answers: [
+          {
+            ...endpoint("delete-transaction"),
+            path: "/transactions/a%2Fb%3Fc",
+          },
+        ],
+        run: (c) => c.deleteTransaction("a/b?c"),
+        check: (_r, sent) =>
+          expect(sent.map((s) => s.path)).toEqual(["/transactions/a%2Fb%3Fc"]),
+      },
     ],
     getAccountTransactions: [
       {
@@ -933,6 +945,19 @@ const ynab: World = {
         run: (c) => c.deleteTransaction("tx-1"),
         check: (_r, sent) =>
           expect(sent.map((s) => s.method)).toEqual(["DELETE"]),
+      },
+      {
+        // A stored id is one path segment: it can't add a segment or a query.
+        answers: [
+          ok("DELETE", `/budgets/${YNAB_BUDGET}/transactions/a%2Fb%3Fc`, {
+            data: {},
+          }),
+        ],
+        run: (c) => c.deleteTransaction("a/b?c"),
+        check: (_r, sent) =>
+          expect(sent.map((s) => s.path)).toEqual([
+            `/budgets/${YNAB_BUDGET}/transactions/a%2Fb%3Fc`,
+          ]),
       },
     ],
     getAccountTransactions: [

@@ -19,7 +19,7 @@ import type {
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
 import { roundToCents } from "@/lib/utils/math";
-import { externalRequest } from "@/lib/http/external-request";
+import { externalRequest, pathOf } from "@/lib/http/external-request";
 import type { z } from "zod/v4";
 import {
   ynabSchemas,
@@ -104,20 +104,19 @@ export class YnabClient implements BudgetAPIClient {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     };
-    this.budgetPath = `${YNAB_BASE}/budgets/${budgetId}`;
+    this.budgetPath = YNAB_BASE + pathOf`/budgets/${budgetId}`;
   }
 
   /** Internal fetch wrapper — see externalRequest (lib/http). */
   private async request<S extends z.ZodType>(
-    path: string,
+    path: ReturnType<typeof pathOf>,
     schema: S,
     init?: RequestInit,
   ): Promise<z.infer<S>> {
-    const url = path.startsWith("http") ? path : `${this.budgetPath}${path}`;
     return externalRequest({
       service: "ynab",
       endpoint: path,
-      url,
+      url: `${this.budgetPath}${path}`,
       headers: this.headers,
       init,
       schema,
@@ -126,7 +125,7 @@ export class YnabClient implements BudgetAPIClient {
 
   async testConnection(): Promise<void> {
     // /settings — lightweight endpoint, avoids fetching the full budget object
-    await this.request("/settings", ynabSchemas.written);
+    await this.request(pathOf`/settings`, ynabSchemas.written);
   }
 
   async getBudgetName(): Promise<string> {
@@ -140,7 +139,7 @@ export class YnabClient implements BudgetAPIClient {
   // -- Accounts --
 
   async getAccounts(): Promise<BudgetAccount[]> {
-    const res = await this.request("/accounts", ynabSchemas.accounts);
+    const res = await this.request(pathOf`/accounts`, ynabSchemas.accounts);
     return res.data.accounts.map(mapAccount);
   }
 
@@ -149,7 +148,7 @@ export class YnabClient implements BudgetAPIClient {
     asOfDate?: string,
   ): Promise<number> {
     const res = await this.request(
-      `/accounts/${accountId}`,
+      pathOf`/accounts/${accountId}`,
       ynabSchemas.account,
     );
     const balance = fromMilliunits(res.data.account.balance);
@@ -164,7 +163,7 @@ export class YnabClient implements BudgetAPIClient {
   // -- Categories & Months --
 
   async getCategories(): Promise<BudgetCategoryGroup[]> {
-    const res = await this.request("/categories", ynabSchemas.categories);
+    const res = await this.request(pathOf`/categories`, ynabSchemas.categories);
     return res.data.category_groups
       .filter((g) => !YNAB_INTERNAL_GROUPS.has(g.name))
       .map(mapCategoryGroup);
@@ -172,14 +171,14 @@ export class YnabClient implements BudgetAPIClient {
 
   async getMonths(start: string, _end: string): Promise<BudgetMonth[]> {
     // YNAB returns all months; we filter client-side
-    const res = await this.request("/months", ynabSchemas.months);
+    const res = await this.request(pathOf`/months`, ynabSchemas.months);
     return res.data.months
       .filter((m) => m.month >= start && m.month <= _end)
       .map(mapMonth);
   }
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
-    const res = await this.request(`/months/${month}`, ynabSchemas.month);
+    const res = await this.request(pathOf`/months/${month}`, ynabSchemas.month);
     return mapMonthDetail(res.data.month);
   }
 
@@ -189,7 +188,7 @@ export class YnabClient implements BudgetAPIClient {
     amount: number,
   ): Promise<void> {
     await this.request(
-      `/months/${month}/categories/${categoryId}`,
+      pathOf`/months/${month}/categories/${categoryId}`,
       ynabSchemas.written,
       {
         method: "PATCH",
@@ -213,7 +212,7 @@ export class YnabClient implements BudgetAPIClient {
     // other shape is left alone and reported — the interface's contract,
     // and what Actual's note-based write does.
     const { data } = await this.request(
-      `/categories/${categoryId}`,
+      pathOf`/categories/${categoryId}`,
       ynabSchemas.category,
     );
     if (!isPlainMonthlyGoal(data.category))
@@ -234,7 +233,7 @@ export class YnabClient implements BudgetAPIClient {
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {
-    await this.request(`/categories/${categoryId}`, ynabSchemas.written, {
+    await this.request(pathOf`/categories/${categoryId}`, ynabSchemas.written, {
       method: "PATCH",
       body: JSON.stringify({
         category:
@@ -256,7 +255,7 @@ export class YnabClient implements BudgetAPIClient {
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {
-    await this.request(`/categories/${categoryId}`, ynabSchemas.written, {
+    await this.request(pathOf`/categories/${categoryId}`, ynabSchemas.written, {
       method: "PATCH",
       body: JSON.stringify({
         category: { goal_target: toMilliunits(targetAmount) },
@@ -268,7 +267,7 @@ export class YnabClient implements BudgetAPIClient {
 
   async getTransactions(sinceDate: string): Promise<BudgetTransaction[]> {
     const res = await this.request(
-      `/transactions?since_date=${sinceDate}`,
+      pathOf`/transactions?since_date=${sinceDate}`,
       ynabSchemas.transactions,
     );
     return res.data.transactions.map(mapTransaction);
@@ -279,7 +278,7 @@ export class YnabClient implements BudgetAPIClient {
     // A duplicate import_id isn't posted: YNAB answers without `transaction`
     // (in `duplicate_import_ids`). A live one with the id is returned; a
     // deleted one still holds the id, so nothing can be posted.
-    const res = await this.request("/transactions", ynabSchemas.created, {
+    const res = await this.request(pathOf`/transactions`, ynabSchemas.created, {
       method: "POST",
       body: JSON.stringify({
         transaction: {
@@ -327,16 +326,15 @@ export class YnabClient implements BudgetAPIClient {
   ): Promise<YnabTransaction[]> {
     const importId = ynabImportId(tx);
     const res = await this.request(
-      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}`,
+      pathOf`/accounts/${tx.accountId}/transactions?since_date=${tx.date}`,
       ynabSchemas.transactions,
     );
     return res.data.transactions.filter((t) => t.import_id === importId);
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {
-    await this.request(`/transactions/${transactionId}`, ynabSchemas.written, {
-      method: "DELETE",
-    });
+    const path = pathOf`/transactions/${transactionId}`;
+    await this.request(path, ynabSchemas.written, { method: "DELETE" });
   }
 
   async getAccountTransactions(
@@ -344,7 +342,7 @@ export class YnabClient implements BudgetAPIClient {
     sinceDate: string,
   ): Promise<BudgetTransaction[]> {
     const res = await this.request(
-      `/accounts/${accountId}/transactions?since_date=${sinceDate}`,
+      pathOf`/accounts/${accountId}/transactions?since_date=${sinceDate}`,
       ynabSchemas.transactions,
     );
     return res.data.transactions.filter((t) => !t.deleted).map(mapTransaction);
@@ -365,7 +363,7 @@ export class YnabClient implements BudgetAPIClient {
       body.cleared = tx.cleared ? "cleared" : "uncleared";
     if (tx.approved !== undefined) body.approved = tx.approved;
 
-    await this.request(`/transactions/${txId}`, ynabSchemas.written, {
+    await this.request(pathOf`/transactions/${txId}`, ynabSchemas.written, {
       method: "PUT",
       body: JSON.stringify({ transaction: body }),
     });
