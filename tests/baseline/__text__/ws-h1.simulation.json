@@ -1,10 +1,11 @@
 {
  "projection.computeCoastFire": {
   "result": {
+   "retired": false,
    "status": "found"
   }
  },
- "projection.computeCoastFireMC": {
+ "projection.computeCoastFireSimulation": {
   "result": {
    "mcResult": {
     "deterministicProjection": {
@@ -20193,7 +20194,7 @@
    "passes": false
   }
  },
- "projection.computeMonteCarloProjection": {
+ "projection.computeSimulation": {
   "result": {
    "deterministicProjection": {
     "accountDepletions": [

@@ -9,6 +9,7 @@ vi.mock("@/lib/trpc", async () => ({
 }));
 vi.mock("@/lib/hooks/use-local-storage", () => ({
   useLocalStorage: (_k: string, v: unknown) => [v, vi.fn()],
+  useLocalBoolean: (_k: string, v: unknown) => [v, vi.fn()],
 }));
 
 import { AllTransactionsTab } from "@/components/savings/transactions/all-transactions-tab";

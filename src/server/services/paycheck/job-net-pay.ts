@@ -1,5 +1,5 @@
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
 import { eq, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -21,7 +21,6 @@ import {
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriod } from "@/lib/config/enum-values";
@@ -63,7 +62,6 @@ export async function computeJobNetPayPerCheck(
     rawJobContribs,
     rawPersonalContribs,
     allLimitRows,
-    activeContribSetting,
     allTaxParams,
     [jobPerson],
   ] = await Promise.all([
@@ -92,10 +90,6 @@ export async function computeJobNetPayPerCheck(
         ),
       ),
     db.select().from(schema.contributionLimits),
-    db
-      .select()
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
     db.select().from(schema.taxParams),
     db
       .select({ dateOfBirth: schema.people.dateOfBirth })
@@ -122,10 +116,7 @@ export async function computeJobNetPayPerCheck(
   );
 
   // Accounts carry no contribution value: the active Contribution Profile's.
-  const activeContribProfileId = Number(activeContribSetting[0]?.value ?? NaN);
-  const contribProfile = Number.isFinite(activeContribProfileId)
-    ? await fetchContributionProfile(db, activeContribProfileId)
-    : null;
+  const contribProfile = await fetchContributionProfile(db, null);
   const contribActiveFieldsRoot = contribProfile
     ? readContributionActiveFields(
         contribProfile.contributionActiveFields,

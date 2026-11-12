@@ -1,6 +1,7 @@
 import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
 import { isDevelopmentBuild } from "./auth-mode";
+import { writeStamp } from "@/lib/utils/clock";
 
 /**
  * Edge-compatible auth config — NO database imports.
@@ -51,9 +52,35 @@ if (isDemoOnly) {
   });
 }
 
+/** A session lasts this long from sign-in, however active: an Authentik
+ *  group change reaches every session within it. */
+export const SESSION_MAX_AGE_SECONDS = 4 * 60 * 60;
+
+/** Stamps `loginAt` at sign-in; on any later read a token without it, or past
+ *  SESSION_MAX_AGE_SECONDS from it, ends the session (null). The cookie's
+ *  maxAge restarts on every refresh (the proxy's), so it caps idle time only. */
+export function capSessionAge<T extends Record<string, unknown>>(
+  token: T,
+  signingIn: boolean,
+  now = writeStamp().getTime(),
+): (T & { loginAt: number }) | null {
+  if (signingIn) return { ...token, loginAt: now };
+  const { loginAt } = token;
+  if (typeof loginAt !== "number") return null;
+  if (now - loginAt >= SESSION_MAX_AGE_SECONDS * 1000) return null;
+  return { ...token, loginAt };
+}
+
 export const authConfig: NextAuthConfig = {
   providers,
   pages: {
     signIn: "/login",
+  },
+  session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS },
+  callbacks: {
+    // Edge-safe, so the proxy's refresh applies the cap too; auth.ts's
+    // callback runs it before assigning roles.
+    jwt: ({ token, trigger }) =>
+      capSessionAge(token, trigger === "signIn" || trigger === "signUp"),
   },
 };

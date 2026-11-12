@@ -1,5 +1,5 @@
 /**
- * The connections fence, the closed-set check and settings through a
+ * The connections fence, the closed-set check, JSON values and settings through a
  * version restore on PostgreSQL (the cases are in ./backup-fence-cases,
  * ./closed-set-import-cases and ./version-restore-settings-cases, shared
  * with SQLite): ids are reused after a restore resets the sequences, and
@@ -21,8 +21,10 @@ import pg from "pg";
 import { runMigrator } from "../routers/fresh-install-cases";
 import { backupFenceCases } from "./backup-fence-cases";
 import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
+import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
+  danglingReferenceCases,
   unknownAccountTypeCases,
 } from "./closed-set-import-cases";
 
@@ -65,6 +67,8 @@ describe.skipIf(skipWithoutPostgres)(
     backupFenceCases(fresh);
     closedSetImportCases(fresh);
     unknownAccountTypeCases(fresh);
+    danglingReferenceCases(fresh);
     versionRestoreSettingsCases(fresh);
+    backupJsonValueCases(fresh);
   },
 );

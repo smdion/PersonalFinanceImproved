@@ -293,6 +293,44 @@ describe("every request", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("follows a tax-data release download to GitHub's download host, and no further", async () => {
+    const asset = "https://github.com/o/r/releases/download/t/f.json";
+    const download = "https://release-assets.githubusercontent.com/f?sig=1";
+    mockFetch
+      .mockResolvedValueOnce(redirect(302, download))
+      .mockResolvedValueOnce(ok());
+    const res = await fetchChecked(asset, {}, "taxData");
+    expect(res.status).toBe(200);
+    expect(mockFetch.mock.calls[1]![0]).toBe(download);
+
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValueOnce(redirect(302, "https://example.com/f"));
+    const err = await refusal(fetchChecked(asset, {}, "taxData"));
+    expect(err.message).toMatch(/another host \("example\.com"\)/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses GitHub's download host for every other service", async () => {
+    mockFetch.mockResolvedValueOnce(
+      redirect(302, "https://objects.githubusercontent.com/f"),
+    );
+    await refusal(fetchChecked("https://api.ynab.com/x", {}, "ynab"));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a tax-data redirect to a download host over http", async () => {
+    mockFetch.mockResolvedValueOnce(
+      redirect(302, "http://objects.githubusercontent.com/f"),
+    );
+    await refusal(
+      fetchChecked(
+        "https://github.com/o/r/releases/download/t/f",
+        {},
+        "taxData",
+      ),
+    );
+  });
+
   it("reaches fetch with the caller's URL spelling unchanged", async () => {
     mockFetch.mockResolvedValueOnce(ok());
     await fetchChecked("https://api.ynab.com", {}, "ynab");

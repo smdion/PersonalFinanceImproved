@@ -4,6 +4,7 @@
  * what was counted (server/services/sync/fill-ledger.ts).
  */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { and, eq } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -47,7 +48,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * Suggested balances for a new portfolio snapshot, by snapshot
    * sub-account key, from linked SimpleFIN accounts.
    */
-  suggestSnapshot: portfolioProcedure.query(async ({ ctx }) => {
+  listSnapshotSuggestions: portfolioProcedure.query(async ({ ctx }) => {
     const [context, accounts, mix, perfAccounts] = await Promise.all([
       loadFeedContext(ctx.db),
       loadAccounts(ctx.db),
@@ -135,7 +136,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * fill has counted yet, added onto the stored figures.
    */
   listPerformanceSuggestions: portfolioProcedure
-    .input(z.object({ year: z.number().int() }))
+    .input(z.object({ year: zYear }))
     .query(async ({ ctx, input }) => ({
       year: input.year,
       accounts: await loadPerformanceSuggestions(
@@ -160,7 +161,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * counted yet (added onto the cumulative basis); money out reduces contributions first.
    */
   listBasisSuggestions: portfolioProcedure
-    .input(z.object({ year: z.number().int() }))
+    .input(z.object({ year: zYear }))
     .query(async ({ ctx, input }) => {
       const [basisRows, coverage, context, mix, ledger, flows, priorRows] =
         await Promise.all([

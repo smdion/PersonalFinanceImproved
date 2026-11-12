@@ -16,10 +16,10 @@ Projected (salary + bonus)
 Jordan
 $200,000.00
 Bonus
-$30,000.00 gross / $22,965.00 net
+$30,000.00 gross / $21,105.00 net
 Riley
 $70,000.00
-Net annual (after tax + deductions)$217,102.05
+Net annual (after tax + deductions)$215,242.05
 Per-period take-home$5,226.71 /$2,355.14
 Roth IRA MAGI (est.)Use backdoor$265,020.00
 Taxes (annual)$61,274.71
@@ -57,7 +57,7 @@ Budget & Spending?
 4 of 4 at or under range · Household budget · full-year view
 $5,200.00/monthEssential $3,900.00 · Discretionary $1,300.00
 % of:
-Net ($217,102.05)
+Net ($215,242.05)
 Gross ($300,000.00)
 0%20%40%60%
 Housing2% / 25%-35%
@@ -65,7 +65,7 @@ Food6% / 10%-15%
 Transportation3% / 10%-15%
 Insurance1% / 10%-25%
 Portfolio6% ($12,000.00)
-Unallocated66% ($142,702.05)
+Unallocated65% ($140,842.05)
 Total: 84% of net
 On target Below Above Target?
 Contributions
@@ -110,7 +110,7 @@ Contributions$28,000.00/yr(+ $10,100.00 match)
 Tax-advantaged room$29,750.00/yr
 Retirement budget$62,400.00/yr
 Est. Withdrawal (baseline)?$97,178.89/yr(Variable Percentage (VPW), varies)
-Coast FIRE?Already Coast(baseline; see Projection Health for simulated)
+Coast FIRE?2032 (Jordan, 48)(baseline; see Projection Health for simulated)
 DurationLasts to 97+
 Readiness?
 [Now — 2026]

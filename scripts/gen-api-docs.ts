@@ -39,7 +39,7 @@ const SCHEMA_DOCS_OUT = path.join(ROOT, "docs/SCHEMA.md");
 // import). Each procedure is listed under the client path it's called by.
 
 interface ProcedureEntry {
-  /** The client path, e.g. `settings.people.list`. */
+  /** The client path, e.g. `people.list`. */
   path: string;
   /** The router it's mounted under in the root router, e.g. `settings`. */
   router: string;
@@ -134,8 +134,11 @@ function procedureCall(
   return { kind: method, procType: ts.isIdentifier(base) ? base.text : "?" };
 }
 
+/** A `// ══ SECTION ══` banner: it heads a group, it doesn't describe one. */
+const BANNER = /^\/\/\s*═+.*═+$/;
+
 /** The doc comment just above a procedure's first line, whole: a block
- *  comment from its opening line, or a run of `//` lines. */
+ *  comment from its opening line, or a run of `//` lines below any banner. */
 function descriptionAbove(lines: string[], i: number): string {
   const trimmed = (k: number) => lines[k]!.trim();
   if (i > 0 && trimmed(i - 1).endsWith("*/")) {
@@ -159,7 +162,12 @@ function descriptionAbove(lines: string[], i: number): string {
       .join(" ");
   }
   let k = i;
-  while (k > 0 && trimmed(k - 1).startsWith("//")) k--;
+  while (
+    k > 0 &&
+    trimmed(k - 1).startsWith("//") &&
+    !BANNER.test(trimmed(k - 1))
+  )
+    k--;
   return lines
     .slice(k, i)
     .map((line) => line.trim().slice(2).trim())
@@ -354,7 +362,7 @@ export function buildRouterCatalog(
     md += `| Procedure | Kind | Auth | Source |${described ? " Description |" : ""}\n`;
     md += `|---|---|---|---|${described ? "---|" : ""}\n`;
     for (const p of procs) {
-      const desc = p.description.replace(/\|/g, "\\|").slice(0, 200);
+      const desc = p.description.replace(/\|/g, "\\|");
       md += `| \`${p.path}\` | ${p.kind} | \`${p.procType}\` | \`${p.source}\` |${described ? ` ${desc} |` : ""}\n`;
     }
     md += "\n";

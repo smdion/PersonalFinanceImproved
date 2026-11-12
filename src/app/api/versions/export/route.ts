@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
+import { versionRouteCaller } from "@/server/services/versions/route-gate";
 import { exportBackup } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
@@ -12,22 +12,17 @@ export async function GET() {
   }
 
   try {
-    // Require a session with version permission or admin. Only `next dev` with
-    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
-    const allowDev = devBypass() === "admin";
-    const session = await auth();
-    if (!allowDev && !session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (
-      !allowDev &&
-      session?.user.role !== "admin" &&
-      !session?.user.permissions.includes("version")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const caller = await versionRouteCaller("export", auth);
+    if (caller instanceof Response) return caller;
 
-    const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
+    // Anyone but an admin gets the household's data only (no logins,
+    // access settings or credentials).
+    const backup = await exportBackup(
+      db as Parameters<typeof exportBackup>[0],
+      {
+        asAdmin: caller.asAdmin,
+      },
+    );
     const json = JSON.stringify(backup, null, 2);
     const dateStr = calendarDateOf(new Date());
 

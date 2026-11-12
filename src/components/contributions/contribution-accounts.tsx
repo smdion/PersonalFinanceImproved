@@ -32,13 +32,13 @@ import type { Holding } from "@/components/investments/fund-holding-row";
 export function ContributionAccountsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
-  const { data: people } = trpc.settings.people.list.useQuery();
-  const { data: jobs } = trpc.settings.jobs.list.useQuery();
-  const { data: contribs } = trpc.settings.contributionAccounts.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
+  const { data: jobs } = trpc.jobs.list.useQuery();
+  const { data: contribs } = trpc.contribution.accounts.list.useQuery();
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
-    trpc.networth.portfolioSnapshots.getLatest.useQuery();
+    trpc.netWorth.portfolioSnapshots.getLatest.useQuery();
   // SimpleFIN detail per account — hidden (no error) without the portfolio
   // permission these need.
   const { data: insights } = trpc.investments.computeAccountInsights.useQuery(
@@ -79,7 +79,7 @@ export function ContributionAccountsSettings() {
   // Powers each row's "$X in <profile name>" status line: the account carries
   // no value, only the active Contribution Profile's entry does.
   const { data: contributionCompareData } =
-    trpc.contributionProfile.compareData.useQuery();
+    trpc.contributionProfile.getComparisonData.useQuery();
   const activeProfileName =
     contributionProfilesList?.find((p) => p.id === activeContributionProfileId)
       ?.name ?? null;

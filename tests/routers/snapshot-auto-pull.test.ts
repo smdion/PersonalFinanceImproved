@@ -60,7 +60,7 @@ describe("snapshot auto-pull", () => {
           parentCategory: "Retirement",
         })
         .run();
-      const result = await ctx.caller.networth.portfolioSnapshots.create({
+      const result = await ctx.caller.netWorth.portfolioSnapshots.create({
         snapshotDate: "2025-12-31",
         accounts: [
           {

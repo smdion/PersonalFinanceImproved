@@ -1,14 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/server/auth.config";
+import { devBypass } from "@/server/auth-mode";
 
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
-const { auth } = NextAuth(authConfig);
+// The edge-compatible auth config (no DB imports). A page request without a
+// session goes to /login; the dashboard layout, tRPC and the API routes
+// still check the session with the full config (auth.ts).
+const { auth } = NextAuth({
+  ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    // Only `next dev` skips sign-in (auth-mode.ts), as the layout does.
+    authorized: ({ auth: session }) => devBypass() !== null || !!session?.user,
+  },
+});
 
-// Use the edge-compatible auth config (no DB imports) for the proxy.
-// Full auth (with DB) is only used in server components / API routes.
-// In demo-only mode, skip auth entirely — no login required.
+// In demo-only mode, skip auth entirely: no login required.
 export function proxy(request: NextRequest) {
   if (isDemoOnly) {
     return NextResponse.next();
@@ -18,5 +27,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|login).*)"],
+  // Not the sign-in page or the files it loads (its icon, Next's assets).
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg|login).*)"],
 };

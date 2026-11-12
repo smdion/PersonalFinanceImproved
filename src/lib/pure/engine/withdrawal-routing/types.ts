@@ -32,7 +32,7 @@ export interface RouteBracketInfo {
    *  so the 0%-LTCG estimate doesn't count that headroom. */
   conversionsEnabled?: boolean;
   /** Household's annual standard deduction: converts the gross ordinary-income
-   *  floor to taxable income for LTCG lookups (`toLtcgTaxableIncome`);
+   *  floor to taxable income for LTCG lookups (`ltcgStackBase`);
    *  omitted subtracts nothing. */
   standardDeduction?: number;
   /** See `RankWithdrawalTiersInput`'s field of the same

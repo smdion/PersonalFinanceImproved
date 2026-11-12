@@ -186,6 +186,37 @@ describe("checkCommit", () => {
     ).toEqual([]);
   });
 
+  it("reads a reason written as a trailer, and both of git revert -m's lines as boilerplate", () => {
+    const boilerplate =
+      "This reverts commit 0bad0a56cadb4750ae191f7117d30bb9f25be6eb.";
+    for (const reason of [
+      "Cause: it dropped a stored value.",
+      "Regression: net pay moved for every household.",
+    ])
+      expect(
+        rules(facts({ raw: `revert: undo X\n\n${boilerplate}\n\n${reason}` })),
+      ).toEqual([]);
+    expect(
+      rules(
+        facts({
+          raw: `revert: undo X\n\n${boilerplate}\n\nCo-Authored-By: A <a@b.c>\nVisible: none`,
+        }),
+      ),
+    ).toEqual(["revert-reason"]);
+    const merge =
+      "This reverts commit 0bad0a56cadb4750ae191f7117d30bb9f25be6eb, reversing\nchanges made to 1234567890abcdef1234567890abcdef12345678.";
+    expect(rules(facts({ raw: `revert: undo the merge\n\n${merge}` }))).toEqual(
+      ["revert-reason"],
+    );
+    expect(
+      rules(
+        facts({
+          raw: `revert: undo the merge\n\n${merge}\n\nIt broke sign-in.`,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it("leaves a commit that only mentions a revert alone", () => {
     expect(
       rules(facts({ raw: "fix: restore X\n\nThis reverts commit abc1234." })),

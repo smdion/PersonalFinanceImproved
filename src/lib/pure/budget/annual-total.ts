@@ -1,4 +1,5 @@
 import { roundToCents } from "@/lib/utils/math";
+import { budgetColumnSum, type BudgetColumns } from "./item-amount";
 
 /**
  * Compute annualized total for a specific budget column from an array of
@@ -8,12 +9,9 @@ import { roundToCents } from "@/lib/utils/math";
 export function computeBudgetColumnTotal(
   items: { amounts: number[] }[],
   columnIndex: number,
+  columns: number,
 ): number {
-  const monthlyTotal = items.reduce(
-    (sum, item) => sum + (item.amounts[columnIndex] ?? 0),
-    0,
-  );
-  return roundToCents(monthlyTotal * 12);
+  return roundToCents(budgetColumnSum(items, columnIndex, columns) * 12);
 }
 
 /**
@@ -24,28 +22,28 @@ export function computeBudgetColumnTotal(
 export function computeWeightedBudgetTotal(
   items: { amounts: number[] }[],
   columnMonths: number[],
+  columns: number,
 ): number {
   let annual = 0;
   for (let col = 0; col < columnMonths.length; col++) {
-    const monthlyTotal = items.reduce(
-      (sum, item) => sum + (item.amounts[col] ?? 0),
-      0,
-    );
+    const monthlyTotal = budgetColumnSum(items, col, columns);
     annual += monthlyTotal * (columnMonths[col] ?? 0);
   }
   return roundToCents(annual);
 }
 
 /**
- * Compute the correct annual total for a profile, handling both modes:
+ * Compute the correct annual total for a profile's items, handling both modes:
  * - Weighted profiles (columnMonths set): weighted combination of all columns
- * - Tier profiles (columnMonths null): single column × 12
+ * - Tier profiles (columnMonths null): single column × 12 (no profile: none)
  */
 export function computeBudgetAnnualTotal(
   items: { amounts: number[] }[],
   columnIndex: number,
-  columnMonths: number[] | null,
+  profile: BudgetColumns | undefined,
 ): number {
-  if (columnMonths) return computeWeightedBudgetTotal(items, columnMonths);
-  return computeBudgetColumnTotal(items, columnIndex);
+  const columns = profile ? profile.columnLabels.length : 0;
+  if (profile?.columnMonths)
+    return computeWeightedBudgetTotal(items, profile.columnMonths, columns);
+  return computeBudgetColumnTotal(items, columnIndex, columns);
 }

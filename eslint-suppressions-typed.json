@@ -34,11 +34,6 @@
       "count": 1
     }
   },
-  "src/components/dashboard/financial-checkup-card.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/components/retirement-projection/table/account-notes.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
@@ -119,11 +114,6 @@
       "count": 3
     }
   },
-  "src/components/portfolio/use-snapshot-sync-pending.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/portfolio/portfolio-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
@@ -142,11 +132,6 @@
   "src/components/savings/fund-mini-chart.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
-    }
-  },
-  "src/components/tax-optimization/roth-explorer.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
     }
   },
   "src/components/upkeep/cost-trend-chart.tsx": {
@@ -239,11 +224,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/tax-estimation.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -329,11 +309,6 @@
       "count": 1
     }
   },
-  "src/server/routers/settings/earnings.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/routers/version.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
@@ -361,7 +336,7 @@
   },
   "src/server/trpc.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
+      "count": 4
     }
   }
 }

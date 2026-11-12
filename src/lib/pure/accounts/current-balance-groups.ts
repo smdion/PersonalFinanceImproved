@@ -71,7 +71,10 @@ export function groupCurrentBalances<B extends GroupRow>(
  *  changed into (market and deposits together). */
 export type UnpricedMove = {
   key: string;
+  performanceAccountId: number;
   label: string;
+  /** The whole account's name. */
+  account: string;
   institution: string;
   changed: { day: string; balance: number }[];
 };
@@ -83,6 +86,7 @@ export function unpricedMoves(args: {
   balances: readonly {
     key: string;
     label: string;
+    account: string;
     feedIds: readonly number[];
     performanceAccountId: number | null;
   }[];
@@ -107,7 +111,16 @@ export function unpricedMoves(args: {
     });
     if (changed.length === 0) return [];
     const institution = args.institutionOf(b.feedIds[0]!);
-    return [{ key: b.key, label: b.label, institution, changed }];
+    return [
+      {
+        key: b.key,
+        performanceAccountId: b.performanceAccountId,
+        label: b.label,
+        account: b.account,
+        institution,
+        changed,
+      },
+    ];
   });
 }
 

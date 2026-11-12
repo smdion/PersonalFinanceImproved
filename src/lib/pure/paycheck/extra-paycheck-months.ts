@@ -55,14 +55,13 @@ export function findExtraPaycheckMonths(
 }
 
 /**
- * Returns YYYY-MM-01 date strings for every extra-paycheck month (3 paydays)
- * within the window [asOfDate, asOfDate + horizonMonths). Only biweekly pay
- * produces extra paycheck months; all other schedules return [].
+ * `YYYY-MM-01` keys of the 3-payday months (biweekly only) in [fromMonth,
+ * fromMonth + horizonMonths). `fromMonth` is a household month key (`monthKey`).
  */
 export function getExtraPaycheckMonthKeys(
   anchorPayDate: Date,
   payPeriod: string,
-  asOfDate: Date,
+  fromMonth: string,
   horizonMonths: number,
 ): string[] {
   if (payPeriod !== "biweekly") return [];
@@ -71,13 +70,11 @@ export function getExtraPaycheckMonthKeys(
   const results: string[] = [];
 
   // Walk years covered by the horizon, collecting 3-payday months via payday counting.
-  const startYear = asOfDate.getUTCFullYear();
+  const startYear = Number(fromMonth.slice(0, 4));
+  const startMonthIndex = Number(fromMonth.slice(5, 7)) - 1;
+  const startDate = new Date(Date.UTC(startYear, startMonthIndex, 1));
   const endDate = new Date(
-    Date.UTC(
-      asOfDate.getUTCFullYear(),
-      asOfDate.getUTCMonth() + horizonMonths,
-      1,
-    ),
+    Date.UTC(startYear, startMonthIndex + horizonMonths, 1),
   );
   const endYear = endDate.getUTCFullYear();
 
@@ -96,13 +93,7 @@ export function getExtraPaycheckMonthKeys(
       if ((counts[m] ?? 0) >= 3) {
         const key = `${year}-${String(m + 1).padStart(2, "0")}-01`;
         const keyDate = new Date(Date.UTC(year, m, 1));
-        if (
-          keyDate >=
-            new Date(
-              Date.UTC(asOfDate.getUTCFullYear(), asOfDate.getUTCMonth(), 1),
-            ) &&
-          keyDate < endDate
-        ) {
+        if (keyDate >= startDate && keyDate < endDate) {
           results.push(key);
         }
       }

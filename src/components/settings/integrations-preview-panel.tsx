@@ -50,7 +50,7 @@ export function PreviewPanel({
 
   // Contribution accounts for the contribution linking dropdown
   const contributionAccountsQuery =
-    trpc.budget.listContribAccountsForLinking.useQuery();
+    trpc.budget.listContributionAccountsForLinking.useQuery();
   const contributionAccounts = contributionAccountsQuery.data ?? [];
 
   const allApiCats = apiCategories;

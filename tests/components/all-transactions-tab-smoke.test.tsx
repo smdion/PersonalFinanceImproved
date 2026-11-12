@@ -19,12 +19,13 @@ const stored = vi.hoisted(() => ({
   "ledgr:savings:txLocked": false,
   "ledgr:savings:showRuleTx": true,
 }));
-vi.mock("@/lib/hooks/use-local-storage", () => ({
-  useLocalStorage: (k: string, v: unknown) => [
+vi.mock("@/lib/hooks/use-local-storage", () => {
+  const read = (k: string, v: unknown) => [
     k in stored ? stored[k as keyof typeof stored] : v,
     vi.fn(),
-  ],
-}));
+  ];
+  return { useLocalStorage: read, useLocalBoolean: read };
+});
 
 import { AllTransactionsTab } from "@/components/savings/transactions/all-transactions-tab";
 import type { GoalProjection } from "@/components/savings/types";

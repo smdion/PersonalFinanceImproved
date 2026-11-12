@@ -1,10 +1,8 @@
 /** A contribution row's yearly dollars and its employer match terms. A
  *  stored whole percent (6 means 6%) becomes a Fraction once, here. */
-import {
-  CONTRIBUTION_METHOD_VALUES,
-  EMPLOYER_MATCH_TYPE_VALUES,
-  type ContributionMethod,
-  type EmployerMatchType,
+import type {
+  ContributionMethod,
+  EmployerMatchType,
 } from "@/lib/config/enum-values";
 import { assertNever } from "@/lib/utils/assert-never";
 import { storedCeiling, type Ceiling } from "@/lib/utils/ceiling";
@@ -18,16 +16,13 @@ export function fractionFromPercent(percent: number): Fraction {
   return (percent / 100) as Fraction;
 }
 
-/** A row's yearly dollars; an unknown stored method reads as fixed annual. */
+/** A row's yearly dollars. */
 export function computeAnnualContribution(
-  storedMethod: string,
+  method: ContributionMethod,
   value: number,
   salary: number,
   periodsPerYear: number,
 ): number {
-  const method: ContributionMethod =
-    CONTRIBUTION_METHOD_VALUES.find((m) => m === storedMethod) ??
-    "fixed_annual";
   switch (method) {
     case "percent_of_salary":
       return salary * fractionFromPercent(value);
@@ -52,16 +47,15 @@ export type EmployerMatch =
     }
   | { readonly kind: "flat"; readonly perYear: number };
 
-/** A row's stored match terms: its rate (else its whole percent value), the
- *  cap of pay a fraction (0: no cap). An unknown or unset type is no match. */
+/** A row's match terms: its rate (else its whole percent value), the cap of
+ *  pay a fraction (0: no cap). An unset type (null) is no match. */
 export function parseEmployerMatch(
-  storedType: string | null,
+  storedType: EmployerMatchType | null,
   value: number,
   maxMatchPercent: number,
   rate: Fraction | null = null,
 ): EmployerMatch {
-  const type: EmployerMatchType =
-    EMPLOYER_MATCH_TYPE_VALUES.find((t) => t === storedType) ?? "none";
+  const type = storedType ?? "none";
   switch (type) {
     case "none":
       return { kind: "none" };

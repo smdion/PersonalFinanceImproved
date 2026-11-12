@@ -1,7 +1,8 @@
 /** The Current Balances card's words for its daily changes: who a close
- *  leaves out and why ("not in yet" only while a report can still come),
- *  and each account's move over closes it sent no report for. */
+ *  leaves out and why, each account's move over closes it sent no report
+ *  for, and the accounts that send no holdings (said once, under the list). */
 import { formatCurrency } from "@/lib/utils/format";
+import { roundToCents } from "@/lib/utils/math";
 import { previousTradingDay } from "../investments/market-calendar";
 import { shortDay } from "./short-day";
 import type { CloseReport } from "./daily-movement";
@@ -9,13 +10,6 @@ import type { UnpricedMove } from "../accounts/current-balance-groups";
 
 type Close = { day: string; missing: readonly string[] };
 type Reports = readonly Pick<CloseReport, "name" | "closes" | "gaps">[];
-type Unpriced = readonly Pick<UnpricedMove, "label" | "changed">[];
-
-/** Accounts with no holdings whose balance changed into the close. */
-const unpricedAt = (c: Close, unpriced: Unpriced) =>
-  unpriced
-    .filter((u) => u.changed.some((m) => m.day === c.day))
-    .map((u) => u.label);
 
 /** "Nov 4", "Nov 2–4", "Oct 30–Nov 2", from days oldest first. */
 function dayRun(days: readonly string[]): string {
@@ -37,39 +31,44 @@ const listNames = (names: readonly string[]) =>
  *  full name is in the hover text. */
 const shortName = (name: string) => name.split(/\s+/)[0] ?? name;
 
-/** The no-holdings accounts left out of every close holding their
- *  institution's report, at least one (said once, under the list), and the
- *  rest (said on the closes they're out of). */
-export function splitUnpriced<
-  U extends Pick<UnpricedMove, "label" | "changed" | "institution">,
->(
-  closes: readonly Close[],
-  target: string | undefined,
-  reports: Reports,
-  unpriced: readonly U[],
-): { always: U[]; varying: U[] } {
-  const notIn = closes.map((c) => {
-    const { late, noReport } = whyMissing(c, target, reports);
-    return {
-      day: c.day,
-      names: [...late, ...noReport.flatMap(([, n]) => [...n])],
+/** The one line for the accounts that send no holdings, each named once
+ *  (an account held in parts by its account's name), with each one's
+ *  balance changes on hover. Null when there are none. */
+export function noHoldingsLine(
+  unpriced: readonly Pick<
+    UnpricedMove,
+    "performanceAccountId" | "account" | "changed"
+  >[],
+): { text: string; detail: string } | null {
+  const accounts = new Map<
+    number,
+    { name: string; byDay: Map<string, number> }
+  >();
+  for (const u of unpriced) {
+    const a = accounts.get(u.performanceAccountId) ?? {
+      name: u.account,
+      byDay: new Map<string, number>(),
     };
-  });
-  const always = unpriced.filter((u) => {
-    const counted = notIn.filter((c) => !c.names.includes(u.institution));
-    return (
-      counted.length > 0 &&
-      counted.every((c) => u.changed.some((m) => m.day === c.day))
-    );
-  });
-  return { always, varying: unpriced.filter((u) => !always.includes(u)) };
-}
-
-/** The line under the list for them: "Excludes Joanna HSA (Voya): no
- *  holdings reported". */
-export function alwaysExcludedLine(always: Unpriced): string | null {
-  if (always.length === 0) return null;
-  return `Excludes ${listNames(always.map((u) => u.label))}: no holdings reported`;
+    for (const m of u.changed)
+      a.byDay.set(m.day, roundToCents((a.byDay.get(m.day) ?? 0) + m.balance));
+    accounts.set(u.performanceAccountId, a);
+  }
+  if (accounts.size === 0) return null;
+  const list = [...accounts.values()];
+  const changes = list.map(
+    (a) =>
+      `${a.name} ${[...a.byDay]
+        .sort(([x], [y]) => y.localeCompare(x))
+        .map(
+          ([day, n]) =>
+            `${shortDay(day)} ${n >= 0 ? "+" : "−"}${formatCurrency(Math.abs(n))}`,
+        )
+        .join(", ")}`,
+  );
+  return {
+    text: `Not in daily changes (no holdings): ${listNames(list.map((a) => a.name))}`,
+    detail: `These send balances but no holdings, so market moves and money paid in can't be split. Balance changes: ${changes.join("; ")}.`,
+  };
 }
 
 /** The closes without a value next to `day`, itself included. */
@@ -119,17 +118,14 @@ export function missingNote(
   c: Close,
   target: string | undefined,
   reports: Reports,
-  unpriced: Unpriced = [],
 ): string | null {
-  const blind = unpricedAt(c, unpriced);
-  if (c.missing.length === 0 && blind.length === 0) return null;
+  if (c.missing.length === 0) return null;
   const { late, noReport, unknown } = whyMissing(c, target, reports);
   return [
     late.length > 0 &&
       `${short(late)} ${late.length === 1 ? "change" : "changes"} not in yet`,
     ...noReport.map(([run, names]) => `no ${short([...names])} report ${run}`),
     unknown.length > 0 && `excludes ${short(unknown)}`,
-    blind.length > 0 && `excludes ${listNames(blind)} (no holdings)`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -140,10 +136,8 @@ export function missingReason(
   c: Close,
   target: string | undefined,
   reports: Reports,
-  unpriced: Unpriced = [],
 ): string | undefined {
-  const blind = unpricedAt(c, unpriced);
-  if (c.missing.length === 0 && blind.length === 0) return undefined;
+  if (c.missing.length === 0) return undefined;
   const { late, noReport, unknown } = whyMissing(c, target, reports);
   const day = shortDay(c.day);
   const lateText = () => {
@@ -157,8 +151,6 @@ export function missingReason(
     ...noReport.map(noReportText),
     unknown.length > 0 &&
       `${listNames(unknown)} didn't report a price for ${day}, so ${unknown.length === 1 ? "its" : "their"} change isn't in this total.`,
-    blind.length > 0 &&
-      `${listNames(blind)} ${blind.length === 1 ? "sends" : "send"} no holdings, so ${blind.length === 1 ? "its" : "their"} market move can't be told and isn't in this total.`,
   ]
     .filter(Boolean)
     .join(" ");

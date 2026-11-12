@@ -54,7 +54,7 @@ const LAYERS = {
 /** The src/ modules db-migrate.ts imports: esbuild bundles them into the
  *  image's migrator, which runs with no src/, env or Next. */
 const MIGRATOR_SRC =
-  "^src/lib/(db/(migrate/(reference-reconcile-core|demo-schema-marker|migration-converters|converter-rows|converter-refusal|converter-writes|v0102-match-rate|v0102-match-value|v0106-retirement-people|v0106-budget-amounts|v0106-net-pay-snapshot|v0106-credentials|v0106-mapping-ids|v0106-joint-person-ids|v0106-cached-months|v0106-stored-json|v0106-salary-entries|v0106-active-fields|v0106-performance-category|v0106-retired-limits|v0106-after-tax-exempt|frozen-shape)|backup/(version-tables|backup-file)|env-file)|config/(enum-values|budget-apps|filing-status)|utils/(match-rate|date)|crypto-envelope)\\.ts$";
+  "^src/lib/(db/(migrate/(reference-reconcile-core|demo-schema-marker|migration-converters|converter-rows|converter-refusal|converter-writes|v0102-match-rate|v0102-match-value|v0106-retirement-people|v0106-budget-amounts|v0106-net-pay-snapshot|v0106-credentials|v0106-mapping-ids|v0106-joint-person-ids|v0106-cached-months|v0106-stored-json|v0106-salary-entries|v0106-active-fields|v0106-performance-category|v0106-retired-limits|v0106-after-tax-exempt|v0110-job-entries|frozen-shape)|backup/(version-tables|backup-file)|env-file)|config/(enum-values|budget-apps|filing-status)|utils/(match-rate|date)|crypto-envelope)\\.ts$";
 
 const L = LAYERS;
 const ABOVE_FOUNDATION = `${L.shapes}|${L.pure}|${L.infra}|^src/server/|^src/components/|^src/app/`;

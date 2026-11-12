@@ -12,7 +12,7 @@ import type { FenceDb } from "./backup-fence-cases";
 type Db = FenceDb["db"];
 type Backup = { tables: Record<string, Record<string, unknown>[]> };
 
-const admin = { asAdmin: true };
+const admin = { asAdmin: true, user: "Admin" };
 
 async function app() {
   const schema = await import("@/lib/db/schema");
@@ -79,7 +79,7 @@ export function closedSetImportCases(fresh: () => Promise<FenceDb>) {
       const { exportBackup, importBackup } = await app();
       await household(db);
       const backup = JSON.parse(
-        JSON.stringify(await exportBackup(db)),
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
       ) as Backup;
       setAll(
         backup,
@@ -124,7 +124,7 @@ export function closedSetImportCases(fresh: () => Promise<FenceDb>) {
       await household(db);
       const before = await stored(db);
       const backup = JSON.parse(
-        JSON.stringify(await exportBackup(db)),
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
       ) as Backup;
       setAll(backup, "performance_accounts", "account_type", "solo401k");
       setAll(
@@ -285,7 +285,7 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
         await import("@/lib/pure/accounts/tax-buckets/tax-buckets");
       await snapshot(db);
       const backup = JSON.parse(
-        JSON.stringify(await exportBackup(db)),
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
       ) as Backup;
       setAll(backup, "portfolio_accounts", "account_type", "solo401k");
 
@@ -305,6 +305,28 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
       ).toThrow(TypeError);
     } finally {
       await done();
+    }
+  });
+}
+
+/** A backup whose rows point at a row it doesn't have: refused whole on
+ *  both dialects (PostgreSQL inserts with triggers off, then checks every
+ *  reference), and nothing is written. */
+export function danglingReferenceCases(fresh: () => Promise<FenceDb>) {
+  it("an import whose rows point at a missing person is refused, and nothing changes", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { exportBackup, importBackup } = await app();
+      await household(db);
+      const before = await stored(db);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      ) as Backup;
+      setAll(backup, "retirement_settings", "person_id", 999999);
+      await expect(importBackup(db, backup as never, admin)).rejects.toThrow();
+      expect(await stored(db)).toEqual(before);
+    } finally {
+      done();
     }
   });
 }

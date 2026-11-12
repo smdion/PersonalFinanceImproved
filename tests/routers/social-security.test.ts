@@ -1,5 +1,5 @@
 /**
- * Social Security claiming-age sweep — `sweepSocialSecurityClaimingAges`
+ * Social Security claiming-age sweep — `computeSocialSecurityClaimingSweep`
  * router endpoint.
  *
  * Mirrors `withdrawal-bracket-optimizer.test.ts`'s pattern: null result
@@ -221,14 +221,14 @@ async function seedMfjPiaHousehold(
   return { workerId, spouseId, profileId };
 }
 
-describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person household", () => {
+describe("projection router — computeSocialSecurityClaimingSweep, MFJ two-person household", () => {
   it("no return rate: says to set one, instead of the engine throwing", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const { workerId } = await seedMfjPiaHousehold(db);
       db.delete(schema.returnRateTable).run();
       expect(
-        await caller.projection.sweepSocialSecurityClaimingAges({
+        await caller.projection.computeSocialSecurityClaimingSweep({
           personId: workerId,
           pia: 48000,
           ages: [62, 70],
@@ -244,11 +244,12 @@ describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person 
     try {
       const { workerId } = await seedMfjPiaHousehold(db);
 
-      const response = await caller.projection.sweepSocialSecurityClaimingAges({
-        personId: workerId,
-        pia: 48000,
-        ages: [62, 70],
-      });
+      const response =
+        await caller.projection.computeSocialSecurityClaimingSweep({
+          personId: workerId,
+          pia: 48000,
+          ages: [62, 70],
+        });
 
       const data = await fetchRetirementData(rawDb, {});
       const payload = await buildEnginePayload(rawDb, data, {
@@ -314,14 +315,15 @@ describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person 
   });
 });
 
-describe("projection router — sweepSocialSecurityClaimingAges", () => {
+describe("projection router — computeSocialSecurityClaimingSweep", () => {
   it("returns null result when no retirement data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const response = await caller.projection.sweepSocialSecurityClaimingAges({
-        personId: 1,
-        pia: 30000,
-      });
+      const response =
+        await caller.projection.computeSocialSecurityClaimingSweep({
+          personId: 1,
+          pia: 30000,
+        });
       expect(response).toEqual({ result: null });
     } finally {
       cleanup();
@@ -333,10 +335,11 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
     try {
       const { personId } = seedFullProjectionData(db);
 
-      const response = await caller.projection.sweepSocialSecurityClaimingAges({
-        personId,
-        pia: 30000,
-      });
+      const response =
+        await caller.projection.computeSocialSecurityClaimingSweep({
+          personId,
+          pia: 30000,
+        });
       expect(response.result).not.toBeNull();
       expect(response.result).toHaveProperty("recommendedAge");
       // Default sweep is every age 62-70 inclusive.
@@ -357,11 +360,12 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
     try {
       const { personId } = seedFullProjectionData(db);
 
-      const response = await caller.projection.sweepSocialSecurityClaimingAges({
-        personId,
-        pia: 30000,
-        ages: [62, 70],
-      });
+      const response =
+        await caller.projection.computeSocialSecurityClaimingSweep({
+          personId,
+          pia: 30000,
+          ages: [62, 70],
+        });
       expect(
         response.result?.candidates.map((c) => c.claimingAge).sort(),
       ).toEqual([62, 70]);
@@ -375,11 +379,12 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
     try {
       const { personId } = seedFullProjectionData(db);
 
-      const response = await caller.projection.sweepSocialSecurityClaimingAges({
-        personId,
-        pia: 30000,
-        ages: [62, 67],
-      });
+      const response =
+        await caller.projection.computeSocialSecurityClaimingSweep({
+          personId,
+          pia: 30000,
+          ages: [62, 67],
+        });
 
       const data = await fetchRetirementData(rawDb, {});
       const payload = await buildEnginePayload(rawDb, data, {
@@ -429,7 +434,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
       seedFullProjectionData(db);
 
       await expect(
-        caller.projection.sweepSocialSecurityClaimingAges({
+        caller.projection.computeSocialSecurityClaimingSweep({
           personId: 999999,
           pia: 30000,
         }),
@@ -445,7 +450,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
       const { personId } = seedFullProjectionData(db);
 
       await expect(
-        caller.projection.sweepSocialSecurityClaimingAges({
+        caller.projection.computeSocialSecurityClaimingSweep({
           personId,
           pia: 0,
         }),
@@ -461,7 +466,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
       const { personId } = seedFullProjectionData(db);
 
       await expect(
-        caller.projection.sweepSocialSecurityClaimingAges({
+        caller.projection.computeSocialSecurityClaimingSweep({
           personId,
           pia: 30000,
           ages: [60], // below the 62 minimum
@@ -479,7 +484,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
     } as never);
     try {
       await expect(
-        caller.projection.sweepSocialSecurityClaimingAges({
+        caller.projection.computeSocialSecurityClaimingSweep({
           personId: 1,
           pia: 30000,
         }),

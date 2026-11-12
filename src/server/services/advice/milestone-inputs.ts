@@ -19,7 +19,6 @@ import { listBrokerageGoals } from "@/server/data/brokerage-goals";
 import { buildYearEndHistory } from "@/server/services/net-worth/year-end-history";
 import { wealthFormulaIncome } from "@/lib/pure/net-worth/net-worth";
 import {
-  SK_EFUND_BUDGET_COLUMN,
   SK_HIGH_INCOME_THRESHOLD,
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CHECKPOINT_SOURCE,
@@ -38,7 +37,7 @@ import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
-import { getAge } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
 import { debtBalance, isOpenDebt } from "@/lib/pure/debts/debt-balance";
@@ -227,9 +226,7 @@ export async function loadMilestoneInputs(
   const householdAge = current?.averageAge ?? 0;
   const ageOf = (personId: number | null) => {
     const p = people.find((x) => x.id === personId);
-    return p
-      ? getAge(new Date(`${p.dateOfBirth}T00:00:00`), asOfDate)
-      : householdAge;
+    return p ? ageOnDate(p.dateOfBirth, asOfDate) : householdAge;
   };
   const debts: MilestoneDebt[] = debtRows.map((d) => {
     const now = debtBalance(d);
@@ -307,17 +304,11 @@ export async function activeMilestoneInput(ctx: {
   const settingRows = await ctx.db
     .select()
     .from(schema.appSettings)
-    .where(
-      inArray(schema.appSettings.key, [
-        SK_EFUND_BUDGET_COLUMN,
-        SK_HIGH_INCOME_THRESHOLD,
-      ]),
-    );
+    .where(inArray(schema.appSettings.key, [SK_HIGH_INCOME_THRESHOLD]));
   const setting = (key: string) =>
     settingRows.find((r) => r.key === key)?.value ?? null;
-  const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const portfolio = ctx.scope.can("portfolio");
-  // Contributions need the profile ids the page sends; with none they're $0.
+  // The page's profile ids, else the active ones.
   const profileIds = summaryProfileIdsInput(await resolveProfileSelection(ctx));
   const [
     inputs,
@@ -331,12 +322,9 @@ export async function activeMilestoneInput(ctx: {
   ] = await Promise.all([
     loadMilestoneInputs(ctx, undefined),
     computeContributionSummary(ctx, profileIds),
-    computeSavingsSummary(
-      ctx,
-      typeof efundColumn === "number" && efundColumn >= 0
-        ? { budgetTierOverride: efundColumn }
-        : undefined,
-    ),
+    // The e-fund's own column, as the Savings page reads it
+    // (resolveEfundTierIndex).
+    computeSavingsSummary(ctx, undefined),
     computeMortgageActiveSummary(ctx),
     portfolio
       ? orNull("holdings", loadHoldingsOverview(ctx.db, ctx.scope.asOf))

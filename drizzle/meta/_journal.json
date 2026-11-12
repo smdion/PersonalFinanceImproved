@@ -148,6 +148,13 @@
       "when": 1794283864072,
       "tag": "0020_v0106_stored_json",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794331418324,
+      "tag": "0021_v0110_job_entries",
+      "breakpoints": true
     }
   ]
 }

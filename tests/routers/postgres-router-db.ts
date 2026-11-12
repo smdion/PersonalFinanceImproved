@@ -467,6 +467,9 @@ export async function openPostgresTestDatabase(): Promise<PostgresTestDatabase> 
   await a.query(`CREATE DATABASE "${name}" TEMPLATE "${tpl}"`);
   const url = dbUrl(base, name);
   const pool = new pg.Pool({ connectionString: url, max: 4 });
+  // Teardown drops the database WITH (FORCE), which terminates any client the
+  // pool still holds; pg emits that on the pool, and unheard it fails the run.
+  pool.on("error", () => {});
   const sqlite = new PostgresAsSqlite(url);
   return {
     db: drizzle(pool, { schema: pgSchema }),

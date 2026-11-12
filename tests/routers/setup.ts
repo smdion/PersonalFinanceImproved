@@ -140,10 +140,10 @@ export async function createTestCaller(
   // per worker — see openTestSqlite).
   const sqlite = openTestSqlite();
 
-  const db = drizzle(sqlite, { schema: sqliteSchema });
+  const plainDb = drizzle(sqlite, { schema: sqliteSchema });
 
   // The same transactions a SQLite install runs: real commit and rollback.
-  withAsyncTransactions(db, sqlite);
+  const db = withAsyncTransactions(plainDb, sqlite);
 
   // Cast to PG type (same pattern as production schema.ts)
   // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM requires this cast for SQLite-to-PG type compatibility in test harness
@@ -186,7 +186,7 @@ async function createPostgresTestCaller(
   // eslint-disable-next-line no-restricted-syntax -- the app's db type; node-postgres drizzle with the PostgreSQL schema
   const rawDb = pgTest.db as unknown as DbType;
   const caller = _callerFactory({ db: rawDb, session, demoSchema: null });
-  setTopLevelTestDb(rawDb);
+  setTopLevelTestDb(rawDb, pgTest.pool);
   const cleanup = () => {
     releaseTopLevelTestDb(rawDb);
     pgTest.drop();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db, isPostgres } from "@/lib/db";
+import { db } from "@/lib/db";
+import { queryRaw } from "@/lib/db/compat";
 import { sql } from "drizzle-orm";
 
 // Loaded once per process: a build whose app code fails to load reports degraded.
@@ -16,12 +17,7 @@ export async function GET() {
     await appRouterLoad;
 
     // Database connectivity check
-    if (isPostgres()) {
-      await db.execute(sql`SELECT 1`);
-    } else {
-      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-      (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
-    }
+    await queryRaw(db, sql`SELECT 1`);
 
     return NextResponse.json(
       { status: "ok", version: process.env.APP_VERSION ?? "dev" },

@@ -1,41 +1,16 @@
-import { TRPCError } from "@trpc/server";
 import type * as schema from "@/lib/db/schema";
 import { paysMedical, isRothIncomeLimited } from "@/lib/config/account-types";
-import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/accounts/cash-positions";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
-import {
-  rothIraRouteOf,
-  rothIraSummary,
-} from "@/lib/pure/contributions/roth-ira";
+import { rothIraRouteOf } from "@/lib/pure/contributions/roth-ira";
+import { rothIraSummary } from "@/lib/pure/contributions/roth-ira-summary";
 import {
   type computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household/household-income";
-import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
-import {
-  buildLiabilityBracketInput,
-  StandardW4BracketsRequiredError,
-} from "@/lib/pure/paycheck/liability-brackets";
-import type { WithholdingTableRow } from "@/lib/pure/paycheck/withholding";
-import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { loadCapHousehold } from "@/server/services/contributions/caps";
 import type { ContribRowWithActiveFields } from "@/server/services/contributions/profile";
-
-/** buildLiabilityBracketInput for a service: its domain error answered as
- *  the client's BAD_REQUEST, with the same message. */
-export function liabilityBracketInput(
-  bracketRow: WithholdingTableRow,
-  limits: Map<string, number>,
-): TaxBracketInput {
-  try {
-    return buildLiabilityBracketInput(bracketRow, limits);
-  } catch (e) {
-    if (e instanceof StandardW4BracketsRequiredError)
-      throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
-    throw e;
-  }
-}
+import { householdReturnTax } from "@/server/services/paycheck/household-return";
 
 export function householdTotals(
   results: {
@@ -49,9 +24,9 @@ export function householdTotals(
   limitsRecord: Record<string, number>,
   taxYear: number,
 ) {
-  // Household income and tax: federal on combined income with ONE standard
-  // deduction; FICA per person; Additional Medicare on combined Medicare wages
-  // above the threshold. Earners = everyone with pay this year.
+  // Household income and this year's return (household-return.ts): federal
+  // tax on combined income, FICA per person, Additional Medicare on combined
+  // Medicare wages above the threshold. Earners = everyone with pay this year.
   const earners = results.filter((r) => r.earnings);
   const householdIncome =
     earners.length > 0
@@ -61,21 +36,17 @@ export function householdTotals(
   // (loadCapHousehold), never a W-4 on its own: a W-4 status is a
   // withholding choice (married couples often pick Single).
   const householdFilingStatus = capHousehold.filingStatus || null;
-  let householdTax = null;
-  if (earners.length > 0 && householdFilingStatus) {
-    const filingStatus = householdFilingStatus;
-    const bracketRow = allBrackets.find(
-      (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
-    );
-    if (bracketRow) {
-      householdTax = calculateHouseholdTax({
-        people: earners.map((r) => r.earnings!),
-        taxBrackets: liabilityBracketInput(bracketRow, limitsMap),
-        medicareLiabilityThreshold:
-          limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
-      });
-    }
-  }
+  const householdTax =
+    earners.length > 0 && householdFilingStatus
+      ? householdReturnTax(
+          results,
+          householdFilingStatus,
+          allBrackets,
+          limitsMap,
+          limitsRecord,
+          taxYear,
+        )
+      : null;
 
   const rothIra = rothIraSummary({
     // No one with a job → no Roth IRA view, as before.

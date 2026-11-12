@@ -6,6 +6,7 @@
  * snapshot row's manual "Resync" button is the backstop.
  */
 import { useCallback, useEffect, useState } from "react";
+import { isRecord, readBrowserJson } from "@/lib/hooks/browser-storage";
 
 const KEY = "pf-snapshot-unsynced";
 
@@ -16,16 +17,15 @@ type SnapshotSyncPending = {
   editedAt: number;
 };
 
+const isPending = (v: unknown): v is SnapshotSyncPending =>
+  isRecord(v) &&
+  typeof v.snapshotId === "number" &&
+  typeof v.snapshotDate === "string" &&
+  typeof v.count === "number" &&
+  typeof v.editedAt === "number";
+
 function read(): SnapshotSyncPending | null {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as SnapshotSyncPending;
-    // Parsed browser storage: any JSON, even null.
-    return typeof p?.snapshotId === "number" ? p : null;
-  } catch {
-    return null;
-  }
+  return readBrowserJson(KEY, isPending) ?? null;
 }
 
 function write(p: SnapshotSyncPending | null): void {

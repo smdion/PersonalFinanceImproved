@@ -14,7 +14,7 @@ import { toast } from "@/lib/hooks/use-toast";
 import {
   ProfileListRow,
   ProfileSidebarHeader,
-} from "@/components/ui/profile-sidebar";
+} from "@/components/profiles/profile-sidebar";
 import { Badge } from "@/components/ui/badge";
 import type { BudgetProfileListEntry } from "./types";
 

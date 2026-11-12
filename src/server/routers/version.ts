@@ -8,11 +8,14 @@ import {
   adminProcedure,
   protectedProcedure,
   versionProcedure,
+  getSessionUserLabel,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { settleFirstRunGate } from "@/server/data/first-run";
 import { createVersion, restoreVersion } from "@/lib/db/backup/version-logic";
+import { versionRetention } from "@/lib/db/backup/version-retention";
 import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
+import { previewedRows } from "@/lib/db/backup/installation-rows";
 import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 import {
   VERSION_PREVIEW_WITHHELD_TABLES,
@@ -87,11 +90,10 @@ export const versionRouter = createTRPCRouter({
       if (VERSION_PREVIEW_WITHHELD_TABLES.includes(input.tableName))
         return { rows: [], rowCount: tableData.rowCount, withheld: true };
 
-      const allRows = tableData.data as unknown[];
-      return {
-        rows: allRows.slice(0, 50),
-        rowCount: tableData.rowCount,
-      };
+      const shown = previewedRows(input.tableName, tableData.data, {
+        asAdmin: ctx.session.user.role === "admin",
+      });
+      return { rows: shown.slice(0, 50), rowCount: shown.length };
     }),
 
   /** Create a new manual version. */
@@ -141,6 +143,7 @@ export const versionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const restored = await restoreVersion(ctx.db, input.id, {
         asAdmin: ctx.session.user.role === "admin",
+        user: getSessionUserLabel(ctx.session),
       }).catch((err: unknown) => {
         if (!(err instanceof ClosedSetRefusal)) throw err;
         throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
@@ -164,7 +167,7 @@ export const versionRouter = createTRPCRouter({
     const settings = await ctx.db.select().from(schema.appSettings);
     const setting = settings.find((s) => s.key === "version_retention_count");
     return {
-      retentionCount: typeof setting?.value === "number" ? setting.value : 30,
+      retentionCount: versionRetention(setting?.value),
     };
   }),
 

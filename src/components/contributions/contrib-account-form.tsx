@@ -40,9 +40,8 @@ type EmployerMatchType =
   "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual";
 
 export type ContribAccountFormValues = {
-  /** Set only when the user chose to reuse an existing (often inactive
-   *  stub) contribution row instead of creating a new one — callers branch
-   *  on this to call `update` instead of `create`. */
+  /** Set when reusing an existing (often inactive stub) row instead of creating
+   *  one: callers then call `update`, not `create`. */
   id?: number;
   personId: number | null;
   jobId: number | null;
@@ -106,11 +105,11 @@ export function ContributionAccountForm({
   onCancel: () => void;
   isPending?: boolean;
 }) {
-  const { data: people } = trpc.settings.people.list.useQuery();
-  const { data: jobs } = trpc.settings.jobs.list.useQuery();
-  const { data: existingAccounts } =
-    trpc.settings.contributionAccounts.list.useQuery();
-  const { data: compareData } = trpc.contributionProfile.compareData.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
+  const { data: jobs } = trpc.jobs.list.useQuery();
+  const { data: existingAccounts } = trpc.contribution.accounts.list.useQuery();
+  const { data: compareData } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const [v, setV] = useState<ContribAccountFormValues>(() =>
     defaultsFor(initialValues),
   );
@@ -276,6 +275,7 @@ export function ContributionAccountForm({
               if (val === "joint") {
                 set("ownership", "joint");
                 set("personId", null);
+                set("jobId", null);
               } else {
                 set("ownership", "individual");
                 set("personId", parseInt(val, 10));

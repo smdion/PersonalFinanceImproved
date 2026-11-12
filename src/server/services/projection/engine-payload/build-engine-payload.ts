@@ -3,6 +3,7 @@
  * plus the computed values the retirement routers expose. Callers add their own
  * accumulation/decumulation overrides and decumulation defaults.
  */
+import { storedInteger } from "@/lib/utils/stored-integer";
 import { calendarYear } from "@/lib/utils/date";
 import { loadExpenseEndings } from "./expense-endings";
 import {
@@ -126,7 +127,7 @@ export async function buildEnginePayload(
     classBucketRows,
   } = data;
 
-  const { salaryProfileActiveMap, allContribs, patchedJobs } =
+  const { salaryProfileActiveMap, allContribs, patchedJobs, profileOpts } =
     await applyProfiles(db, data, opts, allContribsRaw, allJobs);
 
   const primaryPerson = getPrimaryPerson(people);
@@ -212,11 +213,10 @@ export async function buildEnginePayload(
     allBudgetProfiles,
     allBudgetItems,
     db,
-    opts,
+    profileOpts,
   );
 
-  // Each person's current job, or the next one they start; its dates bound
-  // the years it's worked (workingYearsByPerson, below).
+  // Each person's current job, or the next one they start; its dates bound the years worked.
   const activeJobs = projectionJobs(patchedJobs, asOfDate);
   // Every date in the plan, from each person's own age and dates.
   const timeline = householdTimeline({
@@ -342,7 +342,7 @@ export async function buildEnginePayload(
     people,
     birthYearByPersonId,
     thisYearFiling,
-    currentYear,
+    asOfDate,
     allContribs,
     activeJobs,
     jobSalaries,
@@ -413,8 +413,7 @@ export async function buildEnginePayload(
   // Expenses — phase-based budget columns
   const selectedScenario = retScenarios.find((s) => s.isSelected);
   const globalColSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
-  const globalActiveCol =
-    typeof globalColSetting === "number" ? globalColSetting : 0;
+  const globalActiveCol = storedInteger(globalColSetting, 0);
   const {
     accProfile,
     accCol,
@@ -427,22 +426,20 @@ export async function buildEnginePayload(
     allBudgetProfiles,
     allBudgetItems,
     globalActiveCol,
-    opts,
+    opts: profileOpts,
   });
   const annualExpensesVal = accumulationExpenses;
   const expenseEndings = await loadExpenseEndings(db, {
     items: allBudgetItems,
     accumulation: {
-      profileId: accProfile?.id,
+      profile: accProfile,
       column: accCol,
-      months: (accProfile?.columnMonths as number[] | null) ?? null,
       annual: accumulationExpenses,
       typed: !!opts.accumulationExpenseOverride,
     },
     decumulation: {
-      profileId: decProfile?.id,
+      profile: decProfile,
       column: decCol,
-      months: (decProfile?.columnMonths as number[] | null) ?? null,
       annual: decumulationExpenses,
       typed: !!opts.decumulationExpenseOverride,
     },
@@ -472,30 +469,11 @@ export async function buildEnginePayload(
     accountBreakdownByCategory,
   };
 
+  // The row as the profile's contribution data reads it: its type narrowed, no label as null.
   const toContribDataRow = (c: (typeof activeContribs)[number]) => ({
-    id: c.id,
-    personId: c.personId,
-    jobId: c.jobId,
+    ...c,
     accountType: c.accountType as AccountCategory,
-    subType: c.subType,
     label: c.label ?? null,
-    parentCategory: c.parentCategory,
-    contributionMethod: c.contributionMethod,
-    contributionValue: c.contributionValue,
-    taxTreatment: c.taxTreatment,
-    employerMatchType: c.employerMatchType,
-    employerMatchValue: c.employerMatchValue,
-    employerMatchRate: c.employerMatchRate,
-    employerMaxMatchPct: c.employerMaxMatchPct,
-    isPayrollDeducted: c.isPayrollDeducted,
-    fromBonus: c.fromBonus,
-    performanceAccountId: c.performanceAccountId,
-    targetAnnual: c.targetAnnual,
-    allocationPriority: c.allocationPriority,
-    hsaCoverageType: c.hsaCoverageType,
-    capPassed: c.capPassed,
-    cappedValue: c.cappedValue,
-    cap: c.cap,
   });
   const contribDataJobs = activeJobs.map((j) => ({
     id: j.id,
@@ -726,13 +704,9 @@ export async function buildEnginePayload(
     ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
     expenseEndings,
-    // Always pass when user explicitly set a decumulation override, or when
-    // the computed decumulation budget differs from accumulation budget.
-    decumulationAnnualExpenses:
-      opts.decumulationExpenseOverride != null ||
-      decumulationExpenses !== accumulationExpenses
-        ? decumulationExpenses
-        : undefined,
+    // Always passed: retirement starts from the Retirement budget, and the
+    // Coast FIRE need test has a need, even when it equals the working one.
+    decumulationAnnualExpenses: decumulationExpenses,
     inflationRate: toNumber(settings.annualInflation),
     postRetirementInflationRate: settings.postRetirementInflation
       ? toNumber(settings.postRetirementInflation)

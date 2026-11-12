@@ -28,7 +28,7 @@ import {
   type MockOutput,
 } from "../trpc-mock";
 
-const SUMMARY = "networth.computeSummary";
+const SUMMARY = "netWorth.computeSummary";
 /** The summary query: its data, loading and error. */
 function networth({
   data,

@@ -51,13 +51,13 @@ export function OtherPaySection({
     void utils.paycheck.invalidate();
     void utils.salaryProfile.invalidate();
   };
-  const create = trpc.settings.earnings.create.useMutation({
+  const create = trpc.paycheck.earnings.create.useMutation({
     onSuccess: refresh,
   });
-  const update = trpc.settings.earnings.update.useMutation({
+  const update = trpc.paycheck.earnings.update.useMutation({
     onSuccess: refresh,
   });
-  const remove = trpc.settings.earnings.delete.useMutation({
+  const remove = trpc.paycheck.earnings.delete.useMutation({
     onSuccess: refresh,
   });
   const [adding, setAdding] = useState(false);

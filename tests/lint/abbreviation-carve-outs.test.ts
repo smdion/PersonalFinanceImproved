@@ -3,7 +3,7 @@
  * keys of today's tree: scripts/abbreviation-carve-outs.json is regenerated
  * and compared, so a new stored key is carved out and a gone one drops out.
  * Response keys are every key a router's output type reaches, so the rename
- * proof refuses one that no baseline pin holds.
+ * proof refuses a rename to one that no baseline pin holds.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -12,7 +12,8 @@ import {
   CARVE_OUT_FILE,
   abbreviationCarveOuts,
   isShapeFile,
-  storedAndResponseKeys,
+  routerOutputKeys,
+  storedKeys,
 } from "../../scripts/gen-abbreviation-carve-outs";
 import { notARename, parseNumstat } from "../../scripts/check-commit";
 
@@ -62,7 +63,7 @@ describe("abbreviation carve-outs", () => {
   );
 
   it(
-    "make the rename proof refuse a router output key",
+    "make the rename proof refuse a rename to a router output key",
     () => {
       const file = "src/lib/pure/investments/x.ts";
       const row = (k: string) =>
@@ -70,10 +71,10 @@ describe("abbreviation carve-outs", () => {
       const diff =
         `diff --git a/${file} b/${file}\n--- a/${file}\n+++ b/${file}\n@@ -1 +1 @@\n` +
         [
-          ...row("returnPct")
+          ...row("growth")
             .split("\n")
             .map((l) => `-${l}`),
-          ...row("returnPercent")
+          ...row("returnPct")
             .split("\n")
             .map((l) => `+${l}`),
         ].join("\n");
@@ -81,11 +82,15 @@ describe("abbreviation carve-outs", () => {
         notARename(
           parseNumstat(`1\t1\t${file}`),
           diff,
-          "refactor: x\n\nWhy.\n\nMechanical: rename\nRename: returnPct → returnPercent\n",
-          { keys: storedAndResponseKeys(ROOT), isShapeFile },
+          "refactor: x\n\nWhy.\n\nMechanical: rename\nRename: growth → returnPct\n",
+          {
+            keys: storedKeys(ROOT),
+            responseKeys: routerOutputKeys(ROOT),
+            isShapeFile,
+          },
         ),
       ).toBe(
-        `${file}:2: returnPct as a key: returnPct is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`,
+        `${file}:2: growth as a key: returnPct is a key of a router's answer: the rename reaches a response (or meets one of its keys)`,
       );
     },
     SLOW,

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FormError } from "@/components/ui/form-error";
 import { Badge } from "@/components/ui/badge";
 import type { PersonDraft } from "./wizard-state";
+import { FilingStatusQuestion } from "./filing-status-question";
 
 export function PeopleStep({
   people,
@@ -72,7 +73,6 @@ export function PeopleStep({
         </p>
       </div>
 
-      {/* Existing people list */}
       {people.length > 0 && (
         <div className="space-y-2">
           {people.map((person, i) => (
@@ -102,7 +102,6 @@ export function PeopleStep({
         </div>
       )}
 
-      {/* Add person form */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
           <input
@@ -141,6 +140,7 @@ export function PeopleStep({
           Add Person
         </button>
       </div>
+      <FilingStatusQuestion />
     </div>
   );
 }

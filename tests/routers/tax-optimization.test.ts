@@ -1,6 +1,6 @@
 /**
- * Tax Optimization surface — `projection.projectTaxYears` /
- * `compareWithdrawalStrategies` / `rothConversionWhatIf`.
+ * Tax Optimization surface — `projection.computeTaxProjection` /
+ * `computeWithdrawalStrategyComparison` / `computeRothConversionWhatIf`.
  *
  * Mirrors `withdrawal-bracket-optimizer.test.ts`: null/empty result when
  * unseeded, a real shape with a fixed seeded household, auth gating, and
@@ -76,18 +76,18 @@ function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
     .run();
 }
 
-describe("projection router — projectTaxYears", () => {
+describe("projection router — computeTaxProjection", () => {
   it("no return rate: each tool says to set one, instead of the engine throwing", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
       db.delete(schema.returnRateTable).run();
-      expect(await caller.projection.projectTaxYears({})).toMatchObject({
+      expect(await caller.projection.computeTaxProjection({})).toMatchObject({
         rows: [],
         notConfigured: "no_return_rate",
       });
       expect(
-        await caller.projection.compareWithdrawalStrategies({
+        await caller.projection.computeWithdrawalStrategyComparison({
           strategies: [
             { label: "A", mode: "waterfall" },
             { label: "B", mode: "bracket_filling" },
@@ -95,7 +95,9 @@ describe("projection router — projectTaxYears", () => {
         }),
       ).toMatchObject({ strategies: [], notConfigured: "no_return_rate" });
       expect(
-        await caller.projection.rothConversionWhatIf({ mode: "optimize" }),
+        await caller.projection.computeRothConversionWhatIf({
+          mode: "optimize",
+        }),
       ).toMatchObject({ result: null, notConfigured: "no_return_rate" });
     } finally {
       cleanup();
@@ -105,7 +107,7 @@ describe("projection router — projectTaxYears", () => {
   it("returns an empty result when no retirement data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       expect(res).toEqual({ rows: [], meta: null });
     } finally {
       cleanup();
@@ -118,7 +120,9 @@ describe("projection router — projectTaxYears", () => {
       expires: "",
     } as never);
     try {
-      await expect(caller.projection.projectTaxYears({})).rejects.toThrow();
+      await expect(
+        caller.projection.computeTaxProjection({}),
+      ).rejects.toThrow();
     } finally {
       cleanup();
     }
@@ -129,7 +133,7 @@ describe("projection router — projectTaxYears", () => {
     try {
       seedTaxOptHousehold(db);
 
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       // The engine's decumulation phase spans retirementAge..endAge
       // exclusive of the final age — 25 years for 65->90.
       expect(res.rows.length).toBe(END_AGE - RETIREMENT_AGE);
@@ -159,13 +163,13 @@ describe("projection router — projectTaxYears", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.projectTaxYears({});
+      const res = await caller.projection.computeTaxProjection({});
       // Headline figures first.
       expect(res.rows).toHaveLength(25);
-      expect(res.rows[0]!.federalTax).toBe(154.49);
-      expect(res.rows[0]!.income.rothConversion).toBe(235996.95);
-      expect(res.rows.at(-1)!.cumulativeTax).toBe(62635.689999999995);
-      expect(res.rows.at(-1)!.retirementBalance).toBe(13438063.48);
+      expect(res.rows[0]!.federalTax).toBe(198.47);
+      expect(res.rows[0]!.income.rothConversion).toBe(235557.06);
+      expect(res.rows.at(-1)!.cumulativeTax).toBe(62678.119999999995);
+      expect(res.rows.at(-1)!.retirementBalance).toBe(13413751.48);
       // What holds on every row.
       for (const r of res.rows) {
         expect(r).toMatchObject({
@@ -206,31 +210,31 @@ describe("projection router — projectTaxYears", () => {
       ).toEqual(
         // prettier-ignore
         [
-        [2055, 65, 154.49, 27336.16, 81314.6, 235996.95, 27181.67, 0, 0, 0, 0.15, 247796.8, 4355961.76, ["ACA lost", "Roth conversion"]],
-        [2056, 66, 114.03, 55492.399999999994, 83303.15, 243527.74, 28042.21, 0, 0, 0, 0.15, 515890.77, 4456847.22, ["ACA lost", "Roth conversion"]],
-        [2057, 67, 0, 62635.689999999995, 8016.37, 138226.22, 7143.29, 0, 77252.48, 8246.22, 0, 686822.84, 4663771.94, ["ACA lost", "Roth conversion"]],
-        [2058, 68, 0, 62635.689999999995, 0, 0, 0, 7830.51, 79570.06, 7120.85, 0, 721163.98, 4888738.5, ["ACA lost"]],
-        [2059, 69, 0, 62635.689999999995, 0, 0, 0, 7628.42, 81957.16, 8104.55, 0, 757222.18, 5125165.59, ["ACA lost"]],
-        [2060, 70, 0, 62635.689999999995, 0, 0, 0, 7409.35, 84415.87, 9099.09, 0, 795083.29, 5373644.05, ["ACA lost"]],
-        [2061, 71, 0, 62635.689999999995, 0, 0, 0, 7172.5, 86948.35, 10104.88, 0, 834837.45, 5634795.12, ["ACA lost"]],
-        [2062, 72, 0, 62635.689999999995, 0, 0, 0, 6917.07, 89556.8, 11122.3, 0, 876579.32, 5909271.95, ["ACA lost"]],
-        [2063, 73, 0, 62635.689999999995, 0, 0, 0, 6642.22, 92243.5, 12151.79, 0, 920408.29, 6197761.22, ["ACA lost"]],
-        [2064, 74, 0, 62635.689999999995, 0, 0, 0, 6347.05, 95010.81, 13193.71, 0, 966428.7, 6500984.87, ["ACA lost"]],
-        [2065, 75, 0, 62635.689999999995, 0, 0, 0, 6030.68, 97861.13, 14248.47, 0, 1014750.14, 6819701.9, ["ACA lost"]],
-        [2066, 76, 0, 62635.689999999995, 0, 0, 0, 5692.14, 100796.97, 15316.45, 0, 1065487.65, 7154710.25, ["ACA lost"]],
-        [2067, 77, 0, 62635.689999999995, 0, 0, 0, 5330.45, 103820.88, 16398.05, 0, 1118762.03, 7506848.79, ["ACA lost"]],
-        [2068, 78, 0, 62635.689999999995, 0, 0, 0, 4944.62, 106935.5, 17493.67, 0, 1174700.13, 7876999.38, ["ACA lost"]],
-        [2069, 79, 0, 62635.689999999995, 0, 0, 0, 4533.55, 110143.57, 18603.65, 0, 1233435.14, 8266089.13, ["ACA lost"]],
-        [2070, 80, 0, 62635.689999999995, 0, 0, 0, 4096.17, 113447.88, 19728.4, 0, 1295106.9, 8675092.61, ["ACA lost"]],
-        [2071, 81, 0, 62635.689999999995, 0, 0, 0, 3631.34, 116851.31, 20868.3, 0, 1359862.25, 9105034.34, ["ACA lost"]],
-        [2072, 82, 0, 62635.689999999995, 0, 0, 0, 3137.86, 120356.85, 22023.7, 0, 1427855.36, 9556991.3, ["ACA lost"]],
-        [2073, 83, 0, 62635.689999999995, 0, 0, 0, 2614.52, 123967.56, 23194.99, 0, 1499248.13, 10032095.62, ["ACA lost"]],
-        [2074, 84, 0, 62635.689999999995, 0, 0, 0, 2060.05, 127686.58, 24382.54, 0, 1574210.54, 10531537.35, ["ACA lost"]],
-        [2075, 85, 0, 62635.689999999995, 0, 0, 0, 1473.12, 131517.18, 25586.7, 0, 1652921.07, 11056567.44, ["ACA lost"]],
-        [2076, 86, 0, 62635.689999999995, 0, 0, 0, 852.36, 135462.7, 26807.85, 0, 1735567.12, 11608500.83, ["ACA lost"]],
-        [2077, 87, 0, 62635.689999999995, 0, 0, 0, 196.35, 139526.58, 28046.32, 0, 1822345.48, 12188719.71, ["ACA lost"]],
-        [2078, 88, 0, 62635.689999999995, 0, 0, 0, 0, 143712.37, 29677.76, 0, 1913462.75, 12798155.69, ["ACA lost"]],
-        [2079, 89, 0, 62635.689999999995, 0, 0, 0, 0, 148023.75, 31510.09, 0, 2009135.89, 13438063.48, ["ACA lost"]],
+        [2055, 65, 198.47, 27336.16, 81754.49, 235557.06, 27137.69, 0, 0, 0, 0.15, 247334.91, 4355546.05, ["ACA lost", "Roth conversion"]],
+        [2056, 66, 159.12, 55492.399999999994, 83754.04, 243076.85, 27997.12, 0, 0, 0, 0.15, 514932.35, 4455984.63, ["ACA lost", "Roth conversion"]],
+        [2057, 67, 0, 62678.119999999995, 8432.31, 137810.28, 7185.72, 0, 77252.48, 8599.77, 0, 685379.76, 4662384.93, ["ACA lost", "Roth conversion"]],
+        [2058, 68, 0, 62678.119999999995, 0, 0, 0, 8256.85, 79570.06, 7376.94, 0, 719648.75, 4886834.49, ["ACA lost"]],
+        [2059, 69, 0, 62678.119999999995, 0, 0, 0, 8065.43, 81957.16, 8372.23, 0, 755631.19, 5122707.52, ["ACA lost"]],
+        [2060, 70, 0, 62678.119999999995, 0, 0, 0, 7857.28, 84415.87, 9378.53, 0, 793412.75, 5370592.75, ["ACA lost"]],
+        [2061, 71, 0, 62678.119999999995, 0, 0, 0, 7631.63, 86948.35, 10396.25, 0, 833083.39, 5631109.18, ["ACA lost"]],
+        [2062, 72, 0, 62678.119999999995, 0, 0, 0, 7387.68, 89556.8, 11425.79, 0, 874737.56, 5904907.58, ["ACA lost"]],
+        [2063, 73, 0, 62678.119999999995, 0, 0, 0, 7124.59, 92243.5, 12467.57, 0, 918474.44, 6192672.14, ["ACA lost"]],
+        [2064, 74, 0, 62678.119999999995, 0, 0, 0, 6841.48, 95010.81, 13521.99, 0, 964398.16, 6495122.19, ["ACA lost"]],
+        [2065, 75, 0, 62678.119999999995, 0, 0, 0, 6537.47, 97861.13, 14589.44, 0, 1012618.07, 6813013.96, ["ACA lost"]],
+        [2066, 76, 0, 62678.119999999995, 0, 0, 0, 6211.59, 100796.97, 15670.33, 0, 1063248.97, 7147142.49, ["ACA lost"]],
+        [2067, 77, 0, 62678.119999999995, 0, 0, 0, 5862.9, 103820.88, 16765.06, 0, 1116411.42, 7498343.57, ["ACA lost"]],
+        [2068, 78, 0, 62678.119999999995, 0, 0, 0, 5490.37, 106935.5, 17874.02, 0, 1172231.99, 7867495.86, ["ACA lost"]],
+        [2069, 79, 0, 62678.119999999995, 0, 0, 0, 5092.95, 110143.57, 18997.59, 0, 1230843.59, 8255523.06, ["ACA lost"]],
+        [2070, 80, 0, 62678.119999999995, 0, 0, 0, 4669.55, 113447.88, 20136.17, 0, 1292385.77, 8663396.19, ["ACA lost"]],
+        [2071, 81, 0, 62678.119999999995, 0, 0, 0, 4219.06, 116851.31, 21290.14, 0, 1357005.06, 9092135.99, ["ACA lost"]],
+        [2072, 82, 0, 62678.119999999995, 0, 0, 0, 3740.28, 120356.85, 22459.9, 0, 1424855.31, 9542815.49, ["ACA lost"]],
+        [2073, 83, 0, 62678.119999999995, 0, 0, 0, 3232, 123967.56, 23645.8, 0, 1496098.08, 10016562.67, ["ACA lost"]],
+        [2074, 84, 0, 62678.119999999995, 0, 0, 0, 2692.96, 127686.58, 24848.22, 0, 1570902.98, 10514563.19, ["ACA lost"]],
+        [2075, 85, 0, 62678.119999999995, 0, 0, 0, 2121.85, 131517.18, 26067.56, 0, 1649448.13, 11038063.41, ["ACA lost"]],
+        [2076, 86, 0, 62678.119999999995, 0, 0, 0, 1517.31, 135462.7, 27304.17, 0, 1731920.54, 11588373.41, ["ACA lost"]],
+        [2077, 87, 0, 62678.119999999995, 0, 0, 0, 877.93, 139526.58, 28558.41, 0, 1818516.57, 12166870.26, ["ACA lost"]],
+        [2078, 88, 0, 62678.119999999995, 0, 0, 0, 202.25, 143712.37, 29830.66, 0, 1909442.4, 12775001.41, ["ACA lost"]],
+        [2079, 89, 0, 62678.119999999995, 0, 0, 0, 0, 148023.75, 31510.09, 0, 2004914.52, 13413751.48, ["ACA lost"]],
         ],
       );
     } finally {
@@ -244,7 +248,7 @@ describe("projection router — withdrawal routing DB fallback", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      // No client override is ever sent here (compareWithdrawalStrategies's
+      // No client override is ever sent here (computeWithdrawalStrategyComparison's
       // input carries no decumulationDefaults) — this only proves the DB
       // value if the household's own persisted setting differs from
       // "bracket_filling" and the resolved mode reflects THAT, not the
@@ -253,7 +257,7 @@ describe("projection router — withdrawal routing DB fallback", () => {
         .set({ withdrawalRoutingMode: "waterfall" })
         .run();
 
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           { label: "A", mode: "waterfall" },
           { label: "B", mode: "bracket_filling" },
@@ -277,12 +281,12 @@ describe("projection router — withdrawal routing DB fallback", () => {
   });
 });
 
-describe("projection router — compareWithdrawalStrategies", () => {
+describe("projection router — computeWithdrawalStrategyComparison", () => {
   it("scores each strategy and names the cheapest as baselineLabel", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           {
             label: "Traditional first",
@@ -294,7 +298,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
       });
       // 2 named strategies + the server's own "Your current settings" baseline
       // row (the household's real resolved defaults, scored the same way —
-      // see compareWithdrawalStrategies's docblock).
+      // see computeWithdrawalStrategyComparison's docblock).
       expect(res.strategies).toHaveLength(3);
       expect(
         res.strategies.some((s) => s.label === "Your current settings"),
@@ -319,7 +323,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.compareWithdrawalStrategies({
+      const res = await caller.projection.computeWithdrawalStrategyComparison({
         strategies: [
           {
             label: "trad-first",
@@ -342,12 +346,12 @@ describe("projection router — compareWithdrawalStrategies", () => {
   });
 });
 
-describe("projection router — rothConversionWhatIf", () => {
+describe("projection router — computeRothConversionWhatIf", () => {
   it("optimize mode delegates to optimizeRothBracketTarget (candidates sorted by netCost)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedTaxOptHousehold(db);
-      const res = await caller.projection.rothConversionWhatIf({
+      const res = await caller.projection.computeRothConversionWhatIf({
         mode: "optimize",
       });
       expect(res.mode).toBe("optimize");
@@ -374,12 +378,12 @@ describe("projection router — rothConversionWhatIf", () => {
       seedTaxOptHousehold(db);
 
       // Baseline projection to learn the horizon + starting Traditional balance.
-      const base = await caller.projection.projectTaxYears({});
+      const base = await caller.projection.computeTaxProjection({});
       const firstYear = base.rows[0]!.year;
       const lastYear = base.rows[base.rows.length - 1]!.year;
       const startingTraditional = base.rows[0]!.balanceByTaxType.preTax;
 
-      const res = await caller.projection.rothConversionWhatIf({
+      const res = await caller.projection.computeRothConversionWhatIf({
         mode: "explicit",
         conversionTargets: [{ year: firstYear, targetRate: 0.24 }],
       });

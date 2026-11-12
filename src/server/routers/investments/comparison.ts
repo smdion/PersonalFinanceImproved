@@ -3,6 +3,7 @@
  * (portfolioProcedure — balances and returns).
  */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -49,6 +50,7 @@ import {
   loadHoldingSplits,
 } from "@/server/data/investments";
 import type { Db } from "@/lib/db";
+import { calendarYear } from "@/lib/utils/date";
 
 /** Label of the matched-mix entry (key "matched_mix"). */
 const MATCHED_MIX_LABEL = "Your mix, in index funds";
@@ -143,7 +145,7 @@ export const investmentComparisonRouter = createTRPCRouter({
     .input(
       z.object({
         preset: z.enum(SIMULATION_PRESET_KEYS),
-        years: z.array(z.number().int()).max(100),
+        years: z.array(zYear).max(100),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -156,7 +158,7 @@ export const investmentComparisonRouter = createTRPCRouter({
           .limit(1),
       ]);
       if (!simulation.preset?.found || !person) return null;
-      const birthYear = Number(person.dob.slice(0, 4));
+      const birthYear = calendarYear(person.dob);
       const ranges = yearReturnRanges({
         ages: input.years.map((y) => y - birthYear),
         assetClasses: simulation.mcAssetClasses,
@@ -176,7 +178,7 @@ export const investmentComparisonRouter = createTRPCRouter({
     }),
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
   computeComparison: portfolioProcedure
-    .input(z.object({ fromYear: z.number().int().optional() }))
+    .input(z.object({ fromYear: zYear.optional() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db.select().from(schema.accountPerformance);
       const allYears = yearlyResultsFrom(

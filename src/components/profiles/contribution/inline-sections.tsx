@@ -161,7 +161,7 @@ export function InlineDeductions({
   setAddingDeduction: Dispatch<SetStateAction<boolean>>;
   addingDeduction: boolean;
   createDeduction: ReturnType<
-    typeof trpc.settings.deductions.create.useMutation
+    typeof trpc.paycheck.deductions.create.useMutation
   >;
   deductionRows: DeductionRow[] | undefined;
   deductionActiveFields: (id: number) => Record<string, unknown>;

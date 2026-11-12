@@ -11,10 +11,9 @@ import {
   unpricedMoves,
 } from "@/lib/pure/accounts/current-balance-groups";
 import {
-  alwaysExcludedLine,
   missingNote,
   missingReason,
-  splitUnpriced,
+  noHoldingsLine,
 } from "@/lib/pure/net-worth/close-notes";
 
 const SESSIONS = ["2026-11-05", "2026-11-04"];
@@ -33,6 +32,7 @@ const balanceAt = (id: number, day: string, exact: boolean) => {
 const row = (key: string, feedIds: number[], perf: number | null = 4) => ({
   key,
   label: key === "hsa" ? "Voya HSA" : "Cash",
+  account: key === "hsa" ? "Voya HSA" : "Cash",
   feedIds,
   performanceAccountId: perf,
 });
@@ -50,7 +50,9 @@ describe("unpricedMoves", () => {
     expect(moves([row("hsa", [13])])).toEqual([
       {
         key: "hsa",
+        performanceAccountId: 4,
         label: "Voya HSA",
+        account: "Voya HSA",
         institution: "Voya Financial",
         changed: [
           { day: "2026-11-05", balance: -151.08 },
@@ -122,35 +124,57 @@ describe("groupCurrentBalances with no holdings", () => {
   });
 });
 
-describe("the daily total's note", () => {
+describe("the accounts that send no holdings", () => {
   const unpriced = moves([row("hsa", [13])]);
 
-  it("excludes the account by name, market-only", () => {
-    const c = { day: "2026-11-05", missing: [] };
-    expect(missingNote(c, "2026-11-05", [], unpriced)).toBe(
-      "excludes Voya HSA (no holdings)",
-    );
-    expect(missingReason(c, "2026-11-05", [], unpriced)).toBe(
-      "Voya HSA sends no holdings, so its market move can't be told and isn't in this total.",
-    );
+  it("are named once, under the list, with their balance changes on hover", () => {
+    expect(noHoldingsLine(unpriced)).toEqual({
+      text: "Not in daily changes (no holdings): Voya HSA",
+      detail:
+        "These send balances but no holdings, so market moves and money paid in can't be split. Balance changes: Voya HSA Nov 5 −$151.08, Nov 4 +$200.00.",
+    });
   });
 
-  it("joins the other notes", () => {
-    const c = { day: "2026-11-04", missing: ["Fidelity"] };
-    expect(missingNote(c, "2026-11-05", [], unpriced)).toBe(
-      "excludes Fidelity · excludes Voya HSA (no holdings)",
+  it("an account held in parts is named once, by its account's name", () => {
+    const parts = [
+      {
+        performanceAccountId: 7,
+        label: "Joint IRA (Vanguard) — Joanna — Traditional",
+        account: "Joint IRA (Vanguard)",
+        changed: [{ day: "2026-11-05", balance: 10 }],
+      },
+      {
+        performanceAccountId: 7,
+        label: "Joint IRA (Vanguard) — Joanna — Roth",
+        account: "Joint IRA (Vanguard)",
+        changed: [{ day: "2026-11-05", balance: 5.5 }],
+      },
+    ];
+    const line = noHoldingsLine([...unpriced, ...parts]);
+    expect(line?.text).toBe(
+      "Not in daily changes (no holdings): Voya HSA and Joint IRA (Vanguard)",
     );
+    expect(line?.detail).toContain("Joint IRA (Vanguard) Nov 5 +$15.50.");
   });
 
-  it("a close its balance didn't change into says nothing of it", () => {
+  it("none: no line", () => {
+    expect(noHoldingsLine([])).toBeNull();
+  });
+
+  it("a close's own note never names one: it has only what that close is missing", () => {
+    expect(
+      missingNote({ day: "2026-11-05", missing: [] }, "2026-11-05", []),
+    ).toBeNull();
     expect(
       missingNote(
-        { day: "2026-11-03", missing: [] },
+        { day: "2026-11-04", missing: ["Fidelity"] },
         "2026-11-05",
         [],
-        unpriced,
       ),
-    ).toBeNull();
+    ).toBe("excludes Fidelity");
+    expect(
+      missingReason({ day: "2026-11-05", missing: [] }, "2026-11-05", []),
+    ).toBeUndefined();
   });
 });
 
@@ -211,170 +235,5 @@ describe("groupCurrentBalances", () => {
       bucket,
     );
     expect(rows[0]!.move).toBe(-5);
-  });
-});
-
-describe("an exclusion on every close shown is said once", () => {
-  const hsa = {
-    label: "Joanna HSA (Voya)",
-    institution: "Voya Financial",
-    changed: [
-      { day: "2026-11-05", balance: -151.08 },
-      { day: "2026-11-04", balance: 200 },
-    ],
-  };
-  const cash = {
-    label: "Ally Cash",
-    institution: "Ally Bank",
-    changed: [{ day: "2026-11-04", balance: 12 }],
-  };
-  const closes = [
-    { day: "2026-11-05", missing: [] },
-    { day: "2026-11-04", missing: [] },
-  ];
-
-  it("out of every line: one line under the list, none per line", () => {
-    const { always, varying } = splitUnpriced(closes, "2026-11-05", [], [hsa]);
-    expect(alwaysExcludedLine(always)).toBe(
-      "Excludes Joanna HSA (Voya): no holdings reported",
-    );
-    expect(
-      missingNote(
-        { day: "2026-11-05", missing: [] },
-        "2026-11-05",
-        [],
-        varying,
-      ),
-    ).toBeNull();
-  });
-
-  it("several such accounts are joined", () => {
-    const both = { ...cash, changed: hsa.changed };
-    const { always } = splitUnpriced(closes, "2026-11-05", [], [hsa, both]);
-    expect(alwaysExcludedLine(always)).toBe(
-      "Excludes Joanna HSA (Voya) and Ally Cash: no holdings reported",
-    );
-  });
-
-  it("out of some lines only: stays on those lines", () => {
-    const { always, varying } = splitUnpriced(
-      closes,
-      "2026-11-05",
-      [],
-      [hsa, cash],
-    );
-    expect(always).toEqual([hsa]);
-    expect(varying).toEqual([cash]);
-    expect(
-      missingNote(
-        { day: "2026-11-04", missing: [] },
-        "2026-11-05",
-        [],
-        varying,
-      ),
-    ).toBe("excludes Ally Cash (no holdings)");
-    expect(
-      missingNote(
-        { day: "2026-11-05", missing: [] },
-        "2026-11-05",
-        [],
-        varying,
-      ),
-    ).toBeNull();
-  });
-
-  it("nothing excluded, or no closes: no line", () => {
-    expect(
-      alwaysExcludedLine(splitUnpriced(closes, "2026-11-05", [], []).always),
-    ).toBeNull();
-    expect(splitUnpriced([], "2026-11-05", [], [hsa]).always).toEqual([]);
-  });
-
-  // Voya's Nov 6 report is still to come; Fidelity's too.
-  const pendingLatest = {
-    day: "2026-11-06",
-    missing: ["Fidelity Investments", "Voya Financial"],
-  };
-  const voyaReport = (valued: Record<string, boolean>) => ({
-    name: "Voya Financial",
-    closes: Object.entries(valued).map(([day, v]) => ({ day, valued: v })),
-    gaps: [],
-  });
-
-  it("a latest close still waiting on the institution doesn't count", () => {
-    const reports = [
-      voyaReport({
-        "2026-11-03": true,
-        "2026-11-04": true,
-        "2026-11-05": true,
-        "2026-11-06": false,
-      }),
-    ];
-    const { always, varying } = splitUnpriced(
-      [pendingLatest, ...closes],
-      "2026-11-06",
-      reports,
-      [hsa],
-    );
-    expect(alwaysExcludedLine(always)).toBe(
-      "Excludes Joanna HSA (Voya): no holdings reported",
-    );
-    // The pending line keeps its own note, and no HSA one.
-    expect(missingNote(pendingLatest, "2026-11-06", reports, varying)).toBe(
-      "Fidelity and Voya changes not in yet",
-    );
-  });
-
-  it("a middle close without the institution's report doesn't count", () => {
-    const sparse = {
-      ...hsa,
-      changed: [
-        { day: "2026-11-06", balance: 40 },
-        { day: "2026-11-04", balance: 200 },
-      ],
-    };
-    const reports = [
-      voyaReport({
-        "2026-11-03": true,
-        "2026-11-04": true,
-        "2026-11-05": false,
-        "2026-11-06": true,
-      }),
-    ];
-    const shown = [
-      { day: "2026-11-06", missing: [] },
-      { day: "2026-11-05", missing: ["Voya Financial"] },
-      { day: "2026-11-04", missing: [] },
-    ];
-    const { always, varying } = splitUnpriced(shown, "2026-11-06", reports, [
-      sparse,
-    ]);
-    expect(always).toEqual([sparse]);
-    expect(missingNote(shown[1]!, "2026-11-06", reports, varying)).toBe(
-      "no Voya report Nov 5",
-    );
-    // Missing from a close whose report is in: said on its lines.
-    expect(splitUnpriced(shown, "2026-11-06", [], [sparse]).always).toEqual([]);
-  });
-
-  it("every close waiting on the institution: nothing is said once", () => {
-    const reports = [
-      voyaReport({
-        "2026-11-04": true,
-        "2026-11-05": false,
-        "2026-11-06": false,
-      }),
-    ];
-    const shown = [
-      pendingLatest,
-      { day: "2026-11-05", missing: ["Voya Financial"] },
-    ];
-    const early = { ...hsa, changed: [{ day: "2026-11-06", balance: 40 }] };
-    const { always, varying } = splitUnpriced(shown, "2026-11-06", reports, [
-      early,
-    ]);
-    expect(always).toEqual([]);
-    expect(varying).toEqual([early]);
-    expect(alwaysExcludedLine(always)).toBeNull();
   });
 });

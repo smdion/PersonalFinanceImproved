@@ -3,9 +3,11 @@ import { describe, it, expect } from "vitest";
 import {
   capContributionsByLimitGroup,
   accountGroupLimits,
-  type CapPerson,
-  type CapRow,
 } from "@/lib/pure/contributions/contribution-caps";
+import type {
+  CapPerson,
+  CapRow,
+} from "@/lib/pure/contributions/contribution-caps.types";
 
 const limits = {
   "401k_employee_limit": 20000,
@@ -392,11 +394,165 @@ describe("capContributionsByLimitGroup — employer money over the limit", () =>
   });
 });
 
+describe("capContributionsByLimitGroup — 415(c) at two employers", () => {
+  const lim415 = {
+    "401k_employee_limit": 24500,
+    "401k_catchup_limit": 8000,
+    "401k_super_catchup_limit": 11250,
+    "401k_total_additions_limit": 72000,
+  };
+  /** A $10,000 deferral at a $200,000 job with `employerAnnual` of employer money. */
+  const plan = (job: number, employerAnnual: number) =>
+    row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10000,
+      employerAnnual,
+      employer: { key: job, pay: 200000 },
+    });
+  const a = plan(1, 60000);
+  const b = plan(2, 65000);
+  // A: 72,000 − 60,000 = 12,000 fits; B: 72,000 − 65,000 = 7,000 kept, 3,000 over. Each row's
+  // most is its own employer's room plus the $10,000 configured at the other employer.
+  it.each([
+    ["A first", [a, b]],
+    ["B first", [b, a]],
+  ])("the same caps whichever employer comes first (%s)", (_, rows) => {
+    const r = cap(rows, [person(1, 40, 400000)], "Single", lim415);
+    expect(r.get(a.id)!).toMatchObject({
+      cappedAnnual: 10000,
+      overBy: 0,
+      maxEmployee: 22000,
+    });
+    expect(r.get(b.id)!).toMatchObject({
+      cappedAnnual: 7000,
+      overBy: 3000,
+      maxEmployee: 17000,
+    });
+  });
+});
+
+describe("capContributionsByLimitGroup — money already in from an ended job", () => {
+  const ended = (key: number, pay: number) => ({
+    key,
+    pay,
+    ended: true as const,
+  });
+  it("is never cut for the job held now; over on its own, it shows over", () => {
+    const earlier = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 25000,
+      employer: ended(1, 60000),
+    });
+    const now = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 5000,
+      employer: { key: 2, pay: 60000 },
+    });
+    const r = cap([now, earlier], [person(1, 40)]);
+    expect(r.get(earlier.id)!).toMatchObject({
+      cappedAnnual: 20000,
+      overBy: 5000,
+    });
+    expect(r.get(now.id)!.cappedAnnual).toBe(0);
+  });
+
+  it("an ended plan's 415(c) excess uses the catch-up first, whatever the row order", () => {
+    // 52, catch-up 7,000. Ended job: pay 20,000, 20,000 deferred, 5,000 employer: 5,000 past
+    // its 415(c) bound is catch-up, 2,000 left. Job now: 70,000 employer leaves 2,000 under
+    // 72,000, so it keeps 2,000 + the 2,000 catch-up left = 4,000 (402(g) alone allows 7,000).
+    const lim = { ...limits, "401k_total_additions_limit": 72000 };
+    const earlier = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 20000,
+      employerAnnual: 5000,
+      employer: ended(1, 20000),
+    });
+    const now = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10000,
+      employerAnnual: 70000,
+      employer: { key: 2, pay: 100000 },
+    });
+    const r = cap([now, earlier], [person(1, 52, 120000)], "Single", lim);
+    expect(r.get(earlier.id)!.cappedAnnual).toBe(20000);
+    expect(r.get(now.id)!.cappedAnnual).toBeCloseTo(4000, 2);
+  });
+});
+
+describe("capContributionsByLimitGroup — an HSA held to the months it covers", () => {
+  const hsaRow = (personId: number, coverage: string, annual: number) =>
+    row({
+      personId,
+      accountType: "hsa",
+      hsaCoverageType: coverage,
+      regularAnnual: annual,
+    });
+  const JAN_TO_JUN = 0b111111;
+  it("self-only, covered January to June: half the 4,000 limit", () => {
+    const r = hsaRow(1, "self_only", 3000);
+    const p = { ...person(1, 40), coveredMonths: JAN_TO_JUN };
+    expect(cap([r], [p]).get(r.id)!.cappedAnnual).toBe(2000);
+  });
+  it("a 401(k) isn't held to the HSA's months", () => {
+    const r = row({ personId: 1, accountType: "401k", regularAnnual: 15000 });
+    const p = { ...person(1, 40), coveredMonths: JAN_TO_JUN };
+    expect(cap([r], [p]).get(r.id)!.cappedAnnual).toBe(15000);
+  });
+  it("family: the shared base at the months either spouse is covered", () => {
+    const a = hsaRow(1, "family", 5000);
+    const b = hsaRow(2, "family", 5000);
+    const half = (id: number) => ({
+      ...person(id, 40),
+      coveredMonths: JAN_TO_JUN,
+    });
+    const total = (people: CapPerson[]) => {
+      const r = cap([a, b], people, "MFJ");
+      return r.get(a.id)!.cappedAnnual + r.get(b.id)!.cappedAnnual;
+    };
+    // One spouse covered all year: the whole 8,000 family limit.
+    expect(total([half(1), person(2, 40)])).toBeCloseTo(8000, 2);
+    // Both January to June: half of it.
+    expect(total([half(1), half(2)])).toBeCloseTo(4000, 2);
+  });
+  it("family, held by a joint row: the base at the months either spouse is covered", () => {
+    // January to June and July to December: covered all year between them, so the whole 8,000.
+    const joint = hsaRow(1, "family", 10000);
+    const jointRow = { ...joint, personId: null };
+    const people = [
+      { ...person(1, 40), coveredMonths: 0b111111 },
+      { ...person(2, 40), coveredMonths: 0b111111000000 },
+    ];
+    expect(
+      cap([jointRow], people, "MFJ").get(joint.id)!.cappedAnnual,
+    ).toBeCloseTo(8000, 2);
+  });
+});
+
 describe("capContributionsByLimitGroup — spousal IRA and compensation", () => {
   it("funds a non-earning spouse's IRA from the other spouse's pay", () => {
     const r = row({ personId: 2, accountType: "ira", regularAnnual: 6000 });
     const out = cap([r], [person(1, 40, 100000), person(2, 40, 0)], "MFJ");
     expect(out.get(r.id)!).toMatchObject({ cappedAnnual: 6000, reason: null });
+  });
+
+  it("married filing jointly, equal pay: neither spouse has less, so each is held to their own (IRC 219(c)(2))", () => {
+    const a = row({ personId: 1, accountType: "ira", regularAnnual: 6000 });
+    const b = row({ personId: 2, accountType: "ira", regularAnnual: 1000 });
+    const out = cap([a, b], [person(1, 40, 4000), person(2, 40, 4000)], "MFJ");
+    expect(out.get(a.id)!).toMatchObject({
+      cappedAnnual: 4000,
+      maxEmployee: 4000,
+      reason: "over-compensation",
+    });
+    expect(out.get(b.id)!).toMatchObject({
+      cappedAnnual: 1000,
+      maxEmployee: 4000,
+    });
   });
 
   it("takes capped pre-tax payroll money off compensation", () => {

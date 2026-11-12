@@ -12,16 +12,17 @@ import {
 } from "@/lib/pure/household/profiles";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
+import { resolveRetirementProfileIdFrom } from "@/lib/pure/household/retirement-profile";
 import {
-  resolveRetirementProfileIdFrom,
-  toProfileId,
-} from "@/lib/pure/household/retirement-profile";
-import {
-  ACTIVE_SETTING_KEY,
   PROFILE_TABLE,
   assertNoPlanUses,
 } from "@/server/services/profiles/plans";
 import { upsertSetting } from "@/server/data/settings";
+import {
+  ACTIVE_SETTING_KEY,
+  activeProfileIdFrom,
+} from "@/server/data/active-profile";
+import { refuseEntriesWithoutJobs } from "@/server/services/profiles/salary-entry-writes";
 import { firstRow } from "@/lib/utils/first-row";
 import type { Ack } from "@/lib/http/probe-result";
 
@@ -45,9 +46,8 @@ const ACTIVE_FOR_DELETE: Record<
   LifecycleKind,
   (settingRows: ActiveSettingRow[], profiles: { id: number }[]) => number | null
 > = {
-  // The stored setting, a number or a numeric string, as its readers take it.
-  contribution: (rows) => toProfileId(rows[0]?.value),
-  salary: (rows) => toProfileId(rows[0]?.value),
+  contribution: (rows) => activeProfileIdFrom(rows, "contribution"),
+  salary: (rows) => activeProfileIdFrom(rows, "salary"),
   // Resolved: unset or stale means the lowest id, the one the engine reads.
   retirement: (rows, profiles) =>
     resolveRetirementProfileIdFrom(rows, profiles),
@@ -120,15 +120,19 @@ export async function createProfile(
       .returning();
     return rows[0]!;
   }
-  const rows = await db
-    .insert(schema.salaryProfiles)
-    .values({
-      name: input.name,
-      description: input.description ?? null,
-      salaries: input.salaries ?? {},
-    })
-    .returning();
-  return rows[0]!;
+  const salaries = input.salaries ?? {};
+  return db.transaction(async (tx) => {
+    await refuseEntriesWithoutJobs(tx, Object.keys(salaries));
+    const rows = await tx
+      .insert(schema.salaryProfiles)
+      .values({
+        name: input.name,
+        description: input.description ?? null,
+        salaries,
+      })
+      .returning();
+    return rows[0]!;
+  });
 }
 
 // ── duplicate ──
@@ -183,30 +187,33 @@ export async function duplicateProfile(
     return rows[0]!;
   }
 
-  const source = await db
-    .select()
-    .from(schema.salaryProfiles)
-    .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
-    .then(firstRow);
-  if (!source) throw sourceNotFound();
+  return db.transaction(async (tx) => {
+    const source = await tx
+      .select()
+      .from(schema.salaryProfiles)
+      .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
+      .then(firstRow);
+    if (!source) throw sourceNotFound();
 
-  const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
-  const salaries: SalaryEntryMap = Object.fromEntries(
-    Object.entries(sourceSalaries).map(([jobId, entry]) => [
-      jobId,
-      { ...entry, extraPaycheckRouting: null },
-    ]),
-  );
+    const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
+    const salaries: SalaryEntryMap = Object.fromEntries(
+      Object.entries(sourceSalaries).map(([jobId, entry]) => [
+        jobId,
+        { ...entry, extraPaycheckRouting: null },
+      ]),
+    );
+    await refuseEntriesWithoutJobs(tx, Object.keys(salaries));
 
-  const rows = await db
-    .insert(schema.salaryProfiles)
-    .values({
-      name: input.name,
-      description: source.description,
-      salaries,
-    })
-    .returning();
-  return rows[0]!;
+    const rows = await tx
+      .insert(schema.salaryProfiles)
+      .values({
+        name: input.name,
+        description: source.description,
+        salaries,
+      })
+      .returning();
+    return rows[0]!;
+  });
 }
 
 /** A stored JSON `null` reads back as null although the column is NOT NULL. */

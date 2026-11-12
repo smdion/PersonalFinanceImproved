@@ -44,8 +44,6 @@ import {
 /** Gross-up convergence, carried into the tax (see the header). */
 const GROSS_UP = 1;
 
-const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
-const PER_PERSON = `v0.11 Tax "Senior deduction phases out against the combined amount"`;
 const SAME_YEAR_MAGI = `v0.11 Tax "Senior deduction must use same-year MAGI in every year"`;
 const ONE_RETURN_DEDUCTIONS = `v0.11 Tax "One returnDeductions()"`;
 const GAP_YEARS = `v0.11 Tax "Gap years have no 65+ deductions"`;
@@ -87,25 +85,24 @@ describe("answer key: gains in an engine year", () => {
     // from 0: tax = 15% × (W − 98,900) (key: 3,165 at W 120,000); W =
     // 120,000 + 0.15W − 14,835 → W = 105,165 / 0.85 = 123,723.53, tax
     // 3,723.53.
-    xfail({
-      id: "tax/G2-MFJ [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () => {
-        const r = retiredYear(
-          {
-            status: "MFJ",
-            people: [{ birthYear: 1970 }, { birthYear: 1970 }],
-            brokerage: { balance: 5_000_000, basis: 0 },
-            spending: 120_000,
-            endYear: 2028,
-          },
-          2026,
-        );
-        return { withdrawal: r.totalWithdrawal, tax: r.taxCost };
-      },
-      expected: { withdrawal: 120_000, tax: 0 },
-      today: { withdrawal: 123_723.53, tax: 3_723.53 },
-      tolerance: GROSS_UP,
+    it("tax/G2-MFJ [TAX-16]", () => {
+      cents(
+        (() => {
+          const r = retiredYear(
+            {
+              status: "MFJ",
+              people: [{ birthYear: 1970 }, { birthYear: 1970 }],
+              brokerage: { balance: 5_000_000, basis: 0 },
+              spending: 120_000,
+              endYear: 2028,
+            },
+            2026,
+          );
+          return { withdrawal: r.totalWithdrawal, tax: r.taxCost };
+        })(),
+        { withdrawal: 120_000, tax: 0 },
+        GROSS_UP,
+      );
     });
   });
 });
@@ -114,60 +111,48 @@ describe("answer key: the senior deduction in an engine year", () => {
   // Steady MFJ cases, both born 1958 (68 in 2026; no RMD before 2031),
   // read in 2028, the senior deduction's last year, once today's
   // prior-year MAGI has settled. Today's rule: no senior amount in the
-  // first retired year (2026), then a pooled 12,000 − 6% × (last year's
-  // MAGI − 150,000) (`return-deductions.ts:79`,
-  // `decumulation-year.ts:478`).
+  // first retired year (2026), then each person's 6,000 less 6% × (last
+  // year's MAGI − 150,000) (`year-deduction.ts`).
 
   describe("tax/MFJ-200k [TAX-22]", () => {
     // Decided at W 200,000 (MAGI = AGI = W): senior 2 × (6,000 − 6% ×
     // 50,000) = 6,000 (Schedule 1-A lines 35, 36a, 36b); deductions
     // 35,500 + 6,000 = 41,500; TI 158,500; tax = 11,600 (at 100,800) +
     // 22% × 57,700 = 24,294. Need = 200,000 − 24,294 = 175,706.
-    // Today (key: 23,634 at W 200,000), tax = 11,600 + 22% × (W − 35,500
-    // − senior − 100,800): 2026, no senior: W = (175,706 − 18,386) / 0.78
-    // = 201,692.31. 2027, senior 12,000 − 6% × 51,692.31 = 8,898.46: W =
-    // 199,182.49. 2028, senior 12,000 − 6% × 49,182.49 = 9,049.05:
-    // deductions 44,549.05, tax = 0.22W − 20,376.79, W = 155,329.21 / 0.78
-    // = 199,140.01, tax 23,434.01. Both fixes are needed: with the
-    // per-person rule alone the prior-year MAGI leaves 2028 at W
-    // 200,001.94 (outside ±1).
+    // Today, per person but on last year's MAGI, tax = 11,600 + 22% × (W
+    // − 35,500 − senior − 100,800): 2026, no senior: W = (175,706 −
+    // 18,386) / 0.78 = 201,692.31. 2027, senior 2 × (6,000 − 6% ×
+    // 51,692.31) = 5,796.92: W = 200,057.28. 2028, senior 2 × (6,000 − 6%
+    // × 50,057.28) = 5,993.13: deductions 41,493.13, W = 156,001.51 / 0.78
+    // = 200,001.94, tax 24,295.94 (outside ±1 until same-year MAGI).
     xfail({
       id: "tax/MFJ-200k [TAX-22]",
-      todo: `${ONE_RETURN_DEDUCTIONS} (with "Senior deduction phases out against the combined amount" and "Senior deduction must use same-year MAGI in every year")`,
+      todo: SAME_YEAR_MAGI,
       run: year(retirees("MFJ", 1958, 175_706), 2028),
       expected: { withdrawal: 200_000, tax: 24_294, deductions: 41_500 },
       today: {
-        withdrawal: 199_140.01,
-        tax: 23_434.01,
-        deductions: 44_549.05,
+        withdrawal: 200_001.94,
+        tax: 24_295.94,
+        deductions: 41_493.13,
       },
       tolerance: GROSS_UP,
     });
   });
 
-  describe("tax/MFJ-260k [TAX-22]", () => {
-    // Decided at W 260,000: 6% × 110,000 = 6,600 takes each 6,000 to 0
-    // (gone at 250,000 joint, spec SR-8); deductions 35,500; TI 224,500;
-    // tax = 35,932 (at 211,400) + 24% × 13,100 = 39,076. Need = 260,000 −
-    // 39,076 = 220,924. Today (key: 37,780 at W 260,000), tax = 35,932 +
-    // 24% × (W − 35,500 − senior − 211,400): 2026, no senior: W =
-    // (220,924 − 23,324) / 0.76 = 260,000. 2027, pooled 12,000 − 6% ×
-    // 110,000 = 5,400: W = 258,294.74. 2028, 12,000 − 6% × 108,294.74 =
-    // 5,502.32: deductions 41,002.32, W = (220,924 − 24,644.56) / 0.76 =
-    // 258,262.42, tax 37,338.42. (The per-person rule alone fixes this
-    // one: its MAGI never falls under 250,000.)
-    xfail({
-      id: "tax/MFJ-260k [TAX-22]",
-      todo: PER_PERSON,
-      run: year(retirees("MFJ", 1958, 220_924), 2028),
-      expected: { withdrawal: 260_000, tax: 39_076, deductions: 35_500 },
-      today: {
-        withdrawal: 258_262.42,
-        tax: 37_338.42,
-        deductions: 41_002.32,
+  it("tax/MFJ-260k [TAX-22] W 260,000, tax 39,076, deductions 35,500", () => {
+    // At W 260,000: 6% × 110,000 = 6,600 takes each 6,000 to 0 (gone at
+    // 250,000 joint, spec SR-8), and last year's MAGI is also 260,000;
+    // deductions 35,500; TI 224,500; tax = 35,932 (at 211,400) + 24% ×
+    // 13,100 = 39,076. Need = 260,000 − 39,076 = 220,924.
+    cents(
+      year(retirees("MFJ", 1958, 220_924), 2028)(),
+      {
+        withdrawal: 260_000,
+        tax: 39_076,
+        deductions: 35_500,
       },
-      tolerance: GROSS_UP,
-    });
+      GROSS_UP,
+    );
   });
 
   // First retired year: the senior amount reads this year's MAGI (S1A

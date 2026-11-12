@@ -1,5 +1,5 @@
 /**
- * `computeMonteCarloProjection` plus the mutations that edit its input tables
+ * `computeSimulation` plus the mutations that edit its input tables
  * (`updateGlidePathAllocations`, `updateClampBounds`).
  */
 import { SK_SIMULATION_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
@@ -31,7 +31,7 @@ export const monteCarloRouter = createTRPCRouter({
    * (asset class parameters + glide path allocations); returns percentile bands,
    * success rate and key metrics.
    */
-  computeMonteCarloProjection: protectedProcedure
+  computeSimulation: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
       z.strictObject({
@@ -88,7 +88,7 @@ export const monteCarloRouter = createTRPCRouter({
         /** Read-only cache peek — never runs the (expensive) trials, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
         peekOnly: z.boolean().optional(),
         /** Optional client id (crypto.randomUUID()) to poll this run's progress under
-         *  via `getMonteCarloProgress` (see monte-carlo-worker-client.ts). */
+         *  via `getSimulationProgress` (see monte-carlo-worker-client.ts). */
         runId: z.string().optional(),
       }),
     )
@@ -98,7 +98,7 @@ export const monteCarloRouter = createTRPCRouter({
    * Live progress of an in-flight run with this `runId`, polled ~500ms by the client
    * (in-memory; see monte-carlo-worker-client.ts). Null when done, unknown or not started.
    */
-  getMonteCarloProgress: protectedProcedure
+  getSimulationProgress: protectedProcedure
     .input(z.object({ runId: z.string() }))
     .query(({ input }) => {
       return getMonteCarloProgress(input.runId);

@@ -4,7 +4,8 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useLocalBoolean } from "@/lib/hooks/use-local-storage";
+import { useHistoryWindow } from "../use-history-window";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
@@ -57,14 +58,12 @@ export function AllTransactionsTab({
     "transaction",
   );
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [historyWindow, setHistoryWindow] = useLocalStorage<
-    0 | 3 | 6 | 12 | "all"
-  >("ledgr:savings:txHistoryWindow", 0);
-  const [tableLocked, setTableLocked] = useLocalStorage<boolean>(
+  const [historyWindow, setHistoryWindow] = useHistoryWindow("transactions");
+  const [tableLocked, setTableLocked] = useLocalBoolean(
     "ledgr:savings:txLocked",
     true,
   );
-  const [showRuleTx, setShowRuleTx] = useLocalStorage<boolean>(
+  const [showRuleTx, setShowRuleTx] = useLocalBoolean(
     "ledgr:savings:showRuleTx",
     false,
   );
@@ -82,8 +81,8 @@ export function AllTransactionsTab({
     field: ActiveCellField;
   } | null>(null);
 
-  // An inline edit ends once: Enter's save records the edit it ended (each
-  // activation is a new activeCell), so that edit's blur doesn't save again.
+  // An inline edit ends once: Enter or Escape records the edit it ended (each
+  // activation is a new activeCell), so that edit's blur doesn't save.
   const committed = useRef<typeof activeCell>(null);
 
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
@@ -166,9 +165,8 @@ export function AllTransactionsTab({
     );
   };
 
-  // Show all upcoming transactions including transfers (deduped: only show one leg per pair)
-  // Clipped to the projection window end date when provided.
-  // Rule-generated rows hidden by default unless showRuleTx is on.
+  // Upcoming transactions, transfers deduped to one leg, clipped to the
+  // projection window's end; rule-generated rows only when showRuleTx is on.
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
@@ -362,6 +360,7 @@ export function AllTransactionsTab({
         setActiveCell(null);
       }
       if (e.key === "Escape") {
+        committed.current = activeCell;
         setEditingId(null);
         setEditForm(null);
         setActiveCell(null);

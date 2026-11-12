@@ -6,10 +6,46 @@ import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
+import { bonusCheckNet, yearTotals } from "@/lib/pure/paycheck/year-totals";
+import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
-import { RothIraLine } from "@/components/taxes/roth-ira-section";
+import { RothIraLine } from "@/components/taxes/roth-ira-line";
+
+/** A person's regular checks from the year schedule (Social Security at the full rate until
+ *  the wage base): year to date, or the whole year. */
+function regularPay(
+  pc: Pick<
+    PaycheckResult,
+    "yearSchedule" | "periodsElapsedYtd" | "periodsPerYear"
+  >,
+  ytd: boolean,
+): { gross: number; net: number } {
+  return yearTotals(
+    pc.yearSchedule,
+    1,
+    ytd ? pc.periodsElapsedYtd : pc.periodsPerYear,
+  );
+}
+
+/** The current job's bonus check this year (its year-schedule row): the gross, and the
+ *  take-home after its own withholding, FICA and contributions. Zero when none is paid. */
+function bonusCheck(
+  pc: Pick<PaycheckResult, "yearSchedule" | "bonusEstimate">,
+): { gross: number; net: number } {
+  const row = pc.yearSchedule.find((r) => r.bonusGross > 0);
+  if (!row) return { gross: 0, net: 0 };
+  return {
+    gross: row.bonusGross,
+    net: bonusCheckNet({
+      gross: row.bonusGross,
+      federal: row.bonusWithholding,
+      fica: row.bonusFica,
+      contributions: pc.bonusEstimate.bonusContributions,
+    }),
+  };
+}
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
@@ -29,21 +65,16 @@ function HouseholdIncomeCardImpl() {
       : null;
 
   const people = data?.people.filter((d) => d.paycheck) ?? [];
-  const periods = (d: (typeof people)[0]) =>
-    isYtd
-      ? Math.max(
-          0,
-          d.paycheck!.periodsElapsedYtd - d.paycheck!.periodsBeforeStart,
-        )
-      : d.paycheck!.periodsPerYear;
+  const regular = (d: (typeof people)[0]) => regularPay(d.paycheck!, isYtd);
   const blendedOf = (d: (typeof people)[0]) =>
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/pure/paycheck/paycheck.types").BlendedAnnualTotals
       | undefined;
-  // Every view uses the resolved bonus (set bonus, else the formula), the one the taxes
-  // use, so gross, net and tax reconcile. YTD counts only bonuses already paid
-  // (bonusMonth/bonusDayOfMonth passed) so it stays money actually received.
-  const bonusEstimateFor = (d: (typeof people)[0]) => d.paycheck!.bonusEstimate;
+  // Every view uses the current job's bonus check, like its regular pay beside it (none
+  // outside start…last day). YTD counts only bonuses already paid.
+  const bonusGrossFor = (d: (typeof people)[0]) =>
+    bonusCheck(d.paycheck!).gross;
+  const bonusNetFor = (d: (typeof people)[0]) => bonusCheck(d.paycheck!).net;
   /** The formula bonus, when a set bonus is in use and differs from it. */
   const formulaBonusIfDifferent = (d: (typeof people)[0]) => {
     if (!("fullFormulaBonusEstimate" in d)) return null;
@@ -54,21 +85,17 @@ function HouseholdIncomeCardImpl() {
       : null;
   };
   // The calculator's bonus period (null when there's no bonus date, or it
-  // falls before the job started) against the paydays so far.
+  // falls outside the job's checks) against the paydays so far.
   const isBonusPaidYtd = (d: (typeof people)[0]) => {
     const p = d.paycheck!.bonusPeriod;
     return p !== null && p <= d.paycheck!.periodsElapsedYtd;
   };
   const totalBonusGross = isYtd
-    ? sumBy(people, (d) =>
-        isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusGross : 0,
-      )
-    : sumBy(people, (d) => bonusEstimateFor(d).bonusGross);
+    ? sumBy(people, (d) => (isBonusPaidYtd(d) ? bonusGrossFor(d) : 0))
+    : sumBy(people, bonusGrossFor);
   const totalBonusNet = isYtd
-    ? sumBy(people, (d) =>
-        isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusNet : 0,
-      )
-    : sumBy(people, (d) => bonusEstimateFor(d).bonusNet);
+    ? sumBy(people, (d) => (isBonusPaidYtd(d) ? bonusNetFor(d) : 0))
+    : sumBy(people, (d) => bonusNetFor(d));
   // Projected: household annual income — the figure the taxes are on.
   const income = data?.householdIncome ?? null;
   const totalGrossAnnual = isBlended
@@ -78,7 +105,7 @@ function HouseholdIncomeCardImpl() {
       }) + totalBonusGross
     : !isYtd && income
       ? income.gross
-      : sumBy(people, (d) => d.paycheck!.gross * periods(d)) + totalBonusGross;
+      : sumBy(people, (d) => regular(d).gross) + totalBonusGross;
   const totalNetAnnual = isBlended
     ? sumBy(people, (d) => {
         const ba = blendedOf(d);
@@ -86,7 +113,7 @@ function HouseholdIncomeCardImpl() {
       }) + totalBonusNet
     : !isYtd && income
       ? income.netRegular + income.netBonus
-      : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
+      : sumBy(people, (d) => regular(d).net) + totalBonusNet;
   // Same words as the header's View toggle.
   const modeLabel = isYtd
     ? "Year to date"
@@ -115,13 +142,13 @@ function HouseholdIncomeCardImpl() {
                     <td className="text-muted w-24 py-0.5">{d.person.name}</td>
                     <td className="text-primary py-0.5 text-right font-medium tabular-nums">
                       {isYtd
-                        ? formatCurrency(d.paycheck!.gross * periods(d))
+                        ? formatCurrency(regular(d).gross)
                         : isBlended && ba
                           ? formatCurrency(ba.gross)
                           : formatCurrency(d.salary)}
                     </td>
                   </tr>
-                  {bonusEstimateFor(d).bonusGross > 0 && (
+                  {bonusGrossFor(d) > 0 && (
                     <tr>
                       <td className="text-faint pb-1 pl-2 text-xs">
                         Bonus
@@ -132,8 +159,8 @@ function HouseholdIncomeCardImpl() {
                         )}
                       </td>
                       <td className="text-faint pb-1 text-right text-xs tabular-nums">
-                        {formatCurrency(bonusEstimateFor(d).bonusGross)} gross /{" "}
-                        {formatCurrency(bonusEstimateFor(d).bonusNet)} net
+                        {formatCurrency(bonusGrossFor(d))} gross /{" "}
+                        {formatCurrency(bonusNetFor(d))} net
                       </td>
                     </tr>
                   )}

@@ -8,26 +8,25 @@ export function useInlineEditorState(profileId: number, onSaved: () => void) {
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
     id: profileId,
   });
-  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
+  const { data: deductionRows } = trpc.paycheck.deductions.list.useQuery();
   const { drafts, setDraft, clearDraft } = useDraftCommit();
   const utils = trpc.useUtils();
   const [addingDeduction, setAddingDeduction] = useState(false);
-  const createDeduction = trpc.settings.deductions.create.useMutation({
+  const createDeduction = trpc.paycheck.deductions.create.useMutation({
     onSuccess: () => {
       utils.settings.invalidate();
       setAddingDeduction(false);
     },
   });
-  const updateDeduction = trpc.settings.deductions.update.useMutation({
+  const updateDeduction = trpc.paycheck.deductions.update.useMutation({
     onSuccess: () => utils.settings.invalidate(),
   });
-  const setAccountActive =
-    trpc.settings.contributionAccounts.setActive.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.contributionProfile.invalidate();
-      },
-    });
+  const setAccountActive = trpc.contribution.accounts.setActive.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.contributionProfile.invalidate();
+    },
+  });
   /** Builds the full deduction record from the current row plus the changed field,
    *  the same pattern as paycheck-content.tsx's onUpdateDeduction. */
   const patchDeductionRecord = (

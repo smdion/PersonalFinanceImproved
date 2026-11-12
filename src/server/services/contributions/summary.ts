@@ -52,11 +52,11 @@ import {
 } from "@/lib/pure/contributions/account-type-snapshots";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { isPriorYearContributionWindow } from "@/lib/utils/date";
-import { ageOnDate } from "@/lib/pure/household/age";
+import { limitAge } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -324,7 +324,7 @@ export async function computeContributionSummary(
         activeJob.anchorPayDate,
         periodsPerYear,
       );
-      const age = ageOnDate(person.dateOfBirth, asOfDate);
+      const age = limitAge(person.dateOfBirth, currentYear);
 
       const {
         bonusDate,
@@ -673,19 +673,16 @@ export async function computeContributionSummary(
   );
 
   // Joint accounts — computed at household level, not attributed to any person
-  const jointContribs = effectiveContributions.filter(
-    (c) => c.ownership === "joint",
-  );
   const jointAccountTypes: AccountTypeSnapshot[] = [];
   // A joint account's IRS limit (a family HSA) through the same resolver
-  // as each person's, at the oldest member's age for any catch-up.
+  // as each person's, at the oldest member's Dec 31 age for any catch-up.
   const householdAge = Math.max(
     0,
-    ...people.map((p) => ageOnDate(p.dateOfBirth, asOfDate)),
+    ...people.map((p) => limitAge(p.dateOfBirth, currentYear)),
   );
   jointAccountRows(
-    jointContribs,
-    results,
+    effectiveContributions,
+    effectiveJobs,
     perfLabelMap,
     asOfDate,
     liveThroughToday,

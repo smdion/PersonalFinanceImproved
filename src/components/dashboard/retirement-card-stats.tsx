@@ -143,7 +143,7 @@ export function SimulatedSuccessRow({
   simulationSummary,
 }: {
   simulationSummary:
-    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined;
+    RouterOutputs["projection"]["getSimulationSummary"] | undefined;
 }) {
   return (
     <>

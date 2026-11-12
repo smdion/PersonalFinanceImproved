@@ -7,10 +7,10 @@ import {
   integer,
   boolean,
   timestamp,
-  decimal,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 
 // ────────────────────────────────────────────────────────────────────────────

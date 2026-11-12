@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@/lib/trpc";
 import type { Dispatch, SetStateAction } from "react";
 
 export type SnapshotPaginationProps = {
-  paginatedSnapshots: RouterOutputs["networth"]["listSnapshots"];
+  paginatedSnapshots: RouterOutputs["netWorth"]["listSnapshots"];
   setSnapshotPage: Dispatch<SetStateAction<number>>;
   showAll: boolean;
   snapshotPage: number;

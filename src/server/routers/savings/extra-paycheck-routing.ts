@@ -1,5 +1,6 @@
 import { eq, asc, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
+import { zMoneyNumber, zMonthKey } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -7,9 +8,9 @@ import {
   savingsProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { activeProfileId } from "@/server/data/active-profile";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import { mergeSalaryEntries } from "@/server/services/profiles/salary-entry-writes";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { materializeExtraPaycheckSavings } from "@/server/services/budget/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/budget-income-materializer";
@@ -18,15 +19,15 @@ import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay
 
 /**
  * Write a job's extraPaycheckRouting into the globally-ACTIVE Salary Profile only, so
- * comparing profiles never rewrites materialized transactions. Throws
- * PRECONDITION_FAILED when there's no active profile or the job has no entry in it.
+ * comparing profiles never rewrites materialized transactions. PRECONDITION_FAILED with
+ * no active profile or no entry for the job; NOT_FOUND when the active profile is gone.
  */
 async function writeJobExtraPaycheckRouting(
   db: DbOrTx,
   jobId: number,
   routing: ExtraPaycheckRoutingData | null,
 ): Promise<void> {
-  const activeId = await resolveActiveSalaryProfileId(db);
+  const activeId = await activeProfileId(db, "salary");
   if (activeId == null) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -34,34 +35,17 @@ async function writeJobExtraPaycheckRouting(
         "No Salary Profile is active — activate one before configuring extra-paycheck routing.",
     });
   }
-  const [row] = await db
-    .select()
-    .from(schema.salaryProfiles)
-    .where(eq(schema.salaryProfiles.id, activeId));
-  if (!row) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "The active Salary Profile no longer exists.",
-    });
-  }
-  const { salaries } = checkSalaryEntries(row);
-  const key = String(jobId);
-  const entry = salaries[key];
-  if (!entry) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: `Job ${jobId} has no entry in the active Salary Profile — add one before configuring extra-paycheck routing.`,
-    });
-  }
-  await db
-    .update(schema.salaryProfiles)
-    .set({
-      salaries: {
-        ...salaries,
-        [key]: { ...entry, extraPaycheckRouting: routing },
-      },
-    })
-    .where(eq(schema.salaryProfiles.id, activeId));
+  // Read under the profile's lock: a concurrent edit or job delete isn't overwritten.
+  await mergeSalaryEntries(db, activeId, (salaries) => {
+    const key = String(jobId);
+    const entry = salaries[key];
+    if (!entry)
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: `Job ${jobId} has no entry in the active Salary Profile — add one before configuring extra-paycheck routing.`,
+      });
+    return { ...salaries, [key]: { ...entry, extraPaycheckRouting: routing } };
+  });
 }
 
 export const extraPaycheckRoutingProcedures = {
@@ -118,11 +102,8 @@ export const extraPaycheckRoutingProcedures = {
           jobId: z.number().int(),
           rules: z.array(
             z.object({
-              from: z.string().regex(/^\d{4}-\d{2}$/),
-              to: z
-                .string()
-                .regex(/^\d{4}-\d{2}$/)
-                .nullable(),
+              from: zMonthKey,
+              to: zMonthKey.nullable(),
               splits: z.array(
                 z.object({
                   goalId: z.number().int(),
@@ -135,7 +116,10 @@ export const extraPaycheckRoutingProcedures = {
           yearlyGrowth: z
             .record(
               z.string(),
-              z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+              z.object({
+                type: z.enum(["pct", "dollar"]),
+                value: zMoneyNumber,
+              }),
             )
             .optional(),
         }),
@@ -218,7 +202,7 @@ export const extraPaycheckRoutingProcedures = {
           jobId: z.number().int(),
           yearlyGrowth: z.record(
             z.string(),
-            z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+            z.object({ type: z.enum(["pct", "dollar"]), value: zMoneyNumber }),
           ),
         }),
       )
@@ -283,7 +267,7 @@ export const extraPaycheckRoutingProcedures = {
       .input(
         z.object({
           jobId: z.number().int(),
-          month: z.string().regex(/^\d{4}-\d{2}$/),
+          month: zMonthKey,
           splits: z
             .array(
               z.object({

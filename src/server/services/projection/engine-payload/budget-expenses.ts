@@ -63,9 +63,6 @@ export async function resolvePhaseExpenses(
     ? allBudgetItems.filter((i) => i.profileId === decProfile.id)
     : [];
 
-  const accMonths = (accProfile?.columnMonths as number[] | null) ?? null;
-  const decumulationMonths =
-    (decProfile?.columnMonths as number[] | null) ?? null;
   // Resolved through the contribution-account chain computeActiveSummary uses:
   // raw `amounts` is stale for contribution-linked items.
   const accNumColumns = accProfile?.columnLabels.length ?? 1;
@@ -90,14 +87,10 @@ export async function resolvePhaseExpenses(
       );
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
-    computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);
+    computeBudgetAnnualTotal(resolvedAccItems, accCol, accProfile);
   const decumulationExpenses =
     opts.decumulationExpenseOverride ??
-    computeBudgetAnnualTotal(
-      resolvedDecumulationItems,
-      decCol,
-      decumulationMonths,
-    );
+    computeBudgetAnnualTotal(resolvedDecumulationItems, decCol, decProfile);
   return {
     accProfile,
     accCol,
@@ -110,7 +103,7 @@ export async function resolvePhaseExpenses(
       : computeBudgetAnnualTotal(
           resolvedAccItems.filter((i) => i.contributionAccountId != null),
           accCol,
-          accMonths,
+          accProfile,
         ),
     decumulationExpenses,
   };

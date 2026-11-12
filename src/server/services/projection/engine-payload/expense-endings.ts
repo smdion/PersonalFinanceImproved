@@ -13,10 +13,11 @@ import type { Db } from "@/lib/db";
 
 type Loan = typeof schema.mortgageLoans.$inferSelect;
 type Item = typeof schema.budgetItems.$inferSelect;
+type Profile = typeof schema.budgetProfiles.$inferSelect;
 type Phase = {
-  profileId: number | undefined;
+  /** The phase's budget profile; none when no profile resolves. */
+  profile: Pick<Profile, "id" | "columnLabels" | "columnMonths"> | undefined;
   column: number;
-  months: number[] | null;
   /** The phase's whole budget, a year. */
   annual: number;
   /** Spending was typed in: no lines to end. */
@@ -61,7 +62,7 @@ export async function loadExpenseEndings(
   const shareOf = (loan: Loan, phase: Phase) => {
     const item = linked.find(
       (i) =>
-        i.profileId === phase.profileId &&
+        i.profileId === phase.profile?.id &&
         i.mortgageLoanId !== null &&
         currentLoan(loans, i.mortgageLoanId)?.id === loan.id,
     );
@@ -69,7 +70,7 @@ export async function loadExpenseEndings(
     const line = computeBudgetAnnualTotal(
       [{ amounts: item.amounts as number[] }],
       phase.column,
-      phase.months,
+      phase.profile,
     );
     const payment = toNumber(loan.principalAndInterest) * 12;
     return Math.min(1, Math.min(line, payment) / phase.annual);

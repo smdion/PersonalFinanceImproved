@@ -5,6 +5,7 @@
  */
 import { SIMULATION_INFLATION_GROWTH_FLOOR } from "../../constants";
 import { taxGrowthFactor } from "./bracket-growth";
+import type { ProjectionInput } from "./types/projection-result";
 
 export type InflationPath = {
   /** General inflation this year. */
@@ -91,4 +92,19 @@ export function buildInflationPath(args: {
       return known * Math.pow(1 + inflationRate, ahead);
     },
   };
+}
+
+/** A run's path: index 0 is the input's as-of year, with its shocks, at the
+ *  rates given (the engine passes its validated ones; a Simulation trial
+ *  its base rates). Every run's path is built here, so they agree. */
+export function runInflationPath(
+  input: Pick<ProjectionInput, "asOfDate" | "inflationShocks">,
+  rates: { inflationRate: number; postRetirementInflationRate: number },
+): InflationPath {
+  return buildInflationPath({
+    inflationRate: rates.inflationRate,
+    postRetirementInflationRate: rates.postRetirementInflationRate,
+    baseYear: input.asOfDate.getFullYear(),
+    shocks: input.inflationShocks,
+  });
 }

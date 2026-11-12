@@ -2,7 +2,7 @@
 
 /**
  * Coast FIRE hero KPI card: the deterministic age always; once the scenario view or "Validate"
- * runs `computeCoastFireMC`, that one result powers this card and the chart's fan bands.
+ * runs `computeCoastFireSimulation`, that one result powers this card and the chart's fan bands.
  */
 
 import { DEFAULT_SIMULATION } from "@/lib/constants";
@@ -12,6 +12,7 @@ import {
   formatPercent,
   formatRelativeTime,
 } from "@/lib/utils/format";
+import { RETIRED_PLAN_FAILS } from "@/components/dashboard/coast-fire-label";
 import { KpiCard } from "./kpi-card";
 import {
   SIMULATION_NOT_CONFIGURED_MESSAGE,
@@ -22,9 +23,11 @@ type CoastFireInput = Parameters<
   typeof trpc.projection.computeCoastFire.useQuery
 >[0];
 
-/** The part of computeCoastFireMC's result the card reads. */
+/** The part of computeCoastFireSimulation's result the card reads. */
 type CoastFireSimulationResult = Pick<
-  NonNullable<RouterOutputs["projection"]["computeCoastFireMC"]["result"]>,
+  NonNullable<
+    RouterOutputs["projection"]["computeCoastFireSimulation"]["result"]
+  >,
   | "coastFireAge"
   | "status"
   | "successRate"
@@ -49,12 +52,9 @@ function hasCoastFireGapAmount(simulation: CoastFireSimulationResult): boolean {
   );
 }
 
-type DeterministicResult = {
-  coastFireAge: number | null;
-  status: "already_coast" | "found" | "unreachable";
-  sustainableWithdrawalToday: number;
-  projectedExpensesAtRetirementToday: number;
-};
+type DeterministicResult = NonNullable<
+  RouterOutputs["projection"]["computeCoastFire"]["result"]
+>;
 
 interface CoastFireCardProps {
   input: CoastFireInput;
@@ -63,11 +63,11 @@ interface CoastFireCardProps {
   /** Coast FIRE simulation result from use-projection-queries.ts. It runs on
    *  demand (once a Coast FIRE scenario is selected), so the card shows the
    *  deterministic age first and upgrades to combined when it arrives. */
-  coastFireMcResult?: CoastFireSimulationResult;
-  /** True while the shared coast MC query is fetching. */
+  coastFireSimulationResult?: CoastFireSimulationResult;
+  /** True while the shared Coast FIRE Simulation query is fetching. */
   coastFireSimulationLoading?: boolean;
-  /** When the Coast FIRE MC result was computed — ISO string, or null when
-   *  it came from a fresh (uncached) run just now. Surfaced so the user can
+  /** When the Coast FIRE Simulation result was computed: an ISO string, or
+   *  null when it came from a fresh (uncached) run just now, so the user can
    *  tell a cached result apart from a just-computed one. */
   coastFireSimulationComputedAt?: string | null;
   /** Why the simulated answer can't be computed (no preset, classes or
@@ -78,7 +78,7 @@ interface CoastFireCardProps {
 export function CoastFireCard({
   input,
   ageLabel,
-  coastFireMcResult,
+  coastFireSimulationResult,
   coastFireSimulationLoading = false,
   coastFireSimulationComputedAt,
   coastFireSimulationNotConfigured,
@@ -92,9 +92,9 @@ export function CoastFireCard({
   );
 
   const det = deterministic?.result ?? undefined;
-  const simulationAvailable = coastFireMcResult != null;
+  const simulationAvailable = coastFireSimulationResult != null;
   const hasGapAmount =
-    simulationAvailable && hasCoastFireGapAmount(coastFireMcResult);
+    simulationAvailable && hasCoastFireGapAmount(coastFireSimulationResult);
 
   return (
     <KpiCard
@@ -106,7 +106,7 @@ export function CoastFireCard({
         `Baseline is a single expected-return path (same math as the Baseline scenario) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
         ...(hasGapAmount
           ? [
-              `Why stopping today fails: in ${formatPercent(coastFireMcResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
+              `Why stopping today fails: in ${formatPercent(coastFireSimulationResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireSimulationResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
             ]
           : []),
       ]}
@@ -115,12 +115,16 @@ export function CoastFireCard({
           prefetching, combined baseline+simulated once it lands. Does NOT
           show "Already ✓" unless BOTH baseline and simulated agree. */}
       {simulationAvailable ? (
-        <CombinedStatus det={det} mc={coastFireMcResult} ageLabel={ageLabel} />
+        <CombinedStatus
+          det={det}
+          mc={coastFireSimulationResult}
+          ageLabel={ageLabel}
+        />
       ) : (
         <DeterministicStatus result={det} ageLabel={ageLabel} />
       )}
       <div className="mt-auto pt-2">
-        {coastFireSimulationLoading && !coastFireMcResult && (
+        {coastFireSimulationLoading && !coastFireSimulationResult && (
           <div className="text-caption text-muted animate-pulse">
             Running simulations...
           </div>
@@ -138,7 +142,7 @@ export function CoastFireCard({
         {simulationAvailable && (
           <SimulatedDetail
             ageLabel={ageLabel}
-            mc={coastFireMcResult}
+            mc={coastFireSimulationResult}
             computedAt={coastFireSimulationComputedAt}
           />
         )}
@@ -160,7 +164,6 @@ function CombinedStatus({
   mc: CoastFireSimulationResult;
   ageLabel: (age: number) => string;
 }) {
-  // If baseline hasn't loaded, fall back to simulated-only headline.
   if (!det) {
     return <SimulatedOnlyStatus mc={mc} ageLabel={ageLabel} />;
   }
@@ -173,9 +176,11 @@ function CombinedStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          {mc.status === "unreachable" && det.status !== "unreachable"
-            ? "Baseline says reachable but simulated outcomes fail."
-            : "Needs contributions through retirement."}
+          {det.retired && det.status === "unreachable"
+            ? `${RETIRED_PLAN_FAILS}.`
+            : mc.status === "unreachable" && det.status !== "unreachable"
+              ? "Baseline says reachable but simulated outcomes fail."
+              : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -298,7 +303,9 @@ function DeterministicStatus({
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          Needs contributions through retirement.
+          {result.retired
+            ? `${RETIRED_PLAN_FAILS}.`
+            : "Needs contributions through retirement."}
         </div>
       </>
     );
@@ -357,7 +364,6 @@ function SimulatedDetail({
       ? "text-yellow-500"
       : "text-red-500";
 
-  // Build the tail message based on status.
   let tail: string;
   if (mc.status === "unreachable") {
     tail = `— not reachable`;

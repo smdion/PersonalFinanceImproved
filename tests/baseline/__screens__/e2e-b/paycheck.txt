@@ -53,11 +53,11 @@ $30,299.88
 Federal withholding
 $19,673.94
 Social Security + Medicare?
-$14,131.52
+$12,412.79
 After-tax deductions
 $0.00
 Net pay
-$135,894.46
+$137,613.45
 26 of 26 checks
 Bonus
 Bonus %
@@ -79,11 +79,11 @@ Federal (supplemental)?
 at 22%
 -$6,600.00
 Social Security + Medicare
--$435.00
+-$576.30
 No contributions are taken from this bonus. Turn on “Also taken from bonus checks” on an account under Contributions.
 Net
-76.5% take-home
-$22,965.00
+76.1% take-home
+$22,823.70
 Check against a pay stub
 Contribution Accounts?(2)
 SS wage base cap hit at period 23 of 26(bonus in period 5 accelerates this)
@@ -137,7 +137,7 @@ $5,318.16
 After-tax deductions
 $0.00
 Net pay
-$56,523.36
+$56,523.60
 24 of 24 checks
 Bonus
 Bonus %

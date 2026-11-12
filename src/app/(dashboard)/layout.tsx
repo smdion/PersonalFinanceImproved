@@ -1,6 +1,7 @@
 import { auth } from "@/server/auth";
 import type { Permission } from "@/lib/config/permissions";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { HydrationBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -11,6 +12,7 @@ import { PrivacyProvider } from "@/lib/context/privacy-context";
 import { PRIVACY_COOKIE } from "@/lib/utils/privacy-mode";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { getDemoProfile } from "@/lib/demo";
+import { DEMO_COOKIE } from "@/lib/demo/slugs";
 import { databaseStatus } from "@/server/data/database-status";
 import { devBypass } from "@/server/auth-mode";
 import { prefetchForShell } from "@/server/trpc-server";
@@ -30,6 +32,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Rendered per request in every build: DEMO_ONLY and `next dev` skip
+  // auth(), which alone would make it dynamic, and a prerendered copy shows
+  // the build machine's "Database Unavailable" (scripts/check-prerender.ts).
+  await connection();
   // The same rule as every request's session (auth-mode.ts): only `next dev`
   // skips sign-in; any other build signs in, Authentik configured or not.
   const bypass = devBypass();
@@ -83,7 +89,7 @@ export default async function DashboardLayout({
 
   // Check for active demo mode
   const cookieStore = await cookies();
-  const demoSlug = cookieStore.get("demo_active_profile")?.value;
+  const demoSlug = cookieStore.get(DEMO_COOKIE)?.value;
   const demoProfile = demoSlug ? getDemoProfile(demoSlug) : null;
   const privacy = cookieStore.get(PRIVACY_COOKIE)?.value === "1";
 

@@ -10,6 +10,7 @@ The supported install is the Docker image with the sample compose file (README �
 2. `docker compose up -d`. On every start, `docker-entrypoint.sh` runs `db-migrate.ts`: a pre-upgrade backup, then pending migrations, then the reference-data seed, then the server.
 3. Check `GET /api/health` reports `ok` and the expected version.
 4. Put a reverse proxy in front for HTTPS and set `NEXTAUTH_URL` and `AUTH_TRUST_HOST=true` (README § Deployment).
+5. A public `DEMO_ONLY` server needs that proxy to supply the client's address (`TRUSTED_PROXY_HEADER`, README): every visitor shares the demo session, so the rate limits key visitors by address, and with `none` they all share one bucket (5 demo profile activations a minute between them).
 
 ## Deploy gate
 
@@ -56,7 +57,7 @@ The image has no `pnpm` or scripts: on a Docker install, stop the container and 
 2. Dump the database if a migration is pending (§ Backups), then `pnpm run deploy X.Y.Z` (§ Deploy gate).
 3. Push the branch and open a pull request into `main`; wait for CI.
 4. Merge only with the owner's explicit OK.
-5. On `main`, at the merged commit: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): refuses a release under 24 h after the last release tag unless `--hotfix "<reason>"` names a reason the CHANGELOG entry carries as a `Hotfix: <reason>` line (`scripts/release-soak.ts`; the dry run reports it), refuses unless `package.json` is already at X.Y.Z (the bump is a commit in the release PR, step 1), checks the CHANGELOG entry, that CI is green for the merged commit (`scripts/ci-gate.ts`, as `pnpm run deploy` does) and docs, tags `vX.Y.Z`, pushes the tag only (never a branch: `main` takes changes through a PR) and creates the GitHub release from the CHANGELOG section.
+5. On `main`, at the merged commit: `pnpm release X.Y.Z --dry-run`, then `pnpm release X.Y.Z` (`scripts/release.sh`): no soak wait (green CI on the merged commit is the gate); refuses unless `package.json` is already at X.Y.Z (the bump is a commit in the release PR, step 1), checks the CHANGELOG entry, that CI is green for the merged commit (`scripts/ci-gate.ts`, as `pnpm run deploy` does) and docs, tags `vX.Y.Z`, pushes the tag only (never a branch: `main` takes changes through a PR) and creates the GitHub release from the CHANGELOG section.
 
 ## Rollback
 

@@ -3,7 +3,7 @@
  * (from real past separation only, never a planned date), and their manual-entry mutations.
  */
 import { z } from "zod/v4";
-import { isCalendarDate } from "@/lib/utils/date";
+import { calendarYear, isCalendarDate } from "@/lib/utils/date";
 import { eq, and } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -13,7 +13,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { toNumber } from "@/lib/utils/numbers";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
@@ -78,7 +78,7 @@ export const taxBucketsRouter = createTRPCRouter({
       people: people.map((p) => ({
         id: p.id,
         name: p.name,
-        birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
+        birthYear: calendarYear(p.dateOfBirth),
       })),
       currentDate: ctx.scope.asOf,
     });
@@ -89,7 +89,7 @@ export const taxBucketsRouter = createTRPCRouter({
       people: people.map((p) => ({
         id: p.id,
         name: p.name,
-        birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
+        birthYear: calendarYear(p.dateOfBirth),
       })),
     };
   }),
@@ -102,10 +102,10 @@ export const taxBucketsRouter = createTRPCRouter({
       z.object({
         performanceAccountId: z.number().int(),
         ownerPersonId: z.number().int(),
-        year: z.number().int().optional(),
+        year: zYear.optional(),
         contributionBasis: zDecimal,
         conversionBasis: zDecimal,
-        latestConversionYear: z.number().int().nullable(),
+        latestConversionYear: zYear.nullable(),
         notes: z.string().nullable().optional(),
       }),
     )
@@ -180,10 +180,10 @@ export const taxBucketsRouter = createTRPCRouter({
           z.object({
             performanceAccountId: z.number().int(),
             ownerPersonId: z.number().int(),
-            year: z.number().int(),
+            year: zYear,
             contributionBasis: zDecimal,
             conversionBasis: zDecimal,
-            latestConversionYear: z.number().int().nullable(),
+            latestConversionYear: zYear.nullable(),
           }),
         ),
         /** Set when the figures were filled from SimpleFIN: what they

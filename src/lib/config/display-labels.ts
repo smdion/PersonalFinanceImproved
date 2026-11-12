@@ -89,6 +89,16 @@ export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   fixed_annual: "Fixed annual",
 };
 
+/** A contribution card's no-match option: "not recognised" when the stored match
+ *  type is outside the set (read as no match). */
+export function noEmployerMatchLabel(
+  row: { matchTypeUnrecognised?: true },
+  matchedElsewhere: boolean,
+): string {
+  if (row.matchTypeUnrecognised) return "Match type not recognised";
+  return matchedElsewhere ? "No match config of its own" : "No employer match";
+}
+
 /** Unit glyph for a match type's value field; null for "none". Display-only: never use it
  *  for %-to-decimal math. The cap check stays an inline `"percent_of_contribution"` test
  *  so a new type with a cap can't inherit its ×100/÷100 conversion. */
@@ -349,6 +359,16 @@ export function filingStatusLabel(status: string): string {
   return known ? filingTable(FILING_STATUS_LABELS, known) : status;
 }
 
+/** Where a filing status not saved for the household came from (the
+ *  sources lib/pure/tax/filing-status.ts names besides "household"). */
+export const FILING_STATUS_SOURCE_LABELS: Record<
+  "retirementProfile" | "w4",
+  string
+> = {
+  retirementProfile: "the Retirement Profile",
+  w4: "the W-4",
+};
+
 /** Display label for a budget API service, so sync toasts name the connected
  *  provider. */
 export function budgetApiServiceLabel(
@@ -358,3 +378,11 @@ export function budgetApiServiceLabel(
   if (service === "simplefin") return "SimpleFIN";
   return "the budget API";
 }
+
+/** Why a joint account with no job refuses a percent: it has no pay of its own. */
+export const JOINT_PERCENT_REFUSED = {
+  salary:
+    "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+  match:
+    "A joint account with no job has no pay to match a percent of: use a dollar match, or tie it to a job.",
+} as const;

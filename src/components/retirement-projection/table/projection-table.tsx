@@ -1,11 +1,12 @@
 "use client";
 
 /** Year-by-year projection table with dynamic column headers, accumulation/decumulation row delegation, and Monte Carlo overlay. */
-import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
+import { ProjectionTableSkeleton } from "./projection-table-skeleton";
+import { QueryBoundary, queryPending } from "@/components/ui/query-boundary";
 import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { HelpTip } from "@/components/ui/help-tip";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { isHighIncomeHousehold } from "@/lib/pure/contributions/savings-rate";
 import { Toggle } from "@/components/ui/toggle";
 import { PillBtn, LabeledPillGroup } from "../pill-btn";
 import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
@@ -73,15 +74,9 @@ export function ProjectionTable({
     hasIndividualAccountData,
   } = state;
 
-  // The Rate column counts the match when the shared savings-rate switch
-  // does (same default: left out for a high-income household).
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
-  const { excludeMatch } = useSavingsRateOptions(
-    isHighIncomeHousehold(
-      result?.projectionByYear.find(isAccumYear)?.projectedSalary ?? 0,
-      highIncomeThreshold,
-    ),
-  );
+  // The Rate column counts the match as the shared savings-rate switch says.
+  const { highIncome, queries: highIncomeQueries } = useHighIncomeHousehold();
+  const { excludeMatch } = useSavingsRateOptions(highIncome === true);
 
   // Shared MC cell rendering options — passed to row components
   const simulationCellOpts: RenderSimulationCellOptions = {
@@ -93,6 +88,9 @@ export function ProjectionTable({
     diagMode,
     renderTooltip,
   };
+  const skeleton = <ProjectionTableSkeleton />;
+  if (queryPending(highIncomeQueries) || highIncome === undefined)
+    return <QueryBoundary query={highIncomeQueries} fallback={skeleton} />;
 
   return (
     <>

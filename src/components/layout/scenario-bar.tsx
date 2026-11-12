@@ -109,7 +109,7 @@ export function ScenarioBar() {
   const { data: contributionProfiles } =
     trpc.contributionProfile.list.useQuery();
   const { data: contributionCompareData } =
-    trpc.contributionProfile.compareData.useQuery();
+    trpc.contributionProfile.getComparisonData.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();

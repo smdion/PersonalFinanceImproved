@@ -26,7 +26,7 @@ export function DeductionForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
-  const { data: jobs } = trpc.settings.jobs.list.useQuery();
+  const { data: jobs } = trpc.jobs.list.useQuery();
   const [jobId, setJobId] = useState<number | null>(null);
   const [deductionName, setDeductionName] = useState("");
   const [presetKey, setPresetKey] = useState(DEDUCTION_PRESETS[0]!.key);

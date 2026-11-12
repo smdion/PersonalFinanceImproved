@@ -22,7 +22,7 @@ export type SnapshotTableProps = {
     snapshotDate: string,
     rawAmount: string,
   ) => Promise<void>;
-  rawSnapshots: RouterOutputs["networth"]["listSnapshots"]["snapshots"];
+  rawSnapshots: RouterOutputs["netWorth"]["listSnapshots"]["snapshots"];
   resyncPush: ReturnType<typeof usePortfolioSnapshotMutations>["resyncPush"];
   setExpandedSnapshot: React.Dispatch<React.SetStateAction<number | null>>;
   snapshotDate: string | null | undefined;
@@ -190,7 +190,7 @@ export function SnapshotTable({
 }
 
 export type SnapshotFiltersProps = {
-  paginatedSnapshots: RouterOutputs["networth"]["listSnapshots"];
+  paginatedSnapshots: RouterOutputs["netWorth"]["listSnapshots"];
   setShowAll: Dispatch<SetStateAction<boolean>>;
   setSnapshotDateFrom: Dispatch<SetStateAction<string>>;
   setSnapshotDateTo: Dispatch<SetStateAction<string>>;

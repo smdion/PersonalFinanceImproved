@@ -53,7 +53,7 @@ export function HouseContent() {
     utils.assets.invalidate();
     utils.mortgage.invalidate();
     utils.historical.invalidate();
-    utils.networth.invalidate();
+    utils.netWorth.invalidate();
   };
 
   const addHIMutation = trpc.assets.addHomeImprovement.useMutation({

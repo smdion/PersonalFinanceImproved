@@ -139,11 +139,17 @@ describe("computeAnnualEarnings", () => {
       0,
     );
     expect(earnings.netRegular).toBeCloseTo(paycheck.netPay * 26, 2);
-    // Pins a bug (verdict K1): the bonus's net is the estimate's, which
-    // holds only because this bonus has no date. v0.11 Paycheck "year
-    // totals equal the check-by-check sum" moves it to the bonus's
-    // schedule row (answer-key paycheck/K1-*).
-    expect(earnings.netBonus).toBe(paycheck.bonusEstimate.bonusNet);
+    // The bonus's net is its schedule row's: an undated bonus is on the
+    // last check (answer-key paycheck/K1-*).
+    const bonusRow = paycheck.yearSchedule.find((p) => p.bonusGross > 0)!;
+    expect(bonusRow.periodNumber).toBe(26);
+    expect(earnings.netBonus).toBeCloseTo(
+      bonusRow.bonusGross -
+        bonusRow.bonusWithholding -
+        bonusRow.bonusFica -
+        paycheck.bonusEstimate.bonusContributions,
+      2,
+    );
   });
 
   it("non-payroll money is neither pre-tax on the paycheck nor FICA-exempt", () => {

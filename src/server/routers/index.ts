@@ -5,7 +5,7 @@ import { paycheckRouter } from "./paycheck";
 import { budgetRouter } from "./budget";
 import { contributionRouter } from "./contribution";
 import { mortgageRouter } from "./mortgage";
-import { networthRouter } from "./net-worth";
+import { netWorthRouter } from "./net-worth";
 import { milestonesRouter } from "./milestones";
 import { savingsRouter } from "./savings";
 import { brokerageRouter } from "./brokerage";
@@ -27,14 +27,18 @@ import { secRouter } from "./sec";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { taxBucketsRouter } from "./tax-buckets";
+import { jobsProcedures } from "./jobs";
+import { peopleProcedures } from "./people";
 
 export const appRouter = createTRPCRouter({
   settings: settingsRouter,
+  ...peopleProcedures,
+  ...jobsProcedures,
   paycheck: paycheckRouter,
   budget: budgetRouter,
   contribution: contributionRouter,
   mortgage: mortgageRouter,
-  networth: networthRouter,
+  netWorth: netWorthRouter,
   milestones: milestonesRouter,
   savings: savingsRouter,
   brokerage: brokerageRouter,

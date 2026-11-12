@@ -1,8 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import {
-  DEMO_SCHEMA_MARKER_PREFIX,
-  DEMO_SHARED_TABLES,
-  MIGRATION_STAMP_SUBQUERY,
+  DEMO_SCHEMA_STATE_SQL,
+  demoSchemaStateParams,
 } from "@/lib/db/migrate/demo-schema-marker";
 import { devBypass } from "./auth-mode";
 import { ZodError, z } from "zod/v4";
@@ -19,7 +18,8 @@ import { clientAddress } from "@/lib/client-address";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
-import { demoSchemaName } from "@/lib/demo/slugs";
+import { DEMO_COOKIE, demoSchemaName } from "@/lib/demo/slugs";
+import { DemoSessionEnded, demoSessionEnded } from "@/lib/demo/session-ended";
 import {
   notifyMutationSucceeded,
   onMutationSucceeded,
@@ -41,7 +41,7 @@ export type Context = {
   session: Session | null;
   demoSchema: string | null;
   /** Set only by `internalCtx()` below, never from request data: a nested
-   *  call for a signed-in request (e.g. `peekMonteCarloSummary`) skips the
+   *  call for a signed-in request (e.g. `getSimulationSummary`) skips the
    *  authenticated rate limit; every other middleware still runs. */
   internal?: boolean;
   /** The HTTP request's shared reads (`scope.load`); none in a mutation. */
@@ -100,7 +100,7 @@ export async function createContext(): Promise<Context> {
   let demoSchema: string | null = null;
   try {
     const cookieStore = await cookies();
-    const demoSlug = cookieStore.get("demo_active_profile")?.value;
+    const demoSlug = cookieStore.get(DEMO_COOKIE)?.value;
     if (demoSlug) demoSchema = demoSchemaName(demoSlug);
   } catch {
     // cookies() may throw outside request context (e.g. during build)
@@ -108,11 +108,6 @@ export async function createContext(): Promise<Context> {
 
   return { db, session, demoSchema, reads: createReadMemo() };
 }
-
-/** The cause of a request refused for its demo profile (missing or built
- *  before the latest migration) — the client shows the way back to the
- *  demo picker instead of retrying. */
-export class DemoSessionEnded extends Error {}
 
 const t = initTRPC
   .context<Context>()
@@ -201,25 +196,14 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     // schema that is missing, lacks a table, or has a stale migration stamp is
     // refused (except demo.* procedures, which never read app data).
     const { rows } = (await client.query(
-      `SELECT to_regnamespace($1) IS NOT NULL AND NOT EXISTS (
-         SELECT 1 FROM pg_tables p WHERE p.schemaname = 'public'
-           AND p.tablename <> ALL($3::text[])
-           AND NOT EXISTS (SELECT 1 FROM pg_tables d
-             WHERE d.schemaname = $1 AND d.tablename = p.tablename)
-       ) AND obj_description(to_regnamespace($1)::oid, 'pg_namespace')
-         = $2 || ${MIGRATION_STAMP_SUBQUERY}
-       AS complete`,
-      [ctx.demoSchema, DEMO_SCHEMA_MARKER_PREFIX, DEMO_SHARED_TABLES],
+      DEMO_SCHEMA_STATE_SQL,
+      demoSchemaStateParams(ctx.demoSchema),
     )) as { rows: { complete: boolean }[] };
     if (!rows[0]?.complete) {
       if (path.startsWith("demo.")) return await next({ ctx });
-      const message =
-        "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.";
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message,
-        cause: new DemoSessionEnded(message),
-      });
+      throw demoSessionEnded(
+        "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.",
+      );
     }
     await client.query(`SET search_path TO ${quotedSchema}, public`);
     const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
@@ -235,27 +219,47 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   }
 });
 
-// Demo-only mode: block all mutations except demo profile management
+// Demo-only mode: only demo profile management writes, and every read is a
+// demo profile's, never the database's own tables.
 const demoOnlyGuard = t.middleware(async ({ ctx, next, type, path }) => {
-  if (isDemoOnly && type === "mutation" && !path.startsWith("demo.")) {
+  if (!isDemoOnly || path.startsWith("demo.")) return next({ ctx });
+  if (type === "mutation") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "This is a read-only demo instance. Data cannot be modified.",
     });
   }
+  if (!ctx.demoSchema)
+    throw demoSessionEnded("Choose a demo profile to continue.");
   return next({ ctx });
 });
 
 // ── Rate-limit helpers ──
 
-const RATE_LIMIT_PUBLIC = { maxRequests: 60, windowMs: 60_000 } as const;
+type RateTier = {
+  name: "public" | "authenticated" | "expensive";
+  maxRequests: number;
+  windowMs: number;
+};
+const RATE_LIMIT_PUBLIC: RateTier = {
+  name: "public",
+  maxRequests: 60,
+  windowMs: 60_000,
+};
 // Catches runaway bugs (refetch loops), not normal browsing: a cold
 // dashboard load is ~46 procedures and batching doesn't spare the
 // per-procedure middleware, so 600 allows about a dozen cold loads a minute.
-const RATE_LIMIT_AUTHENTICATED = {
+const RATE_LIMIT_AUTHENTICATED: RateTier = {
+  name: "authenticated",
   maxRequests: 600,
   windowMs: 60_000,
-} as const;
+};
+/** Expensive operations (the Simulation, a full sync): 5 a minute per user and procedure. */
+const RATE_LIMIT_EXPENSIVE: RateTier = {
+  name: "expensive",
+  maxRequests: 5,
+  windowMs: 60_000,
+};
 
 async function getRateLimitKey(): Promise<string> {
   try {
@@ -267,21 +271,27 @@ async function getRateLimitKey(): Promise<string> {
   }
 }
 
-const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
-  const key = await getRateLimitKey();
-  const { success, remaining, firstExceedance } = rateLimit(
-    key,
-    RATE_LIMIT_PUBLIC.maxRequests,
-    RATE_LIMIT_PUBLIC.windowMs,
+/** One request from `key`'s budget in `tier`. Each tier counts apart, so a
+ *  request in one never spends another's budget. */
+function takeRateToken(tier: RateTier, key: string, path: string) {
+  const result = rateLimit(
+    `${tier.name}:${key}`,
+    tier.maxRequests,
+    tier.windowMs,
   );
-  if (firstExceedance) {
+  if (result.firstExceedance)
     log("warn", "rate_limit_exceeded", {
-      tier: "public",
+      tier: tier.name,
       key,
       path,
-      limit: RATE_LIMIT_PUBLIC.maxRequests,
+      limit: tier.maxRequests,
     });
-  }
+  return result;
+}
+
+const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
+  const key = await getRateLimitKey();
+  const { success, remaining } = takeRateToken(RATE_LIMIT_PUBLIC, key, path);
   if (!success) {
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
@@ -315,19 +325,11 @@ export async function takeAuthenticatedRateToken(
   path: string,
 ): Promise<{ ok: boolean; remaining: number }> {
   const key = await resolveAuthenticatedRateLimitKey(ctx);
-  const { success, remaining, firstExceedance } = rateLimit(
+  const { success, remaining } = takeRateToken(
+    RATE_LIMIT_AUTHENTICATED,
     key,
-    RATE_LIMIT_AUTHENTICATED.maxRequests,
-    RATE_LIMIT_AUTHENTICATED.windowMs,
+    path,
   );
-  if (firstExceedance) {
-    log("warn", "rate_limit_exceeded", {
-      tier: "authenticated",
-      key,
-      path,
-      limit: RATE_LIMIT_AUTHENTICATED.maxRequests,
-    });
-  }
   return { ok: success, remaining };
 }
 
@@ -349,9 +351,6 @@ const authenticatedRateLimitMiddleware = t.middleware(
   },
 );
 
-/** Rate limit for expensive operations (Monte Carlo, full sync) — 5 per minute per user. */
-const RATE_LIMIT_EXPENSIVE = { maxRequests: 5, windowMs: 60_000 } as const;
-
 export const expensiveRateLimitMiddleware = t.middleware(
   async ({ ctx, next, path, getRawInput }) => {
     // peekOnly only reads the projection cache, so it's exempt; otherwise
@@ -365,23 +364,9 @@ export const expensiveRateLimitMiddleware = t.middleware(
       return next({ ctx });
     }
 
-    const key = ctx.session?.user?.id // runs before the auth check
-      ? `expensive:${ctx.session.user.id}:${path}`
-      : `expensive:${await getRateLimitKey()}:${path}`;
-    const { success, firstExceedance } = rateLimit(
-      key,
-      RATE_LIMIT_EXPENSIVE.maxRequests,
-      RATE_LIMIT_EXPENSIVE.windowMs,
-    );
-    if (firstExceedance) {
-      log("warn", "rate_limit_exceeded", {
-        tier: "expensive",
-        key,
-        path,
-        limit: RATE_LIMIT_EXPENSIVE.maxRequests,
-      });
-    }
-    if (!success) {
+    // Runs before the auth check; the authenticated tier's key, per procedure.
+    const key = `${await resolveAuthenticatedRateLimitKey(ctx)}:${path}`;
+    if (!takeRateToken(RATE_LIMIT_EXPENSIVE, key, path).success) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
         message: "This operation is rate-limited. Please wait before retrying.",
@@ -398,7 +383,7 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
   const result = await next();
   if (!result.ok) {
     const err = result.error;
-    // Skip expected auth/permission/validation errors — only log server-side problems
+    // Skip expected refusals (auth, validation, an ended demo session)
     const skipCodes = new Set([
       "UNAUTHORIZED",
       "FORBIDDEN",
@@ -406,7 +391,7 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
       "BAD_REQUEST",
       "TOO_MANY_REQUESTS",
     ]);
-    if (!skipCodes.has(err.code)) {
+    if (!skipCodes.has(err.code) && !(err.cause instanceof DemoSessionEnded)) {
       log("error", "trpc_error", {
         path,
         type,
@@ -455,6 +440,13 @@ const rateLimitedAuthedBase = baseProcedure.use(
 
 // ── Procedures ──
 
+/** The request's session; UNAUTHORIZED when it has none. */
+function requireSession(ctx: Context): Session {
+  if (!ctx.session?.user)
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
+  return ctx.session;
+}
+
 // Public — no auth required (health check), rate-limited
 export const publicProcedure = baseProcedure
   .use(rateLimitMiddleware)
@@ -463,44 +455,24 @@ export const publicProcedure = baseProcedure
 // Protected — requires valid session (all dashboard queries), rate-limited per user
 export const protectedProcedure = rateLimitedAuthedBase
   .meta({ auth: "protected" })
-  .use(async ({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not authenticated",
-      });
-    }
-    return next({
-      ctx: { ...ctx, session: ctx.session },
-    });
-  });
+  .use(async ({ ctx, next }) =>
+    next({ ctx: { ...ctx, session: requireSession(ctx) } }),
+  );
 
 // Admin — requires Admin role + logs mutations to change_log
 export const adminProcedure = rateLimitedAuthedBase
   .meta({ auth: "admin" })
   .use(async ({ ctx, next, path, type, getRawInput }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not authenticated",
-      });
-    }
-    if (ctx.session.user.role !== "admin") {
+    const session = requireSession(ctx);
+    if (session.user.role !== "admin") {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "Admin access required",
       });
     }
-    const result = await next({
-      ctx: { ...ctx, session: ctx.session },
-    });
-    if (type === "mutation" && result.ok) {
-      logMutation(
-        ctx.session,
-        path,
-        await getRawInput().catch(() => undefined),
-      );
-    }
+    const result = await next({ ctx: { ...ctx, session } });
+    if (type === "mutation" && result.ok)
+      logMutation(session, path, await getRawInput().catch(() => undefined));
     return result;
   });
 
@@ -509,28 +481,16 @@ function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })
     .use(async ({ ctx, next, path, type, getRawInput }) => {
-      if (!ctx.session?.user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Not authenticated",
-        });
-      }
-      if (!userHasPermission(ctx.session.user, permission)) {
+      const session = requireSession(ctx);
+      if (!userHasPermission(session.user, permission)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `${permission} permission required`,
         });
       }
-      const result = await next({
-        ctx: { ...ctx, session: ctx.session },
-      });
-      if (type === "mutation" && result.ok) {
-        logMutation(
-          ctx.session,
-          path,
-          await getRawInput().catch(() => undefined),
-        );
-      }
+      const result = await next({ ctx: { ...ctx, session } });
+      if (type === "mutation" && result.ok)
+        logMutation(session, path, await getRawInput().catch(() => undefined));
       return result;
     });
 }

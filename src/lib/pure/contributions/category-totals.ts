@@ -11,12 +11,12 @@ import {
 import type { CapPassed } from "./contribution-caps";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
-import {
-  contributionRowAmounts,
-  type ContributionRow,
-  type JobRef,
-  type JobSalaryRef,
+import type {
+  ContributionRow,
+  JobRef,
+  JobSalaryRef,
 } from "./contribution-rows";
+import { contributionRowAmounts } from "./row-amounts";
 
 /** Per-category contribution totals with tax breakdown. */
 type ContributionCategorySummary = {
@@ -48,7 +48,7 @@ export function aggregateContributionsByCategory(
   };
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
    *  excluded from the totals above (annual treated as 0) rather than
-   *  defaulted to a guessed pay period. See resolveContributionPeriods. */
+   *  defaulted to a guessed pay period. See rowPaySchedule. */
   incompleteAccountIds: number[];
 } {
   const emptySummaries = () =>

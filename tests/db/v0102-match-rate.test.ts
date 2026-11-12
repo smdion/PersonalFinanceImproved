@@ -80,10 +80,16 @@ describe("rateFromPercent", () => {
     ["1e-400", "0"],
     [1e-7, "0.000000001"],
     [0.1 + 0.2, "0.0030000000000000004"],
+    // Under the rounding edge: decimal(12,6) keeps 999999.999999.
+    ["99999999.99994", "999999.9999994"],
   ])("%s → %s", (stored, rate) => expect(rateFromPercent(stored)).toBe(rate));
 
   it.each(
-    [["", "-", ".", "abc", "e2", "Infinity", "1e400", "123456789"]].flat(),
+    [
+      ["", "-", ".", "abc", "e2", "Infinity", "1e400", "123456789"],
+      // decimal(12,6) would round it to 1000000: seven integer digits.
+      ["99999999.99995", "99999999.99999"],
+    ].flat(),
   )("%s → null", (stored) => expect(rateFromPercent(stored)).toBeNull());
   it.each([null, undefined, true, {}, Number.NaN, 1e21])("%s → null", (v) =>
     expect(rateFromPercent(v)).toBeNull(),

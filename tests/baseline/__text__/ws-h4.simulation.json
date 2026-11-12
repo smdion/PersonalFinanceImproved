@@ -1,12 +1,6056 @@
 {
  "projection.computeCoastFire": {
   "result": {
-   "status": "already_coast"
+   "retired": false,
+   "status": "unreachable"
   }
  },
- "projection.computeCoastFireMC": {
+ "projection.computeCoastFireSimulation": {
   "result": {
    "mcResult": {
+    "deterministicProjection": {
+     "accountDepletions": [
+      {
+       "category": "401k",
+       "subType": "roth"
+      },
+      {
+       "category": "403b",
+       "subType": "traditional"
+      },
+      {
+       "category": "403b",
+       "subType": "roth"
+      },
+      {
+       "category": "ira",
+       "subType": "traditional"
+      },
+      {
+       "category": "ira",
+       "subType": "roth"
+      },
+      {
+       "category": "hsa"
+      },
+      {
+       "category": "brokerage"
+      }
+     ],
+     "projectionByYear": [
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        }
+       ]
+      },
+      {
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "accountOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "hsa",
+         "brokerage"
+        ],
+        "routingMode": "waterfall"
+       },
+       "hasBonusAdjustment": false,
+       "hasBudgetOverride": false,
+       "hasSalaryOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "accumulation",
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ]
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Alpine 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Kai 401k (Beacon 401(k) plan)",
+         "ownerName": "Kai",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": true
+      }
+     ]
+    }
+   },
+   "status": "unreachable",
+   "stopNowMcResult": {
     "deterministicProjection": {
      "accountDepletions": [
       {
@@ -6440,8 +12484,7 @@
       }
      ]
     }
-   },
-   "status": "already_coast"
+   }
   }
  },
  "projection.computeCoastFireProbe": {
@@ -12808,10 +18851,10 @@
      ]
     }
    },
-   "passes": true
+   "passes": false
   }
  },
- "projection.computeMonteCarloProjection": {
+ "projection.computeSimulation": {
   "result": {
    "deterministicProjection": {
     "accountDepletions": [

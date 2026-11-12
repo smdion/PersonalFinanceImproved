@@ -42,7 +42,7 @@ const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
 type SnapshotPoint = {
   date: string;
   total: number;
-  /** Amount per tracked account (see networth.listSnapshotTotals). */
+  /** Amount per tracked account (see netWorth.listSnapshotTotals). */
   byAccount?: StackedSnapshot["byAccount"];
 };
 

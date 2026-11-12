@@ -22,8 +22,7 @@ import {
   gapLines,
   missingNote,
   missingReason,
-  alwaysExcludedLine,
-  splitUnpriced,
+  noHoldingsLine,
 } from "@/lib/pure/net-worth/close-notes";
 import { shortDay } from "@/lib/pure/net-worth/short-day";
 import { StaleFeedNotes } from "@/components/settings/simplefin-stale-feeds";
@@ -170,8 +169,8 @@ function rollupBucket(
   };
 }
 
-/** Each close's market move, latest first, then each account's move over
- *  closes it sent no report for. */
+/** Each close's market move, latest first, then the accounts that send no
+ *  holdings, and each account's move over closes it sent no report for. */
 function DailyChanges({
   movement,
   target,
@@ -184,7 +183,7 @@ function DailyChanges({
   unpriced: CurrentData["unpricedMoves"];
 }) {
   if (movement.length === 0) return null;
-  const split = splitUnpriced(movement, target, reports, unpriced);
+  const noHoldings = noHoldingsLine(unpriced);
   return (
     <>
       <p className="text-caption text-faint">
@@ -201,14 +200,11 @@ function DailyChanges({
             </span>
             <span
               className="text-faint break-words"
-              title={[
-                missingReason(c, target, reports, split.varying),
-                unreportedDetail(c),
-              ]
+              title={[missingReason(c, target, reports), unreportedDetail(c)]
                 .filter(Boolean)
                 .join(" ")}
             >
-              {[missingNote(c, target, reports, split.varying), paidLine(c)]
+              {[missingNote(c, target, reports), paidLine(c)]
                 .filter(Boolean)
                 .join(" · ")}
             </span>
@@ -217,7 +213,7 @@ function DailyChanges({
       </div>
       <div className="text-caption text-faint mb-2 empty:hidden">
         <StaleFeedNotes />
-        {split.always.length > 0 && <p>{alwaysExcludedLine(split.always)}</p>}
+        {noHoldings && <p title={noHoldings.detail}>{noHoldings.text}</p>}
         {gapLines(reports).map((line) => (
           <p key={line}>{line}</p>
         ))}

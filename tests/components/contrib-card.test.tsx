@@ -98,6 +98,34 @@ describe("ContribCard", () => {
     expect(screen.getByText("Traditional")).toBeInTheDocument();
   });
 
+  it("an ESPP shows its discount as a percent, but a dollar match in dollars", () => {
+    const espp = (employerMatchType: string, employerMatchValue: string) => ({
+      ...baseContrib,
+      accountType: "brokerage" as const,
+      subType: "espp",
+      taxTreatment: "after_tax",
+      employerMatchType,
+      employerMatchValue,
+    });
+    const { unmount } = render(
+      <ContributionCard
+        {...defaultProps}
+        contrib={espp("percent_of_contribution", "15")}
+      />,
+    );
+    expect(screen.getByText("discount")).toBeInTheDocument();
+    unmount();
+    render(
+      <ContributionCard
+        {...defaultProps}
+        contrib={espp("dollar_match", "1500")}
+      />,
+    );
+    expect(screen.queryByText("discount")).toBeNull();
+    expect(screen.getByText("Employer:")).toBeInTheDocument();
+    expect(screen.getByText("$1,500.00/yr")).toBeInTheDocument();
+  });
+
   it("shows the joint label when ownership is joint", () => {
     render(
       <ContributionCard
@@ -157,7 +185,7 @@ describe("ContribCard", () => {
   it("names a per-paycheck amount per paycheck, in the preview and once auto-maxed", () => {
     const perPaycheck = {
       ...baseContrib,
-      contributionMethod: "fixed_per_period",
+      contributionMethod: "fixed_per_period" as const,
       contributionValue: "500",
     };
     const { unmount } = render(

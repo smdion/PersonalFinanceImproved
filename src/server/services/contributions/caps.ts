@@ -4,7 +4,6 @@ import { getAllPeople } from "@/server/data/people";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import type { FilingStatusSource } from "@/lib/pure/tax/filing-status";
 import { accountDisplayName } from "@/lib/utils/account-name";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { getLimitGroup } from "@/lib/config/account-types";
 import { applyContribActiveFields } from "./profile";
 import type {
@@ -23,14 +22,15 @@ import {
 } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { Db } from "@/lib/db";
+import { capForSaveCheck } from "@/lib/pure/contributions/cap-request";
 import {
   capEffectiveContribs,
-  capForRequest,
   type CapPassHousehold,
   type CapRequestHousehold,
   type CapPassRow,
   type CappedRowFields,
 } from "@/lib/pure/contributions/cap-pass";
+import { activeProfileId } from "@/server/data/active-profile";
 
 /**
  * The household's cap context for a request: birth years, the year's limits, `asOf`'s
@@ -126,15 +126,6 @@ type ContribSaveCheck = {
   touched: readonly number[];
 };
 
-/** The active Contribution Profile's id (NaN when none is set). */
-async function activeContribProfileId(db: Db): Promise<number> {
-  const [row] = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
-  return Number(row?.value ?? NaN);
-}
-
 /**
  * Per touched row, what a save leaves over its IRS limit: before and after run the same
  * cap pass, and a row counts only when its limit group ends further over than before.
@@ -143,7 +134,7 @@ async function activeContribProfileId(db: Db): Promise<number> {
 async function irsLimitJudge(
   db: Db,
   check: ContribSaveCheck,
-  judgedProfileId: number,
+  judgedProfileId: number | null,
   asOf: Date,
 ): Promise<(agesAsOf: number) => string[]> {
   const [allContribs, allJobs, people, salaryMap] = await Promise.all([
@@ -154,12 +145,13 @@ async function irsLimitJudge(
   ]);
   let profileFields: AccountFields = {};
   if (check.before === undefined || check.after === undefined) {
-    const [judged] = Number.isFinite(judgedProfileId)
-      ? await db
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, judgedProfileId))
-      : [];
+    const [judged] =
+      judgedProfileId !== null
+        ? await db
+            .select()
+            .from(schema.contributionProfiles)
+            .where(eq(schema.contributionProfiles.id, judgedProfileId))
+        : [];
     profileFields = judged
       ? readContributionActiveFields(judged.contributionActiveFields, judged.id)
           .contributionAccounts
@@ -178,7 +170,7 @@ async function irsLimitJudge(
       fields: AccountFields,
       rowsAfter?: ReadonlyMap<number, ContribRowPatch>,
     ) =>
-      capForRequest(
+      capForSaveCheck(
         applyContribActiveFields(
           allContribs
             .map((c) => ({ ...c, ...rowsAfter?.get(c.id) }))
@@ -231,7 +223,7 @@ export async function assertWithinIrsLimits(
   asOf: Date,
 ): Promise<void> {
   if (check.touched.length === 0) return;
-  const activeId = await activeContribProfileId(db);
+  const activeId = await activeProfileId(db, "contribution");
   if (check.profileId !== null && check.profileId !== activeId) return;
   const judge = await irsLimitJudge(db, check, activeId, asOf);
   const problems = judge(asOf.getFullYear());
@@ -250,7 +242,8 @@ export async function switchProfileLimitWarning(
   asOf: Date,
 ): Promise<string | null> {
   if (check.touched.length === 0) return null;
-  if (check.profileId === (await activeContribProfileId(db))) return null;
+  if (check.profileId === (await activeProfileId(db, "contribution")))
+    return null;
   const thisYear = asOf.getFullYear();
   const [switchRows, profiles, retirementYear] = await Promise.all([
     db

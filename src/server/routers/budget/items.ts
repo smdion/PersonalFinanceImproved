@@ -3,7 +3,10 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { requireBudgetProfile } from "@/server/services/budget/budget-client";
+import {
+  requireBudgetProfile,
+  requireLockedBudgetProfile,
+} from "@/server/services/budget/budget-client";
 import type { DbOrTx } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
@@ -60,36 +63,40 @@ export const itemProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await requireBudgetProfile(ctx.db, input.profileId);
+      // One step with the profile's lock: the item gets one amount per
+      // column of the profile as it stands when written.
+      return ctx.db.transaction(async (tx) => {
+        const profile = await requireLockedBudgetProfile(tx, input.profileId);
 
-      const numCols = profile.columnLabels.length;
-      const amounts = new Array(numCols).fill(0) as number[];
+        const numCols = profile.columnLabels.length;
+        const amounts = new Array(numCols).fill(0) as number[];
 
-      // Determine sort order: place at end of category
-      const items = await ctx.db
-        .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, profile.id));
-      const sameCatItems = items.filter((i) => i.category === input.category);
-      const maxSort =
-        sameCatItems.length > 0
-          ? Math.max(...sameCatItems.map((i) => i.sortOrder))
-          : items.length > 0
-            ? Math.max(...items.map((i) => i.sortOrder))
-            : 0;
+        // Determine sort order: place at end of category
+        const items = await tx
+          .select()
+          .from(schema.budgetItems)
+          .where(eq(schema.budgetItems.profileId, profile.id));
+        const sameCatItems = items.filter((i) => i.category === input.category);
+        const maxSort =
+          sameCatItems.length > 0
+            ? Math.max(...sameCatItems.map((i) => i.sortOrder))
+            : items.length > 0
+              ? Math.max(...items.map((i) => i.sortOrder))
+              : 0;
 
-      return ctx.db
-        .insert(schema.budgetItems)
-        .values({
-          profileId: profile.id,
-          category: input.category,
-          subcategory: input.subcategory,
-          amounts,
-          isEssential: input.isEssential,
-          sortOrder: maxSort + 1,
-        })
-        .returning()
-        .then(firstRow);
+        return tx
+          .insert(schema.budgetItems)
+          .values({
+            profileId: profile.id,
+            category: input.category,
+            subcategory: input.subcategory,
+            amounts,
+            isEssential: input.isEssential,
+            sortOrder: maxSort + 1,
+          })
+          .returning()
+          .then(firstRow);
+      });
     }),
 
   /** Delete a budget item. */

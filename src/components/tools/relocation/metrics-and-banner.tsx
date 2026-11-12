@@ -80,8 +80,8 @@ export function RelocationMetricsAndBanner({
 
         <div className="bg-surface-sunken rounded-lg p-3">
           <div className="text-muted text-xs uppercase">
-            Savings Rate Impact
-            <HelpTip text="How much your monthly savings rate would change after relocating" />
+            Left Over After Spending
+            <HelpTip text="Salary minus spending, as a share of salary, before and after relocating. Not a savings rate: contributions aren't counted." />
           </div>
           <div
             className={`text-lg font-bold ${r.savingsRateDrop > 0 ? "text-red-600" : "text-green-600"}`}

@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type {
   TaxTreatment,
@@ -43,11 +44,11 @@ export const contributionAccounts = sqliteTable(
     employerMatchType: text("employer_match_type")
       .$type<EmployerMatchType>()
       .notNull(),
-    employerMatchValue: text("employer_match_value"),
+    employerMatchValue: decimalText("employer_match_value"),
     /** A percent match's rate as a fraction (0.5 = 50%): what is read;
      *  migration 0017 clears the whole-percent value where this is set. */
-    employerMatchRate: text("employer_match_rate"),
-    employerMaxMatchPct: text("employer_max_match_pct"),
+    employerMatchRate: decimalText("employer_match_rate"),
+    employerMaxMatchPct: decimalText("employer_max_match_pct"),
     employerMatchTaxTreatment: text("employer_match_tax_treatment")
       .$type<MatchTaxTreatment>()
       .notNull()
@@ -65,11 +66,11 @@ export const contributionAccounts = sqliteTable(
       () => performanceAccounts.id,
       { onDelete: "set null" },
     ),
-    targetAnnual: text("target_annual"),
+    targetAnnual: decimalText("target_annual"),
     allocationPriority: integer("allocation_priority").notNull().default(0),
     notes: text("notes"),
     isPayrollDeducted: integer("is_payroll_deducted", { mode: "boolean" }),
-    priorYearContribAmount: text("prior_year_contrib_amount")
+    priorYearContribAmount: decimalText("prior_year_contrib_amount")
       .notNull()
       .default("0"),
     priorYearContribYear: integer("prior_year_contrib_year"),
@@ -116,7 +117,7 @@ export const contributionLimits = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     taxYear: integer("tax_year").notNull(),
     limitType: text("limit_type").notNull(),
-    value: text("value").notNull(),
+    value: decimalText("value").notNull(),
     notes: text("notes"),
     ...referenceOriginColumns,
   },

@@ -8,6 +8,8 @@ import { cookies } from "next/headers";
 import { PRIVACY_COOKIE } from "@/lib/utils/privacy-mode";
 import { createContext, internalCtx, takeAuthenticatedRateToken } from "./trpc";
 import { appRouter } from "./routers";
+import type { Session } from "next-auth";
+import { userHasPermission } from "./data/request-scope";
 
 /**
  * Server helpers for a page render. Its queries run as internal calls (no
@@ -32,7 +34,12 @@ type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>["helpers"];
  * saved settings), prefetched only by the layout (prefetchForShell).
  * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell loads.
  */
-function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
+function prefetchShellQueries(
+  h: ServerHelpers,
+  user: Session["user"] | undefined,
+): Promise<unknown>[] {
+  // Holdings checks are `portfolio`'s: the client never asks for them without it.
+  const canSeeHoldings = !!user && userHasPermission(user, "portfolio");
   return [
     h.settings.appSettings.list.prefetch(),
     h.settings.getDataFreshness.prefetch(),
@@ -42,9 +49,9 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
     h.sync.getSyncStatus.prefetch(),
     h.simplefin.getStatus.prefetch(),
     h.sec.getStatus.prefetch(),
-    h.investments.computeHealth.prefetch(),
+    ...(canSeeHoldings ? [h.investments.computeHealth.prefetch()] : []),
     h.contributionProfile.list.prefetch(),
-    h.contributionProfile.compareData.prefetch(),
+    h.contributionProfile.getComparisonData.prefetch(),
     h.salaryProfile.list.prefetch(),
     h.retirement.retirementProfiles.list.prefetch(),
     h.budget.listProfiles.prefetch(),
@@ -66,14 +73,17 @@ export async function prefetchForPage(
  *  the page, so both render them from the same data on the server and in the
  *  browser. */
 export async function prefetchForShell(): Promise<DehydratedState | undefined> {
-  return prefetchDehydrated("shell.prefetch", (helpers) =>
-    Promise.all(prefetchShellQueries(helpers)),
+  return prefetchDehydrated("shell.prefetch", (helpers, user) =>
+    Promise.all(prefetchShellQueries(helpers, user)),
   );
 }
 
 async function prefetchDehydrated(
   path: string,
-  run: (helpers: ServerHelpers) => Promise<unknown>,
+  run: (
+    helpers: ServerHelpers,
+    user: Session["user"] | undefined,
+  ) => Promise<unknown>,
 ): Promise<DehydratedState | undefined> {
   const cookieStore = await cookies();
   if (cookieStore.get(PRIVACY_COOKIE)?.value === "1") return undefined;
@@ -82,7 +92,7 @@ async function prefetchDehydrated(
     // One load = one request against the user's rate limit; when it's
     // spent, skip the prefetch and let the browser's own fetch report it.
     if (!(await takeAuthenticatedRateToken(ctx, path)).ok) return undefined;
-    await run(helpers);
+    await run(helpers, ctx.session?.user);
     return dehydrate(helpers.queryClient);
   } catch {
     return undefined;

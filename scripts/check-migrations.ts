@@ -1,12 +1,16 @@
 /**
  * Validate that all Drizzle migrations apply cleanly to a fresh SQLite database.
- * Catches broken migrations, syntax errors, and ordering issues.
+ * Catches broken migrations, syntax errors, and ordering issues. Then
+ * `drizzle-kit check` on both dialects' folders: the snapshot chain and the
+ * journal agree; and each journal's `when` values rise strictly.
  *
  * Run: tsx scripts/check-migrations.ts
  */
 import Database from "better-sqlite3";
+import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { nonRisingWhen } from "./journal-order";
 
 // Use SQLite migrations for validation (CI runs against fresh SQLite DB)
 const migrationsDir = path.join(process.cwd(), "drizzle-sqlite");
@@ -128,6 +132,29 @@ db.close();
 console.log(
   `\n${applied} applied, ${errors} failed out of ${entries.length} total.`,
 );
+
+for (const folder of ["drizzle", "drizzle-sqlite"]) {
+  const file = path.join(process.cwd(), folder, "meta", "_journal.json");
+  const bad = nonRisingWhen(JSON.parse(fs.readFileSync(file, "utf8")).entries);
+  if (bad.length > 0) {
+    console.error(
+      `  FAIL ${folder}: \`when\` doesn't rise at ${bad.join(", ")}`,
+    );
+    errors++;
+  }
+}
+
+for (const config of ["drizzle.config.ts", "drizzle-sqlite.config.ts"]) {
+  const kit = spawnSync(
+    path.join(process.cwd(), "node_modules", ".bin", "drizzle-kit"),
+    ["check", "--config", config],
+    { stdio: "inherit" },
+  );
+  if (kit.status !== 0) {
+    console.error(`  FAIL drizzle-kit check --config ${config}`);
+    errors++;
+  }
+}
 
 if (errors > 0) {
   console.log("Migration safety check FAILED.");

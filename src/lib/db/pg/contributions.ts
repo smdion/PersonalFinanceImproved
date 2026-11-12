@@ -7,11 +7,11 @@ import {
   integer,
   boolean,
   timestamp,
-  decimal,
   uniqueIndex,
   index,
   check,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { sql } from "drizzle-orm";
 import type {
   TaxTreatment,

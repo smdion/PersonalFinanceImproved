@@ -27,6 +27,7 @@ projection-year-handlers/    one year of work
   year-need.ts               the after-tax need and the withdrawal that meets it
   year-draws.ts              the draw routed by mode, then followed to each account
   tax-year-settlement.ts     the tax priced and settled in today's order (UD-04, UD-08)
+  conversion-year-reprice.ts the conversion year's gains re-priced, then NIIT
   funding-shortfall.ts       the unmet need (raw) and whether it's material
   year-cliffs.ts             IRMAA and ACA cliff checks
   portfolio-contributions.ts Portfolio contributions after retirement, reported only
@@ -71,12 +72,14 @@ spending-strategies/         the eight spending strategies, each (params, input)
 | `withdrawal-cost-ranking.ts`                 | Ranks non-Traditional sources by real cost (basis, penalty) for bracket filling beyond the Traditional cap. Public as `rankWithdrawalTiers`.                                                                       |
 | `tax-estimation.ts`                          | Bracket tax, effective/marginal rates, taxable Social Security.                                                                                                                                                    |
 | `inflation-path.ts`                          | The inflation a run sees year by year: one object every compounding site reads, shocked per year in a Simulation trial.                                                                                            |
+| `price-level.ts`                             | `projectionPriceLevel`: a run's price level by calendar year, on that path, for today's dollars outside the loop (Coast FIRE).                                                                                     |
 | `bracket-growth.ts`                          | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
 | `return-deductions.ts`                       | In `lib/pure/tax/`: the 2025–2028 OBBBA senior deduction and its phase-out; last year's MAGI is known or unknown.                                                                                                  |
 | `rmd-enforcement.ts`                         | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
 | `social-security-income.ts`                  | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
 | `qcd.ts`                                     | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
 | `roth-conversion.ts`                         | Roth conversions into bracket room; the tax is paid from brokerage.                                                                                                                                                |
+| `conversion-irmaa-cap.ts`                    | A conversion's room under the next IRMAA cliff above the year's MAGI.                                                                                                                                              |
 | `irmaa-check.ts`                             | The IRMAA cliff check: surcharge cost, and a warning when a conversion crosses a cliff.                                                                                                                            |
 | `aca-check.ts`                               | The ACA subsidy cliff check: MAGI headroom under 400% FPL, and a warning past it.                                                                                                                                  |
 | `household-irmaa.ts`                         | The household IRMAA surcharge: per-person cost × people 65+, for both decumulation-year sites.                                                                                                                     |
@@ -130,7 +133,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty)
 9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw); when the RMD overrode routing, the reported gross-up factor is recomputed from them
 10. `settleYearDraws` — `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
-11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` re-prices the year's tax after it
+11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` (`conversion-year-reprice.ts`) re-prices the year's tax after it
 12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material
 13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
@@ -142,12 +145,12 @@ The year row then reports `retirementBalance` / `allAccountsBalance`, unmet need
 
 Four behaviours the engine spec leaves undecided have one named home each, with today's behaviour in its docblock. Each id is the spec's `UD-` number and the pending decision that settles it; changing the behaviour is that decision's work, not a refactor.
 
-| Id         | What                     | Home                                                                                   | Today                                                                                     |
-| ---------- | ------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| UD-01 (D2) | Year-0 proration         | `pre-year-setup.ts` `seedRetirementSpending`; `contribution-target.ts` `yearZeroBasis` | Only a working year 0 is pro-rated (contributions, match, growth, a gap year's draw)      |
-| UD-02 (D3) | Mid-year retirement      | `pre-year-setup.ts` `yearPhase`                                                        | Retiring in year 0 after its start runs it as a pro-rated working year; else whole        |
-| UD-04 (D1) | The RMD top-up           | `rmd-step.ts` `enforceYearRmd`; `tax-year-settlement.ts` `settleYearDraws`             | A short RMD adds Traditional on top of the routed draw; the excess is reinvested or spent |
-| UD-08 (D4) | What pays conversion tax | `tax-year-settlement.ts` `yearRothConversion`                                          | The tax is paid from retirement brokerage money                                           |
+| Id         | What                     | Home                                                                                                                                      | Today                                                                                                                                                                                                                     |
+| ---------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UD-01 (D2) | Year-0 proration         | `pre-year-setup.ts` `seedRetirementSpending`; `contribution-target.ts` `yearZeroBasis`; `contributions/cap-request.ts` `withLeftThisYear` | Only a working year 0 is pro-rated by months (contributions, match, growth, a gap year's draw); a job starting or ending this year puts in its limited rows' checks left instead (`leftThisYear`), every job from v0.11.1 |
+| UD-02 (D3) | Mid-year retirement      | `pre-year-setup.ts` `yearPhase`                                                                                                           | Retiring in year 0 after its start runs it as a pro-rated working year; else whole                                                                                                                                        |
+| UD-04 (D1) | The RMD top-up           | `rmd-step.ts` `enforceYearRmd`; `tax-year-settlement.ts` `settleYearDraws`                                                                | A short RMD adds Traditional on top of the routed draw; the excess is reinvested or spent                                                                                                                                 |
+| UD-08 (D4) | What pays conversion tax | `tax-year-settlement.ts` `yearRothConversion`                                                                                             | The tax is paid from retirement brokerage money                                                                                                                                                                           |
 
 ## Types
 

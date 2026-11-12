@@ -59,6 +59,14 @@ describe("retold", () => {
       field: "data.0.amount",
     });
   });
+
+  it("keeps what the service said, still out of the message and JSON", () => {
+    const e = failure("bad-response");
+    e.keepResponseText('{"error":"budget not found"}');
+    const told = retold(e, "new message");
+    expect(told.responseText).toBe('{"error":"budget not found"}');
+    expect(JSON.stringify(told)).not.toContain("budget not found");
+  });
 });
 
 describe("userMessageFor", () => {

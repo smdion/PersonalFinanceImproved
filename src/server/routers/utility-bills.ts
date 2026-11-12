@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber, toNumberOrNull } from "@/lib/utils/numbers";
-import { zDecimal } from "@/lib/utils/zod-fields";
+import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import {
   utilityKindSchema,
   utilityUnitSchema,
@@ -24,9 +24,8 @@ import { safeDivide } from "@/lib/utils/math";
 import type { Db } from "@/lib/db";
 
 // ── Shared field validators ──
-// Year/month bounded per CONTRIBUTING.md "Validation Consistency"; decimal columns use
-// the shared `zDecimal` (string input) — never bare z.number()/z.string().
-const yearSchema = z.number().int().min(1900).max(2100);
+// CONTRIBUTING.md "Validation Consistency": years are zYear, months 1–12,
+// decimal columns the shared `zDecimal` (string input).
 const monthSchema = z.number().int().min(1).max(12);
 
 /** Reading value fields, shared between upsertReading and updateReading. */
@@ -237,7 +236,7 @@ export const utilitiesRouter = createTRPCRouter({
     .input(
       z.object({
         serviceId: z.number().int().positive(),
-        year: yearSchema,
+        year: zYear,
         month: monthSchema,
         ...readingValueFields,
       }),

@@ -1,14 +1,14 @@
 import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
 
-/** The inputs computeMonteCarloProjection reports it ran with. */
+/** The inputs computeSimulation reports it ran with. */
 export type SimulationInputs = Extract<
-  RouterOutputs["projection"]["computeMonteCarloProjection"],
+  RouterOutputs["projection"]["computeSimulation"],
   { simulationInputs: unknown }
 >["simulationInputs"];
 
 /** One asset class's return/volatility override, as the query takes it. */
 export type AssetClassOverride = NonNullable<
-  RouterInputs["projection"]["computeMonteCarloProjection"]["assetClassOverrides"]
+  RouterInputs["projection"]["computeSimulation"]["assetClassOverrides"]
 >[number];
 
 /** In the dollars the page shows (`simulationDollars` — today's are the

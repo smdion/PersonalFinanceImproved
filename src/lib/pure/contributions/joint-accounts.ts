@@ -8,8 +8,7 @@ import {
   isRetirementCategory,
   isTaxFree,
 } from "@/lib/config/account-types";
-import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
+import { parseEmployerMatch } from "@/lib/pure/contributions/contribution-amount";
 import { capMessage } from "@/lib/pure/contributions/contribution-caps";
 import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import type { AccountViewMetrics } from "@/lib/pure/contributions/view-metrics";
@@ -22,14 +21,12 @@ import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/lib/utils/numbers";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
-import type {
-  AccountTypeSnapshot,
-  PersonSnapshot,
-} from "@/lib/pure/contributions/summary.types";
+import type { AccountTypeSnapshot } from "@/lib/pure/contributions/summary.types";
+import { jointRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
 export function jointAccountRows(
-  jointContribs: ContributionAccountRow[],
-  results: PersonSnapshot[],
+  contributions: ContributionAccountRow[],
+  jobs: Parameters<typeof jointRowAmounts>[1],
   perfLabelMap: Map<number, string>,
   asOfDate: Date,
   liveThroughToday: Set<number>,
@@ -39,20 +36,17 @@ export function jointAccountRows(
   limitsRecord: Record<string, number>,
   jointAccountTypes: AccountTypeSnapshot[],
 ) {
-  for (const c of jointContribs) {
-    const val = toNumber(String(c.contributionValue));
-    const periodsPerYear =
-      results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
-    const annual = computeAnnualContribution(
-      c.contributionMethod,
-      val,
-      0, // a joint account has no salary: a percent reads as $0
-      periodsPerYear,
+  for (const { row: c, annual, periodsPerYear } of jointRowAmounts(
+    contributions,
+    jobs,
+    asOfDate,
+  )) {
+    const match = parseEmployerMatch(
+      c.employerMatchType,
+      toNumber(c.employerMatchValue),
+      toNumber(c.employerMaxMatchPct),
     );
-    const matchAnnual =
-      c.employerMatchType === "fixed_annual"
-        ? toNumber(c.employerMatchValue)
-        : 0;
+    const matchAnnual = match.kind === "flat" ? match.perYear : 0;
 
     const linkedPerfLabel = c.performanceAccountId
       ? perfLabelMap.get(c.performanceAccountId)
@@ -84,14 +78,15 @@ export function jointAccountRows(
         ? c.subType.toLowerCase()
         : c.accountType;
 
-    const jointViewMetrics: AccountViewMetrics = {
-      employeeContrib: roundToCents(annual),
-      employerMatch: roundToCents(matchAnnual),
-      totalContrib: roundToCents(annual + matchAnnual),
+    const viewOf = (emp: number, match: number): AccountViewMetrics => ({
+      employeeContrib: roundToCents(emp),
+      employerMatch: roundToCents(match),
+      totalContrib: roundToCents(emp + match),
       fundingPct: 0,
       fundingMissing: 0,
       pctOfSalaryToMax: null,
-    };
+    });
+    const jointViewMetrics = viewOf(annual, matchAnnual);
     // Live actuals (portfolio permission): YTD is the money in so far;
     // Year-End adds the rest of the year on this contribution's own
     // schedule — the same rule as the per-person accounts.
@@ -100,12 +95,6 @@ export function jointAccountRows(
       liveThroughToday.has(c.performanceAccountId)
         ? perfActualMap.get(c.performanceAccountId)
         : undefined;
-    const viewOf = (emp: number, match: number): AccountViewMetrics => ({
-      ...jointViewMetrics,
-      employeeContrib: roundToCents(emp),
-      employerMatch: roundToCents(match),
-      totalContrib: roundToCents(emp + match),
-    });
     const jointRemaining = contribRemainingFraction(c.contributionMethod, {
       periodsPerYear,
       // A joint contribution has no job: no anchor payday to walk.

@@ -173,7 +173,7 @@ describe("contribution.ts — PG string mode", () => {
       parentCategory: "retirement",
       contributionMethod: "percent_of_salary",
       contributionValue: "14.000000", // string (PG)
-      employerMatchType: "percent_of_salary",
+      employerMatchType: "percent_of_contribution",
       employerMatchValue: "50.000000", // string (PG) — 50% of contribution
       employerMaxMatchPct: "0.060000", // string (PG) — cap at 6% of salary
       employerMatchTaxTreatment: "traditional",
@@ -252,6 +252,7 @@ describe("paycheck-input.ts — PG string mode", () => {
       payWeek: "even",
       anchorPayDate: "2026-01-02",
       startDate: "2020-01-01",
+      endDate: null,
       bonusMonth: 3,
       bonusDayOfMonth: 15,
       additionalFedWithholding: "125.00", // jobs.additional_fed_withholding style string

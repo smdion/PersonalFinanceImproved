@@ -82,7 +82,7 @@ describe("contribution router", () => {
   function insertContribAccount(
     dbArg: TestDb,
     overrides: Partial<typeof schema.contributionAccounts.$inferInsert> & {
-      personId: number;
+      personId: number | null;
       accountType: string;
       /** Also taken from bonus checks (this profile's election). */
       fromBonus?: boolean;
@@ -754,6 +754,26 @@ describe("contribution router", () => {
         parentCategory: "Portfolio",
         ownership: "joint",
       });
+      insertContribAccount(db, {
+        personId,
+        accountType: "brokerage",
+        contributionMethod: "fixed_annual",
+        contributionValue: "6000",
+        taxTreatment: "after_tax",
+        employerMatchType: "dollar_match",
+        employerMatchValue: "1500",
+        parentCategory: "Retirement",
+        ownership: "joint",
+      });
+    });
+
+    it("counts a joint account's dollar match: $1,500 a year, not $0", async () => {
+      const result = await computeSummary();
+      const joint = result.jointAccountTypes.find(
+        (a) => a.employeeContrib === 6000,
+      );
+      expect(joint?.employerMatch).toBe(1500);
+      expect(joint?.totalContrib).toBe(7500);
     });
 
     it("includes joint accounts in jointAccountTypes", async () => {
@@ -770,6 +790,38 @@ describe("contribution router", () => {
       expect(result.jointTotals.totalWithoutMatch).toBeGreaterThanOrEqual(
         24000,
       );
+    });
+  });
+
+  describe("computeSummary — a joint account tied to a job", () => {
+    let personId: number;
+
+    beforeAll(async () => {
+      personId = await seedPerson(db, "Joint-Job-Person", "1987-07-07");
+      const jobId = seedJob(db, personId, { annualSalary: "90000" });
+      insertContribAccount(db, {
+        personId: null,
+        jobId,
+        accountType: "brokerage",
+        contributionMethod: "fixed_annual",
+        contributionValue: "3333",
+        taxTreatment: "after_tax",
+        employerMatchType: "none",
+        parentCategory: "Portfolio",
+        ownership: "joint",
+      });
+    });
+
+    it("counts once, in its job's rows, and leaves the joint totals", async () => {
+      const result = await computeSummary();
+      const person = result.people.find((p) => p.person.id === personId);
+      const brokerage = person!.accountTypes.find(
+        (a) => a.categoryKey === "brokerage",
+      );
+      expect(brokerage?.employeeContrib).toBe(3333);
+      expect(
+        result.jointAccountTypes.some((a) => a.employeeContrib === 3333),
+      ).toBe(false);
     });
   });
 

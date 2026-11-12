@@ -13,7 +13,6 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, viewerSession, adminSession } from "./setup";
-import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -145,14 +144,14 @@ describe("mortgage.mortgageLoans", () => {
         name: "Refi Loan",
         refinancedFromId: first!.id,
         paidOffDate: "2024-06-01",
-        pmi: "50.00",
-        insuranceAndTaxes: "200.00",
-        totalEscrow: "300.00",
+        pmi: "50",
+        insuranceAndTaxes: "200",
+        totalEscrow: "300",
         propertyValueEstimated: "400000",
       });
       expect(created!.refinancedFromId).toBe(first!.id);
       expect(created!.paidOffDate).toBe("2024-06-01");
-      expect(created!.pmi).toBe("50.00");
+      expect(created!.pmi).toBe("50");
     });
   });
 });
@@ -232,7 +231,7 @@ describe("mortgage.mortgageWhatIfScenarios", () => {
         sortOrder: 1,
       });
       expect(updated!.label).toBe("+$300/month");
-      expect(decimalText(updated!.extraMonthlyPrincipal)).toBe("300");
+      expect(updated!.extraMonthlyPrincipal).toBe("300");
     });
 
     it("deletes a scenario", async () => {
@@ -289,7 +288,7 @@ describe("mortgage.mortgageExtraPayments", () => {
         notes: "Bonus payment",
       });
       expect(created).toBeDefined();
-      expect(decimalText(created!.amount)).toBe("5000");
+      expect(created!.amount).toBe("5000");
       expect(created!.isActual).toBe(true);
       paymentId = created!.id;
     });
@@ -320,7 +319,7 @@ describe("mortgage.mortgageExtraPayments", () => {
         isActual: true,
         notes: "Updated bonus",
       });
-      expect(decimalText(updated!.amount)).toBe("7500");
+      expect(updated!.amount).toBe("7500");
       expect(updated!.paymentDate).toBe("2023-07-15");
     });
 

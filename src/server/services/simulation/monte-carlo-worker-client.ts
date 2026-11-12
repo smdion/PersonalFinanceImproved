@@ -32,7 +32,7 @@ let worker: Worker | null = null;
 const queue: QueuedJob[] = [];
 let activeJob: QueuedJob | null = null;
 
-// runId -> progress, for projection.getMonteCarloProgress (single instance, so
+// runId -> progress, for projection.getSimulationProgress (single instance, so
 // in memory). Entries go when their job settles; the TTL sweep below catches a
 // runId never polled again.
 const PROGRESS_TTL_MS = 5 * 60 * 1000;
@@ -137,7 +137,7 @@ function runNext() {
 
 /**
  * Run calculateMonteCarlo() on the shared worker thread, queued behind any running simulation.
- * `runId`, if given, is the key `getMonteCarloProgress` polls under; omit it for no progress.
+ * `runId`, if given, is the key `getSimulationProgress` polls under; omit it for no progress.
  */
 export function runMonteCarloOffThread(
   input: MonteCarloInput,

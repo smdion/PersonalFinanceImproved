@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
-import {
-  calculateBlendedAnnual,
-  withheldThroughPeriod,
-  type SalarySegment,
-} from "@/lib/pure/paycheck/year-schedule";
+import { withheldThroughPeriod } from "@/lib/pure/paycheck/year-schedule";
 import {
   countPeriodsElapsed,
   contribRemainingFraction,
@@ -15,6 +11,11 @@ import {
   periodsBeforeStart,
   checksPaidYtd,
 } from "@/lib/pure/paycheck/pay-periods-in-year";
+import {
+  jobChecksThisYear,
+  lastCheckThisYear,
+} from "@/lib/pure/paycheck/job-last-check";
+import { yearEarnings } from "@/lib/pure/paycheck/person-paycheck";
 import { getExtraPaycheckMonthKeys } from "@/lib/pure/paycheck/extra-paycheck-months";
 import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
 import type {
@@ -454,80 +455,6 @@ describe("calculatePaycheck", () => {
 });
 
 // ---------------------------------------------------------------------------
-// calculateBlendedAnnual
-// ---------------------------------------------------------------------------
-
-function makeMinimalPaycheck(gross: number): PaycheckResult {
-  return {
-    gross,
-    ficaWages: gross,
-    federalWithholding: gross * 0.22,
-    preTaxDeductions: [],
-    postTaxDeductions: [],
-    // eslint-disable-next-line no-restricted-syntax -- test-only stub; only fields calculateBlendedAnnual reads
-  } as unknown as PaycheckResult;
-}
-
-function makeSegment(
-  gross: number,
-  startPeriod: number,
-  endPeriod: number,
-): SalarySegment {
-  return {
-    salary: gross * 26,
-    effectiveDate: null,
-    startPeriod,
-    endPeriod,
-    paycheck: makeMinimalPaycheck(gross),
-  };
-}
-
-// Pins a bug (verdict N2): no Additional Medicare keys, the shape that lets
-// the blended walk leave Additional Medicare out of the Year-end estimate.
-// v0.11 Paycheck "One yearTotals(schedule, first, last)" retires it
-// (answer-key paycheck/N2).
-const TAX_BRACKETS = {
-  socialSecurityWageBase: 176_100,
-  socialSecurityRate: 0.062,
-  medicareRate: 0.0145,
-};
-
-describe("calculateBlendedAnnual", () => {
-  it("returns zero totals for empty segments (early return)", () => {
-    const result = calculateBlendedAnnual([], TAX_BRACKETS);
-    expect(result.gross).toBe(0);
-    expect(result.ficaSS).toBe(0);
-    expect(result.ficaMedicare).toBe(0);
-  });
-
-  it("computes totals for a full-year single segment", () => {
-    // $150k salary: $5,769.23/period × 26 = $150k gross
-    const result = calculateBlendedAnnual(
-      [makeSegment(5769.23, 1, 26)],
-      TAX_BRACKETS,
-    );
-    expect(result.gross).toBeCloseTo(5769.23 * 26, 0);
-    expect(result.ficaSS).toBeGreaterThan(0);
-    expect(result.ficaMedicare).toBeGreaterThan(0);
-  });
-
-  it("handles SS wage base spanning across periods (lines 986-990)", () => {
-    // segFicaBase = $10,000/period, ssWageBase = $176,100
-    // Period 17: ytd = 170,000 < 176,100 → full SS
-    // Period 18: ytd = 180,000 > 176,100, prev = 170,000 < 176,100 → spanning case
-    // Period 19+: prev >= 176,100 → no SS
-    const result = calculateBlendedAnnual(
-      [makeSegment(10_000, 1, 26)],
-      TAX_BRACKETS,
-    );
-    // SS should be capped at ssWageBase × rate, not 26 × 10000 × rate
-    const maxSS =
-      TAX_BRACKETS.socialSecurityWageBase * TAX_BRACKETS.socialSecurityRate;
-    expect(result.ficaSS).toBeCloseTo(maxSS, 0);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Anchor-payday date-walk pinned values
 //
 // Pinned ahead of consolidating the "align anchor date to on/after a
@@ -627,7 +554,7 @@ describe("anchor-payday date-walk (pinned)", () => {
       getExtraPaycheckMonthKeys(
         new Date("2025-01-03"),
         "biweekly",
-        new Date("2025-03-07"),
+        "2025-03-01",
         18,
       ),
     ).toEqual(["2025-08-01", "2026-01-01", "2026-07-01"]);
@@ -654,7 +581,7 @@ describe("anchor-payday date-walk (pinned)", () => {
     },
   );
 
-  it("bonusPeriod — semimonthly, day before/after the 16th split", () => {
+  it("bonusPeriod — semimonthly, day before/after the 15th payday", () => {
     const base = {
       ...PERSON_A_PAYCHECK_INPUT,
       payPeriod: "semimonthly" as const,
@@ -806,5 +733,129 @@ describe("a job started this year", () => {
     const r = calculatePaycheck(input);
     const sofar = withheldThroughPeriod(r.yearSchedule, r.periodsElapsedYtd);
     expect(sofar.federal).toBeCloseTo(5 * r.federalWithholding, 0);
+  });
+});
+
+describe("a job ending this year", () => {
+  // Biweekly Fridays from 2025-01-03; the job's last day is Tuesday
+  // 2025-06-10, so Jun 6 (check 12) is its last check and the fourteen
+  // paydays after it aren't its checks.
+  const input: PaycheckInput = {
+    ...PERSON_A_PAYCHECK_INPUT,
+    asOfDate: new Date("2025-03-01"),
+    endDate: new Date("2025-06-10T12:00:00Z"),
+  };
+
+  it("its last check is the last payday on or before its last day", () => {
+    const at = (endDate: Date | null) =>
+      lastCheckThisYear({ ...input, endDate }, 26);
+    expect(at(input.endDate!)).toBe(12);
+    // Ending on a payday: that check is its last.
+    expect(at(new Date("2025-06-06T12:00:00Z"))).toBe(12);
+    // Ending next year, or no end: paid to the year's end.
+    expect(at(new Date("2026-02-01T12:00:00Z"))).toBe(26);
+    expect(at(null)).toBe(26);
+  });
+
+  it("its checks this year: twelve", () => {
+    expect(jobChecksThisYear(input, 26)).toEqual({
+      beforeStart: 0,
+      lastCheck: 12,
+      total: 12,
+    });
+    // Started June 2: the eleven paydays before it aren't its checks; fifteen are.
+    const started = new Date("2025-06-02");
+    expect(
+      jobChecksThisYear(
+        {
+          ...input,
+          asOfDate: new Date("2025-08-01"),
+          startDate: started,
+          endDate: null,
+        },
+        26,
+      ),
+    ).toEqual({ beforeStart: 11, lastCheck: 26, total: 15 });
+  });
+
+  it("the paydays after its last day are empty, as the paydays before a start are", () => {
+    const r = calculatePaycheck(input);
+    const full = calculatePaycheck({ ...input, endDate: null });
+    expect(r.yearSchedule).toHaveLength(26);
+    expect(r.yearSchedule.slice(0, 12)).toEqual(full.yearSchedule.slice(0, 12));
+    expect(r.yearSchedule.slice(12).every((p) => p.afterEnd)).toBe(true);
+    expect(
+      r.yearSchedule.slice(12).every((p) => p.gross === 0 && p.netPay === 0),
+    ).toBe(true);
+    expect(r.yearSchedule[11]!.afterEnd).toBeUndefined();
+    // Same regular check otherwise.
+    expect(r.netPay).toBe(full.netPay);
+  });
+
+  it("a bonus dated after its last day isn't this job's", () => {
+    const r = calculatePaycheck({
+      ...input,
+      bonusOverride: 10_000,
+      bonusMonth: 12,
+      bonusDayOfMonth: 15,
+    });
+    expect(r.yearSchedule.every((p) => p.bonusGross === 0)).toBe(true);
+    // Nothing names a pay period for it.
+    expect(r.bonusPeriod).toBeNull();
+    expect(r.bonusAfterEnd).toBe(true);
+    const earlier = calculatePaycheck({
+      ...input,
+      bonusOverride: 10_000,
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+    });
+    expect(earlier.yearSchedule.some((p) => p.bonusGross === 10_000)).toBe(
+      true,
+    );
+  });
+
+  it("an undated bonus (paid after the regular checks) isn't this job's either", () => {
+    const r = calculatePaycheck({ ...input, bonusOverride: 10_000 });
+    expect(r.yearSchedule.every((p) => p.bonusGross === 0)).toBe(true);
+    expect(r.bonusAfterEnd).toBe(true);
+    // Held to the year's end, it's paid with the last check.
+    const allYear = calculatePaycheck({
+      ...input,
+      endDate: null,
+      bonusOverride: 10_000,
+    });
+    expect(allYear.yearSchedule[25]!.bonusGross).toBe(10_000);
+    expect(allYear.bonusAfterEnd).toBe(false);
+  });
+
+  it("the year's earnings are the schedule's checks: 12 checks, no bonus after the end", () => {
+    const yearOf = (bonusMonth: number) => {
+      const paycheck = calculatePaycheck({
+        ...input,
+        bonusOverride: 10_000,
+        bonusMonth,
+        bonusDayOfMonth: 15,
+      });
+      return yearEarnings(
+        { id: 1, employerName: "Acme", startDate: "2020-01-01" },
+        paycheck,
+        26,
+        input.annualSalary,
+        [],
+        [],
+        () => ({
+          endedJobs: [],
+          endedYears: [],
+          undatedBonusEmployers: [],
+          endedWithheld: { federal: 0, fica: 0 },
+        }),
+        {},
+      );
+    };
+    const after = yearOf(12);
+    expect(after.blendedAnnual.segments[0]!.periods).toBe(12);
+    expect(after.earnings.bonus).toBe(0);
+    expect(after.bonusNotCounted).toEqual([]);
+    expect(yearOf(3).earnings.bonus).toBe(10_000);
   });
 });

@@ -164,7 +164,9 @@ describe("LinkedBalanceCard daily change notes", () => {
       unpricedMoves: [
         {
           key: "hsa",
+          performanceAccountId: 4,
           label: "Voya HSA",
+          account: "Voya HSA",
           institution: "Voya Financial",
           changed: [{ day: "2026-11-05", balance: -151.08 }],
         },
@@ -183,69 +185,60 @@ describe("LinkedBalanceCard daily change notes", () => {
       ),
     ).toHaveTextContent("—");
     expect(screen.getByText("+$0.00")).toBeInTheDocument();
-    // Out of one line of two: said on that line, not under the list.
+    // Named once under the list, never on a line.
     expect(
-      screen.getByText("excludes Voya HSA (no holdings)"),
+      screen.getByText("Not in daily changes (no holdings): Voya HSA"),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/no holdings reported/)).toBeNull();
+    expect(screen.queryByText(/excludes/)).toBeNull();
   });
 
-  it("an account out of every line is said once, under the list", () => {
+  it("names each no-holdings account once under the list, whatever its closes did", () => {
+    // Every case that once repeated an account on each line: a quiet day
+    // (Nov 9→10), the latest close pending, an institution's report missing,
+    // and an account held in parts that moved on one close only. No tracked
+    // account list (inactive, or not loaded): named by the account's name.
     setQuery("investments.getCurrentBalances", {
-      target: "2026-11-05",
-      snapshotDate: null,
-      summary: { total: 1000 },
-      feeds: [],
-      balances: [],
-      movement: [close("2026-11-05", []), close("2026-11-04", ["Voya"])],
-      closeReports: [],
-      unpricedMoves: [
-        {
-          key: "hsa",
-          label: "Joanna HSA (Voya)",
-          institution: "Voya Financial",
-          changed: [
-            { day: "2026-11-05", balance: -151.08 },
-            { day: "2026-11-04", balance: 40 },
-          ],
-        },
-      ],
-    });
-    render(
-      <TooltipProvider>
-        <LinkedBalanceCard />
-      </TooltipProvider>,
-    );
-    expect(
-      screen.getByText("Excludes Joanna HSA (Voya): no holdings reported"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/\(no holdings\)/)).toBeNull();
-    // What differs by line stays on its line.
-    expect(screen.getByText("excludes Voya")).toBeInTheDocument();
-  });
-
-  it("an exclusion is still said once when the latest close is pending", () => {
-    setQuery("investments.getCurrentBalances", {
-      target: "2026-11-06",
+      target: "2026-11-11",
       snapshotDate: null,
       summary: { total: 1000 },
       feeds: [],
       balances: [],
       movement: [
-        close("2026-11-06", ["Fidelity Investments", "Voya Financial"]),
+        close("2026-11-11", ["Fidelity Investments"]),
+        close("2026-11-10", []),
+        close("2026-11-09", ["Voya Financial"]),
+        close("2026-11-06", []),
         close("2026-11-05", []),
-        close("2026-11-04", []),
       ],
       closeReports: [],
       unpricedMoves: [
         {
           key: "hsa",
+          performanceAccountId: 4,
           label: "Joanna HSA (Voya)",
+          account: "Joanna HSA (Voya)",
           institution: "Voya Financial",
           changed: [
-            { day: "2026-11-05", balance: -151.08 },
-            { day: "2026-11-04", balance: 40 },
+            { day: "2026-11-11", balance: -151.08 },
+            { day: "2026-11-06", balance: 40 },
+            { day: "2026-11-05", balance: 860 },
           ],
+        },
+        {
+          key: "part:7:trad",
+          performanceAccountId: 7,
+          label: "Joint IRA (Vanguard) — Joanna — Traditional",
+          account: "Joint IRA (Vanguard)",
+          institution: "Vanguard",
+          changed: [{ day: "2026-11-06", balance: 1686 }],
+        },
+        {
+          key: "part:7:roth",
+          performanceAccountId: 7,
+          label: "Joint IRA (Vanguard) — Joanna — Roth",
+          account: "Joint IRA (Vanguard)",
+          institution: "Vanguard",
+          changed: [{ day: "2026-11-06", balance: 12 }],
         },
       ],
     });
@@ -254,13 +247,18 @@ describe("LinkedBalanceCard daily change notes", () => {
         <LinkedBalanceCard />
       </TooltipProvider>,
     );
-    expect(
-      screen.getByText("Excludes Joanna HSA (Voya): no holdings reported"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/\(no holdings\)/)).toBeNull();
-    expect(
-      screen.getByText("Fidelity and Voya changes not in yet"),
-    ).toBeInTheDocument();
+    const line = screen.getByText(
+      "Not in daily changes (no holdings): Joanna HSA (Voya) and Joint IRA (Vanguard)",
+    );
+    expect(line.getAttribute("title")).toBe(
+      "These send balances but no holdings, so market moves and money paid in can't be split. Balance changes: Joanna HSA (Voya) Nov 11 −$151.08, Nov 6 +$40.00, Nov 5 +$860.00; Joint IRA (Vanguard) Nov 6 +$1,698.00.",
+    );
+    // Only that line names one, by name or by "holdings".
+    expect(screen.getAllByText(/holdings/)).toHaveLength(1);
+    expect(screen.getAllByText(/Joint IRA|Joanna HSA/)).toHaveLength(1);
+    // What differs by line stays on its line.
+    expect(screen.getByText("Fidelity change not in yet")).toBeInTheDocument();
+    expect(screen.getByText("excludes Voya")).toBeInTheDocument();
   });
 
   it("names a feed SimpleFIN still lists whose balance stopped", () => {

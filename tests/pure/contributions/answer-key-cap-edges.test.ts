@@ -63,6 +63,7 @@ function row(
     employerMaxMatchPct: null,
     isPayrollDeducted: true,
     fromBonus: false,
+    ownership: "individual",
     ...over,
   };
 }

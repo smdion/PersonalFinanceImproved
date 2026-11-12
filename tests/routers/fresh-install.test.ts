@@ -48,8 +48,8 @@ describe("fresh install (SQLite)", () => {
     fs.copyFileSync(migratedTemplate(), dbPath);
     const sqlite = new Database(dbPath);
     open.push(sqlite);
-    const db = drizzle(sqlite, { schema: sqliteSchema });
-    withAsyncTransactions(db, sqlite);
+    const plainDb = drizzle(sqlite, { schema: sqliteSchema });
+    const db = withAsyncTransactions(plainDb, sqlite);
     // eslint-disable-next-line no-restricted-syntax -- the routers are typed for PostgreSQL; the SQLite db runs them (as in ./setup)
     const rawDb = db as unknown as NodePgDatabase<typeof pgSchema>;
     return {

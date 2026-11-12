@@ -1,5 +1,6 @@
 /** The retirement card's estimate rows: the baseline withdrawal, Coast FIRE
  *  and when the simulation last ran. */
+import { coastFireLabel } from "./coast-fire-label";
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { focusHref } from "@/lib/config/focus-topics";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -48,7 +49,7 @@ export function renderWithdrawalRow(
 /** The Coast FIRE row: the baseline age, and the simulated one when run. */
 export function renderCoastFireRow(
   coastFireSimulationPeek:
-    RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
+    RouterOutputs["projection"]["computeCoastFireSimulation"] | undefined,
   ageLabel: (age: number) => string,
   coastFireData: Extract<
     RouterOutputs["projection"]["computeCoastFire"],
@@ -76,11 +77,7 @@ export function renderCoastFireRow(
         focus={{ topic: "planHealth" }}
         className="text-primary hover:underline"
       >
-        {coastFireData.result.status === "unreachable"
-          ? "Not reachable"
-          : coastFireData.result.status === "already_coast"
-            ? "Already Coast"
-            : ageLabel(coastFireData.result.coastFireAge ?? 0)}
+        {coastFireLabel(coastFireData.result, ageLabel)}
         <span className="text-caption text-faint ml-1">
           {simLabel
             ? `(simulated: ${simLabel})`
@@ -94,9 +91,9 @@ export function renderCoastFireRow(
 /** When the last simulation ran, when one has. */
 export function renderLastRunRow(
   simulationPeek:
-    RouterOutputs["projection"]["peekMonteCarloSummary"] | undefined,
+    RouterOutputs["projection"]["getSimulationSummary"] | undefined,
   coastFireSimulationPeek:
-    RouterOutputs["projection"]["computeCoastFireMC"] | undefined,
+    RouterOutputs["projection"]["computeCoastFireSimulation"] | undefined,
 ) {
   const lastRunAt = [
     simulationPeek?.computedAt,

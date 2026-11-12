@@ -1,24 +1,17 @@
 /** A backup's or a version's tables brought to the current schema as their
  *  source wrote them: the converters read a jsonb string scalar from a
  *  PostgreSQL source as JSON text, as the live migration does (selectPg). */
-import { is } from "drizzle-orm";
-import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
-import * as schema from "../schema-pg";
 import { isRow } from "../migrate/converter-rows";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
+import { convertTimestampsFor } from "./restore-timestamps";
+import { schemaColumnsOfType } from "./schema-columns";
+import { isPostgres } from "../dialect";
 
-/** Every jsonb column, by table. */
+/** Every jsonb column's name, by table. */
 const JSONB_COLUMNS = new Map(
-  Object.values<unknown>(schema)
-    .filter((t) => is(t, PgTable))
-    .map((t) => {
-      const table = getTableConfig(t);
-      const columns = table.columns
-        .filter((c) => c.getSQLType() === "jsonb")
-        .map((c) => c.name);
-      return [table.name, columns] as const;
-    })
-    .filter(([, columns]) => columns.length > 0),
+  [...schemaColumnsOfType((type) => type === "jsonb")].map(
+    ([table, columns]) => [table, columns.map((c) => c.name)] as const,
+  ),
 );
 
 /** Each string scalar in a jsonb column, in place, by `as`. */
@@ -36,10 +29,21 @@ function eachStringScalar(
     }
 }
 
-/** transformBackupToCurrentSchema for a source dialect: a PostgreSQL
- *  source's string scalars are JSON text while the steps run, and any one
- *  no converter rewrote is its string again after. */
+/** transformBackupToCurrentSchema for a source dialect, its timestamps then
+ *  in the form this install's dialect stores (restore-timestamps.ts). */
 export function transformFromSource(
+  tables: Record<string, unknown[]>,
+  versions: { from: string; to: string },
+  sourceDialect: "postgres" | "sqlite" | undefined,
+): ReturnType<typeof transformBackupToCurrentSchema> {
+  const result = transformedFrom(tables, versions, sourceDialect);
+  convertTimestampsFor(result.tables, isPostgres() ? "postgres" : "sqlite");
+  return result;
+}
+
+/** A PostgreSQL source's string scalars are JSON text while the steps run,
+ *  and any one no converter rewrote is its string again after. */
+function transformedFrom(
   tables: Record<string, unknown[]>,
   versions: { from: string; to: string },
   sourceDialect: "postgres" | "sqlite" | undefined,

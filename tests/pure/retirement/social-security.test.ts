@@ -458,7 +458,7 @@ describe("sweepClaimingAges", () => {
     // entry in place while leaving a spouse's spousal top-up frozen is
     // exactly the bug this guard exists to prevent (see the module
     // docblock and ClaimingAgeSweepOptions.buildCandidateInput). A real
-    // multi-person caller (the sweepSocialSecurityClaimingAges router)
+    // multi-person caller (the computeSocialSecurityClaimingSweep router)
     // must supply its own builder via buildSocialSecurityEntries.
     const input = makeSingleHousehold();
     expect(() =>

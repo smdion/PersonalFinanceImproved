@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
-import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
+import { getSessionUserLabel } from "@/server/trpc";
+import { versionRouteCaller } from "@/server/services/versions/route-gate";
 import { importBackup, type BackupData } from "@/lib/db/backup/version-logic";
 import { log } from "@/lib/logger";
 import { settleFirstRunGate } from "@/server/data/first-run";
 import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+// The multipart wrapping around the file: its boundary lines and headers.
+const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data
 const MAX_JSON_DEPTH = 10; // guard against deeply nested JSONB structures
 
@@ -23,6 +26,9 @@ const backupDataSchema = z.object({
   // Optional (older backups lack it); declared so validation keeps it and
   // importBackupPg can tell PG jsonb strings from SQLite-serialized ones.
   sourceDialect: z.enum(["postgres", "sqlite"]).optional(),
+  // An export by someone who isn't an admin: today's logins, access settings
+  // and credentials stay, whoever imports it (installation-rows.ts).
+  householdOnly: z.literal(true).optional(),
 });
 
 /** Recursively check that no string exceeds MAX_STRING_LENGTH and depth doesn't exceed MAX_JSON_DEPTH. */
@@ -46,41 +52,55 @@ function validateImportDepthAndSize(value: unknown, depth = 0): string | null {
   return null;
 }
 
+/** The request's form, read through a counter that fails the read once the
+ *  body passes `limit` bytes (`size.over` then says why). */
+function formWithin(
+  request: Request,
+  limit: number,
+  size: { over: boolean },
+): Promise<FormData> {
+  if (!request.body) return request.formData();
+  let read = 0;
+  const counted = request.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        read += chunk.byteLength;
+        size.over = read > limit;
+        if (size.over) controller.error(new RangeError("body too large"));
+        else controller.enqueue(chunk);
+      },
+    }),
+  );
+  const contentType = request.headers.get("content-type") ?? "";
+  return new Response(counted, {
+    headers: { "content-type": contentType },
+  }).formData();
+}
+
+const tooLarge = () =>
+  NextResponse.json({ error: "File too large (max 50MB)" }, { status: 413 });
+
 export async function POST(request: Request) {
+  const size = { over: false };
   if (process.env.DEMO_ONLY === "true") {
     return new Response("Forbidden: demo mode is read-only", { status: 403 });
   }
 
   try {
-    // Require a session with version permission or admin. Only `next dev` with
-    // ALLOW_DEV_MODE skips it (auth-mode.ts); validateEnv() refuses it in prod.
-    const allowDev = devBypass() === "admin";
-    const session = await auth();
-    if (!allowDev && !session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (
-      !allowDev &&
-      session?.user.role !== "admin" &&
-      !session?.user.permissions.includes("version")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const caller = await versionRouteCaller("import", auth);
+    if (caller instanceof Response) return caller;
 
-    // Parse multipart form data
-    const formData = await request.formData();
+    // Parse multipart form data, refused past the size limit before it's all held
+    if (Number(request.headers.get("content-length")) > MAX_REQUEST_SIZE)
+      return tooLarge();
+    const formData = await formWithin(request, MAX_REQUEST_SIZE, size);
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File too large (max 50MB)" },
-        { status: 400 },
-      );
-    }
+    if (file.size > MAX_FILE_SIZE) return tooLarge();
 
     const text = await file.text();
     let parsed: unknown;
@@ -110,11 +130,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Anyone but an admin leaves the installation's connections as they are.
+    // Anyone but an admin leaves logins, access settings and credentials as they are.
     const importResult = await importBackup(
       db as Parameters<typeof importBackup>[0],
       backup,
-      { asAdmin: allowDev || session?.user.role === "admin" },
+      {
+        asAdmin: caller.asAdmin,
+        user: caller.session ? getSessionUserLabel(caller.session) : "dev",
+      },
     );
     await settleFirstRunGate(db, "import");
 
@@ -122,6 +145,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof ClosedSetRefusal)
       return NextResponse.json({ error: error.message }, { status: 400 });
+    if (size.over) return tooLarge();
     log("error", "import_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

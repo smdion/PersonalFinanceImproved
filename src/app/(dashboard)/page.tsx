@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     // Independent prefetches (one failure doesn't block the others); other
     // cards fetch on the client.
     await Promise.all([
-      helpers.networth.computeSummary.prefetch().catch(() => undefined),
+      helpers.netWorth.computeSummary.prefetch().catch(() => undefined),
       helpers.settings.getOnboardingStatus.prefetch().catch(() => undefined),
     ]);
   });

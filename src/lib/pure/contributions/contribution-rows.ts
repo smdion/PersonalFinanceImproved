@@ -1,54 +1,20 @@
 /** A contribution row in yearly dollars, and the job its pay comes from. */
+import type {
+  ContributionMethod,
+  EmployerMatchType,
+} from "@/lib/config/enum-values";
 import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { AccountOwnership } from "@/lib/config/enum-values";
 import { computeValue } from "./contribution-caps";
 import {
   computeAnnualContribution,
   fractionFromPercent,
 } from "./contribution-amount";
-import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   bonusCheckContribution,
   isPaidThroughPayroll,
 } from "@/lib/pure/paycheck/bonus";
-import { matchPayGroupsWithBonus, matchGroupKey } from "./employer-match";
-
-/**
- * Jobless account fallback: the active jobs' periods per year, or `incomplete: true` with none
- * or with mixed schedules (`periodsPerYear` is then a placeholder). Shared by
- * computeActiveSummary and its inverse, applyContributionAccountEdit.
- */
-export function resolveJoblessPeriodsPerYear(
-  activeJobs: { payPeriod: string | undefined }[],
-): { periodsPerYear: number; incomplete: boolean } {
-  const schedules = new Set(
-    activeJobs.flatMap((j) => (j.payPeriod != null ? [j.payPeriod] : [])),
-  );
-  const [first] = schedules;
-  return first !== undefined
-    ? {
-        periodsPerYear: getPeriodsPerYear(first),
-        incomplete: schedules.size > 1,
-      }
-    : { periodsPerYear: 0, incomplete: true };
-}
-
-/**
- * A row's periods per year from its resolved `job` (undefined = none). Only `fixed_per_period`
- * uses it for its yearly amount, so only it can be incomplete; others resolve `0`, which
- * callers must not divide by.
- */
-export function resolveContributionPeriods(
-  method: string,
-  job: { payPeriod: string | undefined } | undefined,
-): { periodsPerYear: number; incomplete: boolean } {
-  if (!job || job.payPeriod == null)
-    return { periodsPerYear: 0, incomplete: method === "fixed_per_period" };
-  return {
-    periodsPerYear: getPeriodsPerYear(job.payPeriod),
-    incomplete: false,
-  };
-}
 
 /** Minimal fields needed from the DB contribution_accounts row. */
 export type ContributionRow = {
@@ -59,10 +25,10 @@ export type ContributionRow = {
   subType: string | null;
   label: string | null;
   parentCategory: string;
-  contributionMethod: string;
+  contributionMethod: ContributionMethod;
   contributionValue: string | number;
   taxTreatment: string;
-  employerMatchType: string | null;
+  employerMatchType: EmployerMatchType | null;
   employerMatchValue: string | null;
   employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | null;
@@ -72,6 +38,7 @@ export type ContributionRow = {
   fromBonus: boolean | undefined;
   /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
   cappedValue?: number;
+  ownership: AccountOwnership;
 };
 
 export type JobRef = {
@@ -89,11 +56,7 @@ export type JobSalaryRef = {
   bonusGrossThisYear?: number;
 };
 
-/**
- * The job whose pay a contribution is figured on: its own job, or — for an
- * account not tied to one — the person's job. One lookup for the summary,
- * the display specs and the engine specs.
- */
+/** The job pay a contribution is figured on: its own job's, else its person's (as rowPaySchedule). */
 export function jobPayFor<T extends { job: { id: number; personId: number } }>(
   c: { jobId: number | null; personId: number | null },
   jobSalaries: readonly T[],
@@ -110,7 +73,7 @@ export function jobPayFor<T extends { job: { id: number; personId: number } }>(
  */
 export function annualContributionWithBonus(
   c: {
-    contributionMethod: string | null;
+    contributionMethod: ContributionMethod | null;
     contributionValue: string | number | null;
     jobId: number | null;
     isPayrollDeducted?: boolean | null;
@@ -145,50 +108,4 @@ export function annualContributionWithBonus(
       pay.bonusGross ?? 0,
     )
   );
-}
-
-/**
- * Each row's yearly employee money (computeValue), the pay its match uses, and rows with an
- * unresolvable pay period (money 0); shared by the category aggregate and the cap pass.
- */
-export function contributionRowAmounts(
-  activeContributions: readonly ContributionRow[],
-  activeJobs: readonly JobRef[],
-  jobSalaries: readonly JobSalaryRef[],
-): {
-  annualById: Map<number, number>;
-  salaryById: Map<number, number>;
-  incompleteAccountIds: number[];
-} {
-  const incompleteAccountIds: number[] = [];
-  const salaryById = new Map<number, number>();
-  const annualById = new Map<number, number>();
-  const bonusGroups = matchPayGroupsWithBonus([...activeContributions]);
-  for (const c of activeContributions) {
-    // Direct job link, or fall back to person's first active job when jobId is null
-    const js = jobPayFor(c, jobSalaries);
-    const job = c.jobId
-      ? activeJobs.find((j) => j.id === c.jobId)
-      : activeJobs.find((j) => j.personId === c.personId);
-    const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
-      c.contributionMethod,
-      job,
-    );
-    if (incomplete) incompleteAccountIds.push(c.id);
-    const annual = incomplete
-      ? 0
-      : annualContributionWithBonus(
-          c,
-          { salary, bonusGross: js?.bonusGross },
-          periods,
-        );
-    // Match on the pay the deferrals came from, bonus checks included.
-    salaryById.set(
-      c.id,
-      salary + (bonusGroups.has(matchGroupKey(c)) ? (js?.bonusGross ?? 0) : 0),
-    );
-    annualById.set(c.id, annual);
-  }
-  return { annualById, salaryById, incompleteAccountIds };
 }

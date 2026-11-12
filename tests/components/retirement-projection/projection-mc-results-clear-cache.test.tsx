@@ -61,7 +61,7 @@ function baseState(overrides: Partial<ProjectionState> = {}): ProjectionState {
     },
     setShowAssumptions: vi.fn(),
     runMonteCarlo: vi.fn(),
-    runCoastFireMc: vi.fn(),
+    runCoastFireSimulation: vi.fn(),
     clearProjectionCacheMutation,
     ...overrides,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

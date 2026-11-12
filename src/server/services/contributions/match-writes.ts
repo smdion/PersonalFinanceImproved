@@ -1,9 +1,10 @@
 /** The one writer of employer match terms: every account and profile-entry
  *  write stores its rate through these (lib/pure/contributions/match-writes). */
 import { TRPCError } from "@trpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { DbOrTx } from "@/lib/db";
+import { lockedRow } from "@/server/data/lock-row";
 import {
   MAX_MATCH_RATE,
   accountMatchColumns,
@@ -146,12 +147,15 @@ export async function refreshEntryRates(
   };
   const key = String(accountId);
   const profiles = await db
-    .select({
-      id: schema.contributionProfiles.id,
-      fields: schema.contributionProfiles.contributionActiveFields,
-    })
-    .from(schema.contributionProfiles);
-  for (const p of profiles) {
+    .select({ id: schema.contributionProfiles.id })
+    .from(schema.contributionProfiles)
+    .orderBy(asc(schema.contributionProfiles.id)); // locks taken in id order
+  for (const { id } of profiles) {
+    // Read-merge-write of the stored JSON under its row lock: a concurrent
+    // writer's entry isn't lost (a profile deleted meanwhile has none).
+    const locked = await lockedRow(db, schema.contributionProfiles, id);
+    if (!locked) continue;
+    const p = { id, fields: locked.contributionActiveFields };
     // A hand-edited column can hold JSON null: no entries to refresh.
     const fields: unknown = p.fields;
     if (!isObject(fields) || !isObject(fields["contributionAccounts"]))

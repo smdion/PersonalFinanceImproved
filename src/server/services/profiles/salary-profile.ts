@@ -7,10 +7,8 @@ import {
   type SalaryProfileActiveMap,
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
-import {
-  fetchSalaryProfile,
-  resolveActiveSalaryProfileId,
-} from "@/server/data/salaries";
+import { fetchSalaryProfile } from "@/server/data/salaries";
+import { activeProfileId } from "@/server/data/active-profile";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import {
   BLANK_SALARY_ENTRY,
@@ -40,7 +38,7 @@ export async function loadEffectiveSalaryProfile(
   if (salaryProfileId != null) {
     return loadAndApplySalaryProfile(db, salaryProfileId);
   }
-  const activeId = await resolveActiveSalaryProfileId(db);
+  const activeId = await activeProfileId(db, "salary");
   return activeId != null ? loadAndApplySalaryProfile(db, activeId) : new Map();
 }
 

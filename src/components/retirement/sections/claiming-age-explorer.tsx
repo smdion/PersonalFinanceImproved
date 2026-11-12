@@ -40,7 +40,7 @@ export function ClaimingAgeExplorer({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
-  const query = trpc.projection.sweepSocialSecurityClaimingAges.useQuery(
+  const query = trpc.projection.computeSocialSecurityClaimingSweep.useQuery(
     {
       personId,
       pia,

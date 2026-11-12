@@ -156,11 +156,11 @@ vi.mock("@/lib/trpc", async () => ({
 describe("PortfolioContent smoke", () => {
   beforeEach(() => {
     resetTrpcMock();
-    setQuery("networth.computeSummary", mockSummary);
-    setQuery("networth.listSnapshotTotals", mockSnapshotTotals);
-    setQuery("networth.listSnapshots", mockPaginatedSnapshots);
-    setQuery("networth.portfolioSnapshots.getLatest", mockLatestSnap);
-    setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+    setQuery("netWorth.computeSummary", mockSummary);
+    setQuery("netWorth.listSnapshotTotals", mockSnapshotTotals);
+    setQuery("netWorth.listSnapshots", mockPaginatedSnapshots);
+    setQuery("netWorth.portfolioSnapshots.getLatest", mockLatestSnap);
+    setQuery("people.list", [{ id: 1, name: "Alice" }]);
     setQuery("performance.performanceAccounts.list", mockPerfAccounts);
     setQuery("sync.getSyncStatus", {
       service: null,
@@ -169,9 +169,9 @@ describe("PortfolioContent smoke", () => {
     });
     // The old stand-in's mutations never settled.
     for (const path of [
-      "networth.portfolioSnapshots.delete",
-      "networth.portfolioSnapshots.updateAccount",
-      "networth.portfolioSnapshots.create",
+      "netWorth.portfolioSnapshots.delete",
+      "netWorth.portfolioSnapshots.updateAccount",
+      "netWorth.portfolioSnapshots.create",
       "sync.resyncPortfolioPush",
     ] as const)
       holdMutation(path);
@@ -211,7 +211,7 @@ describe("PortfolioContent smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save Snapshot/i }));
 
     expect(
-      mutationCalls("networth.portfolioSnapshots.create"),
+      mutationCalls("netWorth.portfolioSnapshots.create"),
     ).not.toHaveLength(0);
   });
 });

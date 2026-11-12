@@ -10,7 +10,6 @@ import {
   matchRateWriteCases,
   type MatchRateDb,
 } from "./match-rate-writes-cases";
-import { decimalText } from "./decimal-text";
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 let t: Ctx;
@@ -27,9 +26,7 @@ beforeEach(async () => {
     personId,
     jobId,
     row: async (id) =>
-      decimalText(
-        t.db.select().from(accounts).where(eq(accounts.id, id)).get()!,
-      ),
+      t.db.select().from(accounts).where(eq(accounts.id, id)).get()!,
     entries: async (id) =>
       (
         t.db.select().from(profiles).where(eq(profiles.id, id)).get()!
@@ -54,7 +51,7 @@ afterEach(() => t.cleanup());
 matchRateWriteCases(() => h);
 
 async function percentAccount(value: string) {
-  const created = await t.caller.settings.contributionAccounts.create({
+  const created = await t.caller.contribution.accounts.create({
     accountType: "401k",
     parentCategory: "Retirement",
     taxTreatment: "pre_tax",

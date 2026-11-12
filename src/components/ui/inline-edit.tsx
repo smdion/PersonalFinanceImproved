@@ -45,6 +45,9 @@ export function InlineEdit({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
+  // An edit ends once, by save or cancel: a blur after Enter or Escape
+  // reaches the same render's handlers and must not save (again).
+  const ended = useRef(false);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -62,6 +65,8 @@ export function InlineEdit({
   }, [value, editing]);
 
   const save = () => {
+    if (ended.current) return;
+    ended.current = true;
     const parsed = parseInput ? parseInput(draft) : draft;
     if (parsed !== value) {
       onSave(parsed);
@@ -70,6 +75,7 @@ export function InlineEdit({
   };
 
   const cancel = () => {
+    ended.current = true;
     setDraft(value);
     setEditing(false);
   };
@@ -113,6 +119,7 @@ export function InlineEdit({
     <button
       type="button"
       onClick={() => {
+        ended.current = false;
         setDraft(value);
         setEditing(true);
       }}

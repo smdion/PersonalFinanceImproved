@@ -33,6 +33,7 @@ import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriodType } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import { NO_ONE_65 } from "../tax/tax-helpers";
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
 
@@ -220,7 +221,12 @@ describe("paycheck PW-10 properties", () => {
           );
           const owed = (people: number[]) =>
             calculateHouseholdTax({
-              people: people.map((w) => ({ federalWages: w, ficaWages: w })),
+              ageDeductions: NO_ONE_65,
+              people: people.map((w) => ({
+                federalWages: w,
+                ficaWages: w,
+                hsaOutsidePayroll: 0,
+              })),
               taxBrackets: liabilityInput("Single"),
               medicareLiabilityThreshold: limit(
                 2026,

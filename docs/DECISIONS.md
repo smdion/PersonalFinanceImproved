@@ -35,6 +35,6 @@ Settled product and architecture choices, most with their reason. Check here bef
 - **Counts only fall.** Lint counts, file sizes, copied code, accessibility violations and page budgets are ratchets: a cleanup lowers one in the same commit, and a raise is its own commit with the owner's OK.
 - **Page budgets carry stated headroom:** each page's measured size at the release plus 2 KB, re-set once per release.
 - **Small commits.** At most 400 changed `src/` lines, and at most 8 `src/` files in an engine or tax commit; a proven move or rename is exempt.
-- **A release soaks for 24 hours** after the last one, unless it is a hotfix, whose reason goes in the CHANGELOG.
+- **No release soak** (owner, 2026-11-09): a release is tagged once CI is green on `main`'s merge commit.
 - **Ledgr stays provider-neutral for alerts:** a failing scheduled job posts to any JSON webhook (`LEDGR_ALERT_WEBHOOK_URL`); where it goes is the installer's choice.
 - **Migrations convert any install.** Ledgr is public, so one install's data never proves a stored shape is absent: an old shape is converted by a migration and a backup transform, or its reader stays.

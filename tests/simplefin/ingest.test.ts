@@ -274,7 +274,7 @@ describe("ingestInvestmentData", () => {
     const rows = transactions(brokerageId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      amount: "500.00",
+      amount: "500",
       description: "CONTRIBUTION",
       posted: "2026-05-08",
       kindOverride: null,

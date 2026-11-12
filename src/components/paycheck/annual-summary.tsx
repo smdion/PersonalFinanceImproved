@@ -6,6 +6,7 @@ import { FieldRow } from "@/components/ui/field-row";
 import { SectionHeader } from "./section-header";
 import type { PaycheckResult, ViewMode } from "./types";
 import type { BlendedAnnualTotals } from "@/lib/pure/paycheck/paycheck.types";
+import { yearTotals } from "@/lib/pure/paycheck/year-totals";
 
 type Totals = {
   gross: number;
@@ -104,23 +105,17 @@ export function AnnualSummary({
 
   // Year-end estimate without salary-change data falls back to projected.
   const ytd = mode === "ytd";
-  // Year to date: the checks this job has paid (none before it started).
-  const checks = ytd
-    ? Math.max(0, paycheck.periodsElapsedYtd - paycheck.periodsBeforeStart)
-    : paycheck.periodsPerYear;
-  const sum = (lines: { amount: number }[]) =>
-    lines.reduce((s, d) => s + d.amount, 0);
+  // The year schedule's checks (Social Security at the full rate until the
+  // wage base): to today, or the whole year. Rows before the job started or
+  // after it ends are empty, so a part-year job counts only its own checks.
+  const last = ytd ? paycheck.periodsElapsedYtd : paycheck.periodsPerYear;
+  const checks = paycheck.yearSchedule
+    .slice(0, last)
+    .filter((p) => !p.beforeStart && !p.afterEnd).length;
   return (
     <TotalsPanel
       title={ytd ? "Year to date" : "Projected year"}
-      totals={{
-        gross: paycheck.gross * checks,
-        preTax: sum(paycheck.preTaxDeductions) * checks,
-        federal: paycheck.federalWithholding * checks,
-        fica: (paycheck.ficaSS + paycheck.ficaMedicare) * checks,
-        postTax: sum(paycheck.postTaxDeductions) * checks,
-        net: paycheck.netPay * checks,
-      }}
+      totals={yearTotals(paycheck.yearSchedule, 1, last)}
       footnote={`${checks} of ${paycheck.periodsPerYear} checks`}
     />
   );

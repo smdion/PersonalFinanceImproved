@@ -3,6 +3,10 @@
  * calculator tests (category totals, display specs).
  */
 import type { AccountCategory } from "@/lib/config/account-types";
+import type {
+  ContributionMethod,
+  EmployerMatchType,
+} from "@/lib/config/enum-values";
 
 export function makeContribRow(
   overrides: Partial<{
@@ -13,10 +17,10 @@ export function makeContribRow(
     subType: string | null;
     label: string | null;
     parentCategory: string;
-    contributionMethod: string;
+    contributionMethod: ContributionMethod;
     contributionValue: string;
     taxTreatment: string;
-    employerMatchType: string | null;
+    employerMatchType: EmployerMatchType | null;
     employerMatchValue: string | null;
     employerMaxMatchPct: string | null;
   }> = {},
@@ -29,12 +33,13 @@ export function makeContribRow(
     subType: null,
     label: null,
     parentCategory: "Retirement",
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as ContributionMethod,
     contributionValue: "10",
     taxTreatment: "pre_tax",
-    employerMatchType: null,
+    employerMatchType: null as EmployerMatchType | null,
     employerMatchValue: null,
     employerMaxMatchPct: null,
+    ownership: "individual" as const,
     fromBonus: undefined as boolean | undefined,
     // Rows as the IRS-limit cap pass leaves them (none over a limit here).
     capPassed: true as const,

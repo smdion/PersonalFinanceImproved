@@ -23,10 +23,12 @@ import {
 } from "../../config/account-types";
 import {
   capContributionsByLimitGroup,
-  type CapContext,
   type CappedContribution,
-  type CapRow,
 } from "../contributions/contribution-caps";
+import type {
+  CapContext,
+  CapRow,
+} from "../contributions/contribution-caps.types";
 import { OVERFLOW_TOLERANCE } from "../../constants";
 import { projectSpecAmount } from "./contribution-projection";
 

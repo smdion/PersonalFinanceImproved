@@ -6,13 +6,12 @@
  * null `data` yields safe empty outputs.
  */
 
-import { computeValue } from "@/lib/pure/contributions/contribution-caps";
+import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContributions,
-  fixedContributionMonthly,
 } from "@/components/budget/helpers";
 import { normalizeContributionKey } from "@/lib/config/account-types";
 import type {
@@ -152,27 +151,10 @@ export function useBudgetDerivedData({
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
       }
 
-      for (const c of pData.jointContribs as Array<{
-        id: number;
-        accountType: string;
-        contributionMethod: string;
-        contributionValue: string | number;
-        cappedValue?: number;
-      }>) {
+      for (const c of pData.jointContribs) {
         if (linkedContributionAccountIds.has(c.id)) continue;
-        const val = computeValue(c) || 0;
-        // Joint money has no pay schedule of its own: the first paycheck's.
-        const periods = (
-          pData.people as { paycheck: { periodsPerYear: number } | null }[]
-        ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
-        const monthly =
-          c.contributionMethod === "fixed_per_period" && periods
-            ? fixedContributionMonthly(c.contributionMethod, val, periods)
-            : c.contributionMethod === "fixed_monthly"
-              ? val
-              : val / 12;
         const key = normalizeContributionKey(c.accountType);
-        if (key) map.set(key, (map.get(key) ?? 0) + monthly);
+        if (key) map.set(key, (map.get(key) ?? 0) + c.monthly);
       }
 
       return map;
@@ -228,7 +210,7 @@ export function useBudgetDerivedData({
             it.contribAmounts?.[col] ??
             (it.contribAmount != null
               ? it.contribAmount
-              : (it.amounts[col] ?? 0));
+              : budgetItemAmount(it.amounts, col, numCols));
           const val = editMode ? getDraft(it.id, col, resolved) : resolved;
           return s + val;
         }, 0),
@@ -289,9 +271,9 @@ export function useBudgetDerivedData({
         continue;
       // Contribution-linked items keep `amounts` stale (see
       // resolveLinkedBudgetItemAmounts); the pushed figure is `contribAmounts`.
-      const amounts = (item.contribAmounts ?? item.amounts) as number[];
-      const colIndex = Math.min(activeColumn, amounts.length - 1);
-      const newValue = amounts[colIndex] ?? 0;
+      const amounts = item.contribAmounts ?? item.amounts;
+      const colIndex = Math.min(activeColumn, numCols - 1);
+      const newValue = budgetItemAmount(amounts, colIndex, numCols);
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
@@ -312,9 +294,8 @@ export function useBudgetDerivedData({
       if (!item.apiCategoryId) continue;
       if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
         continue;
-      const amounts = item.amounts as number[];
-      const colIndex = Math.min(activeColumn, amounts.length - 1);
-      const currentValue = amounts[colIndex] ?? 0;
+      const colIndex = Math.min(activeColumn, numCols - 1);
+      const currentValue = budgetItemAmount(item.amounts, colIndex, numCols);
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,

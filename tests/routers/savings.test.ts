@@ -35,7 +35,6 @@ import {
 import type { BudgetMonthDetail } from "@/lib/budget-api";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import { goalClient } from "../helpers/goal-client";
-import { decimalText } from "./decimal-text";
 
 vi.mock("@/lib/budget-api", async () => {
   const actual =
@@ -137,7 +136,7 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       expect(result).toBeDefined();
-      expect(decimalText(result!.amount)).toBe("-500");
+      expect(result!.amount).toBe("-500");
     });
 
     it("rejects an invalid date format", async () => {
@@ -204,7 +203,7 @@ describe("savings.plannedTransactions", () => {
       });
       expect(result).toBeDefined();
       expect(result!.id).toBe(txId);
-      expect(decimalText(result!.amount)).toBe("350");
+      expect(result!.amount).toBe("350");
       expect(result!.description).toBe("Updated description");
     });
 
@@ -882,7 +881,7 @@ describe("savings.convertGoalToBudgetItem", () => {
     ).rejects.toThrow("Savings goal not found");
   });
 
-  it("throws PRECONDITION_FAILED when no active budget profile exists", async () => {
+  it("refuses with no active budget profile, as every budget edit does", async () => {
     const freshCtx = await createTestCaller();
     try {
       const freshGoalId = seedSavingsGoal(freshCtx.db, {
@@ -896,7 +895,25 @@ describe("savings.convertGoalToBudgetItem", () => {
           subcategory: "Something",
           isEssential: false,
         }),
-      ).rejects.toThrow("No active budget profile");
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "No active profile",
+      });
+    } finally {
+      freshCtx.cleanup();
+    }
+  });
+
+  it("refuses a recalculation with no budget profile, or one that was deleted", async () => {
+    const freshCtx = await createTestCaller();
+    try {
+      const refused = { code: "BAD_REQUEST", message: "No active profile" };
+      await expect(
+        freshCtx.caller.savings.recalculateAllocation(),
+      ).rejects.toMatchObject(refused);
+      await expect(
+        freshCtx.caller.savings.lockInAllocationPercent({ profileId: 999_999 }),
+      ).rejects.toMatchObject(refused);
     } finally {
       freshCtx.cleanup();
     }
@@ -1459,6 +1476,43 @@ describe("savings.computeSummary", () => {
       expect(result.allocationOverrides[0]!.amount).toBe(175);
     } finally {
       freshCtx.cleanup();
+    }
+  });
+});
+
+describe("savings.computeSummary: self-loans", () => {
+  it("keeps a partly repaid self-loan outstanding ($1,000 with $500 repaid)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sqliteClient = (ctx.db as any).$client as {
+        prepare: (sql: string) => { all: (...params: unknown[]) => unknown[] };
+      };
+      patchExecute(
+        ctx.rawDb as unknown as Record<string, unknown>,
+        sqliteClient,
+      );
+      seedStandardDataset(ctx.db);
+      const efund = seedSavingsGoal(ctx.db, {
+        name: "Invented reserve",
+        targetAmount: "15000",
+        isEmergencyFund: true,
+      });
+      // Stored at scale, as the writers store it: "500.00" < "1000.00" is
+      // false as text and true as numbers.
+      ctx.db
+        .insert(sqliteTables.selfLoans)
+        .values({
+          fromGoalId: efund,
+          amount: "1000.00",
+          repaidAmount: "500.00",
+          loanDate: "2026-01-15",
+        })
+        .run();
+      const result = await ctx.caller.savings.computeSummary();
+      expect(result.efund?.outstandingSelfLoans).toBe(500);
+    } finally {
+      ctx.cleanup();
     }
   });
 });

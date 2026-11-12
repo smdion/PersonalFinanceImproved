@@ -12,12 +12,11 @@ import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
-import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import {
@@ -29,13 +28,16 @@ import {
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
 } from "@/lib/pure/paycheck/budget-periods";
-import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
+import {
+  buildPaycheckInputForJob,
+  jobScheduleDates,
+} from "@/lib/pure/paycheck/paycheck-input";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
-import { fetchContributionProfile } from "@/server/services/contributions/profile";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
+import { jointRows } from "@/lib/pure/contributions/row-amounts";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
 import { toNumber } from "@/lib/utils/numbers";
 import { getPeriodsPerYear } from "@/lib/config/pay-periods";
@@ -56,7 +58,7 @@ import {
   deductionLine,
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
-import { findActiveJob } from "@/lib/pure/household/profiles";
+import { findActiveJob, otherCurrentJobs } from "@/lib/pure/household/profiles";
 import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
@@ -166,16 +168,7 @@ export async function computePaycheckSummary(
   // Accounts with no active value under this profile (applyContribActiveFields
   // excludes them) are surfaced per person, so a card never shows a quietly
   // shrunk total.
-  const contribProfileRow = await fetchContributionProfile(
-    ctx.db,
-    input?.contributionProfileId,
-  );
-  const accountActiveFields = contribProfileRow
-    ? readContributionActiveFields(
-        contribProfileRow.contributionActiveFields,
-        contribProfileRow.id,
-      ).contributionAccounts
-    : {};
+  const accountActiveFields = profileResult.contribActiveFields;
   // The What-If tab's sandbox edits apply last, through the same merge
   // function: one more layer, never a second resolution path.
   const sandboxed = applyContribActiveFields(
@@ -353,7 +346,7 @@ export async function computePaycheckSummary(
       });
       if (!ended) return [];
       const endedPaycheck = calculatePaycheck(ended.paycheckInput);
-      const anchor = job.anchorPayDate ?? job.startDate;
+      const anchor = jobScheduleDates(job).anchorPayDate;
       // Its paydays from the year's start (or its own) to its end.
       const checks = checksPaidYtd(
         end,
@@ -362,11 +355,7 @@ export async function computePaycheckSummary(
         ended.periodsPerYear,
         job.startDate,
       );
-      const paydaysToEnd = countPeriodsElapsed(
-        end,
-        job.payPeriod!,
-        new Date(anchor),
-      );
+      const paydaysToEnd = countPeriodsElapsed(end, job.payPeriod!, anchor);
       return [
         {
           employerName: job.employerName,
@@ -379,7 +368,7 @@ export async function computePaycheckSummary(
               countPeriodsElapsed(
                 end < asOfDate ? end : asOfDate,
                 job.payPeriod!,
-                new Date(anchor),
+                anchor,
               ),
               ended.periodsPerYear,
             ),
@@ -414,8 +403,7 @@ export async function computePaycheckSummary(
 
   const results = await Promise.all(
     people.map(async (person) => {
-      // Personal (jobless) contributions belong on this card with or without a
-      // current job, so this runs before the early returns below.
+      // Personal (jobless) contributions show with or without a job: before the early returns.
       const incompleteAccountIds = getIncompleteContribAccountIds(
         allContribs.filter(
           (c) =>
@@ -519,11 +507,9 @@ export async function computePaycheckSummary(
         yearPayNote,
       } = yearEarnings(
         activeJob,
-        taxYear,
         paycheck,
         periodsPerYear,
         salary,
-        taxBracketInput,
         contribAccounts,
         deductions,
         endedJobYears,
@@ -580,6 +566,7 @@ export async function computePaycheckSummary(
               ] ?? 0,
           })),
         rawContribs,
+        otherCurrentJobs: otherCurrentJobs(effectiveJobs, activeJob, asOfDate),
         /** The year's Social Security / Medicare rates, wage base and Additional
          *  Medicare threshold, from tax data: what "Check against your pay stub"
          *  works back from. */
@@ -618,10 +605,7 @@ export async function computePaycheckSummary(
     }),
   );
 
-  // Joint accounts — returned separately for household-level display
-  const jointContribs = effectiveContribs.filter(
-    (c) => c.isActive && c.ownership === "joint",
-  );
+  const jointContribs = jointRows(effectiveContribs, effectiveJobs, asOfDate);
   const {
     householdIncome,
     householdFilingStatus,

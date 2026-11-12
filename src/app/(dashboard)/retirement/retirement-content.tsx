@@ -78,7 +78,7 @@ export function RetirementContent() {
     "retirement_snapshot_id",
     null,
   );
-  const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
+  const snapshotTotalsQuery = trpc.netWorth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
   // The plan input minus the withdrawal-editor defaults these queries skip.
   const baseInput = useMemo(() => {

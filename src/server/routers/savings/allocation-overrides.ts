@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, savingsProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { zCalendarDate } from "@/lib/utils/zod-fields";
+import { zCalendarDate, zMoneyNumber } from "@/lib/utils/zod-fields";
 import type { DbOrTx } from "@/lib/db";
 import { firstRow } from "@/lib/utils/first-row";
 
@@ -47,7 +47,7 @@ export const allocationOverrideProcedures = {
         z.object({
           goalId: z.number().int(),
           monthDate: zCalendarDate,
-          amount: z.number(),
+          amount: zMoneyNumber,
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -122,7 +122,7 @@ export const allocationOverrideProcedures = {
           allocations: z.array(
             z.object({
               goalId: z.number().int(),
-              amount: z.number().min(0),
+              amount: zMoneyNumber.min(0),
             }),
           ),
         }),
@@ -144,7 +144,7 @@ export const allocationOverrideProcedures = {
           allocations: z.array(
             z.object({
               goalId: z.number().int(),
-              amount: z.number().min(0),
+              amount: zMoneyNumber.min(0),
             }),
           ),
         }),

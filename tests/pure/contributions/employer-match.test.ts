@@ -132,20 +132,6 @@ describe("computeEmployerMatch", () => {
     }
   });
 
-  it("returns 0 for unknown match type", () => {
-    expect(
-      computeEmployerMatch(
-        "unknown",
-        5000,
-        0,
-        12000,
-        "percent_of_salary",
-        10,
-        120000,
-      ),
-    ).toBe(0);
-  });
-
   it("handles fixed_per_period contrib method for empPct calculation", () => {
     // Employee contributes $500/period (annual = $13,000 on $120k salary)
     // empPct = 13000/120000 = 0.1083

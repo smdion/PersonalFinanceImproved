@@ -64,6 +64,7 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
+          setupFiles: ["tests/setup-clock.ts"],
           include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
           // The extglob negation below excludes every file under
           // tests/components except the two that test exported pure
@@ -93,7 +94,7 @@ export default defineConfig({
           // fraction of jsdom's per-file setup cost (the project keeps its
           // name so --project=jsdom scripts still work).
           environment: "happy-dom",
-          setupFiles: ["tests/setup-component.ts"],
+          setupFiles: ["tests/setup-clock.ts", "tests/setup-component.ts"],
           include: [
             "tests/components/**/*.test.ts",
             "tests/components/**/*.test.tsx",

@@ -90,7 +90,7 @@ describe("deletes clear their JSON references", () => {
     try {
       const personId = await seedPerson(db, "Pat", "1990-01-01");
       const jobId = seedJob(db, personId);
-      const ded = await caller.settings.deductions.create({
+      const ded = await caller.paycheck.deductions.create({
         jobId,
         deductionName: "Dental",
         isPretax: true,
@@ -104,7 +104,7 @@ describe("deletes clear their JSON references", () => {
           },
         },
       });
-      await caller.settings.deductions.delete({ id: ded!.id });
+      await caller.paycheck.deductions.delete({ id: ded!.id });
       const fields = db
         .select()
         .from(schema.contributionProfiles)

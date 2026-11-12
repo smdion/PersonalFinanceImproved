@@ -111,7 +111,8 @@ export function useConfirmApplyPlan() {
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const { data: retirementProfiles } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  const { data: compare } = trpc.contributionProfile.compareData.useQuery();
+  const { data: compare } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const lists = useMemo<
     Record<PlanProfileKind, readonly { id: number; name: string }[] | undefined>
   >(

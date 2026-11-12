@@ -14,8 +14,11 @@ import {
   seedPerson,
   viewerSession,
 } from "./setup";
+import * as schema from "@/lib/db/schema-sqlite";
+import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 
 const reads = vi.hoisted(() => ({
+  savings: vi.fn(),
   holdings: vi.fn(),
   buyingMonths: vi.fn(),
   goals: vi.fn(),
@@ -31,6 +34,18 @@ vi.mock("@/server/services/investments/holdings-overview", async (orig) => ({
 vi.mock("@/server/services/investments/buying-months", () => ({
   loadBuyingMonths: reads.buyingMonths,
 }));
+vi.mock("@/server/services/savings/summary", async (orig) => {
+  const real = await orig<typeof import("@/server/services/savings/summary")>();
+  return {
+    ...real,
+    computeSavingsSummary: (
+      ...args: Parameters<typeof real.computeSavingsSummary>
+    ) => {
+      reads.savings(args[1]);
+      return real.computeSavingsSummary(...args);
+    },
+  };
+});
 vi.mock("@/server/data/brokerage-goals", () => ({
   listBrokerageGoals: reads.goals,
 }));
@@ -87,5 +102,22 @@ describe("milestones.recordReached — what the input reads, by viewer", () => {
       "milestones.active_input_read_failed",
       { read: "holdings", error: "fund facts down" },
     );
+  });
+
+  it('the savings summary resolves the e-fund\'s column itself (a stored "1" included)', async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const personId = await seedPerson(db, "Test Person", "1990-01-01");
+      seedJob(db, personId);
+      db.insert(schema.appSettings)
+        .values({ key: SK_EFUND_BUDGET_COLUMN, value: "1" })
+        .run();
+      await caller.milestones.recordReached();
+      // No override from a typed read of the setting: resolveEfundTierIndex
+      // reads it, digit string included (efund-expenses.test.ts).
+      expect(reads.savings).toHaveBeenCalledWith(undefined);
+    } finally {
+      cleanup();
+    }
   });
 });

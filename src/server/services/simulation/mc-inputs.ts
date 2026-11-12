@@ -35,7 +35,7 @@ export async function loadSavedInflationOverrides(
 
 /**
  * The Simulation's inputs (asset classes, correlations, glide path, inflation risk) under
- * `presetKey`; without one, the raw table values (computeMonteCarloProjection applies the
+ * `presetKey`; without one, the raw table values (computeSimulation applies the
  * run's preset itself, with the run's asset-class changes on top).
  */
 export async function buildSimulationInputs(
@@ -57,7 +57,7 @@ export async function buildSimulationInputs(
    *  or null when they can. */
   notConfigured: SimulationNotConfigured | null;
   /** Raw saved inflation override — null if none saved. Callers that surface
-   *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
+   *  this to the client (e.g. computeSimulation) use this as-is. */
   savedInflationOverrides: SavedInflationOverrides;
 }> {
   const [

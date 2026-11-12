@@ -21,11 +21,9 @@ export function buildAccountLabel(params: {
   return `${name} (${params.institution})`;
 }
 
-/**
- * Build a human-readable display name for an account.
- * Priority: displayName (user override) > accountLabel (programmatic).
- * All pages must use this function — never inline `displayName ?? accountLabel`.
- */
+/** An account's display name: displayName > built from its parts when the
+ *  owner is known > the stored accountLabel > built with no owner. Every page
+ *  uses this, never an inline `displayName ?? accountLabel`. */
 export function accountDisplayName(
   account: {
     accountType?: string;
@@ -47,30 +45,21 @@ export function accountDisplayName(
   const effectiveOwner =
     account.ownershipType === "joint" ? "Joint" : ownerName;
 
-  // Priority 2: programmatic label (stored on performanceAccounts)
-  if (account.accountLabel) {
-    // Rebuild with the correct prefix when the stored label doesn't start
-    // with it, so labels stored without the joint prefix still display right.
-    if (
-      effectiveOwner &&
-      !account.accountLabel.startsWith(effectiveOwner) &&
-      account.accountType &&
-      account.institution
-    ) {
-      return buildAccountLabel({
-        ownerName: effectiveOwner,
-        accountType: account.accountType,
-        subType: account.subType,
-        label: account.label,
-        institution: account.institution,
-      });
-    }
-    return account.accountLabel;
-  }
-  // Priority 3: construct on the fly (fallback for objects without accountLabel)
-  if (account.accountType && account.institution) {
+  // Priority 2: the label built from its parts whenever the owner is known
+  // (joint, or the caller's owner name), so a person's rename shows at once;
+  // the stored programmatic label only names an owner the caller didn't give.
+  if (effectiveOwner && account.accountType && account.institution)
     return buildAccountLabel({
       ownerName: effectiveOwner,
+      accountType: account.accountType,
+      subType: account.subType,
+      label: account.label,
+      institution: account.institution,
+    });
+  if (account.accountLabel) return account.accountLabel;
+  // Priority 3: built with no owner (no owner known, no stored label)
+  if (account.accountType && account.institution) {
+    return buildAccountLabel({
       accountType: account.accountType,
       subType: account.subType,
       label: account.label,

@@ -25,7 +25,7 @@ describe("portfolioSnapshots.createAccount", () => {
       const older = seedSnapshot(db, "2025-03-01", []);
       seedSnapshot(db, "2025-06-01", []);
       await expect(
-        caller.networth.portfolioSnapshots.createAccount({
+        caller.netWorth.portfolioSnapshots.createAccount({
           ...row,
           snapshotId: older,
         }),
@@ -59,7 +59,7 @@ describe("portfolioSnapshots.createAccount", () => {
         })
         .run();
       const snap = seedSnapshot(db, "2025-06-01", []);
-      const created = await caller.networth.portfolioSnapshots.createAccount({
+      const created = await caller.netWorth.portfolioSnapshots.createAccount({
         ...row,
         snapshotId: snap,
         parentCategory: "Retirement",

@@ -7,6 +7,7 @@ import {
   integer,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { decimalText } from "../sqlite-decimal";
 
 import { people } from "./people";
 
@@ -17,28 +18,28 @@ import { people } from "./people";
 export const netWorthAnnual = sqliteTable("net_worth_annual", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   yearEndDate: text("year_end_date").notNull().unique(),
-  grossIncome: text("gross_income").notNull().default("0"),
-  combinedAgi: text("combined_agi").notNull().default("0"),
-  ssaEarnings: text("ssa_earnings"),
-  effectiveTaxRate: text("effective_tax_rate"),
-  taxesPaid: text("taxes_paid"),
+  grossIncome: decimalText("gross_income").notNull().default("0"),
+  combinedAgi: decimalText("combined_agi").notNull().default("0"),
+  ssaEarnings: decimalText("ssa_earnings"),
+  effectiveTaxRate: decimalText("effective_tax_rate"),
+  taxesPaid: decimalText("taxes_paid"),
   // Assets
-  cash: text("cash").notNull().default("0"),
-  houseValue: text("house_value").notNull().default("0"),
-  retirementTotal: text("retirement_total").notNull().default("0"),
-  hsa: text("hsa").notNull().default("0"),
-  ltBrokerage: text("lt_brokerage").notNull().default("0"),
-  espp: text("espp").notNull().default("0"),
-  rBrokerage: text("r_brokerage").notNull().default("0"),
-  otherAssets: text("other_assets").notNull().default("0"),
+  cash: decimalText("cash").notNull().default("0"),
+  houseValue: decimalText("house_value").notNull().default("0"),
+  retirementTotal: decimalText("retirement_total").notNull().default("0"),
+  hsa: decimalText("hsa").notNull().default("0"),
+  ltBrokerage: decimalText("lt_brokerage").notNull().default("0"),
+  espp: decimalText("espp").notNull().default("0"),
+  rBrokerage: decimalText("r_brokerage").notNull().default("0"),
+  otherAssets: decimalText("other_assets").notNull().default("0"),
   // Liabilities
-  mortgageBalance: text("mortgage_balance").notNull().default("0"),
-  otherLiabilities: text("other_liabilities").notNull().default("0"),
+  mortgageBalance: decimalText("mortgage_balance").notNull().default("0"),
+  otherLiabilities: decimalText("other_liabilities").notNull().default("0"),
   // Breakdowns
-  taxFreeTotal: text("tax_free_total").notNull().default("0"),
-  taxDeferredTotal: text("tax_deferred_total").notNull().default("0"),
-  portfolioTotal: text("portfolio_total").notNull().default("0"),
-  propertyTaxes: text("property_taxes"),
+  taxFreeTotal: decimalText("tax_free_total").notNull().default("0"),
+  taxDeferredTotal: decimalText("tax_deferred_total").notNull().default("0"),
+  portfolioTotal: decimalText("portfolio_total").notNull().default("0"),
+  propertyTaxes: decimalText("property_taxes"),
   // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
   portfolioByTaxLocation: text("portfolio_by_tax_location", { mode: "json" })
@@ -54,7 +55,7 @@ export const homeImprovementItems = sqliteTable("home_improvement_items", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   year: integer("year").notNull(),
   description: text("description").notNull(),
-  cost: text("cost").notNull(),
+  cost: decimalText("cost").notNull(),
   note: text("note"),
 });
 
@@ -69,8 +70,8 @@ export const historicalSalaries = sqliteTable(
       .notNull()
       .references(() => people.id, { onDelete: "cascade" }),
     year: integer("year").notNull(),
-    salary: text("salary").notNull(),
-    bonus: text("bonus").notNull().default("0"),
+    salary: decimalText("salary").notNull(),
+    bonus: decimalText("bonus").notNull().default("0"),
   },
   (table) => [
     uniqueIndex("historical_salaries_person_year_idx").on(
@@ -87,7 +88,7 @@ export const otherAssetItems = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
     year: integer("year").notNull(),
-    value: text("value").notNull(),
+    value: decimalText("value").notNull(),
     note: text("note"),
   },
   (table) => [

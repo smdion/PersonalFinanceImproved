@@ -2,7 +2,7 @@
  * The year-end history's stored-year stages (lib/pure/net-worth/
  * year-end-rows.ts), on an invented household: a 401k and a brokerage
  * account, 2024 finalized, 2025 still open. buildYearEndHistory's full rows
- * stay pinned in tests/baseline (networth.*, historical.*, milestones.*).
+ * stay pinned in tests/baseline (netWorth.*, historical.*, milestones.*).
  */
 import { describe, expect, it } from "vitest";
 import {

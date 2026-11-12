@@ -24,7 +24,7 @@ export type PersonContributionAccountsInput<R extends ContributionAccountRow> =
     limitsRecord: Record<string, number>;
     /** Salary plus this year's bonus: the savings rate's denominator. */
     totalCompensation: number;
-    /** Age on asOfDate (catch-up limits). */
+    /** Age at Dec 31 of the tax year (`limitAge`): catch-up limits. */
     age: number;
     /** Last year's IRS limits (prior-year contributions). */
     priorYearLimitsRecord: Record<string, number>;

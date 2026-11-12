@@ -26,6 +26,7 @@ import {
   beforeAll,
   beforeEach,
   describe,
+  it,
   vi,
 } from "vitest";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -36,7 +37,7 @@ import { fetchRetirementData } from "@/server/services/projection/engine-payload
 import { calculateProjection } from "@/lib/pure/engine";
 import { buildDecumulationDefaults } from "@/server/services/projection/projection-run";
 import { SK_RETIREMENT_DECUMULATION_EXPENSE_OVERRIDE } from "@/lib/constants/settings-keys";
-import { xfail } from "../../../../fixtures/answer-key";
+import { cents, xfail } from "../../../../fixtures/answer-key";
 import {
   createTestCaller,
   seedAppSetting,
@@ -272,31 +273,26 @@ describe("answer key: the Retirement budget every screen runs on (spending-terms
     // Trace #6: a Retirement budget picked as the same Budget profile and
     // column, so its total equals the Budget's (120,000). Decided (the
     // trace's fix, under the one resolver): it is always sent, so Coast
-    // FIRE's need test runs. Today the payload
-    // omits it when the two totals are equal
-    // (`build-engine-payload.ts:1262-1267`).
-    xfail({
-      id: "engine/T6 [ENG-03]",
-      todo: ONE_RESOLVER,
-      run: async () => {
-        const data = await fetchRetirementData(appDb, {});
-        const payload = await buildEnginePayload(appDb, data, {
-          asOf: new Date(),
-          decumulationBudgetProfileId: budgetProfileId,
-          decumulationBudgetColumn: 0,
-        });
-        const input = payload!.baseEngineInput;
-        return {
+    // FIRE's need test runs (SM1, owner SM1 C2).
+    it("engine/T6 [ENG-03] sent even when it equals the Budget: 120,000", async () => {
+      const data = await fetchRetirementData(appDb, {});
+      const payload = await buildEnginePayload(appDb, data, {
+        asOf: new Date(),
+        decumulationBudgetProfileId: budgetProfileId,
+        decumulationBudgetColumn: 0,
+      });
+      const input = payload!.baseEngineInput;
+      cents(
+        {
           ...sent(input),
           sent: input.decumulationAnnualExpenses === undefined ? 0 : 1,
-        };
-      },
-      expected: {
-        sent: 1,
-        decumulationAnnualExpenses: 120_000,
-        retirementBudget: 120_000,
-      },
-      today: { sent: 0, retirementBudget: 120_000 },
+        },
+        {
+          sent: 1,
+          decumulationAnnualExpenses: 120_000,
+          retirementBudget: 120_000,
+        },
+      );
     });
   });
 });

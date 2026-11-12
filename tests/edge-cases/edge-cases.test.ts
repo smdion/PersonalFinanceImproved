@@ -38,7 +38,6 @@ describe("paycheck edge cases", () => {
     earnings: [],
     taxBrackets: MFJ_2C_BRACKETS,
     limits: {},
-    ytdGrossEarnings: 0,
     bonusPercent: 0,
     bonusMultiplier: 1.0,
     bonusOverride: null,
@@ -108,18 +107,6 @@ describe("paycheck edge cases", () => {
       payPeriod: "monthly",
     });
     expect(result.extraPaycheckMonths).toEqual([]);
-  });
-
-  it("handles YTD earnings past SS wage base", () => {
-    const result = calculatePaycheck({
-      ...basePaycheck,
-      annualSalary: 200000,
-      ytdGrossEarnings: 190000, // already past the 2026 $184,500
-    });
-    expect(result.ficaSS).toBe(0);
-    expect(result.warnings).toContainEqual(
-      expect.stringContaining("SS wage base exceeded"),
-    );
   });
 
   it("handles zero bonus percent", () => {

@@ -27,9 +27,9 @@ const view = (
       ],
     },
     wageAgi: magi,
-    hsaOutsidePayroll: 0,
     investmentIncome: 0,
     preTaxIraByPerson: preTax ? [{ personId: 7, amount: preTax }] : [],
+    otherIraByPerson: [{ personId: 7, amount: 0 }],
     marginOverride: null,
   });
 const recs = (
@@ -186,10 +186,10 @@ describe("a backdoor deposit waiting to be converted", () => {
         ],
       },
       wageAgi: 220_000,
-      hsaOutsidePayroll: 0,
       investmentIncome: 0,
       preTaxIraByPerson: [{ personId: 7, amount: preTax }],
       pendingConversionByPerson: [{ personId: 7, amount: pending }],
+      otherIraByPerson: [{ personId: 7, amount: 0 }],
       marginOverride: null,
     });
 

@@ -124,13 +124,13 @@ export function NewSnapshotForm({
   onSaved: () => void;
 }) {
   const { data: latestSnap, isLoading: loadingLatest } =
-    trpc.networth.portfolioSnapshots.getLatest.useQuery();
+    trpc.netWorth.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts, isLoading: loadingPerfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: people, isLoading: loadingPeople } =
-    trpc.settings.people.list.useQuery();
+    trpc.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const createMutation = trpc.networth.portfolioSnapshots.create.useMutation({
+  const createMutation = trpc.netWorth.portfolioSnapshots.create.useMutation({
     onSuccess: (data) => {
       // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
       const sync = (data as unknown as Record<string, unknown>)
@@ -153,12 +153,12 @@ export function NewSnapshotForm({
     },
   });
 
-  const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery();
+  const { data: snapshotTotals } = trpc.netWorth.listSnapshotTotals.useQuery();
   // Hidden (no error shown) without the portfolio permission it needs.
-  const { data: suggestions } = trpc.investments.suggestSnapshot.useQuery(
-    undefined,
-    { retry: false },
-  );
+  const { data: suggestions } =
+    trpc.investments.listSnapshotSuggestions.useQuery(undefined, {
+      retry: false,
+    });
   const [filled, setFilled] = useState(false);
   const [accountNotes, setAccountNotes] = useState<
     Map<number, NonNullable<typeof suggestions>["accounts"][number]>

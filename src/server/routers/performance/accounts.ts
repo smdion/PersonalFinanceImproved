@@ -157,9 +157,11 @@ export const accountProcedures = {
           const affectedYears = await tx
             .selectDistinct({ year: schema.accountPerformance.year })
             .from(schema.accountPerformance)
-            .where(eq(schema.accountPerformance.performanceAccountId, id));
+            .where(eq(schema.accountPerformance.performanceAccountId, id))
+            .orderBy(schema.accountPerformance.year);
           const before = [];
-          // One query at a time on the transaction's connection.
+          // One at a time on the transaction's connection, years ascending
+          // (each capture takes its year's lock).
           for (const { year } of affectedYears)
             before.push(await captureYearRollups(tx, year));
 

@@ -14,6 +14,9 @@ vi.mock("@/lib/budget-api", () => ({
 vi.mock("@/server/data/budget-profiles", () => ({
   resolveTargetBudgetProfile: async () => m.profile,
 }));
+vi.mock("@/server/data/budget-profile-lock", () => ({
+  lockedTargetBudgetProfile: async () => m.profile,
+}));
 
 import {
   requireActiveBudgetApi,
@@ -52,17 +55,11 @@ describe("requireBudgetClient", () => {
     });
   });
 
-  it("refuses a missing client with the default or the caller's message", async () => {
+  it("refuses a missing client with one message for every caller", async () => {
     m.active = "actual";
     await expect(requireBudgetClient(db)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
       message: "Budget API client not available",
-    });
-    await expect(
-      requireBudgetClient(db, "No budget API active"),
-    ).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-      message: "No budget API active",
     });
   });
 

@@ -36,8 +36,8 @@ export function ProfileEditor({
     Record<string, string>
   >({});
 
-  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
-  const { data: jobsList } = trpc.settings.jobs.list.useQuery();
+  const { data: deductionRows } = trpc.paycheck.deductions.list.useQuery();
+  const { data: jobsList } = trpc.jobs.list.useQuery();
 
   const createMutation = trpc.contributionProfile.create.useMutation({
     onSuccess: (created) => onSaved(created.id),

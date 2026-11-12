@@ -7,12 +7,12 @@ import {
   integer,
   boolean,
   date,
-  decimal,
   uniqueIndex,
   index,
   check,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { sql } from "drizzle-orm";
 import type {
   UtilityKind,

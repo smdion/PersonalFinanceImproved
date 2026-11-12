@@ -9,6 +9,7 @@ import type { PaycheckContributionRow } from "./paycheck-contribution-row";
 export type ContributionAccountRow = PaycheckContributionRow &
   CapPassed & {
     ownership: AccountOwnership;
+    isActive: boolean;
     performanceAccountId: number | null;
     targetAnnual: string | null;
     allocationPriority: number;

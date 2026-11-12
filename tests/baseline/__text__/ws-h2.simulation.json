@@ -1,10 +1,11 @@
 {
  "projection.computeCoastFire": {
   "result": {
-   "status": "already_coast"
+   "retired": false,
+   "status": "found"
   }
  },
- "projection.computeCoastFireMC": {
+ "projection.computeCoastFireSimulation": {
   "result": {
    "mcResult": {
     "deterministicProjection": {
@@ -4376,6 +4377,10 @@
       },
       {
        "category": "brokerage"
+      },
+      {
+       "category": "401k",
+       "subType": "traditional"
       }
      ],
      "projectionByYear": [
@@ -8029,7 +8034,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8130,7 +8135,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8231,7 +8236,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8332,7 +8337,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8433,7 +8438,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8534,7 +8539,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8635,7 +8640,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8736,7 +8741,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8837,7 +8842,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       },
       {
@@ -8938,7 +8943,7 @@
         }
        ],
        "strategyAction": "decline",
-       "unmetNeedMaterial": false,
+       "unmetNeedMaterial": true,
        "withdrawalSized": false
       }
      ]
@@ -12507,20 +12512,6 @@
          "ownerName": "Taylor",
          "parentCategory": "Retirement",
          "taxType": "preTax"
-        },
-        {
-         "category": "brokerage",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "no_owner"
-          }
-         },
-         "name": "Retirement brokerage (projected)",
-         "parentCategory": "Retirement",
-         "projectedOnly": true,
-         "taxType": "afterTax"
         }
        ],
        "phase": "decumulation",
@@ -12541,7 +12532,7 @@
          "structure": "roth_traditional"
         }
        },
-       "rmdOverrodeRouting": true,
+       "rmdOverrodeRouting": false,
        "slots": [
         {
          "cappedByAccount": false,
@@ -12622,20 +12613,6 @@
          "ownerName": "Taylor",
          "parentCategory": "Retirement",
          "taxType": "preTax"
-        },
-        {
-         "category": "brokerage",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "no_owner"
-          }
-         },
-         "name": "Retirement brokerage (projected)",
-         "parentCategory": "Retirement",
-         "projectedOnly": true,
-         "taxType": "afterTax"
         }
        ],
        "phase": "decumulation",
@@ -12656,7 +12633,7 @@
          "structure": "roth_traditional"
         }
        },
-       "rmdOverrodeRouting": true,
+       "rmdOverrodeRouting": false,
        "slots": [
         {
          "cappedByAccount": false,
@@ -12737,20 +12714,6 @@
          "ownerName": "Taylor",
          "parentCategory": "Retirement",
          "taxType": "preTax"
-        },
-        {
-         "category": "brokerage",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "no_owner"
-          }
-         },
-         "name": "Retirement brokerage (projected)",
-         "parentCategory": "Retirement",
-         "projectedOnly": true,
-         "taxType": "afterTax"
         }
        ],
        "phase": "decumulation",
@@ -12771,7 +12734,7 @@
          "structure": "roth_traditional"
         }
        },
-       "rmdOverrodeRouting": true,
+       "rmdOverrodeRouting": false,
        "slots": [
         {
          "cappedByAccount": false,
@@ -12852,20 +12815,6 @@
          "ownerName": "Taylor",
          "parentCategory": "Retirement",
          "taxType": "preTax"
-        },
-        {
-         "category": "brokerage",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "no_owner"
-          }
-         },
-         "name": "Retirement brokerage (projected)",
-         "parentCategory": "Retirement",
-         "projectedOnly": true,
-         "taxType": "afterTax"
         }
        ],
        "phase": "decumulation",
@@ -12886,7 +12835,7 @@
          "structure": "roth_traditional"
         }
        },
-       "rmdOverrodeRouting": true,
+       "rmdOverrodeRouting": false,
        "slots": [
         {
          "cappedByAccount": false,
@@ -13614,7 +13563,7 @@
    "passes": false
   }
  },
- "projection.computeMonteCarloProjection": {
+ "projection.computeSimulation": {
   "result": {
    "deterministicProjection": {
     "accountDepletions": [
@@ -16027,20 +15976,6 @@
         "ownerName": "Taylor",
         "parentCategory": "Retirement",
         "taxType": "preTax"
-       },
-       {
-        "category": "brokerage",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "kind": "no_owner"
-         }
-        },
-        "name": "Retirement brokerage (projected)",
-        "parentCategory": "Retirement",
-        "projectedOnly": true,
-        "taxType": "afterTax"
        }
       ],
       "phase": "decumulation",
@@ -16061,7 +15996,7 @@
         "structure": "roth_traditional"
        }
       },
-      "rmdOverrodeRouting": true,
+      "rmdOverrodeRouting": false,
       "slots": [
        {
         "cappedByAccount": false,

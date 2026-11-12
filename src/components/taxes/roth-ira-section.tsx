@@ -4,7 +4,6 @@
  * Taxes page: Roth IRA MAGI and the direct-vs-backdoor verdict from buildRothIraView (via
  * useRothIra); this only renders. Without the portfolio permission it shows the wage AGI.
  */
-import { FocusLink } from "@/components/ui/focus-link";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -14,7 +13,9 @@ import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import type { InvestmentIncomeBasis } from "@/lib/pure/investments/investment-income";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
-import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira";
+import { rothIraAdvice } from "@/lib/pure/contributions/roth-ira-advice";
+import { OtherJobsNotes } from "@/components/taxes/other-jobs-note";
+import type { RouterOutputs } from "@/lib/trpc";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",
@@ -28,7 +29,14 @@ const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
 const notCounted = () =>
   `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. Married filing separately isn't modelled: its Roth IRA phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)}.`;
 
-export function RothIraSection({ wageAgi }: { wageAgi: number }) {
+export function RothIraSection({
+  wageAgi,
+  people,
+}: {
+  wageAgi: number;
+  /** The paycheck summary's people: a second current job is noted. */
+  people: RouterOutputs["paycheck"]["computeSummary"]["people"];
+}) {
   const user = useUser();
   const { available, view, inputs, marginSetting, setMarginSetting } =
     useRothIra();
@@ -40,7 +48,7 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
           <span className="inline-flex items-center">
             AGI from wages (est.)
             <HelpTip
-              text="Salary plus bonus, minus the money that comes out before tax (pre-tax 401k, payroll HSA, health insurance). Investment income isn't included here, so treat it as a floor for things like Roth IRA limits."
+              text="Salary plus bonus, minus the money that comes out before tax (pre-tax 401k, payroll HSA, health insurance) and HSA money you pay in yourself. Investment income isn't included here, so treat it as a floor for things like Roth IRA limits."
               maxWidth={280}
             />
           </span>
@@ -89,12 +97,16 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
           <span className="inline-flex items-center">
             Roth IRA MAGI (est.)
             <HelpTip
-              text={`Salary + bonus − pre-tax payroll money (${formatCurrency(view.parts.wageAgi)}), − HSA money paid outside payroll (${formatCurrency(view.parts.hsaOutsidePayroll)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${notCounted()}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
+              text={`AGI: salary + bonus − pre-tax payroll money − HSA money paid outside payroll (${formatCurrency(view.parts.wageAgi)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${notCounted()}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
               maxWidth={320}
             />
           </span>
           <span>{formatCurrency(view.magi)}</span>
         </div>
+        <OtherJobsNotes
+          people={people}
+          counted="pay is in this MAGI, so it may be low: check the direct limit by hand"
+        />
         {j && (
           <>
             <div className="flex justify-between">
@@ -164,42 +176,5 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
         )}
       </div>
     </Card>
-  );
-}
-
-/** Verdict in a few words — the dashboard line. */
-const SHORT_VERDICT = {
-  direct: "Direct OK",
-  tooClose: "Too close to call",
-  backdoor: "Use backdoor",
-} as const;
-
-/**
- * One line for the Household Income card: Roth IRA MAGI and the verdict in
- * a few words; the detail is on the Taxes page. Without the
- * portfolio permission, the wage AGI.
- */
-export function RothIraLine({ wageAgi }: { wageAgi: number }) {
-  const { available, view } = useRothIra();
-  const j = view?.judgement ?? null;
-  return (
-    <div className="flex justify-between">
-      {/* The detail is on Taxes this year → Roth IRA. */}
-      <FocusLink focus={{ topic: "rothIra" }} className="hover:underline">
-        {available && view ? "Roth IRA MAGI (est.)" : "AGI from wages (est.)"}
-      </FocusLink>
-      <span>
-        {j && (
-          <span
-            className={
-              j.verdict === "direct" ? "mr-2" : "text-primary mr-2 font-medium"
-            }
-          >
-            {SHORT_VERDICT[j.verdict]}
-          </span>
-        )}
-        {formatCurrency(available && view ? view.magi : wageAgi)}
-      </span>
-    </div>
   );
 }

@@ -42,7 +42,7 @@ export function useInvalidateBudget(): {
     utils.retirement.invalidate();
     utils.projection.invalidate();
     utils.brokerage.invalidate();
-    utils.settings.contributionAccounts.invalidate();
+    utils.contribution.accounts.invalidate();
   }, [utils, invalidateSummary]);
 
   return {

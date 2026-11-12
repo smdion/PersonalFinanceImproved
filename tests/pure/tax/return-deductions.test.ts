@@ -1,7 +1,7 @@
 /**
  * OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) —
  * $6,000/person 65+, tax years 2025-2028 only, phased out 6% of MAGI above
- * $150k MFJ / $75k Single/HoH/MFS. Verified against IRS guidance + Tax
+ * $150k MFJ / $75k otherwise, per person on the return's MAGI. Verified against IRS guidance + Tax
  * Foundation/Kiplinger reporting, 2026-09-02 (fully phased out at $250k MFJ
  * for one qualifying senior: 150000 + 6000/0.06 = 250000, matching the
  * commonly-cited figure).
@@ -73,26 +73,22 @@ describe("computeObbbaSeniorDeduction", () => {
     ).toBe(0);
   });
 
-  it("two seniors' combined base phases out further out than one senior's", () => {
-    // Pins a bug until v0.11 Tax "One returnDeductions()" (with "Senior
-    // deduction phases out against the combined amount"): Schedule 1-A
-    // lines 35-37 phase each person's 6,000 out on the joint MAGI, so two
-    // seniors are gone at $250,000, not $350,000. The answer key's tax/E6-E10
-    // (answer-key-tax.test.ts) replace this test in the fix commit.
-    // $12,000 base / 6% = $200,000 of room -> fully phased out at $350,000
+  it("phases each senior's amount out on its own: two are gone where one is", () => {
+    // Schedule 1-A lines 35-37: 6% of the joint MAGI over $150,000 comes off
+    // each person's $6,000, so two seniors are gone at $250,000 too.
     expect(
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 2,
-        magi: { kind: "known", value: 300000 },
+        magi: { kind: "known", value: 200000 },
         year: 2026,
       }),
-    ).toBeGreaterThan(0);
+    ).toBe(6000);
     expect(
       computeObbbaSeniorDeduction({
         ...BASE,
         seniorCount: 2,
-        magi: { kind: "known", value: 350000 },
+        magi: { kind: "known", value: 250000 },
         year: 2026,
       }),
     ).toBe(0);

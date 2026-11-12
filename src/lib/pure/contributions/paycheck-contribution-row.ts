@@ -1,5 +1,6 @@
 /** The contribution account row the paycheck's account inputs are built from. */
 import type {
+  ContributionMethod,
   EmployerMatchType,
   HsaCoverageType,
   MatchTaxTreatment,
@@ -16,8 +17,9 @@ export type PaycheckContributionRow = Pick<
 > & {
   subType: string | null;
   label: string | null;
-  contributionMethod: string;
-  contributionValue: string | number;
+  contributionMethod: ContributionMethod;
+  /** Null when a stored profile entry has none (it reads as 0). */
+  contributionValue: string | number | null;
   taxTreatment: TaxTreatment;
   employerMatchType: EmployerMatchType;
   employerMatchValue: string | null;

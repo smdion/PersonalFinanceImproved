@@ -6,7 +6,7 @@ import type { trpc, RouterOutputs } from "@/lib/trpc";
 import {
   ProfileListRow,
   ProfileSidebarHeader,
-} from "@/components/ui/profile-sidebar";
+} from "@/components/profiles/profile-sidebar";
 
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";

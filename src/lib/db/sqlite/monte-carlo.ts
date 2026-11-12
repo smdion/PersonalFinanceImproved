@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type { CompositionBucket } from "@/lib/config/enum-values";
 
@@ -21,8 +22,8 @@ export const assetClassParams = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
-    meanReturn: text("mean_return").notNull(),
-    stdDev: text("std_dev").notNull(),
+    meanReturn: decimalText("mean_return").notNull(),
+    stdDev: decimalText("std_dev").notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   },
@@ -54,7 +55,7 @@ export const assetClassCorrelations = sqliteTable(
     classBId: integer("class_b_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
-    correlation: text("correlation").notNull(),
+    correlation: decimalText("correlation").notNull(),
   },
   (table) => [
     uniqueIndex("asset_class_correlations_pair_idx").on(
@@ -74,7 +75,7 @@ export const glidePathAllocations = sqliteTable(
     assetClassId: integer("asset_class_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
-    allocation: text("allocation").notNull(),
+    allocation: decimalText("allocation").notNull(),
   },
   (table) => [
     uniqueIndex("glide_path_age_class_idx").on(table.age, table.assetClassId),
@@ -91,13 +92,21 @@ export const simulationPresets = sqliteTable(
     key: text("key").notNull().unique(), // 'aggressive', 'default', 'conservative'
     label: text("label").notNull(),
     description: text("description").notNull(),
-    returnMultiplier: text("return_multiplier").notNull().default("1.000000"),
-    volMultiplier: text("vol_multiplier").notNull().default("1.000000"),
-    inflationMean: text("inflation_mean").notNull().default("0.025000"),
-    inflationStdDev: text("inflation_std_dev").notNull().default("0.012000"),
+    returnMultiplier: decimalText("return_multiplier")
+      .notNull()
+      .default("1.000000"),
+    volMultiplier: decimalText("vol_multiplier").notNull().default("1.000000"),
+    inflationMean: decimalText("inflation_mean").notNull().default("0.025000"),
+    inflationStdDev: decimalText("inflation_std_dev")
+      .notNull()
+      .default("0.012000"),
     defaultTrials: integer("default_trials").notNull().default(5000),
-    returnClampMin: text("return_clamp_min").notNull().default("-0.500000"),
-    returnClampMax: text("return_clamp_max").notNull().default("1.000000"),
+    returnClampMin: decimalText("return_clamp_min")
+      .notNull()
+      .default("-0.500000"),
+    returnClampMax: decimalText("return_clamp_max")
+      .notNull()
+      .default("1.000000"),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   },
@@ -115,7 +124,7 @@ export const simulationPresetGlidePaths = sqliteTable(
     assetClassId: integer("asset_class_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
-    allocation: text("allocation").notNull(),
+    allocation: decimalText("allocation").notNull(),
   },
   (table) => [
     uniqueIndex("mc_preset_gp_idx").on(
@@ -138,7 +147,7 @@ export const simulationPresetReturnOverrides = sqliteTable(
     assetClassId: integer("asset_class_id")
       .notNull()
       .references(() => assetClassParams.id, { onDelete: "cascade" }),
-    meanReturn: text("mean_return").notNull(),
+    meanReturn: decimalText("mean_return").notNull(),
   },
   (table) => [
     uniqueIndex("mc_preset_ro_idx").on(table.presetId, table.assetClassId),
@@ -152,10 +161,10 @@ export const simulationUserPresets = sqliteTable("mc_user_presets", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   simulations: integer("simulations").notNull().default(1000),
-  returnMean: text("return_mean").notNull(),
-  returnStdDev: text("return_std_dev").notNull(),
-  inflationMean: text("inflation_mean").notNull(),
-  inflationStdDev: text("inflation_std_dev").notNull(),
+  returnMean: decimalText("return_mean").notNull(),
+  returnStdDev: decimalText("return_std_dev").notNull(),
+  inflationMean: decimalText("inflation_mean").notNull(),
+  inflationStdDev: decimalText("inflation_std_dev").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -8,8 +8,10 @@ import { describe, it, expect } from "vitest";
 import { createTestCaller } from "../routers/setup";
 import { backupFenceCases } from "./backup-fence-cases";
 import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
+import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
+  danglingReferenceCases,
   unknownAccountTypeCases,
 } from "./closed-set-import-cases";
 
@@ -31,27 +33,28 @@ describe("settings through a version restore (SQLite)", () => {
   versionRestoreSettingsCases(fresh);
 });
 
+describe("JSON values on import and restore (SQLite)", () => {
+  backupJsonValueCases(fresh);
+});
+
 describe("closed-set values on import and restore (SQLite)", () => {
   closedSetImportCases(fresh);
   unknownAccountTypeCases(fresh);
+  danglingReferenceCases(fresh);
 });
 
 describe("an installation table with no column lists", () => {
   it("stops a non-admin's import rather than keeping it whole", async () => {
-    const { INSTALLATION_COLUMNS } =
+    const { withInstallationRows } =
       await import("@/lib/db/backup/installation-rows");
-    const { exportBackup, importBackup } =
-      await import("@/lib/db/backup/version-logic");
+    const { exportBackup } = await import("@/lib/db/backup/version-logic");
     const { rawDb, cleanup } = await createTestCaller();
-    const listed = INSTALLATION_COLUMNS["api_connections"];
-    delete INSTALLATION_COLUMNS["api_connections"];
     try {
-      const backup = await exportBackup(rawDb);
+      const backup = await exportBackup(rawDb, { asAdmin: true });
       await expect(
-        importBackup(rawDb, backup, { asAdmin: false }),
+        withInstallationRows(rawDb, backup.tables, { asAdmin: false }, {}),
       ).rejects.toThrow("api_connections: no installation columns listed");
     } finally {
-      INSTALLATION_COLUMNS["api_connections"] = listed!;
       cleanup();
     }
   });

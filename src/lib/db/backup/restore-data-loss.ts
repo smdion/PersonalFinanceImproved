@@ -2,7 +2,11 @@ import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
 import { countRows, queryRaw } from "../compat";
-import { VERSION_TABLE_NAMES, tablesFromBackup } from "./version-tables";
+import {
+  LOGIN_TABLES,
+  VERSION_TABLE_NAMES,
+  tablesFromBackup,
+} from "./version-tables";
 import { REBUILT_ON_RESTORE } from "./backup-transforms";
 
 /** Versioned tables the backup lacks (it predates them) that hold rows now:
@@ -16,7 +20,8 @@ export async function tablesLostOnRestore(
   const present = new Set(backupTableNames);
   const lost: { tableName: string; currentRows: number }[] = [];
   for (const tableName of tablesFromBackup(VERSION_TABLE_NAMES, by)) {
-    if (present.has(tableName)) continue;
+    // Present, or (logins) kept from today when the backup lacks them.
+    if (present.has(tableName) || LOGIN_TABLES.includes(tableName)) continue;
     // Rebuilt by the restore from a table the backup does carry.
     const source = REBUILT_ON_RESTORE[tableName];
     if (source && present.has(source)) continue;

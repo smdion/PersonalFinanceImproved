@@ -7,14 +7,12 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
-import {
-  checkOnboardingComplete,
-  firstRunState,
-} from "@/server/data/first-run";
+import { onboardingWizardDone, firstRunState } from "@/server/data/first-run";
 import { lockForTransaction } from "@/server/data/lock-row";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
+import { SK_ONBOARDING_COMPLETED } from "@/lib/constants/settings-keys";
 
 /** Refuse unless the install still needs its first admin (first-run.ts). */
 async function requireAdminNeeded(db: DbOrTx): Promise<void> {
@@ -31,7 +29,7 @@ export const onboardingProcedures = {
    * Whether onboarding is complete: the wizard finished, or a person exists.
    */
   getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
-    return { complete: await checkOnboardingComplete(ctx.db) };
+    return { complete: await onboardingWizardDone(ctx.db) };
   }),
 
   /**
@@ -39,7 +37,7 @@ export const onboardingProcedures = {
    * profile, "Current Retirement", made active.
    */
   completeOnboarding: adminProcedure.mutation(async ({ ctx }) => {
-    await upsertSetting(ctx.db, "onboarding_completed", true);
+    await upsertSetting(ctx.db, SK_ONBOARDING_COMPLETED, true);
     // Settings saved before onboarding finished become the first profile.
     await adoptFirstRetirementProfile(ctx.db);
     return { ok: true };
@@ -104,6 +102,8 @@ export const onboardingProcedures = {
 
     try {
       const wellKnown = `${issuer}/.well-known/openid-configuration`;
+      // Plain fetch, not fetchChecked: the URL is the operator's own env,
+      // never a request's, and the issuer is usually a LAN host.
       const res = await fetch(wellKnown, {
         signal: AbortSignal.timeout(5000),
       });

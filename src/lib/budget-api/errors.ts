@@ -115,6 +115,7 @@ export function retold(from: BudgetApiError, message: string): BudgetApiError {
   );
   e.service = from.service;
   e.field = from.field;
+  if (from.responseText !== undefined) e.keepResponseText(from.responseText);
   return e;
 }
 

@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import { cents } from "../../fixtures/answer-key";
 import { getAge, ageInYear } from "@/lib/utils/date";
 import {
-  ageInYearFromDob,
+  limitAge,
   ageOnDate,
   countReachingAgeRule,
 } from "@/lib/pure/household/age";
@@ -47,8 +47,8 @@ describe("answer key: ages", () => {
     expect([
       ageOnDate("1966-07-15", utc("2026-07-14")),
       ageOnDate("1966-07-15", utc("2026-07-15")),
-      ageInYearFromDob("1966-07-15", 2026),
-      ageInYearFromDob("1966-12-31", 2026),
+      limitAge("1966-07-15", 2026),
+      limitAge("1966-12-31", 2026),
       ageInYear(1966, 2026),
     ]).toEqual([59, 60, 60, 60, 60]);
   });

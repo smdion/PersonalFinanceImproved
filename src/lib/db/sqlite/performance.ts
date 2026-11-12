@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type {
   AccountOwnership,
@@ -44,7 +45,7 @@ export const performanceAccounts = sqliteTable(
       .$type<ContributionScaling>()
       .notNull()
       .default("scales_with_salary"),
-    costBasis: text("cost_basis").notNull().default("0"),
+    costBasis: decimalText("cost_basis").notNull().default("0"),
     /** When the owner left the employer funding this plan (401k/403b only): the user-set source
      *  for Rule of 55 eligibility. Null = not separated / not applicable / not entered; the UI
      *  suggests one from linked jobs but never writes it. */
@@ -97,10 +98,10 @@ export const accountBasis = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     year: integer("year").notNull(),
     /** Contributions — always penalty-free and tax-free, no seasoning clock. */
-    contributionBasis: text("contribution_basis").notNull().default("0"),
+    contributionBasis: decimalText("contribution_basis").notNull().default("0"),
     /** Roth conversions — always tax-free, but penalty-free only once
      *  seasoned (see latestConversionYear). */
-    conversionBasis: text("conversion_basis").notNull().default("0"),
+    conversionBasis: decimalText("conversion_basis").notNull().default("0"),
     /** Latest tax year with a conversion (null if conversionBasis = 0); gating the pooled basis
      *  on the latest year can only understate penalty-free access, never overstate it. */
     latestConversionYear: integer("latest_conversion_year"),
@@ -150,7 +151,7 @@ export const portfolioAccounts = sqliteTable(
       .references(() => portfolioSnapshots.id, { onDelete: "cascade" }),
     institution: text("institution").notNull(),
     taxType: text("tax_type").$type<PortfolioTaxType>().notNull(),
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     accountType: text("account_type").notNull(),
     subType: text("sub_type"),
     label: text("label"),
@@ -180,20 +181,20 @@ export const annualPerformance = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     year: integer("year").notNull(),
     category: text("category").notNull(),
-    beginningBalance: text("beginning_balance").notNull(),
-    totalContributions: text("total_contributions").notNull(),
-    yearlyGainLoss: text("yearly_gain_loss").notNull(),
-    endingBalance: text("ending_balance").notNull(),
-    annualReturnPct: text("annual_return_pct"),
-    employerContributions: text("employer_contributions")
+    beginningBalance: decimalText("beginning_balance").notNull(),
+    totalContributions: decimalText("total_contributions").notNull(),
+    yearlyGainLoss: decimalText("yearly_gain_loss").notNull(),
+    endingBalance: decimalText("ending_balance").notNull(),
+    annualReturnPct: decimalText("annual_return_pct"),
+    employerContributions: decimalText("employer_contributions")
       .notNull()
       .default("0"),
-    distributions: text("distributions").notNull().default("0"),
-    fees: text("fees").notNull().default("0"),
-    rollovers: text("rollovers").notNull().default("0"),
-    lifetimeGains: text("lifetime_gains").notNull(),
-    lifetimeContributions: text("lifetime_contributions").notNull(),
-    lifetimeMatch: text("lifetime_match").notNull(),
+    distributions: decimalText("distributions").notNull().default("0"),
+    fees: decimalText("fees").notNull().default("0"),
+    rollovers: decimalText("rollovers").notNull().default("0"),
+    lifetimeGains: decimalText("lifetime_gains").notNull(),
+    lifetimeContributions: decimalText("lifetime_contributions").notNull(),
+    lifetimeMatch: decimalText("lifetime_match").notNull(),
     isCurrentYear: integer("is_current_year", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -224,17 +225,17 @@ export const accountPerformance = sqliteTable(
     ownerPersonId: integer("owner_person_id").references(() => people.id, {
       onDelete: "restrict",
     }),
-    beginningBalance: text("beginning_balance").notNull(),
-    totalContributions: text("total_contributions").notNull(),
-    yearlyGainLoss: text("yearly_gain_loss").notNull(),
-    endingBalance: text("ending_balance").notNull(),
-    annualReturnPct: text("annual_return_pct"),
-    employerContributions: text("employer_contributions")
+    beginningBalance: decimalText("beginning_balance").notNull(),
+    totalContributions: decimalText("total_contributions").notNull(),
+    yearlyGainLoss: decimalText("yearly_gain_loss").notNull(),
+    endingBalance: decimalText("ending_balance").notNull(),
+    annualReturnPct: decimalText("annual_return_pct"),
+    employerContributions: decimalText("employer_contributions")
       .notNull()
       .default("0"),
-    fees: text("fees").notNull().default("0"),
-    distributions: text("distributions").notNull().default("0"),
-    rollovers: text("rollovers").notNull().default("0"),
+    fees: decimalText("fees").notNull().default("0"),
+    distributions: decimalText("distributions").notNull().default("0"),
+    rollovers: decimalText("rollovers").notNull().default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     isFinalized: integer("is_finalized", { mode: "boolean" })

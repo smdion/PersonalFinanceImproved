@@ -1,4 +1,7 @@
-import type { RothIraRoute } from "@/lib/config/enum-values";
+import type {
+  ContributionMethod,
+  RothIraRoute,
+} from "@/lib/config/enum-values";
 import type { CappedContribution } from "@/lib/pure/contributions/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
@@ -23,7 +26,7 @@ export type RawContrib = {
   label: string | null;
   parentCategory: string;
   taxTreatment: string;
-  contributionMethod: string;
+  contributionMethod: ContributionMethod;
   contributionValue: string;
   /** The IRS-capped value the figures use, when the cap pass set one. */
   cappedValue?: number;
@@ -33,6 +36,8 @@ export type RawContrib = {
   maxValue?: number;
   othersInGroup?: number;
   employerMatchType: string;
+  /** The stored match type is outside the set (read as no match). */
+  matchTypeUnrecognised?: true;
   employerMatchValue: string | null;
   employerMatchRate?: string | null;
   employerMaxMatchPct: string | null;

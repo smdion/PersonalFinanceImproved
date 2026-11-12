@@ -3,7 +3,7 @@
  * treatment, to split a feed's single deposit (lib/pure/investments/flow-suggestions.ts).
  */
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -13,9 +13,7 @@ import type {
   ContributionMix,
 } from "@/lib/pure/investments/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { toNumber } from "@/lib/utils/numbers";
-import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   contribRemainingFraction,
   contribStepFraction,
@@ -35,10 +33,8 @@ import {
   storedMatchRate,
 } from "@/lib/pure/contributions/employer-match";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
-import {
-  annualContributionWithBonus,
-  resolveContributionPeriods,
-} from "@/lib/pure/contributions/contribution-rows";
+import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(
@@ -47,24 +43,19 @@ export async function loadContributionMix(
   /** Tracked account → the day its latest contribution actually arrived (live data). */
   contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
-  const [allJobs, contribs, activeProfile] = await Promise.all([
+  const [allJobs, contribs] = await Promise.all([
     db.select().from(schema.jobs),
     db
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
   ]);
-  const profileId = Number(activeProfile[0]?.value ?? NaN);
   if (!contribs.some((c) => c.performanceAccountId != null)) return new Map();
 
   const salaryMap = await loadEffectiveSalaryProfile(db, null);
   const { contribs: effective, jobs } = await loadAndApplyContribProfile(
     db,
-    Number.isFinite(profileId) ? profileId : null,
+    null,
     contribs,
     filterActiveJobs(allJobs, asOf),
     salaryMap,
@@ -77,19 +68,12 @@ export async function loadContributionMix(
     salaryMap,
     new Map(),
   ).filter((c) => c.performanceAccountId != null);
-  const jobById = new Map(jobs.map((j) => [j.id, j]));
-  const jobByPerson = new Map(jobs.map((j) => [j.personId, j]));
   // The employer matches what's deferred, on the pay it came from — the
   // bonus counts for accounts taken from bonus checks (one rule).
   const bonusGroups = matchPayGroupsWithBonus(rows);
 
   const resolved = rows.map((c) => {
-    const job =
-      c.jobId != null
-        ? jobById.get(c.jobId)
-        : c.personId != null
-          ? jobByPerson.get(c.personId)
-          : undefined;
+    const { periodsPerYear, job } = rowPaySchedule(c, jobs);
     // This year's pay: base salary and the bonus (the actual when set).
     const comp =
       c.jobId != null && job ? resolveCompensation(salaryMap, job.id) : null;
@@ -97,10 +81,6 @@ export async function loadContributionMix(
       ? contributionPay(comp.salary, comp.terms, comp.bonusOverride)
       : { salary: 0, bonusGross: 0 };
     const salary = pay.salary;
-    const { periodsPerYear } = resolveContributionPeriods(
-      c.contributionMethod,
-      job ? { payPeriod: job.payPeriod ?? undefined } : undefined,
-    );
     // The year's amount, bonus check included (annualContributionWithBonus),
     // and the share of it the regular paychecks carry.
     const annual = annualContributionWithBonus(c, pay, periodsPerYear);
@@ -110,10 +90,7 @@ export async function loadContributionMix(
       salary + (bonusGroups.has(matchGroupKey(c)) ? pay.bonusGross : 0);
     // Where the year stands on this contribution's schedule — the same
     // paycheck walk the Contributions page's YTD / Year-End Estimate use.
-    const payPeriods =
-      job?.payPeriod != null
-        ? getPeriodsPerYear(job.payPeriod)
-        : DEFAULT_PAY_PERIODS_PER_YEAR;
+    const payPeriods = periodsPerYear || DEFAULT_PAY_PERIODS_PER_YEAR;
     const elapsed = {
       periodsPerYear: payPeriods,
       // No job (or no anchor payday): estimated from the month.

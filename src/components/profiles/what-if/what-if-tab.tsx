@@ -10,7 +10,7 @@ import { useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { accountDisplayName } from "@/lib/utils/format";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { PROJECTION_DEBOUNCE_MS } from "@/lib/constants";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -62,13 +62,11 @@ export function WhatIfTab({
     trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
 
-  const [activeContributionSetting] = usePersistedSetting<number | null>(
+  const [activeContributionSetting] = useProfileIdSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
   );
-  const [activeSalarySetting] = usePersistedSetting<number | null>(
+  const [activeSalarySetting] = useProfileIdSetting(
     SK_ACTIVE_SALARY_PROFILE_ID,
-    null,
   );
   const activeBudgetProfileId =
     budgetProfiles?.find((p) => p.isActive)?.id ?? null;
@@ -305,7 +303,7 @@ export function WhatIfTab({
   const deductionMakeRealAdditionRef = useRef<DeductionAddition | null>(null);
   const setDeductionActiveFields =
     trpc.contributionProfile.setDeductionActiveFields.useMutation();
-  const createDeduction = trpc.settings.deductions.create.useMutation({
+  const createDeduction = trpc.paycheck.deductions.create.useMutation({
     onSuccess: (created) => {
       const addition = deductionMakeRealAdditionRef.current;
       const finish = () => {
@@ -397,12 +395,12 @@ export function WhatIfTab({
     toast.error(err.message || "Failed to add contribution account");
   };
   const createContributionAccount =
-    trpc.settings.contributionAccounts.create.useMutation({
+    trpc.contribution.accounts.create.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });
   const updateContributionAccount =
-    trpc.settings.contributionAccounts.update.useMutation({
+    trpc.contribution.accounts.update.useMutation({
       onSuccess: onMakeRealSettled,
       onError: onMakeRealError,
     });

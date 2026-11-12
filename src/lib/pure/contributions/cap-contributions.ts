@@ -10,11 +10,12 @@ import {
   type CapPassHousehold,
   type CapPassRow,
 } from "@/lib/pure/contributions/cap-pass";
-import type {
-  ContributionRow,
-  JobRef,
-  JobSalaryRef,
-} from "@/lib/pure/contributions/contribution-rows";
+import type { ContributionRow } from "@/lib/pure/contributions/contribution-rows";
+import {
+  type CapJob,
+  type JobYearPay,
+  withLeftThisYear,
+} from "@/lib/pure/contributions/cap-request";
 
 /**
  * This year's active contribution rows, capped at the IRS limits, with
@@ -27,11 +28,12 @@ export function capContributions<
   people: readonly { id: number }[],
   birthYearByPersonId: Map<number, number>,
   thisYearFiling: { status: string | null },
-  currentYear: number,
+  asOf: Date,
   allContributions: readonly Row[],
-  activeJobs: JobRef[],
-  jobSalaries: (JobSalaryRef & { totalComp: number })[],
+  activeJobs: CapJob[],
+  jobSalaries: JobYearPay[],
 ) {
+  const currentYear = asOf.getFullYear();
   // IRS limits: the `contribution_limits` rows for the resolved tax year
   // (resolveTaxParams already filtered and coerced them to numbers).
   const limitsMap: Record<string, number> = resolvedTax.limits;
@@ -52,9 +54,9 @@ export function capContributions<
     taxYear: currentYear,
   };
   // A jobless row is active when its person is known, or when it has no
-  // person: a joint account (settings/contribution-accounts.ts), which
+  // person: a joint account (contribution/accounts.ts), which
   // would otherwise drop out of every total.
-  const activeContribs = capEffectiveContribs(
+  const capped = capEffectiveContribs(
     allContributions
       .filter(
         (c) =>
@@ -64,6 +66,13 @@ export function capContributions<
       )
       .map((c) => ({ ...c, accountType: c.accountType as AccountCategory })),
     { ...capHousehold, activeJobs, jobSalaries },
+  );
+  // A job starting or ending this year: each row's money left this year (engine year 0).
+  const activeContribs = withLeftThisYear(
+    capped,
+    { ...capHousehold, asOf },
+    activeJobs,
+    jobSalaries,
   );
   // Who holds which limited account, and each limit group's household
   // limit (every shared limit counted once): what the pages show, and what

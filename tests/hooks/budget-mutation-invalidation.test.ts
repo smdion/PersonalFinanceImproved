@@ -49,7 +49,7 @@ const SUMMARY_AND_CONTRIBUTIONS = [
   "retirement.invalidate",
   "projection.invalidate",
   "brokerage.invalidate",
-  "settings.contributionAccounts.invalidate",
+  "contribution.accounts.invalidate",
 ];
 
 /** A mutation key, the procedure it calls and what it invalidates. */

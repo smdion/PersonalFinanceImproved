@@ -419,9 +419,9 @@ export async function projectionText(
  *  pin keeps (v0.10.4 plan commit 27c). */
 const SIMULATIONS = [
   "projection.computeCoastFire",
-  "projection.computeCoastFireMC",
+  "projection.computeCoastFireSimulation",
   "projection.computeCoastFireProbe",
-  "projection.computeMonteCarloProjection",
+  "projection.computeSimulation",
 ].map((p) => PROCEDURES.find((procedure) => procedure.path === p)!);
 
 /** The second text pin of a seeded household: each Simulation and Coast

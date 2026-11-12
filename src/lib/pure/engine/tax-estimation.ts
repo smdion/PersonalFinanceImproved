@@ -9,7 +9,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { computeLtcgTax, toLtcgTaxableIncome } from "@/lib/pure/tax/ltcg";
+import { scheduleDGainsTax } from "@/lib/pure/tax/ltcg";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   ssTaxThresholdsFor,
@@ -153,7 +153,6 @@ export function computeTaxableSS(
   if (ssIncome <= 0) return 0;
 
   const thresholds = ssTaxThresholdsFor(filingStatus);
-  if (!thresholds) return ssIncome * SS_TAX_TIER2_INCLUSION_RATE; // fallback
 
   // IRS Pub 915: provisional income includes tax-exempt interest (e.g. municipal bonds)
   const provisionalIncome =
@@ -250,7 +249,7 @@ interface ComputeTaxFromSlotsInput {
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     /** Converts `actualTaxableIncome` (gross) to the taxable income the LTCG
-     *  lookup below uses (`toLtcgTaxableIncome`); omitted subtracts nothing. */
+     *  lookup below uses (`scheduleDGainsTax`); omitted subtracts nothing. */
     standardDeduction?: number;
   };
   filingStatus: ReturnFilingStatus | null | undefined;
@@ -354,19 +353,17 @@ export function computeTaxFromSlots(
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,
     );
-    // Progressive LTCG tax: gains stack on ordinary income across 0%/15%/20%.
-    // `actualTaxableIncome` is gross (right for the W-4 brackets above), so
-    // it becomes taxable income for the LTCG brackets first.
+    // Gains stack on ordinary income across 0%/15%/20%, at most their cost at
+    // ordinary rates (line 25). `actualTaxableIncome` is gross, as the W-4
+    // brackets above take it; the gains tax converts it first.
     brokerageTaxCost = filingStatus
       ? roundToCents(
-          computeLtcgTax(
-            toLtcgTaxableIncome(
-              actualTaxableIncome,
-              taxRates.standardDeduction,
-            ),
+          scheduleDGainsTax(
+            actualTaxableIncome,
             brokerageGainsPortion,
             filingStatus,
-            taxRates.ltcgBrackets,
+            taxRates,
+            estimateEffectiveTaxRate,
           ),
         )
       : roundToCents(brokerageGainsPortion * taxRates.brokerage);

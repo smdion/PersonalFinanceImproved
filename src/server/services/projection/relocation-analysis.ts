@@ -1,6 +1,6 @@
-/** The relocation analysis (retirement.computeRelocationAnalysis): its
- *  input, the two budget and contribution scenarios being compared. */
+/** computeRelocationAnalysis's input: the two budget/contribution scenarios. */
 import { z } from "zod/v4";
+import { zYear } from "@/lib/utils/zod-fields";
 import type { RequestScope } from "@/server/data/request-scope";
 import { householdRetirementYear } from "@/server/services/profiles/retirement-year";
 import {
@@ -36,6 +36,7 @@ import {
 } from "@/lib/config/account-types";
 import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import { budgetColumnSum } from "@/lib/pure/budget/item-amount";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
 import { loadActiveRetirementSettings } from "@/server/data/retirement-settings";
 import type { Db } from "@/lib/db";
@@ -55,7 +56,7 @@ export const zRelocationAnalysisInput = z.object({
   yearAdjustments: z
     .array(
       z.object({
-        year: z.number().int(),
+        year: zYear,
         monthlyExpenses: z.number(),
         profileId: z.number().int().optional(),
         budgetColumn: z.number().int().min(0).optional(),
@@ -67,7 +68,7 @@ export const zRelocationAnalysisInput = z.object({
   contributionOverrides: z
     .array(
       z.object({
-        year: z.number().int(),
+        year: zYear,
         rate: z.number().min(0).max(1),
         notes: z.string().optional(),
       }),
@@ -84,7 +85,7 @@ export const zRelocationAnalysisInput = z.object({
         loanTermYears: z.number().int().min(0).optional(),
         ongoingMonthlyCost: z.number().min(0).optional(),
         saleProceeds: z.number().min(0).optional(),
-        purchaseYear: z.number().int(),
+        purchaseYear: zYear,
       }),
     )
     .default([]),
@@ -169,10 +170,7 @@ export async function computeRelocationAnalysis(
         activeProfiles,
       );
       const totals = labels.map((_: string, colIndex: number) =>
-        resolvedItems.reduce(
-          (sum: number, item) => sum + (item.amounts[colIndex] ?? 0),
-          0,
-        ),
+        budgetColumnSum(resolvedItems, colIndex, numColumns),
       );
       const weightedAnnualTotal = months
         ? roundToCents(
@@ -324,9 +322,9 @@ export async function computeRelocationAnalysis(
     };
   };
 
-  // Resolve contribution profiles per scenario. No profile (or a missing id)
-  // resolves against an empty active-fields map: zero contributions, since
-  // accounts carry no value of their own.
+  // Resolve contribution profiles per scenario (fetchContributionProfile: none
+  // named is the active one). A missing id resolves against an empty
+  // active-fields map: zero contributions, accounts carry no value of their own.
   const capHousehold = await loadCapHousehold(
     ctx.db,
     people,
@@ -335,9 +333,7 @@ export async function computeRelocationAnalysis(
     referenceDate.getFullYear(),
   );
   const resolveContributionProfile = async (profileId: number | null) => {
-    const profile = profileId
-      ? await fetchContributionProfile(ctx.db, profileId)
-      : null;
+    const profile = await fetchContributionProfile(ctx.db, profileId);
 
     // jobSalaries already reflects the active Salary Profile: this is the
     // relocation analysis's comparison arm, so no Plan-specific salary applies.

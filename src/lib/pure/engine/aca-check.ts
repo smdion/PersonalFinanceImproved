@@ -1,7 +1,7 @@
 /** ACA: checks if MAGI crosses the ACA subsidy cliff (pre-65 retirees). */
 import { roundToCents } from "../../utils/math";
 import { getAcaSubsidyCliff } from "../../config/aca-tables";
-import type { MagiIncome } from "@/lib/pure/tax/year-income";
+import { yearMagi, type MagiIncome } from "@/lib/pure/tax/year-income";
 
 export interface AcaInput {
   enableAcaAwareness: boolean | undefined;
@@ -47,13 +47,7 @@ export function checkAca(input: AcaInput): AcaResult {
   // `fplByHousehold` is the coverage year's poverty levels.
   const acaCliff =
     getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
-  // Today's term order (float ties at the cliff); yearMagi once it rounds to cents.
-  const projectedMagi =
-    income.traditionalDraws +
-    income.rothConversions +
-    income.realizedGains +
-    income.rothTaxableGrowth +
-    income.socialSecurity.gross;
+  const projectedMagi = yearMagi(income, "aca");
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
   const acaSubsidyPreserved = projectedMagi < acaCliff;
 

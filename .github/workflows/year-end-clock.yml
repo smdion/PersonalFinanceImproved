@@ -1,0 +1,36 @@
+name: Year-end clock
+
+# Every test starts at one fixed "now" (tests/setup-clock.ts), so a commit
+# gives the same results on any day. This nightly run on main moves that
+# clock to the year's edge in the household's time zone: the date-heavy
+# files (`pnpm test:tz`, America/Chicago) at 23:30 on Dec 31 and 00:30 on
+# Jan 1, where the local day and year differ from UTC's. It is outside
+# ci.yml on purpose: scripts/ci-gate.ts reads only ci.yml.
+on:
+  schedule:
+    - cron: "30 9 * * *" # daily 09:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  year-end:
+    name: Date-heavy tests at the year's edge in Chicago
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Dec 31 23:30 and Jan 1 00:30, America/Chicago
+        run: pnpm test:year-end

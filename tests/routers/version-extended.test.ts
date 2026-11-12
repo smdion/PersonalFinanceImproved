@@ -16,7 +16,14 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller, seedAppSetting, viewerSession } from "./setup";
+import {
+  createTestCaller,
+  createViewerSessionWithPermissions,
+  seedAppSetting,
+  viewerSession,
+} from "./setup";
+import { createCallerFactory } from "@/server/trpc";
+import { appRouter } from "@/server/routers";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 /**
@@ -195,6 +202,7 @@ describe("version router", () => {
 describe("version router — seeded data", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
+  let rawDb: Awaited<ReturnType<typeof createTestCaller>>["rawDb"];
   let cleanup: () => void;
   let versionId: number;
 
@@ -202,6 +210,7 @@ describe("version router — seeded data", () => {
     const ctx = await createTestCaller();
     caller = ctx.caller;
     db = ctx.db;
+    rawDb = ctx.rawDb;
     cleanup = ctx.cleanup;
 
     // Seed a version with table data
@@ -316,6 +325,32 @@ describe("version router — seeded data", () => {
         tableName: "local_admins",
       });
       expect(result).toEqual({ rows: [], rowCount: 1, withheld: true });
+    });
+
+    it("shows a non-admin no access setting (as their export holds none), and an admin every setting", async () => {
+      seedStateVersionTable(db, versionId, "app_settings", [
+        { id: 1, key: "rbac_admin_group", value: "admins" },
+        { id: 2, key: "rbac_group_budget", value: "budgeters" },
+        { id: 3, key: "budget_active_column", value: 0 },
+      ]);
+      const holder = createCallerFactory(appRouter)({
+        db: rawDb,
+        session: createViewerSessionWithPermissions(["version"]),
+        demoSchema: null,
+      });
+      const shown = await holder.version.getPreview({
+        versionId,
+        tableName: "app_settings",
+      });
+      expect(shown).toEqual({
+        rows: [{ id: 3, key: "budget_active_column", value: 0 }],
+        rowCount: 1,
+      });
+      const all = await caller.version.getPreview({
+        versionId,
+        tableName: "app_settings",
+      });
+      expect(all.rowCount).toBe(3);
     });
 
     it("returns empty for non-existent version", async () => {

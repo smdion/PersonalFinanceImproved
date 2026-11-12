@@ -71,7 +71,7 @@ export type ContributionAccountInput = {
   employerMatchTaxTreatment: TaxTreatment;
   /** Yearly cap on this account's payroll contributions that aren't FICA
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
-   *  exempt in full (cap can't be sized). */
+   *  exempt in full (a capped row, or a cap that can't be sized). */
   ficaExemptAnnualCap: number | null;
 };
 
@@ -90,12 +90,16 @@ export type PeriodBreakdown = {
   /** A payday this year before the job started — not this job's check
    *  (every amount 0). Periods keep their calendar number. */
   beforeStart?: true;
+  /** A payday this year after the job's last day — not this job's check
+   *  (every amount 0). */
+  afterEnd?: true;
 };
 
 export type BonusEstimate = {
   bonusGross: number;
   bonusNet: number;
   bonusFederalWithholding: number;
+  /** Social Security and Medicare, Additional Medicare included, as if paid after the regular checks. */
   bonusFica: number;
   bonusContributions: number;
   /** The bonus's FICA wages: bonusGross less FICA-exempt payroll contributions the bonus check takes. */
@@ -121,7 +125,6 @@ export type PaycheckInput = {
   earnings: EarningLine[];
   taxBrackets: TaxBracketInput;
   limits: Record<string, number>;
-  ytdGrossEarnings: number;
   bonusPercent: number;
   bonusMultiplier: number;
   bonusOverride: number | null; // if set, use this value as gross bonus instead of calculating
@@ -132,6 +135,9 @@ export type PaycheckInput = {
   /** The job's start date — a job started this year has no checks before
    *  it. Absent: paid all year. */
   startDate?: Date | null;
+  /** The job's last day — a job ending this year has no checks after it.
+   *  Absent: paid to the year's end. */
+  endDate?: Date | null;
 };
 
 export type PaycheckResult = {
@@ -161,6 +167,10 @@ export type PaycheckResult = {
   /** The bonus is dated before the job started — not this job's, so not
    *  in this year's pay (bonusPeriod is null then too). */
   bonusBeforeStart: boolean;
+  /** The bonus's check is after the job's last check this year (dated
+   *  after its last day, or undated for a job ending this year) — not in
+   *  this year's pay (bonusPeriod is null then too). */
+  bonusAfterEnd: boolean;
   /** A bonus amount with no month set (bonusPeriod is null then too). */
   bonusUndated: boolean;
   nextPayDate: string; // ISO date string of next upcoming payday
@@ -168,7 +178,7 @@ export type PaycheckResult = {
   warnings: string[];
 };
 
-/** Blended annual totals computed from a salary timeline with mid-year changes. */
+/** The Year-end estimate: the job's checks this year, summed from the year schedule. */
 export type BlendedAnnualTotals = {
   gross: number;
   federalWithholding: number;
@@ -177,9 +187,9 @@ export type BlendedAnnualTotals = {
   preTaxDeductions: number;
   postTaxDeductions: number;
   netPay: number;
-  /** Weighted average salary across all segments. */
+  /** The job's salary (one salary a year). */
   blendedSalary: number;
-  /** Per-segment breakdown for UI transparency. */
+  /** The checks at that salary, for the panel's footnote. */
   segments: {
     salary: number;
     periods: number;

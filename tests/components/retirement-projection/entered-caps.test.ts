@@ -17,6 +17,13 @@ describe("enteredCaps", () => {
     expect(enteredCaps({ ...blank(), hsa: "0" })).toEqual({ hsa: 0 });
   });
 
+  it("leaves text that isn't a number uncapped, never a NaN cap", () => {
+    expect(enteredCaps({ ...blank(), ira: "abc", hsa: "  " })).toBeUndefined();
+    expect(enteredCaps({ ...blank(), ira: "abc", hsa: "500" })).toEqual({
+      hsa: 500,
+    });
+  });
+
   it("is undefined when no cap is entered", () => {
     expect(enteredCaps(blank())).toBeUndefined();
   });

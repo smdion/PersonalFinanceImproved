@@ -31,10 +31,7 @@ export async function pushContributionsToApi(
   input: { goalId?: number } | undefined,
 ) {
   // The service is resolved once: the end of this call refreshes its cache.
-  const { service: active, client } = await requireBudgetClient(
-    ctx.db,
-    "No budget API active",
-  );
+  const { service: active, client } = await requireBudgetClient(ctx.db);
 
   const [goals, activeProfile, budgetItems, appSettings] = await Promise.all([
     // A deactivated fund's old target is not what the plan funds.
@@ -85,9 +82,8 @@ export async function pushContributionsToApi(
           isEssential: boolean;
           amounts: number[];
         }[],
-        activeProfile.id,
+        activeProfile,
         efundTierIndex,
-        activeProfile.columnMonths ?? null,
       )
     : 0;
 

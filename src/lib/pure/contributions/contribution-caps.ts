@@ -17,52 +17,15 @@ import {
   irsLimitBaseKey,
   resolveIrsLimit,
 } from "@/lib/pure/contributions/irs-limits";
+import {
+  compensationOf,
+  holdIraRowsToCompensation,
+} from "@/lib/pure/contributions/ira-compensation";
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
-
-export type CapRow = {
-  id: number;
-  /** null = a joint row with no single owner. */
-  personId: number | null;
-  accountType: string;
-  hsaCoverageType: string | null;
-  /** Employee money from regular checks over the tax year. */
-  regularAnnual: number;
-  /** Employee money from bonus checks over the tax year. */
-  bonusAnnual: number;
-  /** Employer money over the tax year at the configured contribution
-   *  (counts toward the limit when the type's `matchCountsTowardLimit`);
-   *  CapContext.employerAt, when given, says how it changes with a cut. */
-  employerAnnual: number;
-  /** Pre-tax payroll money — comes off the person's taxable compensation
-   *  (W-2 box 1), which bounds an IRA. */
-  reducesCompensation: boolean;
-};
-
-export type CapPerson = {
-  id: number;
-  /** null = unknown — capped at the most any age allows. */
-  birthYear: number | null;
-  /** Taxable pay for the year before pre-tax payroll money (salary, bonus,
-   *  other taxable pay); the pass takes off the capped pre-tax rows itself.
-   *  null = unknown (no compensation bound). */
-  wages: number | null;
-};
-
-export type CapContext = {
-  taxYear: number;
-  filingStatus: string;
-  /** Every IRS limit key for the year (base, catch-up, super catch-up,
-   *  coverage variants) — for a projected year, the grown figures. */
-  limits: Record<string, number>;
-  people: readonly CapPerson[];
-  /**
-   * Employer money for these rows when their employee money is scaled by
-   * `factor` (a match figured on the contribution moves with it). Must not
-   * fall as the factor grows. Absent = each row's fixed `employerAnnual`.
-   */
-  employerAt?: (rowIds: readonly number[], factor: number) => number;
-};
+import type { CapContext, CapRow } from "./contribution-caps.types";
+import { holdToAnnualAdditions } from "./annual-additions";
+import { monthsFor, participantOf } from "./already-in";
 
 type CapReason =
   /** Cut to the IRS limit. */
@@ -268,8 +231,7 @@ export function capContributionsByLimitGroup(
   const employeeOf = (r: CapRow) =>
     Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
   const kept = rows.map(employeeOf);
-  /** Each row's factor on its configured employee money, for employer
-   *  money that moves with it. */
+  /** Each row's factor on its configured employee money (employer money moves with it). */
   const factorOf = rows.map(() => 1);
   const limitOf: (number | null)[] = rows.map(() => null);
   const maxOf: (number | null)[] = rows.map(() => null);
@@ -319,8 +281,9 @@ export function capContributionsByLimitGroup(
       jointCoverage,
     ]);
 
+    const held = monthsFor(coverageMatters, sharedFamily, ctx.people, byPerson);
     const sizeFor = (pid: number, cov: string | null) =>
-      sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits);
+      held(sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits), pid);
     /** Employer money that counts for these rows at `factor`. */
     const employerOf = (index: readonly number[], factor = 1) =>
       !cfg.matchCountsTowardLimit
@@ -337,14 +300,9 @@ export function capContributionsByLimitGroup(
     const participant = (
       pid: number,
       index: number[],
-      ownRoom: number,
-    ): Participant => ({
-      personId: pid,
-      rowIndex: index,
-      employee: sumBy(index, (i) => kept[i]!),
-      employerAt: (f) => employerOf(index, f),
-      ownRoom,
-    });
+      size?: Size,
+      family = false,
+    ) => participantOf(pid, rows, index, kept, employerOf, size, family);
     const apply = (parts: readonly Participant[], sharedLimit: number) => {
       const factors = capParticipants(parts, sharedLimit);
       const employerOver = sumBy(parts, (p) => sharedNeed(p, 0)) > sharedLimit;
@@ -384,7 +342,7 @@ export function capContributionsByLimitGroup(
           if (ageOf.get(s.pid) == null) flag(s.idx, "no-birth-date");
         });
         apply(
-          sized.map((s, k) => participant(s.pid, s.idx, sizes[k]!.catchup)),
+          sized.map((s, k) => participant(s.pid, s.idx, sizes[k], true)),
           sizes[0]!.base,
         );
       }
@@ -398,7 +356,7 @@ export function capContributionsByLimitGroup(
         if (ageOf.get(pid) == null) flag(index, "no-birth-date");
         if (coverageMatters && coverage.get(pid) == null)
           flag(index, "no-coverage");
-        apply([participant(pid, index, 0)], size.base + size.catchup);
+        apply([participant(pid, index, size)], size.base + size.catchup);
         groupLimits.set(
           group,
           (groupLimits.get(group) ?? 0) + size.base + size.catchup,
@@ -433,7 +391,7 @@ export function capContributionsByLimitGroup(
           sumBy(index, (i) => kept[i]!) +
           employerOf(index, factorOf[index[0]!]!),
       );
-    const jointPart = participant(-1, joint, 0);
+    const jointPart = participant(-1, joint);
     const room = maxEmployeeFor(jointPart, Math.max(0, ownedRoom));
     const total = sumBy(joint, (i) => kept[i]!);
     const factor = total > room ? room / total : 1;
@@ -444,25 +402,9 @@ export function capContributionsByLimitGroup(
     }
   }
 
-  // Compensation bound (IRA), on the capped pre-tax money above: each
-  // person's own compensation, or the couple's combined for a spousal IRA.
-  const compensation = new Map(
-    ctx.people.map((p) => [
-      p.id,
-      p.wages === null
-        ? null
-        : Math.max(
-            0,
-            p.wages -
-              sumBy(
-                rows.flatMap((r, i) =>
-                  r.personId === p.id && r.reducesCompensation ? [i] : [],
-                ),
-                (i) => kept[i]!,
-              ),
-          ),
-    ]),
-  );
+  holdToAnnualAdditions(rows, ctx, { kept, factorOf, maxOf }); // 415(c), per employer
+  // IRA bound on the capped pre-tax money: own pay; on a joint return the lower earner adds the other's pay less their IRA money.
+  const { compensation } = compensationOf(ctx, rows, kept);
   const bounded = new Map<string, number[]>();
   rows.forEach((r, i) => {
     const group = getLimitGroup(r.accountType);
@@ -490,27 +432,7 @@ export function capContributionsByLimitGroup(
     }
   };
   const spousal = includes(SPOUSAL_IRA_FILING_STATUSES, ctx.filingStatus);
-  for (const index of bounded.values()) {
-    if (spousal) {
-      // Everyone's compensation counts, IRA or not — usually only the
-      // spouse without pay contributes. Unknown for anyone = no bound.
-      const comps = [...compensation.values()];
-      if (comps.every((c) => c !== null))
-        holdTo(
-          index,
-          sumBy(comps, (c) => c!),
-        );
-      continue;
-    }
-    for (const pid of new Set(index.map((i) => rows[i]!.personId!))) {
-      const comp = compensation.get(pid) ?? null;
-      if (comp !== null)
-        holdTo(
-          index.filter((i) => rows[i]!.personId === pid),
-          comp,
-        );
-    }
-  }
+  holdIraRowsToCompensation(bounded, spousal, compensation, rows, holdTo, kept);
 
   const out = new Map<number, CappedContribution>();
   rows.forEach((r, i) => {

@@ -8,9 +8,9 @@ type VersionTableEntry = {
   name: string;
   /** FK dependency tier: 0 = no FKs, 1 = depends on tier 0, 2 = depends on tier 1, 3 = depends on tier 2. */
   tier: number;
-  /** "household": restored and previewed for the backup permission. "logins":
-   *  never previewed. "installation": never previewed, and a non-admin's
-   *  restore or import keeps today's credentials (installation-rows.ts). */
+  /** "household": restored and previewed. Never previewed: "logins" (kept from
+   *  today but for an admin's backup that has one) and "installation" (a
+   *  non-admin keeps today's credentials). See installation-rows.ts. */
   scope: "household" | "logins" | "installation";
 };
 
@@ -133,8 +133,11 @@ export const VERSION_PREVIEW_WITHHELD_TABLES = namesIn([
   "installation",
 ]);
 
-/** Versioned, but a non-admin's import or restore keeps today's credentials. */
-export const ADMIN_ONLY_RESTORE_TABLES = namesIn(["installation"]);
+/** Versioned, but a non-admin's import or restore keeps today's logins and credentials. */
+export const ADMIN_ONLY_RESTORE_TABLES = namesIn(["logins", "installation"]);
+
+/** Kept from today whenever a backup lacks them (installation-rows.ts). */
+export const LOGIN_TABLES = namesIn(["logins"]);
 
 /** Of these tables, the ones a restore or import takes from the backup whole:
  *  all for an admin, all but ADMIN_ONLY_RESTORE_TABLES for anyone else. */
@@ -142,6 +145,15 @@ export function tablesFromBackup(names: string[], by: { asAdmin: boolean }) {
   return names.filter(
     (n) => by.asAdmin || !ADMIN_ONLY_RESTORE_TABLES.includes(n),
   );
+}
+
+/** How many of a backup's versioned tables a restore or import takes from it. */
+export function tablesTakenCount(
+  tables: Record<string, unknown>,
+  by: { asAdmin: boolean },
+): number {
+  const present = VERSION_TABLE_NAMES.filter((n) => n in tables);
+  return tablesFromBackup(present, by).length;
 }
 
 /** Excluded from versioning (audit/version tables + ephemeral caches). */

@@ -2,6 +2,7 @@
 // Part of the Drizzle schema (SQLite) — see schema-pg.ts.
 
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { decimalText } from "../sqlite-decimal";
 
 import { savingsGoals } from "./savings";
 
@@ -19,9 +20,9 @@ export const selfLoans = sqliteTable(
     toGoalId: integer("to_goal_id").references(() => savingsGoals.id, {
       onDelete: "restrict",
     }),
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     loanDate: text("loan_date").notNull(),
-    repaidAmount: text("repaid_amount").notNull().default("0"),
+    repaidAmount: decimalText("repaid_amount").notNull().default("0"),
     repaidDate: text("repaid_date"),
   },
   (table) => [

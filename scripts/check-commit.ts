@@ -23,17 +23,32 @@
  * days names the missing concept in a `Concept:` trailer; a third goes to the
  * advisor first, recorded by an `Advisor: PASS (round <n>)` trailer. A
  * revert says why in its own words: git's "This reverts commit …" line
- * alone isn't a reason.
+ * alone isn't a reason. A commit that re-records a pinned figure names its
+ * item, each moved figure and baseline-diff.ts's count (v0.11 G1). A
+ * `Rename-path:` commit (AR9) is proven by re-running the parent's
+ * scripts/rename-trpc-path.ts on the parent, in a temporary worktree, with
+ * the commit's trailers: the tree must be the commit's byte for byte, and
+ * the commit then counts as `Mechanical:` (renamePathProblem).
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { codeOf } from "./engine-hash";
 import {
   isShapeFile,
-  storedAndResponseKeys,
+  routerOutputKeys,
+  storedKeys,
 } from "./gen-abbreviation-carve-outs";
 
 export const SUBJECT_PREFIX =
@@ -57,6 +72,8 @@ const ENGINE_OR_TAX = [
 ];
 
 export type ParsedMessage = {
+  /** The whole message, for trailers that repeat (trailerValues). */
+  raw: string;
   subject: string;
   body: string;
   trailers: Record<string, string>;
@@ -75,8 +92,14 @@ export type CommitFacts = {
   priorFixes: Map<Spot, number>;
   /** Why a `Mechanical:` commit isn't a move (undefined: it is, or no trailer). */
   notMechanical?: string;
+  /** Why a `Rename-path:` commit isn't proven (undefined: it is, or no trailer). */
+  notRenamePath?: string;
   /** Why a `Comments-only:` commit changes code (undefined: it doesn't, or no trailer). */
   notCommentsOnly?: string;
+  /** Answer-key expected failures the commit flips or deletes (G2). */
+  droppedXfails?: string[];
+  /** The commit's sha (undefined: the staged change). */
+  sha?: string;
 };
 
 export type Warning = { rule: string; text: string };
@@ -119,11 +142,31 @@ export function parseMessage(raw: string): ParsedMessage {
     if (trailer) trailers[trailer.key] = trailer.value;
     else bodyLines.push(line);
   }
-  return { subject, body: bodyLines.join("\n").trim(), trailers };
+  return { raw, subject, body: bodyLines.join("\n").trim(), trailers };
 }
 
-/** git revert's own body line: it says what was reverted, not why. */
-const REVERT_BOILERPLATE = /^This reverts commit [0-9a-f]{7,40}\b.*$/;
+/** git revert's own body lines (`-m` adds the second): what, not why. */
+const REVERT_BOILERPLATE =
+  /^(This reverts commit [0-9a-f]{7,40}\b.*|changes made to [0-9a-f]{7,40}\.)$/;
+/** Trailers a tool reads: none of them says why a revert is made. */
+const MACHINE_TRAILERS = new Set([
+  "Co-Authored-By",
+  "Signed-off-by",
+  "Mechanical",
+  "Rename",
+  "Rename-path",
+  "Rename-path-move",
+  "Rename-path-delete",
+  "Rename-path-edit",
+  "Comments-only",
+  "Ratchet-raise",
+  "Known-renamed",
+  "Baseline-rerecord",
+  "Layers-renamed",
+  "Concept",
+  "Advisor",
+  "Visible",
+]);
 
 /** A `revert:` subject, or git's default `Revert "…"` one. */
 export function isRevertSubject(subject: string): boolean {
@@ -132,14 +175,21 @@ export function isRevertSubject(subject: string): boolean {
   );
 }
 
-/** A revert's reason: its body without git's boilerplate line, or a `Why:`/`Reason:` line. */
+/**
+ * A revert's reason: its body without git's boilerplate lines, or a line
+ * written as a trailer (`Why:`, `Cause:`, `Regression:`, …) that no tool
+ * reads.
+ */
 export function revertReason(message: ParsedMessage): string {
   const own = message.body
     .split("\n")
     .filter((line) => !REVERT_BOILERPLATE.test(line.trim()))
     .join("\n")
     .trim();
-  return own || message.trailers.Why || message.trailers.Reason || "";
+  const said = Object.entries(message.trailers).find(
+    ([key]) => !MACHINE_TRAILERS.has(key),
+  );
+  return own || said?.[1] || "";
 }
 
 export function isFixSubject(subject: string): boolean {
@@ -3553,19 +3603,41 @@ function isKey(id: ts.Node): boolean {
 const ZOD_SHAPE =
   /^z\.(object|strictObject|looseObject)$|\.(extend|safeExtend|pick|omit|partial|required)$/;
 
+type KeySet = { has: (name: string) => boolean };
+
+/**
+ * Why a key renamed `from` → `to` reaches a stored, external or response
+ * shape. Stored and external keys go by the old name; a response key per
+ * symbol (todo:533): the new name is a key a router's output type reaches
+ * in the renamed tree, so an internal type that shares a response key's
+ * name renames, and one that flows into an answer doesn't.
+ */
+function keyNameProblem(
+  from: string,
+  to: string,
+  shapes: { keys: KeySet; responseKeys?: KeySet },
+): string | undefined {
+  if (shapes.keys.has(from))
+    return `${from} is a stored or external key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+  if (shapes.responseKeys?.has(to))
+    return `${to} is a key of a router's answer: the rename reaches a response (or meets one of its keys)`;
+  return undefined;
+}
+
 /** Why a key renamed at `id` changes a stored, external or response shape. */
 function shapeKeyProblem(
   id: ts.Node,
   file: string,
   from: string,
   shapes: {
-    keys: { has: (name: string) => boolean };
+    keys: KeySet;
+    responseKeys?: KeySet;
     isShapeFile: (file: string) => boolean;
   },
 ): string | undefined {
   if (!isKey(id)) return undefined;
-  if (shapes.keys.has(from))
-    return `${from} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+  const named = keyNameProblem(from, id.getText(), shapes);
+  if (named) return named;
   if (shapes.isShapeFile(file)) return `${file} defines a stored shape`;
   const literalKey =
     ts.isPropertyAssignment(id.parent) ||
@@ -3635,8 +3707,8 @@ function codeRenameProblem(
     if (typeKey) {
       if (map.get(typeKey[0]) !== typeKey[1])
         return `${at(y, now)}: "${typeKey[0]}" → "${typeKey[1]}" is not in the ${RENAME}: list`;
-      if (shapes.keys.has(typeKey[0]))
-        return `${at(y, now)}: "${typeKey[0]}" as a key: ${typeKey[0]} is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)`;
+      const named = keyNameProblem(typeKey[0], typeKey[1], shapes);
+      if (named) return `${at(y, now)}: "${typeKey[0]}" as a key: ${named}`;
       used.add(typeKey[0]);
       continue;
     }
@@ -3753,13 +3825,238 @@ export function mechanicalProblem(
   diff: string,
 ): string | undefined {
   if (trailerValues(raw, RENAME).length === 0) return notAMove(numstat, diff);
-  let keys: Set<string> | undefined;
+  let [keys, responseKeys]: (Set<string> | undefined)[] = [];
   return notARename(numstat, diff, raw, {
     // Read only when a renamed name stands as a key: reading the router
-    // output types builds the program.
-    keys: { has: (name) => (keys ??= storedAndResponseKeys()).has(name) },
+    // output types builds the program (of the tree as it stands: renamed).
+    keys: { has: (name) => (keys ??= storedKeys()).has(name) },
+    responseKeys: {
+      has: (name) => (responseKeys ??= routerOutputKeys()).has(name),
+    },
     isShapeFile,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Proven tRPC path renames (AR9 proof, owner 2026-11-11): `Rename-path:`
+// ---------------------------------------------------------------------------
+
+export const RENAME_PATH = "Rename-path";
+export const RENAME_PATH_MOVE = "Rename-path-move";
+export const RENAME_PATH_DELETE = "Rename-path-delete";
+export const RENAME_PATH_EDIT = "Rename-path-edit";
+export const RENAME_PATH_SCRIPT = "scripts/rename-trpc-path.ts";
+
+/** One rename-trpc-path run, as the commit's trailers give it. */
+export type RenamePathMap = {
+  paths: [string, string][];
+  moves: [string, string][];
+  edits: { file: string; from: string; to: string }[];
+  deletes: string[];
+};
+
+const PROCEDURE_PATH = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
+const REPO_FILE = /^[\w@.()[\]/-]+$/;
+const ARROW_SPLIT = /\s+(?:→|->)\s+/;
+
+/** A JSON string at the start of `text`, and what follows it. */
+function leadingJsonString(
+  text: string,
+): { value: string; rest: string } | undefined {
+  if (!text.startsWith('"')) return undefined;
+  for (let i = 1; i < text.length; i++) {
+    if (text[i] === "\\") i++;
+    else if (text[i] === '"') {
+      try {
+        const value: unknown = JSON.parse(text.slice(0, i + 1));
+        if (typeof value === "string")
+          return { value, rest: text.slice(i + 1) };
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The commit's `Rename-path:` trailers as one map, and any malformed line:
+ *
+ *   Rename-path: <old.path> → <new.path>[, <old> → <new>…]
+ *   Rename-path-move: <old file> → <new file>
+ *   Rename-path-delete: <file>
+ *   Rename-path-edit: <file> <JSON string from> → <JSON string to>
+ *
+ * Undefined map: the message carries no `Rename-path:` line.
+ */
+export function readRenamePaths(raw: string): {
+  map?: RenamePathMap;
+  problems: string[];
+} {
+  const problems: string[] = [];
+  const map: RenamePathMap = { paths: [], moves: [], edits: [], deletes: [] };
+  for (const value of trailerValues(raw, RENAME_PATH))
+    for (const part of value.split(",").map((s) => s.trim())) {
+      const [from, to, extra] = part.split(ARROW_SPLIT);
+      if (
+        !from ||
+        !to ||
+        extra !== undefined ||
+        from === to ||
+        !PROCEDURE_PATH.test(from) ||
+        !PROCEDURE_PATH.test(to)
+      )
+        problems.push(
+          `"${RENAME_PATH}: ${part}": write ${RENAME_PATH}: <old.path> → <new.path>`,
+        );
+      else if (map.paths.some(([f]) => f === from))
+        problems.push(`${RENAME_PATH}: ${from} is renamed twice`);
+      else map.paths.push([from, to]);
+    }
+  for (const value of trailerValues(raw, RENAME_PATH_MOVE)) {
+    const [from, to, extra] = value.split(ARROW_SPLIT);
+    if (
+      !from ||
+      !to ||
+      extra !== undefined ||
+      ![from, to].every((f) => REPO_FILE.test(f))
+    )
+      problems.push(
+        `"${RENAME_PATH_MOVE}: ${value}": write ${RENAME_PATH_MOVE}: <old file> → <new file>`,
+      );
+    else map.moves.push([from, to]);
+  }
+  for (const value of trailerValues(raw, RENAME_PATH_DELETE)) {
+    if (!REPO_FILE.test(value))
+      problems.push(
+        `"${RENAME_PATH_DELETE}: ${value}": write ${RENAME_PATH_DELETE}: <file>`,
+      );
+    else map.deletes.push(value);
+  }
+  for (const value of trailerValues(raw, RENAME_PATH_EDIT)) {
+    const space = value.indexOf(" ");
+    const file = space < 0 ? "" : value.slice(0, space);
+    const from = leadingJsonString(value.slice(space + 1));
+    const arrow = from && /^\s+(?:→|->)\s+/.exec(from.rest);
+    const to = arrow
+      ? leadingJsonString(from.rest.slice(arrow[0].length))
+      : undefined;
+    if (!REPO_FILE.test(file) || !from || !to || to.rest.trim() !== "")
+      problems.push(
+        `"${RENAME_PATH_EDIT}: ${value.slice(0, 80)}": write ${RENAME_PATH_EDIT}: <file> <JSON string from> → <JSON string to>`,
+      );
+    else map.edits.push({ file, from: from.value, to: to.value });
+  }
+  const used =
+    map.paths.length + map.moves.length + map.edits.length + map.deletes.length;
+  if (map.paths.length === 0) {
+    if (used > 0 || problems.length > 0)
+      problems.push(`a ${RENAME_PATH}-* line needs a ${RENAME_PATH}: line`);
+    return { problems };
+  }
+  return { map, problems };
+}
+
+/** The trailer lines that give `map` (rename-trpc-path.ts --print-trailers). */
+export function renamePathTrailers(map: RenamePathMap): string[] {
+  return [
+    ...map.paths.map(([from, to]) => `${RENAME_PATH}: ${from} → ${to}`),
+    ...map.moves.map(([from, to]) => `${RENAME_PATH_MOVE}: ${from} → ${to}`),
+    ...map.edits.map(
+      (e) =>
+        `${RENAME_PATH_EDIT}: ${e.file} ${JSON.stringify(e.from)} → ${JSON.stringify(e.to)}`,
+    ),
+    ...map.deletes.map((d) => `${RENAME_PATH_DELETE}: ${d}`),
+  ];
+}
+
+const hasRenamePath = (raw: string) =>
+  trailerValues(raw, RENAME_PATH).length > 0;
+
+/**
+ * Why a `Rename-path:` commit isn't proven: rename-trpc-path.ts as the
+ * parent holds it, run on the parent in a temporary worktree with the
+ * commit's own trailers, must give the commit's tree byte for byte.
+ * `expectedTree` is the commit's tree (or the staged one); undefined: proven.
+ */
+export function renamePathProblem(
+  raw: string,
+  parentRef: string,
+  expectedTree: string,
+  run: Git = git,
+): string | undefined {
+  const { map, problems } = readRenamePaths(raw);
+  if (problems.length > 0) return problems.join("; ");
+  if (!map) return `no ${RENAME_PATH}: line`;
+  const parent = run("rev-parse", "--verify", `${parentRef}^{commit}`).trim();
+  try {
+    run("cat-file", "-e", `${parent}:${RENAME_PATH_SCRIPT}`);
+  } catch {
+    return `the parent ${parent.slice(0, 8)} has no ${RENAME_PATH_SCRIPT} to re-run`;
+  }
+  const top = run("rev-parse", "--show-toplevel").trim();
+  const scratch = mkdtempSync(path.join(tmpdir(), "rename-path-"));
+  const tree = path.join(scratch, "tree");
+  const messageFile = path.join(scratch, "message.txt");
+  writeFileSync(messageFile, raw);
+  try {
+    run(
+      "-c",
+      "core.hooksPath=/dev/null",
+      "worktree",
+      "add",
+      "--detach",
+      "--quiet",
+      tree,
+      parent,
+    );
+    const modules = path.join(top, "node_modules");
+    if (existsSync(modules))
+      symlinkSync(realpathSync(modules), path.join(tree, "node_modules"));
+    try {
+      execFileSync(
+        "npx",
+        ["tsx", RENAME_PATH_SCRIPT, "--root", tree, "--message", messageFile],
+        {
+          cwd: tree,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          maxBuffer: 1 << 28,
+        },
+      );
+    } catch (e) {
+      const err = e as { stderr?: string; message?: string };
+      return `${RENAME_PATH_SCRIPT} failed on the parent: ${String(
+        err.stderr || err.message,
+      )
+        .trim()
+        .slice(0, 400)}`;
+    }
+    const inTree = gitIn(tree);
+    inTree("add", "-A");
+    const made = inTree("write-tree").trim();
+    if (made === expectedTree) return undefined;
+    const differing = run(
+      "diff",
+      "--no-renames",
+      "--name-only",
+      made,
+      expectedTree,
+    )
+      .split("\n")
+      .filter(Boolean);
+    const shown = differing.slice(0, 20).join(", ");
+    const more =
+      differing.length > 20 ? ` and ${differing.length - 20} more` : "";
+    return `re-running ${RENAME_PATH_SCRIPT} on the parent ${parent.slice(0, 8)} gives a different tree; differing paths: ${shown}${more}`;
+  } finally {
+    try {
+      run("worktree", "remove", "--force", tree);
+    } catch {
+      /* never added */
+    }
+    rmSync(scratch, { recursive: true, force: true });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -3797,12 +4094,222 @@ export function notCommentsOnly(
   return undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Figure commits (v0.11 G1)
+// ---------------------------------------------------------------------------
+
+export const RERECORD = "Baseline-rerecord";
+const FIGURE_CHANGE = "Figure-change";
+
+/**
+ * Pinned figures: the behavior, sync, text and screens baselines, the engine
+ * and Simulation snapshots, the answer key, and the pinned expected-rows
+ * fixtures (`tests/fixtures/*-rows.json`).
+ */
+const PINNED_FIGURES = [
+  /^tests\/baseline\/__(baseline|sync|text|screens)__\//,
+  /^tests\/pure\/(engine|simulation)\/__snapshots__\//,
+  /^tests\/(.+\/)?answer-key[^/]*\.test\.tsx?$/,
+  /^tests\/fixtures\/answer-key[^/]*\.ts$/,
+  /^tests\/fixtures\/[^/]+-rows\.json$/,
+];
+
+/** `<case or field>: … $A → $B …, <cause>` */
+const FIGURE_LINE = /^.+?: .*\S ?→ ?\S.*, \S/;
+/** scripts/baseline-diff.ts's last line. */
+const BASELINE_COUNT =
+  /\b\d+ figure\(s\) moved in \d+ baseline file\(s\) since \S+/;
+
+/**
+ * Pinned-figure files whose lines change or go: a new pin, file or case
+ * only adds lines, so it moves no figure.
+ */
+export function rerecordedFiles(files: FileChange[]): string[] {
+  return files
+    .filter((c) => c.deleted > 0 && PINNED_FIGURES.some((p) => p.test(c.file)))
+    .map((c) => c.file);
+}
+
+/** check-ratchets' `<glob> — <reason>`; the reason starts with the item id. */
+const RERECORD_FORM = /^\S.*?\s+(?:—|--)\s+(\S.*)$/;
+/** A scope item id (`Q1`, `TX5`, `AR13`, `PY4b`), or `none,` when no figure moved. */
+const ITEM_ID = /^(?:[A-Z]+\d+[a-z]?|none)(?=[\s,(]|$)/;
+
+/**
+ * Each `Baseline-rerecord:` line's item: the id its reason starts with
+ * (`none` when no figure moves), or undefined for a line not in the form.
+ */
+export function rerecordItems(message: ParsedMessage): (string | undefined)[] {
+  return trailerValues(message.raw, RERECORD).map(
+    (value) => ITEM_ID.exec(RERECORD_FORM.exec(value)?.[1] ?? "")?.[0],
+  );
+}
+
+/**
+ * A commit that re-records a pinned figure names its item and says what
+ * moved: `Baseline-rerecord: <glob> — <item id>, <reason>`, a
+ * `Figure-change:` line per figure class, and baseline-diff.ts's count line.
+ */
+function figureWarnings(
+  message: ParsedMessage,
+  files: FileChange[],
+): Warning[] {
+  const touched = rerecordedFiles(files);
+  const items = rerecordItems(message);
+  const form = `"${RERECORD}: <glob> — <item id>, <reason>" (or "<glob> — none, <reason>" when no figure moves)`;
+  if (items.length === 0) {
+    if (touched.length === 0) return [];
+    return [
+      {
+        rule: "figure-rerecord",
+        text: `re-records pinned figures (${touched.slice(0, 3).join(", ")}${touched.length > 3 ? ", …" : ""}): add ${form} with its ${FIGURE_CHANGE}: lines`,
+      },
+    ];
+  }
+  if (items.includes(undefined))
+    return [{ rule: "figure-rerecord", text: `write ${form}` }];
+  const item = items.find((id) => id !== "none");
+  if (item === undefined) return [];
+  const warnings: Warning[] = [];
+  const lines = trailerValues(message.raw, FIGURE_CHANGE);
+  if (lines.length === 0)
+    warnings.push({
+      rule: "figure-change",
+      text: `${RERECORD}: ${item} needs a "${FIGURE_CHANGE}: <case or field>: $A → $B, <cause>" line per moved figure class`,
+    });
+  for (const line of lines.filter((l) => !FIGURE_LINE.test(l)))
+    warnings.push({
+      rule: "figure-change",
+      text: `"${FIGURE_CHANGE}: ${line}": write <case or field>: $A → $B, <cause>`,
+    });
+  if (!BASELINE_COUNT.test(message.raw))
+    warnings.push({
+      rule: "figure-count",
+      text: `${RERECORD}: ${item} needs scripts/baseline-diff.ts's count line ("N figure(s) moved in M baseline file(s) since <rev>.") in the body`,
+    });
+  return warnings;
+}
+
+/** A subject's type: its prefix, without scope or `!`. */
+const subjectType = (subject: string) => /^([a-z]+)/.exec(subject)?.[1];
+
+/**
+ * Commit types say behavior (v0.11 G8): `refactor:` changes no figure, and a
+ * breaking API change is `feat!:`/`fix!:` with an `API:` line saying what
+ * breaks; an `API:` line without the `!`, or a `!` without the line, warns.
+ */
+function typeWarnings(message: ParsedMessage): Warning[] {
+  const warnings: Warning[] = [];
+  const item = rerecordItems(message).find((id) => id && id !== "none");
+  if (subjectType(message.subject) === "refactor" && item !== undefined)
+    warnings.push({
+      rule: "refactor-figure",
+      text: `refactor: changes no figure, but ${RERECORD} names ${item}: type it fix(<area>): or feat(<area>):`,
+    });
+  const breaking = /^[a-z]+(\([^)]+\))?!:/.test(message.subject);
+  const api = trailerValues(message.raw, "API").length > 0;
+  if (api && !breaking)
+    warnings.push({
+      rule: "api-breaking",
+      text: "an API: line marks a breaking API change: type it feat!: or fix!:",
+    });
+  if (breaking && !api && !isRevertSubject(message.subject))
+    warnings.push({
+      rule: "api-breaking",
+      text: 'a breaking change (the "!") says what breaks in an "API: <procedure or field>: <change>" line',
+    });
+  return warnings;
+}
+
+// Figure commits name their flips and their CALCULATIONS row (v0.11 G2)
+
+const CALCULATIONS = "Calculations";
+/** Landed before G2: Q1, whose row's Gaps never listed the loss it fixed. */
+const BEFORE_CALCULATIONS_RULE = new Set([
+  "301bcb446186cf96ba919283ec035276e915ea43",
+]);
+/** An answer-key case id, as tests/fixtures/answer-key.ts checks it. */
+const CASE_ID = /^[a-z]+\/[A-Za-z0-9][^\s]*$/;
+const XFAIL_CALL = /\bxfail\(\{[^]{0,300}?\bid:\s*(["'`])(.*?)\1/g;
+const FAILS_CALL = /\b(?:it|test)\.fails\(\s*(["'`])(.*?)\1/g;
+
+/** The answer-key expected failures in a test file's text, by case id. */
+export function expectedFailures(text: string): string[] {
+  return [...text.matchAll(XFAIL_CALL), ...text.matchAll(FAILS_CALL)]
+    .map((m) => (m[2] ?? "").split(" ")[0] ?? "")
+    .filter((id) => CASE_ID.test(id));
+}
+
+/**
+ * The expected failures a full-context diff of test files flips or deletes:
+ * ids on the old side that no file's new side still expects to fail.
+ */
+export function droppedXfails(diff: string): string[] {
+  const files = readDiff(diff);
+  const now = new Set(
+    files.flatMap((f) => expectedFailures(f.new.lines.join("\n"))),
+  );
+  const was = files.flatMap((f) => expectedFailures(f.old.lines.join("\n")));
+  return [...new Set(was)].filter((id) => !now.has(id));
+}
+
+/** Changed test code that loses lines: where a flip can be. */
+const flipCandidates = (files: FileChange[]) =>
+  files
+    .filter(
+      (c) =>
+        c.deleted > 0 &&
+        c.file.startsWith("tests/") &&
+        CODE_FILE.test(c.file) &&
+        !c.file.includes(" => "),
+    )
+    .map((c) => c.file);
+
+function flipWarnings(facts: CommitFacts): Warning[] {
+  const { message, files } = facts;
+  const lines = trailerValues(message.raw, FIGURE_CHANGE);
+  // A case id may hold a colon (limits/IRA-2JOB:save): split on the rest and
+  // drop only the colon that ends the name ("tax/E6: …").
+  const named = new Set(
+    lines.flatMap((line) =>
+      line.split(/[\s,;()]+/).map((token) => token.replace(/:+$/, "")),
+    ),
+  );
+  const unnamed = (facts.droppedXfails ?? []).filter((id) => !named.has(id));
+  const warnings: Warning[] = unnamed.map((id) => ({
+    rule: "xfail-flip",
+    text: `${id} is no longer an expected failure: name it in a "${FIGURE_CHANGE}: ${id}: $A → $B, <cause>" line`,
+  }));
+  const item = rerecordItems(message).find((id) => id && id !== "none");
+  if (
+    item !== undefined &&
+    !files.some((c) => c.file === REGISTER_DOC) &&
+    !/^none\b/.test(message.trailers[CALCULATIONS] ?? "") &&
+    !BEFORE_CALCULATIONS_RULE.has(facts.sha ?? "")
+  )
+    warnings.push({
+      rule: "figure-calculations",
+      text: `${RERECORD}: ${item} also updates its ${REGISTER_DOC} row (Tested, Gaps), or says "${CALCULATIONS}: none, <reason>"`,
+    });
+  return warnings;
+}
+
 export function checkCommit(facts: CommitFacts): Warning[] {
   const { message, files } = facts;
   const warnings: Warning[] = [];
-  const claimed = "Mechanical" in message.trailers;
-  const mechanical = claimed && facts.notMechanical === undefined;
-  if (claimed && facts.notMechanical !== undefined) {
+  // A proven Rename-path: commit is Mechanical: (its proof replaces the
+  // move and Rename: proofs, which can't read a path rename).
+  const pathRename = RENAME_PATH in message.trailers;
+  const claimed = "Mechanical" in message.trailers || pathRename;
+  const mechanical = pathRename
+    ? facts.notRenamePath === undefined
+    : claimed && facts.notMechanical === undefined;
+  if (pathRename && facts.notRenamePath !== undefined) {
+    warnings.push({
+      rule: "rename-path",
+      text: `${RENAME_PATH}: not proven: ${facts.notRenamePath}`,
+    });
+  } else if (!pathRename && claimed && facts.notMechanical !== undefined) {
     warnings.push({
       rule: "mechanical",
       text: `Mechanical: is for a move or rename only: ${facts.notMechanical}`,
@@ -3834,9 +4341,14 @@ export function checkCommit(facts: CommitFacts): Warning[] {
   ) {
     warnings.push({
       rule: "revert-reason",
-      text: 'a revert says why: "This reverts commit …" alone gives no reason',
+      text: 'a revert says why: "This reverts commit …" alone gives no reason (write a sentence, or a Why: line)',
     });
   }
+  warnings.push(
+    ...figureWarnings(message, files),
+    ...flipWarnings(facts),
+    ...typeWarnings(message),
+  );
   const srcLines = srcLinesChanged(files);
   if (srcLines > MAX_SRC_LINES && !exempt) {
     warnings.push({
@@ -3949,9 +4461,18 @@ export function countPriorFixes(
 }
 
 function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
-  const message = parseMessage(git("log", "-1", "--format=%B", sha));
+  const raw = git("log", "-1", "--format=%B", sha);
+  const message = parseMessage(raw);
+  const pathRename = hasRenamePath(raw);
+  const notRenamePath = pathRename
+    ? renamePathProblem(
+        raw,
+        `${sha}^`,
+        git("rev-parse", `${sha}^{tree}`).trim(),
+      )
+    : undefined;
   const notMechanical =
-    "Mechanical" in message.trailers
+    "Mechanical" in message.trailers && !pathRename
       ? mechanicalProblem(
           git("log", "-1", "--format=%B", sha),
           parseNumstat(git("show", "-M", "--numstat", "--format=", sha)),
@@ -3970,13 +4491,22 @@ function factsForCommit(sha: string, history: HistoryCommit[]): CommitFacts {
     git("show", "-U0", "--format=", sha, "--", "src/"),
   );
   const time = Number(git("log", "-1", "--format=%ct", sha).trim());
+  const flips = flipCandidates(files);
   return {
     message,
     files,
     spots,
     priorFixes: countPriorFixes(spots, time, history, sha),
     notMechanical,
+    notRenamePath,
     notCommentsOnly: notComments,
+    droppedXfails:
+      flips.length > 0
+        ? droppedXfails(
+            git("show", FULL_CONTEXT, "--format=", sha, "--", ...flips),
+          )
+        : [],
+    sha,
   };
 }
 
@@ -3987,16 +4517,22 @@ function report(label: string, warnings: Warning[]) {
 }
 
 function runMessageFile(file: string): Warning[] {
-  const message = parseMessage(readFileSync(file, "utf8"));
+  const raw = readFileSync(file, "utf8");
+  const message = parseMessage(raw);
   if (message.subject.startsWith("Merge ")) return [];
   const files = parseNumstat(git("diff", "--cached", "--numstat"));
   const spots = spotsFromDiff(git("diff", "--cached", "-U0", "--", "src/"));
   const now = Math.floor(Date.now() / 1000);
   const history = readHistory(now - FIX_WINDOW_DAYS * DAY_SECONDS);
+  const pathRename = hasRenamePath(raw);
+  // The staged change against HEAD: the tree a commit would get.
+  const notRenamePath = pathRename
+    ? renamePathProblem(raw, "HEAD", git("write-tree").trim())
+    : undefined;
   const notMechanical =
-    "Mechanical" in message.trailers
+    "Mechanical" in message.trailers && !pathRename
       ? mechanicalProblem(
-          readFileSync(file, "utf8"),
+          raw,
           parseNumstat(git("diff", "--cached", "-M", "--numstat")),
           git("diff", "--cached", "-M", FULL_CONTEXT),
         )
@@ -4008,13 +4544,19 @@ function runMessageFile(file: string): Warning[] {
           git("diff", "--cached", "-M", FULL_CONTEXT, "--", "src/"),
         )
       : undefined;
+  const flips = flipCandidates(files);
   const warnings = checkCommit({
     message,
     files,
     spots,
     priorFixes: countPriorFixes(spots, now + 1, history),
     notMechanical,
+    notRenamePath,
     notCommentsOnly: notComments,
+    droppedXfails:
+      flips.length > 0
+        ? droppedXfails(git("diff", "--cached", FULL_CONTEXT, "--", ...flips))
+        : [],
   });
   report("commit", warnings);
   return warnings;

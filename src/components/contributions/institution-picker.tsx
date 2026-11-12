@@ -29,7 +29,7 @@ export function InstitutionPicker({
   const utils = trpc.useUtils();
   const { data: accounts } =
     trpc.performance.performanceAccounts.list.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
   const createPerf = trpc.performance.performanceAccounts.create.useMutation({
     onSuccess: (created) => {
       utils.performance.performanceAccounts.invalidate();

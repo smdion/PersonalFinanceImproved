@@ -8,7 +8,9 @@
  * - every legitimate replay is unchanged: each recreate in the journal,
  *   replayed from the entry before it and from every later entry, keeps
  *   every value of every column it keeps, drops only its own columns and,
- *   from before its entry, is never skipped.
+ *   from before its entry, is never skipped;
+ * - a recreate skipped over a column no snapshot knows is refused when the
+ *   database is provably before its entry, and warned about past it.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
@@ -16,7 +18,12 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
-import { runSQLite, snapshotColumns } from "../../db-migrate";
+import {
+  refuseUnknownColumnSkip,
+  runSQLite,
+  snapshotColumns,
+  type RecreateShape,
+} from "../../db-migrate";
 import { sampleJournalPoints } from "../helpers/journal-sample";
 
 const FOLDER = "drizzle-sqlite";
@@ -261,4 +268,86 @@ describe("every legitimate recreate replay is unchanged", () => {
       db2.close();
     },
   );
+});
+
+describe("a recreate skipped over a hand-added column", () => {
+  const entryOf = (tag: string) =>
+    journal.entries.find((e) => e.tag.startsWith(tag))!.idx;
+
+  /** A database at `idx` on a cleared journal with a column no snapshot
+   *  knows added to `table`. */
+  function handAdded(idx: number, table: string) {
+    const db = atEntry(idx, []);
+    db.pragma("foreign_keys = OFF");
+    fill(db, table);
+    db.exec(`ALTER TABLE "${table}" ADD COLUMN hand_col TEXT`);
+    db.close();
+  }
+
+  it.each([
+    ["the baseline", 0, "retirement_settings", "0005_v092_filing_status_auto"],
+    [
+      "0004",
+      entryOf("0004"),
+      "retirement_settings",
+      "0005_v092_filing_status_auto",
+    ],
+    ["0014", entryOf("0014"), "holding_observations", "0015_v0102_dead_data"],
+  ] as const)(
+    "before its entry (%s, %s) is refused, naming the column, with nothing changed",
+    (_at, idx, table, tag) => {
+      handAdded(idx, table);
+      const before = rowOf(table);
+      expect(() => runSQLite()).toThrow(
+        `Table ${table} has column(s) no Ledgr release made (hand_col), and this database is before ${tag}, whose change to ${table} can't be applied over them. Remove the column(s) or restore a backup, then start again. Nothing has been changed.`,
+      );
+      expect(rowOf(table)).toEqual(before);
+    },
+  );
+
+  it("past its entry it is skipped with a warning naming the column", () => {
+    handAdded(entryOf("0014"), "retirement_settings");
+    const events = logged(() => runSQLite());
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        level: "warn",
+        event: "squash_recreate_skipped",
+        table: "retirement_settings",
+        unknownColumns: ["hand_col"],
+      }),
+    );
+    expect(rowOf("retirement_settings").hashes).toEqual(allHashes);
+  });
+});
+
+describe("when a skip over an unknown column is provably before its entry", () => {
+  const shape = (laterAdds: string[][]): RecreateShape => ({
+    tag: "0099_invented",
+    ownDrops: new Set(["dropped_col"]),
+    known: new Set(["a", "dropped_col", "x", "y"]),
+    laterAdds: laterAdds.map((c) => new Set(c)),
+  });
+  const skip = (present: string[], laterAdds: string[][]) => () =>
+    refuseUnknownColumnSkip(
+      "t",
+      ["a", "hand_col", ...present],
+      ["hand_col"],
+      shape(laterAdds),
+    );
+
+  it("still holding a column the entry drops: refused", () => {
+    expect(skip(["dropped_col"], [])).toThrow(/before 0099_invented/);
+  });
+
+  it("holding no later entry's added columns, each adding some: refused", () => {
+    expect(skip([], [["x"], ["x", "y"]])).toThrow(/before 0099_invented/);
+  });
+
+  it("holding every column one later entry adds: past it, so only warned", () => {
+    expect(skip(["x"], [["x"], ["x", "y"]])()).toEqual(["hand_col"]);
+  });
+
+  it("a later entry that adds nothing (a column added, then dropped again) proves nothing: only warned", () => {
+    expect(skip([], [["x"], []])()).toEqual(["hand_col"]);
+  });
 });

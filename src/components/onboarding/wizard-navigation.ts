@@ -20,9 +20,9 @@ export function wizardNavigation(
   setCurrentStep: Dispatch<SetStateAction<Step>>,
   setIsSaving: Dispatch<SetStateAction<boolean>>,
   people: PersonDraft[],
-  createPerson: ReturnType<typeof trpc.settings.people.create.useMutation>,
+  createPerson: ReturnType<typeof trpc.people.create.useMutation>,
   jobs: JobDraft[],
-  createJob: ReturnType<typeof trpc.settings.jobs.create.useMutation>,
+  createJob: ReturnType<typeof trpc.jobs.create.useMutation>,
   updateSalaryProfile: ReturnType<typeof trpc.salaryProfile.update.useMutation>,
   setTaxDataSyncEnabled: ReturnType<
     typeof trpc.settings.taxDataSync.setEnabled.useMutation

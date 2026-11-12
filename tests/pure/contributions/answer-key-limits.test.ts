@@ -42,16 +42,17 @@
  * phase-out range function only, with the range (or a net MAGI) fed in.
  */
 import { describe, expect, it } from "vitest";
-import {
-  capContributionsByLimitGroup,
-  type CapPerson,
-  type CapRow,
-} from "@/lib/pure/contributions/contribution-caps";
+import { capContributionsByLimitGroup } from "@/lib/pure/contributions/contribution-caps";
+import type {
+  CapPerson,
+  CapRow,
+} from "@/lib/pure/contributions/contribution-caps.types";
 import { resolveIrsLimit } from "@/lib/pure/contributions/irs-limits";
 import {
   judgeRothIra,
   rothIraAllowed,
-} from "@/lib/pure/contributions/roth-ira";
+} from "@/lib/pure/contributions/roth-ira-judge";
+import { otherIraMoney } from "@/lib/pure/contributions/roth-ira-summary";
 import { megaBackdoorRoom } from "@/lib/pure/advice/milestones/input";
 import { computeEmployerMatch } from "@/lib/pure/contributions/employer-match";
 import { taxDataLimitMap } from "../../helpers/tax-data";
@@ -213,26 +214,21 @@ describe("limits: deferrals and age", () => {
     cents(deferralLimit(2025, 1961), 31_000);
   });
 
-  // C14: deferrals can't pass pay. 2026, born 1971 (55), pay 10,000, a
-  // plan that allows all of pay, 24,500 asked. Total deferrals never pass
-  // compensation: 415(c)(1)(B) "100 percent of the participant's
-  // compensation", and for the catch-up leg 414(v)(2)(A)(ii) (compensation
-  // less other deferrals). min(32,500, 10,000) = 10,000. Today the cap
-  // pass keeps 24,500 (the router repro's net check is −587.11).
-  xfail({
-    id: "limits/C14 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D1)',
-    run: () => {
-      const r = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 24_500,
-      });
-      return cap(2026, [person(1, 2026, 55, 10_000)], [r]).get(r.id)!
-        .cappedAnnual;
-    },
-    expected: 10_000,
-    today: 24_500,
+  it("limits/C14 [LIM-06] deferrals can't pass pay (2026, 55, pay 10,000, 24,500 asked): 10,000", () => {
+    // A plan that allows all of pay. Total deferrals never pass
+    // compensation: 415(c)(1)(B) "100 percent of the participant's
+    // compensation", and for the catch-up leg 414(v)(2)(A)(ii)
+    // (compensation less other deferrals). min(32,500, 10,000) = 10,000.
+    const r = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 24_500,
+      employer: { key: 1, pay: 10_000 },
+    });
+    cents(
+      cap(2026, [person(1, 2026, 55, 10_000)], [r]).get(r.id)!.cappedAnnual,
+      10_000,
+    );
   });
 });
 
@@ -275,31 +271,53 @@ describe("limits: several employers", () => {
     cents(roomAtB(45, 24_500), 0);
   });
 
-  // C20: each plan is bound by its own employer's pay. 2026, 52, two
-  // jobs paying 10,000 each, 32,500 asked at each. 415(c)(1)(B) per
-  // employer: 10,000 + 10,000 = 20,000, under the 32,500 personal cap.
-  // Ledgr has wages per person, so it pools them (20,000) and holds the
-  // two rows to the 402(g) cap only: 32,500 (derived; the key gives no
-  // Today figure).
-  xfail({
-    id: "limits/C20 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D1b)',
-    run: () => {
-      const a = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 32_500,
-      });
-      const b = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 32_500,
-      });
-      const capped = cap(2026, [person(1, 2026, 52, 20_000)], [a, b]);
-      return capped.get(a.id)!.cappedAnnual + capped.get(b.id)!.cappedAnnual;
-    },
-    expected: 20_000,
-    today: 32_500,
+  it("limits/LM3-EARLIER [LIM-06] an ended job's deferrals are already in (2026, 45, 10,000 at an ended job, 20,000 now): 14,500 now", () => {
+    // One 402(g) limit across every employer in the year (402(g)(1)(A);
+    // Notice 2023-62 § III.B), and the ended job's 10,000 is already paid,
+    // so it isn't cut: 24,500 − 10,000 = 14,500 at the job held now.
+    const earlier = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10_000,
+      employer: { key: 1, pay: 40_000, ended: true },
+    });
+    const now = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 20_000,
+      employer: { key: 2, pay: 100_000 },
+    });
+    const capped = cap(2026, [person(1, 2026, 45, 140_000)], [now, earlier]);
+    cents(
+      {
+        earlier: capped.get(earlier.id)!.cappedAnnual,
+        now: capped.get(now.id)!.cappedAnnual,
+      },
+      { earlier: 10_000, now: 14_500 },
+    );
+  });
+
+  it("limits/C20 [LIM-06] each plan bound by its own employer's pay (2026, 52, two jobs at 10,000, 32,500 asked at each): 20,000", () => {
+    // 415(c)(1)(B) per employer: 10,000 + 10,000 = 20,000, under the
+    // 32,500 personal cap; no catch-up fits at either (414(v)(2)(A)(ii):
+    // pay less the other deferrals is 0).
+    const a = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 32_500,
+      employer: { key: 1, pay: 10_000 },
+    });
+    const b = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 32_500,
+      employer: { key: 2, pay: 10_000 },
+    });
+    const capped = cap(2026, [person(1, 2026, 52, 20_000)], [a, b]);
+    cents(
+      capped.get(a.id)!.cappedAnnual + capped.get(b.id)!.cappedAnnual,
+      20_000,
+    );
   });
 });
 
@@ -369,37 +387,34 @@ describe("limits: total additions and mega backdoor room", () => {
     cents(megaRoom(2026, 50_000, 24_500, 5_000).room, 20_500);
   });
 
-  // C40: 415(c) excess. 2026, 45, pay 20,000, deferrals 20,000, employer
-  // 5,000. Annual additions 25,000 against min(72,000, 20,000) = 20,000:
-  // 5,000 over (415(c)(1)(B)). The cap pass has no 415(c) step, so
-  // nothing is over today (verdict D2: 0).
-  xfail({
-    id: "limits/C40 [LIM-06]",
-    todo: 'v0.11 Limits "Annual-additions step per employer" (verdict D2)',
-    run: () => {
-      const r = row({
-        personId: 1,
-        accountType: "401k",
-        regularAnnual: 20_000,
-        employerAnnual: 5_000,
-      });
-      return cap(2026, [person(1, 2026, 45, 20_000)], [r]).get(r.id)!.overBy;
-    },
-    expected: 5_000,
-    today: 0,
+  it("limits/C40 [LIM-06] 415(c) excess (2026, 45, pay 20,000, deferrals 20,000, employer 5,000): 5,000", () => {
+    // Annual additions 25,000 against min(72,000, 20,000) = 20,000:
+    // 5,000 over (415(c)(1)(B)), cut from the employee money.
+    const r = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 20_000,
+      employerAnnual: 5_000,
+      employer: { key: 1, pay: 20_000 },
+    });
+    cents(
+      cap(2026, [person(1, 2026, 45, 20_000)], [r]).get(r.id)!.overBy,
+      5_000,
+    );
   });
 
   it("limits/C41 [LIM-06] over 415(c) as catch-up (2026, 52, pay 20,000, deferrals 20,000, employer 5,000): excess 0", () => {
     // At 52, the 5,000 of deferrals past 415(c) are catch-up (Reg.
     // 1.414(v)-1(b)(1)(i), 415(c) is an applicable limit): additions
     // 20,000 ≤ 20,000, and catch-up 5,000 ≤ 414(v)(2)(A)(ii)'s
-    // 20,000 − 15,000. Nothing over. Ledgr agrees only because it has no
-    // 415(c) step (D1); kept as the guard on the catch-up side of the fix.
+    // 20,000 − 15,000. Nothing over: the guard on the catch-up side of
+    // the 415(c) step.
     const r = row({
       personId: 1,
       accountType: "401k",
       regularAnnual: 20_000,
       employerAnnual: 5_000,
+      employer: { key: 1, pay: 20_000 },
     });
     cents(cap(2026, [person(1, 2026, 52, 20_000)], [r]).get(r.id)!.overBy, 0);
   });
@@ -551,6 +566,9 @@ const allowedDirect = (
         compensation: 300_000,
         iraLimit: capped.limit!,
         iraRoom: capped.maxEmployee,
+        otherIraContributions: otherIraMoney([
+          { accountType: "ira", taxTreatment: "pre_tax", cap: capped },
+        ]),
       },
     ],
   });
@@ -590,18 +608,12 @@ describe("limits: IRA", () => {
     cents(iraLimit(2025, 20, 3_500), 3_500);
   });
 
-  // C55: Roth room after a traditional IRA. 2026, 50, 5,000 traditional,
-  // MAGI under the range. One limit across both kinds (408A(c)(2); Pub
-  // 590-A Worksheet 2-2 lines 9–11): 8,600 − 5,000 = 3,600. Today the
-  // "Allowed" figure stops at line 8 and shows the whole 8,600 (verdict
-  // D5). Fed as the paycheck summary does (`computePaycheckSummary`): the
-  // cap pass's room goes in as `iraRoom`.
-  xfail({
-    id: "limits/C55 [LIM-13]",
-    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
-    run: () => allowedDirect("Single", 50, 50_000, 5_000),
-    expected: 3_600,
-    today: 8_600,
+  it("limits/C55 [LIM-13] Roth room after a traditional IRA (2026, 50, 5,000 traditional, MAGI under the range): 3,600", () => {
+    // One limit across both kinds (408A(c)(2); Pub 590-A Worksheet 2-2
+    // lines 9–11): 8,600 − 5,000 = 3,600 (verdict D5). Fed as the Roth IRA
+    // view is: the cap pass's room as `iraRoom`, the traditional row's
+    // capped money as line 9.
+    cents(allowedDirect("Single", 50, 50_000, 5_000), 3_600);
   });
 
   it("limits/C56 [LIM-11] spousal IRA (Pub 590-A; 2025 MFJ, A pay 30,000 gives 7,000, B no pay): 7,000", () => {
@@ -627,29 +639,19 @@ describe("limits: IRA", () => {
   });
 
   // D4: the higher earner is held to their own pay (219(c)(2)(B): only
-  // the spouse with less compensation uses the couple's). Ledgr pools both
-  // spouses' pay for both (limits-report D4: today's figures below).
-  //
-  // D4-a: pay 5,000 / 3,000, IRA 7,500 / 500. Higher earner:
-  // min(7,500, 5,000) = 5,000. Lower: min(7,500, 3,000 + 5,000 − 5,000)
-  // = 3,000 ≥ 500, so 500. Today: 8,000 pooled pay holds 7,500 + 500.
-  xfail({
-    id: "limits/D4-a [LIM-11]",
-    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
-    run: () => coupleIra([5_000, 3_000], [7_500, 500]),
-    expected: { higher: 5_000, lower: 500 },
-    today: { higher: 7_500, lower: 500 },
+  // the spouse with less compensation uses the couple's; verdict D4).
+  it("limits/D4-a [LIM-11] higher earner held to own pay (2026 MFJ, pay 5,000 / 3,000, IRA 7,500 / 500): 5,000 / 500", () => {
+    // Higher earner: min(7,500, 5,000) = 5,000. Lower: min(7,500, 3,000 +
+    // 5,000 − 5,000) = 3,000 ≥ 500, so 500.
+    const both = coupleIra([5_000, 3_000], [7_500, 500]);
+    cents(both.higher, 5_000);
+    cents(both.lower, 500);
   });
-  // D4-b: pay 5,000 / 1,000, IRA 7,500 / 1,000. Higher: 5,000. Lower:
-  // min(7,500, 1,000 + 5,000 − 5,000) = 1,000. Today: 8,500 cut to the
-  // pooled 6,000 by one factor 6,000 / 8,500: 7,500 × 0.70588… = 5,294.12,
-  // 1,000 × 0.70588… = 705.88.
-  xfail({
-    id: "limits/D4-b [LIM-11]",
-    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
-    run: () => coupleIra([5_000, 1_000], [7_500, 1_000]),
-    expected: { higher: 5_000, lower: 1_000 },
-    today: { higher: 5_294.12, lower: 705.88 },
+  it("limits/D4-b [LIM-11] the lower earner uses what the higher leaves (pay 5,000 / 1,000, IRA 7,500 / 1,000): 5,000 / 1,000", () => {
+    // Higher: 5,000. Lower: min(7,500, 1,000 + 5,000 − 5,000) = 1,000.
+    const both = coupleIra([5_000, 1_000], [7_500, 1_000]);
+    cents(both.higher, 5_000);
+    cents(both.lower, 1_000);
   });
 });
 
@@ -850,17 +852,11 @@ describe("limits: Roth IRA phase-out", () => {
     );
   });
 
-  // C88: phase-out first, then the traditional money. 2026 MFJ, 45, MAGI
-  // 247,000, 5,000 traditional. Worksheet 2-2: line 8 on 7,500 = 3,750;
-  // lines 9–11, 7,500 − 5,000 = 2,500; the smaller wins: 2,500 (reducing
-  // the base first would give the wrong 1,250). Today the text says 3,750
-  // (verdict D5).
-  xfail({
-    id: "limits/C88 [LIM-13]",
-    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
-    run: () => allowedDirect("MFJ", 45, 247_000, 5_000),
-    expected: 2_500,
-    today: 3_750,
+  it("limits/C88 [LIM-13] phase-out first, then the traditional money (2026 MFJ, 45, MAGI 247,000, 5,000 traditional): 2,500", () => {
+    // Worksheet 2-2: line 8 on 7,500 = 3,750; lines 9–11, 7,500 − 5,000 =
+    // 2,500; the smaller wins: 2,500 (reducing the base first would give
+    // the wrong 1,250; verdict D5).
+    cents(allowedDirect("MFJ", 45, 247_000, 5_000), 2_500);
   });
 
   it("limits/C89 [LIM-12] conversion income left out of MAGI, range function only (2026 MFJ, 45, AGI 300,000 with 80,000 conversion): 7,500", () => {

@@ -17,13 +17,15 @@ import {
 } from "@/lib/pure/household/compensation";
 import type { Db } from "@/lib/db";
 import { entryWithMergedRate } from "@/lib/pure/contributions/employer-match";
+import { readStoredMatchType } from "@/lib/db/stored-match-type";
+import { activeProfileId } from "@/server/data/active-profile";
 
 /**
  * Resolve a profile against live data (`liveJobSalaries` already reflects the active
  * Salary Profile); generic so callers get their own row types back with fields applied.
  */
 export function resolveProfile<
-  C extends { id: number },
+  C extends typeof schema.contributionAccounts.$inferSelect,
   J extends { id: number; personId: number },
   S extends {
     job: { id: number; personId: number };
@@ -45,33 +47,11 @@ export function resolveProfile<
   liveJobSalaries: S[],
   salaryProfileActiveMap: SalaryProfileActiveMap,
 ) {
-  const accountActiveFields = readContributionActiveFields(
-    profile.contributionActiveFields,
-    profile.id,
-  ).contributionAccounts;
-
-  // The merge applyContribActiveFields does: an account with no value in
-  // this profile has none anywhere, so it is excluded.
-  const activeContribs = liveContribs
-    .map((c) => {
-      const activeFields = accountActiveFields[String(c.id)];
-      // An entry may hold only other fields; without contributionValue the account
-      // resolves to nothing.
-      if (!activeFields || activeFields.contributionValue === undefined)
-        return null;
-      return {
-        ...c,
-        ...entryWithMergedRate(c, activeFields),
-        fromBonus: activeFields.fromBonus === true,
-      } as C & {
-        contributionValue: string | number;
-        contributionMethod: string;
-        isActive?: boolean;
-        fromBonus: boolean;
-      };
-    })
-    .filter((c): c is NonNullable<typeof c> => c !== null)
-    .filter((c) => c.isActive !== false);
+  const activeContribs = applyContribActiveFields(
+    liveContribs,
+    readContributionActiveFields(profile.contributionActiveFields, profile.id)
+      .contributionAccounts,
+  );
 
   // Jobs carry no Contribution-Profile-owned fields; pay schedule comes from the resolved
   // Salary Profile entry, the same axis as salary.
@@ -102,70 +82,70 @@ export function resolveProfile<
   };
 }
 
-/**
- * Contribution rows with a profile's active fields merged on (DB columns and profile-only
- * fields like displayNameCustom); `isActive=false` rows are filtered out.
- */
-export type ContribRowWithActiveFields =
-  typeof schema.contributionAccounts.$inferSelect & {
-    contributionValue: string | number;
-    contributionMethod: string;
-    /** Also taken from bonus checks — always set once active fields apply. */
-    fromBonus: boolean | undefined;
-    /** A Roth IRA account's route — absent = direct. */
-    rothRoute?: RothIraRoute;
-    displayNameCustom?: string;
-  };
+/** What a profile's active fields put on an account row (with profile-only
+ *  fields like displayNameCustom). */
+type ContributionActiveFields = {
+  contributionValue: string | number;
+  contributionMethod: ContributionMethod;
+  /** The stored match type is outside the set: read as no match, and shown. */
+  matchTypeUnrecognised?: true;
+  /** Also taken from bonus checks — always set once active fields apply. */
+  fromBonus: boolean | undefined;
+  /** A Roth IRA account's route — absent = direct. */
+  rothRoute?: RothIraRoute;
+  displayNameCustom?: string;
+};
 
-export function applyContribActiveFields(
-  rows: (
-    typeof schema.contributionAccounts.$inferSelect | ContribRowWithActiveFields
-  )[],
+export type ContribRowWithActiveFields =
+  typeof schema.contributionAccounts.$inferSelect & ContributionActiveFields;
+
+/** Account rows with a profile's active fields merged on; a row whose profile
+ *  sets no value is left out, as is an `isActive=false` row. */
+export function applyContribActiveFields<
+  R extends typeof schema.contributionAccounts.$inferSelect,
+>(
+  rows: readonly (R | (R & ContributionActiveFields))[],
   accountActiveFields: Record<string, Record<string, unknown>>,
-  /**
-   * `true` for the What-If sandbox layer over already-resolved rows: a row with no entry
-   * at this layer keeps its earlier value instead of being excluded.
-   */
+  /** `true` for the What-If layer over resolved rows: a row with no entry here keeps its value. */
   isOverlay = false,
-): ContribRowWithActiveFields[] {
+): (R & ContributionActiveFields)[] {
   return rows
-    .map((row): ContribRowWithActiveFields | null => {
+    .map((row): (R & ContributionActiveFields) | null => {
       const activeFields = accountActiveFields[String(row.id)];
       // The first layer needs a value (there's no base value to fall back
       // to); an overlay entry may change just another field (e.g. fromBonus)
       // of a row the first layer already resolved.
       if (!activeFields) {
-        return isOverlay ? (row as ContribRowWithActiveFields) : null;
+        return isOverlay ? (row as R & ContributionActiveFields) : null;
       }
       if (!isOverlay && activeFields.contributionValue === undefined)
         return null;
       return {
         ...row,
         ...entryWithMergedRate(row, activeFields),
+        ...readStoredMatchType(row, activeFields),
         // An overlay layer that doesn't set it keeps the first layer's.
         fromBonus:
           (activeFields.fromBonus ??
-            (row as Partial<ContribRowWithActiveFields>).fromBonus) === true,
-      } as ContribRowWithActiveFields;
+            (row as Partial<ContributionActiveFields>).fromBonus) === true,
+      } as R & ContributionActiveFields;
     })
-    .filter((row): row is ContribRowWithActiveFields => row !== null)
+    .filter((row): row is R & ContributionActiveFields => row !== null)
     .filter((row) => row.isActive !== false);
 }
 
-/**
- * Synthetic (no DB row) account for a What-If hypothetical: negative `id` so it never
- * collides, with the defaults `contributionAccountInput` uses for a new real row.
- */
+/** A What-If hypothetical account (no DB row; negative `id`, never colliding), with
+ *  the defaults `contributionAccountInput` uses for a new real row. */
 export function buildSandboxContribRow(
   addition: {
     personId: number;
-    accountType: string;
-    contributionMethod: string;
+    accountType: AccountCategory;
+    contributionMethod: ContributionMethod;
     contributionValue: string;
   },
   syntheticId: number,
 ): ContribRowWithActiveFields {
-  const category = addition.accountType as AccountCategory;
+  const category = addition.accountType; // checked by zSandboxContribAdditions
   return {
     id: syntheticId,
     jobId: null,
@@ -175,7 +155,7 @@ export function buildSandboxContribRow(
     label: null,
     parentCategory: getParentCategory(category),
     taxTreatment: getDefaultTaxTreatment(category) as TaxTreatment,
-    contributionMethod: addition.contributionMethod as ContributionMethod,
+    contributionMethod: addition.contributionMethod,
     contributionValue: addition.contributionValue,
     employerMatchType: "none",
     employerMatchValue: null,
@@ -223,26 +203,25 @@ export function applyDeductionActiveFields(
     .filter((d): d is DeductionRowWithActiveFields => d !== null);
 }
 
-/**
- * Fetch a contribution profile by id; null when no id is given or the row is
- * gone. A profile with empty contributionActiveFields applies nothing.
- */
+/** The Contribution Profile a request runs on: the id given, else the active one; null only when
+ *  none is active or the id is gone. Empty contributionActiveFields apply nothing. */
 export async function fetchContributionProfile(
   db: Db,
   profileId: number | null | undefined,
 ): Promise<typeof schema.contributionProfiles.$inferSelect | null> {
-  if (profileId == null) return null;
+  const id = profileId ?? (await activeProfileId(db, "contribution"));
+  if (id === null) return null;
   const profiles = await db
     .select()
     .from(schema.contributionProfiles)
-    .where(eq(schema.contributionProfiles.id, profileId));
+    .where(eq(schema.contributionProfiles.id, id));
   return profiles[0] ?? null;
 }
 
 /**
  * Load a profile by ID and apply its active fields: contribs (+ deductions when
  * `allDeductions` is passed) and jobs merged with the caller's `salaryProfileActiveMap`.
- * With no profile selected (or the row gone) no contribution resolves.
+ * With none active (or the row gone) no contribution resolves.
  */
 export async function loadAndApplyContribProfile(
   db: Db,

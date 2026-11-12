@@ -3,18 +3,18 @@
  * Assumptions band lets you VIEW a non-active Retirement Profile without activating
  * it (same "view without activating" contract computeProjection/
  * computeStrategyComparison already honor via retirementProfileId), but
- * computeMonteCarloProjection/computeCoastFire/computeCoastFireMC/
+ * computeSimulation/computeCoastFire/computeCoastFireSimulation/
  * computeCoastFireProbe never accepted that field at all — so the band's
  * "view a non-active profile" silently never reached the actual
  * chart/table data, which kept showing the globally-active profile's
  * numbers regardless of what the band was viewing.
  *
  * This tests the two representative, now-fixed procedures directly
- * (computeMonteCarloProjection with a small trial count for speed, and
+ * (computeSimulation with a small trial count for speed, and
  * computeCoastFire which is deterministic) — both thread through the same
  * baseSharedInput object client-side (use-projection-queries.ts) and the
  * same buildEnginePayload({ retirementProfileId }) call server-side as
- * computeCoastFireMC/computeCoastFireProbe, so proving these two honor it
+ * computeCoastFireSimulation/computeCoastFireProbe, so proving these two honor it
  * is strong evidence the shared plumbing is correct for all four.
  */
 import "./setup-mocks";
@@ -114,13 +114,13 @@ describe("projection router — retirementProfileId (view a non-active Retiremen
 
   afterAll(() => cleanup());
 
-  it("computeMonteCarloProjection resolves the SPECIFIED profile's retirementAge, not the globally-active one", async () => {
-    const active = await caller.projection.computeMonteCarloProjection({
+  it("computeSimulation resolves the SPECIFIED profile's retirementAge, not the globally-active one", async () => {
+    const active = await caller.projection.computeSimulation({
       numTrials: 100,
       accumulationOverrides: [],
       decumulationOverrides: [],
     });
-    const viewed = await caller.projection.computeMonteCarloProjection({
+    const viewed = await caller.projection.computeSimulation({
       selection: { retirement: secondProfileId },
       numTrials: 100,
       accumulationOverrides: [],

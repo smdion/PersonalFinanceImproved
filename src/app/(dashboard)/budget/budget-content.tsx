@@ -20,7 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetRetirementNote } from "@/components/budget/budget-retirement-note";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useIntegerSetting } from "@/lib/hooks/use-profile-id-setting";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -77,11 +77,11 @@ export function BudgetContent({
 }) {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
-  const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
+  const [activeColumn, setActiveColumn] = useIntegerSetting(
     SK_BUDGET_ACTIVE_COLUMN,
     0,
   );
-  const [nameColWidth, setNameColWidth] = usePersistedSetting<number>(
+  const [nameColWidth, setNameColWidth] = useIntegerSetting(
     SK_BUDGET_NAME_COL_WIDTH,
     192,
   );
@@ -98,13 +98,11 @@ export function BudgetContent({
     activeProfileId,
   });
 
-  const [activeContributionProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = useIntegerSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
   );
-  const [activeSalaryProfileIdSetting] = usePersistedSetting<number | null>(
+  const [activeSalaryProfileIdSetting] = useIntegerSetting(
     SK_ACTIVE_SALARY_PROFILE_ID,
-    null,
   );
   // The active ids, sent explicitly (null while loading = none), shared by
   // the summary query and the edit batch so they resolve alike.
@@ -554,9 +552,8 @@ export function BudgetContent({
               // Creating a Plan is settings.scenarios.create — scenarioProcedure,
               // a different permission from the Budget page's own gate.
               canCreatePlan={hasPermission(user, "scenario")}
-              // settings.deductions.create / settings.contributionAccounts
-              // .create are adminProcedure — a stricter gate than either
-              // permission above.
+              // paycheck.deductions.create / contribution.accounts.create are
+              // adminProcedure — a stricter gate than either permission above.
               canManagePaycheck={isAdmin(user)}
             />
           </CardBoundary>

@@ -13,10 +13,12 @@ import { describe, it, expect } from "vitest";
 import type {
   EngineAccumulationYear,
   ProjectionInput,
+  ProjectionResult,
 } from "@/lib/pure/engine/types";
 import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
+  simulatedCoastFirePasses,
 } from "@/lib/pure/retirement/coast-fire";
 import { calculateProjection } from "@/lib/pure/engine";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
@@ -168,6 +170,42 @@ describe("findCoastFireAge", () => {
     );
   });
 
+  it("a retiree whose plan runs out isn't already Coast FIRE: unreachable", () => {
+    // Retired at 65, now 70, $100,000 left and $60,000 a year to spend
+    // (Social Security $36,000 from 67): the money runs out in a few years,
+    // so "already Coast FIRE" would be false. The plan judge fails it.
+    const input = makeInput({
+      currentAge: 70,
+      retirementYear: AS_OF.getFullYear() - 5,
+      currentSalary: 0,
+      startingBalances: {
+        preTax: 100_000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 100_000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      annualExpenses: 60_000,
+    });
+
+    const result = findCoastFireAge(input);
+
+    expect(result.status).toBe("unreachable");
+    expect(result.coastFireAge).toBeNull();
+    expect(result.retired).toBe(true);
+  });
+
   it("returns unreachable when even full contributions won't fund the plan", () => {
     // Near-zero portfolio + near-zero salary but large expenses — no path works.
     const input = makeInput({
@@ -293,6 +331,61 @@ describe("findCoastFireAge", () => {
 
     expect(result.status).toBe("already_coast");
     expect(result.coastFireAge).toBe(70);
+  });
+
+  it("today's dollars use the engine's own price level: the first retirement year, and the last year run", () => {
+    // Retiring this year after it began: the engine runs this year as a
+    // working year, so retirement starts next year (index 1), one year of
+    // inflation from today, though retirement age minus age is 0.
+    const input = makeInput({
+      currentAge: 65,
+      retirementYear: AS_OF.getFullYear(),
+      currentSalary: 0,
+      startingBalances: {
+        preTax: 1_000_000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1_000_000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      annualExpenses: 40_000,
+    });
+
+    const result = findCoastFireAge(input);
+    const years = calculateProjection(input).projectionByYear;
+    const firstRetirementYear = years.find(
+      (y) => y.phase === "decumulation",
+    )!.year;
+    // The end balance is the last year run's (the end year isn't run).
+    const lastYear = years[years.length - 1]!;
+
+    expect(firstRetirementYear).toBe(AS_OF.getFullYear() + 1);
+    expect(result.projectedExpensesAtRetirement).toBeGreaterThan(0);
+    expect(result.projectedExpensesAtRetirementToday).toBeCloseTo(
+      result.projectedExpensesAtRetirement / 1.025,
+      6,
+    );
+    expect(result.sustainableWithdrawalToday).toBeCloseTo(
+      result.sustainableWithdrawal / 1.025,
+      6,
+    );
+    expect(result.endRetirementBalance).toBe(lastYear.retirementBalance);
+    expect(result.endRetirementBalanceToday).toBeCloseTo(
+      result.endRetirementBalance /
+        1.025 ** (lastYear.year - AS_OF.getFullYear()),
+      6,
+    );
   });
 
   it("exercises binary search and returns found with near-zero starting balance", () => {
@@ -1045,5 +1138,38 @@ describe("findCoastFireAge — gross-up off", () => {
       },
     };
     expect(findCoastFireAge(input).status).toBe("already_coast");
+  });
+});
+
+describe("simulatedCoastFirePasses — one verdict for both Coast FIRE paths", () => {
+  /** A run whose deterministic year 1 spends `spending` against `need`. */
+  const run = (successRate: number, spending: number, need: number) => ({
+    successRate,
+    deterministicProjection: {
+      projectionByYear: [
+        {
+          phase: "decumulation",
+          withdrawalSized: false,
+          spending,
+          projectedExpenses: spending,
+        },
+      ],
+      firstDecumulationYearStatedNeed: need,
+      // eslint-disable-next-line no-restricted-syntax -- only the fields the need test reads
+    } as unknown as ProjectionResult,
+  });
+
+  it("ret/SM1-sim [ENG-31] 95% of trials survive but year 1 spends $40,000 of a $60,000 need: fails", () => {
+    expect(simulatedCoastFirePasses(run(0.95, 40_000, 60_000), 0.9)).toBe(
+      false,
+    );
+  });
+
+  it("ret/SM1-sim2 [ENG-31] 95% survive and year 1 covers the need: passes", () => {
+    expect(simulatedCoastFirePasses(run(0.95, 60_000, 60_000), 0.9)).toBe(true);
+  });
+
+  it("ret/SM1-sim3 [ENG-31] the need covered but 80% survive: fails", () => {
+    expect(simulatedCoastFirePasses(run(0.8, 60_000, 60_000), 0.9)).toBe(false);
   });
 });

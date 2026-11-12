@@ -28,6 +28,7 @@ import {
   CONTRIBUTION_METHOD_LABELS_SHORT,
   EMPLOYER_MATCH_LABELS,
   EMPLOYER_MATCH_VALUE_UNIT,
+  noEmployerMatchLabel,
 } from "@/lib/config/display-labels";
 import { AutoMax } from "./contrib-card-auto-max";
 
@@ -217,20 +218,7 @@ export function ContributionCard({
 
       {c.employerMatchType !== "none" && (
         <div className="text-muted mt-1 flex flex-wrap items-center gap-1 text-xs">
-          {getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
-            <>
-              <InlineEdit
-                value={matchFigure}
-                onSave={saveMatchFigure}
-                formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
-                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                type="number"
-                className="text-muted"
-                isEditable={!readOnly}
-              />
-              <span>discount</span>
-            </>
-          ) : EMPLOYER_MATCH_VALUE_UNIT[c.employerMatchType] === "$" ? (
+          {EMPLOYER_MATCH_VALUE_UNIT[c.employerMatchType] === "$" ? (
             <>
               <span>Employer:</span>
               <InlineEdit
@@ -242,6 +230,19 @@ export function ContributionCard({
                 className="text-muted"
                 isEditable={!readOnly}
               />
+            </>
+          ) : getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
+            <>
+              <InlineEdit
+                value={matchFigure}
+                onSave={saveMatchFigure}
+                formatDisplay={(v) => formatPercent(Number(v) / 100, 0)}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="text-muted"
+                isEditable={!readOnly}
+              />
+              <span>discount</span>
             </>
           ) : (
             <>
@@ -306,9 +307,7 @@ export function ContributionCard({
             className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent focus:outline-none"
           >
             <option value="none">
-              {employerMatchAnnual > 0
-                ? "No match config of its own"
-                : "No employer match"}
+              {noEmployerMatchLabel(c, employerMatchAnnual > 0)}
             </option>
             <option value="percent_of_contribution">Add % match</option>
             <option value="dollar_match">Add $ match</option>

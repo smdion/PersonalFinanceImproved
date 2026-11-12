@@ -16,14 +16,20 @@ vi.mock("next/headers", () => ({
   }),
 }));
 const state = vi.hoisted(
-  (): { tokensLeft: number; charged: string[]; helperCtx: unknown } => ({
+  (): {
+    tokensLeft: number;
+    charged: string[];
+    helperCtx: unknown;
+    user: { id: string; role: string; permissions: string[] };
+  } => ({
     tokensLeft: Infinity,
     charged: [],
     helperCtx: null,
+    user: { id: "1", role: "admin", permissions: [] },
   }),
 );
 vi.mock("../../src/server/trpc", () => ({
-  createContext: async () => ({ session: { user: { id: "1" } } }),
+  createContext: async () => ({ session: { user: state.user } }),
   internalCtx: (ctx: object) => ({ ...ctx, internal: true }),
   takeAuthenticatedRateToken: async (_ctx: unknown, path: string) => {
     state.charged.push(path);
@@ -72,6 +78,7 @@ beforeEach(() => {
   privacy = false;
   state.tokensLeft = Infinity;
   state.charged.length = 0;
+  state.user = { id: "1", role: "admin", permissions: [] };
   shellCalls.length = 0;
   settingsPrefetch = async () => undefined;
 });
@@ -115,6 +122,17 @@ describe("prefetchForShell", () => {
       ]),
     );
     expect(state?.queries).toEqual([]);
+  });
+
+  it("loads the holdings checks only for a viewer who may see them", async () => {
+    state.user = { id: "2", role: "viewer", permissions: ["budget"] };
+    await prefetchForShell();
+    expect(shellCalls).not.toContain("investments.computeHealth");
+    expect(shellCalls).toContain("simplefin.getStatus");
+    shellCalls.length = 0;
+    state.user = { id: "2", role: "viewer", permissions: ["portfolio"] };
+    await prefetchForShell();
+    expect(shellCalls).toContain("investments.computeHealth");
   });
 
   it("a shell query failing still returns a state", async () => {

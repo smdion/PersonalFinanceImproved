@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { PrivacyToggle } from "@/components/ui/privacy-toggle";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { Button } from "@/components/ui/button";
 import { DataFreshness } from "./data-freshness";
 import { signOut } from "next-auth/react";

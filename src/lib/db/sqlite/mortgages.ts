@@ -9,6 +9,7 @@ import {
   index,
   type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
+import { decimalText } from "../sqlite-decimal";
 
 import type {
   UtilityKind,
@@ -37,20 +38,22 @@ export const mortgageLoans = sqliteTable(
       { onDelete: "set null" },
     ),
     paidOffDate: text("paid_off_date"),
-    principalAndInterest: text("principal_and_interest").notNull(),
-    pmi: text("pmi").notNull().default("0"),
-    insuranceAndTaxes: text("insurance_and_taxes").notNull().default("0"),
-    totalEscrow: text("total_escrow").notNull().default("0"),
-    interestRate: text("interest_rate").notNull(),
+    principalAndInterest: decimalText("principal_and_interest").notNull(),
+    pmi: decimalText("pmi").notNull().default("0"),
+    insuranceAndTaxes: decimalText("insurance_and_taxes")
+      .notNull()
+      .default("0"),
+    totalEscrow: decimalText("total_escrow").notNull().default("0"),
+    interestRate: decimalText("interest_rate").notNull(),
     termYears: integer("term_years").notNull(),
-    originalLoanAmount: text("original_loan_amount").notNull(),
+    originalLoanAmount: decimalText("original_loan_amount").notNull(),
     firstPaymentDate: text("first_payment_date").notNull(),
-    propertyValuePurchase: text("property_value_purchase").notNull(),
-    propertyValueEstimated: text("property_value_estimated"),
+    propertyValuePurchase: decimalText("property_value_purchase").notNull(),
+    propertyValueEstimated: decimalText("property_value_estimated"),
     usePurchaseOrEstimated: text("use_purchase_or_estimated")
       .notNull()
       .default("purchase"),
-    apiBalance: text("api_balance"),
+    apiBalance: decimalText("api_balance"),
     apiBalanceDate: text("api_balance_date"),
   },
   (table) => [
@@ -67,9 +70,11 @@ export const mortgageWhatIfScenarios = sqliteTable(
       onDelete: "cascade",
     }),
     label: text("label").notNull(),
-    extraMonthlyPrincipal: text("extra_monthly_principal").notNull(),
-    extraOneTimePayment: text("extra_one_time_payment").notNull().default("0"),
-    refinanceRate: text("refinance_rate"),
+    extraMonthlyPrincipal: decimalText("extra_monthly_principal").notNull(),
+    extraOneTimePayment: decimalText("extra_one_time_payment")
+      .notNull()
+      .default("0"),
+    refinanceRate: decimalText("refinance_rate"),
     refinanceTerm: integer("refinance_term"),
     sortOrder: integer("sort_order").notNull().default(0),
   },
@@ -86,7 +91,7 @@ export const mortgageExtraPayments = sqliteTable(
     paymentDate: text("payment_date"),
     startDate: text("start_date"),
     endDate: text("end_date"),
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     isActual: integer("is_actual", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -110,26 +115,26 @@ export const debts = sqliteTable(
     ownerPersonId: integer("owner_person_id").references(() => people.id, {
       onDelete: "restrict",
     }),
-    balance: text("balance").notNull(),
+    balance: decimalText("balance").notNull(),
     balanceAsOf: text("balance_as_of").notNull(),
-    originalAmount: text("original_amount"),
+    originalAmount: decimalText("original_amount"),
     /** Annual rate as a fraction (0.065 = 6.5%). */
-    interestRate: text("interest_rate"),
+    interestRate: decimalText("interest_rate"),
     /** What the household pays each month (not the card's minimum). */
-    monthlyPayment: text("monthly_payment"),
+    monthlyPayment: decimalText("monthly_payment"),
     openedDate: text("opened_date"),
     paidOffDate: text("paid_off_date"),
     notes: text("notes"),
     sortOrder: integer("sort_order").notNull().default(0),
     /** What was paid for the thing the loan bought (a car's price) — the
      *  20/3/8 rule's down payment is this less `originalAmount`. */
-    purchasePrice: text("purchase_price"),
+    purchasePrice: decimalText("purchase_price"),
     /** The loan's term in months, as written. */
     termMonths: integer("term_months"),
     /** The balance pulled from a mapped budget account (as
      *  mortgage_loans.api_balance) and the day it's from; used instead of
      *  `balance` while set, cleared when the mapping goes. */
-    apiBalance: text("api_balance"),
+    apiBalance: decimalText("api_balance"),
     apiBalanceDate: text("api_balance_date"),
   },
   (table) => [index("debts_owner_person_id_idx").on(table.ownerPersonId)],
@@ -143,8 +148,8 @@ export const propertyTaxes = sqliteTable(
       .notNull()
       .references(() => mortgageLoans.id, { onDelete: "cascade" }),
     year: integer("year").notNull(),
-    assessedValue: text("assessed_value"),
-    taxAmount: text("tax_amount").notNull(),
+    assessedValue: decimalText("assessed_value"),
+    taxAmount: decimalText("tax_amount").notNull(),
     note: text("note"),
   },
   (table) => [
@@ -190,10 +195,10 @@ export const utilityReading = sqliteTable(
       .references(() => utilityService.id, { onDelete: "cascade" }),
     year: integer("year").notNull(),
     month: integer("month").notNull(), // 1–12, app-validated (no CHECK; sqlite codegen strips them)
-    cost: text("cost").notNull(),
+    cost: decimalText("cost").notNull(),
     // Nullable: some bills are cost-only (e.g. 2018 move-in year). scale 4 keeps
     // fractional meter reads (e.g. ccf/kWh sub-unit precision) lossless.
-    usage: text("usage"),
+    usage: decimalText("usage"),
     note: text("note"),
     /** Who wrote `cost`: typed in, the one-time import, or the budget feed
      *  (YNAB / Actual). Null: from before sources were tracked — treated as

@@ -24,7 +24,7 @@ import {
 const FOLDER = "drizzle-sqlite";
 const journal = JSON.parse(
   fs.readFileSync(path.join(FOLDER, "meta", "_journal.json"), "utf8"),
-) as { entries: { idx: number; tag: string }[] };
+) as { entries: { idx: number; tag: string; when: number }[] };
 const hashOf = (tag: string) =>
   crypto
     .createHash("sha256")
@@ -196,22 +196,12 @@ describe("a cleared or dropped migration table (SQLite, real migrator)", () => {
     ["the baseline", 0],
     ["the latest entry", latestIdx],
   ] as const)(
-    "a migration table dropped at %s is no older era: the strict apply stops with nothing changed, the next start replays",
+    "a migration table dropped at %s is a cleared journal: the first start replays, with a backup",
     (_at, idx) => {
       atEntry(idx, "dropped");
-      let message = "";
-      try {
-        runSQLite();
-      } catch (err) {
-        expect(err).not.toBeInstanceOf(UpgradePathError);
-        message = (err as Error).message;
-      }
-      expect(message).toMatch(/already exists/);
-      // The strict apply created the empty migration table before it ran,
-      // so the next start is a cleared journal.
-      expect(read()).toMatchObject({ hashes: [], people: 1 });
       runSQLite();
       expect(read()).toMatchObject({ hashes: allHashes, people: 1 });
+      expect(backups()).toHaveLength(1);
     },
   );
 
@@ -283,7 +273,7 @@ describe("assertSupportedUpgradePath on each dialect's journal", () => {
   describe.each(["drizzle", "drizzle-sqlite"])("%s", (folder) => {
     const own = JSON.parse(
       fs.readFileSync(path.join(folder, "meta", "_journal.json"), "utf8"),
-    ) as { entries: { idx: number; tag: string }[] };
+    ) as { entries: { idx: number; tag: string; when: number }[] };
     const check = (recorded: Set<string>, actual: Map<string, Set<string>>) =>
       assertSupportedUpgradePath(
         own,

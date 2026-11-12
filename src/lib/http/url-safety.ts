@@ -10,13 +10,16 @@ import {
 import { BlockList, isIP, type LookupFunction } from "node:net";
 
 export type OutboundService =
-  "ynab" | "actual" | "simplefin" | "tiingo" | "sec";
+  "ynab" | "actual" | "simplefin" | "tiingo" | "sec" | "taxData";
 
 type UrlPolicy = {
   schemes: readonly ("http:" | "https:")[];
   /** Whether a private, local or single-label host is open, at the URL
    *  check and at connect. */
   privateHosts: boolean;
+  /** Other hosts a redirect may go to (each still checked): a service that
+   *  serves its files from a download host. None for every other. */
+  redirectHosts?: readonly string[];
 };
 
 const HTTPS_ONLY: UrlPolicy = { schemes: ["https:"], privateHosts: false };
@@ -30,6 +33,14 @@ const URL_POLICIES: Record<OutboundService, UrlPolicy> = {
   simplefin: HTTPS_ONLY,
   tiingo: HTTPS_ONLY,
   sec: HTTPS_ONLY,
+  // A GitHub release asset redirects from github.com to its download host.
+  taxData: {
+    ...HTTPS_ONLY,
+    redirectHosts: [
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com",
+    ],
+  },
 };
 
 const IPV4_BLOCKED: readonly [string, number][] = [
@@ -145,6 +156,14 @@ export function checkOutboundUrl(
   const why = refusal(host);
   if (!why) return { ok: true, url };
   return { ok: false, reason: `"${host}" is ${why}.` };
+}
+
+/** Whether a redirect for `service` may go to another host, `host`. */
+export function redirectsToHost(
+  service: OutboundService,
+  host: string,
+): boolean {
+  return URL_POLICIES[service].redirectHosts?.includes(host) ?? false;
 }
 
 /** Whether a request for `service` may connect to a private address. */

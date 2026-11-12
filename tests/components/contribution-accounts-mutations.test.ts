@@ -29,10 +29,10 @@ vi.mock("@/lib/trpc", async () => ({
 }));
 
 const P = {
-  updateContrib: "settings.contributionAccounts.update",
-  createContrib: "settings.contributionAccounts.create",
-  updatePortfolioAccount: "networth.portfolioSnapshots.updateAccount",
-  createPortfolioAccount: "networth.portfolioSnapshots.createAccount",
+  updateContrib: "contribution.accounts.update",
+  createContrib: "contribution.accounts.create",
+  updatePortfolioAccount: "netWorth.portfolioSnapshots.updateAccount",
+  createPortfolioAccount: "netWorth.portfolioSnapshots.createAccount",
   updatePerf: "performance.performanceAccounts.update",
   createPerf: "performance.performanceAccounts.create",
   deletePerf: "performance.performanceAccounts.delete",
@@ -52,8 +52,7 @@ const invalidated = (path: string) => utilsCalls(path).length > 0;
 
 type PerfAccount =
   RouterOutputs["performance"]["performanceAccounts"]["list"][number];
-type Contrib =
-  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+type Contrib = RouterOutputs["contribution"]["accounts"]["list"][number];
 
 const basePerfAccount: PerfAccount = {
   id: 1,
@@ -317,7 +316,7 @@ describe("useContributionAccountsMutations", () => {
     );
   });
 
-  it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and networth", async () => {
+  it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and netWorth", async () => {
     const useContributionAccountsMutations = await importHook();
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [] }),
@@ -329,7 +328,7 @@ describe("useContributionAccountsMutations", () => {
     );
     expect(invalidated("retirement.invalidate")).toBe(true);
     expect(invalidated("projection.invalidate")).toBe(true);
-    expect(invalidated("networth.invalidate")).toBe(true);
+    expect(invalidated("netWorth.invalidate")).toBe(true);
   });
 
   it("updateContribMut's onSuccess invalidates contributionAccounts, retirement, and projection", async () => {
@@ -339,12 +338,12 @@ describe("useContributionAccountsMutations", () => {
     );
     result.current.handleContribUpdate(baseContrib, {});
     settleMutation(P.updateContrib);
-    expect(invalidated("settings.contributionAccounts.invalidate")).toBe(true);
+    expect(invalidated("contribution.accounts.invalidate")).toBe(true);
     expect(invalidated("retirement.invalidate")).toBe(true);
     expect(invalidated("projection.invalidate")).toBe(true);
   });
 
-  it("updatePortfolioAccountMut's onSuccess invalidates portfolioSnapshots.getLatest and networth", async () => {
+  it("updatePortfolioAccountMut's onSuccess invalidates portfolioSnapshots.getLatest and netWorth", async () => {
     const useContributionAccountsMutations = await importHook();
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [] }),
@@ -355,8 +354,8 @@ describe("useContributionAccountsMutations", () => {
     >[0]);
     settleMutation(P.updatePortfolioAccount);
     expect(
-      invalidated("networth.portfolioSnapshots.getLatest.invalidate"),
+      invalidated("netWorth.portfolioSnapshots.getLatest.invalidate"),
     ).toBe(true);
-    expect(invalidated("networth.invalidate")).toBe(true);
+    expect(invalidated("netWorth.invalidate")).toBe(true);
   });
 });

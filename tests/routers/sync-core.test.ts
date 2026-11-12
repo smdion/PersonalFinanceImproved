@@ -34,7 +34,6 @@ import {
 import * as schema from "@/lib/db/schema-sqlite";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
 import { ynabCategory, ynabTransaction } from "../fixtures/ynab-spec";
-import { decimalText } from "./decimal-text";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -162,6 +161,29 @@ describe("sync core — syncAll", () => {
     expect(mockCacheSet).toHaveBeenCalledTimes(4);
   });
 
+  it("reads the active budget app through the sync's transaction, not the outer connection", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      getAccounts: vi.fn().mockResolvedValue([]),
+      getCategories: vi.fn().mockResolvedValue([]),
+      getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
+      getTransactions: vi.fn().mockResolvedValue([]),
+    });
+    mockGetApiConnection.mockResolvedValue({ accountMappings: [] });
+    const readers: unknown[] = [];
+    mockCacheSet.mockImplementation((tx: unknown) => {
+      readers.push(tx);
+      return Promise.resolve();
+    });
+
+    const result = await caller.sync.syncAll({ service: "ynab" });
+    expect(result.ok).toBe(true);
+    const transaction = readers[0];
+    expect(transaction).toBeDefined();
+    expect(transaction).not.toBe(db);
+    expect(mockGetActiveBudgetApi.mock.calls.at(-1)?.[0]).toBe(transaction);
+  });
+
   it("pulls asset values from tracking accounts during sync", async () => {
     // Insert an asset for pull mapping
     db.insert(schema.otherAssetItems)
@@ -206,7 +228,7 @@ describe("sync core — syncAll", () => {
     // Verify asset was updated
     const assets = db.select().from(schema.otherAssetItems).all();
     const updated = assets.find((a) => a.name === "Vehicle" && a.year === 2026);
-    expect(decimalText(updated?.value)).toBe("22000");
+    expect(updated?.value).toBe("22000");
   });
 
   it("pulls mortgage property value from tracking account", async () => {
@@ -261,7 +283,7 @@ describe("sync core — syncAll", () => {
 
     const loans = db.select().from(schema.mortgageLoans).all();
     const updated = loans.find((l) => l.id === loan.id);
-    expect(decimalText(updated?.propertyValueEstimated)).toBe("420000");
+    expect(updated?.propertyValueEstimated).toBe("420000");
     // The value only: which one to use is the household's choice.
     expect(updated?.usePurchaseOrEstimated).toBe("purchase");
   });
@@ -306,7 +328,7 @@ describe("sync core — syncAll", () => {
 
     const updatedLoans = db.select().from(schema.mortgageLoans).all();
     const updated = updatedLoans.find((l) => l.id === loan.id);
-    expect(decimalText(updated?.apiBalance)).toBe("285000"); // absolute value
+    expect(updated?.apiBalance).toBe("285000"); // absolute value
   });
 
   it("wraps client errors in INTERNAL_SERVER_ERROR", async () => {

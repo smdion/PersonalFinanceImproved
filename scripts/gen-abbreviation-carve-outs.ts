@@ -146,18 +146,27 @@ export function routerOutputKeys(root = ROOT): Set<string> {
 }
 
 /**
- * Every stored, external and response key of the tree at `root`: the names a
- * proven rename (check-commit's `Rename:`, owner Q2) may not change as keys.
- * Response keys are every key a router's output type reaches, not only the
- * ones a baseline pin happens to hold.
+ * Every stored and external key of the tree at `root`: the names a proven
+ * rename (check-commit's `Rename:`, owner Q2) may not change as keys, by
+ * name, since data read through a cast can hold them anywhere.
  */
-export function storedAndResponseKeys(root = ROOT): Set<string> {
+export function storedKeys(root = ROOT): Set<string> {
   const names = new Set<string>();
   const files = [
     ...SHAPE_DIRS.flatMap((d) => filesIn(root, d, /\.ts$/)),
     ...SHAPE_FILES.map((f) => path.join(root, f)),
   ];
   for (const file of files) shapeNames(file, names);
+  return new Set([...names].filter((n) => NAME.test(n)));
+}
+
+/**
+ * Every stored, external and response key of the tree at `root`, for the
+ * carve-out list. Response keys are every key a router's output type
+ * reaches, not only the ones a baseline pin happens to hold.
+ */
+export function storedAndResponseKeys(root = ROOT): Set<string> {
+  const names = storedKeys(root);
   for (const file of filesIn(root, RESPONSE_DIR, /\.json$/))
     jsonKeys(JSON.parse(fs.readFileSync(file, "utf8")), names);
   for (const name of routerOutputKeys(root)) names.add(name);

@@ -36,10 +36,10 @@ const fakeDb = (loans: unknown[]) =>
         Promise.resolve(t === schema.mortgageLoans ? loans : []),
     }),
   }) as never;
+const profile = { id: 1, columnLabels: ["Only"], columnMonths: null };
 const phase = (over = {}) => ({
-  profileId: 1,
+  profile,
   column: 0,
-  months: null,
   annual: 60000,
   typed: false,
   ...over,
@@ -96,7 +96,9 @@ describe("loadExpenseEndings", () => {
   });
 
   it("a different retirement budget profile uses its own linked line", async () => {
-    const [e] = await run([item(1, 1, 1000, 1)], [loan(1)], { profileId: 2 });
+    const [e] = await run([item(1, 1, 1000, 1)], [loan(1)], {
+      profile: { ...profile, id: 2 },
+    });
     expect(e!.decumulation).toBe(0);
   });
 

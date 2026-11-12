@@ -13,12 +13,12 @@ import {
 } from "./employer-match";
 import {
   jobPayFor,
-  resolveContributionPeriods,
   annualContributionWithBonus,
   type ContributionRow,
   type JobRef,
   type JobSalaryRef,
 } from "./contribution-rows";
+import { rowPaySchedule } from "./row-pay";
 
 type PersonRef = { id: number; name: string };
 
@@ -60,14 +60,11 @@ export function buildContributionDisplaySpecs(
   const incompleteById = new Map<number, boolean>();
   const bonusGroups = matchPayGroupsWithBonus(filtered);
   for (const c of filtered) {
-    const job = c.jobId
-      ? activeJobs.find((j) => j.id === c.jobId)
-      : activeJobs.find((j) => j.personId === c.personId);
     const js = jobPayFor(c, jobSalaries);
     const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContributionPeriods(
-      c.contributionMethod,
-      job,
+    const { periodsPerYear: periods, incomplete } = rowPaySchedule(
+      c,
+      activeJobs,
     );
     const cv = computeValue(c);
     salaryById.set(

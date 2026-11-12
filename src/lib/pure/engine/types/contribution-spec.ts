@@ -50,13 +50,13 @@ export type ContributionSpec = {
   contributionScaling?: "scales_with_salary" | "fixed_amount";
   /** HSA coverage type (sizes the HSA limit); null/absent = none given. */
   hsaCoverageType?: string | null;
-  /** Set only when the row is over its IRS limit: its configured yearly
-   *  money (`baseAnnual` is the capped amount). Year 0 then counts what it
-   *  has already put in at the configured rate (late-year rule). */
+  /** Over its IRS limit: its configured yearly money (`baseAnnual` is capped); year 0 counts
+   *  what it has put in at the configured rate (late-year rule). */
   configuredAnnual?: number;
-  /** This row's share of its category's base-year employer money — the
-   *  year's employer money held against the IRS limit is this share of the
-   *  money the engine credits (yearEmployerMatch). Absent = 0. */
+  /** A job starting or ending this year: year 0 is this, its money left this year. */
+  leftThisYear?: number;
+  /** This row's share of its category's base-year employer money: the year's employer money held
+   *  against the IRS limit is this share of what the engine credits (yearEmployerMatch). Absent = 0. */
   employerShare?: number;
   /** False for flat employer money (a set yearly amount), which keeps coming
    *  while contributions are paused. Absent = it depends on contributing. */

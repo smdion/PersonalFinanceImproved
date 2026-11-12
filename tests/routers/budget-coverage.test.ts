@@ -3,8 +3,9 @@
  * by the primary budget.test.ts suite.
  *
  * Covers: updateItemAmounts, updateCategoryEssential,
- * linkContributionAccount, unlinkContributionAccount, listContribAccountsForLinking,
- * listApiCategories, syncBudgetFromApi, syncBudgetToApi, listApiActuals,
+ * linkContributionAccount, unlinkContributionAccount,
+ * listContributionAccountsForLinking, listApiCategories, syncBudgetFromApi,
+ * syncBudgetToApi, listApiActuals,
  * addColumn/removeColumn with columnMonths,
  * computeActiveSummary with contribution-linked items,
  * listProfiles with weighted columnMonths.
@@ -359,14 +360,14 @@ describe("budget router — unlinkContributionAccount", () => {
 });
 
 // ---------------------------------------------------------------------------
-// listContribAccountsForLinking
+// listContributionAccountsForLinking
 // ---------------------------------------------------------------------------
 
-describe("budget router — listContribAccountsForLinking", () => {
+describe("budget router — listContributionAccountsForLinking", () => {
   it("returns empty array when no contribution accounts exist", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       expect(result).toEqual([]);
     } finally {
       cleanup();
@@ -380,7 +381,7 @@ describe("budget router — listContribAccountsForLinking", () => {
       // Create a non-payroll contribution account (no jobId)
       await seedContribAccount(db, seed.personId);
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(result[0]!.id).toBeDefined();
       expect(result[0]!.accountType).toBe("ira");
@@ -397,7 +398,7 @@ describe("budget router — listContribAccountsForLinking", () => {
       // Create a payroll-linked contribution account
       await seedPayrollContribAccount(db, seed.personId, seed.jobId);
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       // Should not include the payroll-linked one
       const payrollAcct = result.find((r) => r.accountType === "401k");
       expect(payrollAcct).toBeUndefined();
@@ -420,7 +421,7 @@ describe("budget router — listContribAccountsForLinking", () => {
         performanceAccountId: perfAcctId,
       });
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(typeof result[0]!.displayLabel).toBe("string");
     } finally {
@@ -463,7 +464,7 @@ describe("budget router — listContribAccountsForLinking", () => {
         taxTreatment: "tax_free",
       });
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       const labels = result.map((r) => r.displayLabel).sort();
       expect(labels).toEqual([
         "Sam IRA (Vanguard) — Roth",
@@ -507,7 +508,7 @@ describe("budget router — listContribAccountsForLinking", () => {
         taxTreatment: "pre_tax",
       });
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       const labels = result.map((r) => r.displayLabel).sort();
       expect(labels).toEqual([
         "Test Person IRA (Vanguard) — Roth",
@@ -540,7 +541,7 @@ describe("budget router — listContribAccountsForLinking", () => {
         performanceAccountId: null,
       });
 
-      const result = await caller.budget.listContribAccountsForLinking();
+      const result = await caller.budget.listContributionAccountsForLinking();
       expect(result).toHaveLength(1);
       expect(result[0]!.displayLabel).toMatch(/^Joint /);
     } finally {
@@ -1923,20 +1924,29 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
     }
   });
 
-  it("differs from the no-profile figure the panel used to show", async () => {
+  it("matches paycheck.computeSummary with no input, which reads the active Contribution Profile", async () => {
     const { caller, cleanup } = await seedHouseholdWithActiveContribProfile();
     try {
       const profiles = await caller.budget.listProfiles();
       const main = profiles.find((p) => p.isActive)!;
+      const noInput = netMonthlyFrom(await caller.paycheck.computeSummary());
+      expect(main.netMonthly).toBeCloseTo(noInput, 6);
+    } finally {
+      cleanup();
+    }
+  });
 
-      // What the old client-side query computed: computeSummary() with no
-      // input at all, i.e. no Contribution Profile applied.
-      const noProfile = await caller.paycheck.computeSummary();
-      const oldNet = netMonthlyFrom(noProfile);
-      const oldUnspent = oldNet - main.monthlyTotal - main.monthlySavings;
-
-      expect(main.netMonthly).not.toBeCloseTo(oldNet, 2);
-      expect(main.unspentMonthly).not.toBeCloseTo(oldUnspent, 2);
+  it("a null Contribution Profile pick reads the active one, as no pick does", async () => {
+    const { caller, cleanup } = await seedHouseholdWithActiveContribProfile();
+    try {
+      const none = await caller.budget.computeActiveSummary();
+      const nullPick = await caller.budget.computeActiveSummary({
+        selection: { contribution: null },
+      });
+      expect(nullPick?.netMonthlyIncome).toBeCloseTo(
+        none!.netMonthlyIncome!,
+        6,
+      );
     } finally {
       cleanup();
     }

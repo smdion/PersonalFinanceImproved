@@ -6,6 +6,7 @@ import * as path from "path";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
   MIGRATION_STAMP_SUBQUERY,
+  markerStampSql,
 } from "./src/lib/db/migrate/demo-schema-marker";
 import {
   parseSimulationPresets,
@@ -344,6 +345,20 @@ function warnIfEphemeral(backupPath: string): void {
   });
 }
 
+/** The pre-upgrade backup's read: a `date` column (OID 1082) as its stored
+ *  "YYYY-MM-DD" text, never a Date node-pg parsed at local midnight, which
+ *  JSON writes as the day before east of UTC. */
+export function backupColumnTypes(
+  types: typeof import("pg").types,
+): import("pg").CustomTypesConfig {
+  return {
+    getTypeParser: ((oid: number, format?: "text" | "binary") =>
+      oid === 1082
+        ? (value: string) => value
+        : types.getTypeParser(oid, format)) as typeof types.getTypeParser,
+  };
+}
+
 /**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
  * disk — the safety net before any schema change (squash or normal
@@ -359,6 +374,7 @@ async function writePreMigrationBackupPg(
   schemaVersion: string,
 ): Promise<string | null> {
   const tables: Record<string, unknown[]> = {};
+  const columnTypes = backupColumnTypes((await import("pg")).types);
   try {
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
     const { rows: existing } = await client.query<{ tablename: string }>(
@@ -370,7 +386,10 @@ async function writePreMigrationBackupPg(
         tables[tableName] = [];
         continue;
       }
-      const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+      const { rows } = await client.query({
+        text: `SELECT * FROM "${tableName}"`,
+        types: columnTypes,
+      });
       tables[tableName] = rows;
     }
     await client.query("COMMIT");
@@ -441,7 +460,10 @@ export class UpgradePathError extends Error {
   override name = "UpgradePathError";
 }
 
-type Journal = { entries: { idx: number; tag: string }[] };
+/** `when` (generation time) is each applied migration's `created_at`, as
+ *  Drizzle records it, so its latest-`created_at` check never takes an
+ *  applied migration for pending, whatever the clock. */
+type Journal = { entries: { idx: number; tag: string; when: number }[] };
 
 function readJournal(migrationsFolder: string): Journal {
   return JSON.parse(
@@ -850,12 +872,27 @@ async function convertPg(
   if (run) log("info", "migration_conversion", { tag, ...run });
 }
 
+/** The migration table drizzle's migrator keeps, made if absent. */
+async function createPgMigrationsTable(
+  client: Pick<import("pg").PoolClient, "query">,
+): Promise<void> {
+  await client.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
+  await client.query(
+    `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+      id serial PRIMARY KEY,
+      hash text NOT NULL,
+      created_at bigint
+    )`,
+  );
+}
+
 /**
  * Handle a migration squash: when the database has more applied migrations
- * than the journal has entries (or none recorded but tables present, or
- * recorded hashes that don't match the journal's), the migrations were
- * squashed since it last ran. assertSupportedUpgradePathPg has already
- * established the database is at the baseline's schema or past it. This:
+ * than the journal has entries (or none recorded, or no migration table,
+ * but tables present, or recorded hashes that don't match the journal's),
+ * the migrations were squashed since it last ran.
+ * assertSupportedUpgradePathPg has already established the database is at
+ * the baseline's schema or past it. This:
  * 1. writes a pre-upgrade backup (always — none means stop),
  * 2. in ONE transaction: clears __drizzle_migrations, replays every journal
  *    entry idempotently (savepoints, ignorable errors skipped), records each
@@ -877,8 +914,13 @@ async function handleSquashUpgrade(
         WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations'
       ) AS exists`,
     );
-    if (!tableCheck[0]?.exists)
-      return { backupPath: null, schemaVersion: null, wasSquash: false };
+    const actual = await pgColumns(client);
+    if (!tableCheck[0]?.exists) {
+      if (!actual.has("people"))
+        return { backupPath: null, schemaVersion: null, wasSquash: false };
+      // An install whose migration table was dropped: a cleared journal.
+      await createPgMigrationsTable(client);
+    }
 
     const recordedHashes = await pgRecordedHashes(client);
     const { rows: countRows } = await client.query(
@@ -888,7 +930,6 @@ async function handleSquashUpgrade(
     const journal = readJournal(migrationsFolder);
     const journalCount = journal.entries.length;
     const crypto = await import("crypto");
-    const actual = await pgColumns(client);
 
     // Squash detection. Three cases trigger recovery:
     //   1. appliedCount > journalCount — a squash collapsed N migrations
@@ -943,7 +984,7 @@ async function handleSquashUpgrade(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [
             crypto.createHash("sha256").update(sql).digest("hex"),
-            String(Date.now()),
+            String(entry.when),
           ],
         );
         log("info", "squash_migration_applied", { tag: entry.tag });
@@ -1069,14 +1110,7 @@ export async function runPostgres() {
     try {
       // Ensure drizzle schema + migrations table exist (migrate() normally does
       // this, but we need it before our pre-apply step).
-      await preClient.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
-      await preClient.query(
-        `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
-          id serial PRIMARY KEY,
-          hash text NOT NULL,
-          created_at bigint
-        )`,
-      );
+      await createPgMigrationsTable(preClient);
 
       const { rows: recorded } = await preClient.query(
         "SELECT hash FROM drizzle.__drizzle_migrations",
@@ -1137,7 +1171,7 @@ export async function runPostgres() {
             await convertPg(preClient, entry.tag, "afterSql");
             await preClient.query(
               "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
-              [hash, String(Date.now())],
+              [hash, String(entry.when)],
             );
             log("info", "migration_applied", { tag: entry.tag });
           }
@@ -1178,8 +1212,8 @@ export async function runPostgres() {
     // schema's current structure on next activation. Demo schemas are
     // sandboxes the demo router (src/server/routers/demo.ts) builds with
     // CREATE TABLE LIKE public.x and stamps with the applied-migration
-    // count and last hash (src/lib/db/migrate/demo-schema-marker.ts); any whose
-    // stamp doesn't match the current one was built for an older structure. Checked on
+    // count and last hash, then its seeded day (src/lib/db/migrate/demo-schema-marker.ts);
+    // any whose stamp doesn't match the current one was built for an older structure. Checked on
     // EVERY start, not just when a migration ran, so a failed drop is
     // retried — and it's fatal: a stale schema can't be left in place
     // (requests refuse to use it, but it must not linger silently).
@@ -1189,8 +1223,8 @@ export async function runPostgres() {
         const { rows: stale } = await demoClient.query<{ nspname: string }>(
           `SELECT n.nspname FROM pg_namespace n
             WHERE n.nspname LIKE 'demo\\_%'
-              AND obj_description(n.oid, 'pg_namespace') IS DISTINCT FROM
-                  $1 || ${MIGRATION_STAMP_SUBQUERY}
+              AND ${markerStampSql("obj_description(n.oid, 'pg_namespace')")}
+                  IS DISTINCT FROM $1 || ${MIGRATION_STAMP_SUBQUERY}
             ORDER BY n.nspname`,
           [DEMO_SCHEMA_MARKER_PREFIX],
         );
@@ -1470,33 +1504,100 @@ const sqliteColumnNames = (sqlite: SqliteDb, table: string): string[] =>
     sqlite.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[]
   ).map((c) => c.name);
 
+/** What a replayed recreate of `table` at journal entry `idx` may drop and
+ *  how a database before that entry looks: the columns its own entry drops,
+ *  every column any snapshot of the journal gives the table, and the
+ *  columns later entries add to it. */
+export type RecreateShape = {
+  tag: string;
+  ownDrops: ReadonlySet<string>;
+  known: ReadonlySet<string>;
+  /** Per later entry, the columns its snapshot has beyond this entry's. */
+  laterAdds: readonly ReadonlySet<string>[];
+};
+
+function recreateShape(
+  journal: Journal,
+  migrationsFolder: string,
+  entry: { idx: number; tag: string },
+  table: string,
+): RecreateShape {
+  const columnsAt = (idx: number) =>
+    snapshotColumns(migrationsFolder, idx).get(table) ?? [];
+  const own = new Set(columnsAt(entry.idx));
+  return {
+    tag: entry.tag,
+    ownDrops: new Set(
+      entry.idx > 0 ? columnsAt(entry.idx - 1).filter((c) => !own.has(c)) : [],
+    ),
+    known: new Set(journal.entries.flatMap((e) => columnsAt(e.idx))),
+    laterAdds: journal.entries
+      .filter((e) => e.idx > entry.idx)
+      .map((e) => new Set(columnsAt(e.idx).filter((c) => !own.has(c)))),
+  };
+}
+
+/** Squash replay only: a recreate skipped over a column no snapshot knows
+ *  (a hand edit) on a database provably not past the entry (it still holds
+ *  a column the entry drops, or holds no later entry's added columns, each
+ *  later entry adding some) would record a change it never made, so the
+ *  replay is refused. */
+export function refuseUnknownColumnSkip(
+  table: string,
+  present: readonly string[],
+  lost: readonly string[],
+  shape: RecreateShape,
+): string[] {
+  const unknown = lost.filter((c) => !shape.known.has(c));
+  if (unknown.length === 0) return unknown;
+  const has = new Set(present);
+  const beforeEntry =
+    [...shape.ownDrops].some((c) => has.has(c)) ||
+    (shape.laterAdds.length > 0 &&
+      shape.laterAdds.every(
+        (adds) => adds.size > 0 && [...adds].some((c) => !has.has(c)),
+      ));
+  if (beforeEntry)
+    throw new UpgradePathError(
+      `Table ${table} has column(s) no Ledgr release made (${unknown.join(", ")}), and this database is before ${shape.tag}, whose change to ${table} can't be applied over them. Remove the column(s) or restore a backup, then start again. Nothing has been changed.`,
+    );
+  return unknown;
+}
+
 /** Squash replay only: a table recreate runs as a unit under a savepoint
- *  and drops only the columns its own journal entry drops (`ownDrops`). It
- *  is skipped whole when a statement is already done or X has another
- *  column `__new_X` lacks; any other error stops the replay. */
+ *  and drops only the columns its own journal entry drops. It is skipped
+ *  whole when a statement is already done or X has another column
+ *  `__new_X` lacks (a warning when no snapshot knows that column); any
+ *  other error, or refuseUnknownColumnSkip, stops the replay. */
 function replayRecreateSqlite(
   sqlite: SqliteDb,
   table: string,
   statements: string[],
-  ownDrops: ReadonlySet<string>,
+  shape: RecreateShape,
 ): void {
   sqlite.exec("SAVEPOINT replay_recreate");
   let skipped: string | null = null;
+  let unknown: string[] = [];
   try {
     sqlite.exec(statements[0]!);
     const kept = new Set(sqliteColumnNames(sqlite, `__new_${table}`));
-    const lost = sqliteColumnNames(sqlite, table).filter(
-      (c) => !kept.has(c) && !ownDrops.has(c),
-    );
-    if (lost.length > 0) skipped = `would drop ${lost.join(", ")}`;
-    else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
+    const present = sqliteColumnNames(sqlite, table);
+    const lost = present.filter((c) => !kept.has(c) && !shape.ownDrops.has(c));
+    if (lost.length > 0) {
+      unknown = refuseUnknownColumnSkip(table, present, lost, shape);
+      skipped = `would drop ${lost.join(", ")}`;
+    } else for (const stmt of statements.slice(1)) sqlite.exec(stmt);
   } catch (err) {
     if (!isIgnorableSqliteError(err)) throw err; // the replay rolls back
     skipped = (err as Error).message;
   }
   if (skipped !== null) {
     sqlite.exec("ROLLBACK TO SAVEPOINT replay_recreate");
-    log("info", "squash_recreate_skipped", { table, reason: skipped });
+    log(unknown.length > 0 ? "warn" : "info", "squash_recreate_skipped", {
+      table,
+      reason: skipped,
+      ...(unknown.length > 0 ? { unknownColumns: unknown } : {}),
+    });
   }
   sqlite.exec("RELEASE SAVEPOINT replay_recreate");
 }
@@ -1508,8 +1609,9 @@ function replayRecreateSqlite(
 function replayStatementsSqlite(
   sqlite: SqliteDb,
   sql: string,
+  journal: Journal,
   migrationsFolder: string,
-  idx: number,
+  entry: { idx: number; tag: string },
 ): void {
   const statements = sql
     .split("--> statement-breakpoint")
@@ -1527,21 +1629,11 @@ function replayStatementsSqlite(
         )
       : -1;
     if (table && end > i) {
-      // What this entry drops from the table: its snapshot's columns
-      // against the previous entry's.
-      const own = new Set(snapshotColumns(migrationsFolder, idx).get(table));
-      const ownDrops = new Set(
-        idx > 0
-          ? (
-              snapshotColumns(migrationsFolder, idx - 1).get(table) ?? []
-            ).filter((c) => !own.has(c))
-          : [],
-      );
       replayRecreateSqlite(
         sqlite,
         table,
         statements.slice(i, end + 1),
-        ownDrops,
+        recreateShape(journal, migrationsFolder, entry, table),
       );
       i = end;
     } else
@@ -1637,6 +1729,10 @@ function sqliteIndexes(sqlite: SqliteDb): Set<string> {
   );
 }
 
+/** The migration table drizzle's migrator keeps, made if absent. */
+const CREATE_SQLITE_MIGRATIONS_TABLE =
+  "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)";
+
 /**
  * SQLite twin of handleSquashUpgrade (see its docblock): same detection,
  * backup first (an exact VACUUM INTO copy), then clear + replay + record +
@@ -1651,7 +1747,12 @@ function handleSQLiteSquashUpgrade(
       "SELECT 1 FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
     )
     .get();
-  if (!tableExists) return null;
+  const actual = sqliteColumns(sqlite);
+  if (!tableExists) {
+    if (!actual.has("people")) return null;
+    // An install whose migration table was dropped: a cleared journal.
+    sqlite.exec(CREATE_SQLITE_MIGRATIONS_TABLE);
+  }
 
   const recordedHashes = sqliteRecordedHashes(sqlite);
   const appliedCount = (
@@ -1663,7 +1764,6 @@ function handleSQLiteSquashUpgrade(
   const journalCount = journal.entries.length;
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require in SQLite dialect
   const crypto = require("crypto") as typeof import("crypto");
-  const actual = sqliteColumns(sqlite);
 
   // The same three cases as handleSquashUpgrade.
   const needsRecovery =
@@ -1702,7 +1802,7 @@ function handleSQLiteSquashUpgrade(
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
         convertSqlite(sqlite, entry.tag, "beforeSql");
-        replayStatementsSqlite(sqlite, sql, migrationsFolder, entry.idx);
+        replayStatementsSqlite(sqlite, sql, journal, migrationsFolder, entry);
         convertSqlite(sqlite, entry.tag, "afterSql");
         sqlite
           .prepare(
@@ -1710,7 +1810,7 @@ function handleSQLiteSquashUpgrade(
           )
           .run(
             crypto.createHash("sha256").update(sql).digest("hex"),
-            String(Date.now()),
+            String(entry.when),
           );
         log("info", "squash_migration_applied", { tag: entry.tag });
       }
@@ -1781,9 +1881,7 @@ export function runSQLite() {
         "utf-8",
       ),
     );
-    sqlite.exec(
-      "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
-    );
+    sqlite.exec(CREATE_SQLITE_MIGRATIONS_TABLE);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require("crypto") as typeof import("crypto");
     const appliedHashes = new Set(
@@ -1834,7 +1932,7 @@ export function runSQLite() {
             .prepare(
               "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
             )
-            .run(hash, String(Date.now()));
+            .run(hash, String(entry.when));
           log("info", "migration_applied", {
             tag: entry.tag,
             dialect: "sqlite",

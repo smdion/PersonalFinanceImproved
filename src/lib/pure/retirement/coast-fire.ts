@@ -6,7 +6,7 @@
 import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
-import { calculateProjection } from "../engine";
+import { calculateProjection, projectionPriceLevel } from "../engine";
 import type { AccountCategory } from "../../config/account-types";
 import type {
   EngineDecumulationYear,
@@ -29,6 +29,14 @@ type CoastFireResult = {
   sustainableWithdrawal: number;
   /** Projected expenses at the first decumulation year (nominal, inflated). */
   projectedExpensesAtRetirement: number;
+  /** Those three in today's dollars: each divided by the engine's own price
+   *  level in its year (the first retirement year; the last year run). */
+  endRetirementBalanceToday: number;
+  sustainableWithdrawalToday: number;
+  projectedExpensesAtRetirementToday: number;
+  /** At or past retirement age: nothing is left to stop, so "unreachable"
+   *  means the plan itself fails. */
+  retired: boolean;
 };
 
 /** Dollars of rounding slack in the no-stated-need fallback check (see passes()). */
@@ -40,26 +48,41 @@ const UNREACHABLE: CoastFireResult = {
   endRetirementBalance: 0,
   sustainableWithdrawal: 0,
   projectedExpensesAtRetirement: 0,
+  endRetirementBalanceToday: 0,
+  sustainableWithdrawalToday: 0,
+  projectedExpensesAtRetirementToday: 0,
+  retired: false,
 };
 
 function resultFrom(
+  input: ProjectionInput,
   coastFireAge: number,
   status: CoastFireStatus,
   projection: ProjectionResult,
+  retired: boolean,
 ): CoastFireResult {
   const retirementYear = firstRetirementYear(projection);
   const finalYear =
     projection.projectionByYear[projection.projectionByYear.length - 1];
+  // What the household spends — with Social Security on top of a
+  // portfolio-sized withdrawal that's not the strategy's amount.
+  const expenses = retirementYear ? strategySpending(retirementYear) : 0;
+  const endBalance = finalYear?.retirementBalance ?? 0;
+  const level = projectionPriceLevel(input);
+  // Never retiring in the window: the withdrawal is the retirement year's.
+  const atRetirement = level(retirementYear?.year ?? input.retirementYear);
   return {
     coastFireAge,
     status,
-    endRetirementBalance: finalYear?.retirementBalance ?? 0,
+    endRetirementBalance: endBalance,
     sustainableWithdrawal: projection.sustainableWithdrawal,
-    // What the household spends — with Social Security on top of a
-    // portfolio-sized withdrawal that's not the strategy's amount.
-    projectedExpensesAtRetirement: retirementYear
-      ? strategySpending(retirementYear)
+    projectedExpensesAtRetirement: expenses,
+    endRetirementBalanceToday: finalYear
+      ? endBalance / level(finalYear.year)
       : 0,
+    sustainableWithdrawalToday: projection.sustainableWithdrawal / atRetirement,
+    projectedExpensesAtRetirementToday: expenses / atRetirement,
+    retired,
   };
 }
 
@@ -70,6 +93,12 @@ function passes(projection: ProjectionResult): boolean {
   // Survival: the one plan judge (retirement money lasts, every year's
   // spending funded — penalty-locked and Portfolio-only money included).
   if (!assessPlan(projection).succeeded) return false;
+  return meetsFirstYearNeed(projection);
+}
+
+/** Coast FIRE's own test on top of survival: the strategy's first
+ *  retirement year spends at least the household's stated need. */
+export function meetsFirstYearNeed(projection: ProjectionResult): boolean {
   const retirementYear = firstRetirementYear(projection);
   if (!retirementYear) return false;
   // Against the stated need, never `sustainableWithdrawal`. With no retirement budget set
@@ -96,6 +125,19 @@ function passes(projection: ProjectionResult): boolean {
   );
 }
 
+/** The Simulation's Coast FIRE verdict for one probe: enough trials pass
+ *  the plan judge and, as at fixed returns, the run's deterministic year 1
+ *  covers the stated need. */
+export function simulatedCoastFirePasses(
+  run: { successRate: number; deterministicProjection: ProjectionResult },
+  threshold: number,
+): boolean {
+  return (
+    run.successRate >= threshold &&
+    meetsFirstYearNeed(run.deterministicProjection)
+  );
+}
+
 function firstRetirementYear(
   projection: ProjectionResult,
 ): EngineDecumulationYear | undefined {
@@ -112,10 +154,16 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   const { currentAge } = input;
   const retirementAge = planRetirementAge(input);
 
-  // Edge case: user is already at or past retirement age. Coast FIRE is
-  // undefined in this case — just return the current projection's outcome.
+  // Already retired: nothing left to stop, so "already" only when the plan
+  // itself passes; otherwise it isn't reachable.
   if (currentAge >= retirementAge) {
-    return resultFrom(currentAge, "already_coast", calculateProjection(input));
+    const projection = calculateProjection(input);
+    return passes(projection)
+      ? resultFrom(input, currentAge, "already_coast", projection, true)
+      : {
+          ...resultFrom(input, currentAge, "unreachable", projection, true),
+          coastFireAge: null,
+        };
   }
 
   // Helper: run the projection with contributions and employer match
@@ -129,7 +177,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   // If stopping today passes, user is already Coast FIRE.
   const stopNow = probeAt(currentAge);
   if (passes(stopNow)) {
-    return resultFrom(currentAge, "already_coast", stopNow);
+    return resultFrom(input, currentAge, "already_coast", stopNow, false);
   }
 
   // If stopping the year before retirement doesn't pass, unreachable.
@@ -151,7 +199,7 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
     }
   }
 
-  return resultFrom(lo, "found", probeAt(lo));
+  return resultFrom(input, lo, "found", probeAt(lo), false);
 }
 
 /**

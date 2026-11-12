@@ -4,8 +4,12 @@ import {
   zPaycheckSummaryInput,
   computePaycheckSummary,
 } from "@/server/services/paycheck/summary";
+import { earningsProcedures } from "./paycheck/earnings";
+import { deductionsProcedures } from "./paycheck/deductions";
 
 export const paycheckRouter = createTRPCRouter({
+  ...earningsProcedures,
+  ...deductionsProcedures,
   /**
    * Each person's paycheck, gross to net, and the household's income and tax, under the active
    * Salary and Contribution profiles or the ones named, with the What-If tab's edits on top.

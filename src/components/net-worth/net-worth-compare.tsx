@@ -108,7 +108,7 @@ export function NetWorthCompare({
         ? customTo
         : presetDates.to;
 
-  const { data, ...comparison } = trpc.networth.computeComparison.useQuery(
+  const { data, ...comparison } = trpc.netWorth.computeComparison.useQuery(
     { dateFrom, dateTo, useMarketValue },
     { enabled: !!dateFrom && !!dateTo && dateFrom < dateTo },
   );

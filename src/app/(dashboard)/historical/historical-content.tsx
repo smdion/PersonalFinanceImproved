@@ -85,7 +85,7 @@ export function HistoricalContent() {
 
   const invalidateAll = () => {
     utils.historical.invalidate();
-    utils.networth.invalidate();
+    utils.netWorth.invalidate();
   };
 
   const updateMutation = trpc.historical.update.useMutation({

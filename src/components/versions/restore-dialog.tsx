@@ -34,17 +34,35 @@ export function RestoreDialog({
 }: RestoreDialogProps) {
   // One run: the pre-restore backup (if asked for), then the restore.
   const [restoring, setRestoring] = useState(false);
+  // The opened dialog (each open is a new target object) a backup was made
+  // in, so a retry doesn't make another and the next open makes its own.
+  const [backedUpFor, setBackedUpFor] = useState<object | null>(null);
+  const [backupError, setBackupError] = useState<string | null>(null);
   const id = useId();
   if (!restoreTarget) return null;
   const target = restoreTarget;
   const handleRestore = async () => {
     setRestoring(true);
+    setBackupError(null);
     try {
-      if (restoreCreateBackup) {
-        await createMutation.mutateAsync({
-          name: `Pre-restore backup (${calendarDateOf(new Date())})`,
-          description: `Auto-created before restoring"${target.name}"`,
-        });
+      if (restoreCreateBackup && backedUpFor !== target) {
+        const made = await createMutation
+          .mutateAsync({
+            name: `Pre-restore backup (${calendarDateOf(new Date())})`,
+            description: `Auto-created before restoring "${target.name}"`,
+          })
+          .then(
+            () => true,
+            (err: unknown) => {
+              const why = err instanceof Error ? `: ${err.message}` : "";
+              setBackupError(
+                `The backup failed, so nothing was restored${why}`,
+              );
+              return false;
+            },
+          );
+        if (!made) return;
+        setBackedUpFor(target);
       }
       // As mutate() does: a failure shows from restoreMutation's own state.
       await restoreMutation.mutateAsync({ id: target.id }).catch(() => {});
@@ -53,6 +71,9 @@ export function RestoreDialog({
     }
   };
   const cancel = () => {
+    // A failure belongs to this attempt, not the next dialog.
+    restoreMutation.reset();
+    setBackupError(null);
     setRestoreTarget(null);
     setRestoreConfirmText("");
   };
@@ -117,6 +138,9 @@ export function RestoreDialog({
           </button>
         </ModalCancel>
       </div>
+      {backupError && (
+        <p className="mt-2 text-xs text-red-600">{backupError}</p>
+      )}
       {restoreMutation.isError && (
         <p className="mt-2 text-xs text-red-600">
           {restoreMutation.error.message}

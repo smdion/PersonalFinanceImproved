@@ -26,6 +26,8 @@ const diffOf = (changes: Change[]) =>
 
 const shapes = {
   keys: new Set(["annualReturnPct", "retirementAge"]),
+  // Keys a router's answer reaches in the renamed tree.
+  responseKeys: new Set(["projectedExpenseTotal"]),
   isShapeFile: (f: string) => f === "src/lib/db/shapes/json-schemas.ts",
 };
 
@@ -242,6 +244,28 @@ describe("notARename", () => {
     );
   });
 
+  it("judges a response key per symbol: by the name it takes in the renamed tree (todo:533)", () => {
+    const state = (k: string) =>
+      `type LoopState = { ${k}: number };\nexport const s: LoopState = { ${k}: 1 };`;
+    const rename = (to: string) =>
+      prove(
+        [
+          {
+            file: "src/lib/pure/engine/loop.ts",
+            old: state("projectedExpenses"),
+            new: state(to),
+          },
+        ],
+        `Rename: projectedExpenses → ${to}`,
+      );
+    // An internal type that shares a response key's old name renames.
+    expect(rename("loopExpenses")).toBeUndefined();
+    // One whose new name a router's answer reaches doesn't.
+    expect(rename("projectedExpenseTotal")).toBe(
+      "src/lib/pure/engine/loop.ts:1: projectedExpenses as a key: projectedExpenseTotal is a key of a router's answer: the rename reaches a response (or meets one of its keys)",
+    );
+  });
+
   it("fails a stored or response key anywhere, and a key in a shape file", () => {
     const read = (k: string) => `const r = row.${k};`;
     expect(
@@ -256,7 +280,7 @@ describe("notARename", () => {
         "Rename: annualReturnPct → annualReturn",
       ),
     ).toBe(
-      "src/lib/a.ts:1: annualReturnPct as a key: annualReturnPct is a stored, external or response key (scripts/gen-abbreviation-carve-outs.ts reads them)",
+      "src/lib/a.ts:1: annualReturnPct as a key: annualReturnPct is a stored or external key (scripts/gen-abbreviation-carve-outs.ts reads them)",
     );
     const field = (k: string) => `export const s = { ${k}: 1 };`;
     expect(
@@ -368,7 +392,7 @@ describe("notARename", () => {
         ],
         "Rename: annualReturnPct → annualReturnPercent",
       ),
-    ).toMatch(/annualReturnPct is a stored, external or response key/);
+    ).toMatch(/annualReturnPct is a stored or external key/);
   });
 
   it("lets the register's references follow, and refuses other prose", () => {

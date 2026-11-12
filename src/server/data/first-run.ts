@@ -8,15 +8,15 @@ import { log } from "@/lib/logger";
 import { oidcConfigured } from "@/server/auth-mode";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
-
-const ONBOARDING_KEY = "onboarding_completed";
+import { SK_ONBOARDING_COMPLETED } from "@/lib/constants/settings-keys";
+import { onboardingClosesGate } from "@/lib/db/onboarding-gate";
 
 /** The stored `onboarding_completed`: true, false, or null when unset. */
 async function onboardingFlag(db: DbOrTx): Promise<boolean | null> {
   const [row] = await db
     .select({ value: schema.appSettings.value })
     .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, ONBOARDING_KEY));
+    .where(eq(schema.appSettings.key, SK_ONBOARDING_COMPLETED));
   return row?.value === true ? true : row?.value === false ? false : null;
 }
 
@@ -28,8 +28,10 @@ async function peopleExist(db: DbOrTx): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** Onboarding is complete once the wizard finished or a person exists. */
-export async function checkOnboardingComplete(db: DbOrTx): Promise<boolean> {
+/** Onboarding is complete once the wizard finished or a person exists. Is the
+ *  wizard done, not is the gate closed: with the flag false and people, this says
+ *  done while onboardingClosesGate (firstRunState's rule) keeps the gate open. */
+export async function onboardingWizardDone(db: DbOrTx): Promise<boolean> {
   return (await onboardingFlag(db)) === true || peopleExist(db);
 }
 
@@ -52,8 +54,8 @@ export async function firstRunState(
   if (process.env.DEMO_ONLY === "true") return { adminNeeded: false };
   if (await localAdminExists(db)) return { adminNeeded: false };
   const flag = await onboardingFlag(db);
-  if (flag !== null) return { adminNeeded: !flag };
-  return { adminNeeded: !(await peopleExist(db)) };
+  const people = flag === null && (await peopleExist(db));
+  return { adminNeeded: !onboardingClosesGate(flag, people) };
 }
 
 /**
@@ -65,7 +67,7 @@ export async function settleFirstRunGate(
   after: "reset" | "restore" | "import",
 ): Promise<void> {
   const signInRemains = (await localAdminExists(db)) || oidcConfigured();
-  await upsertSetting(db, ONBOARDING_KEY, signInRemains);
+  await upsertSetting(db, SK_ONBOARDING_COMPLETED, signInRemains);
   if (!signInRemains)
     log("warn", "first_admin_gate_open", {
       after,

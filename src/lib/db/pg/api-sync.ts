@@ -8,11 +8,11 @@ import {
   boolean,
   date,
   timestamp,
-  decimal,
   uniqueIndex,
   index,
   check,
 } from "drizzle-orm/pg-core";
+import { decimal } from "../pg-decimal";
 import { jsonb } from "../pg-jsonb";
 import { sql } from "drizzle-orm";
 import type {
@@ -75,9 +75,9 @@ export const budgetApiCache = pgTable(
 );
 
 /**
- * Server-side cache of projection results (deterministic, Monte Carlo, Coast FIRE MC), apart
- * from budgetApiCache (whose clear re-pulls a remote mirror) with its own eviction. `seed` is
- * stored with the result it produced; a miss (new inputs, or "Re-run") gets a fresh seed.
+ * Server-side cache of projection results (deterministic, Simulation, Coast FIRE Simulation),
+ * apart from budgetApiCache (whose clear re-pulls a remote mirror) with its own eviction. `seed`
+ * is stored with the result it produced; a miss (new inputs, or "Re-run") gets a fresh seed.
  */
 export const projectionCache = pgTable(
   "projection_cache",

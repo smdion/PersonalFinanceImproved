@@ -1,7 +1,7 @@
 "use client";
 
 import { trpc } from "@/lib/trpc";
-import { usePersistedSetting } from "./use-persisted-setting";
+import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import { useActiveProfileRepair } from "./use-active-profile-repair";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -29,12 +29,11 @@ export function useActiveSalaryProfile(): [
         utils.brokerage.invalidate(),
         utils.budget.invalidate(),
         utils.savings.invalidate(),
-        utils.settings.contributionAccounts.invalidate(),
+        utils.contribution.accounts.invalidate(),
       ]),
   });
-  const [activeId, setActiveId] = usePersistedSetting<number | null>(
+  const [activeId, setActiveId] = useProfileIdSetting(
     SK_ACTIVE_SALARY_PROFILE_ID,
-    null,
     {
       // setActive accepts null to clear the selection.
       writeVia: (id) => setActive.mutateAsync({ id }),

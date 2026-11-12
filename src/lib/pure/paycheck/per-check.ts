@@ -13,14 +13,16 @@ import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { sumBracketTax } from "../tax/tax-brackets";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
-import { calculateBonus, findBonusPeriod } from "./bonus";
+import { calculateBonus } from "./bonus";
+import { additionalMedicareWithheld } from "./additional-medicare";
+import { bonusOnSchedule } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
+import { jobChecksThisYear } from "./job-last-check";
 import {
   buildPayFrequencyLabel,
   countPeriodsElapsed,
   findNextPayDate,
-  periodsBeforeStart,
 } from "./pay-periods-in-year";
 
 /**
@@ -196,28 +198,21 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     ficaSS = ficaBase * ssRate;
   } else {
     // Wage base reached during the year: per-check SS is the year's SS spread evenly, so
-    // per-check net × periods is true take-home (the year schedule shows timing). A check
-    // already past the base (YTD) gets its real figure.
-    if (input.ytdGrossEarnings > 0 && input.ytdGrossEarnings >= ssWageBase) {
-      ficaSS = 0;
-      warnings.push("SS wage base exceeded for this period");
-    } else {
-      ficaSS = (ssWageBase * ssRate) / periodsPerYear;
-      warnings.push(
-        `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
-      );
-    }
+    // per-check net × periods is true take-home (the year schedule shows timing).
+    ficaSS = (ssWageBase * ssRate) / periodsPerYear;
+    warnings.push(
+      `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
+    );
   }
 
   // Medicare on the FICA base, no cap. Additional Medicare past the threshold is averaged
   // over the year's checks, like Social Security; the year schedule shows the real checks.
   const additionalMedicarePerCheck =
-    (input.taxBrackets.medicareAdditionalRate *
-      Math.max(
-        0,
-        annualFicaBase - input.taxBrackets.medicareAdditionalThreshold,
-      )) /
-    periodsPerYear;
+    additionalMedicareWithheld(
+      input.taxBrackets,
+      annualFicaBase,
+      annualFicaBase,
+    ) / periodsPerYear;
   const ficaMedicare =
     ficaBase * input.taxBrackets.medicareRate + additionalMedicarePerCheck;
 
@@ -246,13 +241,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   // ── Step 8: Year schedule ──
   // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
-  // before a job's start this year stay (numbering) but pay nothing.
-  const beforeStart = periodsBeforeStart(
-    input.asOfDate,
-    input.payPeriod,
-    input.anchorPayDate,
-    input.startDate,
-  );
+  // before a job's start or after its end this year stay (numbering) but pay nothing.
+  const checks = jobChecksThisYear(input, periodsPerYear);
   const yearSchedule = buildYearSchedule(
     input,
     gross,
@@ -261,11 +251,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     ficaBase,
     totalPostTax,
     bonusEstimate,
-    beforeStart,
+    checks,
   );
 
   // Paydays so far this year by the calendar — the year schedule's index
-  // (checks this job paid = this − beforeStart).
+  // (checks this job paid = this − checks.beforeStart).
   const periodsElapsedYtd = countPeriodsElapsed(
     input.asOfDate,
     input.payPeriod,
@@ -283,24 +273,6 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     input.payWeek,
   );
 
-  // Determine which period the bonus lands in (for UI display)
-  // A bonus dated before the job started isn't this job's (the schedule
-  // leaves it out too).
-  const bonusPeriodFound =
-    input.bonusMonth != null && bonusEstimate.bonusGross > 0
-      ? findBonusPeriod(
-          input.asOfDate,
-          input.payPeriod,
-          input.anchorPayDate,
-          input.bonusMonth,
-          input.bonusDayOfMonth,
-        )
-      : null;
-  const bonusPeriod =
-    bonusPeriodFound !== null && bonusPeriodFound > beforeStart
-      ? bonusPeriodFound
-      : null;
-
   return {
     gross,
     earnings,
@@ -313,15 +285,13 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     postTaxDeductions,
     netPay: roundToCents(netPay),
     bonusEstimate,
-    bonusPeriod,
     extraPaycheckMonths,
     yearSchedule,
     periodsPerYear,
     periodsElapsedYtd,
-    periodsBeforeStart: beforeStart,
-    bonusBeforeStart:
-      bonusPeriodFound !== null && bonusPeriodFound <= beforeStart,
-    bonusUndated: input.bonusMonth == null && bonusEstimate.bonusGross > 0,
+    periodsBeforeStart: checks.beforeStart,
+    // Where the bonus falls against the job's checks (for display).
+    ...bonusOnSchedule(input, bonusEstimate.bonusGross, checks.beforeStart),
     nextPayDate,
     payFrequencyLabel,
     warnings,

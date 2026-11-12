@@ -12,7 +12,8 @@ export function useProfileManagerState() {
     useActiveContributionProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
-  const { data: compareData } = trpc.contributionProfile.compareData.useQuery();
+  const { data: compareData } =
+    trpc.contributionProfile.getComparisonData.useQuery();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
     null,
   );
@@ -29,14 +30,14 @@ export function useProfileManagerState() {
   };
 
   const createContributionAccount =
-    trpc.settings.contributionAccounts.create.useMutation({
+    trpc.contribution.accounts.create.useMutation({
       onSuccess: () => {
         invalidateProfileDeps();
         setAddingAccount(false);
       },
     });
   const updateContributionAccount =
-    trpc.settings.contributionAccounts.update.useMutation({
+    trpc.contribution.accounts.update.useMutation({
       onSuccess: () => {
         invalidateProfileDeps();
         setAddingAccount(false);

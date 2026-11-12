@@ -19,6 +19,7 @@ const account = (
   key: "a",
   performanceAccountId: 1,
   label: "IRA",
+  account: "IRA",
   reported: 105_000,
   reportedDay: "2026-10-29",
   snapshot: 100_000,
@@ -287,6 +288,7 @@ describe("pairFeedsWithParts", () => {
     key,
     performanceAccountId: 1,
     label: key,
+    account: key,
     amount,
   });
   const feed = (id: number, subKey: string | null, balance: number) => ({

@@ -250,9 +250,9 @@ const BLANK_ROW: AccountRow = {
   priorYearContribYear: null,
 };
 
-/** The match today's reader reads for one account, alone or through one
- *  entry merged by applyContribActiveFields (as an overlay, so an entry
- *  with no contribution value still merges); null when the merge drops it. */
+/** The match today's reader reads for one account through applyContribActiveFields
+ *  (its entry, else an empty one; as an overlay, so an entry with no contribution
+ *  value still merges), where the stored type is read; null when the merge drops it. */
 function readMatch(account: Row | undefined, entry: Row | undefined) {
   const row: AccountRow = {
     ...BLANK_ROW,
@@ -262,12 +262,14 @@ function readMatch(account: Row | undefined, entry: Row | undefined) {
     employerMatchValue: stored(account?.["employer_match_value"]),
     employerMatchRate: stored(account?.["employer_match_rate"]),
   };
-  const [merged] = entry
-    ? applyContribActiveFields([row], { [row.id]: entry }, true)
-    : [row];
+  const [merged] = applyContribActiveFields(
+    [row],
+    { [row.id]: entry ?? {} },
+    true,
+  );
   if (!merged) return null;
   return parseEmployerMatch(
-    merged.employerMatchType == null ? null : String(merged.employerMatchType),
+    merged.employerMatchType,
     toNumber(
       merged.employerMatchValue == null
         ? null

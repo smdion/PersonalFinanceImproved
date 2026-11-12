@@ -28,7 +28,7 @@ export type PortfolioPanelsProps = {
   showChart: boolean;
   showNewSnapshot: boolean;
   showQuickLook: boolean;
-  snapshotTotals: RouterOutputs["networth"]["listSnapshotTotals"] | undefined;
+  snapshotTotals: RouterOutputs["netWorth"]["listSnapshotTotals"] | undefined;
 };
 
 export function PortfolioPanels({

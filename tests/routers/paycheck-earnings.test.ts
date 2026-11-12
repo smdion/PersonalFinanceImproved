@@ -1,5 +1,5 @@
 /**
- * Other pay & taxable benefits: structural rows (settings.earnings) with
+ * Other pay & taxable benefits: structural rows (paycheck.earnings) with
  * their per-check amounts in the Salary Profile entry (otherEarnings), and
  * the paycheck/tax reading them. Invented household only.
  */
@@ -39,7 +39,7 @@ describe("paycheck earnings", () => {
   it("a taxable benefit that isn't paid raises taxes, not take-home", async () => {
     const before = (await ctx.caller.paycheck.computeSummary()).people[0]!
       .paycheck!;
-    const row = await ctx.caller.settings.earnings.create({
+    const row = await ctx.caller.paycheck.earnings.create({
       jobId,
       earningName: "Group life over $50k",
       isCash: false,
@@ -67,7 +67,7 @@ describe("paycheck earnings", () => {
 
   it("refuses a benefit that's neither paid nor taxed", async () => {
     await expect(
-      ctx.caller.settings.earnings.create({
+      ctx.caller.paycheck.earnings.create({
         jobId,
         earningName: "Nothing",
         isCash: false,
@@ -78,10 +78,10 @@ describe("paycheck earnings", () => {
   });
 
   it("deleting a line also drops its amount from every Salary Profile", async () => {
-    const [row] = await ctx.caller.settings.earnings.list();
-    await ctx.caller.settings.earnings.delete({ id: row!.id });
+    const [row] = await ctx.caller.paycheck.earnings.list();
+    await ctx.caller.paycheck.earnings.delete({ id: row!.id });
     const [profile] = ctx.db.select().from(sqliteSchema.salaryProfiles).all();
     expect(profile!.salaries[String(jobId)]!.otherEarnings).toEqual({});
-    expect(await ctx.caller.settings.earnings.list()).toEqual([]);
+    expect(await ctx.caller.paycheck.earnings.list()).toEqual([]);
   });
 });

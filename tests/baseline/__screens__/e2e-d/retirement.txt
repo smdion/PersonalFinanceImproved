@@ -25,9 +25,8 @@ $4,751,597.70
 Range $3,414,394.14 – $9,933,264.34 in 2072
 Baseline: $0.00 (fixed returns)
 Coast FIRE?
-Already ✓
-$119,500.00/yr sustainable
-vs $119,500.00 expenses
+Not reachable
+Already retired: the plan doesn't pass.
 Simulation— what was run
 Default?Tax-aware?
 6.72%?
@@ -56,7 +55,7 @@ View Assumptions →
 Compute— what gets run
 Scenario?
 Baseline
-Coast FIRE (2026 (Sam, 50))
+Coast FIRE
 Coast FIRE (Today)
 Coast FIRE (Custom)
 Initial Rate

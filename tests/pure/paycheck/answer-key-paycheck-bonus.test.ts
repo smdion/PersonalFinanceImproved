@@ -19,7 +19,7 @@
  * split with a check is verdict N8's open question and isn't asserted.
  */
 import { describe, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import { account, job } from "../fixtures/paycheck-answer-key";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { bonusSpendingNet } from "@/lib/pure/household/household-income";
@@ -76,20 +76,11 @@ describe("answer key: the bonus check's FICA", () => {
   // Additional Medicare withheld 0.9% × 10,000 = 90.00 (Pub 15 § 9,
   // 3102(f)). FICA 235.00. Federal 22% × 10,000 = 2,200.00. Net 10,000 −
   // 2,200 − 235 = 7,565.00.
-  // Today the bonus estimate charges no Additional Medicare: FICA 145.00,
-  // net 7,655.00, $90 high (0.9% × the 10,000 bonus). The same omission
-  // as paycheck/C48's year totals.
-  xfail({
-    id: "paycheck/PAY16-3 [PAY-16]",
-    todo: 'v0.11 Paycheck "Take-home, wider than reported" (the bonus check\'s Additional Medicare)',
-    run: () => {
-      const b = calculatePaycheck(
-        job({ salary: 208_000, period: "biweekly", bonus: 10_000 }),
-      ).bonusEstimate;
-      return { fica: b.bonusFica, net: b.bonusNet };
-    },
-    expected: { fica: 235, net: 7_565 },
-    today: { fica: 145, net: 7_655 },
+  it("paycheck/PAY16-3 [PAY-16] past $200,000 with this employer, the bonus pays Additional Medicare", () => {
+    const b = calculatePaycheck(
+      job({ salary: 208_000, period: "biweekly", bonus: 10_000 }),
+    ).bonusEstimate;
+    cents({ fica: b.bonusFica, net: b.bonusNet }, { fica: 235, net: 7_565 });
   });
 });
 

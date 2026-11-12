@@ -17,19 +17,31 @@ const budgetItems = [
   { profileId: 2, isEssential: true, amounts: [9000, 9000, 9000] },
 ];
 
+const profile = {
+  id: 1,
+  columnLabels: ["Lean", "Normal", "Comfortable"],
+  columnMonths: null,
+};
+
 describe("getEssentialExpenses", () => {
   it("sums one column of the profile's essential items, monthly", () => {
-    expect(getEssentialExpenses(budgetItems, 1, 0, null)).toBe(1900);
-    expect(getEssentialExpenses(budgetItems, 1, 2, null)).toBe(3000);
+    expect(getEssentialExpenses(budgetItems, profile, 0)).toBe(1900);
+    expect(getEssentialExpenses(budgetItems, profile, 2)).toBe(3000);
   });
 
   it("weighs every column by its months on a weighted profile", () => {
     // (1,900 × 6 + 2,400 × 4 + 3,000 × 2) / 12 = 2,250 a month
-    expect(getEssentialExpenses(budgetItems, 1, 0, [6, 4, 2])).toBe(2250);
+    expect(
+      getEssentialExpenses(
+        budgetItems,
+        { ...profile, columnMonths: [6, 4, 2] },
+        0,
+      ),
+    ).toBe(2250);
   });
 
-  it("reads $0 for a column past an item's amounts", () => {
-    expect(getEssentialExpenses(budgetItems, 1, 5, null)).toBe(0);
+  it("reads $0 for a column past the profile's columns", () => {
+    expect(getEssentialExpenses(budgetItems, profile, 5)).toBe(0);
   });
 });
 
@@ -47,9 +59,14 @@ describe("resolveEfundTierIndex", () => {
     expect(resolveEfundTierIndex(settings(2), 0, 3)).toBe(0);
   });
 
-  it("falls to the budget page's column when the e-fund's isn't a number", () => {
-    expect(resolveEfundTierIndex(settings("2"), undefined, 3)).toBe(1);
+  it("reads a column stored as a digit string as that column (an older PostgreSQL write)", () => {
+    expect(resolveEfundTierIndex(settings("2"), undefined, 3)).toBe(2);
+    expect(resolveEfundTierIndex(settings(-1, "2"), undefined, 3)).toBe(2);
+  });
+
+  it("falls to the budget page's column when the e-fund's isn't an integer", () => {
     expect(resolveEfundTierIndex(settings(null), undefined, 3)).toBe(1);
+    expect(resolveEfundTierIndex(settings("two"), undefined, 3)).toBe(1);
   });
 
   it("falls to the budget page's column when the e-fund's is negative", () => {
@@ -58,7 +75,7 @@ describe("resolveEfundTierIndex", () => {
 
   it("falls to column 0 when neither column is saved", () => {
     expect(resolveEfundTierIndex([], undefined, 3)).toBe(0);
-    expect(resolveEfundTierIndex(settings(-1, "1"), undefined, 3)).toBe(0);
+    expect(resolveEfundTierIndex(settings(-1, "one"), undefined, 3)).toBe(0);
   });
 
   it("clamps a saved column past the end of a profile with fewer columns", () => {

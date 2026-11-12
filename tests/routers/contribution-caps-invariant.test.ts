@@ -241,7 +241,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
 
     it("refuses a joint 401(k): IRS limits are per person", async () => {
       await expect(
-        t.caller.settings.contributionAccounts.create({
+        t.caller.contribution.accounts.create({
           personId: null,
           jobId: null,
           ownership: "joint",
@@ -337,7 +337,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
 
     it("turning an account back on can't push the group over", async () => {
       await expect(
-        t.caller.settings.contributionAccounts.setActive({
+        t.caller.contribution.accounts.setActive({
           id: b403Id,
           isActive: true,
         }),
@@ -346,7 +346,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
 
     it("the refusal names the account the way the app does (owner + display label)", async () => {
       await expect(
-        t.caller.settings.contributionAccounts.setActive({
+        t.caller.contribution.accounts.setActive({
           id: b403Id,
           isActive: true,
         }),

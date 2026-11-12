@@ -22,7 +22,7 @@ import {
   NO_CLAMP,
   retiree,
 } from "../../fixtures/answer-key-simulation";
-import { judgeRothIra } from "@/lib/pure/contributions/roth-ira";
+import { judgeRothIra } from "@/lib/pure/contributions/roth-ira-judge";
 import { calculateMonteCarlo } from "@/lib/pure/simulation/monte-carlo";
 
 const SINGLE_2026 = { start: 153_000, end: 168_000 };
@@ -35,7 +35,13 @@ const judge = (magi: number) =>
     marginOverride: null,
     combinedCompensation: false,
     people: [
-      { personId: 1, name: "A", compensation: 200_000, iraLimit: 7_500 },
+      {
+        personId: 1,
+        name: "A",
+        compensation: 200_000,
+        iraLimit: 7_500,
+        otherIraContributions: 0,
+      },
     ],
   })!;
 

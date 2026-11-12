@@ -162,7 +162,7 @@ export function NewProfileDeductions({
   setDeductionValues,
 }: {
   deductionRows: DeductionRow[] | undefined;
-  jobsList: RouterOutputs["settings"]["jobs"]["list"] | undefined;
+  jobsList: RouterOutputs["jobs"]["list"] | undefined;
   deductionValues: Record<string, string>;
   setDeductionValues: Dispatch<SetStateAction<Record<string, string>>>;
 }) {

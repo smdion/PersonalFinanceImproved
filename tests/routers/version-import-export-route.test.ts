@@ -33,8 +33,25 @@ vi.mock("@/lib/db/backup/version-logic", () => ({
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
 }));
+// The tRPC module itself is heavy; the route reads only its label helper.
+vi.mock("@/server/trpc", () => ({
+  getSessionUserLabel: (session: { user: { name: string } }) =>
+    session.user.name,
+}));
 vi.mock("@/server/data/first-run", () => ({
   settleFirstRunGate: vi.fn().mockResolvedValue(undefined),
+}));
+// The browser's demo cookie (none unless a case sets one).
+const demoCookie = vi.hoisted(() => ({
+  value: undefined as string | undefined,
+}));
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "demo_active_profile" && demoCookie.value !== undefined
+        ? { name, value: demoCookie.value }
+        : undefined,
+  }),
 }));
 
 beforeEach(() => {
@@ -44,6 +61,7 @@ beforeEach(() => {
   // non-demo test cases are hermetic regardless of ORIGINAL_ENV's contents,
   // rather than relying on it having been unset when this file loaded.
   delete process.env.DEMO_ONLY;
+  demoCookie.value = undefined;
   vi.resetModules();
 });
 
@@ -222,7 +240,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: false },
+      { asAdmin: false, user: "U" },
     );
   });
 
@@ -232,7 +250,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: true },
+      { asAdmin: true, user: "U" },
     );
   });
 
@@ -245,7 +263,7 @@ describe("/api/versions/import: who imports, and the connections fence", () => {
     expect(importBackup).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      { asAdmin: false },
+      { asAdmin: false, user: "U" },
     );
   });
 
@@ -298,5 +316,198 @@ describe("/api/versions/import: a backup refused over its closed-set values", ()
       'performance_accounts.account_type = "solo401k" (1 row)',
     );
     expect(settleFirstRunGate).not.toHaveBeenCalled();
+  });
+});
+
+// SE2: with a demo profile active, every page shows the demo's schema, but
+// these routes read and write the household's own data: both refuse.
+describe("/api/versions/import and export while a demo profile is active", () => {
+  const admin = {
+    user: {
+      id: "u",
+      name: "U",
+      email: "u@test.local",
+      role: "admin",
+      permissions: [],
+    },
+    expires: "2099-12-31T23:59:59.999Z",
+  };
+
+  async function signedInAsAdmin() {
+    vi.stubEnv("NODE_ENV", "production");
+    const { auth } = await import("@/server/auth");
+    vi.mocked(auth).mockResolvedValueOnce(admin as never);
+  }
+
+  it("import answers 409 and imports nothing", async () => {
+    demoCookie.value = "single-income";
+    await signedInAsAdmin();
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    const body = new FormData();
+    body.append(
+      "file",
+      new File(
+        [JSON.stringify({ schemaVersion: "1", exportedAt: "x", tables: {} })],
+        "backup.json",
+      ),
+    );
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "A demo profile is active. Leave the demo to import a backup.",
+    );
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+
+  it("export answers 409 and reads nothing", async () => {
+    demoCookie.value = "single-income";
+    await signedInAsAdmin();
+    const { GET } = await import("@/app/api/versions/export/route");
+    const { exportBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(exportBackup).mockClear();
+    const res = await GET();
+    expect(res.status).toBe(409);
+    expect(exportBackup).not.toHaveBeenCalled();
+  });
+
+  it("a cookie naming no demo profile doesn't refuse (tRPC reads the household's data then too)", async () => {
+    demoCookie.value = "not-a-profile";
+    await signedInAsAdmin();
+    const { GET } = await import("@/app/api/versions/export/route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+  });
+
+  it("an unsigned request still answers 401 first", async () => {
+    demoCookie.value = "single-income";
+    vi.stubEnv("NODE_ENV", "production");
+    const { GET } = await import("@/app/api/versions/export/route");
+    const res = await GET();
+    expect(res.status).toBe(401);
+  });
+});
+
+// SE1: the version permission manages the household's data, not access.
+describe("/api/versions/export: who exports how much", () => {
+  const as = (role: "admin" | "viewer", permissions: string[]) => ({
+    user: { id: "u", name: "U", email: "u@test.local", role, permissions },
+    expires: "2099-12-31T23:59:59.999Z",
+  });
+
+  async function exportAs(session: ReturnType<typeof as>) {
+    vi.stubEnv("NODE_ENV", "production");
+    const { auth } = await import("@/server/auth");
+    vi.mocked(auth).mockResolvedValueOnce(session as never);
+    const { GET } = await import("@/app/api/versions/export/route");
+    const { exportBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(exportBackup).mockClear();
+    const res = await GET();
+    return { res, exportBackup: vi.mocked(exportBackup) };
+  }
+
+  it("a viewer with the version permission exports the household's data only", async () => {
+    const { res, exportBackup } = await exportAs(as("viewer", ["version"]));
+    expect(res.status).toBe(200);
+    expect(exportBackup).toHaveBeenCalledWith(expect.anything(), {
+      asAdmin: false,
+    });
+  });
+
+  it("an admin exports the full backup", async () => {
+    const { res, exportBackup } = await exportAs(as("admin", []));
+    expect(res.status).toBe(200);
+    expect(exportBackup).toHaveBeenCalledWith(expect.anything(), {
+      asAdmin: true,
+    });
+  });
+});
+
+describe("/api/versions/import: a household-only export", () => {
+  it("keeps its householdOnly mark through validation", async () => {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    const body = new FormData();
+    const backup = {
+      schemaVersion: "0001",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      tables: {},
+      householdOnly: true,
+    };
+    body.append("file", new File([JSON.stringify(backup)], "backup.json"));
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(importBackup).mock.calls[0]![1]).toMatchObject({
+      householdOnly: true,
+    });
+  });
+});
+
+describe("/api/versions/import: a body past the size limit", () => {
+  async function importRequest(request: Request) {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    return { res: await POST(request), importBackup: vi.mocked(importBackup) };
+  }
+
+  it("answers 413 on a declared length past the limit, before reading the body", async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error("the body was read");
+      },
+    });
+    const { res, importBackup } = await importRequest(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+        headers: {
+          "content-length": String(51 * 1024 * 1024),
+          "content-type": "multipart/form-data; boundary=x",
+        },
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(413);
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+
+  it("answers 413 on an undeclared length once the stream passes the limit", async () => {
+    const chunk = new Uint8Array(1024 * 1024);
+    let sent = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent++ < 60) controller.enqueue(chunk);
+        else controller.close();
+      },
+    });
+    const { res, importBackup } = await importRequest(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+        headers: { "content-type": "multipart/form-data; boundary=x" },
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(413);
+    // Refused at the limit: the rest of the stream is never pulled.
+    expect(sent).toBeLessThan(60);
+    expect(importBackup).not.toHaveBeenCalled();
   });
 });

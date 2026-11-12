@@ -17,3 +17,7 @@ export const PERMISSIONS = [
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
+
+/** app_settings key prefix for RBAC group overrides. */
+export const RBAC_SETTINGS_PREFIX = "rbac_group_";
+export const RBAC_ADMIN_GROUP_KEY = "rbac_admin_group";

@@ -42,7 +42,7 @@
  *   list additions". P25's blindness half stays below as `it.todo`.
  */
 import { describe, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import { retiredYear } from "../../fixtures/answer-key-household";
 import { readTaxData, taxDataLimitMap } from "../../helpers/tax-data";
 import {
@@ -63,6 +63,7 @@ import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import { NO_ONE_65 } from "./tax-helpers";
 
 type Year = 2025 | 2026;
 
@@ -283,7 +284,12 @@ function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
  */
 function householdTax(status: ReturnFilingStatus, jobs: number[]) {
   return calculateHouseholdTax({
-    people: jobs.map((w) => ({ federalWages: w, ficaWages: w })),
+    ageDeductions: NO_ONE_65,
+    people: jobs.map((w) => ({
+      federalWages: w,
+      ficaWages: w,
+      hsaOutsidePayroll: 0,
+    })),
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(
       2026,
@@ -311,10 +317,6 @@ function additionalMedicare(status: ReturnFilingStatus, jobs: number[]) {
       : -amount(/about \$([\d,]+) comes back/);
   return { liability: r.additionalMedicare, balance };
 }
-
-const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
-const ONE_RETURN_DEDUCTIONS = `v0.11 Tax "One returnDeductions()" (with "Senior deduction phases out against the combined amount")`;
-const LINE_25_CAP = `v0.11 Tax "Gap years have no 65+ deductions" (Schedule D line 25 cap, min(L23, L24))`;
 
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
 // L8 provisional income = other + ½ benefits (+ tax-exempt interest).
@@ -532,7 +534,7 @@ describe("answer key: long-term gains", () => {
 
   // Unused deduction shelters gains (spec LT-3; F1040 line 15; QDCG lines
   // 1, 5, 10): T = AGI − deductions, so a deduction larger than ordinary
-  // income comes off the gains. Today `toLtcgTaxableIncome` clamps the
+  // income comes off the gains. Today `ltcgStackBase` clamps the
   // ordinary part at 0 and `computeTaxFromSlots` taxes every gain dollar
   // (`lib/pure/tax/ltcg.ts`, `lib/pure/engine/tax-estimation.ts`).
   describe("tax/L2 [TAX-16]", () => {
@@ -540,19 +542,18 @@ describe("answer key: long-term gains", () => {
     // 16,100 = 48,900; L5 0; L9 = min(48,900, 49,450) = 48,900: all at
     // 0%. Today: ordinary clamped to 0, all 60,000 gains stacked from 0:
     // (60,000 − 49,450) × 15% = 1,582.50 (key "Today").
-    xfail({
-      id: "tax/L2 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 5_000,
-          gains: 60_000,
-          deductions: 16_100,
-        }),
-      expected: 0,
-      today: 1_582.5,
+    it("tax/L2 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "Single",
+            ordinary: 5_000,
+            gains: 60_000,
+            deductions: 16_100,
+          }))(),
+        0,
+      );
     });
   });
 
@@ -560,38 +561,36 @@ describe("answer key: long-term gains", () => {
     // 2026 MFJ: no other income, G 131,100, deduction 32,200. T = 98,900,
     // exactly the 0% top: all at 0% (spec LT-7). Today: (131,100 −
     // 98,900) × 15% = 4,830.00 (worked here; the key says "3,165-type").
-    xfail({
-      id: "tax/L3 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "MFJ",
-          ordinary: 0,
-          gains: 131_100,
-          deductions: 32_200,
-        }),
-      expected: 0,
-      today: 4_830,
+    it("tax/L3 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "MFJ",
+            ordinary: 0,
+            gains: 131_100,
+            deductions: 32_200,
+          }))(),
+        0,
+      );
     });
   });
 
   describe("tax/L4 [TAX-16]", () => {
     // Same, G 131,101: T 98,901; L9 98,900, L17 1 × 15% = 0.15. Today:
     // 32,201 × 15% = 4,830.15 (worked here; the key says "clamped").
-    xfail({
-      id: "tax/L4 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "MFJ",
-          ordinary: 0,
-          gains: 131_101,
-          deductions: 32_200,
-        }),
-      expected: 0.15,
-      today: 4_830.15,
+    it("tax/L4 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2026,
+            status: "MFJ",
+            ordinary: 0,
+            gains: 131_101,
+            deductions: 32_200,
+          }))(),
+        0.15,
+      );
     });
   });
 
@@ -599,67 +598,54 @@ describe("answer key: long-term gains", () => {
     // 2025 Single: no other income, G 64,100, deduction 15,750. T =
     // 48,350, the 2025 0% top: 0. Today: (64,100 − 48,350) × 15% =
     // 2,362.50 (worked here; the key says "clamped").
-    xfail({
-      id: "tax/L5 [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2025,
-          status: "Single",
-          ordinary: 0,
-          gains: 64_100,
-          deductions: 15_750,
-        }),
-      expected: 0,
-      today: 2_362.5,
+    it("tax/L5 [TAX-16]", () => {
+      cents(
+        (() =>
+          yearTax({
+            year: 2025,
+            status: "Single",
+            ordinary: 0,
+            gains: 64_100,
+            deductions: 15_750,
+          }))(),
+        0,
+      );
     });
   });
 
   // Line 25 cap (spec LT-4): the tax is the smaller of line 23 (stacked)
   // and line 24 (TAX on all of T). Where the 0% top sits under the 12%
   // band's top, a gain at 15% would cost more than at 12%. 2026 Single:
-  // 50,400 − 49,450 = 950 of such room. `computeLtcgTax`
-  // (`lib/pure/tax/ltcg.ts`) never sees the ordinary schedule, so no caller
-  // caps it.
-  describe("tax/L6 [TAX-17]", () => {
-    // 2026 Single, T 50,400, G 950 (ordinary 65,550 before the 16,100
-    // deduction): L5 49,450, TAX = 1,240 + 12% × 37,050 = 5,686; L17 950
-    // × 15% = 142.50; L23 5,828.50. L24 = TAX(50,400) = 1,240 + 12% ×
-    // 38,000 = 5,800. Line 25: 5,800.00. Today 5,828.50 (key).
-    xfail({
-      id: "tax/L6 [TAX-17]",
-      todo: LINE_25_CAP,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 49_450 + 16_100,
-          gains: 950,
-          deductions: 16_100,
-        }),
-      expected: 5_800,
-      today: 5_828.5,
-    });
+  // 50,400 − 49,450 = 950 of such room.
+  it("tax/L6 [TAX-17] 2026 Single, T 50,400, G 950: line 25 5,800", () => {
+    // Ordinary 65,550 before the 16,100 deduction: L5 49,450, TAX = 1,240
+    // + 12% × 37,050 = 5,686; L17 950 × 15% = 142.50; L23 5,828.50. L24 =
+    // TAX(50,400) = 1,240 + 12% × 38,000 = 5,800. Line 25: 5,800.00.
+    cents(
+      yearTax({
+        year: 2026,
+        status: "Single",
+        ordinary: 49_450 + 16_100,
+        gains: 950,
+        deductions: 16_100,
+      }),
+      5_800,
+    );
   });
 
-  describe("tax/L7 [TAX-17]", () => {
-    // 2026 Single, T 50,400, G 1,000: L5 49,400, TAX = 1,240 + 12% ×
-    // 37,000 = 5,680; L9 50 at 0%, L17 950 × 15% = 142.50; L23 5,822.50;
-    // L24 5,800. Line 25: 5,800.00. Today 5,822.50 (key).
-    xfail({
-      id: "tax/L7 [TAX-17]",
-      todo: LINE_25_CAP,
-      run: () =>
-        yearTax({
-          year: 2026,
-          status: "Single",
-          ordinary: 49_400 + 16_100,
-          gains: 1_000,
-          deductions: 16_100,
-        }),
-      expected: 5_800,
-      today: 5_822.5,
-    });
+  it("tax/L7 [TAX-17] 2026 Single, T 50,400, G 1,000: line 25 5,800", () => {
+    // L5 49,400, TAX = 1,240 + 12% × 37,000 = 5,680; L9 50 at 0%, L17 950
+    // × 15% = 142.50; L23 5,822.50; L24 5,800. Line 25: 5,800.00.
+    cents(
+      yearTax({
+        year: 2026,
+        status: "Single",
+        ordinary: 49_400 + 16_100,
+        gains: 1_000,
+        deductions: 16_100,
+      }),
+      5_800,
+    );
   });
 
   describe("tax/X3 [TAX-16] {return 2025 MFJ}", () => {
@@ -669,24 +655,23 @@ describe("answer key: long-term gains", () => {
     // Schedule 1-A) = 46,700. T = 73,300; L5 = max(0, 73,300 − 100,000)
     // = 0; L9 = 73,300 under 96,700: 0. Today: ordinary clamped to 0,
     // gains from 0: (100,000 − 96,700) × 15% = 495 (key).
-    xfail({
-      id: "tax/X3 [TAX-16] {return 2025 MFJ}",
-      todo: UNUSED_DEDUCTION,
-      run: () =>
-        yearTax({
-          year: 2025,
-          status: "MFJ",
-          ordinary: 20_000,
-          gains: 100_000,
-          deductions: deductions({
+    it("tax/X3 [TAX-16] {return 2025 MFJ}", () => {
+      cents(
+        (() =>
+          yearTax({
             year: 2025,
             status: "MFJ",
-            seniors: 2,
-            magi: 120_000,
-          }),
-        }),
-      expected: 0,
-      today: 495,
+            ordinary: 20_000,
+            gains: 100_000,
+            deductions: deductions({
+              year: 2025,
+              status: "MFJ",
+              seniors: 2,
+              magi: 120_000,
+            }),
+          }))(),
+        0,
+      );
     });
   });
 });
@@ -790,71 +775,35 @@ describe("answer key: senior deduction", () => {
     );
   });
 
-  // Today the function reduces the pooled 2 × 6,000 once
-  // (`return-deductions.ts:79`): 12,000 − 6% × (MAGI − 150,000),
-  // gone at 350,000. Pinned as a feature by
-  // `return-deductions.test.ts:76`.
-  const twoSeniors = (magi: number) => () =>
+  // Each person's 6,000 is reduced by 6% of the joint MAGI over 150,000
+  // and floored at 0 on its own (Schedule 1-A lines 35-37): two seniors
+  // are gone at 250,000, as one is.
+  const twoSeniors = (magi: number) =>
     seniorDeduction({ year: 2026, status: "MFJ", seniors: 2, magi });
 
-  describe("tax/E6 [TAX-22]", () => {
-    // MAGI 150,001: 2 × (6,000 − 0.06) = 11,999.88. Today: 12,000 − 0.06
-    // = 11,999.94 (worked here; the key says "pooled").
-    xfail({
-      id: "tax/E6 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(150_001),
-      expected: 11_999.88,
-      today: 11_999.94,
-    });
+  it("tax/E6 [TAX-22] MFJ two 65+, MAGI 150,001: 11,999.88", () => {
+    // 2 × (6,000 − 6% × 1) = 11,999.88.
+    cents(twoSeniors(150_001), 11_999.88);
   });
 
-  describe("tax/E7 [TAX-22] (also tax/HW-PO200)", () => {
-    // MAGI 200,000: 2 × (6,000 − 3,000) = 6,000. Today: 12,000 − 3,000 =
-    // 9,000 (key). The CPA hand worksheet's phase-out variant (HW-PO200,
-    // `comparison.md`) is the same household: two seniors, 200,000.
-    xfail({
-      id: "tax/E7 [TAX-22] (also tax/HW-PO200)",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(200_000),
-      expected: 6_000,
-      today: 9_000,
-    });
+  it("tax/E7 [TAX-22] (also tax/HW-PO200) MFJ two 65+, MAGI 200,000: 6,000", () => {
+    // 2 × (6,000 − 3,000) = 6,000. The CPA hand worksheet's phase-out
+    // variant (HW-PO200, `comparison.md`) is the same household.
+    cents(twoSeniors(200_000), 6_000);
   });
 
-  describe("tax/E8 [TAX-22]", () => {
-    // MAGI 249,999: 2 × (6,000 − 5,999.94) = 0.12. Today: 12,000 −
-    // 5,999.94 = 6,000.06 (worked here; the key says "pooled").
-    xfail({
-      id: "tax/E8 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(249_999),
-      expected: 0.12,
-      today: 6_000.06,
-    });
+  it("tax/E8 [TAX-22] MFJ two 65+, MAGI 249,999: 0.12", () => {
+    // 2 × (6,000 − 5,999.94) = 0.12.
+    cents(twoSeniors(249_999), 0.12);
   });
 
-  describe("tax/E9 [TAX-22] (also tax/HW-PO250)", () => {
-    // MAGI 250,000: 6% × 100,000 = 6,000 off each: 0. Today: 12,000 −
-    // 6,000 = 6,000 (key). HW-PO250 is the same household.
-    xfail({
-      id: "tax/E9 [TAX-22] (also tax/HW-PO250)",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(250_000),
-      expected: 0,
-      today: 6_000,
-    });
+  it("tax/E9 [TAX-22] (also tax/HW-PO250) MFJ two 65+, MAGI 250,000: 0", () => {
+    // 6% × 100,000 = 6,000 off each. HW-PO250 is the same household.
+    cents(twoSeniors(250_000), 0);
   });
 
-  describe("tax/E10 [TAX-22]", () => {
-    // MAGI 300,000: 0. Today: 12,000 − 9,000 = 3,000 (key).
-    xfail({
-      id: "tax/E10 [TAX-22]",
-      todo: ONE_RETURN_DEDUCTIONS,
-      run: twoSeniors(300_000),
-      expected: 0,
-      today: 3_000,
-    });
+  it("tax/E10 [TAX-22] MFJ two 65+, MAGI 300,000: 0", () => {
+    cents(twoSeniors(300_000), 0);
   });
 });
 

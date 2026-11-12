@@ -512,7 +512,7 @@ export function buildMilestoneInput(raw: {
     // match counted below the high-income line. Step 7's 25% counts Retirement and
     // Portfolio; step 6's counts Retirement only.
     const highIncome = isHighIncomeHousehold(
-      householdTotalCompensation(people),
+      householdTotalCompensation(c.people),
       raw.highIncomeThreshold,
     );
     const breakdown = householdSavings(

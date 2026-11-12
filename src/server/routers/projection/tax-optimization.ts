@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/pure/engine";
 import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
+import { firstBreakEvenYear } from "@/lib/pure/retirement/conversion-break-even";
 import type {
   DecumulationOverride,
   RoutingMode,
@@ -147,7 +148,7 @@ function lifetimeTax(years: EngineDecumulationYear[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// projectTaxYears — the year-by-year tax table (roadmap #4)
+// computeTaxProjection — the year-by-year tax table (roadmap #4)
 // ---------------------------------------------------------------------------
 
 type TaxYearRow = {
@@ -231,7 +232,7 @@ export const taxOptimizationRouter = createTRPCRouter({
    * Year-by-year tax projection through decumulation from one deterministic run:
    * income sources, taxes, effective rate, balances, running lifetime tax and flags.
    */
-  projectTaxYears: protectedProcedure
+  computeTaxProjection: protectedProcedure
     .input(taxOptimizationBaseInput)
     .query(async ({ ctx, input }) => {
       const run = await runProjection(ctx, input);
@@ -267,7 +268,7 @@ export const taxOptimizationRouter = createTRPCRouter({
    * Scores the household's projection on lifetime tax once per withdrawal strategy;
    * each strategy is one extra `decumulationOverride` from the first decumulation year.
    */
-  compareWithdrawalStrategies: protectedProcedure
+  computeWithdrawalStrategyComparison: protectedProcedure
     .input(
       taxOptimizationBaseInput.extend({
         strategies: z.array(withdrawalStrategyChoiceSchema).min(2).max(5),
@@ -346,7 +347,7 @@ export const taxOptimizationRouter = createTRPCRouter({
    * `explicit` applies a per-year `targetRate` schedule and compares it with a
    * no-conversion baseline (tax now, RMD reduction, IRMAA delta, `breakEvenYear`).
    */
-  rothConversionWhatIf: protectedProcedure
+  computeRothConversionWhatIf: protectedProcedure
     .input(
       z.discriminatedUnion("mode", [
         taxOptimizationBaseInput.extend({ mode: z.literal("optimize") }),
@@ -413,15 +414,13 @@ export const taxOptimizationRouter = createTRPCRouter({
 
       let cumWith = 0;
       let cumOff = 0;
-      let breakEvenYear: number | null = null;
       const perYear = withYears.map((y) => {
         const off = offByYear.get(y.year);
-        // `taxCost` already includes NIIT — see the projectTaxYears loop.
+        // `taxCost` already includes NIIT — see the computeTaxProjection loop.
         cumWith += y.taxCost + y.irmaaCost + y.rothConversionTaxCost;
         cumOff += off
           ? off.taxCost + off.irmaaCost + off.rothConversionTaxCost
           : 0;
-        if (breakEvenYear === null && cumWith < cumOff) breakEvenYear = y.year;
         return {
           year: y.year,
           age: y.age,
@@ -441,7 +440,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         mode: "explicit" as const,
         result: {
           perYear,
-          breakEvenYear,
+          breakEvenYear: firstBreakEvenYear(perYear),
           lifetimeTaxWith: lifetimeTax(withYears),
           lifetimeTaxWithout: lifetimeTax(offYears),
         },

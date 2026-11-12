@@ -5,8 +5,10 @@ import {
   zContributionSummaryInput,
   computeContributionSummary,
 } from "@/server/services/contributions/summary";
+import { contributionAccountsProcedures } from "./contribution/accounts";
 
 export const contributionRouter = createTRPCRouter({
+  ...contributionAccountsProcedures,
   /** The default high-income line — by this year's filing status (the
    *  saved setting, when set, wins on the client). Here so a filing-status
    *  save, which reloads `contribution`, reloads it too. */

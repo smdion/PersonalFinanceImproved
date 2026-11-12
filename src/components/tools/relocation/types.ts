@@ -1,6 +1,6 @@
 /** Shared prop types for relocation sub-components extracted from
  *  tools/tools-content.tsx, read from what
- *  `retirement.computeRelocationAnalysis` returns.
+ *  `projection.computeRelocationAnalysis` returns.
  */
 // The calculator-side result type lives in `lib/` and is the authoritative
 // shape for `relocQuery.data.result`. Re-exporting lets us keep lib imports
@@ -9,7 +9,7 @@ import type { RelocationResult as CalculatorRelocationResult } from "@/lib/pure/
 import type { RouterOutputs } from "@/lib/trpc";
 
 type RelocationAnalysis = Extract<
-  RouterOutputs["retirement"]["computeRelocationAnalysis"],
+  RouterOutputs["projection"]["computeRelocationAnalysis"],
   { currentContribProfile: unknown }
 >;
 

@@ -177,7 +177,7 @@ beforeEach(() => {
   setQuery("settings.appSettings.list", [
     { key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: 1 },
   ]);
-  setQuery("settings.deductions.list", [
+  setQuery("paycheck.deductions.list", [
     {
       id: 21,
       jobId: 1,
@@ -186,7 +186,7 @@ beforeEach(() => {
       ficaExempt: true,
     },
   ]);
-  setQuery("settings.jobs.list", [
+  setQuery("jobs.list", [
     { id: 1, personId: 1, employerName: "Northwind Clinic" },
     { id: 2, personId: 2, employerName: "Harbor Schools" },
   ]);

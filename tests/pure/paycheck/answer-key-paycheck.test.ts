@@ -38,9 +38,9 @@
  *   rate only (U5); closed, v0.12 UI "Disclosure list additions".
  * - C18, HW-H2b, C52, C53: blocked, below as `it.todo`.
  * - C48's bonus-check split (a $20,000 bonus after regular pay used the
- *   whole base): written below as an expected failure on its year totals
- *   only (owner, 2026-11-03). The bonus's own FICA and net (spec 380.00
- *   and 15,220.00, today 290.00 and 15,310.00) wait on an N8 ruling: a
+ *   whole base): written below on its year totals only (owner,
+ *   2026-11-03). The bonus's own FICA and net on its check (spec
+ *   380.00 and 15,220.00) wait on an N8 ruling: a
  *   bonus dated onto check 26 shares that check's last 1,807.75 of base
  *   pro rata.
  * - The December per-check split of C47 (spec $372 / $1,767, Ledgr
@@ -48,7 +48,7 @@
  *   owner hasn't recorded, so only the year totals and January are held.
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import {
   account,
   deduction,
@@ -64,6 +64,7 @@ import type {
   PaycheckResult,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import { NO_ONE_65 } from "../tax/tax-helpers";
 
 const row = (r: PaycheckResult, check: number) => r.yearSchedule[check - 1]!;
 const sum = (xs: number[]) =>
@@ -379,6 +380,28 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
     cents(scheduleNet(january), scheduleNet(december));
   });
 
+  it("paycheck/PAY19-1 [PAY-19] semimonthly: a bonus dated the 15th is on the 15th's check", () => {
+    // Semimonthly paydays are the 1st and the 15th (Ledgr's own calendar:
+    // the next payday and the paydays so far count them so). A bonus is
+    // paid with the check it is dated on or after (PW-8.1): June 1 is
+    // check 11 and June 15 check 12, so a June 15 bonus is on check 12
+    // and a June 14 one on check 11.
+    const on = (day: number) =>
+      calculatePaycheck(
+        job({
+          salary: 120_000,
+          period: "semimonthly",
+          bonus: 10_000,
+          bonusMonth: 6,
+          bonusDay: day,
+        }),
+      ).bonusPeriod;
+    expect({ june14: on(14), june15: on(15) }).toEqual({
+      june14: 11,
+      june15: 12,
+    });
+  });
+
   // C48: regular pay alone uses the whole base, then a $20,000 bonus with
   // no date (spec: paid after check 26). $190,000, 26 biweekly checks of
   // 7,307.69 (= 189,999.94), Single 2026. Year wages 209,999.94.
@@ -395,32 +418,21 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
   //   = 34,333.99; bonus 22% × 20,000 = 4,400.00 (Pub 15 § 7, 1a).
   // Year net 209,999.94 − 34,333.99 − 4,400 − 14,574.00 = 156,691.95,
   //   ±$0.26 for 26 checks' rounding (PW-3.15).
-  // Today the undated bonus isn't on the schedule; its estimate charges
-  // Medicare 290.00 and no Additional Medicare (bonus net 15,310.00, spec
-  // 15,220.00), so the year is 90.00 short: FICA 14,484.00, net
-  // 156,781.95. The bonus's own split isn't asserted (verdict N8).
-  xfail({
-    id: "paycheck/C48 [PAY-19]",
-    todo: 'v0.11 Paycheck "Take-home, wider than reported"',
-    run: () => {
-      const r = calculatePaycheck(
-        job({ salary: 190_000, period: "biweekly", bonus: 20_000 }),
-      );
-      // The bonus is counted once: from its schedule row once it has one,
-      // from the estimate while it's undated and off the schedule.
-      const onSchedule = r.yearSchedule.some((p) => p.bonusGross > 0);
-      const b = r.bonusEstimate;
-      return {
-        fica:
-          sum(
-            r.yearSchedule.map((p) => p.ficaSS + p.ficaMedicare + p.bonusFica),
-          ) + (onSchedule ? 0 : b.bonusFica),
-        net: scheduleNet(r) + (onSchedule ? 0 : b.bonusNet),
-      };
-    },
-    expected: { fica: 14_574, net: 156_691.95 },
-    today: { fica: 14_484, net: 156_781.95 },
-    tolerance: 0.26,
+  // The bonus's own split isn't asserted (verdict N8).
+  it("paycheck/C48 [PAY-19] regular pay used the base: the undated bonus on the last check pays Additional Medicare", () => {
+    const r = calculatePaycheck(
+      job({ salary: 190_000, period: "biweekly", bonus: 20_000 }),
+    );
+    cents(
+      {
+        fica: sum(
+          r.yearSchedule.map((p) => p.ficaSS + p.ficaMedicare + p.bonusFica),
+        ),
+        net: scheduleNet(r),
+      },
+      { fica: 14_574, net: 156_691.95 },
+      0.26,
+    );
   });
 
   it("paycheck/C51 [PAY-17] the bonus's 401(k) comes off before the flat rate", () => {
@@ -476,6 +488,7 @@ function yearOf(
     deductions: input.deductions,
   });
   const tax = calculateHouseholdTax({
+    ageDeductions: NO_ONE_65,
     people: [earnings],
     taxBrackets: liabilityInput(status),
     medicareLiabilityThreshold: limit(
@@ -706,10 +719,12 @@ describe("paycheck/HW-H1–H4: the CPA hand worksheet", () => {
     const ea = yearOf(jobA, a, "Single").earnings;
     const eb = yearOf(jobB, b, "Single").earnings;
     const tax = calculateHouseholdTax({
+      ageDeductions: NO_ONE_65,
       people: [
         {
           federalWages: ea.federalWages + eb.federalWages,
           ficaWages: ea.ficaWages + eb.ficaWages,
+          hsaOutsidePayroll: ea.hsaOutsidePayroll + eb.hsaOutsidePayroll,
         },
       ],
       taxBrackets: liabilityInput("Single"),

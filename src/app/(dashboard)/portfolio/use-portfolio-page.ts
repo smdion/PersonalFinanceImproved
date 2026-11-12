@@ -11,7 +11,7 @@ export function usePortfolioPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const targeting = useYearEndTargetingInput();
-  const summary = trpc.networth.computeSummary.useQuery(targeting);
+  const summary = trpc.netWorth.computeSummary.useQuery(targeting);
   const { data } = summary;
   const [snapshotPage, setSnapshotPage] = useState(1);
   const [snapshotDateFrom, setSnapshotDateFrom] = useState("");
@@ -42,13 +42,13 @@ export function usePortfolioPage() {
     trpc.investments.getLiveSinceSnapshot.useQuery(undefined, {
       retry: false,
     });
-  const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery(
+  const { data: snapshotTotals } = trpc.netWorth.listSnapshotTotals.useQuery(
     undefined,
     {
       enabled: showChart || showQuickLook,
     },
   );
-  const { data: paginatedSnapshots } = trpc.networth.listSnapshots.useQuery({
+  const { data: paginatedSnapshots } = trpc.netWorth.listSnapshots.useQuery({
     page: showAll ? 1 : snapshotPage,
     pageSize: snapshotPageSize,
     dateFrom: snapshotDateFrom || undefined,

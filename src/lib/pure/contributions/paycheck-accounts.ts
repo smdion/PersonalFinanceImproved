@@ -143,7 +143,7 @@ export function buildContribAccounts(
       ficaExemptAnnualCap: !isPayrollDeducted
         ? null
         : c.cap && isPayrollFicaExemptCategory(c.accountType)
-          ? c.cap.cappedAnnual
+          ? Infinity
           : payrollFicaExemptCap(
               c.accountType,
               ficaContext.ageAtYearEnd,

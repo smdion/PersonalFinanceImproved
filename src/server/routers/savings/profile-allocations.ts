@@ -1,5 +1,6 @@
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
+import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -20,7 +21,7 @@ import {
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
 } from "@/server/services/savings/savings-allocation";
-import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
+import { requireBudgetProfile } from "@/server/services/budget/budget-client";
 import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import {
@@ -132,15 +133,14 @@ export const profileAllocationProcedures = {
         }),
       );
     }),
-    /** Manual edit: sets (goalId, profileId)'s funding as given, unlike
-     *  recalculateAllocation/lockInAllocationPercent, which derive it from the live pool. */
+    /** Sets (goalId, profileId)'s funding as given (recalculate/lock-in derive it from the pool). */
     upsert: savingsProcedure
       .input(
         z.object({
           goalId: z.number().int(),
           profileId: z.number().int(),
           allocationPercent: z.number().min(0).max(100).nullable(),
-          monthlyContribution: z.number().min(0),
+          monthlyContribution: zMoneyNumber.min(0),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -196,15 +196,9 @@ export const profileAllocationProcedures = {
     .mutation(async ({ ctx, input }) => {
       const [goals, targetProfile] = await Promise.all([
         ctx.db.select().from(schema.savingsGoals),
-        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+        requireBudgetProfile(ctx.db, input?.profileId),
       ]);
-      const targetProfileId = targetProfile?.id;
-      if (targetProfileId === undefined) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No active budget profile to recalculate against",
-        });
-      }
+      const targetProfileId = targetProfile.id;
 
       // Resolve against the target profile's own allocations: percentage vs flat-dollar
       // is decided per profile.
@@ -282,15 +276,9 @@ export const profileAllocationProcedures = {
     .mutation(async ({ ctx, input }) => {
       const [goals, targetProfile] = await Promise.all([
         ctx.db.select().from(schema.savingsGoals),
-        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+        requireBudgetProfile(ctx.db, input?.profileId),
       ]);
-      const targetProfileId = targetProfile?.id;
-      if (targetProfileId === undefined) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "No active budget profile to recalculate against",
-        });
-      }
+      const targetProfileId = targetProfile.id;
 
       const resolvedByGoal = await getResolvedGoalAllocations(
         ctx.db,

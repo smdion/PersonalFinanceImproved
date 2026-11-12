@@ -134,13 +134,50 @@ function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
   );
 }
 
-/** The person's current job on `asOf` (isJobCurrent). */
-export function findActiveJob<T extends JobLike>(
+/** The person's current job on `asOf` (isJobCurrent). With two current,
+ *  the one started first (then the lower id), whatever order rows arrive in. */
+export function findActiveJob<T extends JobLike & { id: number }>(
   jobs: readonly T[],
   personId: number,
   asOf: Date,
 ): T | undefined {
-  return jobs.find((j) => j.personId === personId && isJobCurrent(j, asOf));
+  return jobs
+    .filter((j) => j.personId === personId && isJobCurrent(j, asOf))
+    .sort((a, b) =>
+      a.startDate === b.startDate
+        ? a.id - b.id
+        : a.startDate < b.startDate
+          ? -1
+          : 1,
+    )[0];
+}
+
+/** A job's What-If tweak: the person's current job's only (findActiveJob, as Paycheck reads it);
+ *  every other job keeps its Salary Profile pay. */
+export function whatIfForJob<T extends JobLike & { id: number }, W>(
+  job: T,
+  jobs: readonly T[],
+  asOf: Date,
+  whatIf: ReadonlyMap<number, W>,
+): W | undefined {
+  return findActiveJob(jobs, job.personId, asOf)?.id === job.id
+    ? whatIf.get(job.personId)
+    : undefined;
+}
+
+/** Employers of a person's current jobs beside the one picked (findActiveJob):
+ *  only that one is counted; empty when it is their only current job. */
+export function otherCurrentJobs<T extends JobLike & { employerName: string }>(
+  jobs: readonly T[],
+  picked: T,
+  asOf: Date,
+): string[] {
+  return jobs
+    .filter(
+      (j) =>
+        j !== picked && j.personId === picked.personId && isJobCurrent(j, asOf),
+    )
+    .map((j) => j.employerName);
 }
 
 /** Every current job on `asOf` (isJobCurrent). */
@@ -156,7 +193,7 @@ export function filterActiveJobs<T extends Omit<JobLike, "personId">>(
  * — with none — the next one they start (isJobCurrent). A job's own dates
  * then bound the years it's worked (workingYears).
  */
-export function projectionJobs<T extends JobLike>(
+export function projectionJobs<T extends JobLike & { id: number }>(
   jobs: readonly T[],
   asOf: Date,
 ): T[] {

@@ -18,7 +18,7 @@ export type SnapshotDetailRowProps = {
   isExpanded: boolean;
   isLatest: boolean;
   resyncPush: ReturnType<typeof usePortfolioSnapshotMutations>["resyncPush"];
-  snap: RouterOutputs["networth"]["listSnapshots"]["snapshots"][number];
+  snap: RouterOutputs["netWorth"]["listSnapshots"]["snapshots"][number];
   snapshotEditLocked: boolean;
   syncPending: ReturnType<typeof useSnapshotSyncPending>["pending"];
   syncPendingSnapshot: (snapshotId: number) => Promise<void>;

@@ -92,12 +92,12 @@ async function firstRun(install: FreshInstall): Promise<number> {
     password: "Fresh-install-pass-1",
   });
   const admin = install.caller(firstAdminSession);
-  const person = await admin.settings.people.create({
+  const person = await admin.people.create({
     name: "Robin",
     dateOfBirth: "1985-06-15",
     isPrimaryUser: true,
   });
-  const job = await admin.settings.jobs.create({
+  const job = await admin.jobs.create({
     personId: person!.id,
     employerName: "Employer",
     startDate: "2026-01-05",
@@ -157,7 +157,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
         age: 18,
         rateOfReturn: "0.06",
       });
-      const { result } = await admin.projection.computeCoastFireMC({});
+      const { result } = await admin.projection.computeCoastFireSimulation({});
       expect(result).not.toBeNull();
       expect(result!.probesRun, result!.warning ?? "").toBeGreaterThan(0);
     },
@@ -179,12 +179,14 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
         result: null,
         notConfigured: "no_return_rate",
       });
-      expect(await admin.projection.computeCoastFireMC({})).toMatchObject({
+      expect(
+        await admin.projection.computeCoastFireSimulation({}),
+      ).toMatchObject({
         result: null,
       });
-      expect(
-        await admin.projection.computeMonteCarloProjection({}),
-      ).toMatchObject({ result: null });
+      expect(await admin.projection.computeSimulation({})).toMatchObject({
+        result: null,
+      });
     },
     timeout,
   );

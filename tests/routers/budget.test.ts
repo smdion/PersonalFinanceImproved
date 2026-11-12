@@ -1491,11 +1491,12 @@ describe("budget router", () => {
     });
 
     it("fixed_per_period converts correctly", async () => {
-      // No jobs seeded in this suite's dataset besides the one from
-      // seedStandardDataset (biweekly, 26 periods/year).
+      // A joint account runs on the household's one schedule: the only job
+      // is seedStandardDataset's (biweekly, 26 periods/year).
       const { itemId, contribProfileId } = await seedLinkedItem({
         contributionMethod: "fixed_per_period",
         contributionValue: "50.00", // monthly = 50*26/12 = 108.33
+        ownership: "joint",
       });
 
       const before = await caller.budget.computeActiveSummary({
@@ -1516,6 +1517,35 @@ describe("budget router", () => {
         (200 * 12) / 26,
         2,
       );
+    });
+
+    it("a per-check account of a person with no job reads $0, flagged, as on the Contributions page", async () => {
+      const { itemId, contribProfileId } = await seedLinkedItem({
+        contributionMethod: "fixed_per_period",
+        contributionValue: "50.00",
+      });
+      const before = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+      });
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBe(0);
+      expect(linked.contribStatus?.[0]).toBe("no_pay_period");
+    });
+
+    it("a percent account of a person with a job but none of its own reads the person's job pay, as on the Contributions page", async () => {
+      const personId = await seedPerson(db, "Linked Jobless Percent");
+      seedJob(db, personId, { annualSalary: "120000" });
+      const { itemId, contribProfileId } = await seedLinkedItem({
+        contributionMethod: "percent_of_salary",
+        contributionValue: "6",
+        personId,
+      });
+      const before = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+      });
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      // 6% of $120,000 is $7,200 a year: $600 a month (was $0).
+      expect(linked.contribAmount).toBeCloseTo(600, 2);
     });
 
     it("rejects editing a percent_of_salary-linked item with a clear error", async () => {
@@ -1615,6 +1645,48 @@ describe("budget router", () => {
       const after = withSandbox.rawItems!.find((i) => i.id === itemId)!;
 
       expect(after.contribAmount).toBeCloseTo(before.contribAmount!, 2);
+    });
+
+    it("sandboxSalaryEntries pays the What-If salary at the person's current job only", async () => {
+      // Two current jobs; the first on file is the current job (findActiveJob). A What-If
+      // salary of 240,000 sets its pay; the second job keeps its Salary Profile 60,000.
+      const personId = await seedPerson(db);
+      const currentJob = seedJob(db, personId, { annualSalary: "90000" });
+      const otherJob = seedJob(db, personId, { annualSalary: "60000" });
+      const accountAt = (jobId: number) =>
+        seedLinkableContributionAccount(db, personId, { jobId });
+      const [atCurrent, atOther] = [accountAt(currentJob), accountAt(otherJob)];
+      const tenPercent = {
+        contributionValue: "10",
+        contributionMethod: "percent_of_salary",
+      };
+      const contribProfileId = seedContributionProfile(db, {
+        name: "What-If Per Job Profile",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(atCurrent)]: tenPercent,
+            [String(atOther)]: tenPercent,
+          },
+        },
+      });
+      const itemAt = (accountId: number, subcategory: string) =>
+        seedBudgetItem(db, profileId, {
+          category: "Investing",
+          subcategory,
+          amounts: [999],
+          contributionAccountId: accountId,
+        });
+      const currentItem = itemAt(atCurrent, "What-If Current Job Item");
+      const otherItem = itemAt(atOther, "What-If Other Job Item");
+
+      const result = await caller.budget.computeActiveSummary({
+        selection: { contribution: contribProfileId },
+        sandboxSalaryEntries: { [String(personId)]: { salary: 240000 } },
+      });
+      const monthly = (id: number) =>
+        result.rawItems!.find((i) => i.id === id)!.contribAmount;
+      expect(monthly(currentItem)).toBeCloseTo(24000 / 12, 2);
+      expect(monthly(otherItem)).toBeCloseTo(6000 / 12, 2);
     });
   });
 

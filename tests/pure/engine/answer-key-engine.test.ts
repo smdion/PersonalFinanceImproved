@@ -52,7 +52,6 @@ import {
 /** Gross-up convergence, carried into the tax (see the header). */
 const GROSS_UP = 1;
 
-const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
 const SAME_YEAR_MAGI = `v0.11 Tax "Senior deduction must use same-year MAGI in every year"`;
 const NIIT_UNFUNDED = `v0.11 Engine "NIIT unfunded when RMD money is reinvested"`;
 const END_YEAR = `v0.11 Engine "Plan 'to 95' stops at 94" (D10: run the end year)`;
@@ -168,13 +167,8 @@ describe("answer key: a brokerage draw, all gains in the 0% band (hand worksheet
     // unused deduction never shelters gains: tax = 15% × (0.4W − 49,450),
     // W = 140,000 + 0.06W − 7,417.50 → W = 132,582.50 / 0.94 =
     // 141,045.21, tax 1,045.21.
-    xfail({
-      id: "engine/HW-H5B [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: year(140_000),
-      expected: { withdrawal: 140_000, tax: 0 },
-      today: { withdrawal: 141_045.21, tax: 1_045.21 },
-      tolerance: GROSS_UP,
+    it("engine/HW-H5B [TAX-16]", () => {
+      cents(year(140_000)(), { withdrawal: 140_000, tax: 0 }, GROSS_UP);
     });
   });
 
@@ -184,13 +178,12 @@ describe("answer key: a brokerage draw, all gains in the 0% band (hand worksheet
     // 15,071.81 (MAGI 166,028.72 < 200,000: no NIIT). Today, no deduction
     // against gains: tax = 0.06W − 7,417.50, W = 392,582.50 / 0.94 =
     // 417,640.96, tax 17,640.96.
-    xfail({
-      id: "engine/HW-H5C [TAX-16]",
-      todo: UNUSED_DEDUCTION,
-      run: year(400_000),
-      expected: { withdrawal: 415_071.81, tax: 15_071.81 },
-      today: { withdrawal: 417_640.96, tax: 17_640.96 },
-      tolerance: GROSS_UP,
+    it("engine/HW-H5C [TAX-16]", () => {
+      cents(
+        year(400_000)(),
+        { withdrawal: 415_071.81, tax: 15_071.81 },
+        GROSS_UP,
+      );
     });
   });
 });

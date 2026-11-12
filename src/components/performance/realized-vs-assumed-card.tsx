@@ -11,15 +11,16 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { realizedVsAssumed } from "@/lib/pure/investments/realized-vs-assumed";
+import { calendarYear } from "@/lib/utils/date";
 
 export function RealizedVsAssumedCard() {
   const { data: perf } = trpc.performance.computeSummary.useQuery();
   const { data: rates } = trpc.retirement.returnRates.list.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people } = trpc.people.list.useQuery();
   if (!perf || !rates || !people) return null;
 
   const primary = people.find((p) => p.isPrimaryUser) ?? people[0];
-  const primaryYear = Number(String(primary?.dateOfBirth ?? "").slice(0, 4));
+  const primaryYear = calendarYear(String(primary?.dateOfBirth ?? ""));
   const { rows, realizedAnnual, assumedAnnual } = realizedVsAssumed(
     perf.annualRows
       .filter((r) => r.category === PERF_CATEGORY_PORTFOLIO)

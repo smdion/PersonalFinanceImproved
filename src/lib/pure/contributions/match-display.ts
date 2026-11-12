@@ -80,9 +80,10 @@ export function formatEmployerMatch(
   matchRate?: Stored,
 ): string | null {
   if (!matchType || matchType === "none") return null;
-  const percent = matchType === PERCENT_MATCH && matchRate != null;
-  const shown = percent ? percentFromRate(matchRate) : matchValue;
-  const value = parseFloat(String(shown ?? "0"));
+  // The figure the form shows: an unreadable rate falls back to the value.
+  const value = parseFloat(
+    matchFigureForForm(matchType, matchValue, matchRate) || "0",
+  );
   if (matchType === PERCENT_MATCH) {
     const cap = parseFloat(String(maxMatchPercent ?? "0"));
     return cap > 0 ? `${value}% of ${formatPercent(cap, 2)}` : `${value}%`;

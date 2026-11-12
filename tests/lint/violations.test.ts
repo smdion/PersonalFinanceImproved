@@ -2080,7 +2080,7 @@ const BUILT_AT_LOAD = [
   "src/server/routers/performance/accounts.ts performanceAccountInput",
   "src/server/services/projection/projection-run.ts accumulationOverrideArraySchema",
   "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
-  "src/server/routers/settings/contribution-accounts.ts contributionAccountInput",
+  "src/server/routers/contribution/accounts.ts contributionAccountInput",
 ];
 
 const CATEGORY_LIST_CALLS = new Set([

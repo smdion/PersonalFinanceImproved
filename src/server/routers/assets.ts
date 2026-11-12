@@ -3,6 +3,7 @@ import { calendarYear } from "@/lib/utils/date";
 import { desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
+import { zMoneyNumber, zYear } from "@/lib/utils/zod-fields";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { upsertHistoricalNote } from "@/server/data/historical-notes";
@@ -12,10 +13,8 @@ import { dropMappingsTo } from "@/server/data/delete-references";
 import { computeAssetSummary } from "@/server/services/net-worth/year-assets";
 
 export const assetsRouter = createTRPCRouter({
-  /**
-   * Asset-focused summary: current state + year-over-year history.
-   * Includes API sync status per item so the UI can show sync badges.
-   */
+  /** Current assets and year-over-year history, with each item's API sync
+   *  status (the sync badges). */
   computeSummary: protectedProcedure
     .input(zYearEndTargeting)
     .query(({ ctx, input }) => computeAssetSummary(ctx, input)),
@@ -24,10 +23,10 @@ export const assetsRouter = createTRPCRouter({
   updateAsset: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         fields: z.object({
-          cash: z.number().optional(),
-          houseValue: z.number().optional(),
+          cash: zMoneyNumber.optional(),
+          houseValue: zMoneyNumber.optional(),
         }),
       }),
     )
@@ -65,9 +64,9 @@ export const assetsRouter = createTRPCRouter({
   addHomeImprovement: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         description: z.string().min(1),
-        cost: z.number(),
+        cost: zMoneyNumber,
         note: z.string().optional(),
       }),
     )
@@ -86,7 +85,7 @@ export const assetsRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         description: z.string().min(1).optional(),
-        cost: z.number().optional(),
+        cost: zMoneyNumber.optional(),
         note: z.string().optional(),
       }),
     )
@@ -121,8 +120,8 @@ export const assetsRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1),
-        year: z.number(),
-        value: z.number(),
+        year: zYear,
+        value: zMoneyNumber,
         note: z.string().optional(),
       }),
     )
@@ -209,9 +208,9 @@ export const assetsRouter = createTRPCRouter({
     .input(
       z.object({
         loanId: z.number(),
-        year: z.number(),
-        assessedValue: z.number().nullable().optional(),
-        taxAmount: z.number(),
+        year: zYear,
+        assessedValue: zMoneyNumber.nullable().optional(),
+        taxAmount: zMoneyNumber,
         note: z.string().nullable().optional(),
       }),
     )
@@ -253,7 +252,7 @@ export const assetsRouter = createTRPCRouter({
   upsertNote: adminProcedure
     .input(
       z.object({
-        year: z.number(),
+        year: zYear,
         field: z.string().min(1),
         note: z.string(),
       }),

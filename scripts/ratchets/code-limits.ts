@@ -230,6 +230,8 @@ export function coverageRises(
 export function listEntries(
   file: string,
   text: string,
+  /** Filled with each entry's value as written (a string entry: ""). */
+  values?: Map<string, string>,
 ): Map<string, number | undefined> {
   const entries = new Map<string, number | undefined>();
   const walk = (node: ts.Node, prefix: string) => {
@@ -241,15 +243,17 @@ export function listEntries(
         }
         const key = `${prefix} › ${prop.name.text}`;
         entries.set(key, numbers(prop.initializer).count);
+        values?.set(key, prop.initializer.getText(sf));
         walk(prop.initializer, key);
       }
       return;
     }
     if (ts.isArrayLiteralExpression(node)) {
       for (const el of node.elements)
-        if (ts.isStringLiteralLike(el))
+        if (ts.isStringLiteralLike(el)) {
           entries.set(`${prefix} › ${el.text}`, undefined);
-        else walk(el, prefix);
+          values?.set(`${prefix} › ${el.text}`, "");
+        } else walk(el, prefix);
       return;
     }
     ts.forEachChild(node, (child) => walk(child, prefix));

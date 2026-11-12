@@ -335,7 +335,7 @@ export function ToolsContent() {
     ],
   );
   const debouncedRelocInput = useDebouncedValue(relocInput, 600);
-  const relocQuery = trpc.retirement.computeRelocationAnalysis.useQuery(
+  const relocQuery = trpc.projection.computeRelocationAnalysis.useQuery(
     debouncedRelocInput,
     {
       enabled: effectiveCurrentProfileId > 0 && effectiveTargetProfileId > 0,
@@ -396,7 +396,7 @@ export function ToolsContent() {
         title={
           <>
             Relocation Analysis
-            <HelpTip text="Compare how moving to a new area would affect your expenses, savings rate, and retirement readiness" />
+            <HelpTip text="Compare how moving to a new area would affect your expenses, what is left over after spending, and retirement readiness" />
           </>
         }
         className="mb-6"

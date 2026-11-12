@@ -30,7 +30,7 @@ async function exported(household: Household): Promise<Tables> {
   try {
     await seedHousehold(caller, household);
     return JSON.parse(
-      JSON.stringify((await exportBackup(rawDb)).tables),
+      JSON.stringify((await exportBackup(rawDb, { asAdmin: true })).tables),
     ) as Tables;
   } finally {
     await cleanup();

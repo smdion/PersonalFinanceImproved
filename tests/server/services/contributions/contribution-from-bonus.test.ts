@@ -37,14 +37,15 @@ function k401(
     subType: null,
     label: null,
     parentCategory: "Retirement",
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: "6",
     taxTreatment: "pre_tax",
-    employerMatchType: "percent_of_contribution",
+    employerMatchType: "percent_of_contribution" as const,
     employerMatchValue: "100",
     employerMaxMatchPct: "0.04",
     isPayrollDeducted: null as boolean | null,
     fromBonus: false as boolean | undefined,
+    ownership: "individual" as "individual" | "joint",
     // As the IRS-limit cap pass leaves them (none over a limit here).
     capPassed: true as const,
     ...over,
@@ -148,6 +149,49 @@ describe("projection specs (buildProfileContribData — profile switches use it 
       6,
     );
   });
+
+  it("a joint per-check account counts on the household's one schedule; with two schedules, or as a percent, it's dropped, flagged", () => {
+    const joint = {
+      ...k401(),
+      id: 2,
+      personId: null,
+      jobId: null,
+      accountType: "brokerage" as AccountCategory,
+      contributionMethod: "fixed_per_period" as const,
+      contributionValue: "100",
+      taxTreatment: "after_tax",
+      employerMatchType: "none" as const,
+      performanceAccountId: null,
+      targetAnnual: null,
+      allocationPriority: 0,
+      ownership: "joint" as const,
+    };
+    const run = (activeJobs: typeof jobs) =>
+      buildProfileContribData(
+        [joint],
+        activeJobs,
+        [{ ...pay[0]!, totalComp: SALARY }],
+        ctx,
+      );
+    expect(run(jobs).baseYearContributions.brokerage).toBeCloseTo(2_600, 2);
+    const mixed = run([...jobs, { id: 2, personId: 2, payPeriod: "monthly" }]);
+    expect(mixed.contributionSpecs).toHaveLength(0);
+    expect(mixed.incompleteAccountIds).toEqual([2]);
+    const percent = buildProfileContribData(
+      [
+        {
+          ...joint,
+          contributionMethod: "percent_of_salary",
+          contributionValue: "6",
+        },
+      ],
+      jobs,
+      [{ ...pay[0]!, totalComp: SALARY }],
+      ctx,
+    );
+    expect(percent.contributionSpecs).toHaveLength(0);
+    expect(percent.incompleteAccountIds).toEqual([2]);
+  });
 });
 
 describe("What-If overlay (applyContribActiveFields)", () => {
@@ -156,7 +200,7 @@ describe("What-If overlay (applyContribActiveFields)", () => {
     {
       "1": {
         contributionValue: "6",
-        contributionMethod: "percent_of_salary",
+        contributionMethod: "percent_of_salary" as const,
         fromBonus: true,
       },
     },
@@ -196,7 +240,7 @@ describe("employer match — each account's own election", () => {
     accountType: "hsa" as AccountCategory,
     parentCategory: "Portfolio",
     contributionValue: "2",
-    employerMatchType: "none",
+    employerMatchType: "none" as const,
     employerMatchValue: null,
     employerMaxMatchPct: null,
   };
@@ -233,7 +277,7 @@ describe("What-If overlay — an entry that only turns an account off", () => {
       {
         "1": {
           contributionValue: "6",
-          contributionMethod: "percent_of_salary",
+          contributionMethod: "percent_of_salary" as const,
         },
       },
     );

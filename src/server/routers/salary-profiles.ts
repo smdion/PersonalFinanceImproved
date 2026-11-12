@@ -15,7 +15,7 @@ import {
   salaryEntrySchema,
 } from "@/lib/db/shapes/json-schemas";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
-import { resolveActiveSalaryProfileId } from "@/server/data/salaries";
+import { activeProfileId } from "@/server/data/active-profile";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import {
@@ -25,6 +25,12 @@ import {
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
 import { loadSalaryProfileDetail } from "@/server/services/profiles/salary-profile";
+import { lockedRow } from "@/server/data/lock-row";
+import {
+  existingJobKeys,
+  refuseEntriesWithoutJobs,
+  updateSalaryProfile,
+} from "@/server/services/profiles/salary-entry-writes";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -45,24 +51,26 @@ async function refreshExtraPaycheckRoutingIfActive(
   profileId: number,
 ): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
   try {
-    const activeId = await resolveActiveSalaryProfileId(db);
+    const activeId = await activeProfileId(db, "salary");
     if (activeId !== profileId) return undefined;
 
     // Re-read the row in its own transaction: a caller's in-memory `salaries`
     // could clobber a concurrent patch to another job on the same profile.
     const refreshedRow = await db.transaction(async (tx) => {
-      const rows = await tx
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, profileId));
-      const profile = rows[0];
+      const profile = await lockedRow(tx, schema.salaryProfiles, profileId);
       if (!profile) return undefined;
 
       const salaries = { ...checkSalaryEntries(profile).salaries };
+      const jobs = await existingJobKeys(tx, Object.keys(salaries));
       let anyRefreshed = false;
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
         if (!routing?.rules?.length) continue; // a refused entry is read as stored
+        // One entry whose job is gone (a same-version restore, or a raced write) can't stop the rest.
+        if (!jobs.has(jobIdStr)) {
+          log("warn", "salary_entry_without_job", { profileId, jobIdStr });
+          continue;
+        }
         const jobId = Number(jobIdStr);
         const refreshed = await computeJobNetPayPerCheck(tx, jobId, scope.asOf);
         salaries[jobIdStr] = {
@@ -216,16 +224,6 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select()
-        .from(schema.salaryProfiles)
-        .where(eq(schema.salaryProfiles.id, input.id));
-      if (!existing[0])
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Profile not found",
-        });
-
       await assertSalaryEntryTaxBracketsExist(ctx, input.salaries);
 
       const updates: Partial<typeof schema.salaryProfiles.$inferInsert> = {};
@@ -234,12 +232,7 @@ export const salaryProfileRouter = createTRPCRouter({
         updates.description = input.description ?? null;
       if (input.salaries !== undefined) updates.salaries = input.salaries;
 
-      const rows = await ctx.db
-        .update(schema.salaryProfiles)
-        .set(updates)
-        .where(eq(schema.salaryProfiles.id, input.id))
-        .returning();
-      const updated = rows[0]!;
+      const updated = await updateSalaryProfile(ctx.db, input.id, updates);
 
       if (input.salaries !== undefined) {
         const refreshed = await refreshExtraPaycheckRoutingIfActive(
@@ -254,8 +247,8 @@ export const salaryProfileRouter = createTRPCRouter({
 
   /**
    * Field-level patch of one job's entry (`unset` clears named keys); the merged result
-   * must still be a complete entry. Read-merge-write runs in a transaction so
-   * overlapping patches can't clobber each other. Also creates a new entry.
+   * must still be a complete entry. Read-merge-write runs in a transaction holding the
+   * profile's row lock, so overlapping patches can't clobber each other. Also creates a new entry.
    */
   patchEntry: contributionProfileProcedure
     .input(
@@ -268,11 +261,9 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.transaction(async (tx) => {
-        const existing = await tx
-          .select()
-          .from(schema.salaryProfiles)
-          .where(eq(schema.salaryProfiles.id, input.id));
-        const profile = existing[0];
+        const key = String(input.jobId);
+        await refuseEntriesWithoutJobs(tx, [key]);
+        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
         if (!profile)
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -280,7 +271,6 @@ export const salaryProfileRouter = createTRPCRouter({
           });
 
         const salaries = checkSalaryEntries(profile).salaries;
-        const key = String(input.jobId);
         const mergedEntry: Record<string, unknown> = { ...salaries[key] };
         for (const field of input.unset ?? []) delete mergedEntry[field];
         Object.assign(mergedEntry, input.fields);
@@ -331,11 +321,7 @@ export const salaryProfileRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.transaction(async (tx) => {
-        const existing = await tx
-          .select()
-          .from(schema.salaryProfiles)
-          .where(eq(schema.salaryProfiles.id, input.id));
-        const profile = existing[0];
+        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
         if (!profile)
           throw new TRPCError({
             code: "NOT_FOUND",

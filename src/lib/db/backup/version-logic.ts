@@ -6,31 +6,37 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import { sql, eq, type SQL } from "drizzle-orm";
-import { PgDialect } from "drizzle-orm/pg-core";
+import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../schema";
 import { isPostgres } from "../dialect";
 import { encodeJsonbForPgImport } from "./jsonb-import";
-import { jsonbColumns, restoredValue } from "./restored-values";
+import { ONE_SNAPSHOT, readVersionTables } from "./version-snapshot";
+import { assertReferencesHold } from "./restore-references-pg";
+import {
+  jsonColumnsFor,
+  jsonbColumnsOnClient,
+  missingJsonb,
+  restoredValue,
+} from "./restored-values";
 import {
   truncateTables,
   resetSequences,
   tablesWithIdColumn,
   validateColumns,
-  queryRaw,
   execRaw,
 } from "../compat";
 import { reconcileReferenceData } from "../migrate/reference-data";
 import {
   VERSION_TABLE_NAMES,
   VERSION_TABLES,
-  tablesFromBackup,
+  tablesTakenCount,
 } from "./version-tables";
-import { withInstallationRows } from "./installation-rows";
+import { householdOnlyTables, withInstallationRows } from "./installation-rows";
 import { checkImportedValues, checkRestoredValues } from "./closed-set-columns";
 import { log } from "@/lib/logger";
 import { transformFromSource } from "./restore-source";
+import { versionRetention } from "./version-retention";
 import { writeStamp } from "@/lib/utils/clock";
 
 /** An INSERT's columns: the union of every row's keys, since a backup transform can append a
@@ -92,36 +98,16 @@ export async function createVersion(
   database: NodePgDatabase<typeof schema>,
   input: CreateVersionInput,
 ): Promise<VersionResult> {
-  // Read all tables + write version in a single transaction for consistency
+  // Read all tables from one snapshot + write the version in one transaction
   const result = await database.transaction(async (tx) => {
-    const tableData: {
-      tableName: string;
-      rows: unknown[];
-      rowCount: number;
-    }[] = [];
-
-    for (const tableName of VERSION_TABLE_NAMES) {
-      try {
-        const rows = await queryRaw(
-          tx,
-          sql.raw(`SELECT * FROM "${tableName}"`),
-        );
-        tableData.push({
-          tableName,
-          rows,
-          rowCount: rows.length,
-        });
-      } catch {
-        // Table doesn't exist yet (migration pending) — skip
-        tableData.push({ tableName, rows: [], rowCount: 0 });
-      }
-    }
+    const tableData = Object.entries(await readVersionTables(tx)).map(
+      ([tableName, rows]) => ({ tableName, rows, rowCount: rows.length }),
+    );
 
     const totalRows = tableData.reduce((sum, t) => sum + t.rowCount, 0);
     const jsonStr = JSON.stringify(tableData.map((t) => t.rows));
     const sizeEstimate = Buffer.byteLength(jsonStr, "utf8");
 
-    // Insert version metadata
     const rows = await tx
       .insert(schema.stateVersions)
       .values({
@@ -138,7 +124,6 @@ export async function createVersion(
 
     const version = rows[0]!;
 
-    // Insert per-table data
     for (const td of tableData) {
       await tx.insert(schema.stateVersionTables).values({
         versionId: version.id,
@@ -149,7 +134,7 @@ export async function createVersion(
     }
 
     return version;
-  });
+  }, ONE_SNAPSHOT);
 
   // Post-commit: clean up old auto versions beyond retention
   await cleanupAutoVersions(database);
@@ -171,10 +156,8 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
     const retentionSetting = settings.find(
       (s) => s.key === "version_retention_count",
     );
-    const retention =
-      typeof retentionSetting?.value === "number" ? retentionSetting.value : 30;
+    const retention = versionRetention(retentionSetting?.value);
 
-    // Count auto versions
     const autoVersions = await database
       .select({ id: schema.stateVersions.id })
       .from(schema.stateVersions)
@@ -201,15 +184,11 @@ async function insertRows(
   tx: Parameters<typeof execRaw>[0],
   tableName: string,
   rows: Record<string, unknown>[],
+  sourceDialect?: "postgres" | "sqlite",
 ): Promise<number> {
   const columns = unionColumns(rows);
   validateColumns(tableName, columns);
-  const jsonb = isPostgres()
-    ? await jsonbColumns(
-        (q) => queryRaw<{ column_name: string }>(tx, q),
-        tableName,
-      )
-    : new Set<string>();
+  const jsonb = await jsonColumnsFor(tx, tableName, sourceDialect);
   const colList = columns.map((c) => `"${c}"`).join(", ");
   const BATCH_SIZE = 500;
 
@@ -217,7 +196,7 @@ async function insertRows(
     const batch = rows.slice(i, i + BATCH_SIZE);
     const valueClauses = batch.map((row) => {
       const values = columns.map((col) =>
-        restoredValue(row[col], jsonb.has(col)),
+        restoredValue(row[col], jsonb.get(col)),
       );
       return sql`(${sql.join(values, sql.raw(", "))})`;
     });
@@ -232,9 +211,8 @@ async function insertRows(
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
-  by: { asAdmin: boolean },
+  by: { asAdmin: boolean; user: string },
 ) {
-  // Load version metadata
   const [version] = await database
     .select()
     .from(schema.stateVersions)
@@ -244,7 +222,6 @@ export async function restoreVersion(
     throw new Error(`Version ${versionId} not found`);
   }
 
-  // Load all table data
   const tableDatas = await database
     .select()
     .from(schema.stateVersionTables)
@@ -261,10 +238,10 @@ export async function restoreVersion(
     { from: version.schemaVersion, to: CURRENT_SCHEMA_VERSION },
     isPostgres() ? "postgres" : "sqlite",
   );
+  for (const t of tableDatas) transformedMap[t.tableName] ??= [];
 
-  // Rebuild the table data map with transformed data — including tables the
-  // transform rebuilt that the version itself doesn't carry (e.g. links a
-  // newer schema keeps in a table of its own).
+  // Rebuild the table data map with transformed data, including tables the
+  // transform rebuilt that the version doesn't carry (e.g. a newer schema's).
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
@@ -279,10 +256,8 @@ export async function restoreVersion(
   let restoredRows = 0;
 
   await database.transaction(async (tx) => {
-    // Truncate all user tables
     await truncateTables(tx, VERSION_TABLE_NAMES);
 
-    // Insert rows per table in tier order (0 → 1 → 2)
     const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
     for (const tableEntry of sortedTables) {
@@ -299,10 +274,8 @@ export async function restoreVersion(
       restoredRows += await insertRows(tx, tableEntry.name, rows);
     }
 
-    // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
     await resetSequences(tx, VERSION_TABLE_NAMES);
 
-    // Log restore action
     try {
       await tx.insert(schema.changeLog).values({
         tableName: "state_versions",
@@ -311,7 +284,7 @@ export async function restoreVersion(
         oldValue: null,
         // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         newValue: { action: "restore", versionName: version.name } as unknown,
-        changedBy: version.createdBy,
+        changedBy: by.user,
       });
     } catch {
       // Non-critical
@@ -322,8 +295,8 @@ export async function restoreVersion(
   // that it lacks (a newer tax year), as the next start would.
   await reconcileReferenceData(database);
 
-  const names = tableDatas.map((t) => t.tableName);
-  const restoredTables = tablesFromBackup(names, by).length;
+  const versioned = Object.fromEntries(tableDatas.map((t) => [t.tableName, 1]));
+  const restoredTables = tablesTakenCount(versioned, by);
   return { restoredTables, restoredRows, valueNotes: fenced.valueNotes };
 }
 
@@ -333,37 +306,31 @@ export type BackupData = {
   tables: Record<string, unknown[]>;
   // The dialect the export ran against; absent is treated as "postgres" on import.
   sourceDialect?: "postgres" | "sqlite";
+  householdOnly?: true; // exported by someone who isn't an admin (householdOnlyTables)
 };
 
 export async function exportBackup(
   database: NodePgDatabase<typeof schema>,
+  by: { asAdmin: boolean },
 ): Promise<BackupData> {
-  const tables: Record<string, unknown[]> = {};
-
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = await queryRaw(
-        database,
-        sql.raw(`SELECT * FROM "${tableName}"`),
-      );
-    } catch {
-      // Table doesn't exist yet (migration pending) — export empty
-      tables[tableName] = [];
-    }
-  }
+  const tables = await database.transaction(readVersionTables, {
+    ...ONE_SNAPSHOT,
+    accessMode: "read only",
+  });
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     exportedAt: writeStamp().toISOString(),
-    tables,
+    tables: by.asAdmin ? tables : householdOnlyTables(tables),
     sourceDialect: isPostgres() ? "postgres" : "sqlite",
+    ...(by.asAdmin ? {} : { householdOnly: true as const }),
   };
 }
 
 export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-  by: { asAdmin: boolean },
+  by: { asAdmin: boolean; user: string },
 ) {
   // Transform the backup to the current schema if needed.
   const { tables: transformedTables, transformed } = transformFromSource(
@@ -380,7 +347,11 @@ export async function importBackup(
   }
 
   const checked = checkImportedValues(
-    await withInstallationRows(database, transformedTables, by),
+    await withInstallationRows(database, transformedTables, {
+      asAdmin: by.asAdmin,
+      householdOnly: backup.householdOnly === true,
+      sourceDialect: backup.sourceDialect,
+    }),
   );
   const transformedBackup: BackupData = {
     ...backup,
@@ -399,17 +370,20 @@ export async function importBackup(
   }
 
   const result = isPostgres()
-    ? await importBackupPg(database, transformedBackup)
-    : await importBackupSqlite(database, transformedBackup);
+    ? await importBackupPg(database, transformedBackup, by.user)
+    : await importBackupSqlite(database, transformedBackup, by.user);
   // The backup's reference rows replaced today's (see restoreVersion).
   await reconcileReferenceData(database);
-  return { ...result, valueNotes: checked.valueNotes };
+  const taken = { asAdmin: by.asAdmin && backup.householdOnly !== true };
+  const restoredTables = tablesTakenCount(transformedTables, taken);
+  return { ...result, restoredTables, valueNotes: checked.valueNotes };
 }
 
 async function importBackupPg(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-): Promise<{ restoredTables: number; restoredRows: number }> {
+  user: string,
+): Promise<{ restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
   const { pool } = await import("../index");
@@ -422,27 +396,22 @@ async function importBackupPg(
     await client.query("BEGIN");
     await client.query("SET session_replication_role = 'replica'");
 
-    // Truncate all tables
     const allTableNames = VERSION_TABLE_NAMES.map((n) => `"${n}"`).join(", ");
     await client.query(`TRUNCATE ${allTableNames} CASCADE`);
 
     let restoredRows = 0;
     const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
-    // Each table's jsonb columns, read on this client
-    const onClient = async (q: SQL) => {
-      const { sql: text, params } = new PgDialect().sqlToQuery(q);
-      return (await client.query(text, params)).rows;
-    };
-    const jsonbCols = new Map<string, Set<string>>();
-    for (const t of sortedTables)
-      jsonbCols.set(t.name, await jsonbColumns(onClient, t.name));
+    const jsonbCols = await jsonbColumnsOnClient(
+      client,
+      sortedTables.map((t) => t.name),
+    );
 
     for (const tableEntry of sortedTables) {
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
-      const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
+      const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Map();
       const columns = unionColumns(rows);
       validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
@@ -454,7 +423,8 @@ async function importBackupPg(
         const valueClauses = batch.map((row) => {
           const placeholders = columns.map((col) => {
             const val = row[col];
-            if (val === null || val === undefined) return "NULL";
+            if (val === null || val === undefined)
+              return missingJsonb(tableJsonbCols.get(col));
             if (tableJsonbCols.has(col)) {
               params.push(encodeJsonbForPgImport(val, backup.sourceDialect));
               return `$${params.length}::jsonb`;
@@ -472,14 +442,13 @@ async function importBackupPg(
       }
     }
 
-    // Reset serial sequences
     for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       );
     }
 
-    await client.query("SET session_replication_role = 'origin'");
+    await assertReferencesHold(client);
     await client.query("COMMIT");
 
     // Log import (non-critical)
@@ -494,13 +463,13 @@ async function importBackupPg(
           exportedAt: backup.exportedAt,
           // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
-        changedBy: "system",
+        changedBy: user,
       });
     } catch {
       // Non-critical
     }
 
-    return { restoredTables: sortedTables.length, restoredRows };
+    return { restoredRows };
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     await client
@@ -515,7 +484,9 @@ async function importBackupPg(
 async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
-): Promise<{ restoredTables: number; restoredRows: number }> {
+  user: string,
+): Promise<{ restoredRows: number }> {
+  const source = backup.sourceDialect;
   let restoredRows = 0;
   const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
@@ -526,10 +497,9 @@ async function importBackupSqlite(
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[]; // an older backup lacks newer tables
       if (!rows || rows.length === 0) continue;
 
-      restoredRows += await insertRows(tx, tableEntry.name, rows);
+      restoredRows += await insertRows(tx, tableEntry.name, rows, source);
     }
 
-    // Log import (non-critical)
     try {
       await tx.insert(schema.changeLog).values({
         tableName: "state_versions",
@@ -541,12 +511,12 @@ async function importBackupSqlite(
           exportedAt: backup.exportedAt,
           // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
-        changedBy: "system",
+        changedBy: user,
       });
     } catch {
       // Non-critical
     }
   });
 
-  return { restoredTables: sortedTables.length, restoredRows };
+  return { restoredRows };
 }

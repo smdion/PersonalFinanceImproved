@@ -47,17 +47,25 @@ const topLevelDb = vi.hoisted(() => {
     insert: () => noopChain,
     select: () => ({ from: () => noopChain }),
   };
-  return { noopDb, current: null as object | null };
+  return {
+    noopDb,
+    current: null as object | null,
+    pool: null as object | null,
+  };
 });
 
-/** Point the mocked top-level `db` at a test database. */
-export function setTopLevelTestDb(testDb: object): void {
+/** Point the mocked top-level `db` at a test database, and on PostgreSQL the
+ *  mocked `pool` at its pool (a PostgreSQL import runs on its own client). */
+export function setTopLevelTestDb(testDb: object, pool?: object): void {
   topLevelDb.current = testDb;
+  topLevelDb.pool = pool ?? null;
 }
 
 /** Back to the no-op when `testDb` is the current one (it is closing). */
 export function releaseTopLevelTestDb(testDb: object): void {
-  if (topLevelDb.current === testDb) topLevelDb.current = null;
+  if (topLevelDb.current !== testDb) return;
+  topLevelDb.current = null;
+  topLevelDb.pool = null;
 }
 
 // The router suite runs on SQLite, or on PostgreSQL when
@@ -94,7 +102,10 @@ vi.mock("@/lib/db", () => ({
       },
     },
   ),
-  pool: null,
+  // The caller's pool, read when the code reads it: null when no caller set one, as on SQLite.
+  get pool() {
+    return topLevelDb.pool;
+  },
   ...dialect,
 }));
 

@@ -68,6 +68,20 @@ describe("applyContribActiveFields", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("reads an unknown stored match type as no match and flags the account", () => {
+    const odd = {
+      ...baseRow,
+      employerMatchType: "legacy",
+    } as unknown as typeof baseRow;
+    const [row] = applyContribActiveFields([odd], {
+      "1": { contributionValue: "5", contributionMethod: "percent_of_salary" },
+    });
+    expect(row).toMatchObject({
+      employerMatchType: "none",
+      matchTypeUnrecognised: true,
+    });
+  });
+
   it("leaves other rows untouched", () => {
     const row2 = { ...baseRow, id: 2 } as typeof baseRow;
     const result = applyContribActiveFields([baseRow, row2], {
@@ -167,7 +181,7 @@ describe("resolveProfile", () => {
     employerMatchType: null,
     employerMatchValue: null,
     employerMaxMatchPct: null,
-  };
+  } as unknown as (typeof import("@/lib/db/schema").contributionAccounts)["$inferSelect"];
 
   // A job carries no salary/bonus of its own any more — resolveProfile's J
   // generic only needs identity + payroll-basis fields. Salary/bonus

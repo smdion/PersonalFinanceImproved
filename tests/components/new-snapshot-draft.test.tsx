@@ -44,7 +44,7 @@ import {
   type MockOutput,
 } from "./trpc-mock";
 
-const CREATE = "networth.portfolioSnapshots.create";
+const CREATE = "netWorth.portfolioSnapshots.create";
 
 const { NewSnapshotForm } =
   await import("@/components/portfolio/new-snapshot-form");
@@ -58,20 +58,20 @@ const TODAY = calendarDateOf(new Date());
 beforeEach(() => {
   window.localStorage.clear();
   resetTrpcMock();
-  setQuery("networth.listSnapshotTotals", []);
+  setQuery("netWorth.listSnapshotTotals", []);
   // A test swaps in rows built with a plain-string taxType.
   setQuery(
-    "networth.portfolioSnapshots.getLatest",
-    mockLatest as MockOutput<"networth.portfolioSnapshots.getLatest">,
+    "netWorth.portfolioSnapshots.getLatest",
+    mockLatest as MockOutput<"netWorth.portfolioSnapshots.getLatest">,
   );
   setQuery("performance.performanceAccounts.list", mockPerf);
-  setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+  setQuery("people.list", [{ id: 1, name: "Alice" }]);
   setMutationResult(CREATE, { apiSyncResult: { pushed: false } });
 });
 
 describe("NewSnapshotForm fill from SimpleFIN", () => {
   it("fills linked balances and labels them", () => {
-    setQuery("investments.suggestSnapshot", {
+    setQuery("investments.listSnapshotSuggestions", {
       snapshotDate: "2025-01-01",
       amounts: [{ key: "11_preTax__1", amount: 104321.5 }],
       accounts: [
@@ -236,7 +236,7 @@ describe("NewSnapshotForm local draft", () => {
       }),
     );
     // The date already has a snapshot; saving never settles.
-    setQuery("networth.listSnapshotTotals", [{ id: 1, date: TODAY, total: 1 }]);
+    setQuery("netWorth.listSnapshotTotals", [{ id: 1, date: TODAY, total: 1 }]);
     holdMutation(CREATE);
     const mod = await import("@/components/portfolio/new-snapshot-form");
     render(<mod.NewSnapshotForm onClose={() => {}} onSaved={() => {}} />);

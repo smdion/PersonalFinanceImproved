@@ -162,7 +162,7 @@ const READS: [string, (c: Caller) => Promise<unknown>][] = [
   ["contribution.computeSummary", (c) => c.contribution.computeSummary()],
   ["budget.computeActiveSummary", (c) => c.budget.computeActiveSummary()],
   ["savings.computeSummary", (c) => c.savings.computeSummary()],
-  ["networth.computeSummary", (c) => c.networth.computeSummary()],
+  ["netWorth.computeSummary", (c) => c.netWorth.computeSummary()],
   ["performance.computeSummary", (c) => c.performance.computeSummary()],
   ["mortgage.computeActiveSummary", (c) => c.mortgage.computeActiveSummary()],
   ["projection.computeProjection", (c) => c.projection.computeProjection({})],
@@ -201,10 +201,11 @@ describe("frozen backups from released versions", () => {
       try {
         const result = await importBackup(rawDb, structuredClone(backup), {
           asAdmin: true,
+          user: "Admin",
         });
         expect(result.restoredRows).toBeGreaterThan(0);
 
-        const { tables } = await exportBackup(rawDb);
+        const { tables } = await exportBackup(rawDb, { asAdmin: true });
         for (const table of HOUSEHOLD_TABLES)
           expect([table, ids(tables[table])]).toEqual([
             table,

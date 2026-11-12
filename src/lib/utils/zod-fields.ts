@@ -1,6 +1,7 @@
 // Zod fields shared across routers and JSONB active-field schemas. Server
 // code only: a client component that imports this file bundles Zod.
 import { z } from "zod/v4";
+import { isCalendarDate } from "./date";
 
 /** A string holding a finite number: never "", "NaN" or "Infinity". */
 export const zDecimal = z
@@ -16,7 +17,28 @@ export const zFraction = zDecimal.refine(
   { message: "Must be a fraction between 0 and 1 (0.06 for 6%)" },
 );
 
-/** A `YYYY-MM-DD`-shaped request field. Shape only: a day that doesn't
- *  exist (February 30) passes. For router inputs, never for stored JSON
- *  (its parsers keep their own check). */
-export const zCalendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+/** The largest dollar figure a money column holds (decimal(14,2)). */
+const MONEY_LIMIT = 999_999_999_999.99;
+
+/** A dollar amount a request sends as a number: finite and within what a
+ *  money column holds, so nothing past it reaches a JSON column unchecked.
+ *  For router inputs, never for stored JSON. */
+export const zMoneyNumber = z.number().min(-MONEY_LIMIT).max(MONEY_LIMIT);
+
+/** A calendar year a request may name, 1900–2100: one range for every
+ *  year field. For router inputs, never for stored JSON. */
+export const zYear = z.number().int().min(1900).max(2100);
+
+/** A `YYYY-MM-DD` request field naming a real day in a zYear year. For
+ *  router inputs, never for stored JSON (its parsers keep their own
+ *  check, so a stored value an older version accepted still reads). */
+export const zCalendarDate = z.string().refine(isCalendarDate, {
+  message: "Must be a real date, YYYY-MM-DD, between 1900 and 2100",
+});
+
+/** A `YYYY-MM` request month (a real month in a zYear year). */
+export const zMonthKey = z
+  .string()
+  .refine((v) => /^\d{4}-\d{2}$/.test(v) && isCalendarDate(`${v}-01`), {
+    message: "Must be a real month, YYYY-MM, between 1900 and 2100",
+  });

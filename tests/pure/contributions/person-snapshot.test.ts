@@ -30,6 +30,7 @@ const base: ContributionAccountRow = {
   isPayrollDeducted: null,
   fromBonus: false,
   ownership: "individual",
+  isActive: true,
   performanceAccountId: null,
   targetAnnual: null,
   allocationPriority: 0,

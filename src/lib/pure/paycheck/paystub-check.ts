@@ -11,6 +11,7 @@ import {
 } from "@/lib/constants";
 import { countPeriodsElapsed } from "@/lib/pure/paycheck/pay-periods-in-year";
 import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
+import { bonusCheckNet } from "@/lib/pure/paycheck/year-totals";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 
 /** What Ledgr figures for the check being compared. */
@@ -376,31 +377,17 @@ export function ledgrCheckFor(
     ),
   };
   if (kind === "bonus") {
-    // The bonus check as the year schedule pays it — its Social Security
-    // room and Additional Medicare at that point in the year. A bonus with
-    // no date isn't in the schedule: the estimate (as if paid last).
-    const inSchedule =
-      paycheck.bonusPeriod !== null
-        ? paycheck.yearSchedule[paycheck.bonusPeriod - 1]
-        : undefined;
-    const fica = inSchedule
-      ? inSchedule.bonusFica
-      : bonus.bonusFica +
-        rates.additionalMedicare *
-          Math.max(
-            0,
-            Math.min(
-              bonus.bonusFicaWages,
-              medicareWagesYtd - rates.medicareWithholdingThreshold,
-            ),
-          );
-    const withholding = inSchedule
-      ? inSchedule.bonusWithholding
+    // The bonus check as the year schedule pays it (an undated one on the last check),
+    // its SS room and Additional Medicare then; off it (dated before the job), the estimate.
+    const row = paycheck.yearSchedule.find((p) => p.bonusGross > 0);
+    const fica = row ? row.bonusFica : bonus.bonusFica;
+    const withholding = row
+      ? row.bonusWithholding
       : bonus.bonusFederalWithholding;
     // Social Security room left for the bonus: the wage base less this
     // employer's regular wages through its check.
-    const regularThrough = inSchedule
-      ? Math.max(0, paycheck.bonusPeriod! - paycheck.periodsBeforeStart) *
+    const regularThrough = row
+      ? Math.max(0, row.periodNumber - paycheck.periodsBeforeStart) *
         paycheck.ficaWages
       : regularYtd;
     return {
@@ -409,11 +396,12 @@ export function ledgrCheckFor(
       federalTaxableGross: bonus.bonusFederalTaxable,
       ficaWages: bonus.bonusFicaWages,
       federalWithholding: withholding,
-      netPay:
-        Math.round(
-          (bonus.bonusGross - withholding - fica - bonus.bonusContributions) *
-            100,
-        ) / 100,
+      netPay: bonusCheckNet({
+        gross: bonus.bonusGross,
+        federal: withholding,
+        fica,
+        contributions: bonus.bonusContributions,
+      }),
       ssStopped:
         rates.socialSecurityWageBase - regularThrough <
         bonus.bonusFicaWages - 0.01,

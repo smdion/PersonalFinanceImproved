@@ -6,7 +6,7 @@ import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { appRouter } from "@/server/routers";
-import { DemoSessionEnded } from "@/server/trpc";
+import { DemoSessionEnded } from "@/lib/demo/session-ended";
 import { demoSessionEndedMessage } from "@/lib/utils/demo-session";
 
 function format(error: TRPCError) {

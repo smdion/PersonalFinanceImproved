@@ -3,11 +3,20 @@ import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
 import { db } from "@/lib/db";
 import { appSettings } from "@/lib/db/schema";
-import { authConfig } from "./auth.config";
+import { authConfig, capSessionAge } from "./auth.config";
 import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 import { authorizeLocalAdmin } from "./local-admin-login";
-import { PERMISSIONS, type Permission } from "@/lib/config/permissions";
+import {
+  PERMISSIONS,
+  RBAC_ADMIN_GROUP_KEY,
+  RBAC_SETTINGS_PREFIX,
+  type Permission,
+} from "@/lib/config/permissions";
+export {
+  RBAC_ADMIN_GROUP_KEY,
+  RBAC_SETTINGS_PREFIX,
+} from "@/lib/config/permissions";
 
 /*
  * NextAuth v5 is a beta (pinned exact in package.json; its API is not stable).
@@ -30,10 +39,6 @@ const DEFAULT_PERMISSION_GROUPS: Record<Permission, string> = {
 
 /** Default admin group name. */
 const DEFAULT_ADMIN_GROUP = "ledgr-admin";
-
-/** app_settings key prefix for RBAC group overrides. */
-export const RBAC_SETTINGS_PREFIX = "rbac_group_";
-export const RBAC_ADMIN_GROUP_KEY = "rbac_admin_group";
 
 /**
  * Build the group→permission mapping from app_settings overrides (rbac_admin_group,
@@ -192,23 +197,22 @@ const fullAuthConfig: NextAuthConfig = {
     process.env.DEMO_ONLY === "true"
       ? authConfig.providers
       : [...authConfig.providers, localAdminProvider],
-  session: {
-    strategy: "jwt",
-    // 4 hours instead of the 30-day default: Authentik group changes take effect
-    // only when the JWT expires, so this bounds RBAC propagation lag without
-    // forcing constant re-login.
-    maxAge: 4 * 60 * 60,
-  },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      // Sessions end 4 hours after sign-in (authConfig: the same cap the proxy applies).
+      const signingIn = trigger === "signIn" || trigger === "signUp";
+      const capped = capSessionAge(token, signingIn);
+      if (!capped) return null;
       return (await assignRoleAndPermissions(
-        token as Record<string, unknown>,
+        capped,
         user,
         account,
       )) as typeof token;
     },
     session({ session, token }) {
       if (session.user) {
+        // The per-user rate limit keys by it (trpc.ts); Auth.js leaves it unset.
+        if (typeof token.sub === "string") session.user.id = token.sub;
         session.user.role = token.role as "admin" | "viewer";
         // A token from an older version may carry no permissions.
         session.user.permissions =

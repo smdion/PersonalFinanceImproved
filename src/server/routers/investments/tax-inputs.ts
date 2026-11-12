@@ -1,7 +1,7 @@
 /**
  * Investment side of the Roth IRA MAGI estimate (portfolioProcedure): the year's taxable
  * investment income, each person's pre-tax IRA balance (pro-rata), and what it can't see.
- * Fetch and map only; rules are in lib/pure (investment-income.ts, roth-ira.ts).
+ * Fetch and map only; rules are in lib/pure (investment-income.ts, roth-ira-pro-rata.ts).
  */
 import { z } from "zod/v4";
 import { min } from "drizzle-orm";
@@ -20,7 +20,7 @@ import {
   PENDING_CONVERSION_WINDOW_DAYS,
   pendingConversion,
   preTaxIraByPerson,
-} from "@/lib/pure/contributions/roth-ira";
+} from "@/lib/pure/contributions/roth-ira-pro-rata";
 import { loadLatestSubAccounts } from "@/server/data/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/data/account-names";
 import {

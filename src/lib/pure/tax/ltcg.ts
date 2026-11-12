@@ -4,14 +4,32 @@
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 
-/** Gross ordinary income (before any deduction) to the taxable income the LTCG
- *  brackets stack on: less the standard deduction, senior additions included
- *  (undefined subtracts nothing). Every LTCG-stacking site converts here. */
-export function toLtcgTaxableIncome(
+/** Gross ordinary income against the standard deduction (undefined subtracts
+ *  nothing): the ordinary taxable income gains stack on, the deduction left
+ *  unused, the gains it leaves taxed, and the stack's top. */
+export function ltcgStackBase(
   grossOrdinaryIncome: number,
   standardDeduction: number | undefined,
-): number {
-  return Math.max(0, grossOrdinaryIncome - (standardDeduction ?? 0));
+  gains = 0,
+): {
+  ordinaryTaxable: number;
+  unusedDeduction: number;
+  taxedGains: number;
+  top: number;
+} {
+  const deduction = standardDeduction ?? 0;
+  const ordinaryTaxable = Math.max(0, grossOrdinaryIncome - deduction);
+  const unusedDeduction = Math.max(
+    0,
+    deduction - Math.max(0, grossOrdinaryIncome),
+  );
+  const taxedGains = Math.max(0, gains - unusedDeduction);
+  return {
+    ordinaryTaxable,
+    unusedDeduction,
+    taxedGains,
+    top: ordinaryTaxable + taxedGains,
+  };
 }
 
 /** The filing status's brackets. Every complete year has every status
@@ -101,4 +119,51 @@ export function ltcgRoomForRate(
     }
   }
   return Infinity;
+}
+
+/** A year's long-term gains tax (Schedule D Tax Worksheet): less the unused
+ *  deduction, stacked on ordinary taxable income, at most their cost at
+ *  ordinary rates above it (line 25). `ordinaryRate` is the engine's. */
+export function scheduleDGainsTax<Bracket>(
+  grossOrdinaryIncome: number,
+  gains: number,
+  filingStatus: ReturnFilingStatus,
+  taxRates: {
+    taxBrackets?: Bracket[];
+    taxMultiplier?: number;
+    standardDeduction?: number;
+    ltcgBrackets: LtcgBracketTable;
+  },
+  ordinaryRate: (
+    income: number,
+    brackets: Bracket[],
+    taxMultiplier?: number,
+    standardDeduction?: number,
+  ) => number,
+): number {
+  const base = ltcgStackBase(
+    grossOrdinaryIncome,
+    taxRates.standardDeduction,
+    gains,
+  );
+  const stacked = computeLtcgTax(
+    base.ordinaryTaxable,
+    base.taxedGains,
+    filingStatus,
+    taxRates.ltcgBrackets,
+  );
+  const brackets = taxRates.taxBrackets;
+  if (!brackets || brackets.length === 0) return stacked;
+  const ordinaryTax = (income: number) =>
+    income *
+    ordinaryRate(
+      income,
+      brackets,
+      taxRates.taxMultiplier,
+      taxRates.standardDeduction,
+    );
+  return Math.min(
+    stacked,
+    ordinaryTax(grossOrdinaryIncome + gains) - ordinaryTax(grossOrdinaryIncome),
+  );
 }

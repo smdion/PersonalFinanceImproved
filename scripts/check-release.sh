@@ -37,13 +37,14 @@ if [[ -n "${TEST_DATABASE_URL:-}" ]]; then
     tests/db/migration-0016-postgres.test.ts tests/db/migration-0017-postgres.test.ts \
     tests/db/migration-v0106-money-postgres.test.ts \
     tests/db/migration-v0106-credentials-postgres.test.ts tests/db/migration-v0106-joint-person-ids-postgres.test.ts tests/db/migration-v0106-cached-months-postgres.test.ts \
-    tests/db/migration-v0106-stored-json-postgres.test.ts \
-    tests/routers/match-rate-writes-postgres.test.ts tests/integration/backup-fence-postgres.test.ts \
+    tests/db/migration-v0106-stored-json-postgres.test.ts tests/db/migration-v0110-job-entries-postgres.test.ts \
+    tests/routers/match-rate-writes-postgres.test.ts tests/routers/row-locks-postgres.test.ts tests/integration/backup-fence-postgres.test.ts \
     tests/scripts/rotate-encryption-key-postgres.test.ts tests/scripts/export-backup-snapshot-postgres.test.ts \
     tests/routers/seeded-postgres.test.ts \
     tests/baseline/router-baseline-postgres.test.ts tests/baseline/pins-postgres.test.ts; do
     step "PostgreSQL: $t" pnpm -s test "$t"
   done
+  step "PostgreSQL: frozen backups restored" env LEDGR_ROUTER_DIALECT=postgres pnpm -s test tests/integration/frozen-backups.test.ts
   step "PostgreSQL: the router suite against its known failures" pnpm -s tsx scripts/check-router-postgres.ts
 else
   echo "== PostgreSQL suites"

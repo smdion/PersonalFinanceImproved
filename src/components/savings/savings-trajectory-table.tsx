@@ -5,7 +5,8 @@ import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useLocalBoolean } from "@/lib/hooks/use-local-storage";
+import { useHistoryWindow, type HistoryWindow } from "./use-history-window";
 import { monthKey as monthKeyStr } from "@/lib/utils/date-keys";
 
 function monthLabel(d: Date): string {
@@ -28,8 +29,6 @@ function nextWithdrawalBalance(
   return null;
 }
 
-type HistoryWindow = 0 | 3 | 6 | 12 | "all";
-
 export function SavingsTrajectoryTable({
   goalProjections,
   monthDates,
@@ -39,18 +38,15 @@ export function SavingsTrajectoryTable({
   monthDates: Date[];
   hiddenGoalIds: Set<number>;
 }) {
-  const [showEvents, setShowEvents] = useLocalStorage<boolean>(
+  const [showEvents, setShowEvents] = useLocalBoolean(
     "ledgr:savings:showEvents",
     true,
   );
-  const [showAllocations, setShowAllocations] = useLocalStorage<boolean>(
+  const [showAllocations, setShowAllocations] = useLocalBoolean(
     "ledgr:savings:showAllocations",
     false,
   );
-  const [historyWindow, setHistoryWindow] = useLocalStorage<HistoryWindow>(
-    "ledgr:savings:historyWindow",
-    0,
-  );
+  const [historyWindow, setHistoryWindow] = useHistoryWindow("trajectory");
 
   // Lazy-load history only when enabled
   const { data: historyData } = trpc.savings.getMonthlyHistory.useQuery(

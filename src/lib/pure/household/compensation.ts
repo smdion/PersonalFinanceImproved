@@ -299,21 +299,18 @@ export function computeBonusGross(
 }
 
 /**
- * This year's pay for a job: Salary Profile compensation plus What-If terms, and
- * the set bonus when there is one. Shared by the paycheck, contribution summary
- * and IRS-limit cap. `totalComp` = salary + this year's bonus.
+ * This year's pay for a job: Salary Profile compensation plus the job's own What-If
+ * tweak (whatIfForJob: the current job's only), and the set bonus when there is one.
+ * `totalComp` = salary + this year's bonus.
  */
 export function thisYearJobPay(
-  job: { id: number; personId: number },
+  job: { id: number },
   salaryProfileActiveMap: SalaryProfileActiveMap,
-  salaryActiveMap: SalaryActiveMap,
+  whatIf: SalaryOverrideEntry | undefined,
 ) {
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
-  const salary = applyActiveSalary(job.personId, comp.salary, salaryActiveMap);
-  const bonusTerms = applyActiveBonusTerms(
-    salaryActiveMap.get(job.personId),
-    comp.terms,
-  );
+  const salary = whatIf?.salary ?? comp.salary;
+  const bonusTerms = applyActiveBonusTerms(whatIf, comp.terms);
   const { bonusGross } = contributionPay(
     salary,
     bonusTerms,

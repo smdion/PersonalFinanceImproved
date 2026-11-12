@@ -25,8 +25,8 @@ export const profileSelectionSchema = z
 
 export type ProfileSelection = z.infer<typeof profileSelectionSchema>;
 
-/** The picks a budget or savings request takes: its pay profiles. Null is
- *  "none": an active id still loading, or a Plan missing that kind. */
+/** The picks a budget or savings request takes: its pay profiles. Null or
+ *  absent is the active one (an id still loading, or a Plan missing that kind). */
 export const payProfileSelectionSchema = z
   .object({
     contribution: z.number().int().nullable().optional(),

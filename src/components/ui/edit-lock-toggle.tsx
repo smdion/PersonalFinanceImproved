@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock, LockOpen } from "lucide-react";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useLocalBoolean } from "@/lib/hooks/use-local-storage";
 
 /**
  * The padlock edit lock shared by every in-place-editable table/panel. Locked is the default: a
@@ -67,10 +67,10 @@ export const EDIT_LOCK_KEYS = {
 
 /**
  * `[locked, toggle]` persisted under `key`, defaulting to locked.
- * Convention helper so callers don't re-spell the `useLocalStorage(key, true)`
+ * Convention helper so callers don't re-spell the `useLocalBoolean(key, true)`
  * call (and can't accidentally default one panel to unlocked).
  */
 export function useEditLock(key: string): [boolean, () => void] {
-  const [locked, setLocked] = useLocalStorage<boolean>(key, true);
+  const [locked, setLocked] = useLocalBoolean(key, true);
   return [locked, () => setLocked(!locked)];
 }

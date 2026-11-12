@@ -1,6 +1,7 @@
 /** Sync mappings router for managing account-level mappings between budget API accounts and local portfolio/asset tracking accounts. */
 
 import { z } from "zod/v4";
+import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, createTRPCRouter, syncProcedure } from "../../trpc";
@@ -121,7 +122,7 @@ export const syncMappingsRouter = createTRPCRouter({
       z.object({
         service: serviceEnum,
         assetName: z.string().min(1),
-        balance: z.number(),
+        balance: zMoneyNumber,
         remoteAccountId: z.string().min(1),
         syncDirection: z.enum(["pull", "push", "both"]),
       }),

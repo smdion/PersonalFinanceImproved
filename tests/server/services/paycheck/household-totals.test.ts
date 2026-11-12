@@ -9,7 +9,7 @@ import {
   buildLiabilityBracketInput,
   StandardW4BracketsRequiredError,
 } from "@/lib/pure/paycheck/liability-brackets";
-import { liabilityBracketInput } from "@/server/services/paycheck/household-totals";
+import { liabilityBracketInput } from "@/server/services/paycheck/liability-bracket-input";
 
 const MESSAGE =
   "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).";

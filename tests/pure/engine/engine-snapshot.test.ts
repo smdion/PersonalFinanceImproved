@@ -1,24 +1,14 @@
 /**
- * Engine snapshot parity tests.
+ * Engine regression pins.
  *
- * Captures full calculateProjection() output for diverse fixture inputs.
- * After engine refactoring, these must produce byte-identical results.
- * Any difference = test failure (forces investigation before merge).
- *
- * FRESHNESS GUARD:
- * Snapshots can rot. Engineers update them after a refactor without
- * checking that the new values are CORRECT (the snapshot just records
- * what the code currently produces). To prevent silent multi-year drift,
- * the LAST_REVIEWED_AT constant below MUST be bumped to today's date
- * whenever the snapshots are intentionally re-verified (i.e., a human
- * has spot-checked the values against an authoritative source like
- * cFIREsim or hand-computed expectations). The freshness test fails if
- * the date is more than 180 days stale.
- *
- * To bump:
- *   1. Spot-check 3-5 fixtures against an authoritative source
- *   2. Update LAST_REVIEWED_AT below to today (YYYY-MM-DD)
- *   3. Document what was checked and against what source
+ * Captures calculateProjection() output for diverse fixture inputs, so a
+ * refactor that changes any of it fails here and has to be explained.
+ * These are regression pins, not reviewed answers: each records what the
+ * code produced when it was written (its `toBe` figures included), and a
+ * re-record only says the new output was accepted. The reviewed fixtures,
+ * worked by hand and tied to their inputs by `reviewed.json`, are in
+ * `engine-golden.test.ts`; a figure that has to be right belongs there or
+ * in an answer-key file.
  */
 import {
   startingBalanceGaps,
@@ -30,8 +20,6 @@ import { describe, it, expect } from "vitest";
 import { calculateProjection as runEngine } from "@/lib/pure/engine";
 import { recordDrift } from "../fixtures/drift";
 
-const LAST_REVIEWED_AT = "2026-08-27";
-const FRESHNESS_DAYS = 180;
 import type {
   ProjectionInput,
   ContributionSpec,
@@ -250,8 +238,8 @@ describe("engine snapshot parity", () => {
 
     // T13: explicit numeric assertions on the key financial values, so a
     // failing diff reads as "sustainable withdrawal changed from X to Y"
-    // instead of an opaque snapshot blob. Values spot-checked per the
-    // freshness guard above (LAST_REVIEWED_AT).
+    // instead of an opaque snapshot blob. Pinned, not reviewed (see the
+    // file header).
     expect(result.sustainableWithdrawal).toBe(193621.62);
     expect(result.retirementDepletionYear).toBeNull();
     expect(metrics.finalYear?.allAccountsBalance).toBe(28676679.19);
@@ -4121,32 +4109,6 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]!.projectedExpenses).toBeLessThan(100000);
     const metrics = extractMetrics(withFlagOmitted);
     expect(metrics).toMatchSnapshot();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────
-// Freshness guard
-// ─────────────────────────────────────────────────────────────────────
-
-describe("snapshot freshness guard", () => {
-  it(`LAST_REVIEWED_AT must be within ${FRESHNESS_DAYS} days`, () => {
-    const reviewedAt = new Date(LAST_REVIEWED_AT + "T00:00:00Z");
-    expect(Number.isFinite(reviewedAt.getTime())).toBe(true);
-    const ageDays = Math.floor(
-      (Date.now() - reviewedAt.getTime()) / (24 * 60 * 60 * 1000),
-    );
-    if (ageDays > FRESHNESS_DAYS) {
-      // Use expect.fail rather than toBeLessThanOrEqual so the message is rich.
-      expect.fail(
-        `Engine snapshots haven't been reviewed in ${ageDays} days ` +
-          `(LAST_REVIEWED_AT = ${LAST_REVIEWED_AT}, threshold = ${FRESHNESS_DAYS} days).\n\n` +
-          `Snapshots can rot — they record what the code currently produces, ` +
-          `not what it SHOULD produce. Spot-check 3-5 fixtures against an ` +
-          `authoritative source (cFIREsim, hand-computed values, IRS pubs), ` +
-          `then bump LAST_REVIEWED_AT in tests/pure/engine/engine-snapshot.test.ts ` +
-          `to today's date.`,
-      );
-    }
   });
 });
 

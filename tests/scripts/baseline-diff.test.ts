@@ -22,13 +22,13 @@ describe("baseline-diff", () => {
       portfolioAccounts: [{ amount: 260000 }, { amount: 22500 }],
     });
     const lines = fileChanges(
-      "tests/baseline/__baseline__/ws-h3/networth.computeSummary.json",
+      "tests/baseline/__baseline__/ws-h3/netWorth.computeSummary.json",
       before,
       after,
     ).map(summaryLine);
     expect(lines).toEqual([
-      "household ws-h3, procedure networth.computeSummary, field portfolioAccounts[1].amount: $22,000 → $22,500",
-      "household ws-h3, procedure networth.computeSummary, field result.netWorth: $352,000 → $352,500",
+      "household ws-h3, procedure netWorth.computeSummary, field portfolioAccounts[1].amount: $22,000 → $22,500",
+      "household ws-h3, procedure netWorth.computeSummary, field result.netWorth: $352,000 → $352,500",
     ]);
   });
 

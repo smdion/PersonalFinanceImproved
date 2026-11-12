@@ -2,23 +2,15 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { cookies } from "next/headers";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { getDemoProfileList, isDemoProfileSlug } from "@/lib/demo";
+import {
+  createTRPCRouter,
+  expensiveRateLimitMiddleware,
+  protectedProcedure,
+} from "../trpc";
+import { DEMO_COOKIE, getDemoProfileList } from "@/lib/demo";
+import { DEMO_PROFILE_SLUGS } from "@/lib/demo/slugs";
 import { isPostgres } from "@/lib/db/dialect";
 import { buildDemoSchema } from "@/server/services/demo/demo-schema";
-
-/** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
-const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
-const MAX_SLUG_LENGTH = 40;
-
-const demoSlugSchema = z
-  .string()
-  .min(1)
-  .max(MAX_SLUG_LENGTH)
-  .regex(
-    DEMO_SLUG_REGEX,
-    "Slug must be lowercase alphanumeric with hyphens only",
-  );
 
 export const demoRouter = createTRPCRouter({
   /** List available demo profiles. */
@@ -29,11 +21,12 @@ export const demoRouter = createTRPCRouter({
     };
   }),
 
-  /** Activate a demo profile: create its schema and seed it. protectedProcedure on purpose:
-   *  writes go to an isolated per-user demo schema and must work in DEMO_ONLY mode
+  /** Activate a demo profile: rebuild its shared schema and seed it, at most 5 a minute
+   *  per visitor. protectedProcedure on purpose: must work in DEMO_ONLY mode
    *  (RULES.md § Permission & Security Gates rule 3 exception). */
   activateProfile: protectedProcedure
-    .input(z.object({ slug: demoSlugSchema }))
+    .input(z.object({ slug: z.enum(DEMO_PROFILE_SLUGS) }))
+    .use(expensiveRateLimitMiddleware)
     .mutation(async ({ ctx, input }) => {
       if (!isPostgres()) {
         throw new TRPCError({
@@ -43,18 +36,11 @@ export const demoRouter = createTRPCRouter({
         });
       }
 
-      if (!isDemoProfileSlug(input.slug)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Unknown demo profile: ${input.slug}`,
-        });
-      }
-
       const schemaName = await buildDemoSchema(input.slug, ctx.scope.asOf);
 
       // Set HttpOnly cookie server-side so it's not accessible to JavaScript
       const cookieStore = await cookies();
-      cookieStore.set("demo_active_profile", input.slug, {
+      cookieStore.set(DEMO_COOKIE, input.slug, {
         path: "/",
         maxAge: 86400,
         sameSite: "strict",
@@ -69,7 +55,7 @@ export const demoRouter = createTRPCRouter({
    *  (RULES.md § Permission & Security Gates rule 3 exception). */
   deactivateDemo: protectedProcedure.mutation(async () => {
     const cookieStore = await cookies();
-    cookieStore.set("demo_active_profile", "", {
+    cookieStore.set(DEMO_COOKIE, "", {
       path: "/",
       maxAge: 0,
       httpOnly: true,

@@ -225,7 +225,7 @@ After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx s
 | **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                                                                                                                                                                                                                                                                             |
 | **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production.                                                                                                                                                                                                                                                              |
 
-Local admin is the default install's sign-in: Authentik is optional, and without `AUTH_AUTHENTIK_ISSUER` the login page offers only the local-admin form.
+Local admin is the default install's sign-in: Authentik is optional, and without `AUTH_AUTHENTIK_ISSUER` the login page offers only the local-admin form. With Authentik configured, the local-admin form stays on purpose: it is the break-glass sign-in when Authentik is down or its groups are misconfigured, throttled the same way. Keep at least one local admin with a strong password, and keep it out of everyday use.
 
 ## Deployment
 

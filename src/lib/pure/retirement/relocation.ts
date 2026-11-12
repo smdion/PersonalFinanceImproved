@@ -193,7 +193,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   // Steady-state ongoing monthly cost from purchases (for FI target adjustment)
   const ssMonthly = steadyStateMonthly(purchaseData);
 
-  // Savings rates (simplified: available = salary - expenses)
+  // Left over after spending, as a share of salary (not a savings rate)
   const currentSavingsRate =
     roundToCents(
       safeDivide(

@@ -20,11 +20,12 @@ import {
   checkOutboundUrl,
   guardedLookup,
   opensPrivateAddress,
+  redirectsToHost,
   plainLookup,
   type OutboundService,
 } from "@/lib/http/url-safety";
 
-export type ExternalService = Exclude<OutboundService, "sec">;
+export type ExternalService = Exclude<OutboundService, "sec" | "taxData">;
 
 type ServiceRule = {
   timeoutMs: number;
@@ -77,6 +78,7 @@ const SERVICE_NAMES: Record<OutboundService, string> = {
   simplefin: "SimpleFIN",
   tiingo: "Tiingo",
   sec: "SEC",
+  taxData: "Tax data",
 };
 
 /** Connections for a public-only service: a name is refused when it
@@ -131,32 +133,33 @@ async function sendOnce(
   }
 }
 
-/** Where a redirect may go: the same origin, or http to https on the same
- *  host with the same or default port. Any other hop: the reason refused. */
+/** Where a redirect may go: the same origin, http to https on the same host
+ *  with the same or default port, or a host the service's policy lists
+ *  (url-safety.ts). Any other hop: the reason refused. */
 function redirectRefusal(
   from: URL,
   to: URL,
   status: number,
-  method: string,
+  { method, service }: { method: string; service: OutboundService },
 ): string | null {
   if (from.protocol === "https:" && to.protocol === "http:")
     return "it redirected from https to http.";
-  if (from.hostname !== to.hostname)
+  if (from.hostname !== to.hostname && !redirectsToHost(service, to.hostname))
     return `it redirected to another host ("${to.hostname}"); Ledgr doesn't follow that.`;
   const upgrade =
     from.protocol === "http:" &&
     to.protocol === "https:" &&
     (to.port === "" || to.port === from.port);
-  if (from.origin !== to.origin && !upgrade)
+  if (from.hostname === to.hostname && from.origin !== to.origin && !upgrade)
     return `it redirected to another port ("${to.host}"); Ledgr doesn't follow that.`;
   if (status <= 303 && method !== "GET" && method !== "HEAD")
     return `it redirected a ${method} with ${status}; Ledgr doesn't resend it as a GET.`;
   return null;
 }
 
-/** `fetch` for every outside service. The URL is checked before each
- *  request, the address at connect, and at most 3 redirects are followed,
- *  each on its own host only, so headers never reach another host. */
+/** `fetch` for every outside service. The URL is checked before each request,
+ *  the address at connect, and at most 3 redirects are followed, each on its
+ *  own host or a download host its policy lists (sent the same headers). */
 export async function fetchChecked(
   input: string,
   init: RequestInit,
@@ -178,13 +181,34 @@ export async function fetchChecked(
     } catch {
       throw refused(service, "it redirected to something that isn't a URL.");
     }
-    const why = redirectRefusal(url, next, res.status, method);
+    const why = redirectRefusal(url, next, res.status, { method, service });
     if (why) throw refused(service, why);
     if (hop === MAX_REDIRECTS)
       throw refused(service, `it redirected more than ${MAX_REDIRECTS} times.`);
     url = checked(next, service);
     target = url.href;
   }
+}
+
+/** A service's request path, built by pathOf: every value in it is encoded. */
+export type RequestPath = string & { readonly __brand: "RequestPath" };
+
+/** A service's request path with each value encoded as one path segment or
+ *  query value (`pathOf\`/accounts/${id}\``): a stored id can't add a segment, a
+ *  query or a fragment; "", "." and ".." (a URL resolves the dots) are refused. */
+export function pathOf(
+  parts: TemplateStringsArray,
+  ...values: (string | number)[]
+): RequestPath {
+  const path = parts.reduce((built, part, i) => {
+    if (i >= values.length) return built + part;
+    const value = String(values[i]);
+    if (value === "" || value === "." || value === "..")
+      throw new Error(`${JSON.stringify(value)} can't be a request path value`);
+    return built + part + encodeURIComponent(value);
+  }, "");
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the one place a RequestPath is made
+  return path as RequestPath;
 }
 
 /** An endpoint as a pattern: ids become `:id`, the query goes. */

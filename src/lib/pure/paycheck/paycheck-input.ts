@@ -24,6 +24,7 @@ export interface JobForPaycheckInput {
   payWeek: PaycheckInput["payWeek"] | undefined;
   anchorPayDate: string | Date | null | undefined;
   startDate: string | Date;
+  endDate: string | null | undefined;
   bonusMonth: number | null | undefined;
   bonusDayOfMonth: number | null | undefined;
   additionalFedWithholding: string | number | null | undefined;
@@ -57,9 +58,7 @@ export function buildPaycheckInputForJob(
     annualSalary: resolved.salary,
     payPeriod: job.payPeriod!,
     payWeek: job.payWeek!,
-    // `null` means "no anchor, use start date"; `undefined` can't reach here (see
-    // JobForPaycheckInput).
-    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
+    ...jobScheduleDates(job),
     supplementalTaxRate: requireLimit(
       resolved.limitsMap,
       "supplemental_tax_rate",
@@ -74,7 +73,6 @@ export function buildPaycheckInputForJob(
     earnings: resolved.earnings,
     taxBrackets: resolved.taxBrackets,
     limits: resolved.limitsRecord,
-    ytdGrossEarnings: 0,
     bonusPercent: toNumber(resolved.bonusTerms.bonusPercent),
     bonusMultiplier:
       resolved.bonusTerms.bonusMultiplier === null
@@ -85,6 +83,20 @@ export function buildPaycheckInputForJob(
     bonusMonth: job.bonusMonth ?? null,
     bonusDayOfMonth: job.bonusDayOfMonth ?? null,
     asOfDate: resolved.asOfDate,
+  };
+}
+
+/** A job's dates as the paycheck reads them: a known payday (its start when none is set), its
+ *  start, and its last day at noon UTC. */
+export function jobScheduleDates(
+  job: Pick<JobForPaycheckInput, "anchorPayDate" | "startDate" | "endDate">,
+) {
+  return {
+    // `null` = no anchor, use the start date; `undefined` can't reach here (JobForPaycheckInput).
+    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
     startDate: new Date(job.startDate),
+    endDate: job.endDate
+      ? new Date(`${job.endDate.slice(0, 10)}T12:00:00Z`)
+      : null,
   };
 }

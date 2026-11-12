@@ -7,7 +7,7 @@ import { AccountFieldHeaders } from "./account-fields";
 export function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
     trpc.contributionProfile.getById.useQuery({ id: profileId });
-  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
+  const { data: deductionRows } = trpc.paycheck.deductions.list.useQuery();
 
   if (isLoading) {
     return (

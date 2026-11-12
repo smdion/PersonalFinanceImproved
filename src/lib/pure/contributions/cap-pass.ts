@@ -1,5 +1,4 @@
-/** The IRS-limit cap pass: each row keeps its configured `contributionValue`
- *  and gains `cappedValue` (what every calculation reads) and `cap` (the verdict). */
+/** The IRS-limit cap pass: a row keeps `contributionValue` and gains `cappedValue` (what every figure reads) and `cap`. */
 import {
   type CapPassed,
   capContributionsByLimitGroup,
@@ -11,36 +10,29 @@ import {
 } from "@/lib/config/account-types";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { sumBy } from "@/lib/utils/math";
+import { toNumber } from "@/lib/utils/numbers";
+import { jobPay, planEmployer } from "./annual-additions";
 import { computeGroupedEmployerMatch, storedMatchRate } from "./employer-match";
+import type { JobRef, ContributionRow } from "./contribution-rows";
 import {
-  type JobRef,
-  type JobSalaryRef,
-  type ContributionRow,
-  contributionRowAmounts,
-} from "./contribution-rows";
-import { type JobLike, findActiveJob } from "@/lib/pure/household/profiles";
-import {
-  type SalaryProfileActiveMap,
-  type SalaryActiveMap,
-  thisYearJobPay,
-} from "@/lib/pure/household/compensation";
+  type CapJobPay,
+  type CapPassPerson,
+  rowAmountsOverChecks,
+} from "./this-year-amounts";
 
 export type CappedRowFields = CapPassed;
 
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
-  /** Each job's pay; `totalComp` = salary + bonus (W-2 taxable pay before
-   *  pre-tax money) bounds an IRA. */
-  jobSalaries: readonly (JobSalaryRef & { totalComp?: number })[];
-  people: readonly { id: number; birthYear: number | null }[];
+  jobSalaries: readonly CapJobPay[];
+  people: readonly CapPassPerson[];
   limits: Record<string, number>;
   filingStatus: string;
   taxYear: number;
 };
 
-/** What the pass needs from the household — the same for every set of
- *  rows in a request (this tax year), whichever profile's pay applies;
- *  CapRequestHousehold adds the request's date (capForRequest). */
+/** What the pass needs from the household, the same for every row set in a request (this tax
+ *  year) whichever profile's pay applies; CapRequestHousehold adds its date (capForRequest). */
 export type CapPassHousehold = Omit<
   CapPassContext,
   "activeJobs" | "jobSalaries"
@@ -56,23 +48,22 @@ export type CapPassRow = {
   subType?: string | null;
   label?: string | null;
   parentCategory?: string | null;
-  contributionMethod: string | null;
+  contributionMethod: ContributionRow["contributionMethod"] | null;
   contributionValue: string | number | null;
   taxTreatment: string | null;
-  employerMatchType: string | null;
+  employerMatchType: ContributionRow["employerMatchType"];
   employerMatchValue: string | number | null;
   employerMatchRate?: string | number | null;
   employerMaxMatchPct: string | number | null;
   isPayrollDeducted?: boolean | null;
   fromBonus?: boolean;
   hsaCoverageType?: string | null;
+  ownership: ContributionRow["ownership"];
 };
 
-/** The aggregate's row shape, from a pass row. */
+/** The aggregate's row shape, from a pass row: its absent fields defaulted, amounts as stored. */
 const asContributionRow = (c: CapPassRow): ContributionRow => ({
-  id: c.id,
-  personId: c.personId,
-  jobId: c.jobId,
+  ...c,
   accountType: c.accountType as ContributionRow["accountType"],
   subType: c.subType ?? null,
   label: c.label ?? null,
@@ -80,13 +71,10 @@ const asContributionRow = (c: CapPassRow): ContributionRow => ({
   contributionMethod: c.contributionMethod ?? "percent_of_salary",
   contributionValue: c.contributionValue ?? 0,
   taxTreatment: c.taxTreatment ?? "pre_tax",
-  employerMatchType: c.employerMatchType,
   employerMatchValue:
     c.employerMatchValue == null ? null : String(c.employerMatchValue),
-  employerMatchRate: c.employerMatchRate,
   employerMaxMatchPct:
     c.employerMaxMatchPct == null ? null : String(c.employerMaxMatchPct),
-  isPayrollDeducted: c.isPayrollDeducted,
   fromBonus: c.fromBonus,
 });
 
@@ -103,7 +91,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
     delete (fields as { capPassed?: true }).capPassed;
     return r as R;
   });
-  const { annualById, salaryById } = contributionRowAmounts(
+  const { annualById, salaryById } = rowAmountsOverChecks(
     configured.map(asContributionRow),
     ctx.activeJobs,
     ctx.jobSalaries,
@@ -118,9 +106,9 @@ export function capEffectiveContribs<R extends CapPassRow>(
       annual: annualById.get(c.id)! * (scaled.has(c.id) ? factor : 1),
       salary: salaryById.get(c.id)!,
       employerMatchType: c.employerMatchType,
-      employerMatchValue: Number(c.employerMatchValue ?? 0),
+      employerMatchValue: toNumber(c.employerMatchValue),
       employerMatchRate: storedMatchRate(c.employerMatchRate),
-      employerMaxMatchPct: Number(c.employerMaxMatchPct ?? 0),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
       employerMatchTaxTreatment: "pre_tax" as const,
     }));
   const matchAt1 = computeGroupedEmployerMatch(matchRows(new Set(), 1));
@@ -134,6 +122,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
       regularAnnual: annualById.get(c.id)!,
       bonusAnnual: 0,
       employerAnnual: matchAt1.get(c.id)!.matchAnnual,
+      employer: planEmployer(c.jobId, ctx.jobSalaries),
       // Pre-tax and HSA payroll money is left out of W-2 wages.
       reducesCompensation:
         isPaidThroughPayroll(c) &&
@@ -148,7 +137,7 @@ export function capEffectiveContribs<R extends CapPassRow>(
         ...p,
         wages: sumBy(
           ctx.jobSalaries.filter((js) => js.job.personId === p.id),
-          (js) => js.totalComp ?? js.salary,
+          jobPay,
         ),
       })),
       // A match figured on the contribution moves with the cut.
@@ -188,38 +177,5 @@ export function capEffectiveContribs<R extends CapPassRow>(
         ? { maxValue: (value * rowMost) / cap.annual, othersInGroup: others }
         : {}),
     };
-  });
-}
-
-/** Cap a request's effective rows: each person's active job paid this
- *  year's pay (thisYearJobPay, the same pay the request's figures use). */
-export function capForRequest<R extends CapPassRow>(
-  rows: readonly R[],
-  household: CapRequestHousehold,
-  jobs: readonly (JobRef & JobLike)[],
-  salaryProfileActiveMap: SalaryProfileActiveMap,
-  salaryActiveMap: SalaryActiveMap,
-): (R & CappedRowFields)[] {
-  // The job held on the request's date in its tax year, else on Dec 31.
-  const asOf =
-    household.taxYear === household.asOf.getFullYear()
-      ? household.asOf
-      : new Date(household.taxYear, 11, 31);
-  const activeJobs = household.people.flatMap((p) => {
-    const job = findActiveJob(jobs, p.id, asOf);
-    return job ? [job] : [];
-  });
-  return capEffectiveContribs(rows, {
-    ...household,
-    activeJobs,
-    jobSalaries: activeJobs.map((job) => {
-      const pay = thisYearJobPay(job, salaryProfileActiveMap, salaryActiveMap);
-      return {
-        job: { id: job.id, personId: job.personId },
-        salary: pay.salary,
-        bonusGross: pay.bonusGross,
-        totalComp: pay.totalComp,
-      };
-    }),
   });
 }

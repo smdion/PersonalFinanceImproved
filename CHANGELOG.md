@@ -6,6 +6,233 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.11
+
+## [0.11.0] - 2026-11-12
+
+> Rollup of everything since v0.10.0. For patch-level detail, see the v0.10.x entries below.
+
+v0.10.1–v0.10.6 rebuilt Ledgr's code without moving a figure: one definition per domain fact, one home per kind of code, the engine in named stages, one structure for the screens, one word per meaning, and the stored data older versions left behind converted. v0.11.0 is the first release of the v0.11 line, **correct answers**: figures now move, each in its own change with its cause in dollars, checked against the answer key's hand-worked cases. This release corrects taxes (the senior deduction, the 65+ add-on on the Taxes page, gains sheltered by an unused standard deduction, HSA money paid outside payroll), take-home pay (a bonus is paid and taxed on its own check, and every year total is the sum of the year's checks), the IRS contribution limits (per employer, every job, part-year jobs, the Roth IRA worksheet, a married couple's IRAs), joint contribution accounts, and Coast FIRE's verdicts. It also makes backups and the database safer on both SQLite and PostgreSQL, keeps a non-admin's restore away from logins and credentials, hardens the public demo, and renames the last API paths that broke the naming rules: **v0.11.0 is the last release of the v0.11 line with breaking API changes.** A migration test on a copy of the maintainer's data taken at the release upgraded 0020 → 0021 with no refusal (and an older copy 0017 → 0021 in one start). Of the 131 read procedures compared on that data, 114 answer exactly as v0.10.6 did; the other 17 move for the reasons under Changed figures.
+
+### Upgrading
+
+- **This release changes the database: back up first.** Coming from v0.10.6, one migration runs on start (0021, below). Coming from v0.10.0–v0.10.5, the start also applies 0014–0017 (v0.10.2) and 0018–0020 (v0.10.6): **set `ENCRYPTION_KEY` to this install's key before upgrading**, and read v0.10.6's Upgrading notes, because those migrations can stop and name rows to fix in the version you're upgrading from. A rollback is the pre-upgrade backup plus the older image, never the image alone.
+- **Tag 0021 removes Salary Profile pay saved for jobs that were deleted.** The Salary Profiles list's job count and salary total no longer count them. From now on, deleting a job removes its pay from every Salary Profile at once.
+- **The migrator records each migration with its own release date,** so a migration dated after the server's clock can no longer run twice on start.
+- **The first projection after upgrading recomputes, once** (the engine's cache key changed). The Simulation draws fresh samples the first time each is opened. Many projection figures also move for the reasons under Changed figures.
+- **Everyone signs in again at the upgrade, and then every 4 hours.** A session now ends 4 hours after sign-in, however active (before: it renewed itself on every visit for 30 days). Authentik group changes take effect at the next sign-in.
+- **Your filing status, once.** An install whose filing status was never saved sees a one-time prompt on Taxes and Paycheck (for an admin): confirm the status in use, or choose one when it came from a W-4. No figure moves until you do. New installs are asked in the first-run wizard.
+- **Joint contribution accounts with no job take no percent.** A joint account with no job can't be given a percent-of-salary contribution or a percent-of-contribution match: a save that would is refused. One already saved reads $0 and is flagged as incomplete until it becomes a dollar amount or the account is tied to a job.
+- **Public demo servers (`DEMO_ONLY`):** put a reverse proxy in front that supplies the client's address and set `TRUSTED_PROXY_HEADER` (OPS Install step 5). With none, every visitor counts as one and they share 5 demo profile activations a minute. A request with no demo profile chosen is refused ("Choose a demo profile to continue.") instead of reading the database's own tables.
+- **API.** v0.11.0 holds every breaking API change of the v0.11 line. A script that calls `/api/trpc` or the backup routes should check each line:
+  - **Renamed paths, 46 procedures** (no alias; inputs and responses unchanged):
+    - `networth.*` → `netWorth.*` (all 11: `computeComparison`, `computeDetailedHistory`, `computeSummary`, `listHistory`, `listSnapshots`, `listSnapshotTotals`, `portfolioSnapshots.{create, createAccount, delete, getLatest, updateAccount}`);
+    - `retirement.computeRelocationAnalysis` → `projection.computeRelocationAnalysis`;
+    - `budget.listContribAccountsForLinking` → `budget.listContributionAccountsForLinking`;
+    - `investments.suggestSnapshot` → `investments.listSnapshotSuggestions`;
+    - `contributionProfile.compareData` → `contributionProfile.getComparisonData`;
+    - `projection.analyzeStrategy` → `projection.computeStrategyAnalysis`; `projection.compareWithdrawalStrategies` → `projection.computeWithdrawalStrategyComparison`; `projection.projectTaxYears` → `projection.computeTaxProjection`; `projection.rothConversionWhatIf` → `projection.computeRothConversionWhatIf`; `projection.sweepSocialSecurityClaimingAges` → `projection.computeSocialSecurityClaimingSweep`; `projection.peekMonteCarloSummary` → `projection.getSimulationSummary`; `projection.computeCoastFireMC` → `projection.computeCoastFireSimulation`; `projection.computeMonteCarloProjection` → `projection.computeSimulation`; `projection.getMonteCarloProgress` → `projection.getSimulationProgress`;
+    - `settings.jobs.{list, create, update, delete}` → `jobs.*`; `settings.people.{list, create, update, delete}` → `people.*`; `settings.earnings.{list, create, update, delete}` → `paycheck.earnings.*`; `settings.deductions.{list, create, update, delete}` → `paycheck.deductions.*`; `settings.contributionAccounts.{list, create, update, delete, setActive, setPriorYearAmount}` → `contribution.accounts.*` (22 procedures; the rest of `settings.*` stays).
+  - **Refused input** (BAD_REQUEST): a year outside 1900–2100 or not whole, a date that doesn't exist or falls outside 1900–2100, or a month outside 01–12, on request fields (people, jobs, mortgages, savings, snapshots, expense comparison, extra-paycheck routing, planned transactions, Relocation, Tax Buckets, sync mappings); a dollar amount sent as a number beyond ±999,999,999,999.99; a Salary Profile entry (`salaryProfile.create`, `update`, `patchEntry`) for a job that doesn't exist; a "Changes by year" set (`retirement.projectionOverrides.save`) its kind's shape refuses (it stored any list before); a stored active Contribution or Salary Profile id that isn't a whole number ("pick the active profile again"); a percent-of-contribution match on a joint account with no job.
+  - **Changed responses:** every procedure that returns a decimal column returns it in one text form on both databases (no trailing fractional zeros: `"300.00"` → `"300"`, `"0.500000"` → `"0.5"`; the number is unchanged). `performance.computeSummary` always returns `performanceLastUpdated` (null until stamped; the key was missing). `demo.activateProfile` refuses an unknown slug with zod's message (was "Unknown demo profile: <slug>") and is limited to 5 a minute per visitor. `savings.convertGoalToBudgetItem`, `recalculateAllocation` and `lockInAllocationPercent` with no budget profile answer BAD_REQUEST "No active profile" (was PRECONDITION_FAILED with their own messages).
+  - **No profile named means the active one:** a paycheck or contribution summary, a projection or a Plan called with no Contribution Profile id now runs on the active profile (some read none and showed $0 contributions).
+  - **Backup routes:** `GET /api/versions/export` and `POST /api/versions/import` answer 409 while a demo profile is active (they acted on the household's data). For a non-admin, an export leaves out `local_admins`, the `rbac_*` settings and connection credentials, and sets `householdOnly: true`; an import with `householdOnly: true`, or by a non-admin, keeps today's logins and access settings. An import's `restoredTables` counts the tables it took from the backup (was every versioned table). An import over 50 MB is refused (413) before the server reads it.
+  - **Since v0.10.0** (details in each entry below): save and remove mutations answer `{ ok: true }` (v0.10.4), and connection tests `{ ok, … }` (v0.10.5); 23 queries renamed to `get`/`list`/`compute` (v0.10.5); contribution accounts return `employerMatchRate` (v0.10.2); a projection's per-account rows group their draw under `draw` and Roth basis under `roth` (v0.10.3); on PostgreSQL a stored JSON string returns as a string (v0.10.6).
+
+### Changed figures
+
+Each line is one corrected rule, with the case that shows it. Your own figures move only where your household has that case.
+
+**Taxes**
+
+- **The Taxes page counts each person 65+ on the return** (the 65+ add-on and, 2025–2028, the senior deduction), as do its summary and Living Costs: Single, 67, on $60,000 owes $4,054, not $5,020; married filing jointly, both 65+, on $100,000 owes $5,804, not $7,640.
+- **The senior deduction phases out per person on the joint MAGI** (IRC 151(d)(5)(C)): two seniors at $200,000 MFJ get $6,000, not $9,000; at $250,000 or more, none (a 2028 projection year at $260,000: federal tax $37,338.42 → $39,076).
+- **An unused standard deduction shelters long-term gains,** as Form 1040 does, and withdrawal routing counts that room as tax-free: MFJ 2026 with $120,000 of long-term gains and no ordinary income owes $0, not $3,165. Projections of retirees drawing from a brokerage pay less tax and keep more invested.
+- **Gains are never taxed above what ordinary rates would charge on them** (Schedule D line 25): up to $57 less tax a year at 2026 MFJ tables ($28.50 Single); Single with $50,400 taxable income including $950 of gains owes $5,800, not $5,828.50. Conversion years included.
+- **HSA money paid outside payroll comes off AGI on the Taxes page** (Schedule 1 line 13): Single on $104,000 with $4,400 to an HSA outside payroll owes $9,936, not $10,904. The Roth IRA MAGI is unchanged.
+- **A year's MAGI is read to the cent:** where a projection year sits within a cent of an IRMAA tier or the ACA cliff, the result no longer depends on the order its incomes are added (a Roth conversion held exactly at an IRMAA tier edge: $56,000 → $0).
+
+**Paychecks**
+
+- **Year take-home takes a bonus from its own check:** $190,000 with a $30,000 March bonus was $1,860 high ($166,116.87 → $164,256.87); a part-year job's bonus was up to $3,100 high.
+- **The bonus estimate charges Additional Medicare past $200,000:** a $10,000 bonus on $208,000 of pay: FICA $145 → $235, net $7,655 → $7,565.
+- **Withheld so far includes a bonus already paid** (Taxes page, the dashboard's withheld year to date): $100,000 biweekly with a $10,000 March bonus, on July 2: federal $6,585.02 → $8,785.02, FICA $3,824.99 → $4,589.99.
+- **Year to date sums the checks actually paid,** with Social Security at the full rate until the wage base: $300,000 biweekly on July 2 showed net $107,588.39, now $104,457.86.
+- **The Projected year sums the year's actual checks:** a job started in July shows only its own checks. A $200,000 job with a $30,000 March bonus shows net $137,613.45, not $135,894.46 ($1,718.99 more, because the bonus check pays part of the Social Security), matching the dashboard's net annual.
+- **The Year-end estimate sums the year's checks and charges Additional Medicare:** $300,000 monthly: Medicare $4,350 → $5,250, net $216,076.80 → $215,176.80. Other households move by a few cents at most.
+- **A job that ends this year stops at its last day:** a $104,000 biweekly job ending June 5 shows $48,000 over 12 checks, not $104,000 over 26. A bonus dated after the job's last day is left out of the Bonus panel and the Household Income card ($60,000 job with a $6,000 bonus after it ends: $66,000 → $60,000).
+- **A bonus dated before the year's first payday is paid on check 1,** not the last: $156,000 biweekly from January 9 with a $40,000 bonus dated January 5 counts it from January (year to date $0 → $40,000); a job started June 1 no longer counts that bonus as its own (year income $130,000 → $90,000).
+- **A semimonthly bonus dated the 15th is paid on the 15th's check** (check 11 → 12 for June 15). The year's totals don't change.
+
+**Contribution limits and contributions**
+
+- **Limits use the age at Dec 31 of the tax year:** from Jan 1 to Apr 15, someone who turned 50 last year gets last year's $1,000 IRA catch-up (2025 room $7,000 → $8,000), and someone turning 50 this year gets the catch-up all year (2026 IRA $7,500 → $8,600). West of UTC, an age read from a date of birth no longer turns a day early (born 1960-01-01, on 2026-12-31: 67 → 66).
+- **401(k) and 403(b) money is held to the annual-additions limit at each employer:** deferrals plus employer money stay within min($72,000, that job's pay), catch-up outside it. On $200,000 of pay with $60,000 of employer money, a $24,500 deferral is now $12,000 ($20,000 at 50+), and $10,000 of pay no longer keeps a $24,500 401(k). A save over it is refused.
+- **Every job a person holds counts in the IRS-limit caps:** with a $5,000 and a $100,000 job and a $10,000 pre-tax 401(k), the IRA is no longer cut to $0 and its save refused; the full $7,500 fits. A What-If salary applies to the person's current job only.
+- **A job started or ending this year is capped on the checks it pays this year:** $120,000 monthly from July 1 with $500 a check to an HSA keeps $500 a check (was cut to $366.67; net $45,077.28 → $44,514.48). A save that leaves this year's contributions over a limit, counting an earlier job's this year, is refused. In the Projection's first year, such a job puts in what its checks still pay this year, not a share of a year by months.
+- **Roth IRA "Allowed directly" takes off this year's traditional IRA money** (Pub 590-A Worksheet 2-2 lines 9–11): a 50-year-old Single filer under the range with $5,000 in a traditional IRA is allowed $3,600, not $8,600; MFJ at MAGI $247,000 with $5,000 traditional, $2,500, not $3,750.
+- **On a joint return the higher earner's IRA is held to their own pay** (IRC 219(c)): pay $5,000 / $3,000 with IRAs $7,500 / $500: the higher earner's IRA is capped at $5,000 (was $7,500); pay $5,000 / $1,000 with IRAs $7,500 / $1,000: $5,000 and $1,000 (was $5,294.12 and $705.88).
+- **A joint account's yearly amount is figured one way on every page.** A joint per-check amount counts in the Projection when every job pays on one schedule ($100 a check, biweekly: $0 → $2,600 a year); with mixed schedules it reads $0 and is flagged. On the Budget page a joint percent contribution reads $0, not its value ÷ 12 (6% showed $0.50 a month).
+- **A joint account's dollar match counts on the Contributions page:** $1,500 a year, was $0.
+- **A joint account tied to a job counts once,** in that job's rows: the Contributions page's joint totals and the Budget page's estimate no longer count it a second time.
+- **A joint account with no job and a percent-of-contribution match reads $0** and is flagged ($100 a month with a 50% match: $1,200 a year → $0 on Contributions and Budget; $1,800 → $0 in the Projection).
+- **A budget-linked contribution follows the person's job:** a percent contribution on an account with no job of its own reads its owner's job pay (6% for a person paid $120,000: $0 → $600 a month), and a per-check amount for a person with no job reads $0 and is flagged ($108.33 → $0 a month), as on the Contributions page.
+- **No Contribution Profile picked means the active one:** a page or Plan with none picked shows the active profile's contributions where it showed $0 (an invented test household's no-profile paycheck summary: net regular pay $221,516.28 → $194,137.05).
+- **The Contributions page's year-to-date split applies a What-If salary to the current job only;** an ended job's rows no longer take the What-If pay.
+- **The employer-match default switch reads one household figure on every page:** everyone's salary and bonus this year against the high-income line.
+- **The IRS-limit cap pass reads a match value as every other figure does** (edge): text like "100abc" counts as 100, not as no match, so an HSA's room after the employer's money agrees between the cap and the figures.
+
+**Retirement and Coast FIRE**
+
+- **Retirement starts from the Retirement budget even when it equals the working one,** with one year of inflation per year from today's dollars: for a household whose Retirement budget equals its Budget, the first retirement year's need rises by one year of inflation (an invented household: $94,458.70 → $97,292.46), withdrawals and tax rise, balances fall, and a Simulation success rate can fall (that household: 80% → 70%). The same change moves a few figures the other way: a balance-sized withdrawal strategy delays its raises after the higher first year, so the Coast FIRE check's Simulation success and spending-stability rates can rise slightly; the bracket optimizer's and the Roth conversion tool's candidates show lower lifetime tax and a higher Traditional end balance (the extra need is drawn from Roth under the bracket cap, and RMDs shrink); and a raising strategy also moves in the first year when the post-retirement inflation rate differs from general inflation.
+- **Coast FIRE judges the first retirement year against the stated need,** in the fixed-return and the Simulation verdicts: a plan whose first year doesn't cover the Retirement budget is no longer "Already ✓", and one that does is no longer called unreachable. A retiree whose plan fails sees "Not reachable" with "Already retired: the plan doesn't pass." (was "Already ✓"; the dashboard tile said "Already Coast").
+- **Coast FIRE's today's dollars come from the engine's own price level:** the need at retirement no longer counts one extra year of inflation (an invented household: $61,800 → $60,000), and the end balance is deflated to the last year run (about 3% higher, e.g. $3,353,772 → $3,454,386).
+- **The Retirement table's Today's $ Simulation median matches the headline;** it was deflated twice ($367,501 → $663,748 on the test run).
+
+**Budget and savings**
+
+- **A save or sync late on a month's last day keeps that month's extra-paycheck savings** (local time; e.g. after 18:00 in Chicago): a run at 23:30 on Jan 31 kept the test household's January goal funding ($1,828.08 and $824.05), which it used to delete for good.
+- **A budget column, e-fund column or snapshot id stored as text ("1") reads as that number** everywhere it was read as column 0 ($30,000 → $37,200 a year on a two-column budget of $2,500 and $3,100 a month), the Budget page's selected column included.
+- **Emergency fund on SQLite: a partly repaid self-loan counts as outstanding** ($1,000 loan, $500 repaid: $500, was $0).
+
+**Since v0.10.0** (v0.10.x moved one figure): live contribution estimates apply IRS limits tied to pay for a person whose job ended after their last posted contribution (v0.10.5).
+
+### Changed
+
+- **Filing status is asked for.** The first-run wizard asks how the household files its tax return, and new jobs' W-4 box starts from the answer. An existing install whose status was never saved sees a one-time "Confirm your filing status" (or "Choose your filing status", when the status came from a W-4) prompt on Taxes and Paycheck.
+- **Two current jobs:** a person with two current jobs gets the same job everywhere (the one started first): Paycheck, Contributions and the year-end figures no longer follow whichever row the database returned first. The Taxes page says which job's pay and tax are counted, and the Roth IRA section warns that only that job's pay is in its MAGI. Two jobs at once aren't modelled yet.
+- **Contribution saves say why they're refused:** "over the IRS limit — set it to at most …" (an employer's annual-additions limit, a part-year job's checks, an earlier job's money this year), "more than taxable pay allows" (a married couple's IRAs), and "A joint account with no job has no pay to match a percent of: use a dollar match, or tie it to a job."
+- **Employer match display:** a stored match type Ledgr doesn't know reads as no match, is logged once per account, and the Paycheck card says "Match type not recognised"; a percent match whose rate can't be read shows its value, not "0%"; an ESPP with a dollar match shows "Employer: $1,500.00/yr", not "1,500% discount".
+- **Account labels are built from their parts** (owner, label, type, institution) wherever the owner is known, so renaming a person or an account shows everywhere those views read.
+- **The relocation tool's "Savings Rate Impact" card reads "Left Over After Spending"**: salary minus spending, as a share of salary (contributions aren't counted).
+- **The Expenses page's "Savings Rate" card reads "Left Over After Spending"**: net income minus actual spending, as a share of net income (contributions aren't counted; the Dashboard's Savings Rate is unchanged).
+- **The Taxes breakdown shows "HSA paid outside payroll"** above AGI when there is such money, and the AGI help texts say so.
+- **Restore and import notes for a non-admin** say that sign-ins, access settings and each integration's credentials stay as they are, and so do account links that still name the same accounts.
+- **Exit Demo leaves the demo** on a household install (it stayed in it). On a demo-only server, a demo profile built today is kept for every visitor instead of rebuilt by each one; it rebuilds on a new day, after an upgrade, or if it's incomplete. On a household install, activating a demo profile still resets it.
+- **On PostgreSQL, a year's accounts at one institution list by label, then owner,** as on SQLite; contribution accounts and budget items list in one stable order on both.
+- **Since v0.10.0:** every dialog, row, header, tab and chart works from the keyboard and names itself to screen readers, and a failed load says why with Retry (v0.10.4); the screens use one word per meaning ("Projection", "Retirement budget", "Baseline", "Goals", "Simulation") (v0.10.5); only an admin sets up or manages an integration (v0.10.3, v0.10.5); a restore or import checks a backup's saved choices before writing (v0.10.4); `docs/SCHEMA.md` lists every table's real columns (v0.10.6).
+
+### Fixed
+
+- **Current Balances names each account that sends no holdings once,** under the daily list ("Not in daily changes (no holdings): …"), by its account's name, with its balance changes on hover. It was repeated on most daily lines again whenever its balance didn't change on one of them, and an account held in parts was named once per part.
+- **An inline edit ends exactly once:** Escape then leaving the field no longer saves the cancelled value, and Enter then leaving it no longer saves twice (inline numbers, the Upcoming transactions table, every inline edit).
+- **The restore dialog reports a failed pre-restore backup** ("The backup failed, so nothing was restored: …"; it silently did nothing), makes one backup per opening instead of one per retry, no longer shows the last failure when reopened, and the backup's description reads `Auto-created before restoring "<name>"`.
+- **Backups across databases:** a SQLite backup restores on PostgreSQL (and the reverse) with its timestamps; a PostgreSQL import checks every foreign key before it commits; an export and a saved version read every table from one snapshot, so a backup taken during a sync is whole; the PostgreSQL pre-upgrade backup keeps each date's day on a server east of UTC; a restore writes a JSON null and a JSON string as themselves on both databases.
+- **Jobs and Salary Profiles:** deleting a job removes its pay from every Salary Profile in the same transaction (an orphan entry broke the extra-paycheck base-pay refresh), a write for a job that doesn't exist is refused, and a Salary Profile write and a job delete can't race or deadlock on PostgreSQL.
+- **Concurrent writes:** on SQLite a query from outside an open transaction waits for it to end (it could see and lose that transaction's uncommitted rows); on PostgreSQL Salary Profile, performance and budget read-merge-writes lock their row before they read, so a concurrent writer's change isn't lost; an app-setting merge inside a SQLite transaction can't hang.
+- **Migrations:** a replayed SQLite rebuild skipped over a hand-added column is refused before it's recorded (it recorded a change it never made); an install whose migration table was dropped replays on the first start, not the second.
+- **A profile id stored as text ("2") still names its profile** in the UI (the active-profile repair re-pointed it); the auto-version retention count reads a stored text count as that count, never under 1.
+- **A "Changes by year" cap that isn't a number is left uncapped,** instead of failing the projection.
+- **Each rate-limit tier counts apart:** signed-in dashboard requests no longer use up the public tier, so first-run and other public queries stop answering 429, `DEMO_ONLY` visitors no longer share one Simulation bucket, and a session carries its user's id, so limits key each person, not everyone behind one address.
+- **An image built with `DEMO_ONLY=true` no longer ships 20 dashboard pages as a static "Database Unavailable" page.**
+- **Error messages:** a budget-app error retold by Ledgr keeps what the service said; Savings' push with the budget app's connection missing says "Budget API client not available".
+- **Since v0.10.0:** "Changes by year" that set only some categories are applied (v0.10.6); PostgreSQL reads a stored string once (v0.10.6); re-adding a SimpleFIN institution keeps each account's links and history (v0.10.2); Current Balances names a missing report and an institution that stopped updating (v0.10.2, v0.10.4); privacy mode masks the eligibility note (v0.10.3); an unknown saved withdrawal strategy no longer breaks Retirement settings (v0.10.4).
+
+### Security
+
+- **A non-admin's backup leaves logins, access settings and credentials alone.** Their export leaves those out; their import or restore keeps today's sign-ins, `rbac_*` settings and each integration's credentials, and keeps today's account mappings, skipped categories and linked profile and column where the target still exists with the same name (otherwise it takes the backup's). A backup made before connections were versioned keeps today's skipped categories and SimpleFIN last sync; a restored version that holds no connections still clears them. The Versions preview no longer shows a non-admin the access settings.
+- **A finished onboarding stays finished through any backup,** so a restore or a command-line import can't reopen "Create the first admin".
+- **Sessions end 4 hours after sign-in;** a page request with no session goes to `/login` at the proxy.
+- **Backups and the demo:** import and export answer 409 while a demo profile is active (an import in demo mode overwrote the household's data); an import over 50 MB is refused before the server holds it.
+- **The public demo:** a request with no demo profile chosen is refused (and no longer written to the error log); activating a profile is limited to 5 a minute per visitor; a profile's schema is rebuilt in one transaction under its own lock, so no visitor sees a half-built demo and two activations at once seed it once (the 10-schema cap is gone).
+- **Applying a Plan writes a change-log entry** naming who applied it.
+- **Outbound requests:** the tax-data download goes through the outbound URL check, its redirects only to GitHub's release-download hosts; ids stored for YNAB and Actual go into a request path as one segment, so a malformed id can't point a request at another endpoint.
+- **The holdings checks load only for a viewer who may see the portfolio.**
+- **Since v0.10.0:** one checked fetch for every outside service, `http` refused for SimpleFIN and Tiingo, redirects limited (v0.10.2); every stored credential encrypted (v0.10.6); an unknown demo cookie names no schema (v0.10.5).
+
+### Smoke test
+
+One line per change the release lets you see; "if any" marks what most households won't see. Run on prod after the deploy.
+
+**After the upgrade**
+
+- [ ] You're asked to sign in again (every session ends at the upgrade); a session then lasts 4 hours from sign-in.
+- [ ] Settings → Salary Profiles: each profile's job count and total count only existing jobs (tag 0021).
+- [ ] The first Retirement page load recomputes once, then loads as before.
+- [ ] Taxes and Paycheck (admin): if the filing status was never saved, an amber "Confirm your filing status" (or "Choose your filing status") prompt shows; Confirm or a choice makes it go away and moves no figure.
+
+**Taxes page**
+
+- [ ] Someone 65+ on the return: federal tax, the summary and Living Costs' annual taxes include the 65+ add-on and (2025–2028) the senior deduction (lower tax). If any.
+- [ ] HSA money paid outside payroll: a "HSA paid outside payroll" row above "AGI (wages)"; AGI, taxable income, federal tax and effective rate lower by it; "AGI from wages (est.)" on Taxes and the dashboard lower too. If any.
+- [ ] Withheld so far (and the dashboard's Taxes withheld YTD) includes a bonus already paid this year. If a bonus was paid.
+- [ ] A person with two current jobs: the breakdown names the job counted; the Roth IRA section warns its MAGI may be low. If any.
+- [ ] Roth IRA "Allowed directly" / "Allowed today" (and the Roth recommendations) fall by this year's traditional IRA money. If any.
+
+**Paycheck page and dashboard**
+
+- [ ] Projected year: sums the year's actual checks; with a bonus that pays part of the Social Security wage base, net is a little higher and now matches the dashboard's net annual.
+- [ ] Year-end estimate: sums the year's checks; pay past $200,000 shows Additional Medicare (net lower).
+- [ ] Year to date (Paycheck and dashboard): sums the checks paid so far.
+- [ ] Bonus panel: past $200,000 of pay the bonus FICA includes Additional Medicare; year take-home takes the bonus from its own check.
+- [ ] A job ending this year: Projected stops at its last day; a bonus dated after it is left out (Bonus panel, dashboard Household Income card). If any.
+- [ ] A bonus dated before the year's first payday is on check 1; a semimonthly bonus dated the 15th is on the 15th's check. If any.
+- [ ] A contribution card whose stored match type is unknown reads "Match type not recognised"; an ESPP with a dollar match shows "Employer: $…/yr". If any.
+
+**Contributions page**
+
+- [ ] IRA, HSA and 401(k) limits include the catch-up for the whole year a person reaches its age; Jan 1–Apr 15, last year's IRA/HSA room includes last year's catch-up. If anyone is 50 or 55 this year or last.
+- [ ] 401(k)/403(b) employee room: held to min($72,000, the job's pay) less employer money at each employer. If employer money is large or pay is low.
+- [ ] Two current jobs: both jobs' pay counts for the IRA limit. If any.
+- [ ] A job started or ending this year: its contributions are capped on this year's checks (no false "over the limit"); a save over a limit, counting an earlier job this year, is refused with "over the IRS limit — set it to at most …". If any.
+- [ ] Married filing jointly: a higher-earning spouse's IRA is capped at their own pay ("more than taxable pay allows" on save). If one spouse earns little.
+- [ ] Joint accounts: a dollar match counts; one tied to a job counts once (in the job's rows); a joint per-check amount with mixed pay schedules reads $0, flagged. If any.
+- [ ] Year-to-date split with a What-If salary: only the current job takes it. If a What-If is set.
+- [ ] Settings → contribution accounts: a joint account with no job refuses a percent-of-contribution match with the joint-account message.
+
+**Budget page**
+
+- [ ] Contribution lines: a joint percent row reads $0; a budget-linked percent on an account with no job reads its owner's job pay; a per-check line for a person with no job reads $0 and is flagged; the "PC" estimate no longer counts a job-tied joint account twice. If any.
+- [ ] A budget column stored as text: the page and the server's totals use the same column (annual expenses, e-fund essentials). If the setting was ever stored as text.
+- [ ] No Contribution Profile picked on a page or Plan: the active profile's contributions show, not $0.
+
+**Retirement page**
+
+- [ ] Projection: if the Retirement budget equals the Budget, the first retirement year's spending is one year of inflation higher; withdrawals and tax up, balances down; the Simulation success rate may fall a step. Compare with the "before" note.
+- [ ] Projection years with long-term gains: tax lower where the standard deduction is unused (brokerage-funded retirees) and, at most $57 a year, where line 25 binds; balances a little higher.
+- [ ] Retirement table, Today's $: the Simulation median column matches the headline (it was lower).
+- [ ] Coast FIRE (card, dashboard tile, the Contributions note): the verdict judges the first retirement year against the Retirement budget, in both the average-returns and Simulation verdicts; a retiree whose plan fails reads "Not reachable" with "Already retired: the plan doesn't pass."; today's-dollar need about 3% lower and end balance about 3% higher than before.
+- [ ] Projection's first year: a job starting or ending this year puts in its remaining checks, not a months share. If any.
+- [ ] Tax optimization, Roth conversion near an IRMAA tier: the room above the edge is read to the cent. Edge only.
+
+**Savings and net worth**
+
+- [ ] Savings: a goal funded by an extra paycheck keeps this month's planned row after a save on a month's last evening.
+- [ ] Emergency fund (SQLite installs): a partly repaid self-loan counts as outstanding. If any.
+- [ ] Account labels show each owner's current name wherever the view resolves owners (a renamed person or account).
+
+**Versions, demo and access**
+
+- [ ] Versions → Restore as a non-admin `version` holder: the confirmation says sign-ins, access settings and credentials stay; the preview shows no `rbac_*` rows. A failed pre-restore backup says "The backup failed, so nothing was restored: …".
+- [ ] Demo: Exit Demo leaves the demo on a household install; Import and Export with a demo active say "A demo profile is active. Leave the demo …".
+- [ ] Inline edits (Performance figures, Savings' Upcoming transactions): Escape then click away saves nothing; Enter then click away saves once.
+- [ ] Relocation tool: the third card reads "Left Over After Spending".
+- [ ] Expenses: the fourth summary card reads "Left Over After Spending" with "$X left over"; the Dashboard's Financial Checkup still says "Savings Rate".
+- [ ] Integrations: each budget app, SimpleFIN, Tiingo and SEC still connects and syncs.
+
+**Operators**
+
+- [ ] `DEMO_ONLY` server (the demo canary): visitors behind the proxy each get their own limits (`TRUSTED_PROXY_HEADER`); a sixth demo activation in a minute is refused; a page with no demo profile chosen goes to the picker.
+- [ ] Any script calling `/api/trpc`: uses the new paths (CHANGELOG § Upgrading → API).
+- [ ] Current Balances: each account that sends no holdings is named once, under the daily list ("Not in daily changes (no holdings): …"); no daily line names one; hover shows its balance changes.
+
+### Under the hood
+
+**Counts (v0.10.6 → v0.11.0):** 241 commits; `src/` 430 files, +7,683 / −4,967; copied code 25 blocks / 529 lines → 20 / 442. Since v0.10.0: 1,267 commits in v0.10.1–v0.10.6.
+
+- **Figure changes are checked by CI:** a commit that re-records a pinned figure names its item, each figure it moves with its cause (`Figure-change:`) and the baseline's count of moved figures; an expected-failure flip names its case; a figure commit updates its `docs/CALCULATIONS.md` row; a breaking change carries an `API:` line; a tRPC path rename is proven by re-running its codemod.
+- **Answer-key cases flipped** from "expected to fail" to plain passes with each fix that names them (tax, paycheck, limits, Coast FIRE); six hand-worked golden projections replace the engine snapshot's date check.
+- **Tests run at one fixed instant** (a nightly run crosses the year in Chicago); every mutation runs on a real database; all 17 frozen release backups restore on PostgreSQL with matching figures.
+- **One reader each:** stored integer settings (`storedInteger`), browser storage (checked, not cast), a budget item's column amount, the active profile ids, a contribution row's pay schedule and yearly amount, a person's checks this year, a year's take-home (`yearTotals`, the year schedule), the inflation path and price level, and `returnDeductions()` for the engine year and the Taxes page.
+- **Decimal columns read in one text form on both databases.**
+- **The soak gate is gone:** a release is green CI on main's merge commit.
+- `check:migrations` refuses a journal whose dates don't rise and runs drizzle-kit's check on both dialects.
+- **Page budgets re-set once for the release:** every page's budget is its measured size on the release build + 2 KB (26 rise by 1–2 KB, 1 falls, 11 unchanged; Retirement 513 KB, Paycheck 305 KB).
+- **The docs name what's still open:** RULES § Known Gaps and the CALCULATIONS Gaps column name the v0.11.x release that carries each open item; FALLBACKS registers this release's fallbacks (no Contribution Profile named runs on the active one, incomplete contribution rows, HSA months unknown counted as the whole year, v0.1.0's zone-less timestamps read as UTC).
+- **Since v0.10.0:** one definition per domain fact (v0.10.1); `lib/pure`, `server/data` and `server/services` homes and router splits (v0.10.2); the engine, the Simulation and long services in named stages (v0.10.3); one structure and shared pieces for the screens (v0.10.4); sweeps of names, comments, clocks and fallbacks, with ratchets that only fall (v0.10.5); stored data converted and readers simplified (v0.10.6).
+
+---
+
 # v0.10
 
 ## [0.10.6] - 2026-11-10

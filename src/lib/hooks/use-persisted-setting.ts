@@ -3,6 +3,16 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
+import { readBrowserJson } from "@/lib/hooks/browser-storage";
+
+/** A seed the hook can hold: a setting is one string, number, boolean or
+ *  null. A narrower T (a key union, a profile id) isn't checked here: the
+ *  seed only shows until the DB value loads, which wins. */
+function isSettingValue<T extends string | number | boolean | null>(
+  v: unknown,
+): v is T {
+  return v === null || ["string", "number", "boolean"].includes(typeof v);
+}
 
 /**
  * A setting persisted to app_settings. The DB value wins once loaded (`loaded`);
@@ -38,15 +48,10 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   }, [localValue]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(`setting:${key}`);
-    if (stored !== null) {
-      try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding from localStorage, client-only by definition
-        setLocalValue(JSON.parse(stored) as T);
-      } catch {
-        // ignore invalid JSON
-      }
-    }
+    const stored = readBrowserJson(`setting:${key}`, isSettingValue<T>);
+    if (stored !== undefined)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding from localStorage, client-only by definition
+      setLocalValue(stored);
   }, [key]);
 
   // A local change not yet confirmed by the query. A per-write generation lets

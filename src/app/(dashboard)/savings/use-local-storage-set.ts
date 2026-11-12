@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { readBrowserJson } from "@/lib/hooks/browser-storage";
+
+const isIdList = (v: unknown): v is number[] =>
+  Array.isArray(v) && v.every((id) => typeof id === "number");
 
 export function useLocalStorageSet(
   key: string,
@@ -9,12 +13,7 @@ export function useLocalStorageSet(
     // typeof window guard — Next.js renders "use client" components on the
     // server first; localStorage is not available there.
     if (typeof window === "undefined") return new Set();
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? new Set(JSON.parse(raw) as number[]) : new Set();
-    } catch {
-      return new Set();
-    }
+    return new Set(readBrowserJson(key, isIdList));
   });
 
   const update = useCallback(

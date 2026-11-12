@@ -7,7 +7,7 @@ import { comparisonProcedures } from "./comparison";
 import { portfolioSnapshotProcedures } from "./portfolio-snapshots";
 import { snapshotAccountProcedures } from "./snapshot-accounts";
 
-export const networthRouter = createTRPCRouter({
+export const netWorthRouter = createTRPCRouter({
   ...summaryProcedures,
   ...historyProcedures,
   ...snapshotProcedures,

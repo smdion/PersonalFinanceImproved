@@ -16,10 +16,10 @@ export function effectiveMatchType(
     : accountType;
 }
 
-/** employer_match_rate is decimal(12,6): six integer digits;
- *  employer_match_value is decimal(14,2): twelve. */
-const RATE_INTEGER_DIGITS = 6;
-const PERCENT_INTEGER_DIGITS = 12;
+/** employer_match_rate is decimal(12,6): six integer digits, six places;
+ *  employer_match_value is decimal(14,2): twelve, two places. */
+const RATE_COLUMN = { wholeDigits: 6, places: 6 };
+const PERCENT_COLUMN = { wholeDigits: 12, places: 2 };
 /** The prefix parseFloat reads: sign, digits, point, exponent. */
 const LEADING_DECIMAL = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?/;
 
@@ -27,19 +27,19 @@ const LEADING_DECIMAL = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?/;
  *  moved in the text ("50.00" → "0.5", "1e2" → "1", "50%" → "0.5"). Null
  *  where parseFloat reads no finite number, or the rate doesn't fit. */
 export function rateFromPercent(stored: unknown): string | null {
-  return movePoint(stored, -2, RATE_INTEGER_DIGITS);
+  return movePoint(stored, -2, RATE_COLUMN);
 }
 
 /** A rate as the whole percent a form shows and the value column keeps in
  *  step with it: "0.5" → "50", "0.035" → "3.5". */
 export function percentFromRate(rate: unknown): string | null {
-  return movePoint(rate, 2, PERCENT_INTEGER_DIGITS);
+  return movePoint(rate, 2, PERCENT_COLUMN);
 }
 
 function movePoint(
   stored: unknown,
   places: number,
-  maxWholeDigits: number,
+  column: { wholeDigits: number; places: number },
 ): string | null {
   const text =
     typeof stored === "number" && Number.isFinite(stored)
@@ -66,7 +66,10 @@ function movePoint(
           /0+$/,
           "",
         );
-  if (whole.length > maxWholeDigits) return null;
+  // The column rounds to its places: all nines rounding up gain a digit.
+  const kept = whole + fraction.slice(0, column.places);
+  const carries = /^9+$/.test(kept) && (fraction[column.places] ?? "0") >= "5";
+  if (whole.length + (carries ? 1 : 0) > column.wholeDigits) return null;
   const sign = m[1] === "-" && (whole !== "" || fraction !== "") ? "-" : "";
   return `${sign}${whole || "0"}${fraction ? `.${fraction}` : ""}`;
 }

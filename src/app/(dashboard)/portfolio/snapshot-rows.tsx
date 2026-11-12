@@ -10,7 +10,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 // ---------------------------------------------------------------------------
 
 export type SnapshotAccountWithPerf =
-  RouterOutputs["networth"]["listSnapshots"]["snapshots"][number]["accounts"][number];
+  RouterOutputs["netWorth"]["listSnapshots"]["snapshots"][number]["accounts"][number];
 
 export type AccountGroup = {
   key: string;
@@ -91,7 +91,7 @@ export type SnapshotRowActionsProps = {
   >["deleteSnapshot"];
   isLatest: boolean;
   resyncPush: ReturnType<typeof usePortfolioSnapshotMutations>["resyncPush"];
-  snap: RouterOutputs["networth"]["listSnapshots"]["snapshots"][number];
+  snap: RouterOutputs["netWorth"]["listSnapshots"]["snapshots"][number];
 };
 
 /** A snapshot row's edit lock, sync and delete buttons. */

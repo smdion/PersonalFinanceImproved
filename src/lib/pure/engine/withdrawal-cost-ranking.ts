@@ -10,7 +10,7 @@ import type { WithholdingBracket } from "./tax-estimation";
 import {
   ltcgRoomForRate,
   ltcgRateForNextDollar,
-  toLtcgTaxableIncome,
+  ltcgStackBase,
 } from "@/lib/pure/tax/ltcg";
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
@@ -117,7 +117,7 @@ export interface RankWithdrawalTiersInput {
    *  modeled here (explicitly out of scope — see module docblock). */
   magiBeforeThisDraw: number;
   /** Household's annual standard deduction: converts `ordinaryIncomeFloor`
-   *  (gross) to the taxable income LTCG brackets use (`toLtcgTaxableIncome`);
+   *  (gross) to the taxable income LTCG brackets use (`ltcgStackBase`);
    *  undefined subtracts nothing. */
   standardDeduction?: number;
   /** Which free tier drains first: Roth basis or brokerage's 0%-LTCG room. Only
@@ -223,15 +223,17 @@ export function rankWithdrawalTiers(
     };
   }
 
-  // Brokerage 0%-LTCG room is free; gains room converts to withdrawal room via
-  // the basis ratio. The gross `ordinaryIncomeFloor` becomes taxable income for
-  // this LTCG lookup.
-  const zeroGainsRoom = ltcgRoomForRate(
+  // Brokerage 0%-LTCG room is free: the deduction ordinary income leaves unused,
+  // then the 0% band above the ordinary taxable income. Gains room converts to
+  // withdrawal room via the basis ratio.
+  const stackBase = ltcgStackBase(ordinaryIncomeFloor, standardDeduction);
+  const zeroBandRoom = ltcgRoomForRate(
     0,
-    toLtcgTaxableIncome(ordinaryIncomeFloor, standardDeduction),
+    stackBase.ordinaryTaxable,
     filingStatus,
     ltcgBrackets,
   );
+  const zeroGainsRoom = stackBase.unusedDeduction + zeroBandRoom;
   const zeroWithdrawalRoom =
     brokerageBasisRatio < 1
       ? zeroGainsRoom / (1 - brokerageBasisRatio)
@@ -262,18 +264,11 @@ export function rankWithdrawalTiers(
   // penalty itself is still charged by computeEarlyWithdrawalPenalty.
   const hsaRate = rothGrowthRate;
 
-  // gains don't raise the ordinary floor itself — same taxable-income
-  // conversion as zeroGainsRoom above, or this mixes a taxable-denominated
-  // room with a gross-denominated floor.
-  const brokerageOrdinaryIncome = toLtcgTaxableIncome(
-    ordinaryIncomeFloor,
-    standardDeduction,
-  );
-  // `brokerageOrdinaryIncome + zeroGainsRoom` sits exactly on the 0% ceiling,
-  // where `getLtcgRate` (a dollar at the ceiling) says 0%. This tier starts
-  // past it, so it's priced at the next dollar's rate.
+  // `ordinaryTaxable + zeroBandRoom` sits exactly on the 0% ceiling, where
+  // `getLtcgRate` (a dollar at the ceiling) says 0%. This tier starts past
+  // it, so it's priced at the next dollar's rate.
   const ltcgRate = ltcgRateForNextDollar(
-    brokerageOrdinaryIncome + zeroGainsRoom,
+    stackBase.ordinaryTaxable + zeroBandRoom,
     filingStatus,
     ltcgBrackets,
   );

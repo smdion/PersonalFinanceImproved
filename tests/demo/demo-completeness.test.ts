@@ -32,7 +32,7 @@ type Caller = Seeded["caller"];
 
 /** Each page's main read, as the page calls it on first load. */
 const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
-  ["dashboard: networth.computeSummary", (c) => c.networth.computeSummary()],
+  ["dashboard: netWorth.computeSummary", (c) => c.netWorth.computeSummary()],
   ["assets: assets.computeSummary", (c) => c.assets.computeSummary({})],
   [
     "benchmarks: investments.computeComparison",
@@ -65,15 +65,15 @@ const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
   ],
   ["liabilities: debts.list", (c) => c.debts.list()],
   ["milestones: milestones.computeInputs", (c) => c.milestones.computeInputs()],
-  ["networth: networth.listHistory", (c) => c.networth.listHistory()],
+  ["networth: netWorth.listHistory", (c) => c.netWorth.listHistory()],
   ["paycheck: paycheck.computeSummary", (c) => c.paycheck.computeSummary()],
   [
     "performance: performance.computeSummary",
     (c) => c.performance.computeSummary(),
   ],
   [
-    "portfolio: networth.listSnapshotTotals",
-    (c) => c.networth.listSnapshotTotals(),
+    "portfolio: netWorth.listSnapshotTotals",
+    (c) => c.netWorth.listSnapshotTotals(),
   ],
   [
     "retirement: projection.computeProjection",
@@ -86,8 +86,8 @@ const PAGE_READS: [string, (c: Caller) => Promise<unknown>][] = [
     (c) => c.taxBuckets.computeBreakdown(),
   ],
   [
-    "tax-optimization: projection.projectTaxYears",
-    (c) => c.projection.projectTaxYears({}),
+    "tax-optimization: projection.computeTaxProjection",
+    (c) => c.projection.computeTaxProjection({}),
   ],
   [
     "tools: projection.relocationScenarios.list",

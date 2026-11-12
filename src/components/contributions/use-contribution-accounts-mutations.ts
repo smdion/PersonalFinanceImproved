@@ -17,7 +17,7 @@ import type { z } from "zod/v4";
 import type { contribAccountActiveFieldsPatchSchema } from "@/lib/db/shapes/json-schemas";
 
 type ContributionRecord =
-  RouterOutputs["settings"]["contributionAccounts"]["list"][number];
+  RouterOutputs["contribution"]["accounts"]["list"][number];
 
 type PerfAccountRecord =
   RouterOutputs["performance"]["performanceAccounts"]["list"][number];
@@ -61,7 +61,7 @@ export function useContributionAccountsMutations({
         utils.performance.performanceAccounts.invalidate();
         utils.retirement.invalidate();
         utils.projection.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.invalidate();
       },
     },
   );
@@ -80,37 +80,35 @@ export function useContributionAccountsMutations({
     },
   );
 
-  const updateContributionMut =
-    trpc.settings.contributionAccounts.update.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
+  const updateContributionMut = trpc.contribution.accounts.update.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.retirement.invalidate();
+      utils.projection.invalidate();
+    },
+  });
 
-  const createContributionMut =
-    trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
+  const createContributionMut = trpc.contribution.accounts.create.useMutation({
+    onSuccess: () => {
+      utils.contribution.accounts.invalidate();
+      utils.retirement.invalidate();
+      utils.projection.invalidate();
+    },
+  });
 
   const updatePortfolioAccountMut =
-    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
+    trpc.netWorth.portfolioSnapshots.updateAccount.useMutation({
       onSuccess: () => {
-        utils.networth.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.portfolioSnapshots.getLatest.invalidate();
+        utils.netWorth.invalidate();
       },
     });
 
   const createPortfolioAccountMut =
-    trpc.networth.portfolioSnapshots.createAccount.useMutation({
+    trpc.netWorth.portfolioSnapshots.createAccount.useMutation({
       onSuccess: () => {
-        utils.networth.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
+        utils.netWorth.portfolioSnapshots.getLatest.invalidate();
+        utils.netWorth.invalidate();
       },
     });
 

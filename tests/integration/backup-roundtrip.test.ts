@@ -34,11 +34,11 @@ import { tablesLostOnRestore } from "@/lib/db/backup/restore-data-loss";
 
 type TestCtx = Awaited<ReturnType<typeof createTestCaller>>;
 
-const asAdmin = { asAdmin: true };
+const asAdmin = { asAdmin: true, user: "Admin" };
 
 /** Every versioned table's rows, ordered by id where there is one. */
 async function snapshotTables(db: TestCtx["rawDb"]) {
-  const { tables } = await exportBackup(db);
+  const { tables } = await exportBackup(db, { asAdmin: true });
   const byId = (a: unknown, b: unknown) =>
     Number((a as { id?: number }).id ?? 0) -
     Number((b as { id?: number }).id ?? 0);
@@ -112,7 +112,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
   });
 
   it("export covers every versioned table", async () => {
-    const backup = await exportBackup(a.rawDb);
+    const backup = await exportBackup(a.rawDb, { asAdmin: true });
     expect(Object.keys(backup.tables).sort()).toEqual(
       [...VERSION_TABLE_NAMES].sort(),
     );
@@ -123,7 +123,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
   it("export → JSON → import into an empty database reproduces every table", async () => {
     const before = await snapshotTables(a.rawDb);
     const backup = JSON.parse(
-      JSON.stringify(await exportBackup(a.rawDb)),
+      JSON.stringify(await exportBackup(a.rawDb, { asAdmin: true })),
     ) as BackupData;
 
     const result = await importBackup(b.rawDb, backup, asAdmin);
@@ -134,8 +134,33 @@ describe("Backup Round-Trip (real version-logic)", () => {
     expect(await snapshotTables(b.rawDb)).toEqual(before);
   });
 
+  it("a backup whose timestamps are PostgreSQL text imports with every timestamp kept", async () => {
+    const before = await snapshotTables(a.rawDb);
+    const backup = JSON.parse(
+      JSON.stringify(await exportBackup(a.rawDb, { asAdmin: true })),
+    ) as BackupData;
+    // timestamptz text with its offset, and every other one as a plain
+    // `timestamp` column wrote it (no offset, UTC).
+    let converted = 0;
+    for (const rows of Object.values(backup.tables))
+      for (const row of rows as Record<string, unknown>[])
+        for (const [column, value] of Object.entries(row))
+          if (/_at$/.test(column) && typeof value === "number") {
+            const text = new Date(value * 1000)
+              .toISOString()
+              .replace("T", " ")
+              .replace(".000Z", "");
+            row[column] = converted % 2 === 0 ? `${text}+00` : text;
+            converted++;
+          }
+    expect(converted).toBeGreaterThan(1);
+
+    await importBackup(b.rawDb, backup, asAdmin);
+    expect(await snapshotTables(b.rawDb)).toEqual(before);
+  });
+
   it("import brings back reference rows the backup predates (a newer tax year)", async () => {
-    const backup = await exportBackup(a.rawDb);
+    const backup = await exportBackup(a.rawDb, { asAdmin: true });
     const years = (backup.tables.tax_params as { tax_year: number }[]).map(
       (r) => r.tax_year,
     );
@@ -147,7 +172,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
       ).filter((r) => r.tax_year !== newest);
 
     await importBackup(b.rawDb, backup, asAdmin);
-    const after = await exportBackup(b.rawDb);
+    const after = await exportBackup(b.rawDb, { asAdmin: true });
     for (const table of ["contribution_limits", "tax_params"])
       expect(
         (after.tables[table] as { tax_year: number }[]).some(
@@ -163,14 +188,18 @@ describe("Backup Round-Trip (real version-logic)", () => {
     );
     a.db.run(sql`DELETE FROM mc_presets WHERE key = 'aggressive'`);
     const before = await snapshotTables(a.rawDb);
-    await importBackup(b.rawDb, await exportBackup(a.rawDb), asAdmin);
+    await importBackup(
+      b.rawDb,
+      await exportBackup(a.rawDb, { asAdmin: true }),
+      asAdmin,
+    );
     const after = await snapshotTables(b.rawDb);
     for (const t of SIMULATION_PRESET_TABLES)
       expect(after[t], t).toEqual(before[t]);
   });
 
   it("import of a backup with no preset rows gets the shipped presets", async () => {
-    const backup = await exportBackup(a.rawDb);
+    const backup = await exportBackup(a.rawDb, { asAdmin: true });
     for (const t of SIMULATION_PRESET_TABLES) backup.tables[t] = [];
     await importBackup(b.rawDb, backup, asAdmin);
     const after = await snapshotTables(b.rawDb);
@@ -181,7 +210,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
 
   it("import replaces existing data rather than merging into it", async () => {
     await seedPerson(b.db, "Stale Person", "1980-01-01");
-    const backup = await exportBackup(a.rawDb);
+    const backup = await exportBackup(a.rawDb, { asAdmin: true });
     await importBackup(b.rawDb, backup, asAdmin);
     const people = await snapshotTables(b.rawDb).then((t) => t.people!);
     expect(people.map((p) => (p as { name: string }).name).sort()).toEqual([
@@ -233,7 +262,7 @@ describe("Backup Round-Trip (real version-logic)", () => {
 describe("Backup connections fence", () => {
   let a: TestCtx;
   let b: TestCtx;
-  const notAdmin = { asAdmin: false };
+  const notAdmin = { asAdmin: false, user: "Viewer" };
 
   function connect(db: TestCtx["db"], service: string, serverUrl: string) {
     db.insert(sqliteSchema.apiConnections)
@@ -268,7 +297,7 @@ describe("Backup connections fence", () => {
   it("an import by someone who isn't an admin keeps today's credentials and brings the household", async () => {
     const kept = await connections(b.rawDb);
     const backup = JSON.parse(
-      JSON.stringify(await exportBackup(a.rawDb)),
+      JSON.stringify(await exportBackup(a.rawDb, { asAdmin: true })),
     ) as BackupData;
     expect(backup.tables.api_connections).toHaveLength(1);
 
@@ -279,7 +308,7 @@ describe("Backup connections fence", () => {
 
   it("an import by someone who isn't an admin keeps today's credentials when the backup has none", async () => {
     const kept = await connections(b.rawDb);
-    const backup = await exportBackup(a.rawDb);
+    const backup = await exportBackup(a.rawDb, { asAdmin: true });
     backup.tables.api_connections = [];
     await importBackup(b.rawDb, backup, notAdmin);
     expect(await connections(b.rawDb)).toEqual(kept);

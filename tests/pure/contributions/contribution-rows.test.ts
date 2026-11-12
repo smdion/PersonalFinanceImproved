@@ -1,18 +1,22 @@
 /**
  * A payroll fixed_monthly / fixed_annual account taken from the bonus check
  * needs the job's real pay-period count to know its per-paycheck amount.
- * resolveContributionPeriods used to hand back 0 for those methods, so the
- * bonus share was regular / 0 = Infinity and the cap pass zeroed the account.
+ * A schedule of 0 for those methods would make the bonus share regular / 0 =
+ * Infinity, and the cap pass would zero the account.
  */
+import type { ContributionMethod } from "@/lib/config/enum-values";
 import { describe, it, expect } from "vitest";
 import {
   annualContributionWithBonus,
-  contributionRowAmounts,
-  resolveContributionPeriods,
   type ContributionRow,
 } from "@/lib/pure/contributions/contribution-rows";
+import {
+  isJointPercentRow,
+  rowPaySchedule,
+} from "@/lib/pure/contributions/row-pay";
+import { contributionRowAmounts } from "@/lib/pure/contributions/row-amounts";
 
-const hsa = (method: string, value: number): ContributionRow => ({
+const hsa = (method: ContributionMethod, value: number): ContributionRow => ({
   id: 1,
   personId: 1,
   jobId: 1,
@@ -23,11 +27,12 @@ const hsa = (method: string, value: number): ContributionRow => ({
   contributionMethod: method,
   contributionValue: value,
   taxTreatment: "tax_free",
-  employerMatchType: "none",
+  employerMatchType: "none" as const,
   employerMatchValue: null,
   employerMaxMatchPct: null,
   isPayrollDeducted: true,
   fromBonus: true,
+  ownership: "individual",
 });
 
 const jobs = [{ id: 1, personId: 1, payPeriod: "biweekly" }];
@@ -41,14 +46,9 @@ const pay = [
 
 describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () => {
   it("resolves the job's real pay periods for every method", () => {
-    expect(
-      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
-        .periodsPerYear,
-    ).toBe(26);
-    expect(
-      resolveContributionPeriods("fixed_monthly", { payPeriod: "biweekly" })
-        .incomplete,
-    ).toBe(false);
+    const row = hsa("fixed_monthly", 100);
+    expect(rowPaySchedule(row, jobs).periodsPerYear).toBe(26);
+    expect(rowPaySchedule(row, jobs).incomplete).toBe(false);
   });
 
   it("a $100/month HSA gives a finite annual: 12 months plus one paycheck's share", () => {
@@ -74,7 +74,7 @@ describe("fixed-monthly / fixed-annual accounts taken from the bonus check", () 
   it("never divides by zero when no pay period is known", () => {
     const annual = annualContributionWithBonus(
       {
-        contributionMethod: "fixed_monthly",
+        contributionMethod: "fixed_monthly" as const,
         contributionValue: 100,
         jobId: 1,
         fromBonus: true,
@@ -96,7 +96,7 @@ describe("annualContributionWithBonus", () => {
     jobId: number | null = 1,
     fromBonus: boolean | undefined = true,
   ) => ({
-    contributionMethod: "percent_of_salary",
+    contributionMethod: "percent_of_salary" as const,
     contributionValue: value,
     jobId,
     fromBonus,
@@ -123,7 +123,7 @@ describe("annualContributionWithBonus", () => {
     expect(
       annualContributionWithBonus(
         {
-          contributionMethod: "fixed_per_period",
+          contributionMethod: "fixed_per_period" as const,
           contributionValue: 200,
           jobId: 1,
           fromBonus: true,
@@ -154,5 +154,121 @@ describe("annualContributionWithBonus", () => {
         26,
       ),
     ).toBe(10_000);
+  });
+});
+
+describe("rowPaySchedule: the one schedule a row's per-check amount runs on", () => {
+  const perCheck = (
+    over: Partial<Parameters<typeof rowPaySchedule>[0]>,
+  ): Parameters<typeof rowPaySchedule>[0] => ({
+    contributionMethod: "fixed_per_period",
+    jobId: null,
+    personId: 1,
+    ownership: "individual",
+    employerMatchType: "none",
+    ...over,
+  });
+  const twoJobs = [
+    { id: 1, personId: 1, payPeriod: "biweekly" },
+    { id: 2, personId: 2, payPeriod: "monthly" },
+  ];
+
+  it("a row's own job, else its person's first job", () => {
+    expect(rowPaySchedule(perCheck({ jobId: 2 }), twoJobs)).toMatchObject({
+      periodsPerYear: 12,
+      incomplete: false,
+      job: twoJobs[1],
+    });
+    expect(rowPaySchedule(perCheck({}), twoJobs)).toMatchObject({
+      periodsPerYear: 26,
+      job: twoJobs[0],
+    });
+  });
+
+  it("a household joint row: the one schedule every active job pays on, else $0 flagged", () => {
+    const joint = perCheck({ ownership: "joint", personId: null });
+    expect(rowPaySchedule(joint, twoJobs)).toEqual({
+      periodsPerYear: 0,
+      incomplete: true,
+      job: undefined,
+    });
+    expect(rowPaySchedule(joint, [twoJobs[0]!])).toMatchObject({
+      periodsPerYear: 26,
+      incomplete: false,
+    });
+    expect(rowPaySchedule(joint, []).incomplete).toBe(true);
+  });
+
+  it("a joint row tied to a job reads that job's schedule", () => {
+    expect(
+      rowPaySchedule(perCheck({ ownership: "joint", jobId: 2 }), twoJobs)
+        .periodsPerYear,
+    ).toBe(12);
+  });
+
+  it("a household joint percent is incomplete: it has no pay of its own", () => {
+    const jointPercent = perCheck({
+      ownership: "joint",
+      personId: null,
+      contributionMethod: "percent_of_salary",
+    });
+    expect(rowPaySchedule(jointPercent, twoJobs).incomplete).toBe(true);
+    expect(
+      rowPaySchedule({ ...jointPercent, jobId: 1 }, twoJobs).incomplete,
+    ).toBe(false);
+  });
+
+  it("an individual row is incomplete only as a per-check amount", () => {
+    expect(
+      rowPaySchedule(perCheck({ contributionMethod: "fixed_monthly" }), [])
+        .incomplete,
+    ).toBe(false);
+  });
+});
+
+describe("isJointPercentRow: a joint account with no job takes no percent", () => {
+  const joint = {
+    ownership: "joint" as const,
+    jobId: null,
+    contributionMethod: "fixed_monthly",
+    employerMatchType: "none",
+  };
+  it("a percent of salary or a percent-of-contribution match; never with a job or a person", () => {
+    expect(isJointPercentRow(joint)).toBe(false);
+    expect(
+      isJointPercentRow({ ...joint, contributionMethod: "percent_of_salary" }),
+    ).toBe(true);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        employerMatchType: "percent_of_contribution",
+      }),
+    ).toBe(true);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        jobId: 1,
+        employerMatchType: "percent_of_contribution",
+      }),
+    ).toBe(false);
+    expect(
+      isJointPercentRow({
+        ...joint,
+        ownership: "individual",
+        contributionMethod: "percent_of_salary",
+      }),
+    ).toBe(false);
+  });
+
+  it("a stored joint dollar amount with a percent match reads $0, incomplete", () => {
+    const row = {
+      ...joint,
+      personId: null,
+      employerMatchType: "percent_of_contribution",
+    };
+    expect(
+      rowPaySchedule(row, [{ id: 1, personId: 1, payPeriod: "biweekly" }])
+        .incomplete,
+    ).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 import { loadCapHousehold } from "@/server/services/contributions/caps";
-import { capForRequest } from "@/lib/pure/contributions/cap-pass";
+import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { eq } from "drizzle-orm";
@@ -8,24 +8,21 @@ import type { ProfilePair } from "@/server/services/profile-selection";
 import {
   type ContribResolutionStatus,
   filterActiveJobs,
+  whatIfForJob,
 } from "@/lib/pure/household/profiles";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   type SalaryOverrideEntry,
   type SalaryActiveMap,
   applySandboxSalaryEntries,
-  resolveCompensation,
-  applyActiveSalary,
+  thisYearJobPay,
 } from "@/lib/pure/household/compensation";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
 } from "@/server/services/contributions/profile";
 import { classifyContributionResolution } from "@/lib/pure/contributions/profile-fields";
-import {
-  resolveJoblessPeriodsPerYear,
-  resolveContributionPeriods,
-} from "@/lib/pure/contributions/contribution-rows";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
 import type { Db } from "@/lib/db";
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 
@@ -105,43 +102,29 @@ export async function resolveLinkedBudgetItemAmounts<
   );
   const activeContributionIds = new Set(activeContributions.map((c) => c.id));
   const activeJobs = filterActiveJobs(profileResult.jobs, scope.asOf);
-  const {
-    periodsPerYear: defaultPeriodsPerYear,
-    incomplete: joblessIncomplete,
-  } = resolveJoblessPeriodsPerYear(activeJobs);
 
   const salaryByJobId = new Map<number, number>();
   for (const j of activeJobs) {
-    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-    // Regular paychecks only (base salary): what a bonus check takes isn't
-    // monthly cash flow.
-    salaryByJobId.set(
-      j.id,
-      applyActiveSalary(j.personId, comp.salary, effectiveSalaryMap),
-    );
+    // Base salary only (a bonus check isn't monthly cash flow); What-If: current job only.
+    const whatIf = whatIfForJob(j, activeJobs, scope.asOf, effectiveSalaryMap);
+    const { salary } = thisYearJobPay(j, salaryProfileActiveMap, whatIf);
+    salaryByJobId.set(j.id, salary);
   }
 
   for (const c of activeContributions) {
     if (!linkedContributionIds.has(c.id)) continue;
     const val = computeValue(c);
-    const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
-    let jobPeriodsPerYear: number;
-    let incomplete: boolean;
-    if (c.jobId) {
-      const job = activeJobs.find((j) => j.id === c.jobId);
-      const resolved = resolveContributionPeriods(c.contributionMethod, job);
-      jobPeriodsPerYear = resolved.periodsPerYear;
-      incomplete = resolved.incomplete;
-    } else {
-      jobPeriodsPerYear = defaultPeriodsPerYear;
-      incomplete = isFixedPerPeriod && joblessIncomplete;
-    }
+    const {
+      periodsPerYear: jobPeriodsPerYear,
+      incomplete,
+      job,
+    } = rowPaySchedule(c, activeJobs);
     if (incomplete) {
       incompleteIds.add(c.id);
       contributionMonthlyById.set(c.id, 0);
       continue;
     }
-    const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
+    const salary = job ? (salaryByJobId.get(job.id) ?? 0) : 0;
     const annual = computeAnnualContribution(
       c.contributionMethod,
       val,

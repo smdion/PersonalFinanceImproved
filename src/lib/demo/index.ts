@@ -13,6 +13,7 @@ import {
 
 export type { DemoProfile } from "./types";
 export {
+  DEMO_COOKIE,
   demoSchemaName,
   isDemoProfileSlug,
   type DemoProfileSlug,

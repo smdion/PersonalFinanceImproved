@@ -88,7 +88,7 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
   });
 
   it("serves data calls with a demo profile active", async () => {
-    const people = await (await callerFor(schemaName)).settings.people.list();
+    const people = await (await callerFor(schemaName)).people.list();
     expect(people.length).toBeGreaterThan(0);
   });
 
@@ -240,15 +240,22 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     const install = await callerFor(null, reads);
     const names = (s: { people: { person: { name: string } }[] }) =>
       s.people.map((p) => p.person.name);
+    // A demo-only server refuses a request with no demo profile chosen.
+    const demoOnly = process.env.DEMO_ONLY === "true";
+    const publicNames = () =>
+      install.paycheck.computeSummary().then(names, (e: unknown) => {
+        if (demoOnly) return "refused";
+        throw e;
+      });
     const [publicFirst, demoSummary, contribution, publicAfter] =
       await Promise.all([
-        install.paycheck.computeSummary(),
+        publicNames(),
         demo.paycheck.computeSummary(),
         demo.contribution.computeSummary(),
-        install.paycheck.computeSummary(),
+        publicNames(),
       ]);
-    expect(names(publicFirst)).toEqual([]);
-    expect(names(publicAfter)).toEqual([]);
+    expect(publicFirst).toEqual(demoOnly ? "refused" : []);
+    expect(publicAfter).toEqual(demoOnly ? "refused" : []);
     const { rows } = await admin.query<{ name: string }>(
       `SELECT name FROM "${schemaName}".people ORDER BY id`,
     );
@@ -257,10 +264,85 @@ describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
     expect(contribution.people.length).toBe(rows.length);
   });
 
+  it("two builds of one demo profile at once seed it once", async () => {
+    const { buildDemoSchema } =
+      await import("@/server/services/demo/demo-schema");
+    const { getDemoProfile, isDemoProfileSlug } = await import("@/lib/demo");
+    const { profiles } = await (await callerFor(null)).demo.listProfiles();
+    const slug = profiles[0]!.slug;
+    if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
+    await Promise.all([
+      buildDemoSchema(slug, new Date("2026-06-01T12:00:00Z")),
+      buildDemoSchema(slug, new Date("2026-06-01T12:00:00Z")),
+    ]);
+    const { rows } = await admin.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM "${schemaName}".people`,
+    );
+    expect(rows[0]!.n).toBe(getDemoProfile(slug)!.people.length);
+    const people = await (await callerFor(schemaName)).people.list();
+    expect(people).toHaveLength(rows[0]!.n);
+  });
+
+  it("a demo-only server keeps a profile built today; another day, older migrations or a household install rebuild it", async () => {
+    const { buildDemoSchema } =
+      await import("@/server/services/demo/demo-schema");
+    const { isDemoProfileSlug } = await import("@/lib/demo");
+    const { profiles } = await (await callerFor(null)).demo.listProfiles();
+    const slug = profiles[0]!.slug;
+    if (!isDemoProfileSlug(slug)) throw new Error(`Not a profile: ${slug}`);
+    const demoOnly = process.env.DEMO_ONLY;
+    const build = (iso: string, server: "demo-only" | "household") => {
+      if (server === "demo-only") process.env.DEMO_ONLY = "true";
+      else delete process.env.DEMO_ONLY;
+      return buildDemoSchema(slug, new Date(iso));
+    };
+    const edit = () =>
+      admin.query(
+        `UPDATE "${schemaName}".people SET name = 'A visitor edit' WHERE id = (SELECT min(id) FROM "${schemaName}".people)`,
+      );
+    const kept = async () => {
+      const { rows } = await admin.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM "${schemaName}".people WHERE name = 'A visitor edit'`,
+      );
+      return rows[0]!.n === 1;
+    };
+    try {
+      await build("2026-06-02T12:00:00Z", "household");
+      await edit();
+      await build("2026-06-02T15:00:00Z", "demo-only");
+      expect(await kept()).toBe(true);
+
+      await build("2026-06-03T12:00:00Z", "demo-only");
+      expect(await kept()).toBe(false);
+
+      await edit();
+      await admin.query(
+        `COMMENT ON SCHEMA "${schemaName}" IS 'ledgr-migrations:0: seeded:2026-06-03'`,
+      );
+      await build("2026-06-03T12:00:00Z", "demo-only");
+      expect(await kept()).toBe(false);
+
+      await edit();
+      await build("2026-06-03T12:00:00Z", "household");
+      expect(await kept()).toBe(false);
+
+      // A restart's stale-schema drop leaves one built for today's migrations.
+      runMigrator();
+      const { rows } = await admin.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM pg_namespace WHERE nspname = $1",
+        [schemaName],
+      );
+      expect(rows[0]!.n).toBe(1);
+    } finally {
+      if (demoOnly === undefined) delete process.env.DEMO_ONLY;
+      else process.env.DEMO_ONLY = demoOnly;
+    }
+  }, 120_000);
+
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(
-      (await callerFor(schemaName)).settings.people.list(),
+      (await callerFor(schemaName)).people.list(),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 });

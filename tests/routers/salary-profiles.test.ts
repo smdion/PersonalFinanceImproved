@@ -214,13 +214,14 @@ describe("salaryProfile router", () => {
 
   describe("create / update", () => {
     it("creates a profile with explicit complete entries", async () => {
-      const { caller, cleanup } = await createTestCaller(adminSession);
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
+        const job = String(seedJob(db, await seedPerson(db, "Alex")));
         const profile = await caller.salaryProfile.create({
           name: "Full Entries",
           description: "Has one job",
           salaries: {
-            "1": entry({ salary: 150000 }),
+            [job]: entry({ salary: 150000 }),
           },
         });
         expect(profile.name).toBe("Full Entries");
@@ -228,7 +229,7 @@ describe("salaryProfile router", () => {
           string,
           { salary: number; bonusPercent: number }
         >;
-        expect(s["1"]).toEqual(entry({ salary: 150000 }));
+        expect(s[job]).toEqual(entry({ salary: 150000 }));
       } finally {
         cleanup();
       }
@@ -257,12 +258,13 @@ describe("salaryProfile router", () => {
     it("updates entries on an existing profile", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
+        const job = String(seedJob(db, await seedPerson(db, "Alex")));
         const profileId = seedSalaryProfile(db, { name: "EntryUpdate" });
         const updated = await caller.salaryProfile.update({
           id: profileId,
-          salaries: { "1": entry({ salary: 200000 }) },
+          salaries: { [job]: entry({ salary: 200000 }) },
         });
-        expect((updated.salaries as Record<string, unknown>)["1"]).toEqual(
+        expect((updated.salaries as Record<string, unknown>)[job]).toEqual(
           entry({ salary: 200000 }),
         );
       } finally {
@@ -271,16 +273,17 @@ describe("salaryProfile router", () => {
     });
 
     it("the migration-seeded baseline profile is an ordinary, editable row", async () => {
-      const { caller, cleanup } = await createTestCaller(adminSession);
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const [seeded] = await caller.salaryProfile.list();
+        const job = String(seedJob(db, await seedPerson(db, "Alex")));
         const renamed = await caller.salaryProfile.update({
           id: seeded!.id,
           name: "My Baseline",
-          salaries: { "1": entry({ salary: 123456 }) },
+          salaries: { [job]: entry({ salary: 123456 }) },
         });
         expect(renamed.name).toBe("My Baseline");
-        expect((renamed.salaries as Record<string, unknown>)["1"]).toEqual(
+        expect((renamed.salaries as Record<string, unknown>)[job]).toEqual(
           entry({ salary: 123456 }),
         );
       } finally {
@@ -487,6 +490,51 @@ describe("salaryProfile router", () => {
         cleanup();
       }
     });
+  });
+
+  it("the routing refresh skips an entry whose job is gone and refreshes the others", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const personId = await seedPerson(db, "Alex");
+      const jobId = seedJob(db, personId, { annualSalary: "100000" });
+      const routing = {
+        rules: [
+          { from: "2026-01", to: null, splits: [{ goalId: 1, pct: 100 }] },
+        ],
+        overrides: [],
+        baseNetPayPerCheck: 1,
+        payPeriod: "biweekly" as const,
+        anchorPayDate: "2025-01-03",
+      };
+      const gone = "987654";
+      const id = seedSalaryProfile(db, {
+        name: "Invented refresh",
+        salaries: {
+          [String(jobId)]: entry({ extraPaycheckRouting: routing }),
+          [gone]: entry({ extraPaycheckRouting: routing }),
+        },
+      });
+      await caller.salaryProfile.setActive({ id });
+      await caller.salaryProfile.patchEntry({
+        id,
+        jobId,
+        fields: { salary: 150000 },
+      });
+      const stored = db
+        .select()
+        .from(sqliteSchema.salaryProfiles)
+        .where(eq(sqliteSchema.salaryProfiles.id, id))
+        .get()!.salaries as Record<
+        string,
+        { extraPaycheckRouting: { baseNetPayPerCheck: number } }
+      >;
+      expect(
+        stored[String(jobId)]!.extraPaycheckRouting.baseNetPayPerCheck,
+      ).not.toBe(1);
+      expect(stored[gone]!.extraPaycheckRouting.baseNetPayPerCheck).toBe(1);
+    } finally {
+      cleanup();
+    }
   });
 
   describe("duplicate", () => {

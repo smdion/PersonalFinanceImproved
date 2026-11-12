@@ -11,7 +11,10 @@ import { ProgressBar } from "@/components/ui/card";
 import { ExpandRowButton } from "@/components/ui/expand-row-button";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import {
+  useIntegerSetting,
+  useProfileIdSetting,
+} from "@/lib/hooks/use-profile-id-setting";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/dashboard/utils";
 // From config, never @/lib/budget-api: the barrel and the YNAB client are
@@ -79,14 +82,10 @@ export function ExpensesContent() {
   const [periodType, setPeriodType] = useState<"month" | "quarter" | "ytd">(
     "month",
   );
-  const [activeContributionProfileId] = usePersistedSetting<number | null>(
+  const [activeContributionProfileId] = useProfileIdSetting(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
-    null,
   );
-  const [activeColumn] = usePersistedSetting<number>(
-    SK_BUDGET_ACTIVE_COLUMN,
-    0,
-  );
+  const [activeColumn] = useIntegerSetting(SK_BUDGET_ACTIVE_COLUMN, 0);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // ── Data queries ──
@@ -323,7 +322,7 @@ export function ExpensesContent() {
       };
     }, [budgetVsActual]);
 
-  const savingsRate = useMemo(
+  const leftOverShare = useMemo(
     () =>
       monthlyNetIncome > 0
         ? (monthlyNetIncome - totalActual) / monthlyNetIncome
@@ -381,16 +380,16 @@ export function ExpensesContent() {
             color={overUnderTextColor(totalActual - totalBudgeted)}
           />
           <SummaryCard
-            label="Savings Rate"
-            value={monthlyNetIncome > 0 ? formatPercent(savingsRate, 1) : "—"}
+            label="Left Over After Spending"
+            value={monthlyNetIncome > 0 ? formatPercent(leftOverShare, 1) : "—"}
             sub={
               formatCurrency(Math.max(0, monthlyNetIncome - totalActual)) +
-              " saved"
+              " left over"
             }
             color={
-              savingsRate >= 0.2
+              leftOverShare >= 0.2
                 ? "text-green-600"
-                : savingsRate >= 0.1
+                : leftOverShare >= 0.1
                   ? "text-amber-600"
                   : "text-red-600"
             }

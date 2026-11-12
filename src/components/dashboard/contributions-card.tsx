@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { focusHref } from "@/lib/config/focus-topics";
 import React, { useState, memo } from "react";
@@ -34,8 +35,6 @@ import {
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import {
   householdSavings,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions/savings-rate";
@@ -43,20 +42,13 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { FundingBar } from "@/components/paycheck/funding-bar";
 import { PaceStatusText } from "./pace-status";
 import { CardQueryBoundary, queryPending } from "./utils";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContributionProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
-  // Independent Salary Profile axis (the active profile).
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contributionProfileInput } =
-    useEffectiveContributionProfileId();
-  const contributionInput = {
-    ...contributionProfileInput,
-    ...salaryProfileInput,
-  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-  const summary = trpc.contribution.computeSummary.useQuery(contributionInput);
+  const summary = trpc.contribution.computeSummary.useQuery(
+    useContributionSummaryInput(),
+  );
   const { data } = summary;
   // Live status per tracked account (needs the portfolio permission; the
   // card works without it).
@@ -77,12 +69,8 @@ function ContributionsCardImpl() {
   const [contributionPeriod, setContributionPeriod] =
     useState<ContributionPeriod>("annual");
   const highIncome = useHighIncomeLine();
-  const { threshold: highIncomeThreshold } = highIncome;
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
-    isHighIncomeHousehold(
-      householdTotalCompensation(data?.people.filter((d) => d.result) ?? []),
-      highIncomeThreshold,
-    ),
+    useHighIncomeHousehold().highIncome === true,
   );
   const queries = [summary, highIncome];
   if (queryPending(queries))

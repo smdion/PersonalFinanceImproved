@@ -15,6 +15,7 @@ import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotat
 import { toNumber } from "@/lib/utils/numbers";
 import {
   captureYearRollups,
+  lockPerformanceYear,
   syncYearRollups,
 } from "@/server/services/performance/performance-rollups";
 import { pushSnapshotToBudgetApi } from "@/server/services/sync/budget-api-push";
@@ -98,6 +99,7 @@ export async function refreshSnapshotYearDerivatives(
   accounts: { performanceAccountId: number | null; amount: string }[],
 ): Promise<SnapshotPerformanceSync> {
   const snapshotYear = parseInt(snapshotDate.substring(0, 4), 10);
+  await lockPerformanceYear(tx, snapshotYear);
   const last = (await lastSnapshotPerYear(tx)).get(snapshotYear);
   if (last && last.date > snapshotDate) return "earlier-snapshot";
   const [finalized] = await tx

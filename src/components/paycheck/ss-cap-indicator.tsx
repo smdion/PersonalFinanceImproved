@@ -4,9 +4,9 @@ import { formatCurrency } from "@/lib/utils/format";
 import type { PaycheckResult } from "./types";
 
 export function SSCapIndicator({ paycheck }: { paycheck: PaycheckResult }) {
-  // Paydays before the job started are empty, not the cap.
+  // Paydays before the job started or after it ends are empty, not the cap.
   const capPeriod = paycheck.yearSchedule.findIndex(
-    (p) => !p.beforeStart && p.ficaSS === 0,
+    (p) => !p.beforeStart && !p.afterEnd && p.ficaSS === 0,
   );
   if (capPeriod === -1) return null;
   const firstCheck = paycheck.yearSchedule.find((p) => !p.beforeStart);

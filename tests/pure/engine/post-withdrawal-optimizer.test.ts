@@ -233,11 +233,10 @@ describe("performRothConversion", () => {
     expect(result.rothConversionAmount).toBe(6000);
   });
 
-  it("adds the IRMAA-cap MAGI in today's term order (a float tie at the cliff)", () => {
-    // Traditional + gains + taxable SS + Roth growth is 218000.00000000003
-    // in this order and exactly 218000 in yearMagi's: today the MAGI reads
-    // as past the first MFJ tier, so the cap is the next tier's headroom,
-    // not $0. Pins today's figure until yearMagi rounds to cents (v0.11).
+  it("reads the IRMAA-cap MAGI to the cent, whatever the term order (exactly at the cliff)", () => {
+    // Traditional + gains + taxable SS + Roth growth is 218,000.00 to the
+    // cent (218000.00000000003 or 218000 by term order): exactly the first
+    // MFJ tier's edge, with no room above it, so the conversion is $0.
     const result = performRothConversion(
       makeRothInput({
         irmaaAwareRothConversions: true,
@@ -248,8 +247,7 @@ describe("performRothConversion", () => {
         rothBracketTarget: 0.35,
       }),
     );
-    // In yearMagi's order the cliff would be 218000 and the conversion $0.
-    expect(result.rothConversionAmount).toBe(56000);
+    expect(result.rothConversionAmount).toBe(0);
     expect(result.rothConversionIrmaaCapped).toBe(true);
   });
 
@@ -513,11 +511,10 @@ describe("checkAca", () => {
     expect(result.warnings[0]).toContain("cliff");
   });
 
-  it("adds the ACA MAGI in today's term order (a float tie at the cliff)", () => {
-    // Traditional + conversion + gains + Roth growth + Social Security is
-    // exactly 84600 (the 2-person cliff) in this order and 84599.99999999999
-    // in yearMagi's: today it reads as at the cliff, so the subsidy is lost.
-    // Pins today's result until yearMagi rounds to cents (v0.11).
+  it("reads the ACA MAGI to the cent, whatever the term order (exactly at the cliff)", () => {
+    // MAGI is 84,600.00 to the cent (84600 or 84599.99999999999 by term
+    // order), the 2-person cliff, read as lost: this pins CALCULATIONS RET-17's
+    // Gap, not the law (IRC 36B(c)(1)(A) "does not exceed" keeps exactly 400%).
     const result = checkAca(
       makeAcaInput({
         totalTraditionalWithdrawal: 15821.05,

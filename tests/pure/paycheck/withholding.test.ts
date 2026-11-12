@@ -49,6 +49,16 @@ describe("buildBracketInput", () => {
     expect(input.standardDeduction).toBe(34_000);
   });
 
+  it("a table of one bracket has no zero band built in: line 1g is the whole standard deduction", () => {
+    // No stored table has this shape; it states the intent. With no first
+    // taxed threshold to net against, 34,000 − 0.
+    const flat: WithholdingTableRow = {
+      ...standard,
+      brackets: [{ threshold: 0, rate: 0.1 }],
+    };
+    expect(buildBracketInput(flat, limits, [flat]).w4Adjustment).toBe(34_000);
+  });
+
   it("with no 2(c) table that year, line 1g falls back to the return's standard deduction", () => {
     // 34,000 − 20,000.
     expect(buildBracketInput(standard, limits, [standard]).w4Adjustment).toBe(

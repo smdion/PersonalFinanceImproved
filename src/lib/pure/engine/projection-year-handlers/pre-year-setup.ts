@@ -25,6 +25,15 @@ import type {
 // Pre-year setup (shared logic before accumulation/decumulation branch)
 // ---------------------------------------------------------------------------
 
+/** A spec with no money this year (its owner away, or saving stopped): nothing is left for year 0. */
+const NO_MONEY_THIS_YEAR = {
+  value: 0,
+  baseAnnual: 0,
+  salaryFraction: 0,
+  configuredAnnual: undefined,
+  leftThisYear: undefined,
+} satisfies Partial<ContributionSpec>;
+
 /**
  * Shared per-year setup: return rate, profile switch, salary, expenses and spending strategy.
  * Mutates state for those fields; returns the PreYearSetup values the phase handlers need.
@@ -225,13 +234,7 @@ export function runPreYearSetup(
         nobodyAtWork ||
         (spec.personId != null && away.includes(spec.personId))
       )
-        return {
-          ...spec,
-          value: 0,
-          baseAnnual: 0,
-          salaryFraction: 0,
-          configuredAnnual: undefined,
-        };
+        return { ...spec, ...NO_MONEY_THIS_YEAR };
       // The others' share of this year's (smaller) household pay.
       if (
         hasPerPersonSalary &&
@@ -258,19 +261,9 @@ export function runPreYearSetup(
   if (savingStopped && !nobodyAtWork)
     yearSpecs = (yearSpecs ?? state.contributionSpecs)?.map((spec) => ({
       ...spec,
-      value: 0,
-      baseAnnual: 0,
-      salaryFraction: 0,
-      configuredAnnual: undefined,
+      ...NO_MONEY_THIS_YEAR,
       employerShare: 0,
     }));
-  // A job starting or ending this year (its own dates, not a retirement:
-  // a person retiring next year works all of this one).
-  const jobEdgeThisYear =
-    isAccumulation &&
-    Object.values(input.workingYearsByPerson ?? {}).some(
-      (w) => w.start === year || w.end === year,
-    );
 
   // Retirement money only, before the expenses block (the Rate-Seeded seed needs it):
   // Portfolio-parented accounts never size retirement spending. Computed once per
@@ -411,7 +404,6 @@ export function runPreYearSetup(
     effectiveSalaryByPerson,
     hasBonusAdjustment,
     yearSpecs,
-    jobEdgeThisYear,
     gapYear,
     savingStopped,
   };

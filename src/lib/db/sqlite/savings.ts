@@ -10,6 +10,7 @@ import {
   type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { decimalText } from "../sqlite-decimal";
 
 import type { BudgetApiService } from "@/lib/config/budget-apps";
 import { budgetProfiles } from "./budget";
@@ -30,7 +31,7 @@ export const savingsGoals = sqliteTable(
       (): AnySQLiteColumn => savingsGoals.id,
       { onDelete: "set null" },
     ),
-    targetAmount: text("target_amount"),
+    targetAmount: decimalText("target_amount"),
     targetMonths: integer("target_months"),
     targetDate: text("target_date"),
     priority: integer("priority").notNull().default(0),
@@ -87,8 +88,8 @@ export const savingsMonthly = sqliteTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     monthDate: text("month_date").notNull(),
-    balance: text("balance").notNull(),
-    depositOrWithdrawal: text("deposit_or_withdrawal"),
+    balance: decimalText("balance").notNull(),
+    depositOrWithdrawal: decimalText("deposit_or_withdrawal"),
     notes: text("notes"),
   },
   (table) => [
@@ -108,7 +109,7 @@ export const savingsPlannedTransactions = sqliteTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     transactionDate: text("transaction_date").notNull(),
-    amount: text("amount").notNull(), // positive = deposit, negative = withdrawal
+    amount: decimalText("amount").notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
     isRecurring: integer("is_recurring", { mode: "boolean" })
       .notNull()
@@ -157,7 +158,7 @@ export const savingsAllocationOverrides = sqliteTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     monthDate: text("month_date").notNull(),
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     source: text("source").notNull().default("manual"),
   },
   (table) => [
@@ -178,7 +179,7 @@ export const budgetIncomeAdjustments = sqliteTable(
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
     monthDate: text("month_date").notNull(), // "YYYY-MM-01"
-    amount: text("amount").notNull(),
+    amount: decimalText("amount").notNull(),
     source: text("source").notNull().default("rule"),
   },
   (table) => [
@@ -202,8 +203,8 @@ export const savingsGoalProfileAllocations = sqliteTable(
     budgetProfileId: integer("budget_profile_id")
       .notNull()
       .references(() => budgetProfiles.id, { onDelete: "cascade" }),
-    allocationPercent: text("allocation_percent"),
-    monthlyContribution: text("monthly_contribution").notNull(),
+    allocationPercent: decimalText("allocation_percent"),
+    monthlyContribution: decimalText("monthly_contribution").notNull(),
   },
   (table) => [
     uniqueIndex("savings_goal_profile_alloc_goal_profile_idx").on(

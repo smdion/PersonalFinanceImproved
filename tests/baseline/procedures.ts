@@ -65,11 +65,11 @@ const activeSelection = ({ ids }: ProcedureContext) => ({
 });
 
 export const PROCEDURES: BaselineProcedure[] = [
-  { path: "settings.people.list" },
-  { path: "settings.jobs.list" },
-  { path: "settings.contributionAccounts.list" },
-  { path: "settings.earnings.list" },
-  { path: "settings.deductions.list" },
+  { path: "people.list" },
+  { path: "jobs.list" },
+  { path: "contribution.accounts.list" },
+  { path: "paycheck.earnings.list" },
+  { path: "paycheck.deductions.list" },
   { path: "settings.taxData.listSectionSources" },
   { path: "settings.taxData.getStatus" },
   { path: "settings.contributionLimits.list" },
@@ -95,7 +95,7 @@ export const PROCEDURES: BaselineProcedure[] = [
     path: "budget.listMortgageItemChoices",
     input: loan((loanId) => ({ loanId })),
   },
-  { path: "budget.listContribAccountsForLinking" },
+  { path: "budget.listContributionAccountsForLinking" },
   { path: "budget.listApiCategories", input: none },
   { path: "budget.listApiActuals", input: none },
   { path: "contribution.computeHighIncomeLine" },
@@ -104,23 +104,23 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "mortgage.mortgageLoans.list" },
   { path: "mortgage.mortgageWhatIfScenarios.list" },
   { path: "mortgage.mortgageExtraPayments.list" },
-  { path: "networth.computeSummary", input: none },
-  { path: "networth.listHistory", input: none },
-  { path: "networth.computeDetailedHistory", input: none },
+  { path: "netWorth.computeSummary", input: none },
+  { path: "netWorth.listHistory", input: none },
+  { path: "netWorth.computeDetailedHistory", input: none },
   {
-    path: "networth.listSnapshots",
+    path: "netWorth.listSnapshots",
     input: () => ({ page: 1, pageSize: 52 }),
   },
-  { path: "networth.listSnapshotTotals" },
+  { path: "netWorth.listSnapshotTotals" },
   {
-    path: "networth.computeComparison",
+    path: "netWorth.computeComparison",
     input: () => ({
       dateFrom: "2026-01-01",
       dateTo: "2026-03-07",
       useMarketValue: true,
     }),
   },
-  { path: "networth.portfolioSnapshots.getLatest" },
+  { path: "netWorth.portfolioSnapshots.getLatest" },
   { path: "milestones.computeInputs", input: none },
   { path: "milestones.getFirstReached" },
   { path: "savings.computeSummary", input: none },
@@ -137,7 +137,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "savings.savingsGoals.list" },
   { path: "brokerage.listGoals" },
   { path: "brokerage.computeSummary" },
-  { path: "retirement.computeRelocationAnalysis", input: relocation },
+  { path: "projection.computeRelocationAnalysis", input: relocation },
   { path: "retirement.retirementProfilePeople.list" },
   { path: "retirement.retirementSettings.list" },
   { path: "retirement.retirementSalaryOverrides.list" },
@@ -153,7 +153,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "retirement.returnRates.list" },
   { path: "projection.computeProjection", input: activeSelection },
   { path: "projection.computeCoastFire", input: activeSelection },
-  { path: "projection.computeCoastFireMC", input: activeSelection },
+  { path: "projection.computeCoastFireSimulation", input: activeSelection },
   {
     path: "projection.computeCoastFireProbe",
     // Five years from now, or the last working year if sooner; a
@@ -168,16 +168,16 @@ export const PROCEDURES: BaselineProcedure[] = [
     },
   },
   {
-    path: "projection.computeMonteCarloProjection",
+    path: "projection.computeSimulation",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
   // After the run above, with its input: the dashboard tile's cache read.
   {
-    path: "projection.peekMonteCarloSummary",
+    path: "projection.getSimulationSummary",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
   { path: "projection.computeStrategyComparison", input: activeSelection },
-  { path: "projection.analyzeStrategy", input: activeSelection },
+  { path: "projection.computeStrategyAnalysis", input: activeSelection },
   { path: "projection.computeStressTest", input: activeSelection },
   {
     path: "projection.computeRelocationFiProjection",
@@ -188,9 +188,9 @@ export const PROCEDURES: BaselineProcedure[] = [
     }),
   },
   { path: "projection.relocationScenarios.list" },
-  { path: "projection.projectTaxYears", input: activeSelection },
+  { path: "projection.computeTaxProjection", input: activeSelection },
   {
-    path: "projection.compareWithdrawalStrategies",
+    path: "projection.computeWithdrawalStrategyComparison",
     // The three the Tax optimization page compares.
     input: (ctx) => ({
       ...activeSelection(ctx),
@@ -210,12 +210,12 @@ export const PROCEDURES: BaselineProcedure[] = [
     }),
   },
   {
-    path: "projection.rothConversionWhatIf",
+    path: "projection.computeRothConversionWhatIf",
     variant: "optimize",
     input: (ctx) => ({ ...activeSelection(ctx), mode: "optimize" }),
   },
   {
-    path: "projection.rothConversionWhatIf",
+    path: "projection.computeRothConversionWhatIf",
     variant: "explicit",
     input: (ctx) => ({
       ...activeSelection(ctx),
@@ -228,7 +228,7 @@ export const PROCEDURES: BaselineProcedure[] = [
     input: activeSelection,
   },
   {
-    path: "projection.sweepSocialSecurityClaimingAges",
+    path: "projection.computeSocialSecurityClaimingSweep",
     input: (ctx) => {
       const { key, id } = primary(ctx);
       const pia = Number(ctx.household.retirement[key]?.ssMonthly ?? 0);
@@ -254,7 +254,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "version.getSchedule" },
   { path: "version.getUpgradeBanner" },
   { path: "contributionProfile.list" },
-  { path: "contributionProfile.compareData" },
+  { path: "contributionProfile.getComparisonData" },
   {
     path: "contributionProfile.getById",
     input: ({ ids }) => ({ id: ids.contributionProfile }),
@@ -296,7 +296,7 @@ export const PROCEDURES: BaselineProcedure[] = [
   { path: "investments.computeComparison", input: none },
   { path: "investments.getSimulationGlidePaths" },
   { path: "investments.getHoldingsOverview" },
-  { path: "investments.suggestSnapshot" },
+  { path: "investments.listSnapshotSuggestions" },
   {
     path: "investments.listPerformanceSuggestions",
     input: () => ({ year: 2026 }),
@@ -327,7 +327,7 @@ export const SKIPPED: Record<string, string> = {
     "reads a budget connection's cached feed, which no household here has; part d pins it for both services after the recorded syncs (sync-writes.test.ts)",
   "projection.getProjectionMetadata":
     "computeProjection's response with result null, from the same function (projection-coverage pins the two equal)",
-  "projection.getMonteCarloProgress":
+  "projection.getSimulationProgress":
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",
   "version.getPreview": "needs a saved version; the baseline seeds none",

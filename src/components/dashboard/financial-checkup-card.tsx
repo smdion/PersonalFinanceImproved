@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeHousehold } from "@/lib/hooks/use-high-income-household";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import Link from "next/link";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -15,22 +16,24 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
 import { type MilestoneResult } from "@/lib/pure/advice/milestones/milestones";
 import { meetsRateTarget } from "@/lib/pure/advice/milestones/milestones.shared";
-import {
-  householdSavings,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
-} from "@/lib/pure/contributions/savings-rate";
+import { householdSavings } from "@/lib/pure/contributions/savings-rate";
 import { useScenario } from "@/lib/context/scenario-context";
-import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-contribution-summary-input";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { CardQueryBoundary, queryPending } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { SK_SAVINGS_RATE_THRESHOLDS } from "@/lib/constants/settings-keys";
+import { parseStoredJson } from "@/lib/hooks/browser-storage";
 
 /** The Savings Rate row's default bars (green at or above the first, yellow
  *  at or above the second) until the household saves its own. */
 const DEFAULT_SAVINGS_RATE_BARS = [0.25, 0.15] as const;
+/** The stored bars: two or more, each a rate or null (the default's bar). */
+const isRateBars = (v: unknown): v is (number | null)[] =>
+  Array.isArray(v) &&
+  v.length >= 2 &&
+  v.every((bar) => bar === null || typeof bar === "number");
 
 type CheckupStep = {
   label: string;
@@ -186,15 +189,16 @@ function FinancialCheckupCardImpl() {
 
   const contributionPeople =
     contribs.data?.people.filter((d) => d.result) ?? [];
-  const highIncome = isHighIncomeHousehold(
-    householdTotalCompensation(contributionPeople),
-    highIncomeThreshold,
-  );
+  const { highIncome, queries: highIncomeQueries } = useHighIncomeHousehold();
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
-    useSavingsRateOptions(highIncome);
+    useSavingsRateOptions(highIncome === true);
 
-  const queries = [milestones, contribs, highIncomeLine];
-  if (queryPending(queries) || highIncomeThreshold === undefined)
+  const queries = [milestones, contribs, highIncomeLine, ...highIncomeQueries];
+  if (
+    queryPending(queries) ||
+    highIncomeThreshold === undefined ||
+    highIncome === undefined
+  )
     return <CardQueryBoundary title="Financial Checkup" query={queries} />;
 
   const byId = new Map(milestones.results.map((r) => [r.id, r]));
@@ -235,20 +239,14 @@ function FinancialCheckupCardImpl() {
     { excludeMatch, includePortfolio },
   );
   const savingsRate = savingsBreakdown.rate;
-  const parsedThresholds = (() => {
-    try {
-      const arr = JSON.parse(
-        typeof savingsRateThresholds === "string"
-          ? savingsRateThresholds
-          : JSON.stringify(savingsRateThresholds),
-      );
-      return Array.isArray(arr) && arr.length >= 2
-        ? (arr as number[])
-        : DEFAULT_SAVINGS_RATE_BARS;
-    } catch {
-      return DEFAULT_SAVINGS_RATE_BARS;
-    }
-  })();
+  const parsedThresholds =
+    parseStoredJson(
+      SK_SAVINGS_RATE_THRESHOLDS,
+      typeof savingsRateThresholds === "string"
+        ? savingsRateThresholds
+        : JSON.stringify(savingsRateThresholds),
+      isRateBars,
+    ) ?? DEFAULT_SAVINGS_RATE_BARS;
   // The stored setting is any JSON array: a null element falls back.
   const greenThreshold = parsedThresholds[0] ?? DEFAULT_SAVINGS_RATE_BARS[0];
   const yellowThreshold = parsedThresholds[1] ?? DEFAULT_SAVINGS_RATE_BARS[1];

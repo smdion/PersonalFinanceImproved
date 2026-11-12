@@ -6,10 +6,10 @@ import type {
   DeductionLine,
 } from "./paycheck.types";
 import { roundToCents, sumBy } from "../../utils/math";
-import { MS_PER_DAY } from "../../constants";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
-import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
+import { bonusCheckNet } from "./year-totals";
+import { additionalMedicareWithheld } from "./additional-medicare";
 
 /**
  * Whether a contribution account is paid through payroll: its own
@@ -69,45 +69,29 @@ export function bonusCheckContribution(
     : account.perPeriodContribution;
 }
 
-/**
- * Net bonus pay: gross = salary × bonus% × (months in bonus year / 12); federal
- * withholding at the supplemental flat rate, not the marginal rate. Contributions
- * come out per bonusCheckContribution.
- */
+/** The bonus estimate, as if paid after the regular checks: federal at the supplemental flat
+ *  rate, contributions per bonusCheckContribution, take-home per bonusCheckNet. */
 export function calculateBonus(
   input: PaycheckInput,
   _marginalRate: number,
   /** Regular pay's FICA wages for the year — what has used the SS wage base before the bonus. */
   regularFicaWagesAnnual: number,
 ): BonusEstimate {
-  if (input.bonusPercent <= 0 && input.bonusOverride === null) {
-    return {
-      bonusGross: 0,
-      bonusNet: 0,
-      bonusFederalWithholding: 0,
-      bonusFica: 0,
-      bonusContributions: 0,
-      bonusFicaWages: 0,
-      bonusFederalTaxable: 0,
-      bonusLines: [],
-    };
-  }
-
-  // If bonus_override is set on the job, use that value directly as gross bonus.
-  // Otherwise: salary × bonus_percent × bonus_multiplier × (months_in_bonus_year / 12).
+  // The set bonus, else salary × bonus% × multiplier × (months in bonus year / 12);
+  // no bonus percent and no set amount: $0.
   const bonusGross =
     input.bonusOverride !== null
       ? roundToCents(input.bonusOverride)
-      : roundToCents(
-          input.annualSalary *
-            input.bonusPercent *
-            input.bonusMultiplier *
-            (input.monthsInBonusYear / 12),
-        );
+      : input.bonusPercent > 0
+        ? roundToCents(
+            input.annualSalary *
+              input.bonusPercent *
+              input.bonusMultiplier *
+              (input.monthsInBonusYear / 12),
+          )
+        : 0;
 
-  // The contributions the bonus check takes (accounts set to be taken from
-  // bonus checks) — percent-of-salary ones scale against bonusGross,
-  // fixed-amount ones take their regular per-period dollars.
+  // What the bonus check takes, per bonusCheckContribution.
   const bonusLines: DeductionLine[] = input.contributionAccounts.flatMap(
     (ca) => {
       const amount = bonusCheckContribution(ca, bonusGross);
@@ -164,17 +148,26 @@ export function calculateBonus(
   const bonusSsTaxable = Math.min(bonusFicaWages, ssCapRoom);
   const bonusFicaSS = roundToCents(bonusSsTaxable * ssRate);
   const bonusFicaMed = roundToCents(bonusFicaWages * medRate);
-  const bonusFica = bonusFicaSS + bonusFicaMed;
+  // Additional Medicare on the part past this employer's threshold, after regular pay.
+  const bonusAdditionalMedicare = roundToCents(
+    additionalMedicareWithheld(
+      input.taxBrackets,
+      bonusFicaWages,
+      regularFicaWagesAnnual + bonusFicaWages,
+    ),
+  );
+  const bonusFica = bonusFicaSS + bonusFicaMed + bonusAdditionalMedicare;
 
   const bonusContributions = sumBy(bonusLines, (l) => l.amount);
 
-  const bonusNet = roundToCents(
-    bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,
-  );
-
   return {
     bonusGross,
-    bonusNet,
+    bonusNet: bonusCheckNet({
+      gross: bonusGross,
+      federal: bonusFederalWithholding,
+      fica: bonusFica,
+      contributions: bonusContributions,
+    }),
     bonusFederalWithholding,
     bonusFica,
     bonusContributions,
@@ -182,62 +175,4 @@ export function calculateBonus(
     bonusFederalTaxable,
     bonusLines,
   };
-}
-
-/**
- * Finds the pay period that contains the bonus pay date.
- * When bonusDayOfMonth is provided, matches the specific date within the month.
- * Otherwise falls back to the first pay period of the given month.
- */
-export function findBonusPeriod(
-  asOfDate: Date,
-  payPeriod: string,
-  anchorPayDate: Date,
-  bonusMonth: number,
-  bonusDayOfMonth: number | null,
-): number {
-  const year = asOfDate.getFullYear();
-  const msPerDay = MS_PER_DAY;
-  const targetMonth = bonusMonth - 1; // 0-indexed
-  // Clamp day to valid range for target month
-  const lastDay = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
-  const targetDay =
-    bonusDayOfMonth != null ? Math.min(bonusDayOfMonth, lastDay) : null;
-  const bonusDate =
-    targetDay != null ? new Date(Date.UTC(year, targetMonth, targetDay)) : null;
-
-  if (payPeriod === "biweekly" || payPeriod === "weekly") {
-    const interval = payPeriod === "biweekly" ? 14 : 7;
-    const jan1 = new Date(Date.UTC(year, 0, 1));
-    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, interval);
-
-    let periodNum = 0;
-    const december31 = new Date(Date.UTC(year, 11, 31));
-    while (payday <= december31) {
-      periodNum++;
-      if (bonusDate) {
-        // Find the period whose window contains the bonus date
-        const nextPayday = new Date(payday.getTime() + interval * msPerDay);
-        if (bonusDate >= payday && bonusDate < nextPayday) return periodNum;
-      } else {
-        if (payday.getUTCMonth() === targetMonth) return periodNum;
-      }
-      payday = new Date(payday.getTime() + interval * msPerDay);
-    }
-    return periodNum; // fallback to last period
-  }
-
-  if (payPeriod === "semimonthly") {
-    // Periods: 1st and 16th of each month
-    if (targetDay != null && targetDay >= 16) {
-      return targetMonth * 2 + 2; // second pay period of the month
-    }
-    return targetMonth * 2 + 1; // first pay period of the month
-  }
-
-  if (payPeriod === "monthly") {
-    return targetMonth + 1;
-  }
-
-  return 1;
 }

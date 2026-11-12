@@ -31,6 +31,7 @@ import { finalizeRothBasisForYear } from "@/server/services/accounts/roth-basis"
 import { calendarYear } from "@/lib/utils/date";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 import { stampPerformanceUpdated } from "@/server/services/performance/last-updated";
+import { lockPerformanceYear } from "@/server/services/performance/performance-rollups";
 import {
   finalizedAnnualFields,
   nearestToYearEnd,
@@ -64,9 +65,8 @@ export async function finalizePerformanceYear(
   const nextYear = year + 1;
 
   return await ctx.db.transaction(async (tx) => {
-    // Guard: reject if year is already finalized.
-    // SQLite's single-writer model provides serialization; PG relies on
-    // the SERIALIZABLE transaction isolation already set on the pool.
+    // Guard: reject if year is already finalized, under both years' locks.
+    for (const at of [year, nextYear]) await lockPerformanceYear(tx, at);
     const existingAnnualRows = await tx
       .select()
       .from(schema.annualPerformance)
