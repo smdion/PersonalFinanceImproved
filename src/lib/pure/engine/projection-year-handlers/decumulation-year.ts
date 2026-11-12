@@ -61,17 +61,9 @@ export function runDecumulationYear(
     indBasis,
     brokBasis,
     spendingState,
-    incomeHistory,
   } = state;
 
-  const {
-    decumulationDefaults,
-    filingStatus,
-    enableIrmaaAwareness,
-    enableAcaAwareness,
-    householdSize,
-    perPersonBirthYears,
-  } = input;
+  const { decumulationDefaults, perPersonBirthYears } = input;
 
   const config = resolveDecumulationConfig(
     year,
@@ -139,13 +131,7 @@ export function runDecumulationYear(
       : 0;
 
   const tables = growYearTaxTables(ctx, state, year, age);
-  const {
-    grownTaxBrackets,
-    grownStandardDeduction,
-    grownLtcgBrackets,
-    grownIrmaaBracketsForCheck,
-    fplGrowthFactor,
-  } = tables;
+  const { grownStandardDeduction } = tables;
 
   const personsAge65Plus = countReachingAgeRule(
     perPersonBirthYears,
@@ -174,7 +160,6 @@ export function runDecumulationYear(
     routeResult,
     slots,
     routeWarnings,
-    routedUnmetNeed,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
   } = route;
@@ -200,102 +185,39 @@ export function runDecumulationYear(
     rmd,
     drawn,
   });
-  const { priceTax, taxableSS, taxFromSlots } = priced;
+  const { taxableSS } = priced;
   const parts = pricedYearParts(state, { need, route, rmd, priced });
-  const {
-    brokerageGainsPortion,
-    actualTaxableIncome,
-    penaltyCost,
-    ssTaxCost,
-    surplusCredit,
-    grossUpFactor,
-  } = parts;
+  const { penaltyCost, ssTaxCost, grossUpFactor } = parts;
 
-  const flow = { need, route, rmd, priced, parts };
-  const { rmdExcessAmount } = settleYearDraws(ctx, state, thisYear, flow);
+  const settled = { need, route, rmd, drawn, priced, parts };
+  const { rmdExcessAmount } = settleYearDraws(ctx, state, thisYear, settled);
 
+  const conversion = yearRothConversion(ctx, state, thisYear, settled);
   const {
     rothConversionAmount,
     rothConversionTaxCost,
     rmdSmoothingShortfall,
     rothConversionIrmaaCapped,
-  } = yearRothConversion(
-    config,
-    hasIndividualAccounts,
-    ctx.rmdStartAgeByPerson,
-    indAccounts,
-    ctx,
-    indBalance,
-    indKey,
-    year,
-    balances,
-    totalTraditionalWithdrawal,
-    totalWithdrawal,
-    targetWithdrawal,
-    brokBasis,
-    taxRates,
-    grownTaxBrackets,
-    grownStandardDeduction,
-    route.resolvedConversionTarget,
-    taxableSS,
-    taxFromSlots,
-    brokerageGainsPortion,
-    input,
-    enableIrmaaAwareness,
-    tables.grownIrmaaBracketsForCap,
-    filingStatus,
-    accountBalance,
-    nonRetirement,
-  );
+  } = conversion;
 
-  const { taxCost, postConversionLtcgRate, income, niitAmount } =
-    repriceConversionYear(
-      taxFromSlots,
-      actualTaxableIncome,
-      rothConversionAmount,
-      grownStandardDeduction,
-      filingStatus,
-      brokerageGainsPortion,
-      grownLtcgBrackets,
-      priceTax,
-      taxableSS,
-      { ...taxRates, taxBrackets: grownTaxBrackets },
-      totalTraditionalWithdrawal,
-      ssIncome,
-    );
+  const repriced = repriceConversionYear(ctx, thisYear, {
+    rmd,
+    priced,
+    parts,
+    conversion,
+  });
+  const { taxCost, postConversionLtcgRate, niitAmount } = repriced;
+  const flow = { ...settled, conversion, repriced };
 
   const {
     deliveredAfterTax,
     shortfallMaterialityFloor,
     unmetNeedRaw,
     unmetNeedMaterial,
-  } = fundingShortfallForYear(
-    totalWithdrawal,
-    taxCost,
-    penaltyCost,
-    state,
-    afterTaxNeed,
-    surplusCredit,
-    routedUnmetNeed,
-    taxRates,
-  );
+  } = fundingShortfallForYear(state, thisYear, flow);
 
   const { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom } =
-    yearCliffChecks(
-      incomeHistory,
-      income,
-      enableIrmaaAwareness,
-      filingStatus,
-      personsAge65Plus,
-      rothConversionAmount,
-      grownIrmaaBracketsForCheck,
-      input,
-      routeWarnings,
-      enableAcaAwareness,
-      householdSize,
-      fplGrowthFactor,
-      taxRates,
-    );
+    yearCliffChecks(ctx, state, thisYear, flow);
 
   const {
     decumBrokerageContribution,

@@ -7,26 +7,33 @@ import {
 } from "@/lib/pure/tax/ltcg";
 import { estimateEffectiveTaxRate } from "../tax-estimation";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
-import type { growLtcgBrackets } from "../bracket-growth";
-import type { priceYearTax } from "./tax-year-settlement";
-import type { ProjectionContext } from "./types";
+import type { DecumulationYear, ProjectionContext } from "./types";
+import type { DecumulationFlow } from "./tax-year-settlement";
+
+/** The flow once the conversion year is re-priced: what the shortfall and
+ *  the cliff checks read. */
+export type RepricedFlow = DecumulationFlow & {
+  repriced: ReturnType<typeof repriceConversionYear>;
+};
 
 /** The conversion year's gains re-priced, then NIIT, after the RMD excess is
  *  reinvested: today's order (funding NIIT first is v0.11). */
 export function repriceConversionYear(
-  taxFromSlots: ReturnType<typeof priceYearTax>["taxFromSlots"],
-  actualTaxableIncome: number,
-  rothConversionAmount: number,
-  grownStandardDeduction: number | undefined,
-  filingStatus: ProjectionContext["input"]["filingStatus"],
-  brokerageGainsPortion: number,
-  grownLtcgBrackets: ReturnType<typeof growLtcgBrackets>,
-  priceTax: ReturnType<typeof priceYearTax>["priceTax"],
-  taxableSS: number,
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
-  totalTraditionalWithdrawal: number,
-  ssIncome: number,
+  ctx: ProjectionContext,
+  thisYear: DecumulationYear,
+  flow: Pick<DecumulationFlow, "rmd" | "priced" | "parts" | "conversion">,
 ) {
+  const { filingStatus } = ctx.input;
+  const { ssIncome, tables } = thisYear;
+  const { grownStandardDeduction, grownLtcgBrackets } = tables;
+  const taxRates = {
+    ...thisYear.taxRates,
+    taxBrackets: tables.grownTaxBrackets,
+  };
+  const { taxFromSlots, priceTax, taxableSS } = flow.priced;
+  const { actualTaxableIncome, brokerageGainsPortion } = flow.parts;
+  const { totalTraditionalWithdrawal } = flow.rmd;
+  const { rothConversionAmount } = flow.conversion;
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   let taxCost = taxFromSlots.taxCost;
   // Roth conversions are ordinary income and can push the gains into a higher

@@ -128,21 +128,33 @@ describe("answer key: the conversion amount and its tax", () => {
     // gains it's handed are checked here.
     let gainsTax = NaN;
     const r = repriceConversionYear(
-      { taxCost: 0, brokerageTaxCost: 0, rothTaxableGrowth: 0 } as never,
-      50_000,
-      83_000,
-      32_200,
-      "MFJ",
-      40_000,
-      ltcg2026,
-      ((_ss: number, brokerageTaxCost: number) => {
-        gainsTax = brokerageTaxCost;
-        return { taxCost: brokerageTaxCost };
-      }) as never,
-      0,
-      {} as never,
-      50_000,
-      0,
+      { input: { filingStatus: "MFJ" } } as never,
+      {
+        ssIncome: 0,
+        taxRates: {},
+        tables: {
+          grownStandardDeduction: 32_200,
+          grownLtcgBrackets: ltcg2026,
+          grownTaxBrackets: undefined,
+        },
+      } as never,
+      {
+        priced: {
+          taxFromSlots: {
+            taxCost: 0,
+            brokerageTaxCost: 0,
+            rothTaxableGrowth: 0,
+          },
+          priceTax: (_ss: number, brokerageTaxCost: number) => {
+            gainsTax = brokerageTaxCost;
+            return { taxCost: brokerageTaxCost };
+          },
+          taxableSS: 0,
+        },
+        parts: { actualTaxableIncome: 50_000, brokerageGainsPortion: 40_000 },
+        rmd: { totalTraditionalWithdrawal: 50_000 },
+        conversion: { rothConversionAmount: 83_000 },
+      } as never,
     );
     cents(
       { gains: gainsTax, rate: r.postConversionLtcgRate, niit: r.niitAmount },
@@ -160,21 +172,33 @@ describe("answer key: a conversion year's gains, line 25", () => {
     // re-priced gains are 114.00.
     let gainsTax = NaN;
     repriceConversionYear(
-      { taxCost: 0, brokerageTaxCost: 0, rothTaxableGrowth: 0 } as never,
-      55_550,
-      10_000,
-      16_100,
-      "Single",
-      950,
-      ltcg2026,
-      ((_ss: number, brokerageTaxCost: number) => {
-        gainsTax = brokerageTaxCost;
-        return { taxCost: brokerageTaxCost };
-      }) as never,
-      0,
-      { taxBrackets: singleTable, taxMultiplier: 1 } as never,
-      55_550,
-      0,
+      { input: { filingStatus: "Single" } } as never,
+      {
+        ssIncome: 0,
+        taxRates: { taxMultiplier: 1 },
+        tables: {
+          grownStandardDeduction: 16_100,
+          grownLtcgBrackets: ltcg2026,
+          grownTaxBrackets: singleTable,
+        },
+      } as never,
+      {
+        priced: {
+          taxFromSlots: {
+            taxCost: 0,
+            brokerageTaxCost: 0,
+            rothTaxableGrowth: 0,
+          },
+          priceTax: (_ss: number, brokerageTaxCost: number) => {
+            gainsTax = brokerageTaxCost;
+            return { taxCost: brokerageTaxCost };
+          },
+          taxableSS: 0,
+        },
+        parts: { actualTaxableIncome: 55_550, brokerageGainsPortion: 950 },
+        rmd: { totalTraditionalWithdrawal: 55_550 },
+        conversion: { rothConversionAmount: 10_000 },
+      } as never,
     );
     cents(gainsTax, 114);
   });

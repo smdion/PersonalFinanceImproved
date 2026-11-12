@@ -18,18 +18,12 @@ import { performRothConversion } from "../roth-conversion";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
-import type { resolveDecumulationConfig } from "../override-resolution";
 import { applyLumpSums } from "./lump-sum";
 import type { yearNeed } from "./year-need";
 import type { distributeYearDraws, routeYearDraw } from "./year-draws";
 import type { enforceYearRmd } from "./rmd-step";
 import type {
-  growIrmaaBrackets,
-  growWithholdingBrackets,
-} from "../bracket-growth";
-import type {
   DecumulationYear,
-  PreYearSetup,
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
@@ -43,6 +37,7 @@ export type DecumulationFlow = {
   drawn: ReturnType<typeof distributeYearDraws>;
   priced: ReturnType<typeof priceYearTax>;
   parts: ReturnType<typeof pricedYearParts>;
+  conversion: ReturnType<typeof yearRothConversion>;
 };
 
 /** The year's tax from its routed (post-RMD) draws, with Social Security's
@@ -237,33 +232,25 @@ export function settleYearDraws(
 /** RMD smoothing's target, then the year's Roth conversion, its tax paid from
  *  retirement brokerage money (UD-08, pending D4: today's tax source and sizing). */
 export function yearRothConversion(
-  config: ReturnType<typeof resolveDecumulationConfig>,
-  hasIndividualAccounts: boolean,
-  rmdStartAgeByPerson: ProjectionContext["rmdStartAgeByPerson"],
-  indAccounts: ProjectionContext["indAccounts"],
   ctx: ProjectionContext,
-  indBalance: ProjectionLoopState["indBalance"],
-  indKey: ProjectionContext["indKey"],
-  year: number,
-  balances: ProjectionLoopState["balances"],
-  totalTraditionalWithdrawal: number,
-  totalWithdrawal: number,
-  targetWithdrawal: number,
-  brokBasis: ProjectionLoopState["brokBasis"],
-  taxRates: ProjectionContext["input"]["decumulationDefaults"]["distributionTaxRates"],
-  grownTaxBrackets: ReturnType<typeof growWithholdingBrackets> | undefined,
-  grownStandardDeduction: number | undefined,
-  resolvedConversionTarget: number | undefined,
-  taxableSS: number,
-  taxFromSlots: ReturnType<typeof priceYearTax>["taxFromSlots"],
-  brokerageGainsPortion: number,
-  input: ProjectionContext["input"],
-  enableIrmaaAwareness: ProjectionContext["input"]["enableIrmaaAwareness"],
-  grownIrmaaBracketsForCap: ReturnType<typeof growIrmaaBrackets>,
-  filingStatus: ProjectionContext["input"]["filingStatus"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  nonRetirement: PreYearSetup["nonRetirement"],
+  state: ProjectionLoopState,
+  thisYear: DecumulationYear,
+  flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
+  const { hasIndividualAccounts, rmdStartAgeByPerson, indAccounts, indKey } =
+    ctx;
+  const { input } = ctx;
+  const { enableIrmaaAwareness, filingStatus } = input;
+  const { indBalance, balances, brokBasis, accountBalance } = state;
+  const { config, year, taxRates } = thisYear;
+  const { nonRetirement } = thisYear.setup;
+  const { grownTaxBrackets, grownStandardDeduction, grownIrmaaBracketsForCap } =
+    thisYear.tables;
+  const { totalTraditionalWithdrawal, totalWithdrawal } = flow.rmd;
+  const { targetWithdrawal } = flow.need;
+  const { resolvedConversionTarget } = flow.route;
+  const { taxableSS, taxFromSlots } = flow.priced;
+  const { brokerageGainsPortion } = flow.parts;
   // RMD-aware conversion smoothing (rmd-smoothing.ts), sized each year from
   // each owner's current Traditional balance (indBalance, after this year's
   // draws); per owner, so only with tracked accounts.
