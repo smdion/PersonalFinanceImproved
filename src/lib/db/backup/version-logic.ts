@@ -238,10 +238,10 @@ export async function restoreVersion(
     { from: version.schemaVersion, to: CURRENT_SCHEMA_VERSION },
     isPostgres() ? "postgres" : "sqlite",
   );
+  for (const t of tableDatas) transformedMap[t.tableName] ??= [];
 
-  // Rebuild the table data map with transformed data — including tables the
-  // transform rebuilt that the version itself doesn't carry (e.g. links a
-  // newer schema keeps in a table of its own).
+  // Rebuild the table data map with transformed data, including tables the
+  // transform rebuilt that the version doesn't carry (e.g. a newer schema's).
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );

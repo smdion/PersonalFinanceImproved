@@ -64,8 +64,8 @@ const rowsOf = (rows: unknown): Row[] =>
     : [];
 
 /** Today's rows, each with its matched links and the backup's `fromBackup`
- *  columns for its key (null when the backup has no such row). A row only the
- *  backup has isn't added: only an admin creates a connection. */
+ *  columns for its key (null when the backup has no such row; today's when it
+ *  has no such table). Only an admin adds a connection the backup alone has. */
 function withBackupColumns(
   today: Row[],
   backup: unknown,
@@ -75,7 +75,8 @@ function withBackupColumns(
   const rows = rowsOf(backup);
   return today.map((row) => {
     const theirs = rows.find((b) => b[key] === row[key]);
-    const taken = fromBackup.map((c) => [c, theirs?.[c] ?? null]);
+    const from = backup === undefined ? row : theirs;
+    const taken = fromBackup.map((c) => [c, from?.[c] ?? null]);
     const links = matchedLinks(row, theirs, targets.today, targets.restored);
     return { ...row, ...links, ...Object.fromEntries(taken) };
   });

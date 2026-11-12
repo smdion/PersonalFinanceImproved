@@ -269,6 +269,39 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
     }
   });
 
+  it("a non-admin import of a backup with no connections table keeps today's skipped categories and last sync; one with the table takes the backup's", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      await household(db, "Theirs", ["ynab"], at("2026-02-01T08:00:00Z"));
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      );
+      await db.delete(schema.apiConnections);
+      await household(db, "Ours", ["ynab"], at("2026-11-01T08:00:00Z"));
+
+      const { api_connections: _, ...withoutConnections } = backup.tables;
+      await importBackup(
+        db,
+        { ...backup, tables: withoutConnections },
+        notAdmin,
+      );
+      expect((await connections(db))[0]).toMatchObject({
+        skippedCategoryIds: ["Ours-category"],
+        lastSyncedAt: at("2026-11-01T08:00:00Z"),
+      });
+
+      await importBackup(db, backup, notAdmin);
+      expect((await connections(db))[0]).toMatchObject({
+        config: { accessToken: "Ours-token", budgetId: "b-1" },
+        skippedCategoryIds: ["Theirs-category"],
+        lastSyncedAt: at("2026-02-01T08:00:00Z"),
+      });
+    } finally {
+      await done();
+    }
+  });
+
   it("an admin's import takes the backup's connections whole", async () => {
     const { db, done } = await fresh();
     try {
@@ -314,6 +347,29 @@ export function backupFenceCases(fresh: () => Promise<FenceDb>) {
 
       await restoreVersion(db, version.id, admin);
       expect(await connections(db)).toEqual(atVersion);
+    } finally {
+      await done();
+    }
+  });
+
+  it("a non-admin restore of a version taken with no connections clears today's skipped categories and last sync (the version has the table, empty)", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { createVersion, restoreVersion } = await app();
+      const version = await createVersion(db, {
+        name: "no connections yet",
+        type: "manual",
+        createdBy: "test",
+      });
+      await household(db, "Later", ["simplefin"], daysAgo(0));
+
+      await restoreVersion(db, version.id, notAdmin);
+      const [after] = await connections(db);
+      expect(after).toMatchObject({
+        service: "simplefin",
+        skippedCategoryIds: null,
+        lastSyncedAt: null,
+      });
     } finally {
       await done();
     }
