@@ -184,9 +184,9 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
       ).toMatchObject({
         result: null,
       });
-      expect(
-        await admin.projection.computeMonteCarloProjection({}),
-      ).toMatchObject({ result: null });
+      expect(await admin.projection.computeSimulation({})).toMatchObject({
+        result: null,
+      });
     },
     timeout,
   );

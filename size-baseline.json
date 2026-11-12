@@ -193,7 +193,7 @@
     "src/components/retirement-projection/table/projection-table.tsx": 431,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 618,
-    "src/components/retirement-projection/use-projection-queries.ts": 813,
+    "src/components/retirement-projection/use-projection-queries.ts": 812,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 404,
     "src/components/retirement/sections/taxes.tsx": 541,
@@ -767,7 +767,7 @@
       "useProjectionFormState": 297
     },
     "src/components/retirement-projection/use-projection-queries.ts": {
-      "useProjectionQueries": 775
+      "useProjectionQueries": 774
     },
     "src/components/retirement-projection/use-projection-state.ts": {
       "useProjectionState": 266

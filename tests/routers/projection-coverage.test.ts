@@ -3,7 +3,7 @@
  * Projection router coverage tests.
  *
  * Targets uncovered procedures: computeProjection (full result path),
- * computeMonteCarloProjection, and computeStrategyComparison.
+ * computeSimulation, and computeStrategyComparison.
  * Supplements projection.test.ts without duplicating its tests.
  */
 import "./setup-mocks";
@@ -550,14 +550,14 @@ describe("projection router — computeProjection edge cases (continued)", () =>
 });
 
 // ---------------------------------------------------------------------------
-// computeMonteCarloProjection
+// computeSimulation
 // ---------------------------------------------------------------------------
 
-describe("projection router — computeMonteCarloProjection", () => {
+describe("projection router — computeSimulation", () => {
   it("returns null result when no retirement data exists", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
       });
       expect(response.result).toBeNull();
@@ -578,7 +578,7 @@ describe("projection router — computeMonteCarloProjection", () => {
         returnClampMin: -0.2,
         returnClampMax: 0.4,
       });
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         taxMode: "simple",
@@ -601,7 +601,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         taxMode: "simple",
@@ -637,7 +637,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedAssetClasses(db);
       seedCorrelations(db);
       seedGlidePath(db);
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         taxMode: "simple",
@@ -665,7 +665,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         taxMode: "advanced",
@@ -687,7 +687,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
       const run = (taxMode: "simple" | "advanced") =>
-        caller.projection.computeMonteCarloProjection({
+        caller.projection.computeSimulation({
           numTrials: 100,
           preset: "custom",
           taxMode,
@@ -781,7 +781,7 @@ describe("projection router — computeMonteCarloProjection", () => {
         })
         .run();
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "default",
         seed: 42,
@@ -801,7 +801,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -828,7 +828,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedGlidePath(db);
 
       await expect(
-        caller.projection.computeMonteCarloProjection({
+        caller.projection.computeSimulation({
           numTrials: 100,
           preset: "custom",
           assetClassOverrides: [{ id: 9999, meanReturn: 0.12 }],
@@ -863,7 +863,7 @@ describe("projection router — computeMonteCarloProjection", () => {
         })
         .run();
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -900,7 +900,7 @@ describe("projection router — computeMonteCarloProjection", () => {
         })
         .run();
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -925,7 +925,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         selection: {
           accumulationBudget: { annualExpenses: 50000 },
           decumulationBudget: { annualExpenses: 40000 },
@@ -956,7 +956,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedGlidePath(db);
 
       const run = (extra: object) =>
-        caller.projection.computeMonteCarloProjection({
+        caller.projection.computeSimulation({
           numTrials: 100,
           preset: "custom",
           seed: 42,
@@ -1006,9 +1006,9 @@ describe("projection router — getSimulationSummary", () => {
       expect(empty).toEqual({ result: null, computedAt: null });
       expect(mcRuns.count).toBe(runsBefore);
 
-      await caller.projection.computeMonteCarloProjection(input);
+      await caller.projection.computeSimulation(input);
       // What the full query's peek returns (the cache keeps whole seconds).
-      const full = await caller.projection.computeMonteCarloProjection({
+      const full = await caller.projection.computeSimulation({
         ...input,
         peekOnly: true,
       });
@@ -1052,10 +1052,10 @@ describe("projection router — getSimulationSummary", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeMonteCarloProjection — persistent projection cache
+// computeSimulation — persistent projection cache
 // ---------------------------------------------------------------------------
 
-describe("projection router — computeMonteCarloProjection cache", () => {
+describe("projection router — computeSimulation cache", () => {
   fewTrialsForCacheTests();
 
   it("a second identical unseeded call reuses the same minted seed and result", async () => {
@@ -1067,8 +1067,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedGlidePath(db);
       const input = { numTrials: 100, preset: "custom" as const };
 
-      const first = await caller.projection.computeMonteCarloProjection(input);
-      const second = await caller.projection.computeMonteCarloProjection(input);
+      const first = await caller.projection.computeSimulation(input);
+      const second = await caller.projection.computeSimulation(input);
 
       expect(second.simulationInputs!.seed).toBe(first.simulationInputs!.seed);
       expect(second.result).toEqual(first.result);
@@ -1088,8 +1088,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedGlidePath(db);
       const input = { numTrials: 100, preset: "custom" as const, seed: 777 };
 
-      const first = await caller.projection.computeMonteCarloProjection(input);
-      const second = await caller.projection.computeMonteCarloProjection(input);
+      const first = await caller.projection.computeSimulation(input);
+      const second = await caller.projection.computeSimulation(input);
 
       expect(first.simulationInputs!.seed).toBe(777);
       expect(second.simulationInputs!.seed).toBe(777);
@@ -1108,8 +1108,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedGlidePath(db);
       const input = { numTrials: 100, preset: "custom" as const };
 
-      const first = await caller.projection.computeMonteCarloProjection(input);
-      const refreshed = await caller.projection.computeMonteCarloProjection({
+      const first = await caller.projection.computeSimulation(input);
+      const refreshed = await caller.projection.computeSimulation({
         ...input,
         forceRefresh: true,
       });
@@ -1132,7 +1132,7 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         peekOnly: true,
@@ -1156,8 +1156,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedGlidePath(db);
       const input = { numTrials: 100, preset: "custom" as const };
 
-      const real = await caller.projection.computeMonteCarloProjection(input);
-      const peeked = await caller.projection.computeMonteCarloProjection({
+      const real = await caller.projection.computeSimulation(input);
+      const peeked = await caller.projection.computeSimulation({
         ...input,
         peekOnly: true,
       });
@@ -1204,12 +1204,12 @@ describe("projection router — computeMonteCarloProjection cache", () => {
         taxMode: DEFAULT_SIMULATION.taxMode,
       };
       const dashboardPeek = () =>
-        caller.projection.computeMonteCarloProjection({
+        caller.projection.computeSimulation({
           ...plan,
           peekOnly: true,
         });
 
-      const run = await caller.projection.computeMonteCarloProjection(page);
+      const run = await caller.projection.computeSimulation(page);
       expect((await dashboardPeek()).result).toEqual(run.result);
 
       // Saved Changes by year: the page leaves them out until edited (the
@@ -1220,8 +1220,7 @@ describe("projection router — computeMonteCarloProjection cache", () => {
         overrideType: "accumulation",
         overrides: [{ year, contributionRate: 0 }],
       });
-      const withSaved =
-        await caller.projection.computeMonteCarloProjection(page);
+      const withSaved = await caller.projection.computeSimulation(page);
       expect(withSaved.result).not.toEqual(run.result);
       expect((await dashboardPeek()).result).toEqual(withSaved.result);
     } finally {
@@ -1238,8 +1237,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       seedGlidePath(db);
       const input = { numTrials: 100, preset: "custom" as const };
 
-      const real = await caller.projection.computeMonteCarloProjection(input);
-      const peeked = await caller.projection.computeMonteCarloProjection({
+      const real = await caller.projection.computeSimulation(input);
+      const peeked = await caller.projection.computeSimulation({
         ...input,
         peekOnly: true,
         forceRefresh: true,
@@ -1766,7 +1765,7 @@ describe("projection router — computeProjection edge cases", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeMonteCarloProjection — edge cases
+// computeSimulation — edge cases
 // ---------------------------------------------------------------------------
 
 describe("projection router — MC edge cases", () => {
@@ -1792,7 +1791,7 @@ describe("projection router — MC edge cases", () => {
       seedAssetClasses(db);
       seedCorrelations(db);
       seedGlidePath(db);
-      const mc = await caller.projection.computeMonteCarloProjection({
+      const mc = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "aggressive",
         seed: 42,
@@ -1822,7 +1821,7 @@ describe("projection router — MC edge cases", () => {
       seedCorrelations(db);
       // No glide path seeded — glidePath will be empty
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -1843,7 +1842,7 @@ describe("projection router — MC edge cases", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -1876,7 +1875,7 @@ describe("projection router — MC edge cases", () => {
       ]);
 
       const run = (extra: object) =>
-        caller.projection.computeMonteCarloProjection({
+        caller.projection.computeSimulation({
           numTrials: 100,
           preset: "custom",
           seed: 42,
@@ -1911,7 +1910,7 @@ describe("projection router — MC edge cases", () => {
         .run();
 
       // UI override for asset class 2 (should merge, not replace)
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,
@@ -1951,7 +1950,7 @@ describe("projection router — MC edge cases", () => {
         .run();
 
       // UI override for the SAME asset class 1 (should replace)
-      const response = await caller.projection.computeMonteCarloProjection({
+      const response = await caller.projection.computeSimulation({
         numTrials: 100,
         preset: "custom",
         seed: 42,

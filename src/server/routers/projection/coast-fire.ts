@@ -71,7 +71,7 @@ export const coastFireRouter = createTRPCRouter({
         forceRefresh: z.boolean().optional(),
         /** Read-only cache peek — never runs the (expensive) binary search, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
         peekOnly: z.boolean().optional(),
-        /** Progress-polling key (see `getMonteCarloProgress`). Probes run one at a time
+        /** Progress-polling key (see `getSimulationProgress`). Probes run one at a time
          *  under the same id, so progress resets to 0 at each probe's start. */
         runId: z.string().optional(),
       }),

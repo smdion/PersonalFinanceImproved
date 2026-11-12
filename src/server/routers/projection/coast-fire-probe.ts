@@ -35,7 +35,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         /** The age to probe; validated below against the resolved engine input's
          *  currentAge/retirementAge (buildCoastFireProfileSwitches has no guard). */
         probeAge: z.number().int(),
-        /** Progress-polling key — see `getMonteCarloProgress`'s docblock. */
+        /** Progress-polling key — see `getSimulationProgress`'s docblock. */
         runId: z.string().optional(),
       }),
     )

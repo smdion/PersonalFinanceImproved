@@ -138,7 +138,7 @@ const storedRouting = z.looseObject({
 
 /**
  * Build decumulation defaults from DB settings + client-supplied routing overrides.
- * Shared by computeProjection and computeMonteCarloProjection.
+ * Shared by computeProjection and computeSimulation.
  */
 export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {

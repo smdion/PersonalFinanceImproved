@@ -459,7 +459,7 @@ describe("monte carlo integration", () => {
     // Reproduces monte-carlo.ts's "Simple" tax-mode transform by hand:
     // startingBalances/startingAccountBalances collapsed into one after-tax
     // bucket for the AGGREGATE engine math. The fix is that
-    // computeMonteCarloProjection also empties `individualAccounts` in this
+    // computeSimulation also empties `individualAccounts` in this
     // mode (below) -- a first attempt instead kept individualAccounts real
     // and skipped the yearly indBalance/accountBalance reconciliation, which stopped
     // the reconciliation from bleeding real balances into the fake bucket

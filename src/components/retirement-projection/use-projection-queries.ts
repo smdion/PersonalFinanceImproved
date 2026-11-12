@@ -29,7 +29,7 @@ type CoastFireProbeResult = NonNullable<
   RouterOutputs["projection"]["computeCoastFireProbe"]["result"]
 >;
 
-// Safety ceiling for every getMonteCarloProgress poller below (400ms
+// Safety ceiling for every getSimulationProgress poller below (400ms
 // interval x 450 = ~3 minutes) — see useBoundedPollInterval's own
 // docblock for why a poll needs one at all.
 const SIMULATION_PROGRESS_POLL_MAX = 450;
@@ -223,7 +223,7 @@ export function useProjectionQueries(
       onSuccess: invalidateEngine,
     });
   const invalidateSimulation = () => {
-    utils.projection.computeMonteCarloProjection.invalidate();
+    utils.projection.computeSimulation.invalidate();
     utils.projection.computeStrategyComparison.invalidate();
   };
   // The glide path also sets the stock share VPW sizes by — every
@@ -296,12 +296,12 @@ export function useProjectionQueries(
     try {
       // Same ids mcQuery / coastFireMcQuery poll progress under (consts below,
       // initialized before any click), so a manual re-run reports live progress.
-      const result = await utils.projection.computeMonteCarloProjection.fetch({
+      const result = await utils.projection.computeSimulation.fetch({
         ...runMonteCarloInput,
         runId: simulationRunId,
         forceRefresh: true,
       });
-      utils.projection.computeMonteCarloProjection.setData(
+      utils.projection.computeSimulation.setData(
         { ...runMonteCarloInput, runId: simulationRunId },
         result,
       );
@@ -381,7 +381,7 @@ export function useProjectionQueries(
     "coastFireProbeProgress",
   );
   const coastFireProbeProgressQuery =
-    trpc.projection.getMonteCarloProgress.useQuery(
+    trpc.projection.getSimulationProgress.useQuery(
       { runId: coastFireProbeRunId ?? "" },
       {
         enabled: coastFireProbeProgressEnabled,
@@ -396,7 +396,7 @@ export function useProjectionQueries(
   const clearProjectionCacheMutation = trpc.projection.clearCache.useMutation({
     onSuccess: () => {
       utils.projection.computeProjection.invalidate();
-      utils.projection.computeMonteCarloProjection.invalidate();
+      utils.projection.computeSimulation.invalidate();
       utils.projection.computeCoastFire.invalidate();
       utils.projection.computeCoastFireSimulation.invalidate();
     },
@@ -418,7 +418,7 @@ export function useProjectionQueries(
     () => JSON.stringify(simulationPrefetchQueryInput),
     [simulationPrefetchQueryInput],
   );
-  const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
+  const mcPrefetchQuery = trpc.projection.computeSimulation.useQuery(
     { ...simulationPrefetchQueryInput, runId: simulationPrefetchRunId },
     {
       enabled:
@@ -436,7 +436,7 @@ export function useProjectionQueries(
     "mcPrefetchProgress",
   );
   const simulationPrefetchProgressQuery =
-    trpc.projection.getMonteCarloProgress.useQuery(
+    trpc.projection.getSimulationProgress.useQuery(
       { runId: simulationPrefetchRunId },
       {
         enabled: mcPrefetchQuery.isFetching,
@@ -458,7 +458,7 @@ export function useProjectionQueries(
         : undefined,
     ...debouncedBaseInput,
   };
-  const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
+  const mcQuery = trpc.projection.computeSimulation.useQuery(
     {
       ...simulationQueryInput,
       runId: simulationRunId,
@@ -483,7 +483,7 @@ export function useProjectionQueries(
     "mcProgress",
   );
   const simulationProgressQuery =
-    trpc.projection.getMonteCarloProgress.useQuery(
+    trpc.projection.getSimulationProgress.useQuery(
       { runId: simulationRunId },
       {
         enabled: simulationProgressEnabled,
@@ -522,7 +522,7 @@ export function useProjectionQueries(
     "coastFireMcProgress",
   );
   const coastFireSimulationProgressQuery =
-    trpc.projection.getMonteCarloProgress.useQuery(
+    trpc.projection.getSimulationProgress.useQuery(
       { runId: coastFireSimulationRunId },
       {
         enabled: coastFireSimulationProgressEnabled,
@@ -541,7 +541,7 @@ export function useProjectionQueries(
     ?.stopNowMcResult ?? coastFireMcQuery.data?.result?.mcResult) as
     MonteCarloResult | undefined;
 
-  // Rate-Seeded scenario: computeMonteCarloProjection with the
+  // Rate-Seeded scenario: computeSimulation with the
   // rateSeededDecumulationYear1 flag (full MonteCarloResult incl.
   // deterministicProjection). On demand only, once the scenario is selected.
   const rateSeededSimulationQueryInput = useMemo(
@@ -558,18 +558,17 @@ export function useProjectionQueries(
     () => JSON.stringify(rateSeededSimulationQueryInput),
     [rateSeededSimulationQueryInput],
   );
-  const rateSeededMcQuery =
-    trpc.projection.computeMonteCarloProjection.useQuery(
-      { ...rateSeededSimulationQueryInput, runId: rateSeededSimulationRunId },
-      {
-        enabled:
-          projectionView === "rateSeeded" &&
-          engineQuery.isSuccess &&
-          !engineQuery.isFetching,
-        placeholderData: (prev) => prev,
-        staleTime: 5 * PROJECTION_STALE_TIME_MS,
-      },
-    );
+  const rateSeededMcQuery = trpc.projection.computeSimulation.useQuery(
+    { ...rateSeededSimulationQueryInput, runId: rateSeededSimulationRunId },
+    {
+      enabled:
+        projectionView === "rateSeeded" &&
+        engineQuery.isSuccess &&
+        !engineQuery.isFetching,
+      placeholderData: (prev) => prev,
+      staleTime: 5 * PROJECTION_STALE_TIME_MS,
+    },
+  );
   const rateSeededSimulationResult = rateSeededMcQuery.data?.result as
     MonteCarloResult | undefined;
   // No manual "Re-run" action exists for this scenario (unlike mc/coast
@@ -582,7 +581,7 @@ export function useProjectionQueries(
     "rateSeededMcProgress",
   );
   const rateSeededSimulationProgressQuery =
-    trpc.projection.getMonteCarloProgress.useQuery(
+    trpc.projection.getSimulationProgress.useQuery(
       { runId: rateSeededSimulationRunId },
       {
         enabled: rateSeededMcQuery.isFetching,

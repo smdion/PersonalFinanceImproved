@@ -75,7 +75,7 @@ export async function computeCoastFireSimulation(
     runId?: string;
   },
 ) {
-  // Engine payload + Simulation tables in parallel, like computeMonteCarloProjection
+  // Engine payload + Simulation tables in parallel, like computeSimulation
   // but on the default preset with no overrides, for reproducibility.
   const [{ payload }, simulation] = await Promise.all([
     prepareProjectionRun(ctx, {
@@ -124,7 +124,7 @@ export async function computeCoastFireSimulation(
     inflationRisk,
   });
   // peekOnly always reads the real cache regardless of forceRefresh, as
-  // computeMonteCarloProjection does (services/simulation/monte-carlo-projection.ts).
+  // the Simulation's run does (services/simulation/monte-carlo-projection.ts).
   const cached =
     input.forceRefresh && !input.peekOnly
       ? null

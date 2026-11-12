@@ -421,7 +421,7 @@ const SIMULATIONS = [
   "projection.computeCoastFire",
   "projection.computeCoastFireSimulation",
   "projection.computeCoastFireProbe",
-  "projection.computeMonteCarloProjection",
+  "projection.computeSimulation",
 ].map((p) => PROCEDURES.find((procedure) => procedure.path === p)!);
 
 /** The second text pin of a seeded household: each Simulation and Coast

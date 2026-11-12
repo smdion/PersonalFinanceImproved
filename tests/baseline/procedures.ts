@@ -168,7 +168,7 @@ export const PROCEDURES: BaselineProcedure[] = [
     },
   },
   {
-    path: "projection.computeMonteCarloProjection",
+    path: "projection.computeSimulation",
     input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
   // After the run above, with its input: the dashboard tile's cache read.
@@ -327,7 +327,7 @@ export const SKIPPED: Record<string, string> = {
     "reads a budget connection's cached feed, which no household here has; part d pins it for both services after the recorded syncs (sync-writes.test.ts)",
   "projection.getProjectionMetadata":
     "computeProjection's response with result null, from the same function (projection-coverage pins the two equal)",
-  "projection.getMonteCarloProgress":
+  "projection.getSimulationProgress":
     "progress of a run in flight, keyed by a random run id; no household figure",
   "version.getById": "needs a saved version; the baseline seeds none",
   "version.getPreview": "needs a saved version; the baseline seeds none",
