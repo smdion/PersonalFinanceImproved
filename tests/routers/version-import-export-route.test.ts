@@ -456,3 +456,58 @@ describe("/api/versions/import: a household-only export", () => {
     });
   });
 });
+
+describe("/api/versions/import: a body past the size limit", () => {
+  async function importRequest(request: Request) {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/backup/version-logic");
+    vi.mocked(importBackup).mockClear();
+    return { res: await POST(request), importBackup: vi.mocked(importBackup) };
+  }
+
+  it("answers 413 on a declared length past the limit, before reading the body", async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error("the body was read");
+      },
+    });
+    const { res, importBackup } = await importRequest(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+        headers: {
+          "content-length": String(51 * 1024 * 1024),
+          "content-type": "multipart/form-data; boundary=x",
+        },
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(413);
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+
+  it("answers 413 on an undeclared length once the stream passes the limit", async () => {
+    const chunk = new Uint8Array(1024 * 1024);
+    let sent = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent++ < 60) controller.enqueue(chunk);
+        else controller.close();
+      },
+    });
+    const { res, importBackup } = await importRequest(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+        headers: { "content-type": "multipart/form-data; boundary=x" },
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(res.status).toBe(413);
+    // Refused at the limit: the rest of the stream is never pulled.
+    expect(sent).toBeLessThan(60);
+    expect(importBackup).not.toHaveBeenCalled();
+  });
+});

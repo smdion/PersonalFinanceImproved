@@ -11,6 +11,8 @@ import { settleFirstRunGate } from "@/server/data/first-run";
 import { ClosedSetRefusal } from "@/lib/db/backup/closed-set-columns";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+// The multipart wrapping around the file: its boundary lines and headers.
+const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data
 const MAX_JSON_DEPTH = 10; // guard against deeply nested JSONB structures
 
@@ -51,7 +53,36 @@ function validateImportDepthAndSize(value: unknown, depth = 0): string | null {
   return null;
 }
 
+/** The request's form, read through a counter that fails the read once the
+ *  body passes `limit` bytes (`size.over` then says why). */
+function formWithin(
+  request: Request,
+  limit: number,
+  size: { over: boolean },
+): Promise<FormData> {
+  if (!request.body) return request.formData();
+  let read = 0;
+  const counted = request.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        read += chunk.byteLength;
+        size.over = read > limit;
+        if (size.over) controller.error(new RangeError("body too large"));
+        else controller.enqueue(chunk);
+      },
+    }),
+  );
+  const contentType = request.headers.get("content-type") ?? "";
+  return new Response(counted, {
+    headers: { "content-type": contentType },
+  }).formData();
+}
+
+const tooLarge = () =>
+  NextResponse.json({ error: "File too large (max 50MB)" }, { status: 413 });
+
 export async function POST(request: Request) {
+  const size = { over: false };
   if (process.env.DEMO_ONLY === "true") {
     return new Response("Forbidden: demo mode is read-only", { status: 403 });
   }
@@ -74,20 +105,17 @@ export async function POST(request: Request) {
     const demoActive = await refuseWhileDemoActive("import");
     if (demoActive) return demoActive;
 
-    // Parse multipart form data
-    const formData = await request.formData();
+    // Parse multipart form data, refused past the size limit before it's all held
+    if (Number(request.headers.get("content-length")) > MAX_REQUEST_SIZE)
+      return tooLarge();
+    const formData = await formWithin(request, MAX_REQUEST_SIZE, size);
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File too large (max 50MB)" },
-        { status: 400 },
-      );
-    }
+    if (file.size > MAX_FILE_SIZE) return tooLarge();
 
     const text = await file.text();
     let parsed: unknown;
@@ -132,6 +160,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof ClosedSetRefusal)
       return NextResponse.json({ error: error.message }, { status: 400 });
+    if (size.over) return tooLarge();
     log("error", "import_failed", {
       error: error instanceof Error ? error.message : String(error),
     });
