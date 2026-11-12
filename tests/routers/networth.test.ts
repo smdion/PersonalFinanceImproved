@@ -105,7 +105,7 @@ async function seedFullData(
   return personId;
 }
 
-describe("networth router", () => {
+describe("netWorth router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -565,7 +565,7 @@ describe("netWorth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 });
 
-describe("networth snapshot account order is stable across an inline balance edit", () => {
+describe("netWorth snapshot account order is stable across an inline balance edit", () => {
   it("listSnapshots and getLatest both return accounts in id order, unchanged after updateAccount", async () => {
     const ctx = await createTestCaller(adminSession);
     try {

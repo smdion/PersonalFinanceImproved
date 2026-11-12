@@ -316,7 +316,7 @@ describe("useContributionAccountsMutations", () => {
     );
   });
 
-  it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and networth", async () => {
+  it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and netWorth", async () => {
     const useContributionAccountsMutations = await importHook();
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [] }),
@@ -343,7 +343,7 @@ describe("useContributionAccountsMutations", () => {
     expect(invalidated("projection.invalidate")).toBe(true);
   });
 
-  it("updatePortfolioAccountMut's onSuccess invalidates portfolioSnapshots.getLatest and networth", async () => {
+  it("updatePortfolioAccountMut's onSuccess invalidates portfolioSnapshots.getLatest and netWorth", async () => {
     const useContributionAccountsMutations = await importHook();
     const { result } = renderHook(() =>
       useContributionAccountsMutations({ allContribs: [] }),

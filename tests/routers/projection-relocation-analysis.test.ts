@@ -1,7 +1,7 @@
 /**
- * Retirement router integration tests.
+ * projection.computeRelocationAnalysis integration tests.
  *
- * Tests the computeRelocationAnalysis query with:
+ * Tests the query with:
  * - empty DB (early return with nulls)
  * - person only (no settings -> null)
  * - person + settings but no budget profiles -> null
@@ -223,7 +223,7 @@ async function markPrimary(
 // Tests -- empty / minimal (early returns)
 // ---------------------------------------------------------------------------
 
-describe("retirement router", () => {
+describe("projection.computeRelocationAnalysis", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -300,7 +300,7 @@ describe("retirement router", () => {
 // Tests -- fully populated data (exercises the full code path)
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- populated data", () => {
+describe("projection.computeRelocationAnalysis -- populated data", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -488,7 +488,7 @@ describe("retirement router -- populated data", () => {
 // Tests -- expense overrides
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- expense overrides", () => {
+describe("projection.computeRelocationAnalysis -- expense overrides", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -567,7 +567,7 @@ describe("retirement router -- expense overrides", () => {
 // Tests -- two different budget profiles
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- different profiles for current vs relocation", () => {
+describe("projection.computeRelocationAnalysis -- different profiles for current vs relocation", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -645,7 +645,7 @@ describe("retirement router -- different profiles for current vs relocation", ()
 // Tests -- year adjustments
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- year adjustments", () => {
+describe("projection.computeRelocationAnalysis -- year adjustments", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -707,7 +707,7 @@ describe("retirement router -- year adjustments", () => {
 // Tests -- contribution overrides
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- contribution overrides", () => {
+describe("projection.computeRelocationAnalysis -- contribution overrides", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -760,7 +760,7 @@ describe("retirement router -- contribution overrides", () => {
 // Tests -- large purchases
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- large purchases", () => {
+describe("projection.computeRelocationAnalysis -- large purchases", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -854,7 +854,7 @@ describe("retirement router -- large purchases", () => {
 // Tests -- return rates
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- return rates", () => {
+describe("projection.computeRelocationAnalysis -- return rates", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -936,7 +936,7 @@ describe("retirement router -- return rates", () => {
 // Tests -- retirement scenarios
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- selected scenario", () => {
+describe("projection.computeRelocationAnalysis -- selected scenario", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -990,7 +990,7 @@ describe("retirement router -- selected scenario", () => {
 // Tests -- multi-column and weighted budget profiles
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- multi-column budget profiles", () => {
+describe("projection.computeRelocationAnalysis -- multi-column budget profiles", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1067,7 +1067,7 @@ describe("retirement router -- multi-column budget profiles", () => {
 // Tests -- no snapshot (zero portfolio)
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- no snapshot", () => {
+describe("projection.computeRelocationAnalysis -- no snapshot", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1107,7 +1107,7 @@ describe("retirement router -- no snapshot", () => {
 // Tests -- contribution profiles
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- contribution profiles", () => {
+describe("projection.computeRelocationAnalysis -- contribution profiles", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1229,7 +1229,7 @@ describe("retirement router -- contribution profiles", () => {
 // Tests -- missing budget profiles return null
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- person + settings but no budget profiles", () => {
+describe("projection.computeRelocationAnalysis -- person + settings but no budget profiles", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1260,7 +1260,7 @@ describe("retirement router -- person + settings but no budget profiles", () => 
 // Tests -- invalid profile ID
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- mismatched profile IDs", () => {
+describe("projection.computeRelocationAnalysis -- mismatched profile IDs", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1309,7 +1309,7 @@ describe("retirement router -- mismatched profile IDs", () => {
 // Tests -- multiple people (primary + secondary)
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- multiple people", () => {
+describe("projection.computeRelocationAnalysis -- multiple people", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1366,7 +1366,7 @@ describe("retirement router -- multiple people", () => {
 // Tests -- Portfolio-category accounts are excluded
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- portfolio-category account filtering", () => {
+describe("projection.computeRelocationAnalysis -- portfolio-category account filtering", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1432,7 +1432,7 @@ describe("retirement router -- portfolio-category account filtering", () => {
 // Tests -- combined: all optional inputs together
 // ---------------------------------------------------------------------------
 
-describe("retirement router -- all optional inputs combined", () => {
+describe("projection.computeRelocationAnalysis -- all optional inputs combined", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -1555,7 +1555,7 @@ describe("retirement router -- all optional inputs combined", () => {
 // previously had no effect on the relocation comparison's contribution math.
 // ---------------------------------------------------------------------------
 
-describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
+describe("projection.computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
   it("a Contribution Profile can no longer change payPeriod — both arms annualize against the same Salary Profile schedule", async () => {
     const { caller, db, cleanup } = await createTestCaller();
     try {
