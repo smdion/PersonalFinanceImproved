@@ -369,7 +369,7 @@ export function DecumulationMethodologyContent() {
                 </td>
                 <td className="pr-3">Record</td>
                 <td>
-                  Per-account percentages for percentage mode (must sum to 1.0)
+                  Per-account shares for percentage mode, scaled to sum to 1.0
                 </td>
               </tr>
               <tr>
@@ -441,8 +441,8 @@ export function DecumulationMethodologyContent() {
                   rothBracketTarget
                 </td>
                 <td>
-                  Target marginal rate for Roth conversions (e.g. 0.12 = fill up
-                  to the 12% bracket)
+                  Target marginal rate (e.g. 0.12 = the 12% bracket); Waterfall
+                  caps Traditional at it only with rothBracketOverlay on
                 </td>
               </tr>
               <tr>
