@@ -12,7 +12,7 @@ import { formatCurrency } from "../../utils/format";
 import { inputWarnings } from "./input-warnings";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
-import { sumBracketTax } from "../tax/tax-brackets";
+import { checkWithholding } from "./check-withholding";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { calculateBonus } from "./bonus";
 import { additionalMedicareWithheld } from "./additional-medicare";
@@ -26,44 +26,6 @@ import {
   countPeriodsElapsed,
   findNextPayDate,
 } from "./pay-periods-in-year";
-
-/**
- * IRS annualized bracket lookup: total annual tax, marginal rate (highest bracket touched), its
- * floor and the base withholding below it (worksheet display). Brackets tax [min, max), null = top.
- */
-function lookupFederalWithholding(
-  adjustedAnnualWage: number,
-  brackets: { min: number; max: number | null; rate: number }[],
-): {
-  annualTax: number;
-  marginalRate: number;
-  bracketMin: number;
-  baseWithholding: number;
-} {
-  let marginalRate = 0;
-  let bracketMin = 0;
-
-  // Highest bracket reached (>=, even with a 0 slice at the boundary), unlike sumBracketTax's
-  // marginalRate: bracketMin/baseWithholding for the withholding-table display need it.
-  for (let i = brackets.length - 1; i >= 0; i--) {
-    const bracket = brackets[i]!;
-    if (adjustedAnnualWage >= bracket.min) {
-      marginalRate = bracket.rate;
-      bracketMin = bracket.min;
-      break;
-    }
-  }
-
-  // Total tax: shared with tax.ts's annual-liability bracket walk
-  const annualTax = sumBracketTax(adjustedAnnualWage, brackets).total;
-
-  // Base withholding = total tax minus the marginal bracket's contribution
-  // This matches the IRS withholding table format: "base + rate × (wage - bracket floor)"
-  const baseWithholding =
-    annualTax - (adjustedAnnualWage - bracketMin) * marginalRate;
-
-  return { annualTax, marginalRate, bracketMin, baseWithholding };
-}
 
 export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const { warnings } = inputWarnings(input);
@@ -151,20 +113,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // plus taxable benefits not paid in cash (imputed income).
   const federalTaxableGross = gross - totalPreTax + federalEarningsAdjustment;
 
-  // Annualize for the bracket lookup, then divide back to per-period.
-  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment.
-  const adjustedAnnualWage = Math.max(
-    0,
-    federalTaxableGross * periodsPerYear - input.taxBrackets.w4Adjustment,
+  const { marginalRate, federalWithholding } = checkWithholding(
+    input,
+    federalTaxableGross,
+    periodsPerYear,
   );
-  const { annualTax, marginalRate } = lookupFederalWithholding(
-    adjustedAnnualWage,
-    input.taxBrackets.brackets,
-  );
-  // W-4 Line 4c: a flat per-check extra, added after the bracket lookup (never annualized) and
-  // kept out of marginalRate, which feeds the bonus supplemental-rate path.
-  const federalWithholding =
-    safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
   // Social Security on the FICA base up to the wage base; one W-2 employer is modeled.

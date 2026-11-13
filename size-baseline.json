@@ -335,10 +335,11 @@
     "src/lib/pure/net-worth/year-end-metrics.ts": 133,
     "src/lib/pure/net-worth/year-end-rows.ts": 521,
     "src/lib/pure/paycheck/bonus.ts": 178,
+    "src/lib/pure/paycheck/check-withholding.ts": 65,
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 115,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 258,
     "src/lib/pure/paycheck/paystub-check.ts": 427,
-    "src/lib/pure/paycheck/per-check.ts": 276,
+    "src/lib/pure/paycheck/per-check.ts": 229,
     "src/lib/pure/paycheck/person-paycheck.ts": 154,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
     "src/lib/pure/paycheck/year-schedule.ts": 187,
@@ -999,7 +1000,7 @@
       "checkPaystub": 162
     },
     "src/lib/pure/paycheck/per-check.ts": {
-      "calculatePaycheck": 209
+      "calculatePaycheck": 200
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 316
