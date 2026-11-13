@@ -12,6 +12,7 @@ import * as s from "@/lib/db/schema-sqlite";
 import { seedProfile } from "@/server/services/demo/demo-seed";
 import { DEMO_PROFILES } from "@/lib/demo";
 import { createTestCaller, seedPerson } from "./setup";
+import { ROUTERS_ON_POSTGRES } from "./postgres-router-db";
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 
@@ -89,24 +90,33 @@ describe("the Roth bracket overlay switch on every insert path", () => {
     }
   });
 
-  it("the demo seed writes the switch on every row", async () => {
-    const { rawDb, db, sqlite, cleanup } = await createTestCaller();
-    try {
-      // From empty tables, as a demo schema starts.
-      sqlite.pragma("foreign_keys = OFF");
-      for (const { name } of sqlite
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> '__drizzle_migrations'",
-        )
-        .all() as { name: string }[])
-        sqlite.prepare(`DELETE FROM "${name}"`).run();
-      sqlite.pragma("foreign_keys = ON");
-      await seedProfile(rawDb, DEMO_PROFILES["recently-retired"]!, new Date());
-      const rows = switches(db);
-      expect(rows.length).toBeGreaterThan(0);
-      expect(rows.map((r) => r.overlay)).toEqual(rows.map(() => false));
-    } finally {
-      await cleanup();
-    }
-  });
+  // Empties the tables the SQLite way (sqlite_master, pragmas); the demo
+  // seed's PostgreSQL run is seeded-postgres.test.ts, through the same inserts.
+  it.skipIf(ROUTERS_ON_POSTGRES)(
+    "the demo seed writes the switch on every row",
+    async () => {
+      const { rawDb, db, sqlite, cleanup } = await createTestCaller();
+      try {
+        // From empty tables, as a demo schema starts.
+        sqlite.pragma("foreign_keys = OFF");
+        for (const { name } of sqlite
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> '__drizzle_migrations'",
+          )
+          .all() as { name: string }[])
+          sqlite.prepare(`DELETE FROM "${name}"`).run();
+        sqlite.pragma("foreign_keys = ON");
+        await seedProfile(
+          rawDb,
+          DEMO_PROFILES["recently-retired"]!,
+          new Date(),
+        );
+        const rows = switches(db);
+        expect(rows.length).toBeGreaterThan(0);
+        expect(rows.map((r) => r.overlay)).toEqual(rows.map(() => false));
+      } finally {
+        await cleanup();
+      }
+    },
+  );
 });
