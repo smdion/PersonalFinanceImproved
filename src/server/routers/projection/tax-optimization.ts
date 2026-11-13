@@ -135,8 +135,7 @@ function lifetimeTax(years: EngineDecumulationYear[]): number {
 type TaxYearRow = {
   year: number;
   age: number;
-  /** Where the year's money comes from (nominal $). No salary/pension line
-   *  — the engine models neither in decumulation. */
+  /** The year's income by source (nominal $); none from salary or pension. */
   income: {
     socialSecurity: number;
     traditionalWithdrawal: number;
@@ -161,14 +160,10 @@ type TaxYearRow = {
   rmdShortfall: number;
   rmdExcess: number;
   unmetNeed: number;
-  /** @deprecated True only when the check ran and the credit was kept; read
-   *  `acaStatus`. Kept in the response for API clients (no breaking API in a
-   *  v0.11 patch). */
+  /** @deprecated Read `acaStatus`. */
   acaSubsidyPreserved: boolean;
-  /** The year's ACA check: kept, lost, or not checked. */
   acaStatus: EngineDecumulationYear["acaStatus"];
   acaMagiHeadroom: number;
-  /** Set once Group D lands; harmless (undefined) until then. */
   rothConversionIrmaaCapped?: boolean;
   flags: string[];
 };
@@ -234,8 +229,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       const years = decumulationYears(run.result.projectionByYear);
       let cumulative = 0;
       const rows = years.map((y) => {
-        // `y.taxCost` already includes NIIT — don't add `y.niitAmount`
-        // again (that was double-counting it into the running total).
+        // `y.taxCost` already includes NIIT; don't add `y.niitAmount`.
         cumulative += y.taxCost + y.irmaaCost + y.rothConversionTaxCost;
         return toTaxYearRow(y, cumulative);
       });

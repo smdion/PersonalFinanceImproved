@@ -221,9 +221,7 @@ export type ProjectionInput = {
   /** Filing status — used for accurate SS taxation and LTCG brackets.
    *  When omitted, falls back to flat 85% SS taxation and flat LTCG rate. */
   filingStatus?: ReturnFilingStatus;
-  /** IRMAA awareness: Roth conversions stop at the next IRMAA cliff (unless
-   *  `irmaaAwareRothConversions` says otherwise). The surcharge itself is
-   *  always computed for anyone 65+. */
+  /** IRMAA awareness: conversions stop at the next cliff (the surcharge is always computed). */
   enableIrmaaAwareness?: boolean;
   /** IRMAA surcharges are paid on top of the retirement budget (a year's
    *  need rises by the surcharge) rather than sitting inside it. Only the
@@ -526,29 +524,19 @@ export type EngineDecumulationYear = {
   niitAmount: number;
   // --- IRMAA fields ---
   /** Annual IRMAA surcharge, for everyone 65+ together (already multiplied
-   *  by that count). 0 below the first tier, with nobody 65+, or with no
-   *  filing status (Simple tax mode). */
+   *  by that count). 0 below tier 1, or with no filing status (Simple mode). */
   irmaaCost: number;
-  /** The part of `irmaaCost` paid on top of the budget
-   *  (`irmaaOnTopOfBudget`). Absent when none is. */
+  /** What of `irmaaCost` is paid on top of the budget; absent when none. */
   irmaaPaid?: number;
   // --- ACA fields ---
-  /** The year's ACA check: kept, lost, or not checked (awareness off, or
-   *  everyone on Medicare). */
-  acaStatus: AcaStatus;
-  /** @deprecated True only when the check ran and the credit was kept
-   *  (`acaStatus === "kept"`); read `acaStatus`. Kept in the response for
-   *  API clients (no breaking API in a v0.11 patch). */
+  acaStatus: "kept" | "lost" | "not_checked";
+  /** @deprecated `acaStatus === "kept"`, kept for API clients; read `acaStatus`. */
   acaSubsidyPreserved: boolean;
   /** MAGI headroom below ACA cliff ($0 if not applicable). */
   acaMagiHeadroom: number;
   /** Per-year warnings (cap hits, insufficient funds, etc.). */
   warnings: string[];
 };
-
-/** A year's ACA check: the premium credit kept (MAGI under the cliff),
- *  lost (over it), or not checked (awareness off, or nobody it applies to). */
-export type AcaStatus = "kept" | "lost" | "not_checked";
 
 /** A single year in the engine projection — either accumulation or decumulation. */
 export type EngineYearProjection =

@@ -49,26 +49,16 @@ export function growYearTaxTables(
 
   // IRMAA brackets, two factors: this year's (the surcharge checked now) and
   // year + 2's (the conversion cap: this year's MAGI sets the premium two
-  // years on).
-  const irmaaGrowthCheck = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.irmaa,
-  );
-  const irmaaGrowthCap = ctx.inflation.growthSinceVintage(
-    year,
-    tableYears.irmaa,
-    2,
-  );
-  // The top tier's threshold grows only from its first indexed year.
+  // years on); the top tier's threshold grows from its own first indexed year.
   const topVintage = irmaaTopTierVintage(tableYears.irmaa);
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
     taxRates.irmaaBrackets,
-    irmaaGrowthCheck,
+    ctx.inflation.growthSinceVintage(year, tableYears.irmaa),
     ctx.inflation.growthSinceVintage(year, topVintage),
   );
   const grownIrmaaBracketsForCap = growIrmaaBrackets(
     taxRates.irmaaBrackets,
-    irmaaGrowthCap,
+    ctx.inflation.growthSinceVintage(year, tableYears.irmaa, 2),
     ctx.inflation.growthSinceVintage(year, topVintage, 2),
   );
 

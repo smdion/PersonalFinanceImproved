@@ -43,9 +43,7 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
 
   const warnings: string[] = [];
 
-  // Always computed for anyone 65+ (Simple tax mode has no filing status,
-  // so no table-based tax and no surcharge); the awareness switch governs
-  // only the conversion cap.
+  // Computed for anyone 65+ (awareness only caps conversions).
   if (!filingStatus || !anyPersonAge65) {
     return { irmaaCost: 0, warnings };
   }
