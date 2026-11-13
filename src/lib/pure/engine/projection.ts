@@ -38,7 +38,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     input.decumulationDefaults.distributionTaxRates.rothBracketOverlay === null
   )
     warnings.push(
-      "Your retirement settings have no Roth bracket overlay setting saved, so it was read as on. Save your Taxes settings to set it.",
+      "Your saved retirement settings have no Roth bracket overlay setting, so it was read as on, as earlier versions ran it.",
     );
 
   // Date/age boundary validation

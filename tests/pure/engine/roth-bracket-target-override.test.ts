@@ -223,7 +223,7 @@ describe("the Roth bracket overlay switch in a projection", () => {
   };
   const draws = (r: ReturnType<typeof calculateProjection>) =>
     r.projectionByYear.filter(isDecumulationYear).map((y) => y.totalWithdrawal);
-  const NO_SWITCH = /no Roth bracket overlay setting saved/;
+  const NO_SWITCH = /have no Roth bracket overlay setting/;
 
   it("a stored row without its switch reads as on, and the projection says so", () => {
     const missing = waterfall(null);
