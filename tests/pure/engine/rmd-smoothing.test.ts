@@ -23,6 +23,7 @@ function baseInput(
   return {
     enabled: true,
     people: [person()],
+    spouses: new Map(),
     householdTraditionalBalance: 500000,
     returnRateMap: new Map([[0, 0.05]]), // flat 5% for every age (fallback)
     totalTraditionalWithdrawal: 40000,
@@ -34,6 +35,34 @@ function baseInput(
 }
 
 describe("computeRmdSmoothingTargets", () => {
+  it("sizes the future RMD with Table II when the spouse will be over 10 years younger at RMD age", () => {
+    // Owner 70, first RMD at 73 (3 years on). A spouse 59 now is 62 then:
+    // 11 years younger, so the divisor is Table II 73/62 = 27.2, not Table
+    // III's 26.5. A larger divisor tolerates a larger balance: less to
+    // convert. A spouse 60 now (63 then, exactly 10 years) leaves Table III.
+    const at = (spouses: Map<number, number>) =>
+      computeRmdSmoothingTargets(
+        baseInput({
+          people: [
+            person({
+              currentAge: 70,
+              rmdStartAge: 73,
+              personTraditionalBalance: 10_000_000,
+            }),
+          ],
+          spouses,
+          householdTraditionalBalance: 10_000_000,
+        }),
+      );
+    const uniform = at(new Map());
+    const joint = at(new Map([[1, 59]]));
+    expect(uniform.householdSmoothingTarget).toBeGreaterThan(0);
+    expect(joint.householdSmoothingTarget).toBeLessThan(
+      uniform.householdSmoothingTarget,
+    );
+    expect(at(new Map([[1, 60]]))).toEqual(uniform);
+  });
+
   it("returns an all-zero result when disabled", () => {
     const result = computeRmdSmoothingTargets(baseInput({ enabled: false }));
     expect(result.householdSmoothingTarget).toBe(0);

@@ -91,7 +91,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
     (input.overrideRmdRequired != null && input.overrideRmdRequired > 0) ||
     (rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0)
   ) {
-    const computedRmd = computeRmdAmount(priorYearEndTradBalance, age);
+    const computedRmd = computeRmdAmount(priorYearEndTradBalance, age, null);
     if (input.overrideRmdRequired != null || computedRmd != null) {
       const rmdRequired = input.overrideRmdRequired ?? computedRmd!;
       rmdAmount = rmdRequired;

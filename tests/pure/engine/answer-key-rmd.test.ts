@@ -237,7 +237,7 @@ describe("answer key: RMD start age and first distribution year", () => {
     // 1,000 ÷ 26.5 = 37.735… → 37.74. Ledgr gives no one the deferral
     // (ret/R8, ret/R10 are out), so this owner's answer is the plain one.
     expect(fdcy(1953)).toBe(2026);
-    cents(computeRmdAmount(1_000, 2026 - 1953)!, 37.74);
+    cents(computeRmdAmount(1_000, 2026 - 1953, null)!, 37.74);
   });
 });
 
@@ -249,8 +249,8 @@ describe("answer key: the RMD amount", () => {
   it("ret/P1 [RET-02] 100,000 at 75, spouse 6 years younger: 4,065.04 (Pub 590-B p.8 prints 4,065)", () => {
     // Spouse sole beneficiary but only 6 years younger: Table III.
     // 100,000 ÷ 24.6 = 4,065.040… → 4,065.04.
-    expect(getRmdFactor(75)).toBe(24.6);
-    cents(computeRmdAmount(100_000, 75)!, 4_065.04);
+    expect(getRmdFactor(75, null)).toBe(24.6);
+    cents(computeRmdAmount(100_000, 75, null)!, 4_065.04);
   });
 
   it("ret/P2 [RET-02] 100,000 at 75, spouse 64 and sole beneficiary: 3,952.57 (Pub 590-B p.8 prints 3,953)", () => {
@@ -266,15 +266,15 @@ describe("answer key: the RMD amount", () => {
     // 1,449.056… → 1,449.06; the Pub rounds up to 1,450 (spec RMD-21: no
     // rounding is required, the rule is "at least").
     expect(fdcy(1952)).toBe(2025);
-    cents(computeRmdAmount(38_400, 73)!, 1_449.06);
+    cents(computeRmdAmount(38_400, 73, null)!, 1_449.06);
   });
 
   it("ret/P4 [RET-03] Justin 2026, balance 34,800 at 74: 1,364.71, not the Pub's 1,313 (DOC-1)", () => {
     // He is 74 in 2026: 34,800 ÷ 25.5 = 1,364.705… → 1,364.71. Pub 590-B
     // p.12 divides by 26.5 again (1,313), a Pub error: the factor is
     // looked up fresh each year (Reg. -5(c)(1)).
-    expect(getRmdFactor(74)).toBe(25.5);
-    cents(computeRmdAmount(34_800, 74)!, 1_364.71);
+    expect(getRmdFactor(74, null)).toBe(25.5);
+    cents(computeRmdAmount(34_800, 74, null)!, 1_364.71);
   });
 
   it("ret/R11 [RET-03] born 1951, retires 2027, 401(k) 600,000 at 12/31/2026, 76 in 2027: 25,316.46", () => {
@@ -283,8 +283,8 @@ describe("answer key: the RMD amount", () => {
     // 600,000 ÷ 23.7 = 25,316.455… → 25,316.46. Ledgr has no
     // still-working input (it would have taken RMDs from 2024), but on
     // the 12/31/2026 balance the 2027 figure is the same.
-    expect(getRmdFactor(76)).toBe(23.7);
-    cents(computeRmdAmount(600_000, 2027 - 1951)!, 25_316.46);
+    expect(getRmdFactor(76, null)).toBe(23.7);
+    cents(computeRmdAmount(600_000, 2027 - 1951, null)!, 25_316.46);
   });
 
   it("ret/R13 [RET-03] H 80 with IRA 300,000, W 78 with IRA 100,000, 2026: 19,396.94 (pooled at H's age: 19,801.98)", () => {
@@ -335,9 +335,9 @@ describe("answer key: the RMD amount", () => {
     // owner's IRAs (Reg. 1.408-8(e)(1)(i); Pub 590-B p.12). Routing that
     // drew it all from the IRA category meets it: no override, no extra
     // draw, no shortfall.
-    cents(computeRmdAmount(60_000, 75)!, 2_439.02);
-    cents(computeRmdAmount(40_000, 75)!, 1_626.02);
-    cents(computeRmdAmount(100_000, 75)!, 4_065.04);
+    cents(computeRmdAmount(60_000, 75, null)!, 2_439.02);
+    cents(computeRmdAmount(40_000, 75, null)!, 1_626.02);
+    cents(computeRmdAmount(100_000, 75, null)!, 4_065.04);
     const r = ownerRmds(
       [{ personId: 1, required: 4_065.04 }],
       [acct("IRA A", "ira", 60_000, 1), acct("IRA B", "ira", 40_000, 1)],
@@ -390,7 +390,7 @@ describe("answer key: the RMD amount", () => {
   it("ret/R22 [RET-02] owner 80, spouse 69, spouse and a child co-beneficiaries: 49,504.95", () => {
     // Not the sole beneficiary, so Table III whatever the gap (Reg.
     // -5(c)(2)(i)): 1,000,000 ÷ 20.2 = 49,504.95.
-    cents(computeRmdAmount(1_000_000, 80)!, 49_504.95);
+    cents(computeRmdAmount(1_000_000, 80, null)!, 49_504.95);
   });
 
   it("ret/R24 [RET-02] owner 90, spouse 76, sole beneficiary: 34,013.61 (the regulation's 14.7, not the Pub's 14.8)", () => {
@@ -405,8 +405,8 @@ describe("answer key: the RMD amount", () => {
   it("ret/R25 [RET-02] age 120, 100,000: 50,000", () => {
     // Table III's last row is "120 and over", 2.0: 100,000 ÷ 2.0 =
     // 50,000, and the same at 121.
-    cents(computeRmdAmount(100_000, 120)!, 50_000);
-    cents(computeRmdAmount(100_000, 121)!, 50_000);
+    cents(computeRmdAmount(100_000, 120, null)!, 50_000);
+    cents(computeRmdAmount(100_000, 121, null)!, 50_000);
   });
 
   it("ret/R26 [RET-03] Roth IRA 1,000,000 at 80 and Roth 401(k) 200,000: 0", () => {
@@ -427,8 +427,8 @@ describe("answer key: the RMD amount", () => {
     // An excess earns no credit in a later year (Reg. -5(a)(6)): with no
     // growth, 2027 is 370,000 at 76, 370,000 ÷ 23.7 = 15,611.814… →
     // 15,611.81, not 15,611.81 − 13,739.84 = 1,871.97.
-    cents(computeRmdAmount(400_000, 75)!, 16_260.16);
-    cents(computeRmdAmount(370_000, 76)!, 15_611.81);
+    cents(computeRmdAmount(400_000, 75, null)!, 16_260.16);
+    cents(computeRmdAmount(370_000, 76, null)!, 15_611.81);
   });
 
   it("ret/R28 [RET-07] shortfall 10,000: excise 2,500", () => {

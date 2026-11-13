@@ -68,7 +68,7 @@ export const UNIFORM_LIFETIME_TABLE: Record<number, number> = {
  *  years younger (Reg. § 1.401(a)(9)-5(c)(2)); otherwise Table III, the Uniform Lifetime. */
 export function getRmdFactor(
   age: number,
-  soleBeneficiarySpouseAge?: number | null,
+  soleBeneficiarySpouseAge: number | null,
 ): number | null {
   if (age < 72) return null;
   const row = Math.min(age, 120);
@@ -89,7 +89,7 @@ export function getRmdFactor(
 export function computeRmdAmount(
   priorYearEndTradBalance: number,
   age: number,
-  soleBeneficiarySpouseAge?: number | null,
+  soleBeneficiarySpouseAge: number | null,
 ): number | null {
   const factor = getRmdFactor(age, soleBeneficiarySpouseAge);
   if (factor == null || factor <= 0) return null;

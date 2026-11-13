@@ -21,6 +21,8 @@ export interface RmdSmoothingPersonInput {
 export interface RmdSmoothingInput {
   enabled: boolean;
   people: RmdSmoothingPersonInput[];
+  /** Each owner's sole-beneficiary spouse's age this year (`soleBeneficiarySpouseAges`). */
+  spouses: ReadonlyMap<number, number>;
   /** Household Traditional balance (`balances.preTax`): the denominator for this person's share
    *  of future Traditional withdrawals (not tracked per person outside RMDs). */
   householdTraditionalBalance: number;
@@ -109,7 +111,13 @@ export function computeRmdSmoothingTargets(
     const projectedBalanceAtRmdAge = balance;
     if (projectedBalanceAtRmdAge <= 0) continue; // nothing left to force an RMD at all
 
-    const factor = getRmdFactor(person.rmdStartAge);
+    // The divisor the RMD will use in the owner's first RMD year: Table II for
+    // a sole-beneficiary spouse over 10 years younger then.
+    const spouseNow = input.spouses.get(person.personId);
+    const factor = getRmdFactor(
+      person.rmdStartAge,
+      spouseNow == null ? null : spouseNow + yearsRemaining,
+    );
     if (factor == null || factor <= 0) continue;
 
     // This person's tolerable future RMD: scaled by the same Traditional

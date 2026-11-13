@@ -158,7 +158,7 @@ export function enforceYearRmd(
     rmdStartAge != null &&
     age >= rmdStartAge &&
     priorYearEndTradBalance > 0
-      ? (getRmdFactor(age) ?? undefined)
+      ? (getRmdFactor(age, null) ?? undefined)
       : undefined;
 
   // Each RMD's minimum Traditional withdrawal, enforced (rmd-enforcement.ts).

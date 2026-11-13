@@ -2,6 +2,7 @@
 import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
+import { soleBeneficiarySpouseAges } from "../../../config/rmd-tables";
 import {
   followDraws,
   followInflows,
@@ -251,9 +252,7 @@ export function yearRothConversion(
   const { taxableSS, taxFromSlots } = flow.priced;
   const grownStandardDeduction = flow.priced.standardDeduction;
   const { brokerageGainsPortion } = flow.parts;
-  // RMD-aware conversion smoothing (rmd-smoothing.ts), sized each year from
-  // each owner's current Traditional balance (indBalance, after this year's
-  // draws); per owner, so only with tracked accounts.
+  // RMD-aware conversion smoothing (rmd-smoothing.ts): per owner, so tracked accounts only.
   let rmdSmoothingTarget: number | undefined;
   if (
     config.rmdSmoothingEnabled &&
@@ -283,13 +282,17 @@ export function yearRothConversion(
     const smoothingResult = computeRmdSmoothingTargets({
       enabled: true,
       people: smoothingPeople,
+      spouses: soleBeneficiarySpouseAges(
+        filingStatus,
+        rmdStartAgeByPerson,
+        year,
+      ),
       householdTraditionalBalance: balances.preTax,
       returnRateMap: ctx.returnRateMap,
       totalTraditionalWithdrawal,
       totalWithdrawal,
-      // What leaves the portfolio this year — not spending, which Social
-      // Security partly covers (and which a portfolio-sized strategy with
-      // Social Security on top doesn't size at all).
+      // What leaves the portfolio this year, not spending (Social Security partly covers
+      // it, and a portfolio-sized strategy with Social Security on top doesn't size it).
       currentProjectedAnnualSpendingNeed: targetWithdrawal,
       postRetirementInflationRate: ctx.validatedPostRetirementInflation,
     });
@@ -298,8 +301,7 @@ export function yearRothConversion(
     }
   }
 
-  // The Roth conversion (roth-conversion.ts); its tax is paid from
-  // retirement brokerage money (basis leaves at the account's own ratio).
+  // The Roth conversion; its tax is paid from retirement brokerage money (at its basis ratio).
   const rothResult = followDraws(
     indAccounts,
     indKey,
@@ -307,7 +309,6 @@ export function yearRothConversion(
     brokBasis,
     () =>
       performRothConversion({
-        // The conversion's tax comes out of retirement brokerage money.
         brokerageBasisRatio: hasIndividualAccounts
           ? retirementBrokerageBasisRatio(
               indAccounts,
@@ -321,8 +322,7 @@ export function yearRothConversion(
         taxMultiplier: taxRates.taxMultiplier,
         standardDeduction: grownStandardDeduction,
         rothConversionTarget: config.rothConversionTarget,
-        // The fallback when config.rothConversionTarget is unset:
-        // resolvedConversionTarget, the same chain the routing reservation used
+        // The fallback with no rothConversionTarget: the routing reservation's chain
         // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
         rothBracketTarget: resolvedConversionTarget,
         totalTraditionalWithdrawal,

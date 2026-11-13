@@ -38,7 +38,7 @@ export function rmdIncomeByOwner(
       const personAge = ageInYear(birthYear, year);
       const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
       if (personAge >= startAge && personTrad > 0) {
-        const spouseAge = spouseAges.get(personId);
+        const spouseAge = spouseAges.get(personId) ?? null;
         const rmdAmount = computeRmdAmount(personTrad, personAge, spouseAge);
         if (rmdAmount != null) {
           rmdByPerson.push({

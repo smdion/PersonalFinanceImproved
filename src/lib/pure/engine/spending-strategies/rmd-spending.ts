@@ -18,7 +18,7 @@ export function applyRmdSpending(
   const { rmdMultiplier } = params as RmdSpendingParams;
 
   // Use primary person's age for RMD factor lookup (not household average)
-  const factor = getRmdFactor(primaryPersonAge ?? age);
+  const factor = getRmdFactor(primaryPersonAge ?? age, null);
 
   // Pre-RMD age: inflation-adjusted budget spending. The orchestrator skips
   // inflation for this strategy and projectedExpenses carries last year's

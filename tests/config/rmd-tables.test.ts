@@ -41,9 +41,9 @@ describe("getRmdStartAge — SECURE 2.0 Act cohorts", () => {
 
 describe("getRmdFactor — Uniform Lifetime Table", () => {
   it("returns null for ages below 72", () => {
-    expect(getRmdFactor(71)).toBeNull();
-    expect(getRmdFactor(50)).toBeNull();
-    expect(getRmdFactor(0)).toBeNull();
+    expect(getRmdFactor(71, null)).toBeNull();
+    expect(getRmdFactor(50, null)).toBeNull();
+    expect(getRmdFactor(0, null)).toBeNull();
   });
 
   // Every cell against the publication, so a mistyped mid-table divisor
@@ -55,11 +55,11 @@ describe("getRmdFactor — Uniform Lifetime Table", () => {
 
   it("returns the published divisor at every age 72-120 [RET-02]", () => {
     for (const [age, divisor] of Object.entries(PUBLISHED.value))
-      expect(getRmdFactor(Number(age)), `age ${age}`).toBe(divisor);
+      expect(getRmdFactor(Number(age), null), `age ${age}`).toBe(divisor);
   });
 
   it('uses the 120 divisor above 120 (Table III: "120 and over", 2.0) [RET-02]', () => {
-    expect(getRmdFactor(125)).toBe(PUBLISHED.value[120]);
+    expect(getRmdFactor(125, null)).toBe(PUBLISHED.value[120]);
   });
 });
 
@@ -69,29 +69,29 @@ describe("getRmdFactor — Uniform Lifetime Table", () => {
 describe("computeRmdAmount (pins current behavior)", () => {
   it("is the prior year-end balance over the divisor, rounded to cents", () => {
     // 100,000 / 27.4 = 3,649.6350 -> 3,649.64.
-    expect(computeRmdAmount(100000, 72)).toBe(3649.64);
+    expect(computeRmdAmount(100000, 72, null)).toBe(3649.64);
     // 250,000 / 24.6 = 10,162.6016 -> 10,162.60.
-    expect(computeRmdAmount(250000, 75)).toBe(10162.6);
+    expect(computeRmdAmount(250000, 75, null)).toBe(10162.6);
   });
 
   it("is null below the table (age 71), whatever the balance", () => {
-    expect(computeRmdAmount(1000000, 71)).toBeNull();
+    expect(computeRmdAmount(1000000, 71, null)).toBeNull();
   });
 
   it("uses the 120 divisor above 120", () => {
-    expect(computeRmdAmount(10000, 130)).toBe(5000);
+    expect(computeRmdAmount(10000, 130, null)).toBe(5000);
   });
 
   it("a zero balance owes 0 (not null)", () => {
-    expect(computeRmdAmount(0, 80)).toBe(0);
+    expect(computeRmdAmount(0, 80, null)).toBe(0);
   });
 
   it("a negative balance gives a negative amount (no floor here; callers gate on balance > 0)", () => {
-    expect(computeRmdAmount(-20200, 80)).toBe(-1000);
+    expect(computeRmdAmount(-20200, 80, null)).toBe(-1000);
   });
 
   it("a fractional age has no divisor: null", () => {
-    expect(computeRmdAmount(100000, 72.5)).toBeNull();
+    expect(computeRmdAmount(100000, 72.5, null)).toBeNull();
   });
 });
 
@@ -132,7 +132,6 @@ describe("getRmdFactor — Joint and Last Survivor Table (sole-beneficiary spous
     expect(getRmdFactor(75, 65)).toBe(PUBLISHED.value[75]);
     expect(getRmdFactor(75, 80)).toBe(PUBLISHED.value[75]);
     expect(getRmdFactor(75, null)).toBe(PUBLISHED.value[75]);
-    expect(getRmdFactor(75, undefined)).toBe(PUBLISHED.value[75]);
   });
 
   it("is null below the owner's table, whatever the spouse's age", () => {
