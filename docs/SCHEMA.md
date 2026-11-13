@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0021_v0110_job_entries`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0022_v0111_roth_overlay`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -32,6 +32,7 @@
 | 0019 | v0106_credentials         | yes        | yes    |
 | 0020 | v0106_stored_json         | yes        | yes    |
 | 0021 | v0110_job_entries         | yes        | yes    |
+| 0022 | v0111_roth_overlay        | yes        | yes    |
 
 ## Relations
 
@@ -662,6 +663,7 @@ erDiagram
     numeric_8_6 tax_multiplier
     boolean gross_up_for_taxes
     numeric_8_6 roth_bracket_target
+    boolean roth_bracket_overlay
     numeric_14_2 social_security_monthly
     integer ss_start_age
     boolean enable_roth_conversions
@@ -1921,6 +1923,7 @@ erDiagram
 | tax_multiplier                           | numeric(8, 6)  | yes      | `'1.0'`             |                                                   |
 | gross_up_for_taxes                       | boolean        | yes      | `true`              |                                                   |
 | roth_bracket_target                      | numeric(8, 6)  |          | `'0.12'`            |                                                   |
+| roth_bracket_overlay                     | boolean        |          |                     |                                                   |
 | social_security_monthly                  | numeric(14, 2) | yes      | `'2500'`            |                                                   |
 | ss_start_age                             | integer        | yes      | `67`                |                                                   |
 | enable_roth_conversions                  | boolean        | yes      | `false`             |                                                   |

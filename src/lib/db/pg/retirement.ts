@@ -70,6 +70,8 @@ export const retirementSettings = pgTable(
       precision: 8,
       scale: 6,
     }).default("0.12"),
+    /** Waterfall's Roth bracket overlay on/off. No DB default: null only before tag 0022 sets it. */
+    rothBracketOverlay: boolean("roth_bracket_overlay"),
     /** Monthly Social Security benefit estimate in today's dollars. */
     socialSecurityMonthly: decimal("social_security_monthly", {
       precision: 14,
@@ -106,13 +108,11 @@ export const retirementSettings = pgTable(
     withdrawalRoutingMode: varchar("withdrawal_routing_mode", { length: 20 })
       .notNull()
       .default("bracket_filling"),
-    /** Household default withdrawal ORDER (Waterfall's sequence; bracket_filling's Traditional
-     *  order); same fallback role as above. NULL = `getDefaultDecumulationOrder()`, never a copy.
-     *  Zod rejects bad or duplicate entries; the engine completes a partial list. */
+    /** Household default withdrawal ORDER (Waterfall's; bracket_filling's Traditional order), same
+     *  fallback role. NULL = `getDefaultDecumulationOrder()`; zod refuses repeats, the engine completes it. */
     withdrawalOrder: jsonb("withdrawal_order").$type<string[]>(),
-    /** Household default percentage-mode splits (per-account fractions, roughly summing to 1);
-     *  same fallback role, NULL = `DEFAULT_WITHDRAWAL_SPLITS`. A missing account is 0 and the
-     *  engine redistributes proportionally. */
+    /** Household default percentage-mode splits (per-account fractions); same fallback role, NULL =
+     *  `DEFAULT_WITHDRAWAL_SPLITS`. A missing account is 0; the router scales a year's sum to 100%. */
     withdrawalSplits:
       jsonb("withdrawal_splits").$type<Record<string, number>>(),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */

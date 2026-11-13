@@ -51,6 +51,7 @@ describe("the migrator bundle", () => {
         "src/lib/db/migrate/v0106-cached-months.ts",
         "src/lib/db/migrate/v0106-salary-entries.ts",
         "src/lib/db/migrate/v0110-job-entries.ts",
+        "src/lib/db/migrate/v0111-roth-overlay.ts",
         "src/lib/db/migrate/v0106-active-fields.ts",
         "src/lib/db/migrate/v0106-performance-category.ts",
         "src/lib/db/migrate/v0106-retired-limits.ts",

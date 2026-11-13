@@ -735,6 +735,8 @@ describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () =
           en_ss_in_amount: true,
           vd_ss_in_amount: true,
           rmd_ss_in_amount: true,
+          // Tag 0022's switch: set, as every writer since sets it.
+          roth_bracket_overlay: false,
         },
       ],
       scenarios: [{ id: 1, name: "Base", retirement_profile_id: null }],

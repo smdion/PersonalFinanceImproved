@@ -95,9 +95,20 @@ function withMatchRates(tables: Tables): Tables {
   return tables;
 }
 
+/** Migration 0022's step: a settings row with no Roth overlay switch keeps
+ *  the overlay on, an empty target at the 12% it read. */
+function withOverlay(tables: Tables): Tables {
+  for (const row of tables["retirement_settings"] ?? [])
+    if (row["roth_bracket_overlay"] == null) {
+      row["roth_bracket_overlay"] = true;
+      row["roth_bracket_target"] ??= "0.12";
+    }
+  return tables;
+}
+
 describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
   it.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
-    "%s comes back unchanged except for the rename and the match rate",
+    "%s comes back unchanged except for the rename, the match rate and the overlay switch",
     async (_key, household) => {
       const { input, expected } = withOldKey(await exported(household));
       const before = structuredClone(input);
@@ -107,7 +118,7 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
         CURRENT,
       );
       expect(transformed).toBe(true);
-      expect(tables).toEqual(withMatchRates(expected));
+      expect(tables).toEqual(withOverlay(withMatchRates(expected)));
       expect(input).toEqual(before);
     },
   );
@@ -124,7 +135,9 @@ describe("a v0.10.1 backup (schema 0013) through the restore ladder", () => {
     );
     const { retirement_profiles: added, ...others } = out;
     const { retirement_profiles: _none, ...unchanged } = input;
-    expect(others).toEqual(withMatchRates(structuredClone(unchanged)));
+    expect(others).toEqual(
+      withOverlay(withMatchRates(structuredClone(unchanged))),
+    );
     // The settings rows already name profile 1, so they now point at it.
     expect(
       new Set(out["retirement_settings"]!.map((r) => (r as Row)["profile_id"])),
