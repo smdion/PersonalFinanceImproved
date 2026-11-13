@@ -775,6 +775,22 @@ describe("a job ending this year", () => {
     ).toEqual({ beforeStart: 11, lastCheck: 26, total: 15 });
   });
 
+  it("counted up to a last check given (the cap pass's periods)", () => {
+    const started = {
+      ...input,
+      startDate: new Date("2025-06-02"),
+      endDate: null,
+    };
+    const asOf = { ...started, asOfDate: new Date("2025-08-01") };
+    expect(jobChecksThisYear(asOf, 20)).toEqual({
+      beforeStart: 11,
+      lastCheck: 20,
+      total: 9,
+    });
+    // Before its start: none, never a negative count.
+    expect(jobChecksThisYear(asOf, 5).total).toBe(0);
+  });
+
   it("the paydays after its last day are empty, as the paydays before a start are", () => {
     const r = calculatePaycheck(input);
     const full = calculatePaycheck({ ...input, endDate: null });

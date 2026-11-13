@@ -30,7 +30,6 @@ import {
   jobScheduleDates,
 } from "@/lib/pure/paycheck/paycheck-input";
 import { jobChecksThisYear } from "@/lib/pure/paycheck/job-last-check";
-import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import { checksPaidYtd } from "@/lib/pure/paycheck/pay-periods-in-year";
 import { bonusCheckNumber } from "@/lib/pure/paycheck/bonus-check";
 
@@ -39,11 +38,7 @@ export type CapJob = JobRef &
   JobLike &
   Pick<
     JobForPaycheckInput,
-    | "payPeriod"
-    | "salaryDivisor"
-    | "anchorPayDate"
-    | "bonusMonth"
-    | "bonusDayOfMonth"
+    "payPeriod" | "anchorPayDate" | "bonusMonth" | "bonusDayOfMonth"
   >;
 
 /** A job's pay over a year: salary, its bonus and the two together. */
@@ -118,14 +113,13 @@ function thisYearInput(
       bonusDayOfMonth: job.bonusDayOfMonth ?? null,
       ...jobScheduleDates(job),
     };
-    const checks = jobChecksThisYear(input);
+    const periods = getPeriodsPerYear(job.payPeriod);
+    // On the pay schedule's periods: an extra payday (a 27th or 53rd) adds no contribution money.
+    const checks = jobChecksThisYear(input, periods);
     const check = bonusCheckNumber(input, pay.bonusGross);
     const bonusGross =
       check !== null && check > checks.beforeStart ? pay.bonusGross : 0;
-    // The checks' share of a year's salary (each check is salary / the divisor).
-    const share =
-      checks.total /
-      salaryDivisor({ ...input, salaryDivisor: job.salaryDivisor });
+    const share = checks.total / periods;
     return {
       ...pay,
       bonusGross,
@@ -254,11 +248,10 @@ export function withLeftThisYear<R extends CapPassRow & CappedRowFields>(
     if (!job?.payPeriod || !edge(job) || !cap) return r;
     const periods = getPeriodsPerYear(job.payPeriod);
     const dates = jobScheduleDates(job);
-    const { total } = jobChecksThisYear({
-      asOfDate: asOf,
-      payPeriod: job.payPeriod,
-      ...dates,
-    });
+    const { total } = jobChecksThisYear(
+      { asOfDate: asOf, payPeriod: job.payPeriod, ...dates },
+      periods,
+    );
     const paid = Math.min(
       total,
       checksPaidYtd(

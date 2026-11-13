@@ -43,9 +43,11 @@ export function bonusAfterEnd(
 }
 
 /** A job's checks in `asOfDate`'s year: the paydays before its start, its last check and the
- *  checks it pays this year (`total`). */
+ *  checks it pays this year (`total`); counted up to `lastAllowed` when given (the cap pass's
+ *  year is the pay schedule's periods). */
 export function jobChecksThisYear(
   input: JobEnd & Pick<PaycheckInput, "startDate">,
+  lastAllowed = Infinity,
 ) {
   const beforeStart = periodsBeforeStart(
     input.asOfDate,
@@ -53,7 +55,7 @@ export function jobChecksThisYear(
     input.anchorPayDate,
     input.startDate,
   );
-  const lastCheck = lastCheckThisYear(input);
+  const lastCheck = Math.min(lastCheckThisYear(input), lastAllowed);
   return {
     beforeStart,
     lastCheck,
