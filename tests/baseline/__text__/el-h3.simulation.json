@@ -541,6 +541,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -702,6 +703,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -863,6 +865,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -1024,170 +1027,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
-        "withdrawalOrder": [
-         "401k",
-         "ira",
-         "403b",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "waterfall"
-       },
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Harper 401k (Plan Co 401(k))",
-         "ownerName": "Harper",
-         "parentCategory": "Retirement",
-         "taxType": "preTax"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Sage IRA (Index Funds IRA)",
-         "ownerName": "Sage",
-         "parentCategory": "Retirement",
-         "taxType": "preTax"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Harper IRA (Index Funds IRA)",
-         "ownerName": "Harper",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "brokerage",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "no_owner"
-          }
-         },
-         "name": "Retirement brokerage (projected)",
-         "parentCategory": "Retirement",
-         "projectedOnly": true,
-         "taxType": "afterTax"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdByPerson": [
-        {
-         "personName": "Harper"
-        },
-        {
-         "personName": "Sage"
-        }
-       ],
-       "rmdOverrodeRouting": true,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        }
-       ],
-       "ssIncomeByPerson": [
-        {
-         "personName": "Harper"
-        },
-        {
-         "personName": "Sage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -1352,6 +1192,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -1516,6 +1357,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -1680,6 +1522,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -1844,6 +1687,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -2008,6 +1852,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -2172,6 +2017,172 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "ira",
+         "403b",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "waterfall"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Harper 401k (Plan Co 401(k))",
+         "ownerName": "Harper",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Sage IRA (Index Funds IRA)",
+         "ownerName": "Sage",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Harper IRA (Index Funds IRA)",
+         "ownerName": "Harper",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "brokerage",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "no_owner"
+          }
+         },
+         "name": "Retirement brokerage (projected)",
+         "parentCategory": "Retirement",
+         "projectedOnly": true,
+         "taxType": "afterTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdByPerson": [
+        {
+         "personName": "Harper"
+        },
+        {
+         "personName": "Sage"
+        }
+       ],
+       "rmdOverrodeRouting": true,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        }
+       ],
+       "ssIncomeByPerson": [
+        {
+         "personName": "Harper"
+        },
+        {
+         "personName": "Sage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "ira",
@@ -2852,6 +2863,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3013,6 +3025,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3174,6 +3187,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3335,170 +3349,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
-       "withdrawalOrder": [
-        "401k",
-        "ira",
-        "403b",
-        "brokerage",
-        "hsa"
-       ],
-       "withdrawalRoutingMode": "waterfall"
-      },
-      "hasBudgetOverride": false,
-      "individualAccountBalances": [
-       {
-        "category": "401k",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "gate": "age_59_half",
-          "kind": "age_reached"
-         }
-        },
-        "name": "Harper 401k (Plan Co 401(k))",
-        "ownerName": "Harper",
-        "parentCategory": "Retirement",
-        "taxType": "preTax"
-       },
-       {
-        "category": "ira",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "gate": "age_59_half",
-          "kind": "age_reached"
-         }
-        },
-        "name": "Sage IRA (Index Funds IRA)",
-        "ownerName": "Sage",
-        "parentCategory": "Retirement",
-        "taxType": "preTax"
-       },
-       {
-        "category": "ira",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "gate": "age_59_half",
-          "kind": "age_reached"
-         }
-        },
-        "name": "Harper IRA (Index Funds IRA)",
-        "ownerName": "Harper",
-        "parentCategory": "Retirement",
-        "roth": {
-         "basisUncertain": false
-        },
-        "taxType": "taxFree"
-       },
-       {
-        "category": "brokerage",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "kind": "no_owner"
-         }
-        },
-        "name": "Retirement brokerage (projected)",
-        "parentCategory": "Retirement",
-        "projectedOnly": true,
-        "taxType": "afterTax"
-       }
-      ],
-      "phase": "decumulation",
-      "preWithdrawalAcctBal": {
-       "401k": {
-        "structure": "roth_traditional"
-       },
-       "403b": {
-        "structure": "roth_traditional"
-       },
-       "brokerage": {
-        "structure": "basis_tracking"
-       },
-       "hsa": {
-        "structure": "single_bucket"
-       },
-       "ira": {
-        "structure": "roth_traditional"
-       }
-      },
-      "rmdByPerson": [
-       {
-        "personName": "Harper"
-       },
-       {
-        "personName": "Sage"
-       }
-      ],
-      "rmdOverrodeRouting": true,
-      "slots": [
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "401k"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "brokerage"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "hsa"
-       }
-      ],
-      "ssIncomeByPerson": [
-       {
-        "personName": "Harper"
-       },
-       {
-        "personName": "Sage"
-       }
-      ],
-      "unmetNeedMaterial": false,
-      "withdrawalSized": false
-     },
-     {
-      "acaSubsidyPreserved": false,
-      "balanceByAccount": {
-       "401k": {
-        "structure": "roth_traditional"
-       },
-       "403b": {
-        "structure": "roth_traditional"
-       },
-       "brokerage": {
-        "structure": "basis_tracking"
-       },
-       "hsa": {
-        "structure": "single_bucket"
-       },
-       "ira": {
-        "structure": "roth_traditional"
-       }
-      },
-      "config": {
-       "avoidPenalizedWithdrawals": true,
-       "discretionaryWithdrawalOrder": "roth_first",
-       "qcdMaximize": false,
-       "rmdExcessHandling": "reinvest",
-       "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3663,6 +3514,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3827,6 +3679,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -3991,6 +3844,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -4155,6 +4009,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -4319,6 +4174,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",
@@ -4483,6 +4339,172 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
+       "withdrawalOrder": [
+        "401k",
+        "ira",
+        "403b",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "waterfall"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "401k",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Harper 401k (Plan Co 401(k))",
+        "ownerName": "Harper",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       },
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Sage IRA (Index Funds IRA)",
+        "ownerName": "Sage",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       },
+       {
+        "category": "ira",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "gate": "age_59_half",
+          "kind": "age_reached"
+         }
+        },
+        "name": "Harper IRA (Index Funds IRA)",
+        "ownerName": "Harper",
+        "parentCategory": "Retirement",
+        "roth": {
+         "basisUncertain": false
+        },
+        "taxType": "taxFree"
+       },
+       {
+        "category": "brokerage",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "kind": "no_owner"
+         }
+        },
+        "name": "Retirement brokerage (projected)",
+        "parentCategory": "Retirement",
+        "projectedOnly": true,
+        "taxType": "afterTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdByPerson": [
+       {
+        "personName": "Harper"
+       },
+       {
+        "personName": "Sage"
+       }
+      ],
+      "rmdOverrodeRouting": true,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       }
+      ],
+      "ssIncomeByPerson": [
+       {
+        "personName": "Harper"
+       },
+       {
+        "personName": "Sage"
+       }
+      ],
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "ira",

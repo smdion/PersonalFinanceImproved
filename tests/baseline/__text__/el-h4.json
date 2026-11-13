@@ -109,6 +109,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -241,6 +242,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -373,6 +375,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -505,6 +508,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -637,6 +641,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -769,6 +774,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -901,6 +907,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1033,6 +1040,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1165,6 +1173,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1297,6 +1306,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1429,6 +1439,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1561,6 +1572,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1694,6 +1706,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1827,6 +1840,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -1960,6 +1974,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2093,6 +2108,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2226,6 +2242,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2359,6 +2376,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2492,6 +2510,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2625,6 +2644,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2758,6 +2778,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -2891,6 +2912,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -3024,6 +3046,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -3157,6 +3180,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -3290,6 +3314,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -3423,6 +3448,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",
@@ -3556,6 +3582,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "brokerage",
      "ira",

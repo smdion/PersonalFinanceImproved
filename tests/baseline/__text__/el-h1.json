@@ -873,6 +873,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1028,6 +1029,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1183,6 +1185,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1338,6 +1341,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1493,6 +1497,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1648,6 +1653,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1803,6 +1809,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -1958,6 +1965,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -2113,6 +2121,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -2268,6 +2277,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -2423,6 +2433,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -2597,6 +2608,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",
@@ -2771,6 +2783,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "ira",

@@ -22,6 +22,7 @@ type DistributionTaxRateInput = {
     taxMultiplier: Decimal;
     grossUpForTaxes: boolean;
     rothBracketTarget: Decimal;
+    rothBracketOverlay: boolean | null;
     enableRothConversions: boolean;
     rothConversionTarget: Decimal;
   };
@@ -129,6 +130,7 @@ export function buildDistributionTaxRates({
     rothBracketTarget: toNumber(
       settings.rothBracketTarget ?? String(DEFAULT_ROTH_BRACKET_TARGET),
     ),
+    rothBracketOverlay: settings.rothBracketOverlay,
     enableRothConversions: settings.enableRothConversions,
     rothConversionTarget:
       settings.rothConversionTarget != null

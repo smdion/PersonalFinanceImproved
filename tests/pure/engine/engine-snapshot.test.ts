@@ -65,6 +65,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -504,6 +505,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -602,6 +604,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -663,6 +666,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -716,6 +720,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -893,6 +898,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -1256,6 +1262,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.12,
           roth: 0,
@@ -1321,6 +1328,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -1586,6 +1594,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -1681,6 +1690,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -1761,6 +1771,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -1838,6 +1849,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -1910,6 +1922,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2195,6 +2208,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2319,6 +2333,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -2449,6 +2464,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2572,6 +2588,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2716,6 +2733,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "roth", ira: "roth" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2790,6 +2808,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2873,6 +2892,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -2960,6 +2980,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -3038,6 +3059,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -3101,6 +3123,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -3164,6 +3187,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.15, // Low fallback — person expects low bracket
           roth: 0,
@@ -3235,6 +3259,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
@@ -3503,6 +3528,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -3668,6 +3694,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -3794,6 +3821,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -3933,6 +3961,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -4063,6 +4092,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,

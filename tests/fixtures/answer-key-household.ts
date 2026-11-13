@@ -86,6 +86,7 @@ function taxRates(h: KeyHousehold, limits: Record<string, number>) {
   if (!bracketData) throw new Error(`no ${YEAR} ${h.status} table`);
   const rates = buildDistributionTaxRates({
     settings: {
+      rothBracketOverlay: true,
       distributionTaxRateTraditional: "0",
       distributionTaxRateBrokerage: "0.15",
       distributionTaxRateRoth: "0",

@@ -138,6 +138,10 @@ function decumulationDefaultsFor(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
+    // A stored row without its switch was saved when the overlay applied to
+    // every row: on (calculateProjection warns).
+    rothBracketOverlay:
+      defaults.distributionTaxRates.rothBracketOverlay ?? true,
     avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
     rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
     qcdMaximize: defaults.qcdMaximize ?? false,

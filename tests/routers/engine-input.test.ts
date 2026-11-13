@@ -22,6 +22,7 @@ const SETTINGS = {
   withdrawalRoutingMode: "waterfall",
 } as Parameters<typeof buildDecumulationDefaults>[0];
 const RATES: Parameters<typeof buildDecumulationDefaults>[2] = {
+  rothBracketOverlay: true,
   traditionalFallbackRate: 0.22,
   roth: 0,
   hsa: 0,

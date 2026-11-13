@@ -284,6 +284,9 @@ export async function seedHousehold(
     const r = need(h.retirement[p.key], `retirement for ${p.key}`);
     await call.retirement.retirementSettings.upsert({
       ...h.settings,
+      // The baseline households stand for installs saved before tag 0022,
+      // which its converter left with the overlay on.
+      rothBracketOverlay: true,
       personId: need(person(p.key), p.key),
       retirementAge: r.retirementAge,
       endAge: r.endAge,

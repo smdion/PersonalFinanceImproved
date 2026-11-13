@@ -280,6 +280,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
           },
           withdrawalTaxPreference: { "401k": "roth", ira: "roth" },
           distributionTaxRates: {
+            rothBracketOverlay: true,
             ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,

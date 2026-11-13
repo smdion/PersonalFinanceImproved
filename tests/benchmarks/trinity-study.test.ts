@@ -66,6 +66,7 @@ describe("Trinity Study — 4% rule validation", { timeout: 60_000 }, () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            rothBracketOverlay: true,
             ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,
@@ -102,6 +103,7 @@ describe("Trinity Study — 4% rule validation", { timeout: 60_000 }, () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            rothBracketOverlay: true,
             ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,

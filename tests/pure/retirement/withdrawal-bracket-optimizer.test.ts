@@ -84,6 +84,7 @@ function makeMainHousehold(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
@@ -268,6 +269,7 @@ function makeDepletionHousehold(currentTarget: number): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,

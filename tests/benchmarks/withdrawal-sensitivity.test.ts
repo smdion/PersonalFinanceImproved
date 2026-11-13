@@ -40,6 +40,7 @@ describe("Withdrawal rate sensitivity", () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            rothBracketOverlay: true,
             ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,

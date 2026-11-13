@@ -14,6 +14,7 @@ import {
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 const settings = {
+  rothBracketOverlay: true,
   distributionTaxRateTraditional: "0.2",
   distributionTaxRateBrokerage: "0.15",
   distributionTaxRateRoth: "0",

@@ -707,6 +707,7 @@ function makeBaseProjection(
     decumulationDefaults: {
       ...DEFAULT_DECUMULATION,
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0,
         roth: 0,
@@ -1037,6 +1038,7 @@ describe("retirement projection edge cases", () => {
           withdrawalRoutingMode: "percentage",
           withdrawalSplits: undefined as never,
           distributionTaxRates: {
+            rothBracketOverlay: true,
             ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,

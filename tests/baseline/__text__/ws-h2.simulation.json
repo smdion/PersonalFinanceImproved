@@ -1406,6 +1406,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -1506,107 +1507,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Taylor 401k (Lakeside 401(k) plan)",
-         "ownerName": "Taylor",
-         "parentCategory": "Retirement",
-         "taxType": "preTax"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "strategyAction": "decline",
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -1708,6 +1609,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -1809,6 +1711,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -1910,6 +1813,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2011,6 +1915,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2112,6 +2017,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2213,6 +2119,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2314,6 +2221,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2415,6 +2323,109 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Taylor 401k (Lakeside 401(k) plan)",
+         "ownerName": "Taylor",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "strategyAction": "decline",
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2530,6 +2541,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2645,6 +2657,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2760,6 +2773,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2875,6 +2889,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -2990,6 +3005,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3105,6 +3121,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3220,6 +3237,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3335,6 +3353,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3450,6 +3469,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3565,6 +3585,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3680,6 +3701,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3795,6 +3817,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -3910,6 +3933,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -4025,6 +4049,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -4140,6 +4165,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -4255,6 +4281,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6245,6 +6272,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6345,107 +6373,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Taylor 401k (Lakeside 401(k) plan)",
-         "ownerName": "Taylor",
-         "parentCategory": "Retirement",
-         "taxType": "preTax"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "strategyAction": "decline",
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6547,6 +6475,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6648,6 +6577,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6749,6 +6679,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6850,6 +6781,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -6951,6 +6883,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7052,6 +6985,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7153,6 +7087,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7254,6 +7189,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7355,6 +7291,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7456,6 +7393,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7557,6 +7495,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7658,6 +7597,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7759,6 +7699,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7860,6 +7801,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -7961,6 +7903,109 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Taylor 401k (Lakeside 401(k) plan)",
+         "ownerName": "Taylor",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "strategyAction": "decline",
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8062,6 +8107,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8163,6 +8209,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8264,6 +8311,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8365,6 +8413,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8466,6 +8515,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8567,6 +8617,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8668,6 +8719,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8769,6 +8821,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -8870,6 +8923,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -10772,6 +10826,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -10872,107 +10927,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Taylor 401k (Lakeside 401(k) plan)",
-         "ownerName": "Taylor",
-         "parentCategory": "Retirement",
-         "taxType": "preTax"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "strategyAction": "decline",
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11074,6 +11029,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11175,6 +11131,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11276,6 +11233,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11377,6 +11335,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11478,6 +11437,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11579,6 +11539,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11680,6 +11641,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11781,6 +11743,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11882,6 +11845,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -11983,6 +11947,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12084,6 +12049,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12185,6 +12151,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12286,6 +12253,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12387,6 +12355,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12488,6 +12457,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12589,6 +12559,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12690,6 +12661,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12791,6 +12763,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -12892,6 +12865,109 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Taylor 401k (Lakeside 401(k) plan)",
+         "ownerName": "Taylor",
+         "parentCategory": "Retirement",
+         "taxType": "preTax"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "strategyAction": "decline",
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -13007,6 +13083,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -13122,6 +13199,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -13237,6 +13315,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -13352,6 +13431,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -13467,6 +13547,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "401k",
          "403b",
@@ -14943,6 +15024,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15043,107 +15125,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
-       "withdrawalOrder": [
-        "401k",
-        "403b",
-        "ira",
-        "brokerage",
-        "hsa"
-       ],
-       "withdrawalRoutingMode": "bracket_filling"
-      },
-      "hasBudgetOverride": false,
-      "individualAccountBalances": [
-       {
-        "category": "401k",
-        "draw": {
-         "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
-         "reason": {
-          "kind": "rule_of_55"
-         }
-        },
-        "name": "Taylor 401k (Lakeside 401(k) plan)",
-        "ownerName": "Taylor",
-        "parentCategory": "Retirement",
-        "taxType": "preTax"
-       }
-      ],
-      "phase": "decumulation",
-      "preWithdrawalAcctBal": {
-       "401k": {
-        "structure": "roth_traditional"
-       },
-       "403b": {
-        "structure": "roth_traditional"
-       },
-       "brokerage": {
-        "structure": "basis_tracking"
-       },
-       "hsa": {
-        "structure": "single_bucket"
-       },
-       "ira": {
-        "structure": "roth_traditional"
-       }
-      },
-      "rmdOverrodeRouting": false,
-      "slots": [
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "401k"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "hsa"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "brokerage"
-       }
-      ],
-      "strategyAction": "decline",
-      "unmetNeedMaterial": false,
-      "withdrawalSized": false
-     },
-     {
-      "acaSubsidyPreserved": false,
-      "balanceByAccount": {
-       "401k": {
-        "structure": "roth_traditional"
-       },
-       "403b": {
-        "structure": "roth_traditional"
-       },
-       "brokerage": {
-        "structure": "basis_tracking"
-       },
-       "hsa": {
-        "structure": "single_bucket"
-       },
-       "ira": {
-        "structure": "roth_traditional"
-       }
-      },
-      "config": {
-       "avoidPenalizedWithdrawals": true,
-       "discretionaryWithdrawalOrder": "roth_first",
-       "qcdMaximize": false,
-       "rmdExcessHandling": "reinvest",
-       "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15245,6 +15227,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15346,6 +15329,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15447,6 +15431,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15548,6 +15533,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15649,6 +15635,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15750,6 +15737,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15851,6 +15839,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -15952,6 +15941,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16053,6 +16043,109 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
+       "withdrawalOrder": [
+        "401k",
+        "403b",
+        "ira",
+        "brokerage",
+        "hsa"
+       ],
+       "withdrawalRoutingMode": "bracket_filling"
+      },
+      "hasBudgetOverride": false,
+      "individualAccountBalances": [
+       {
+        "category": "401k",
+        "draw": {
+         "allowPenalizedWithdrawals": false,
+         "eligibilityLocked": false,
+         "reason": {
+          "kind": "rule_of_55"
+         }
+        },
+        "name": "Taylor 401k (Lakeside 401(k) plan)",
+        "ownerName": "Taylor",
+        "parentCategory": "Retirement",
+        "taxType": "preTax"
+       }
+      ],
+      "phase": "decumulation",
+      "preWithdrawalAcctBal": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "rmdOverrodeRouting": false,
+      "slots": [
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "401k"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "403b"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "hsa"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
+        "category": "brokerage"
+       }
+      ],
+      "strategyAction": "decline",
+      "unmetNeedMaterial": false,
+      "withdrawalSized": false
+     },
+     {
+      "acaSubsidyPreserved": false,
+      "balanceByAccount": {
+       "401k": {
+        "structure": "roth_traditional"
+       },
+       "403b": {
+        "structure": "roth_traditional"
+       },
+       "brokerage": {
+        "structure": "basis_tracking"
+       },
+       "hsa": {
+        "structure": "single_bucket"
+       },
+       "ira": {
+        "structure": "roth_traditional"
+       }
+      },
+      "config": {
+       "avoidPenalizedWithdrawals": true,
+       "discretionaryWithdrawalOrder": "roth_first",
+       "qcdMaximize": false,
+       "rmdExcessHandling": "reinvest",
+       "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16168,6 +16261,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16283,6 +16377,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16398,6 +16493,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16513,6 +16609,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16628,6 +16725,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16743,6 +16841,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16858,6 +16957,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -16973,6 +17073,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17088,6 +17189,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17203,6 +17305,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17318,6 +17421,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17433,6 +17537,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17548,6 +17653,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17663,6 +17769,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",
@@ -17778,6 +17885,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "401k",
         "403b",

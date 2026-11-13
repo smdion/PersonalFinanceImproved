@@ -57,10 +57,8 @@ export function ledgerSettings(
     withdrawalStrategy: "fixed",
     withdrawalRoutingMode: "waterfall",
     withdrawalOrder,
-    // As tag 0022 left a row saved before it (an empty target read as 12%):
-    // the overlay on at 12%.
+    // As tag 0022 left a row saved before it: an empty target reads 12%.
     rothBracketTarget: "0.12",
-    rothBracketOverlay: true,
     enableRothConversions: false,
   };
 }

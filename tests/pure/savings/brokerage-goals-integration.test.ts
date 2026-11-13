@@ -45,6 +45,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,

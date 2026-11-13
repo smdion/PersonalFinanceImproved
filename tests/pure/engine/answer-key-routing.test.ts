@@ -220,6 +220,37 @@ describe("answer key: Waterfall and Percentage routing", () => {
     );
   });
 
+  // The Roth bracket overlay (J9 (a)): on, Waterfall draws Traditional
+  // first up to the target's ceiling (12%: 100,800 + 32,200 = 133,000 of
+  // gross income, MFJ 2026); off, the household's own order holds.
+  const overlay = (on: boolean) =>
+    routeForMode(
+      100_000,
+      makeDecumulationConfig({
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ORDER,
+        rothBracketOverlay: on,
+      }),
+      abc({ brokerage: 500_000, hsa: 0, k401: 500_000 }),
+      {
+        ...noBrackets,
+        taxBrackets: MFJ_2026,
+        rothBracketTarget: 0.12,
+        standardDeduction: STD_MFJ_2026,
+        filingStatus: "MFJ" as const,
+      },
+    );
+
+  it("strategies/OVL-OFF [WDR-02] the overlay off: 100,000 from the brokerage, first in the order", () => {
+    const d = drawn(overlay(false).slots);
+    cents({ A: d.brokerage, C: d["401k"] }, { A: 100_000, C: 0 });
+  });
+
+  it("strategies/OVL-ON [WDR-01] the overlay on: 100,000 of Traditional, under the 133,000 ceiling", () => {
+    const d = drawn(overlay(true).slots);
+    cents({ A: d.brokerage, C: d["401k"] }, { A: 0, C: 100_000 });
+  });
+
   it("strategies/C58 [WDR-02] everything empty: all of it, and 20,000 reported short", () => {
     // Same balances, no cap, need 200,000: 30,000 + 50,000 + 100,000 =
     // 180,000 drawn; 20,000 unmet, none invented (spec WF-4).
@@ -648,6 +679,7 @@ describe("answer key: RMD dollars and the year's need", () => {
               ira: "traditional",
             },
             distributionTaxRates: {
+              rothBracketOverlay: true,
               ...shippedTaxTables(2026),
               traditionalFallbackRate: 0.22,
               roth: 0,

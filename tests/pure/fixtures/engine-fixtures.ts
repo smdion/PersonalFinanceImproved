@@ -104,7 +104,9 @@ export function makeDecumulationConfig(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
-    // Resolved defaults (resolveDecumulationConfig).
+    // Resolved defaults (resolveDecumulationConfig): the overlay on, as on
+    // every install saved before its switch existed.
+    rothBracketOverlay: true,
     avoidPenalizedWithdrawals: true,
     rmdExcessHandling: "reinvest",
     qcdMaximize: false,
@@ -252,6 +254,8 @@ export function makeDecumulationDefaults(
       hsa: null,
       brokerage: null,
     } as Record<AccountCategory, "traditional" | "roth" | null>,
+    // Only the switch: what config resolution reads from the rates.
+    distributionTaxRates: { rothBracketOverlay: true },
     ...overrides,
   } as DecumulationDefaults;
 }

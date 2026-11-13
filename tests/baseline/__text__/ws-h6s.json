@@ -53,6 +53,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -155,6 +156,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -257,6 +259,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -359,6 +362,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -461,6 +465,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -563,6 +568,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -665,6 +671,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -767,6 +774,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -869,6 +877,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -971,6 +980,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1073,6 +1083,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1175,6 +1186,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1277,6 +1289,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1379,6 +1392,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1481,6 +1495,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1583,6 +1598,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1685,6 +1701,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1787,6 +1804,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1889,6 +1907,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",
@@ -1991,6 +2010,7 @@
     "qcdMaximize": false,
     "rmdExcessHandling": "reinvest",
     "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
     "withdrawalOrder": [
      "401k",
      "403b",

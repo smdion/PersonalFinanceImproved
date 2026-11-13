@@ -56,6 +56,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
@@ -203,4 +204,43 @@ describe("rothBracketTarget as a per-year decumulationOverride", () => {
   // override changes bracketTraditionalCap" test above fail (the override
   // would be silently ignored) -- confirms this test file actually
   // discriminates the fix, not just exercises the code path.
+});
+
+describe("the Roth bracket overlay switch in a projection", () => {
+  const waterfall = (overlay: boolean | null) => {
+    const input = makeInput();
+    return calculateProjection({
+      ...input,
+      decumulationDefaults: {
+        ...input.decumulationDefaults,
+        withdrawalRoutingMode: "waterfall",
+        distributionTaxRates: {
+          ...input.decumulationDefaults.distributionTaxRates,
+          rothBracketOverlay: overlay,
+        },
+      },
+    });
+  };
+  const draws = (r: ReturnType<typeof calculateProjection>) =>
+    r.projectionByYear.filter(isDecumulationYear).map((y) => y.totalWithdrawal);
+  const NO_SWITCH = /no Roth bracket overlay setting saved/;
+
+  it("a stored row without its switch reads as on, and the projection says so", () => {
+    const missing = waterfall(null);
+    const on = waterfall(true);
+    expect(draws(missing)).toEqual(draws(on));
+    expect(missing.warnings.join("\n")).toMatch(NO_SWITCH);
+    expect(on.warnings.join("\n")).not.toMatch(NO_SWITCH);
+  });
+
+  it("off, the waterfall keeps its own order: the years route differently", () => {
+    const off = waterfall(false);
+    const on = waterfall(true);
+    const traditional = (r: ReturnType<typeof calculateProjection>) =>
+      r.projectionByYear
+        .filter(isDecumulationYear)
+        .map((y) => y.bracketTraditionalCap ?? null);
+    expect(traditional(on).some((c) => c != null)).toBe(true);
+    expect(traditional(off).every((c) => c == null)).toBe(true);
+  });
 });

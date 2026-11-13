@@ -90,6 +90,7 @@ function retiree(strategy: WithdrawalStrategyType): ProjectionInput {
         withdrawalRoutingMode: "waterfall",
         withdrawalStrategy: strategy,
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           taxBrackets: TEST_BRACKETS,
           traditionalFallbackRate: 0.22,

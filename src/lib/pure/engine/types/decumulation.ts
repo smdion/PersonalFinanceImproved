@@ -64,11 +64,11 @@ export type DecumulationDefaults = {
      * expense need — tax cost is still calculated and reported but not grossed up.
      */
     grossUpForTaxes?: boolean;
-    /**
-     * Target marginal rate for Roth optimization: Traditional draws cap at this bracket and Roth
-     * fills the rest. Undefined disables it.
-     */
+    /** Target marginal rate for Roth optimization (bracket filling, conversions, RMD smoothing). */
     rothBracketTarget?: number;
+    /** The Roth bracket overlay: waterfall caps Traditional draws at `rothBracketTarget`'s bracket
+     *  and Roth fills the rest. null: a stored row without its switch, read as on and warned. */
+    rothBracketOverlay: boolean | null;
     /** Enable automatic Roth conversions (Traditional → Roth) to fill target bracket. */
     enableRothConversions?: boolean;
     /** Target marginal rate for Roth conversions (null/undefined = use rothBracketTarget). */
@@ -196,10 +196,11 @@ export type ResolvedDecumulationConfig = {
   withdrawalTaxTypeCaps: Record<RoutingTaxType, number | null>;
   /** Resolved Roth conversion target marginal rate (sticky-forward from overrides). undefined = use defaults. */
   rothConversionTarget?: number;
-  /** Resolved bracket_filling target marginal rate (sticky-forward from
-   *  overrides). undefined = use `decumulationDefaults.distributionTaxRates.rothBracketTarget`.
-   *  See `rothBracketTarget` on `DecumulationOverride`. */
+  /** Resolved bracket_filling target marginal rate (sticky-forward from overrides). undefined =
+   *  use `decumulationDefaults.distributionTaxRates.rothBracketTarget` (see DecumulationOverride). */
   rothBracketTarget?: number;
+  /** The Roth bracket overlay, resolved: only `applyRothBracketOverlay` reads it. */
+  rothBracketOverlay: boolean;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];
   /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved
@@ -214,9 +215,8 @@ export type ResolvedDecumulationConfig = {
   /** See DecumulationDefaults.rmdSmoothingEnabled. Always resolved (never
    *  undefined) — defaults to `false`. */
   rmdSmoothingEnabled: boolean;
-  /** See DecumulationDefaults.rmdSmoothingMaxBracketTarget. Always
-   *  resolved (never undefined) — defaults to
-   *  `RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK`. */
+  /** See DecumulationDefaults.rmdSmoothingMaxBracketTarget. Always resolved
+   *  (never undefined) — defaults to `RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK`. */
   rmdSmoothingMaxBracketTarget: number;
   /** See DecumulationDefaults.discretionaryWithdrawalOrder. Always
    *  resolved (never undefined) — defaults to `"roth_first"`. */

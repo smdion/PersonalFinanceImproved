@@ -108,6 +108,7 @@ describe("runStressTestScenarios (M2)", () => {
   }
 
   const distributionTaxRates = {
+    rothBracketOverlay: true,
     ...shippedTaxTables(),
     traditionalFallbackRate: 0.22,
     roth: 0,

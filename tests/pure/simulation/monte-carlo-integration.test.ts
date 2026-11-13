@@ -47,6 +47,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
@@ -404,6 +405,7 @@ describe("monte carlo integration", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
@@ -635,6 +637,7 @@ describe("monte carlo integration", () => {
         withdrawalTaxPreference: { "401k": "traditional" },
         withdrawalStrategy: "guyton_klinger",
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,

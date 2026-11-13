@@ -109,6 +109,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -209,6 +210,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -309,6 +311,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -409,6 +412,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -509,6 +513,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -609,6 +614,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -709,6 +715,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -809,6 +816,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -909,6 +917,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1009,6 +1018,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1109,6 +1119,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1209,6 +1220,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1309,6 +1321,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1409,6 +1422,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1509,6 +1523,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1609,6 +1624,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1709,6 +1725,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1809,6 +1826,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -1909,6 +1927,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2009,6 +2028,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2109,6 +2129,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2209,6 +2230,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2309,6 +2331,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2409,6 +2432,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2509,6 +2533,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2609,6 +2634,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2709,6 +2735,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2809,6 +2836,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -2909,6 +2937,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3009,6 +3038,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3109,6 +3139,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3209,6 +3240,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3309,6 +3341,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3409,6 +3442,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3509,6 +3543,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3609,6 +3644,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3709,6 +3745,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3809,6 +3846,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -3909,6 +3947,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -4009,6 +4048,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -4109,6 +4149,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -4209,6 +4250,7 @@
         "qcdMaximize": false,
         "rmdExcessHandling": "reinvest",
         "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
         "withdrawalOrder": [
          "brokerage",
          "401k",
@@ -4393,6 +4435,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4493,6 +4536,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4593,6 +4637,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4693,6 +4738,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4793,6 +4839,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4893,6 +4940,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -4993,6 +5041,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5093,6 +5142,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5193,6 +5243,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5293,6 +5344,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5393,6 +5445,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5493,6 +5546,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5593,6 +5647,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5693,6 +5748,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5793,6 +5849,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5893,6 +5950,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -5993,6 +6051,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6093,6 +6152,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6193,6 +6253,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6293,6 +6354,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6393,6 +6455,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6493,6 +6556,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6593,6 +6657,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6693,6 +6758,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6793,6 +6859,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6893,6 +6960,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -6993,6 +7061,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7093,6 +7162,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7193,6 +7263,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7293,6 +7364,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7393,6 +7465,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7493,6 +7566,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7593,6 +7667,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7693,6 +7768,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7793,6 +7869,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7893,6 +7970,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -7993,6 +8071,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -8093,6 +8172,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -8193,6 +8273,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -8293,6 +8374,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -8393,6 +8475,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",
@@ -8493,6 +8576,7 @@
        "qcdMaximize": false,
        "rmdExcessHandling": "reinvest",
        "rmdSmoothingEnabled": false,
+       "rothBracketOverlay": true,
        "withdrawalOrder": [
         "brokerage",
         "401k",

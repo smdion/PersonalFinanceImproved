@@ -168,6 +168,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
               ira: "traditional" as const,
             },
             distributionTaxRates: {
+              rothBracketOverlay: true,
               ...shippedTaxTables(),
               traditionalFallbackRate: 0,
               roth: 0,
@@ -257,6 +258,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
               ira: "traditional" as const,
             },
             distributionTaxRates: {
+              rothBracketOverlay: true,
               ...shippedTaxTables(),
               traditionalFallbackRate: 0,
               roth: 0,

@@ -33,6 +33,14 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     );
   }
 
+  // A stored row without the overlay switch (no converter reached it) reads as on.
+  if (
+    input.decumulationDefaults.distributionTaxRates.rothBracketOverlay === null
+  )
+    warnings.push(
+      "Your retirement settings have no Roth bracket overlay setting saved, so it was read as on. Save your Taxes settings to set it.",
+    );
+
   // Date/age boundary validation
   if (input.retirementYear <= input.asOfDate.getFullYear()) {
     warnings.push(

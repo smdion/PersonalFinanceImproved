@@ -187,6 +187,7 @@ describe("the gross-up delivers the need", () => {
         },
         withdrawalStrategy: "fixed",
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0.2,
           roth: 0,

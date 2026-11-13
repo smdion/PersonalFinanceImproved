@@ -295,6 +295,7 @@ function makeInput(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
@@ -472,6 +473,7 @@ function makeLtcgHeavyInput(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.1,
         roth: 0,
@@ -778,6 +780,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         // A fixed table, not the shipped year's: this household's MAGI is
         // placed between its first tier and that tier grown two years, and
@@ -951,6 +954,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.15,
         roth: 0,

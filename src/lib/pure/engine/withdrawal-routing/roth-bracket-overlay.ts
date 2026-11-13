@@ -8,15 +8,15 @@ import { computeBracketTraditionalCap } from "./caps";
 import type { RouteBracketInfo } from "./types";
 
 /**
- * Roth-bracket overlay for waterfall: caps Traditional withdrawals at the target
- * bracket and forces Traditional preference on unset Roth-split categories.
- * Returns the same config without a rothBracketTarget or bracket data.
+ * Roth-bracket overlay for waterfall, when on: caps Traditional withdrawals at the target bracket
+ * and forces Traditional on unset Roth-split categories. Else (or no bracket data) the same config.
  */
 export function applyRothBracketOverlay(
   config: ResolvedDecumulationConfig,
   bracketInfo: RouteBracketInfo,
 ): ResolvedDecumulationConfig {
   if (
+    !config.rothBracketOverlay ||
     bracketInfo.rothBracketTarget == null ||
     !bracketInfo.taxBrackets ||
     bracketInfo.taxBrackets.length === 0

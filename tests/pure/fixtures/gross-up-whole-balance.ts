@@ -240,6 +240,7 @@ const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
         ira: "roth",
       },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         traditionalFallbackRate: 0.06263157894736843,
         roth: 0,
         hsa: 0,

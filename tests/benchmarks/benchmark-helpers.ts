@@ -71,6 +71,7 @@ const DEFAULT_DECUMULATION = {
     ira: "traditional" as const,
   },
   distributionTaxRates: {
+    rothBracketOverlay: true,
     ...shippedTaxTables(),
     traditionalFallbackRate: 0.22,
     roth: 0,
@@ -101,6 +102,7 @@ export function makePureGrowthInput(
       decumulationDefaults: {
         ...DEFAULT_DECUMULATION,
         distributionTaxRates: {
+          rothBracketOverlay: true,
           ...shippedTaxTables(),
           traditionalFallbackRate: 0,
           roth: 0,
@@ -171,6 +173,7 @@ export function makeTrinityInput(
       ...DEFAULT_DECUMULATION,
       withdrawalRate,
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0,
         roth: 0,

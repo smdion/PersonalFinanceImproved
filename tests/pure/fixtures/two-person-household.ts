@@ -56,6 +56,7 @@ export function household(
       withdrawalSplits: { "401k": 1, "403b": 0, ira: 0, brokerage: 0, hsa: 0 },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        rothBracketOverlay: true,
         ...shippedTaxTables(),
         traditionalFallbackRate: 0.2,
         roth: 0,
