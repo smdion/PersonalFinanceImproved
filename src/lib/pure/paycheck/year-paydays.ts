@@ -1,6 +1,9 @@
 /** A job's checks in a year, and what its salary is divided by for each one. */
 import { getPeriodsPerYear } from "../../config/pay-periods";
-import { DEFAULT_SALARY_DIVISOR } from "../../config/enum-values";
+import {
+  DEFAULT_SALARY_DIVISOR,
+  type SalaryDivisor,
+} from "../../config/enum-values";
 import type { PaycheckInput } from "./paycheck.types";
 import { countPeriodsElapsed } from "./pay-periods-in-year";
 
@@ -47,4 +50,17 @@ export function checkBasis(
     salaryDivisor: salaryDivisor(input),
     paydays: yearPaydays(input),
   };
+}
+
+/** The Paycheck page's checks-a-year label: in a year with more paydays than the pay schedule's
+ *  usual periods, the year's checks and what each one divides the salary by. */
+export function checksPerYearLabel(
+  paydays: number,
+  job: { payPeriod: string; salaryDivisor?: SalaryDivisor | undefined },
+): string {
+  const usual = getPeriodsPerYear(job.payPeriod);
+  if (paydays === usual) return `${paydays} checks/yr`;
+  const divisor = job.salaryDivisor ?? DEFAULT_SALARY_DIVISOR;
+  const each = divisor === "paydays" ? paydays : usual;
+  return `${paydays} checks this year (salary ÷ ${each} each)`;
 }

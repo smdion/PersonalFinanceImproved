@@ -1,7 +1,11 @@
 /** The year's paydays and the salary divisor (PAY-22): a 27 or 53 payday
  *  year counts every real payday, walked from a known one. */
 import { describe, expect, it } from "vitest";
-import { salaryDivisor, yearPaydays } from "@/lib/pure/paycheck/year-paydays";
+import {
+  checksPerYearLabel,
+  salaryDivisor,
+  yearPaydays,
+} from "@/lib/pure/paycheck/year-paydays";
 import { jobChecksThisYear } from "@/lib/pure/paycheck/job-last-check";
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
 
@@ -70,5 +74,22 @@ describe("salaryDivisor", () => {
   });
   it("paydays: the year's paydays (27)", () => {
     expect(salaryDivisor({ ...year27, salaryDivisor: "paydays" })).toBe(27);
+  });
+});
+
+describe("checksPerYearLabel", () => {
+  it("names the year's checks and the divisor only when they differ", () => {
+    expect(checksPerYearLabel(26, { payPeriod: "biweekly" })).toBe(
+      "26 checks/yr",
+    );
+    expect(checksPerYearLabel(27, { payPeriod: "biweekly" })).toBe(
+      "27 checks this year (salary ÷ 26 each)",
+    );
+    expect(
+      checksPerYearLabel(27, {
+        payPeriod: "biweekly",
+        salaryDivisor: "paydays",
+      }),
+    ).toBe("27 checks this year (salary ÷ 27 each)");
   });
 });

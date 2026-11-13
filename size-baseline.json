@@ -83,7 +83,7 @@
     "src/components/onboarding/wizard-navigation.ts": 120,
     "src/components/onboarding/wizard-saves.ts": 152,
     "src/components/onboarding/wizard-state.ts": 32,
-    "src/components/paycheck/person-paycheck.tsx": 441,
+    "src/components/paycheck/person-paycheck.tsx": 440,
     "src/components/performance/update-performance-form.tsx": 852,
     "src/components/performance/year-row.tsx": 759,
     "src/components/portfolio/account-live-data.tsx": 407,
@@ -658,7 +658,7 @@
       "PaystubCheck": 194
     },
     "src/components/paycheck/person-paycheck.tsx": {
-      "PersonPaycheck": 350
+      "PersonPaycheck": 348
     },
     "src/components/performance/account-notes-dialog.tsx": {
       "AccountNotesDialog": 195

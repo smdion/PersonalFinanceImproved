@@ -22,7 +22,8 @@ import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paych
 import { SectionHeader } from "./section-header";
 import { OtherPaySection } from "./other-pay-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import type { BonusDestination } from "@/lib/config/enum-values";
+import type { BonusDestination, SalaryDivisor } from "@/lib/config/enum-values";
+import { checksPerYearLabel } from "@/lib/pure/paycheck/year-paydays";
 import type {
   PaycheckResult,
   ViewMode,
@@ -128,9 +129,8 @@ export function PersonPaycheck({
     id: number;
     employerName: string;
     title: string | null;
-    /** These fields resolve through the active Salary Profile's entry for this
-     *  job (SalaryEntry); computePaycheckSummary merges them flat onto `job`.
-     *  Writes go through salaryProfile.patchEntry. */
+    /** These fields resolve through the active Salary Profile's entry for this job (SalaryEntry),
+     *  merged flat onto `job`; writes go through salaryProfile.patchEntry. */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     personId: number;
@@ -138,6 +138,7 @@ export function PersonPaycheck({
     w4Box2cChecked: boolean;
     additionalFedWithholding: number;
     payPeriod: string;
+    salaryDivisor?: SalaryDivisor;
     anchorPayDate?: string | null;
     startDate: string;
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
@@ -258,14 +259,12 @@ export function PersonPaycheck({
                 hideEditIcon
               />
             </p>
-            {/* Computed from the Salary Profile's schedule (edited on the
-                Profiles page) — shown here for reference. */}
             <p className="text-faint text-xs">
               {payPeriodLabel(job.payPeriod)}
               {" · "}
               Next: {paycheck.nextPayDate}
               {" · "}
-              {paycheck.periodsPerYear} checks/yr
+              {checksPerYearLabel(paycheck.periodsPerYear, job)}
               {paycheck.extraPaycheckMonths.length > 0 && (
                 <>
                   {" · "}3-check months:{" "}
