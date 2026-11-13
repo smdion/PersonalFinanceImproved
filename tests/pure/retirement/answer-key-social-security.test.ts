@@ -122,8 +122,6 @@ function paidMonthly(
 
 const N1 =
   'v0.11 Retirement rules "Spousal excess is lost for life when the lower earner claims in an earlier year" (verdict N1)';
-const N9 =
-  'v0.11 Retirement rules "59½ tested by year" (verdict N9: delayed credits don\'t shrink the spousal excess)';
 
 // ---------------------------------------------------------------------------
 // A. Full retirement age (20 CFR 404.409(a))
@@ -346,31 +344,18 @@ describe("answer key: spousal benefits", () => {
     });
   });
 
-  describe("ret/S46 [RET-31]", () => {
+  it("ret/S46 [RET-31] own 1,240 at 70 with credits: 1,500", () => {
     // Own PIA 1,000, claims at 70 (own 1,240 with 24% credits), worker
     // PIA 3,000 filed. The spousal amount (1,500) is reduced by the own
     // benefit as payable, credits included (402(k)(3)(A); 20 CFR
     // 404.407(a); SP-8): excess 260, total max(1,240, 1,500) = 1,500.
-    // Today the excess is figured on the own PIA: 1,240 + 500 = 1,740.
-    xfail({
-      id: "ret/S46 [RET-31]",
-      todo: N9,
-      run: () => spouseMonthly(1_000, 3_000, 1965, 840),
-      expected: 1_500,
-      today: 1_740,
-    });
+    cents(spouseMonthly(1_000, 3_000, 1965, 840), 1_500);
   });
 
-  describe("ret/S47 [RET-31]", () => {
-    // Own PIA 1,250 at 70: own 1,550 > 1,500, own only. Today: 1,550 +
-    // (1,500 − 1,250) = 1,800.
-    xfail({
-      id: "ret/S47 [RET-31]",
-      todo: N9,
-      run: () => spouseMonthly(1_250, 3_000, 1965, 840),
-      expected: 1_550,
-      today: 1_800,
-    });
+  it("ret/S47 [RET-31] own 1,550 at 70 is over half the worker's: own only, 1,550", () => {
+    // Own PIA 1,250 at 70: own 1,550 > 1,500, own only (402(k)(3)(A):
+    // the excess less the own benefit as payable is below zero).
+    cents(spouseMonthly(1_250, 3_000, 1965, 840), 1_550);
   });
 });
 

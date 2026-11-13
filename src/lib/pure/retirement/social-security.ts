@@ -52,9 +52,12 @@ export function computeSpousalBenefit(
     const reducedOwn =
       spouseOwnPia *
       getClaimingAdjustmentMultiplier(spouseFra, spouseClaimingAgeMonths);
+    // Less the own benefit as payable with delayed credits, never below the PIA: an early
+    // claim's reduction stays out of it (402(k)(3)(A); 20 CFR 404.407(a)).
     const excess = Math.max(
       0,
-      SPOUSAL_BENEFIT_BASE_RATE * workerPia - spouseOwnPia,
+      SPOUSAL_BENEFIT_BASE_RATE * workerPia -
+        Math.max(spouseOwnPia, reducedOwn),
     );
     return reducedOwn + excess * spousalMultiplier;
   }
