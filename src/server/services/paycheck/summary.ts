@@ -1,5 +1,4 @@
-/** The paycheck summary (paycheck.computeSummary). Its input: the profile
- *  pair and tax year it prices under, and the What-If tab's edits. */
+/** The paycheck summary (paycheck.computeSummary), priced on a profile pair, tax year and What-If. */
 import { z } from "zod/v4";
 import {
   zSandboxSalaryEntries,
@@ -31,7 +30,9 @@ import {
 import {
   buildPaycheckInputForJob,
   jobScheduleDates,
+  jobSalaryDivisor,
 } from "@/lib/pure/paycheck/paycheck-input";
+import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
@@ -287,7 +288,7 @@ export async function computePaycheckSummary(
       jobContribs,
       personalContribs,
       salary,
-      periodsPerYear,
+      jobSalaryDivisor(job, opts.asOf ?? asOfDate),
       ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
       contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
     );
@@ -370,12 +371,12 @@ export async function computePaycheckSummary(
                 job.payPeriod!,
                 anchor,
               ),
-              ended.periodsPerYear,
+              endedPaycheck.periodsPerYear,
             ),
           ),
           year: computeAnnualEarnings({
             salary: ended.salary,
-            periodsPerYear: ended.periodsPerYear,
+            salaryDivisor: salaryDivisor(ended.paycheckInput),
             paycheck: endedPaycheck,
             contributionAccounts: ended.contribAccounts,
             deductions: ended.deductions,
@@ -492,7 +493,6 @@ export async function computePaycheckSummary(
           jobContribs,
           personalContribs,
           salary,
-          periodsPerYear,
           limitsRecord,
           person,
           taxYear,
@@ -508,7 +508,7 @@ export async function computePaycheckSummary(
       } = yearEarnings(
         activeJob,
         paycheck,
-        periodsPerYear,
+        salaryDivisor(paycheckInput),
         salary,
         contribAccounts,
         deductions,

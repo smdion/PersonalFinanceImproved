@@ -46,7 +46,7 @@ function earningsFor(over: Partial<PaycheckInput>) {
     paycheck,
     earnings: computeAnnualEarnings({
       salary: input.annualSalary,
-      periodsPerYear: paycheck.periodsPerYear,
+      salaryDivisor: 26,
       paycheck,
       contributionAccounts: input.contributionAccounts,
       deductions: input.deductions,
@@ -195,7 +195,7 @@ describe("computeAnnualEarnings: part of a year", () => {
     const paycheck = calculatePaycheck(input);
     const args = {
       salary: input.annualSalary,
-      periodsPerYear: 26,
+      salaryDivisor: 26,
       paycheck,
       contributionAccounts: input.contributionAccounts,
       deductions: input.deductions,

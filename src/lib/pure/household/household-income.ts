@@ -46,19 +46,20 @@ type AnnualEarnings = {
 
 export function computeAnnualEarnings(args: {
   salary: number;
-  periodsPerYear: number;
+  /** What the salary is divided by for each check (jobSalaryDivisor). */
+  salaryDivisor: number;
   paycheck: PaycheckResult;
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
   /** The checks this job pays inside the year — fewer for a job started
-   *  or ended this year. Default: every check (a full year). */
+   *  or ended this year. Default: every payday of the year. */
   checks?: number;
   /** The bonus is paid this year by this job. Default: yes. */
   bonusPaid?: boolean;
 }): AnnualEarnings {
-  const { periodsPerYear, paycheck } = args;
-  const checks = args.checks ?? periodsPerYear;
-  const share = periodsPerYear > 0 ? checks / periodsPerYear : 0;
+  const { salaryDivisor, paycheck } = args;
+  const checks = args.checks ?? paycheck.periodsPerYear;
+  const share = salaryDivisor > 0 ? checks / salaryDivisor : 0;
   const salary = args.salary * share;
   const bonusPaid = args.bonusPaid ?? true;
   const bonusEstimate = paycheck.bonusEstimate;

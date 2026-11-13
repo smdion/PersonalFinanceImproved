@@ -10,6 +10,7 @@ import {
 } from "@/lib/pure/household/household-income";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { yearTotals } from "@/lib/pure/paycheck/year-totals";
+import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import type { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   BlendedAnnualTotals,
@@ -25,7 +26,6 @@ export function checkPaychecks(
   jobContributions: (PaycheckContributionRow & CapPassed)[],
   personalContributions: (PaycheckContributionRow & CapPassed)[],
   salary: number,
-  periodsPerYear: number,
   limitsRecord: Record<string, number>,
   person: { dateOfBirth: string },
   taxYear: number,
@@ -47,7 +47,7 @@ export function checkPaychecks(
           configured(jobContributions),
           configured(personalContributions),
           salary,
-          periodsPerYear,
+          salaryDivisor(paycheckInput),
           ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
           contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
         ),
@@ -68,7 +68,7 @@ export function checkPaychecks(
 export function yearEarnings<P>(
   activeJob: PaycheckYearJob,
   paycheck: ReturnType<typeof calculatePaycheck>,
-  periodsPerYear: number,
+  divisor: number,
   salary: number,
   contributionAccounts: ContributionAccountInput[],
   deductions: DeductionLine[],
@@ -88,7 +88,7 @@ export function yearEarnings<P>(
   const jobChecks = paycheck.yearSchedule.filter(
     (p) => !p.beforeStart && !p.afterEnd,
   );
-  const year = yearTotals(paycheck.yearSchedule, 1, periodsPerYear);
+  const year = yearTotals(paycheck.yearSchedule, 1, paycheck.periodsPerYear);
   const bonusPaid = jobChecks.some((p) => p.bonusGross !== 0);
   const blendedAnnual: BlendedAnnualTotals = {
     gross: year.gross,
@@ -112,7 +112,7 @@ export function yearEarnings<P>(
   // resolved bonus, pre-tax money, FICA wages) — what household tax and income figures read.
   const currentJobYear = computeAnnualEarnings({
     salary,
-    periodsPerYear,
+    salaryDivisor: divisor,
     paycheck,
     contributionAccounts: contributionAccounts,
     deductions,

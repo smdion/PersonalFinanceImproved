@@ -1051,11 +1051,11 @@
       "buildYearEndHistory": 488
     },
     "src/server/services/paycheck/job-net-pay.ts": {
-      "computeJobNetPayPerCheck": 211
+      "computeJobNetPayPerCheck": 209
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 552,
-      "computePaycheckSummary.results.map()": 201
+      "computePaycheckSummary": 551,
+      "computePaycheckSummary.results.map()": 200
     },
     "src/server/services/performance/finalize-year.ts": {
       "finalizePerformanceYear": 393,

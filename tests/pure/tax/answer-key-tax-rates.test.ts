@@ -43,6 +43,7 @@ import {
 } from "@/lib/pure/tax/ltcg";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { computeAnnualEarnings } from "@/lib/pure/household/household-income";
+import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
@@ -58,7 +59,7 @@ function yearTax(input: PaycheckInput, status: FilingStatusKey) {
   const r = calculatePaycheck(input);
   const earnings = computeAnnualEarnings({
     salary: input.annualSalary,
-    periodsPerYear: r.periodsPerYear,
+    salaryDivisor: salaryDivisor(input),
     paycheck: r,
     contributionAccounts: input.contributionAccounts,
     deductions: input.deductions,

@@ -59,6 +59,7 @@ import {
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import { computeAnnualEarnings } from "@/lib/pure/household/household-income";
+import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import type {
   PaycheckInput,
   PaycheckResult,
@@ -482,7 +483,7 @@ function yearOf(
 ) {
   const earnings = computeAnnualEarnings({
     salary: input.annualSalary,
-    periodsPerYear: r.periodsPerYear,
+    salaryDivisor: salaryDivisor(input),
     paycheck: r,
     contributionAccounts: input.contributionAccounts,
     deductions: input.deductions,

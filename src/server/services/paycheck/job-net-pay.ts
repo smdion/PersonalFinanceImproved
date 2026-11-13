@@ -11,7 +11,10 @@ import {
   resolveCompensation,
   contributionPay,
 } from "@/lib/pure/household/compensation";
-import { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
+import {
+  buildPaycheckInputForJob,
+  jobSalaryDivisor,
+} from "@/lib/pure/paycheck/paycheck-input";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   fetchContributionProfile,
@@ -20,7 +23,6 @@ import {
 } from "@/server/services/contributions/profile";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import { toNumber } from "@/lib/utils/numbers";
-import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriod } from "@/lib/config/enum-values";
@@ -137,9 +139,8 @@ export async function computeJobNetPayPerCheck(
     contribActiveFieldsRoot.deductions,
   );
 
-  // Job tax-inputs (filing status, withholding, schedule) come from the
-  // job's entry in the globally-ACTIVE Salary Profile — same "recorded
-  // fact" resolution as salary itself, no field-level carve-out.
+  // Job tax-inputs (filing status, withholding, schedule) come from the job's entry in the
+  // globally-ACTIVE Salary Profile: the same "recorded fact" resolution as salary itself.
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
   const salaryEntry = salaryProfileActiveMap.get(job.id);
   if (!salaryEntry) {
@@ -170,7 +171,7 @@ export async function computeJobNetPayPerCheck(
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;
-  const periodsPerYear = getPeriodsPerYear(salaryEntry.payPeriod);
+  const divisor = jobSalaryDivisor(resolvedJob, asOfDate);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap, allBrackets);
 
   const deductions: DeductionLine[] = jobDeductions.map((d) =>
@@ -216,7 +217,7 @@ export async function computeJobNetPayPerCheck(
     cappedRows(jobContribs),
     cappedRows(personalContribs.filter((c) => c.ownership !== "joint")),
     currentSalary,
-    periodsPerYear,
+    divisor,
     ficaCapContext(
       limitsRecord,
       jobPerson?.dateOfBirth ?? null,
@@ -225,9 +226,8 @@ export async function computeJobNetPayPerCheck(
     contributionPay(currentSalary, bonusTerms).bonusGross,
   );
 
-  // No bonusOverride: this value is persisted as a recorded fact. resolvedJob
-  // (Salary-Profile-merged) keeps pay schedule and W-4 in step with what this
-  // function resolved contributions/deductions against.
+  // No bonusOverride: this value is persisted as a recorded fact. resolvedJob (Salary-Profile-
+  // merged) keeps pay schedule and W-4 in step with the contributions/deductions resolved here.
   const paycheckInput = buildPaycheckInputForJob(resolvedJob, {
     salary: currentSalary,
     bonusTerms,

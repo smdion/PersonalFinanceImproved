@@ -161,6 +161,7 @@ export type PaycheckResult = {
   bonusPeriod: number | null; // which period number the bonus lands in (null if no bonusMonth)
   extraPaycheckMonths: string[];
   yearSchedule: PeriodBreakdown[];
+  /** The year's paydays (yearPaydays): the year schedule's rows. */
   periodsPerYear: number;
   /** Paydays so far this year, by the calendar (the year schedule's index). */
   periodsElapsedYtd: number;
