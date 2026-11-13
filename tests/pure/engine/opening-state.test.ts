@@ -57,6 +57,12 @@ describe("declareOpeningParts", () => {
     });
   });
 
+  it("a synthetic account's missing tax part is synthetic too", () => {
+    const synthetic = { ...roth401k, origin: "synthetic" as const };
+    const parts = declareOpeningParts([retirementBrokerage, synthetic]);
+    expect(parts[2]).toMatchObject({ taxType: "preTax", origin: "synthetic" });
+  });
+
   it("an account held in both tax parts declares nothing more", () => {
     const parts = declareOpeningParts([
       retirementBrokerage,

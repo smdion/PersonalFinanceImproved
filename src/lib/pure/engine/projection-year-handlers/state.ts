@@ -51,7 +51,7 @@ export function buildProjectionState(
 
   // Per-person Traditional balance for per-person RMD (from individual accounts)
   const priorYearEndTradByPerson = new Map<number, number>();
-  if (ctx.rmdStartAgeByPerson.size > 0 && ctx.hasIndividualAccounts) {
+  if (ctx.rmdStartAgeByPerson.size > 0 && ctx.holdsAccounts) {
     for (const ia of ctx.indAccounts) {
       const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
       if (owner != null && isPreTaxType(ia.taxType)) {

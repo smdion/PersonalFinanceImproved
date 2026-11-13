@@ -55,11 +55,12 @@ export function declareOpeningParts(
       ...facts
     } = ia;
     for (const taxType of ROTH_SPLIT_PARTS) {
+      // A synthetic account's sibling is synthetic too: no real account.
       const part = {
         ...facts,
         taxType,
         startingBalance: 0,
-        origin: "declared" as const,
+        origin: ia.origin === "synthetic" ? ia.origin : ("declared" as const),
       };
       const key = accountKeyOf(part);
       if (keys.has(key)) continue;

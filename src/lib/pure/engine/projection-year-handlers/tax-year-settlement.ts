@@ -256,7 +256,7 @@ export function yearRothConversion(
   let rmdSmoothingTarget: number | undefined;
   if (
     config.rmdSmoothingEnabled &&
-    hasIndividualAccounts &&
+    ctx.holdsAccounts &&
     rmdStartAgeByPerson.size > 0
   ) {
     const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(

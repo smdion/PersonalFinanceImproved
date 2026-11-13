@@ -14,7 +14,7 @@ export function updatePerPersonTradBalance(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.hasIndividualAccounts) return;
+  if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.holdsAccounts) return;
   state.priorYearEndTradByPerson.clear();
   for (const ia of ctx.indAccounts) {
     const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
