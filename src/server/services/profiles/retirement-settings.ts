@@ -23,6 +23,10 @@ import {
   lockFirstRetirementProfile,
 } from "@/server/services/profiles/first-retirement-profile";
 import { firstRow } from "@/lib/utils/first-row";
+import {
+  DEFAULT_ROTH_BRACKET_OVERLAY,
+  type RetirementSettingsInsert,
+} from "@/server/services/profiles/retirement-settings-row";
 
 // --- CRUD Zod schemas ---
 
@@ -43,7 +47,12 @@ export const retirementSettingsInput = z.object({
   withdrawalRate: zDecimal.optional(),
   taxMultiplier: zDecimal.optional(),
   grossUpForTaxes: z.boolean().optional(),
+  /** `null` turns the Roth bracket overlay off and keeps the stored target
+   *  (the column's old "Null = disabled"); omit the key to leave it. */
   rothBracketTarget: zDecimal.nullable().optional(),
+  /** Whether waterfall routing caps Traditional draws at the target's
+   *  bracket. Omit the key to leave it; a new row starts off. */
+  rothBracketOverlay: z.boolean().optional(),
   enableRothConversions: z.boolean().optional(),
   rothConversionTarget: zDecimal.nullable().optional(),
   withdrawalStrategy: z.enum(withdrawalStrategyEnum()).optional(),
@@ -143,9 +152,16 @@ export async function upsertRetirementSettings(
     // filing_status: null = "Auto" (follow this year's filing status,
     // resolved when read — lib/pure/tax/filing-status.ts); not sent = keep
     // what's stored. Never defaulted here.
-    const { profileId: _profileIdKey, ...inputFields } = input;
+    const {
+      profileId: _profileIdKey,
+      rothBracketTarget,
+      ...inputFields
+    } = input;
     const resolvedInput = {
       ...inputFields,
+      ...(rothBracketTarget === null
+        ? { rothBracketOverlay: false }
+        : { rothBracketTarget }),
       profileId: resolvedProfileId,
       filingStatus:
         input.filingStatus === undefined
@@ -167,7 +183,12 @@ export async function upsertRetirementSettings(
             .then(firstRow)
         : await tx
             .insert(schema.retirementSettings)
-            .values(resolvedInput)
+            .values({
+              ...resolvedInput,
+              rothBracketOverlay:
+                resolvedInput.rothBracketOverlay ??
+                DEFAULT_ROTH_BRACKET_OVERLAY,
+            } satisfies RetirementSettingsInsert)
             .returning()
             .then(firstRow);
 

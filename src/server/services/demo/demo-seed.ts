@@ -12,6 +12,7 @@ import {
 import { speculativeJobValues } from "@/server/data/jobs";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
+import { NEW_HOUSEHOLD_ROW } from "@/server/services/profiles/retirement-settings-row";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
 export async function seedProfile(
@@ -276,8 +277,7 @@ export async function seedProfile(
     });
   }
 
-  // 12. Retirement settings — filing status left as "Auto" (null): it
-  // follows this year's, here the demo jobs' W-4 (lib/pure/tax/filing-status.ts).
+  // 12. Retirement settings, a new household's (NEW_HOUSEHOLD_ROW).
   const rs = profile.retirementSettings;
   const personId = personIdByName.get(rs.personName)!;
   await db.insert(schema.retirementSettings).values({
@@ -291,7 +291,7 @@ export async function seedProfile(
     withdrawalStrategy: rs.withdrawalStrategy,
     socialSecurityMonthly: rs.socialSecurityMonthly,
     ssStartAge: rs.ssStartAge,
-    filingStatus: null,
+    ...NEW_HOUSEHOLD_ROW,
   });
   // 12b. Per-person retirement settings overrides
   if (profile.perPersonRetirementSettings) {
@@ -309,7 +309,7 @@ export async function seedProfile(
           withdrawalStrategy: rs.withdrawalStrategy,
           socialSecurityMonthly: prs.socialSecurityMonthly,
           ssStartAge: prs.ssStartAge,
-          filingStatus: null,
+          ...NEW_HOUSEHOLD_ROW,
         });
       }
     }

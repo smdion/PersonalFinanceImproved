@@ -56,7 +56,7 @@ const PINNED_DAY = new Date("2026-11-05T12:00:00Z");
 
 /** sha256 of today's rows (JSON, tables by name, rows in insert order). */
 const DIGEST =
-  "f567207ace94435e43052b1b1b535f83c6f3542361c80d863307c563beb96659";
+  "0b0d6187e1e16d39f65c2ae7f9e0513b710517eb43d1095144c5948020432b29";
 
 type Seeded = Awaited<ReturnType<typeof createTestCaller>>;
 

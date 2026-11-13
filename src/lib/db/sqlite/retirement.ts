@@ -55,7 +55,7 @@ export const retirementSettings = sqliteTable(
     grossUpForTaxes: integer("gross_up_for_taxes", { mode: "boolean" })
       .notNull()
       .default(true),
-    /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket). Null = disabled. */
+    /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket); writers keep it set. */
     rothBracketTarget: decimalText("roth_bracket_target").default("0.12"),
     /** Waterfall's Roth bracket overlay on/off. No DB default: null only before tag 0022 sets it. */
     rothBracketOverlay: integer("roth_bracket_overlay", { mode: "boolean" }),

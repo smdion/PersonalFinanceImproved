@@ -65,7 +65,7 @@ export const retirementSettings = pgTable(
       .notNull()
       .default("1.0"),
     grossUpForTaxes: boolean("gross_up_for_taxes").notNull().default(true),
-    /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket). Null = disabled. */
+    /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket); writers keep it set. */
     rothBracketTarget: decimal("roth_bracket_target", {
       precision: 8,
       scale: 6,
