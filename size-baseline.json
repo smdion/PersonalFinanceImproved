@@ -281,7 +281,7 @@
     "src/lib/pure/debts/mortgage.ts": 387,
     "src/lib/pure/engine/aca-check.ts": 72,
     "src/lib/pure/engine/contribution-routing.ts": 615,
-    "src/lib/pure/engine/individual-accounts/contributions.ts": 435,
+    "src/lib/pure/engine/individual-accounts/contributions.ts": 379,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 145,
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 353,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 320,

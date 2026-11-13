@@ -7,10 +7,8 @@ import {
   accrueIndividualBasis,
   depleteIndividualBasis,
 } from "@/lib/pure/engine/individual-accounts/ledger";
-import {
-  buildSpecToAccountMapping,
-  distributeContributions,
-} from "@/lib/pure/engine/individual-accounts/contributions";
+import { distributeContributions } from "@/lib/pure/engine/individual-accounts/contributions";
+import { buildSpecToAccountMapping } from "@/lib/pure/engine/individual-accounts/spec-accounts";
 import {
   distributeWithdrawals,
   distributeGoalWithdrawal,

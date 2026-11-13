@@ -4002,10 +4002,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 36
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 2
+      "count": 31
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
@@ -5804,6 +5801,14 @@
   "tests/routers/roth-ira-inputs.test.ts": {
     "ratchet/no-lint-violation-ok": {
       "count": 1
+    }
+  },
+  "src/lib/pure/engine/individual-accounts/spec-accounts.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 5
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   }
 }

@@ -11,7 +11,7 @@ import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import { cloneAccountBalances } from "../balance-utils";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
-import { buildSpecToAccountMapping } from "../individual-accounts/contributions";
+import { buildSpecToAccountMapping } from "../individual-accounts/spec-accounts";
 import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
