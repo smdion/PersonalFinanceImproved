@@ -128,13 +128,13 @@ export function calculateBonus(
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
-  // The regular checks' exempt money over the year's paydays.
   const paydays = yearPaydays(input);
   const bonusFicaExempt = sumBy(input.contributionAccounts, (ca) => {
     const cap = ca.ficaExemptAnnualCap;
     if (cap === null) return 0;
     if (!isPreTax(ca.taxTreatment)) return 0;
-    const capLeft = cap - regularFicaExemptPerPeriod(ca, paydays) * paydays;
+    const covered = ca.coveredChecks ?? paydays; // the regular checks it covers
+    const capLeft = cap - regularFicaExemptPerPeriod(ca, paydays) * covered;
     return Math.min(
       bonusCheckContribution(ca, bonusGross),
       Math.max(0, capLeft),
