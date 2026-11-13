@@ -13,6 +13,7 @@ import { MONTHS_PER_YEAR } from "../../../constants";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { getStrategyDefaults } from "@/lib/config/withdrawal-strategies";
 import { makeIndKey } from "../individual-accounts/ledger";
+import { isHeldPart } from "../../accounts/account-part";
 import { declareOpeningParts } from "../opening-state";
 import { getRmdStartAge } from "../../../config/rmd-tables";
 import type { BrokerageGoal, ProjectionContext } from "./types";
@@ -184,7 +185,7 @@ export function buildProjectionContext(
     sortedDecumulationOverrides,
     sortedProfileSwitches,
     hasIndividualAccounts,
-    holdsAccounts: indAccounts.some((ia) => ia.origin == null),
+    holdsAccounts: indAccounts.some(isHeldPart),
     indAccounts,
     indKey,
     indParentCat,

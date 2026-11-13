@@ -22,3 +22,9 @@ export function accountKeyOf(
 
 /** The engine's key function for one individual account (`accountKeyOf`). */
 export type IndKeyFn = (ia: AccountPart) => string;
+
+/** A part with a real account behind it: no `origin` (the engine's declared
+ *  siblings, the projected brokerage and synthetic parts all carry one). */
+export function isHeldPart(part: { origin?: string }): boolean {
+  return part.origin == null;
+}

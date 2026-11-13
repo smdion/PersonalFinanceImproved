@@ -7,6 +7,7 @@ import {
   isOverflowTarget,
 } from "../../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
+import { isHeldPart } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { ContributionSpec } from "../types/contribution-spec";
 import type { AccumulationSlot } from "../types/routing";
@@ -19,7 +20,7 @@ export function ownPartCredits(
   specs: readonly ContributionSpec[] | undefined,
   accounts: readonly IndividualAccountInput[],
 ): [IndividualAccountInput, number][] | undefined {
-  const held = accounts.some((ia) => ia.origin == null);
+  const held = accounts.some(isHeldPart);
   if (held || accounts.length === 0 || (specs && specs.length > 0)) return;
   const credits: [IndividualAccountInput, number][] = [];
   const add = (category: string, taxType: string, amount: number) => {

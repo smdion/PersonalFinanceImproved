@@ -22,7 +22,8 @@ import {
   getTotalBalance,
 } from "../../accounts/account-balance";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
-import { accountKeyOf, type IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { accountKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
   type RothBasisState,
@@ -162,11 +163,10 @@ export function buildIndividualYearBalances(
       ...projectedFields,
     };
   });
-  // A held part always shows; a declared part or the projected brokerage once
-  // it holds money (an empty one is noise); a synthetic part never (EN14).
+  // A held part shows; a synthetic one never; any other once it holds money.
   return rows.filter((r, i) => {
-    const origin = indAccounts[i]!.origin;
-    if (origin == null || origin === "synthetic") return origin == null;
+    if (isHeldPart(indAccounts[i]!)) return true;
+    if (indAccounts[i]!.origin === "synthetic") return false;
     const drawn = r.draw?.withdrawal ?? 0;
     return r.balance !== 0 || r.contribution !== 0 || drawn !== 0;
   });
