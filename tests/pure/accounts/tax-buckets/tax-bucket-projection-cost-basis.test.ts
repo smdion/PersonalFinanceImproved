@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
+import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 
 const now: AccountAnalysisEntry = {
   performanceAccountId: 4,
@@ -29,6 +30,12 @@ function years(costBasis?: number): EngineYearProjection[] {
         year,
         individualAccountBalances: [
           {
+            accountKey: accountKeyOf({
+              name: "Retirement Brokerage",
+              category: "brokerage",
+              taxType: "afterTax",
+              ownerPersonId: 1,
+            }),
             name: "Retirement Brokerage",
             category: "brokerage",
             taxType: "afterTax",

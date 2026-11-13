@@ -1,7 +1,7 @@
 /**
  * The Tax Buckets view at the retirement transition, from the engine's per-account balances,
- * assuming the plan is followed (unlike "now", which counts only real separations). Matched
- * on the same `(name, category, taxType, ownerPersonId)` key `computeTaxBucketBreakdown` uses.
+ * assuming the plan is followed (unlike "now", which counts only real separations). A "now"
+ * entry and its projected row are joined on the part's `accountKey`.
  */
 import type {
   EngineAccumulationYear,
@@ -36,15 +36,10 @@ import type {
   RuleOf55Status,
 } from "@/lib/pure/accounts/account-balances.types";
 import { ageInYear } from "@/lib/utils/date";
-
-function matchKey(
-  name: string,
-  category: string,
-  taxType: string,
-  ownerPersonId: number | null,
-): string {
-  return `${name}|${category}|${taxType}|${ownerPersonId ?? "null"}`;
-}
+import {
+  accountKeyOf,
+  type AccountKey,
+} from "@/lib/pure/accounts/account-part";
 
 type TaxBucketProjectionResult = {
   /** Null when the projection has no accumulation phase (already past the transition);
@@ -227,21 +222,15 @@ export function computeTaxBucketProjection(input: {
   // Per-key contribution history across every accumulation year through the
   // transition — taxFree rows feed Roth basis projection, afterTax rows
   // feed Brokerage cost-basis projection; nothing else uses this map.
-  const contributionsByKey = new Map<string, Map<number, number>>();
+  const contributionsByKey = new Map<AccountKey, Map<number, number>>();
   for (const yearRow of accumulationYears) {
     for (const balance of yearRow.individualAccountBalances) {
       if (!isTaxFreeBucket(balance.taxType) && !isAfterTaxType(balance.taxType))
         continue;
-      const key = matchKey(
-        balance.name,
-        balance.category,
-        balance.taxType,
-        balance.ownerPersonId ?? null,
-      );
-      let yearMap = contributionsByKey.get(key);
+      let yearMap = contributionsByKey.get(balance.accountKey);
       if (!yearMap) {
         yearMap = new Map();
-        contributionsByKey.set(key, yearMap);
+        contributionsByKey.set(balance.accountKey, yearMap);
       }
       yearMap.set(yearRow.year, balance.contribution);
     }
@@ -249,12 +238,7 @@ export function computeTaxBucketProjection(input: {
 
   const transitionBalanceByKey = new Map(
     transitionYearRow.individualAccountBalances.map((balance) => [
-      matchKey(
-        balance.name,
-        balance.category,
-        balance.taxType,
-        balance.ownerPersonId ?? null,
-      ),
+      balance.accountKey,
       balance,
     ]),
   );
@@ -263,12 +247,12 @@ export function computeTaxBucketProjection(input: {
   const staleBasisAccountNames: string[] = [];
 
   const entries: AccountAnalysisEntry[] = nowEntries.map((now) => {
-    const key = matchKey(
-      now.displayName,
-      now.category,
-      now.taxType,
-      now.ownerPersonId,
-    );
+    const key = accountKeyOf({
+      name: now.displayName,
+      category: now.category,
+      taxType: now.taxType,
+      ownerPersonId: now.ownerPersonId,
+    });
     const projected = transitionBalanceByKey.get(key);
     if (!projected) {
       unmatchedAccountNames.push(now.displayName);

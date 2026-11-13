@@ -243,7 +243,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 365,
-    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": 455,
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": 439,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/financial-order-of-operations.ts": 383,
     "src/lib/pure/advice/milestones/habits.ts": 391,
@@ -941,7 +941,7 @@
       "computeTaxBucketAnalysis": 239
     },
     "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": {
-      "computeTaxBucketProjection": 269,
+      "computeTaxBucketProjection": 258,
       "computeTaxBucketProjection.entries.map()": 183
     },
     "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
