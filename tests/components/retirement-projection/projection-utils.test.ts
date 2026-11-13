@@ -46,7 +46,7 @@ import {
   bucketSlotMap,
 } from "@/components/retirement-projection/table/bucket-slots";
 import { safeDivide } from "@/lib/utils/math";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../../pure/fixtures/tax-bucket-split";
 import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/pure/engine/types";
 import type { LumpSum } from "@/lib/pure/engine/types";

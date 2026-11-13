@@ -6,7 +6,6 @@ import {
   getBasis,
 } from "@/lib/pure/accounts/account-balance";
 import {
-  accountBalancesFromTaxBuckets,
   cloneAccountBalances,
   subtractPenaltyExposed,
   subtractExcluded,
@@ -22,6 +21,7 @@ import type {
   NonRetirementExclusion,
 } from "@/lib/pure/accounts/eligibility";
 import { getAllCategories } from "@/lib/config/account-types";
+import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 
 function makeBuckets(overrides: Partial<TaxBuckets> = {}): TaxBuckets {
   return {

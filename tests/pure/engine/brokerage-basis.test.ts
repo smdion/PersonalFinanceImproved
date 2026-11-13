@@ -7,7 +7,7 @@ import {
   seedBrokerageBasis,
   syncAggregateBasis,
 } from "@/lib/pure/engine/brokerage-basis";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type {
   IndividualAccountInput,

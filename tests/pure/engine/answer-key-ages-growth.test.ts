@@ -22,7 +22,7 @@ import {
   countReachingAgeRule,
 } from "@/lib/pure/household/age";
 import { applyGrowth } from "@/lib/pure/engine/growth-application";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
 
 const utc = (iso: string) => new Date(`${iso}T12:00:00Z`);

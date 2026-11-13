@@ -3939,13 +3939,13 @@
   },
   "src/lib/pure/engine/balance-utils.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 4
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 8
+      "count": 7
     }
   },
   "src/lib/pure/engine/brokerage-basis.ts": {

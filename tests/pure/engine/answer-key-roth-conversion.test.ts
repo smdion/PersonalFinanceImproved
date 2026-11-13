@@ -27,7 +27,7 @@ import { runOneYear } from "../../fixtures/answer-key";
 import { readTaxData } from "../../helpers/tax-data";
 import { performRothConversion } from "@/lib/pure/engine/roth-conversion";
 import { repriceConversionYear } from "@/lib/pure/engine/projection-year-handlers/conversion-year-reprice";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";

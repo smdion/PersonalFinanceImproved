@@ -48,7 +48,7 @@
  * ── THIS TEST IS INTENTIONALLY RED until B1b lands ────────────────────────
  */
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../../pure/fixtures/tax-bucket-split";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";

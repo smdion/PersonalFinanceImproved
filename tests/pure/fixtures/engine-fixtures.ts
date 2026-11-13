@@ -17,7 +17,7 @@ import type {
   DecumulationDefaults,
 } from "@/lib/pure/engine/types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "./tax-bucket-split";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "@/lib/constants";

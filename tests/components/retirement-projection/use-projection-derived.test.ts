@@ -15,7 +15,7 @@ import type {
   EngineAccumulationYear,
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
-import { accountBalancesFromTaxBuckets } from "@/lib/pure/engine/balance-utils";
+import { accountBalancesFromTaxBuckets } from "../../pure/fixtures/tax-bucket-split";
 import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 import type { UseProjectionStateProps } from "@/components/retirement-projection/use-projection-state.types";
 import type { ProjectionFormState } from "@/components/retirement-projection/use-projection-form-state";
