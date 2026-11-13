@@ -46,7 +46,7 @@ type AnnualEarnings = {
 
 export function computeAnnualEarnings(args: {
   salary: number;
-  /** What the salary is divided by for each check (jobSalaryDivisor). */
+  /** What the salary is divided by for each check (the job's check basis). */
   salaryDivisor: number;
   paycheck: PaycheckResult;
   contributionAccounts: ContributionAccountInput[];
