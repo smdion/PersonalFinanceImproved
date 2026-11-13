@@ -200,9 +200,7 @@ export type ProjectionInput = {
   /** Age at which Social Security income begins (default 67).
    *  When socialSecurityEntries is provided, this is ignored. */
   ssStartAge: number;
-  /** Per-person Social Security entries. Each person can have a different
-   *  annual amount and start age. When provided, overrides the scalar
-   *  socialSecurityAnnual and ssStartAge fields. */
+  /** Per-person entries; when provided, they override socialSecurityAnnual and ssStartAge. */
   socialSecurityEntries?: {
     personId: number;
     personName: string;
@@ -211,6 +209,8 @@ export type ProjectionInput = {
     startAge: number;
     /** Birth year of this person — used to compute their age each projection year. */
     birthYear: number;
+    /** From `year` on, in place of `annualAmount`: own plus a spousal excess (42 USC 402(b), (r)). */
+    fromSpouseFiling?: { year: number; annualAmount: number };
   }[];
   /** Birth year of primary person — used for RMD start age (SECURE 2.0).
    *  When omitted, RMDs are not enforced (backward-compatible). */

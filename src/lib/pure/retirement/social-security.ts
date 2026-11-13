@@ -22,29 +22,30 @@ import {
  */
 export function computeAdjustedBenefit(
   pia: number,
-  fraBirthYear: number,
+  cohortYear: number,
   claimingAgeMonths: number,
 ): number {
-  const fra = getFullRetirementAge(fraBirthYear);
+  const fra = getFullRetirementAge(cohortYear);
   return pia * getClaimingAdjustmentMultiplier(fra, claimingAgeMonths);
 }
 
 /**
- * The claiming spouse's annual benefit: own plus any spousal top-up, never two. The spousal
- * reduction runs on the CLAIMING spouse's FRA (POMS RS 00202.001). With `spouseOwnPia`, SSA's
- * reducedOwn + reducedExcess; without, max(own, reduced spousal), which can only understate.
+ * The claiming spouse's annual benefit: own (reduced at the claim age) plus any spousal top-up
+ * (reduced at `excessStartAgeMonths`, on the CLAIMING spouse's FRA; POMS RS 00202.001).
+ * Without `spouseOwnPia`, max(own, reduced spousal), which can only understate.
  */
 export function computeSpousalBenefit(
   ownAdjustedBenefit: number,
   workerPia: number,
-  spouseFraBirthYear: number,
+  spouseCohortYear: number,
   spouseClaimingAgeMonths: number,
   spouseOwnPia?: number,
+  excessStartAgeMonths = spouseClaimingAgeMonths,
 ): number {
-  const spouseFra = getFullRetirementAge(spouseFraBirthYear);
+  const spouseFra = getFullRetirementAge(spouseCohortYear);
   const spousalMultiplier = getSpousalAdjustmentMultiplier(
     spouseFra,
-    spouseClaimingAgeMonths,
+    excessStartAgeMonths,
   );
 
   if (spouseOwnPia != null) {

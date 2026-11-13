@@ -28,11 +28,13 @@ export function socialSecurityForYear(
 } {
   const grown = (today: number) => roundToCents(today * ssGrowthFactor);
   if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
-    const today = input.socialSecurityEntries.map((entry) =>
-      ageInYear(entry.birthYear, year) >= entry.startAge
-        ? entry.annualAmount
-        : 0,
-    );
+    const today = input.socialSecurityEntries.map((entry) => {
+      if (ageInYear(entry.birthYear, year) < entry.startAge) return 0;
+      const later = entry.fromSpouseFiling;
+      return later && year >= later.year
+        ? later.annualAmount
+        : entry.annualAmount;
+    });
     const ssIncomeByPerson = input.socialSecurityEntries.map((entry, i) => ({
       personId: entry.personId,
       personName: entry.personName,
