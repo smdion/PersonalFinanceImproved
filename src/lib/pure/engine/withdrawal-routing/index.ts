@@ -21,6 +21,7 @@ import {
 import { routeWithdrawalsBracketFilling } from "./bracket-filling";
 import type { RouteBracketInfo, RouteResult } from "./types";
 import { applyRothBracketOverlay } from "./roth-bracket-overlay";
+import { withoutUnmetWarning } from "./unmet-warning";
 
 /**
  * One dispatch to the mode config.withdrawalRoutingMode selects. Mode functions
@@ -50,9 +51,8 @@ function dispatchOnce(
     routeConfig,
     balances,
   );
-  // The target is a preference, not a limit on spending. Every other account
-  // has had its turn above; what's left comes from what the target held back,
-  // in the household's own order, under only their own caps.
+  // The target is a preference, not a limit: with every other account done,
+  // what the target held back pays the rest, in the household's order and caps.
   if (routeConfig !== config && (result.unmetNeed ?? 0) > 0) {
     const beyond = routeWithdrawalsWaterfall(
       result.unmetNeed!,
@@ -63,7 +63,7 @@ function dispatchOnce(
     result = {
       slots: mergeDecumulationSlots(result.slots, beyond.slots),
       warnings: [
-        ...result.warnings.filter((w) => !w.includes("unmet")),
+        ...withoutUnmetWarning(result.warnings),
         ...beyond.warnings,
         ...(funded > 0 ? [pastTargetWarning(funded)] : []),
       ],
@@ -145,7 +145,7 @@ function routeWithLastResortAllowance(
 
   return {
     slots: mergeDecumulationSlots(pass1.slots, pass2.slots),
-    warnings: [...pass1.warnings, ...pass2.warnings],
+    warnings: [...withoutUnmetWarning(pass1.warnings), ...pass2.warnings],
     unmetNeed: finalUnmetNeed,
     // Dispatch #2's value — it always ran to reach this line, and it's the
     // one computed against the TRUE final routing (allowed money included).

@@ -14,6 +14,7 @@ import {
   getRothBalance,
   getTotalBalance,
 } from "../../accounts/account-balance";
+import { unmetNeedWarning } from "./unmet-warning";
 
 /**
  * Route withdrawals by percentage split across accounts: each account's
@@ -196,9 +197,7 @@ export function routeWithdrawalsPercentage(
     builtSlots = buildSlots();
   }
   if (excess > 0) {
-    warnings.push(
-      `$${excess.toLocaleString()} withdrawal need unmet — insufficient funds across all accounts`,
-    );
+    warnings.push(unmetNeedWarning(excess));
   }
   const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
   return { slots: builtSlots, warnings, unmetNeed };

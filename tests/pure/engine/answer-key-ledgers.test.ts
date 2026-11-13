@@ -284,9 +284,18 @@ describe("answer key: engine ledger H6 (penalty priced in the gross-up)", () => 
   // 3% inflation; spending 40,000. Penalized withdrawals allowed on the
   // account (README: the default draws $0 before 59 1/2 and shows 40,000
   // unmet). 59 1/2 on 2037-01-01; first RMD 2052 (age 75) above the need.
-  // Today 2026–2036 also carry an "insufficient funds" warning while unmet
-  // is 0 (key § Re-run), so no test here asserts "no warnings".
   const H6 = { allowPenalizedWithdrawals: true };
+
+  it("engine/H6-warn [WDR-06] a penalized year that funds its need warns no unmet need", () => {
+    // 2026–2036 draw from the IRA before 59 1/2 with the penalty paid and
+    // nothing unmet (key § Re-run): no year says the need went unmet.
+    const { result } = project("H6", H6);
+    const said = result.projectionByYear
+      .filter((y) => y.year <= 2036)
+      .flatMap((y) => y.warnings.map((w) => `${y.year}: ${w}`))
+      .filter((w) => w.includes("unmet"));
+    expect(said).toEqual([]);
+  });
 
   it("engine/H6 [ENG-01] every ledger row 2026–2053", () => {
     expectLedger("H6", { from: 2026, to: 2053 }, H6);

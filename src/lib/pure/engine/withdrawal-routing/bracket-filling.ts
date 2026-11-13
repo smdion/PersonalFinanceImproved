@@ -20,6 +20,7 @@ import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
 import { routeWithdrawalsWaterfall } from "./waterfall";
 import { computeBracketTraditionalCap, pastTargetWarning } from "./caps";
 import type { RouteBracketInfo, RouteResult } from "./types";
+import { unmetNeedWarning } from "./unmet-warning";
 
 /**
  * Bracket-filling routing: fill Traditional up to the `rothBracketTarget` bracket
@@ -443,9 +444,7 @@ export function routeWithdrawalsBracketFilling(
   }
 
   if (remaining > 0) {
-    warnings.push(
-      `$${remaining.toLocaleString()} withdrawal need unmet — insufficient funds across all accounts`,
-    );
+    warnings.push(unmetNeedWarning(remaining));
   }
 
   return {
