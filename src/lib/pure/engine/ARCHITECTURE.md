@@ -38,7 +38,7 @@ projection-year-handlers/    one year of work
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   helpers.ts, types.ts
-individual-accounts/         the per-account ledger: ledger, spec-accounts, contributions, withdrawals, reconcile
+individual-accounts/         the per-account ledger: ledger, spec-accounts, contributions, other-tax-part, withdrawals, reconcile
 withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
 spending-strategies/         the eight spending strategies, each (params, input) → result
 <modules below>              called by the handlers
@@ -50,16 +50,17 @@ spending-strategies/         the eight spending strategies, each (params, input)
 
 **Configuration and contributions**
 
-| Module                                 | Role                                                                                                                                                                |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `override-resolution.ts`               | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
-| `contribution-routing.ts`              | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
-| `contribution-projection.ts`           | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
-| `individual-accounts/ledger.ts`        | The per-account ledger: account keys, `credit`, a year's growth and tracked Roth basis.                                                                             |
-| `individual-accounts/spec-accounts.ts` | Which individual account each contribution spec pays into.                                                                                                          |
-| `individual-accounts/contributions.ts` | Contributions, match, overflow and ramp spread to each account.                                                                                                     |
-| `individual-accounts/withdrawals.ts`   | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
-| `individual-accounts/reconcile.ts`     | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`.                                                                             |
+| Module                                  | Role                                                                                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `override-resolution.ts`                | Resolves "Changes by year" (sticky-forward) into the year's `ResolvedAccumulationConfig` / `ResolvedDecumulationConfig`. Downstream code only sees resolved config. |
+| `contribution-routing.ts`               | Accumulation allocation: waterfall, percentage, or from contribution specs (the production path). IRS limits, caps, tax splits, overflow to a Retirement brokerage. |
+| `contribution-projection.ts`            | The one per-spec formula for a year's contribution amount, shared by routing and per-account tracking.                                                              |
+| `individual-accounts/ledger.ts`         | The per-account ledger: account keys, `credit`, a year's growth and tracked Roth basis.                                                                             |
+| `individual-accounts/spec-accounts.ts`  | Which individual account each contribution spec pays into.                                                                                                          |
+| `individual-accounts/contributions.ts`  | Contributions, match, overflow and ramp spread to each account.                                                                                                     |
+| `individual-accounts/other-tax-part.ts` | Slot money of a tax type no spec in its category carries, onto the spec account's part of that tax type.                                                            |
+| `individual-accounts/withdrawals.ts`    | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
+| `individual-accounts/reconcile.ts`      | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`.                                                                             |
 
 **Withdrawals and tax**
 

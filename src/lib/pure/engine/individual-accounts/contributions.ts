@@ -15,6 +15,7 @@ import {
 import { projectSpecAmount } from "../contribution-projection";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { credit, portfolioFirst, retirementFirst, specKeyOf } from "./ledger";
+import { otherParts } from "./other-tax-part";
 
 interface DistributeContributionsInput {
   slots: AccumulationSlot[];
@@ -106,8 +107,8 @@ export function distributeContributions(
   }
 
   // --- Step 2: Distribute slot totals to individual accounts using spec weights ---
-  // Fixed-amount specs are pre-allocated directly; remaining slot total is distributed
-  // proportionally among scales-with-salary specs.
+  // Fixed-amount specs first (capped at the slot), the rest by the scaling specs' weights.
+  const toOtherPart = otherParts(input, specAccount, specRaw, indContributions);
   for (const slot of slots) {
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
     const catSpecs = contributionSpecs.filter(
@@ -132,7 +133,6 @@ export function distributeContributions(
       const specs = allSpecs.filter((sp) =>
         isRetirementMoney(sp.parentCategory),
       );
-      // Separate fixed-amount specs from scaling specs
       const fixedSpecs = specs.filter(
         (s) => s.contributionScaling === "fixed_amount",
       );
@@ -140,7 +140,6 @@ export function distributeContributions(
         (s) => s.contributionScaling !== "fixed_amount",
       );
 
-      // Pre-allocate fixed specs their raw amount (capped at slot total)
       for (const sp of fixedSpecs) {
         const sk = specKeyOf(sp);
         const accountName = specAccount.get(sk);
@@ -152,7 +151,6 @@ export function distributeContributions(
         remaining -= portion;
       }
 
-      // Distribute remaining proportionally among scaling specs
       if (scalingSpecs.length > 0 && remaining > 0) {
         const rawTotal = scalingSpecs.reduce(
           (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
@@ -180,7 +178,8 @@ export function distributeContributions(
         const typeSpecs = catSpecs.filter(
           (s) => s.taxTreatment === taxTreatment,
         );
-        distributeSpecs(typeSpecs, slotAmount);
+        if (typeSpecs.length > 0) distributeSpecs(typeSpecs, slotAmount);
+        else toOtherPart(catSpecs, taxTreatment, slotAmount);
       }
     } else {
       // The overflow target's slot also carries this year's IRS overflow,
