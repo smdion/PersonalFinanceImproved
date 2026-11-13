@@ -195,7 +195,7 @@ const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
         startingBalance: 0,
         startingBasis: 0,
         parentCategory: "Retirement",
-        projectedOnly: true,
+        origin: "projected",
       },
     ],
     inputWarnings: [

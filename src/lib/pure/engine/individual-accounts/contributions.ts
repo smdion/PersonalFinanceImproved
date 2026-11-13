@@ -223,7 +223,7 @@ export function distributeContributions(
     if (catMatch <= 0) continue;
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
     const catAccounts = indAccounts.filter(
-      (ia) => ia.category === cat && !ia.projectedOnly,
+      (ia) => ia.category === cat && ia.origin !== "projected",
     );
     if (parentCatMatchData && parentCatMatchData.size > 0) {
       let totalMatch = 0;
@@ -353,7 +353,7 @@ export function distributeContributions(
     const brokerages = indAccounts.filter((ia) =>
       isOverflowTarget(ia.category),
     );
-    const real = brokerages.filter((ia) => !ia.projectedOnly);
+    const real = brokerages.filter((ia) => ia.origin !== "projected");
     const group = real.length > 0 ? portfolioFirst(real, parentOf) : brokerages;
     const groupWithSpecs = group.filter((ia) =>
       accountsWithSpecs.has(indKey(ia)),

@@ -348,7 +348,7 @@ export function ledgerInput(
       startingBalance: 0,
       startingBasis: 0,
       parentCategory: "Retirement",
-      projectedOnly: true,
+      origin: "projected",
     } as IndividualAccountInput);
 
   const sum = (

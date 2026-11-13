@@ -95,7 +95,7 @@ export function resolveLumpSumTarget(
       return retirementFirst(accounts, parentOf);
     // Portfolio savings never go to the projection-only account unless
     // there's nowhere else for them.
-    const real = accounts.filter((ia) => !ia.projectedOnly);
+    const real = accounts.filter((ia) => ia.origin !== "projected");
     return real.length > 0 ? portfolioFirst(real, parentOf) : [...accounts];
   };
   return (

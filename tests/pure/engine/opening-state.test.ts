@@ -53,7 +53,7 @@ describe("declareOpeningParts", () => {
       ...facts,
       taxType: "preTax",
       startingBalance: 0,
-      declared: true,
+      origin: "declared",
     });
   });
 
@@ -64,7 +64,7 @@ describe("declareOpeningParts", () => {
       { ...roth401k, taxType: "preTax", rothBasisMeta: undefined },
     ]);
     expect(parts).toHaveLength(3);
-    expect(parts.some((p) => p.declared)).toBe(false);
+    expect(parts.some((p) => p.origin === "declared")).toBe(false);
   });
 
   it("an IRA held in parts by two owners declares each owner's missing part", () => {
@@ -81,7 +81,7 @@ describe("declareOpeningParts", () => {
       ira(1, "preTax"),
       ira(2, "taxFree"),
     ]);
-    expect(keysOf(parts.filter((p) => p.declared))).toEqual([
+    expect(keysOf(parts.filter((p) => p.origin === "declared"))).toEqual([
       accountKeyOf(ira(1, "taxFree")),
       accountKeyOf(ira(2, "preTax")),
     ]);
@@ -116,7 +116,7 @@ describe("declareOpeningParts", () => {
         startingBalance: 0,
         startingBasis: 0,
         parentCategory: "Retirement",
-        projectedOnly: true,
+        origin: "projected",
       },
     ]);
   });
@@ -191,5 +191,25 @@ describe("a slot's money with no spec of its tax type", () => {
     expect(
       result.projectionByYear.flatMap((y) => y.warnings ?? []),
     ).not.toContainEqual(expect.stringContaining("drifted"));
+  });
+});
+
+describe("parts no real account stands behind", () => {
+  const parts = [
+    { ...acct("Ann IRA", "ira", 400000, 1), parentCategory: "Retirement" },
+    { ...acct("Bo IRA", "ira", 300000, 2), parentCategory: "Retirement" },
+  ];
+  const run = (synthetic: boolean) =>
+    calculateProjection(
+      household(
+        parts.map((p) =>
+          synthetic ? { ...p, origin: "synthetic" as const } : p,
+        ),
+      ),
+    ).projectionByYear;
+
+  it("show no per-account rows", () => {
+    expect(run(false)[0]!.individualAccountBalances).not.toEqual([]);
+    for (const y of run(true)) expect(y.individualAccountBalances).toEqual([]);
   });
 });

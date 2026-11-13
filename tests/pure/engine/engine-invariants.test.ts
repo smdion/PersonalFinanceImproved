@@ -2364,7 +2364,7 @@ describe("engine invariants", () => {
         startingBalance: 0,
         startingBasis: 0,
         parentCategory: "Retirement",
-        projectedOnly: true,
+        origin: "projected",
       };
       // No account holds money the aggregate doesn't know about, so neither
       // reconciliation nor the basis sync has anything to report.
@@ -3146,7 +3146,7 @@ describe("engine invariants", () => {
         const accts = [
           brok("P", 50000, "Portfolio"),
           brok("Projected", 0, "Retirement", {
-            projectedOnly: true,
+            origin: "projected",
             startingBasis: 0,
           }),
         ];

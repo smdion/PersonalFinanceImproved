@@ -66,7 +66,7 @@ export function decumulationPortfolioContributions(
     const brokerages = indAccounts.filter((ia) =>
       isOverflowTarget(ia.category),
     );
-    const realBrokerages = brokerages.filter((ia) => !ia.projectedOnly);
+    const realBrokerages = brokerages.filter((ia) => ia.origin !== "projected");
     const rampAccounts =
       realBrokerages.length > 0
         ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)

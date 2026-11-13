@@ -82,7 +82,8 @@ export function buildIndividualYearBalances(
   const rows = indAccounts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
-    const projectedFields = ia.projectedOnly ? { projectedOnly: true } : {};
+    const projectedFields =
+      ia.origin === "projected" ? { projectedOnly: true } : {};
     const balance =
       Math.abs(indBalance.get(k) ?? 0) < 1
         ? 0
@@ -161,15 +162,14 @@ export function buildIndividualYearBalances(
       ...projectedFields,
     };
   });
-  // The projected brokerage and the declared parts show up once they hold
-  // money (an empty part would be noise in every table).
-  return rows.filter(
-    (r, i) =>
-      !(indAccounts[i]!.projectedOnly || indAccounts[i]!.declared) ||
-      r.balance !== 0 ||
-      r.contribution !== 0 ||
-      (r.draw?.withdrawal ?? 0) !== 0,
-  );
+  // A held part always shows; a declared part or the projected brokerage once
+  // it holds money (an empty one is noise); a synthetic part never (EN14).
+  return rows.filter((r, i) => {
+    const origin = indAccounts[i]!.origin;
+    if (origin == null || origin === "synthetic") return origin == null;
+    const drawn = r.draw?.withdrawal ?? 0;
+    return r.balance !== 0 || r.contribution !== 0 || drawn !== 0;
+  });
 }
 
 /**

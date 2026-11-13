@@ -60,13 +60,10 @@ export type IndividualAccountInput = {
   /** The household's chosen account for reinvested RMD money (Retirement
    *  settings) — resolved by the payload; at most one account. */
   rmdExcessTarget?: boolean;
-  /** Projection-only retirement brokerage, added when the household has none: holds
-   *  retirement money that needs a brokerage (overflow, reinvested RMDs, unnamed lump
-   *  sums). Never its own contributions or goal draws; spent like any retirement account. */
-  projectedOnly?: boolean;
-  /** A tax part the opening state declares at $0 beside the account's held
-   *  part (`declareOpeningParts`); its rows appear only once it holds money. */
-  declared?: boolean;
+  /** Absent: a held account. "declared": a $0 sibling of one, shown once it
+   *  holds money; "projected": the projection-only Retirement brokerage;
+   *  "synthetic": no real account behind it, the household's rules, no rows. */
+  origin?: "declared" | "projected" | "synthetic";
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by
    *  balance. */
@@ -114,7 +111,7 @@ export type IndividualAccountYearBalance = {
   ownerPersonId?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
-  /** The projection-only retirement brokerage (IndividualAccountInput.projectedOnly);
+  /** The projection-only retirement brokerage (`origin: "projected"`);
    *  rows appear only once it holds money. */
   projectedOnly?: boolean;
   balance: number;

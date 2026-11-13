@@ -42,7 +42,7 @@ export function declareOpeningParts(
       startingBalance: 0,
       startingBasis: 0,
       parentCategory: PERF_CATEGORY_RETIREMENT,
-      projectedOnly: true,
+      origin: "projected",
     });
   for (const ia of held) {
     if (!getAccountTypeConfig(ia.category).supportsRothSplit) continue;
@@ -55,7 +55,12 @@ export function declareOpeningParts(
       ...facts
     } = ia;
     for (const taxType of ROTH_SPLIT_PARTS) {
-      const part = { ...facts, taxType, startingBalance: 0, declared: true };
+      const part = {
+        ...facts,
+        taxType,
+        startingBalance: 0,
+        origin: "declared" as const,
+      };
       const key = accountKeyOf(part);
       if (keys.has(key)) continue;
       keys.add(key);

@@ -17,7 +17,7 @@ export function buildSpecToAccountMapping(
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
   const specToAccount = new Map<string, string>();
   // The projection-only retirement brokerage has no contributions of its own.
-  const accounts = indAccounts.filter((ia) => !ia.projectedOnly);
+  const accounts = indAccounts.filter((ia) => ia.origin !== "projected");
 
   for (const spec of contributionSpecs) {
     const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
