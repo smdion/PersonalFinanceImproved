@@ -11,6 +11,7 @@ import {
   computeEmployerPlanPreTaxAccess,
   computeEmployerPlanRothAccess,
   computeRothIraAccess,
+  penaltyFreePrefixAmount,
 } from "@/lib/pure/accounts/early-access";
 
 describe("resolveSeparationYear", () => {
@@ -231,16 +232,35 @@ describe("computeRothIraAccess", () => {
     expect(slices.find((s) => s.label === "Conversion basis")).toBeUndefined();
   });
 
-  // Bug pin (verdict K-E): one clock for every conversion is the bug, not
-  // the rule; each conversion has its own (IRC 408A(d)(3)(F); Reg.
-  // 1.408A-6 A-5). Changes on purpose with v0.11 Retirement rules
-  // "Retirement rules the skeptic confirmed" (K-E), where answer-key
-  // ret/E19 (`tests/pure/accounts/answer-key-penalties.test.ts`) replaces it.
-  it("gates conversion basis on the 5-year clock from the LATEST tracked conversion year", () => {
-    // Multi-year ladder pooled into one number: converted in 2020 and 2025,
-    // latestConversionYear=2025 (the conservative choice). In 2026, only 1
-    // year has passed since 2025 — must be locked, even though the 2020
-    // conversion alone would have seasoned.
+  // Each conversion has its own clock (IRC 408A(d)(3)(F); Reg. 1.408A-6
+  // A-5(c)) and they come out first in, first out (A-8); answer-key
+  // ret/E19 (`answer-key-penalties.test.ts`) is the worked case (verdict
+  // K-E, which this replaced: one clock from the latest conversion).
+  it("each conversion runs its own 5-year clock: a seasoned 2020 conversion is free beside a 2025 one", () => {
+    const slices = computeRothIraAccess({
+      balance: 100000,
+      currentAge: 50,
+      currentYear: 2026,
+      contributionBasis: 0,
+      conversionBasis: 100000,
+      latestConversionYear: 2025,
+      conversionLayers: [
+        { year: 2020, amount: 40000 },
+        { year: 2025, amount: 60000 },
+      ],
+    });
+    const conversions = slices.filter((s) => s.label === "Conversion basis");
+    expect(conversions.map((s) => [s.amount, s.penaltyFree])).toEqual([
+      [40000, true],
+      [60000, false],
+    ]);
+    expect(conversions.every((s) => s.taxFree)).toBe(true);
+    expect(penaltyFreePrefixAmount(slices)).toBe(40000);
+  });
+
+  it("stored basis (one pooled total) still reads its clock from the latest conversion year", () => {
+    // What `account_basis` can say: one total and one year, so a stored
+    // 2020 + 2025 ladder is one 2025 layer (understated, never overstated).
     const slices = computeRothIraAccess({
       balance: 100000,
       currentAge: 50,
@@ -250,8 +270,29 @@ describe("computeRothIraAccess", () => {
       latestConversionYear: 2025,
     });
     const conversionSlice = slices.find((s) => s.label === "Conversion basis")!;
-    expect(conversionSlice.penaltyFree).toBe(false); // understated, not overstated
+    expect(conversionSlice.penaltyFree).toBe(false);
     expect(conversionSlice.taxFree).toBe(true); // conversions are always tax-free
+  });
+
+  it("the balance cap keeps the oldest conversions", () => {
+    const slices = computeRothIraAccess({
+      balance: 50000,
+      currentAge: 50,
+      currentYear: 2026,
+      contributionBasis: 0,
+      conversionBasis: 100000,
+      latestConversionYear: 2025,
+      conversionLayers: [
+        { year: 2020, amount: 40000 },
+        { year: 2025, amount: 60000 },
+      ],
+    });
+    expect(slices.map((s) => [s.label, s.amount, s.penaltyFree])).toEqual([
+      ["Contribution basis", 0, true],
+      ["Conversion basis", 40000, true],
+      ["Conversion basis", 10000, false],
+      ["Growth", 0, false],
+    ]);
   });
 
   it("conversion basis becomes penalty-free once 5 years have passed since the latest conversion", () => {

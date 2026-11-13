@@ -178,9 +178,9 @@ export function computeEmployerPlanRothAccess(
   ];
 }
 
-/** Roth IRA ordering: contribution basis free always; conversion basis tax-free, penalty-free
- *  after the latest conversion's 5-year clock or at 59½; growth needs 59½ for both flags
- *  ("qualified" approximated by age alone). */
+/** Roth IRA ordering: contribution basis free always; conversions tax-free and out first in,
+ *  first out, each penalty-free after its own 5-year clock or at 59½ (IRC 408A(d)(3)(F); Reg.
+ *  1.408A-6 A-5, A-8); growth needs 59½ for both flags ("qualified" approximated by age alone). */
 export function computeRothIraAccess(input: {
   balance: number;
   currentAge: number;
@@ -193,27 +193,8 @@ export function computeRothIraAccess(input: {
   conversionLayers?: readonly ConversionLayer[];
 }): EarlyAccessSlice[] {
   const { balance, currentAge, currentYear, contributionBasis } = input;
-  const layers = conversionLayersOf(input);
-  const conversionBasis = layers.reduce((t, l) => t + l.amount, 0);
-  // Any layer without a year keeps the whole pool unseasoned, as a stored
-  // total without one does.
-  const latestConversionYear = layers.some((l) => l.year == null)
-    ? null
-    : layers.reduce<number | null>(
-        (y, l) => Math.max(y ?? -Infinity, l.year!),
-        null,
-      );
   const cappedContribution = Math.max(0, Math.min(contributionBasis, balance));
-  const cappedConversion = Math.max(
-    0,
-    Math.min(conversionBasis, balance - cappedContribution),
-  );
-  const growth = balance - cappedContribution - cappedConversion;
-  const conversionSeasoned =
-    latestConversionYear != null &&
-    currentYear - latestConversionYear >= ROTH_CONVERSION_SEASONING_YEARS;
   const qualified = currentAge >= PENALTY_FREE_AGE;
-
   const slices: EarlyAccessSlice[] = [
     {
       label: "Contribution basis",
@@ -222,18 +203,35 @@ export function computeRothIraAccess(input: {
       taxFree: true,
     },
   ];
-  if (cappedConversion > 0) {
-    slices.push({
-      label: "Conversion basis",
-      amount: cappedConversion,
-      // The 5-year conversion penalty applies only under 59½.
-      penaltyFree: conversionSeasoned || qualified,
-      taxFree: true,
-    });
+  // Oldest conversions first, capped at what the balance holds past the
+  // contributions; neighbours on the same side of their clock share a slice.
+  let room = balance - cappedContribution;
+  let conversionTotal = 0;
+  for (const layer of conversionLayersOf(input)) {
+    const amount = Math.max(0, Math.min(layer.amount, room));
+    if (amount <= 0) continue;
+    room -= amount;
+    conversionTotal += amount;
+    const seasoned =
+      layer.year != null &&
+      currentYear - layer.year >= ROTH_CONVERSION_SEASONING_YEARS;
+    // The 5-year conversion penalty applies only under 59½.
+    const penaltyFree = seasoned || qualified;
+    const last = slices[slices.length - 1]!;
+    if (slices.length > 1 && last.penaltyFree === penaltyFree) {
+      last.amount += amount;
+    } else {
+      slices.push({
+        label: "Conversion basis",
+        amount,
+        penaltyFree,
+        taxFree: true,
+      });
+    }
   }
   slices.push({
     label: "Growth",
-    amount: growth,
+    amount: balance - cappedContribution - conversionTotal,
     penaltyFree: qualified,
     taxFree: qualified,
   });

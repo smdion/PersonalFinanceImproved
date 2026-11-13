@@ -143,6 +143,8 @@ function rothYear(opts: {
   regular: number;
   conversions: number;
   latestConversionYear: number | null;
+  /** The conversions one by one, oldest first, when there is more than one. */
+  conversionLayers?: { year: number; amount: number }[];
   earnings?: number;
   take: number;
 }): { income: number; penalty: number } {
@@ -151,6 +153,7 @@ function rothYear(opts: {
     contributionBasis: opts.regular,
     conversionBasis: opts.conversions,
     latestConversionYear: opts.latestConversionYear,
+    ...(opts.conversionLayers && { conversionLayers: opts.conversionLayers }),
     sourceYear: opts.year,
     isSeeded: false,
     stale: false,
@@ -465,28 +468,27 @@ describe("answer key: Roth ordering and the conversion clocks", () => {
     });
   });
 
-  describe("ret/E19 [RET-21]", () => {
+  it("ret/E19 [RET-21] 52, conversions in 2022 and 2025, takes 15,000: additional tax 500", () => {
     // 52 in 2027 (born 1975). Conversions 10,000 in 2022 and 10,000 in
     // 2025, regular 0, takes 15,000. First in first out (ROTH-1): the
     // 2022 10,000 (clear from 1/1/2027) is free, then 5,000 of 2025's (in
-    // its clock to 12/31/2029): 10% × 5,000 = 500. Today one clock from
-    // the latest conversion (2025) locks both: 10% × 15,000 = 1,500
-    // (verdict K-E; the pin at `tests/pure/accounts/early-access.test.ts:216`).
-    xfail({
-      id: "ret/E19 [RET-21]",
-      todo: `${SKEPTIC_CONFIRMED} (verdict K-E: one conversion clock)`,
-      run: () =>
-        rothYear({
-          birthYear: 1975,
-          year: 2027,
-          regular: 0,
-          conversions: 20_000,
-          latestConversionYear: 2025,
-          take: 15_000,
-        }),
-      expected: { income: 0, penalty: 500 },
-      today: { income: 0, penalty: 1_500 },
-    });
+    // its clock to 12/31/2029): 10% × 5,000 = 500. One clock from the
+    // latest conversion (verdict K-E) charged all 15,000: 1,500.
+    cents(
+      rothYear({
+        birthYear: 1975,
+        year: 2027,
+        regular: 0,
+        conversions: 20_000,
+        latestConversionYear: 2025,
+        conversionLayers: [
+          { year: 2022, amount: 10_000 },
+          { year: 2025, amount: 10_000 },
+        ],
+        take: 15_000,
+      }),
+      { income: 0, penalty: 500 },
+    );
   });
 });
 
