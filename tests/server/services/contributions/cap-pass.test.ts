@@ -5,6 +5,7 @@
  */
 import "../../../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
+import { xfail } from "../../../fixtures/answer-key";
 import { capEffectiveContribs } from "@/lib/pure/contributions/cap-pass";
 import {
   capAtYearRate,
@@ -389,5 +390,15 @@ describe("withLeftThisYear — engine year 0 for a job starting or ending this y
   });
   it("a job held all year has none: its year 0 prorates by months", () => {
     expect(left("2020-01-01")).toBeUndefined();
+  });
+  // LM3Y (owner "LM3 year 0"): every job's year 0 by checks left. Held all
+  // year, paid on the 1st: 12 checks, 8 paid by August 14 (January–August),
+  // so 4 of 12 are left: the 4,000 self-only limit × 4/12 = 1,333.33.
+  // Today it has none, and the engine prorates by months (5/12: 1,666.67).
+  xfail({
+    id: "limits/LM3Y-held-all-year",
+    todo: `v0.11.1 LM3Y "Year 0 by checks left for every job" (DECISIONS LM3 year 0)`,
+    run: () => left("2020-01-01") ?? Number.NaN,
+    expected: 1333.33,
   });
 });

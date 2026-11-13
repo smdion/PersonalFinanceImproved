@@ -656,7 +656,7 @@ describe("answer key: RMD dollars and the year's need", () => {
   // need) and the RMD tops Traditional up afterwards (verdict N3).
   xfail({
     id: "strategies/N3 [WDR-04]",
-    todo: `v0.11 Engine "Build the decided engine behaviors" (decision D1, UD-04)`,
+    todo: `v0.11.1 EN2 D1 "RMD dollars count toward the year's need first" (decision D1, UD-04)`,
     run: () => {
       const row = runOneYear(
         household(
