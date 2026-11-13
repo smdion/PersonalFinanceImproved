@@ -239,7 +239,7 @@ export type ProjectionInput = {
   irmaaAwareRothConversions?: boolean;
   /** Enable ACA subsidy awareness (pre-65): report MAGI headroom below the subsidy cliff and warn when a year crosses it; never caps MAGI. */
   enableAcaAwareness?: boolean;
-  /** Household size for ACA FPL calculation (default 2). */
+  /** Household size for ACA FPL calculation (none sent: `acaHouseholdSize`). */
   householdSize?: number;
   /** Per-person birth years for age-gated checks (IRMAA at 65+, ACA below 65).
    *  IRMAA applies when ANY person is ≥65; ACA applies when ALL persons are <65.
