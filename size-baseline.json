@@ -286,7 +286,7 @@
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 353,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 320,
     "src/lib/pure/engine/irmaa-check.ts": 86,
-    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 310,
+    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 259,
     "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 224,
     "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 236,
     "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 182,
@@ -967,7 +967,7 @@
       "distributeContributions": 322
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 283
+      "runAccumulationYear": 234
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 181

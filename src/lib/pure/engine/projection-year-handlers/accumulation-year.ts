@@ -12,12 +12,10 @@ import type {
 } from "./types";
 import { brokerageGoalDraws, yearGapDraw } from "./goal-draws";
 import { updatePerPersonTradBalance } from "./helpers";
-import { yearContributionTarget, yearZeroBasis } from "./contribution-target";
-import { routeYearSlots, yearContributionLimits } from "./contribution-slots";
+import { sizeYearContributions } from "./year-contributions";
 import {
   creditYearContributions,
   distributeYearContributions,
-  yearContributionTotals,
 } from "./contribution-credits";
 import { closeYearAccounts } from "./year-end-accounts";
 
@@ -53,15 +51,12 @@ export function runAccumulationYear(
     hasPerPersonSalary,
     firstYearFraction,
     OVERFLOW_CATEGORY,
-    TAX_ADVANTAGED,
   } = ctx;
   // This year's specs: someone not at work this year has theirs zeroed.
   const contributionSpecs = setup.yearSpecs ?? state.contributionSpecs;
   const {
     balances,
     accountBalance,
-    activeBaseYearContributions,
-    activeBaseYearEmployerMatch,
     activeEmployerMatchByParentCat,
     accumulationDefaults,
     indBalance,
@@ -74,7 +69,6 @@ export function runAccumulationYear(
   const {
     currentSalary,
     limitGrowthRate,
-    irsLimitCaps,
     brokerageContributionRamp,
     decumulationDefaults,
     retirementYear,
@@ -89,71 +83,26 @@ export function runAccumulationYear(
   // IRS limits grow annually
   const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
 
-  const { useRealContributions, proRate, lateYearCut, totalLateYearCut } =
-    yearZeroBasis(
-      yearIndex,
-      setup,
-      activeBaseYearContributions,
-      activeBaseYearEmployerMatch,
-      firstYearFraction,
-      contributionSpecs,
-    );
-  const { targetContribution, yearEmployerMatch, personPay, contribution } =
-    yearContributionTarget(
-      ctx,
-      state,
-      setup,
-      { useRealContributions, proRate, lateYearCut, totalLateYearCut },
-      { config, lgf, contributionSpecs },
-    );
-  const { capped, yearLimits } = yearContributionLimits(
-    contributionSpecs,
-    year,
-    irsLimitCaps,
-    lgf,
-    projectedSalary,
-    currentSalary,
-    personPay,
-    yearEmployerMatch,
-    hasPerPersonSalary,
-    projectedSalaryByPerson,
-    useRealContributions,
-    activeBaseYearContributions,
-  );
-  const { slots, routeWarnings, specOverflow, rateCeilingScale } =
-    routeYearSlots(
-      useRealContributions,
-      activeBaseYearContributions,
-      yearEmployerMatch,
-      proRate,
-      lateYearCut,
-      yearLimits,
-      config,
-      contributionSpecs,
-      capped,
-      contribution,
-      projectedSalary,
-      targetContribution,
-    );
   const {
+    proRate,
+    targetContribution,
+    personPay,
+    contribution,
+    slots,
+    routeWarnings,
+    rateCeilingScale,
     totalEmployee,
     totalEmployer,
     totalRoth,
     totalTraditional,
     overflowToBrokerage,
     totalTaxAdvSpace,
-  } = yearContributionTotals(
-    slots,
-    useRealContributions,
+  } = sizeYearContributions(ctx, state, setup, {
+    yearIndex,
+    config,
+    lgf,
     contributionSpecs,
-    specOverflow,
-    state,
-    projectedSalary,
-    currentSalary,
-    TAX_ADVANTAGED,
-    year,
-    age,
-  );
+  });
   const { rampAmount } = creditYearContributions(
     slots,
     balances,
