@@ -279,24 +279,28 @@ describe("findActiveJob", () => {
 describe("filterActiveJobs", () => {
   const jobs = [
     {
+      id: 1,
       startDate: "2020-01-01",
       endDate: "2022-12-31",
       isSpeculative: false,
       name: "old",
     },
     {
+      id: 2,
       startDate: "2023-01-01",
       endDate: null,
       isSpeculative: false,
       name: "current",
     },
     {
+      id: 3,
       startDate: "2025-06-01",
       endDate: null,
       isSpeculative: false,
       name: "future",
     },
     {
+      id: 4,
       startDate: "2020-01-01",
       endDate: null,
       isSpeculative: true,

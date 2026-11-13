@@ -230,7 +230,7 @@ describe("isJointPercentRow: a joint account with no job takes no percent", () =
   const joint = {
     ownership: "joint" as const,
     jobId: null,
-    contributionMethod: "fixed_monthly",
+    contributionMethod: "fixed_monthly" as const,
     employerMatchType: "none",
   };
   it("a percent of salary or a percent-of-contribution match; never with a job or a person", () => {

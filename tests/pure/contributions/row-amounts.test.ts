@@ -3,7 +3,10 @@ import type { ContributionMethod } from "@/lib/config/enum-values";
 import {
   jointRowAmounts,
   jointRows,
+  rowAnnualContribution,
 } from "@/lib/pure/contributions/row-amounts";
+import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
+import { filterActiveJobs, findActiveJob } from "@/lib/pure/household/profiles";
 
 const job = (id: number, personId: number, payPeriod: string) => ({
   id,
@@ -77,5 +80,37 @@ describe("jointRows: the household's joint rows with their yearly and monthly mo
       asOf,
     );
     expect(rows.map((r) => r.id)).toEqual([3]);
+  });
+});
+
+describe("one person's job: the job Paycheck shows (findActiveJob)", () => {
+  // Two current jobs, rows arriving with the later-started first: Paycheck
+  // shows the one started first (findActiveJob), so a row with no job of
+  // its own reads that one's schedule and pay, not the first row's.
+  const later = { ...job(1, 1, "monthly"), startDate: "2024-06-01" };
+  const earlier = { ...job(2, 1, "biweekly"), startDate: "2021-03-01" };
+  const jobs = filterActiveJobs([later, earlier], asOf);
+  const personRow = {
+    ...row(9, "percent_of_salary", 10),
+    personId: 1,
+    ownership: "individual" as const,
+  };
+  const jobSalaries = jobs.map((j) => ({
+    job: j,
+    salary: j.id === 2 ? 100_000 : 40_000,
+  }));
+
+  it("the person's job is findActiveJob's for the schedule and the pay", () => {
+    expect(findActiveJob([later, earlier], 1, asOf)?.id).toBe(2);
+    const amount = rowAnnualContribution(personRow, jobs, jobSalaries);
+    expect([amount.periodsPerYear, amount.salary, amount.annual]).toEqual([
+      26, 100_000, 10_000,
+    ]);
+    expect(rowPaySchedule(personRow, jobs).job?.id).toBe(2);
+  });
+
+  it("the same whatever order the rows arrive in", () => {
+    const flipped = filterActiveJobs([earlier, later], asOf);
+    expect(flipped.map((j) => j.id)).toEqual(jobs.map((j) => j.id));
   });
 });

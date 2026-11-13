@@ -7,11 +7,10 @@ import { mergeSalaryProfileJobFields } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import type { DbOrTx, Db } from "@/lib/db";
 import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
+import { startedFirst } from "@/lib/pure/household/profiles";
 
-/**
- * Inverse of computeAnnualContribution for flat-dollar methods (budget-linked accounts
- * have jobId === null, so percent_of_salary is rejected loudly rather than written as $0).
- */
+/** Inverse of computeAnnualContribution for flat-dollar methods (budget-linked accounts have
+ *  jobId === null, so percent_of_salary is rejected loudly rather than written as $0). */
 function computeContributionValueFromMonthly(
   method: string,
   monthlyAmount: number,
@@ -51,11 +50,11 @@ async function resolvePeriodsPerYearByAccount(
       .from(schema.contributionAccounts)
       .where(inArray(schema.contributionAccounts.id, accountIds)),
   ]);
-  // A job's pay schedule comes from the globally active Salary Profile, never the
-  // Contribution Profile.
+  // Pay schedules: the globally active Salary Profile's, never the Contribution Profile's.
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  // A person's job (rowPaySchedule's personJobIn) is the first of theirs in findActiveJob's order.
   const activeJobs = mergeSalaryProfileJobFields(
-    rawActiveJobs,
+    [...rawActiveJobs].sort(startedFirst),
     salaryProfileActiveMap,
   );
   return new Map(

@@ -135,7 +135,7 @@ function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
 }
 
 /** Jobs in a person's order: started first, then the lower id, whatever order rows arrive in. */
-function startedFirst(
+export function startedFirst(
   a: { startDate: string; id: number },
   b: { startDate: string; id: number },
 ): number {
@@ -183,12 +183,22 @@ export function otherCurrentJobs<T extends JobLike & { employerName: string }>(
     .map((j) => j.employerName);
 }
 
-/** Every current job on `asOf` (isJobCurrent). */
-export function filterActiveJobs<T extends Omit<JobLike, "personId">>(
-  jobs: readonly T[],
-  asOf: Date,
-): T[] {
-  return jobs.filter((j) => isJobCurrent(j, asOf));
+/** A person's job in a list of jobs (or of their pay): the first of theirs. Job lists come in
+ *  findActiveJob's order (filterActiveJobs), so it is the job Paycheck shows for them. */
+export function personJobIn<T>(
+  items: readonly T[],
+  personId: number | null,
+  personOf: (item: T) => number,
+): T | undefined {
+  return items.find((x) => personOf(x) === personId);
+}
+
+/** Every current job on `asOf` (isJobCurrent), in findActiveJob's order (startedFirst): a
+ *  person's first is the job Paycheck shows. */
+export function filterActiveJobs<
+  T extends Omit<JobLike, "personId"> & { id: number },
+>(jobs: readonly T[], asOf: Date): T[] {
+  return jobs.filter((j) => isJobCurrent(j, asOf)).sort(startedFirst);
 }
 
 /**

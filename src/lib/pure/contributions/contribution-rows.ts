@@ -7,6 +7,7 @@ import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountOwnership } from "@/lib/config/enum-values";
 import { computeValue } from "./contribution-caps";
+import { personJobIn } from "@/lib/pure/household/profiles";
 import {
   computeAnnualContribution,
   fractionFromPercent,
@@ -56,21 +57,19 @@ export type JobSalaryRef = {
   bonusGrossThisYear?: number;
 };
 
-/** The job pay a contribution is figured on: its own job's, else its person's (as rowPaySchedule). */
+/** The job pay a contribution is figured on: its own job's, else its person's (personJobIn). */
 export function jobPayFor<T extends { job: { id: number; personId: number } }>(
   c: { jobId: number | null; personId: number | null },
   jobSalaries: readonly T[],
 ): T | undefined {
   return c.jobId
     ? jobSalaries.find((x) => x.job.id === c.jobId)
-    : jobSalaries.find((x) => x.job.personId === c.personId);
+    : personJobIn(jobSalaries, c.personId, (x) => x.job.personId);
 }
 
-/**
- * A contribution's yearly amount, the paycheck's way: regular paychecks plus the bonus check's
- * share (bonusCheckContribution). Used by the summary and the projection; this year passes the
- * pinned bonus as `bonusGross`, the projection the formula bonus.
- */
+/** A contribution's yearly amount, the paycheck's way: regular paychecks plus the bonus check's
+ *  share (bonusCheckContribution). Used by the summary and the projection; this year passes the
+ *  pinned bonus as `bonusGross`, the projection the formula bonus. */
 export function annualContributionWithBonus(
   c: {
     contributionMethod: ContributionMethod | null;

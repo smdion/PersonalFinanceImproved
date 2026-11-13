@@ -8,7 +8,7 @@ import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 describe("a joint account paid per paycheck", () => {
   const joint = {
-    contributionMethod: "fixed_per_period",
+    contributionMethod: "fixed_per_period" as const,
     jobId: null,
     personId: null,
     ownership: "joint" as const,

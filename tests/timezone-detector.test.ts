@@ -76,6 +76,7 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
       const { filterActiveJobs } =
         await import("@/lib/pure/household/profiles");
       const job = {
+        id: 1,
         startDate: "2026-09-07",
         endDate: null,
         isSpeculative: false,
