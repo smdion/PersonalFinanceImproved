@@ -32,7 +32,7 @@ import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriodType } from "@/lib/pure/paycheck/paycheck.types";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 import { NO_ONE_65 } from "../tax/tax-helpers";
 
 const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
@@ -56,7 +56,7 @@ const period = fc.constantFrom<PayPeriodType>(
   "semimonthly",
   "monthly",
 );
-const status = fc.constantFrom<ReturnFilingStatus>("Single", "MFJ", "HOH");
+const status = fc.constantFrom<FilingStatusKey>("Single", "MFJ", "HOH");
 const salary = fc.integer({ min: 0, max: 600_000 });
 /** A bonus, or none, dated somewhere in the year. */
 const bonus = fc.record({
@@ -89,7 +89,7 @@ const closedFica = (w: number) =>
 function run(c: {
   salary: number;
   period: PayPeriodType;
-  status?: ReturnFilingStatus;
+  status?: FilingStatusKey;
   bonus?: { amount: number; month: number; day: number };
 }) {
   const b = c.bonus && c.bonus.amount > 0 ? c.bonus : null;

@@ -46,7 +46,7 @@ import { computeAnnualEarnings } from "@/lib/pure/household/household-income";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 import { NO_ONE_65 } from "./tax-helpers";
 
 const ltcg2026 = readTaxData().years["2026"]!.ltcg!
@@ -54,7 +54,7 @@ const ltcg2026 = readTaxData().years["2026"]!.ltcg!
 
 /** The year's liability for one job, the Taxes page's path:
  *  computeAnnualEarnings, then calculateHouseholdTax. */
-function yearTax(input: PaycheckInput, status: ReturnFilingStatus) {
+function yearTax(input: PaycheckInput, status: FilingStatusKey) {
   const r = calculatePaycheck(input);
   const earnings = computeAnnualEarnings({
     salary: input.annualSalary,

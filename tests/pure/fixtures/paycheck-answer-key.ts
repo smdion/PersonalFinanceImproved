@@ -13,7 +13,7 @@ import type {
   TaxBracketInput,
 } from "@/lib/pure/paycheck/paycheck.types";
 import type { PaycheckInput } from "@/lib/pure/paycheck/paycheck.types";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 
 export type Year = 2025 | 2026;
 
@@ -31,7 +31,7 @@ export function limit(year: Year, key: string): number {
  * Pub 15-T Worksheet 1A line 1g, as printed (T25 and T26 line 1g): the
  * same both years. An input from the publication, not from `src/`.
  */
-function line1g(status: ReturnFilingStatus, checkbox: boolean): number {
+function line1g(status: FilingStatusKey, checkbox: boolean): number {
   if (checkbox) return 0;
   return status === "MFJ" ? 12_900 : 8_600;
 }
@@ -40,7 +40,7 @@ function line1g(status: ReturnFilingStatus, checkbox: boolean): number {
  *  shaped as `calculatePaycheck` takes them. */
 export function withholdingInput(
   year: Year,
-  status: ReturnFilingStatus,
+  status: FilingStatusKey,
   checkbox = false,
 ): TaxBracketInput {
   const row = taxDataWithholding().find(
@@ -73,7 +73,7 @@ export function withholdingInput(
 
 /** The Form 1040 rate schedule (the standard table shifted down by its
  *  first taxed threshold, spec BR-6) for the year's liability. */
-export function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
+export function liabilityInput(status: FilingStatusKey): TaxBracketInput {
   const w = withholdingInput(2026, status);
   return {
     ...w,
@@ -87,7 +87,7 @@ export function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
 export function job(c: {
   salary: number;
   period: PayPeriodType;
-  status?: ReturnFilingStatus;
+  status?: FilingStatusKey;
   checkbox?: boolean;
   year?: Year;
   accounts?: ContributionAccountInput[];

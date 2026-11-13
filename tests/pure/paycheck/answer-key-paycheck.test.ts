@@ -63,7 +63,7 @@ import type {
   PaycheckInput,
   PaycheckResult,
 } from "@/lib/pure/paycheck/paycheck.types";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 import { NO_ONE_65 } from "../tax/tax-helpers";
 
 const row = (r: PaycheckResult, check: number) => r.yearSchedule[check - 1]!;
@@ -478,7 +478,7 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
 function yearOf(
   input: PaycheckInput,
   r: PaycheckResult,
-  status: ReturnFilingStatus,
+  status: FilingStatusKey,
 ) {
   const earnings = computeAnnualEarnings({
     salary: input.annualSalary,

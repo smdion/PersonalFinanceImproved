@@ -4,18 +4,46 @@ import {
   FILING_STATUS_RULES,
   jointTable,
   parseReturnFilingStatus,
+  PROJECTION_FILING_STATUSES,
   survivorTable,
 } from "@/lib/config/filing-status";
+import {
+  retirementFilingStatus,
+  w4BoxSetting,
+} from "@/lib/pure/tax/filing-status";
+import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
 
 describe("filing status", () => {
   it("lists every return status in order", () => {
-    expect(FILING_STATUS_ORDER).toEqual(["MFJ", "Single", "HOH"]);
+    expect(FILING_STATUS_ORDER).toEqual(["MFJ", "Single", "HOH", "QSS"]);
   });
 
   it("puts two people on a joint return, one on the others", () => {
     expect(FILING_STATUS_RULES.MFJ.peopleOnReturn).toBe(2);
     expect(FILING_STATUS_RULES.Single.peopleOnReturn).toBe(1);
     expect(FILING_STATUS_RULES.HOH.peopleOnReturn).toBe(1);
+    expect(FILING_STATUS_RULES.QSS.peopleOnReturn).toBe(1);
+  });
+
+  it("QSS reads the joint row for survivor rules, the single row for joint-only ones (IRC 2(a), 63(f)(3))", () => {
+    const table = { MFJ: "m", Single: "s", HOH: "h" } as const;
+    expect(survivorTable(table, "QSS")).toBe("m");
+    expect(jointTable(table, "QSS")).toBe("s");
+    expect(FILING_STATUS_RULES.QSS.marriedAddOn).toBe(true);
+  });
+
+  it("a new job's W-4 box: QSS ticks the joint one (W-4 Step 1(c))", () => {
+    const stated = (value: unknown) => [{ key: SK_TAX_FILING_STATUS, value }];
+    expect(w4BoxSetting(stated("QSS"))).toBe("MFJ");
+    expect(w4BoxSetting(stated("HOH"))).toBe("HOH");
+    expect(w4BoxSetting([])).toBeNull();
+  });
+
+  it("projection years file QSS as Single; the others as themselves", () => {
+    expect(PROJECTION_FILING_STATUSES).toEqual(["MFJ", "Single", "HOH"]);
+    expect(retirementFilingStatus(null, "QSS")).toBe("Single");
+    expect(retirementFilingStatus("QSS", "MFJ")).toBe("Single");
+    expect(retirementFilingStatus(null, "HOH")).toBe("HOH");
   });
 
   it("reads each status's own tax-table row for both kinds of rule", () => {
@@ -29,8 +57,9 @@ describe("filing status", () => {
     expect(FILING_STATUS_RULES.HOH.marriedAddOn).toBe(false);
   });
 
-  it("parses the three statuses and nothing else", () => {
+  it("parses the four statuses and nothing else", () => {
     expect(parseReturnFilingStatus("HOH")).toBe("HOH");
+    expect(parseReturnFilingStatus("QSS")).toBe("QSS");
     expect(parseReturnFilingStatus("MFS")).toBeNull();
     expect(parseReturnFilingStatus(null)).toBeNull();
   });

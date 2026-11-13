@@ -32,6 +32,7 @@ describe("the wizard's filing status question", () => {
       "Married filing jointly",
       "Single",
       "Head of household",
+      "Qualifying surviving spouse",
     ]);
   });
 

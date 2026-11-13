@@ -7,12 +7,9 @@
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import {
   parseReturnFilingStatus,
-  RETURN_FILING_STATUS_VALUES,
+  PROJECTION_FILING_STATUSES,
 } from "@/lib/config/filing-status";
-import {
-  FILING_STATUS_LABELS,
-  filingStatusLabel,
-} from "@/lib/config/display-labels";
+import { filingStatusLabel } from "@/lib/config/display-labels";
 import { useId, useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
@@ -133,14 +130,14 @@ export function TaxesSection({
             {/* null after an "Auto" save, in the optimistic update until the refetch */}
             Auto ({filingStatusLabel(filingStatus ?? "")})
           </option>
-          {RETURN_FILING_STATUS_VALUES.map((s) => (
+          {PROJECTION_FILING_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {FILING_STATUS_LABELS[s]}
+              {filingStatusLabel(s)}
             </option>
           ))}
         </select>
         <span className="text-caption text-faint">brackets</span>
-        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. Change it here if your filing status will change in retirement. This year's return has its own filing status on the Taxes page. Ledgr doesn't model married filing separately." />
+        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. Change it here if your filing status will change in retirement. This year's return has its own filing status on the Taxes page; a qualifying surviving spouse's lasts two years, so retirement years file as Single. Ledgr doesn't model married filing separately." />
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>

@@ -1,8 +1,13 @@
 // Filing status: the status the tax return files as, and the W-4 Step 1(c) box (a withholding
-// choice); they share three spellings, so each type carries a marker. Also: filing-status.schema.ts
+// choice); they share three spellings (the return adds QSS), so each type carries a marker. Also: filing-status.schema.ts
 // (Zod), lib/pure/tax/filing-status.ts (the chain), server/services/tax/filing-status.ts (this year).
 
-export const RETURN_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
+export const RETURN_FILING_STATUS_VALUES = [
+  "MFJ",
+  "Single",
+  "HOH",
+  "QSS",
+] as const;
 /** A return status's spelling: tables keyed by return status (rules, labels) use it. */
 export type ReturnFilingStatusSpelling =
   (typeof RETURN_FILING_STATUS_VALUES)[number];
@@ -28,14 +33,17 @@ export type FilingStatusRules = {
   readonly peopleOnReturn: 1 | 2;
   /** Position in every list of return statuses (pickers). */
   readonly order: number;
-  /** The tax-table row for the rules the statute writes "joint return or surviving spouse"
-   *  (the rate table and basic standard deduction, LTCG, NIIT, the Roth IRA range). */
+  /** The tax-table row for the rules the statute writes "joint return or surviving spouse":
+   *  the rate table and basic standard deduction, LTCG, NIIT, the Roth IRA range, the W-4 box. */
   readonly survivorRow: FilingStatusKey;
   /** The row for the rules it writes for a joint return alone (Social Security's base
    *  amounts, Additional Medicare, the senior deduction's phase-out start, IRMAA). */
   readonly jointRow: FilingStatusKey;
   /** IRC 63(f)(3): married or a surviving spouse takes the lower 65+ add-on. */
   readonly marriedAddOn: boolean;
+  /** The status the projection's years file as. QSS lasts the two years after the spouse's
+   *  death (IRC 2(a)); with no death year, the projection takes the cautious Single. */
+  readonly projectionStatus: ReturnFilingStatusSpelling;
 };
 
 /** One row per return status. */
@@ -48,6 +56,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "MFJ",
     jointRow: "MFJ",
     marriedAddOn: true,
+    projectionStatus: "MFJ",
   },
   Single: {
     peopleOnReturn: 1,
@@ -55,6 +64,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "Single",
     jointRow: "Single",
     marriedAddOn: false,
+    projectionStatus: "Single",
   },
   HOH: {
     peopleOnReturn: 1,
@@ -62,6 +72,16 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "HOH",
     jointRow: "HOH",
     marriedAddOn: false,
+    projectionStatus: "HOH",
+  },
+  // Qualifying surviving spouse: one person on the return (IRC 2(a)).
+  QSS: {
+    peopleOnReturn: 1,
+    order: 3,
+    survivorRow: "MFJ",
+    jointRow: "Single",
+    marriedAddOn: true,
+    projectionStatus: "Single",
   },
 };
 
@@ -86,6 +106,12 @@ export function jointTable<V>(
 ): V {
   return table[filingRules(status).jointRow];
 }
+
+/** The statuses a projection's years file as (QSS ends after two years), in `order`. */
+export const PROJECTION_FILING_STATUSES: readonly ReturnFilingStatus[] =
+  RETURN_FILING_STATUS_VALUES.filter(
+    (s) => FILING_STATUS_RULES[s].projectionStatus === s,
+  );
 
 /** Every return status, in `order`. */
 export const FILING_STATUS_ORDER: readonly ReturnFilingStatus[] = [

@@ -17,11 +17,11 @@ import { describe, expect, it } from "vitest";
 import { cents } from "../../fixtures/answer-key";
 import { liabilityInput, limit } from "../fixtures/paycheck-answer-key";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { FilingStatusKey } from "@/lib/config/filing-status";
 import { NO_ONE_65 } from "./tax-helpers";
 
 /** The 2026 household tax on each person's FICA (and federal) wages. */
-function household(status: ReturnFilingStatus, wages: number[]) {
+function household(status: FilingStatusKey, wages: number[]) {
   return calculateHouseholdTax({
     ageDeductions: NO_ONE_65,
     people: wages.map((w) => ({

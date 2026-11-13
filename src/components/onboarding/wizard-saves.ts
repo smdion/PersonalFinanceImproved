@@ -6,8 +6,7 @@ import { type SetStateAction, type Dispatch } from "react";
 import { trpc } from "@/lib/trpc";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { type PersonDraft, type JobDraft } from "./wizard-state";
-import { taxFilingStatusSetting } from "@/lib/pure/tax/filing-status";
-import type { FilingStatusKey } from "@/lib/config/filing-status";
+import { w4BoxSetting } from "@/lib/pure/tax/filing-status";
 
 /** Saves the household the wizard collected, then completes first run. */
 export function finishSetup(
@@ -60,12 +59,12 @@ export function finishSetup(
         }
       }
 
-      // Each new job's Salary Profile entry: no bonus, W-4 box = return status.
+      // Each new job's Salary Profile entry: no bonus, the return's W-4 box.
       if (Object.keys(jobEntries).length > 0) {
         const profiles = await utils.salaryProfile.list.fetch();
         const baseline = profiles[0];
         const settings = await utils.settings.appSettings.list.fetch();
-        const filing: FilingStatusKey | null = taxFilingStatusSetting(
+        const w4Box = w4BoxSetting(
           settings.map((r) => ({ key: r.key, value: r.value })),
         );
         if (baseline) {
@@ -78,7 +77,7 @@ export function finishSetup(
               ...BLANK_SALARY_ENTRY,
               salary: entry.salary,
               payPeriod: entry.payPeriod,
-              ...(filing ? { w4FilingStatus: filing } : {}),
+              ...(w4Box ? { w4FilingStatus: w4Box } : {}),
             };
           }
           await updateSalaryProfile.mutateAsync({

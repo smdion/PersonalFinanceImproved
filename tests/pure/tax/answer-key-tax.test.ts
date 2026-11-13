@@ -62,7 +62,19 @@ import { computeNiit } from "@/lib/pure/tax/niit";
 import { calculateHouseholdTax } from "@/lib/pure/tax/tax";
 import type { DecumulationSlot } from "@/lib/pure/engine/types";
 import type { TaxBracketInput } from "@/lib/pure/paycheck/paycheck.types";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import {
+  filingRules,
+  jointTable,
+  type ReturnFilingStatus,
+} from "@/lib/config/filing-status";
+import {
+  medicareLiabilityKey,
+  SENIOR_PHASEOUT_START_KEY,
+} from "@/lib/config/tax-params";
+import {
+  returnDeductions,
+  returnDeductionTerms,
+} from "@/lib/pure/tax/return-deductions";
 import { NO_ONE_65 } from "./tax-helpers";
 
 type Year = 2025 | 2026;
@@ -85,9 +97,11 @@ function limit(year: Year, key: string): number {
   return v;
 }
 
-/** The Pub 15-T standard (non-2(c)) withholding table, as shipped. */
+/** The Pub 15-T standard (non-2(c)) withholding table, as shipped: the
+ *  status's rate-table row (a surviving spouse reads the joint one). */
 function withholding(year: Year, status: ReturnFilingStatus) {
-  const t = shippedYear(year).withholding.tables[status];
+  const row = filingRules(status).survivorRow;
+  const t = shippedYear(year).withholding.tables[row];
   if (!t) throw new Error(`no ${year} ${status} withholding table`);
   return t.standard as WithholdingBracket[];
 }
@@ -218,12 +232,7 @@ function seniorDeduction(c: {
     seniorCount: c.seniors,
     magi: { kind: "known", value: c.magi },
     perPerson: limit(from, "obbba_senior_deduction_per_person"),
-    phaseoutStart: limit(
-      from,
-      c.status === "MFJ"
-        ? "obbba_senior_deduction_phaseout_start_mfj"
-        : "obbba_senior_deduction_phaseout_start_unmarried",
-    ),
+    phaseoutStart: limit(from, jointTable(SENIOR_PHASEOUT_START_KEY, c.status)),
     phaseoutRate: limit(from, "obbba_senior_deduction_phaseout_rate"),
     year: c.year,
     sunsetYear: limit(from, "obbba_senior_deduction_sunset_year"),
@@ -242,14 +251,15 @@ function deductions(c: {
   seniors: number;
   magi: number;
 }) {
+  const rules = filingRules(c.status);
   const addOn = limit(
     c.year,
-    c.status === "MFJ"
+    rules.marriedAddOn
       ? "additional_std_deduction_65_married"
       : "additional_std_deduction_65_unmarried",
   );
   return (
-    limit(c.year, `standard_deduction_${c.status.toLowerCase()}`) +
+    limit(c.year, `standard_deduction_${rules.survivorRow.toLowerCase()}`) +
     c.seniors * addOn +
     seniorDeduction(c)
   );
@@ -260,12 +270,12 @@ function deductions(c: {
  *  `calculateHouseholdTax`). */
 function liabilityInput(status: ReturnFilingStatus): TaxBracketInput {
   return {
-    filingStatus: status,
+    filingStatus: filingRules(status).survivorRow,
     w4Checkbox: false,
     brackets: rateSchedule(2026, status),
     standardDeduction: limit(
       2026,
-      `standard_deduction_${status.toLowerCase()}`,
+      `standard_deduction_${filingRules(status).survivorRow.toLowerCase()}`,
     ),
     w4Adjustment: 0,
     socialSecurityWageBase: limit(2026, "ss_wage_base"),
@@ -291,10 +301,7 @@ function householdTax(status: ReturnFilingStatus, jobs: number[]) {
       hsaOutsidePayroll: 0,
     })),
     taxBrackets: liabilityInput(status),
-    medicareLiabilityThreshold: limit(
-      2026,
-      `fica_medicare_surtax_liability_${status.toLowerCase()}`,
-    ),
+    medicareLiabilityThreshold: limit(2026, medicareLiabilityKey(status)),
   });
 }
 
@@ -1279,29 +1286,109 @@ describe("answer key: survivors of the mutation audit", () => {
   });
 });
 
+// ── Qualifying surviving spouse (spec FS-1 to FS-4) ─────────────────────
+// QSS reads the MFJ row where the statute says "joint return or surviving
+// spouse" (rates, basic deduction, LTCG, NIIT: IRC 1(j)(2)(A), 63(c)(2)(A),
+// 1(j)(5)(B), 1411(b)(1)) and the Single row where it says "joint return"
+// alone (Additional Medicare 3101(b)(2), the senior deduction's start
+// 151(d)(5)(C)(iii), Social Security 86(c)); its 65+ add-on is the married
+// one (63(f)(3)), one person on the return.
+
+describe("answer key: qualifying surviving spouse", () => {
+  it("tax/B9 [TAX-05] 2026 QSS, TI 150,000: 22,424.00", () => {
+    // The MFJ schedule: 11,600 at 100,800 (B4) + 22% × 49,200 = 10,824.
+    cents(scheduleTax(2026, "QSS", 150_000), 22_424);
+  });
+
+  it("tax/L11 [TAX-17] 2026 QSS, T 90,000, G 50,000: 4,304.00", () => {
+    // L5 40,000: 2,480 + 12% × 15,200 = 4,304 on the MFJ schedule; L9 =
+    // 98,900 (the MFJ 0% top) − 40,000 = 58,900 covers all 50,000 at 0%.
+    // Read as Single it would be 10,634.50.
+    cents(stackedTax(2026, "QSS", 90_000, 50_000), 4_304);
+  });
+
+  it("tax/E13 [TAX-22] QSS 70, MAGI 100,000: 4,500", () => {
+    // The unmarried start, 75,000: 6,000 − 6% × 25,000 (as MFJ: 6,000).
+    cents(
+      seniorDeduction({ year: 2026, status: "QSS", seniors: 1, magi: 100_000 }),
+      4_500,
+    );
+  });
+
+  it("tax/N2 [TAX-20] QSS, MAGI 240,000, NII 60,000: 0", () => {
+    // The joint 250,000 threshold (as Single: 1,520).
+    cents(computeNiit(240_000, 60_000, "QSS"), 0);
+  });
+
+  it("tax/A4 [TAX-09] QSS, wages 230,000: 270 owed, 270 withheld", () => {
+    // The 200,000 threshold, not the joint 250,000: 30,000 × 0.9% = 270;
+    // the employer withholds on the same 30,000 (as MFJ: 0).
+    cents(additionalMedicare("QSS", [230_000]), {
+      liability: 270,
+      balance: 0,
+    });
+  });
+
+  it("tax/D4 [TAX-21] 2026 QSS, 65: 33,850", () => {
+    // Basic 32,200 (the joint amount) + the married add-on 1,650, one box
+    // (as the unmarried add-on: 34,250).
+    const limits2026 = Object.fromEntries(
+      [...limits].flatMap(([k, v]) =>
+        k.startsWith("2026:") ? [[k.slice(5), v]] : [],
+      ),
+    );
+    const { standardDeduction } = returnDeductions({
+      terms: returnDeductionTerms(limits2026, "QSS"),
+      over65: 1,
+      magi: { kind: "known", value: 0 },
+      year: 2026,
+    });
+    cents(standardDeduction ?? Number.NaN, 33_850);
+  });
+
+  it("tax/X4 [TAX-16] 2026 QSS, 60, wages 300,000, qualified dividends 30,000: 56,008.00", () => {
+    // AGI 330,000; std 32,200; TI 297,800. L5 267,800: TAX = 35,932 at
+    // 211,400 + 24% × 56,400 = 49,468; the 30,000 at 15% (over the 98,900
+    // top) = 4,500; line 25 53,968. NIIT min(30,000, 80,000) × 3.8% =
+    // 1,140. Additional Medicare 100,000 × 0.9% = 900. Total 56,008.
+    const agi = 330_000;
+    const ded = deductions({
+      year: 2026,
+      status: "QSS",
+      seniors: 0,
+      magi: agi,
+    });
+    const tax = yearTax({
+      year: 2026,
+      status: "QSS",
+      ordinary: 300_000,
+      gains: 30_000,
+      deductions: ded,
+    });
+    const niit = computeNiit(agi, 30_000, "QSS");
+    const am = additionalMedicare("QSS", [300_000]).liability;
+    cents(
+      { deductions: ded, tax, niit, am, total: tax + niit + am },
+      { deductions: 32_200, tax: 53_968, niit: 1_140, am: 900, total: 56_008 },
+    );
+  });
+});
+
 // ── Blocked, with an item that unblocks them ────────────────────────────
 
 describe("answer key: tax cases blocked on a feature", () => {
   // Inputs and figures for each are in the answer key's Tax § Blocked.
-  const QSS = 'v0.11 Tax "Filing statuses: no QSS"';
-  it.todo(`tax/B9: blocked on ${QSS}`);
-  it.todo(`tax/L11: blocked on ${QSS}`);
-  it.todo(`tax/E13: blocked on ${QSS}`);
-  it.todo(`tax/N2: blocked on ${QSS}`);
-  it.todo(`tax/A4: blocked on ${QSS}`);
-  it.todo(`tax/X4: blocked on ${QSS}`);
   it.todo(
     'tax/G1-60: blocked on v0.11 Tax "No income beyond portfolio and SS"',
   );
 
-  // D4 also needs QSS; D2, D3, P22 and P25's blindness half the blindness
+  // D2, D3, P22 and P25's blindness half the blindness
   // add-on built with it (v0.11 has no separate blindness item). P24 and
   // P25's dependent half are closed (header).
   const RETURN_DEDUCTIONS = 'v0.11 Tax "One returnDeductions()"';
   it.todo(`tax/D1: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/D2: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/D3: blocked on ${RETURN_DEDUCTIONS}`);
-  it.todo(`tax/D4: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/D5: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/P21: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/P22: blocked on ${RETURN_DEDUCTIONS}`);

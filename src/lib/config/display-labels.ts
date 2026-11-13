@@ -6,7 +6,7 @@ import { WEALTH_TIER_PAW_MIN, WEALTH_TIER_UAW_MAX } from "@/lib/constants";
 import {
   filingTable,
   parseReturnFilingStatus,
-  type FilingStatusKey,
+  type ReturnFilingStatusSpelling,
 } from "@/lib/config/filing-status";
 import type {
   CompositionBucket,
@@ -348,11 +348,13 @@ export const BRIDGE_SOURCE_LABELS: Record<
 
 /** How each filing status reads on screen — never the short code. Ledgr
  *  has no married-filing-separately status. */
-export const FILING_STATUS_LABELS: Record<FilingStatusKey, string> = {
-  MFJ: "Married filing jointly",
-  Single: "Single",
-  HOH: "Head of household",
-};
+export const FILING_STATUS_LABELS: Record<ReturnFilingStatusSpelling, string> =
+  {
+    MFJ: "Married filing jointly",
+    Single: "Single",
+    HOH: "Head of household",
+    QSS: "Qualifying surviving spouse",
+  };
 /** The label for a stored status; an unknown one is shown as stored. */
 export function filingStatusLabel(status: string): string {
   const known = parseReturnFilingStatus(status);
