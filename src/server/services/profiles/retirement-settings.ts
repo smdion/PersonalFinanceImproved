@@ -25,6 +25,7 @@ import {
 import { firstRow } from "@/lib/utils/first-row";
 import {
   DEFAULT_ROTH_BRACKET_OVERLAY,
+  newRowAcaHouseholdSize,
   type RetirementSettingsInsert,
 } from "@/server/services/profiles/retirement-settings-row";
 
@@ -92,7 +93,7 @@ export const retirementSettingsInput = z.object({
 });
 
 export async function upsertRetirementSettings(
-  ctx: { db: Db },
+  ctx: { db: Db; scope: { asOf: Date } },
   input: z.output<typeof retirementSettingsInput>,
 ) {
   // Unspent RMD money is retirement money: only an active Retirement
@@ -168,6 +169,20 @@ export async function upsertRetirementSettings(
           ? (existing[0]?.filingStatus ?? null)
           : input.filingStatus,
     };
+    const newRowHouseholdSize =
+      existing.length > 0 || resolvedInput.householdSize !== undefined
+        ? resolvedInput.householdSize
+        : await newRowAcaHouseholdSize(tx, {
+            rowStatus: resolvedInput.filingStatus,
+            people: await tx
+              .select({
+                id: schema.people.id,
+                isPrimaryUser: schema.people.isPrimaryUser,
+              })
+              .from(schema.people),
+            appSettings: await tx.select().from(schema.appSettings),
+            asOf: ctx.scope.asOf,
+          });
     const saved =
       existing.length > 0
         ? await tx
@@ -185,6 +200,7 @@ export async function upsertRetirementSettings(
             .insert(schema.retirementSettings)
             .values({
               ...resolvedInput,
+              householdSize: newRowHouseholdSize,
               rothBracketOverlay:
                 resolvedInput.rothBracketOverlay ??
                 DEFAULT_ROTH_BRACKET_OVERLAY,

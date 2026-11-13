@@ -74,6 +74,8 @@ describe("retirement.retirementSettings", () => {
       expect(result!.personId).toBe(personId);
       expect(result!.retirementAge).toBe(65);
       expect(result!.endAge).toBe(95);
+      // No size sent: the household's one person, not the column's 2.
+      expect(result!.householdSize).toBe(1);
     });
 
     it("list returns the inserted settings", async () => {
@@ -301,6 +303,42 @@ describe("retirement.retirementSettings", () => {
       );
       expect(byPerson.get(personId)).toBe("0.02");
       expect(byPerson.get(secondPersonId)).toBe("0.07");
+    });
+  });
+
+  describe("ACA household size on a new row", () => {
+    it("counts the household's people unless a size is sent, and an update keeps it", async () => {
+      const ctx = await createTestCaller(adminSession);
+      try {
+        const a = await seedPerson(ctx.db);
+        const b = await seedPerson(ctx.db);
+        const row = (p: number) => ({ ...baseSettings(), personId: p });
+        const save = ctx.caller.retirement.retirementSettings.upsert;
+        expect((await save(row(a)))!.householdSize).toBe(2);
+        expect(
+          (await save({ ...row(b), householdSize: 4 }))!.householdSize,
+        ).toBe(4);
+        expect(
+          (await save({ ...row(a), retirementAge: 60 }))!.householdSize,
+        ).toBe(2);
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
+    it("one person filing HOH saves a family of two", async () => {
+      const ctx = await createTestCaller(adminSession);
+      try {
+        const a = await seedPerson(ctx.db);
+        const saved = await ctx.caller.retirement.retirementSettings.upsert({
+          ...baseSettings(),
+          personId: a,
+          filingStatus: "HOH",
+        });
+        expect(saved!.householdSize).toBe(2);
+      } finally {
+        ctx.cleanup();
+      }
     });
   });
 

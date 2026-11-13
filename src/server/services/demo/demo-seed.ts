@@ -278,7 +278,7 @@ export async function seedProfile(
   }
 
   // 12. Retirement settings, a new household's (NEW_HOUSEHOLD_ROW).
-  await seedRetirementSettings(db, profile, personIdByName);
+  await seedRetirementSettings(db, profile, personRows, seededOn);
 
   // 12c. The first Retirement profile, as a real install gets it.
   await adoptFirstRetirementProfile(db);

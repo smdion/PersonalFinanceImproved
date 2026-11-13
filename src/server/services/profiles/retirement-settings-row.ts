@@ -3,6 +3,10 @@
  *  on, so a replay would undo a saved "off"). */
 import type * as schema from "@/lib/db/schema";
 import { storedRothOverlay } from "@/lib/config/roth-bracket-overlay";
+import { acaHouseholdSize } from "@/lib/config/aca-tables";
+import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { DbOrTx } from "@/lib/db";
+import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 
 /** The insert type with the switch required. */
 export type RetirementSettingsInsert =
@@ -12,6 +16,26 @@ export type RetirementSettingsInsert =
 
 /** A new household's Roth bracket overlay: off, so its order is its own until it turns it on. */
 export const DEFAULT_ROTH_BRACKET_OVERLAY = false;
+
+/** A new row's ACA household size when the writer sends none (it stays editable): from the
+ *  people and this year's return status as `thisYearFilingStatus` resolves it for this row. */
+export async function newRowAcaHouseholdSize(
+  db: DbOrTx,
+  args: {
+    rowStatus: ReturnFilingStatus | null;
+    people: readonly { id: number; isPrimaryUser: boolean }[];
+    appSettings: readonly { key: string; value: unknown }[];
+    asOf: Date;
+  },
+): Promise<number> {
+  const { status } = await thisYearFilingStatus(db, {
+    appSettings: args.appSettings,
+    profileStatus: args.rowStatus,
+    people: args.people,
+    asOf: args.asOf,
+  });
+  return acaHouseholdSize(args.people.length, status);
+}
 
 type WithoutSwitch = Omit<RetirementSettingsInsert, "rothBracketOverlay">;
 

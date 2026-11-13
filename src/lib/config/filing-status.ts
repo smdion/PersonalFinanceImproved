@@ -41,6 +41,9 @@ export type FilingStatusRules = {
   readonly jointRow: FilingStatusKey;
   /** IRC 63(f)(3): married or a surviving spouse takes the lower 65+ add-on. */
   readonly marriedAddOn: boolean;
+  /** The fewest people in the return's ACA family (26 USC 36B(d)(1)): a joint return's two
+   *  spouses; an HOH's or QSS's qualifying person makes two (IRC 2(a), 2(b)). */
+  readonly minimumFamily: 1 | 2;
   /** The status the projection's years file as. QSS lasts the two years after the spouse's
    *  death (IRC 2(a)); with no death year, the projection takes the cautious Single. */
   readonly projectionStatus: ReturnFilingStatusSpelling;
@@ -56,6 +59,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "MFJ",
     jointRow: "MFJ",
     marriedAddOn: true,
+    minimumFamily: 2,
     projectionStatus: "MFJ",
   },
   Single: {
@@ -64,6 +68,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "Single",
     jointRow: "Single",
     marriedAddOn: false,
+    minimumFamily: 1,
     projectionStatus: "Single",
   },
   HOH: {
@@ -72,6 +77,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "HOH",
     jointRow: "HOH",
     marriedAddOn: false,
+    minimumFamily: 2,
     projectionStatus: "HOH",
   },
   // Qualifying surviving spouse: one person on the return (IRC 2(a)).
@@ -81,6 +87,7 @@ export const FILING_STATUS_RULES: Readonly<
     survivorRow: "MFJ",
     jointRow: "Single",
     marriedAddOn: true,
+    minimumFamily: 2,
     projectionStatus: "Single",
   },
 };
